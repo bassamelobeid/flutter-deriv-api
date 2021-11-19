@@ -4,6 +4,12 @@ use Moose;
 use Date::Utility;
 use BOM::Database::AuthDB;
 
+use constant {
+    TOKEN_GENERATION_ATTEMPTS => 5,
+    REFRESH_TOKEN_LENGTH      => 29,
+    REFRESH_TOKEN_TIMEOUT     => 60 * 60 * 24 * 60    # 60 days.
+};
+
 has 'dbic' => (
     is         => 'ro',
     lazy_build => 1,
@@ -537,10 +543,11 @@ It takes the following arguments:
 
 =over 4
 
-=item * C<$token_length> length of refresh token.
 =item * C<$binary_user_id> binary user id.
-=item * C<$expires_in_sec> expiry time required in seconds
 =item * C<$app_id> source app id.
+=item * C<$token_length> length of refresh token.
+=item * C<$expires_in_sec> expiry time required in seconds
+=item * C<$retries> (optional) number of retries before giving up
 
 =back
 
@@ -549,12 +556,24 @@ Returns a refresh token.
 =cut
 
 sub generate_refresh_token {
-    my ($self, $token_length, $binary_user_id, $expires_in_sec, $app_id) = @_;
-    return $self->dbic->run(
+    my ($self, $binary_user_id, $app_id, $token_length, $expires_in_sec, $retries) = @_;
+    $token_length   //= REFRESH_TOKEN_LENGTH;
+    $expires_in_sec //= REFRESH_TOKEN_TIMEOUT;
+    $retries        //= TOKEN_GENERATION_ATTEMPTS;
+
+    my ($token) = $self->dbic->run(
         fixup => sub {
             $_->selectrow_array("SELECT * FROM oauth.create_refresh_token(?::INT, ?::BIGINT, ?::INT, ?::BIGINT)",
                 undef, $token_length, $binary_user_id, $expires_in_sec, $app_id);
         });
+
+    return $token if $token;
+
+    $retries //= 0;
+
+    return undef if $retries <= 0;
+
+    return $self->generate_refresh_token($token_length, $binary_user_id, $expires_in_sec, $app_id, $retries - 1);
 }
 
 =head2 get_user_app_details_by_refresh_token

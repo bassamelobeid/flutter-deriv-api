@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::Deep;
+use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -393,8 +394,8 @@ subtest 'refresh_token' => sub {
 
     my @tokens;
     foreach my $test ($tests->@*) {
-        my $token  = $m->generate_refresh_token($test->{token_length}, $test_user_id, $test->{expiry_time}, $test_app->{app_id});
-        my $token2 = $m->generate_refresh_token($test->{token_length}, $test_user_id, $test->{expiry_time}, $test_app2->{app_id});
+        my $token  = $m->generate_refresh_token($test_user_id, $test_app->{app_id},  $test->{token_length}, $test->{expiry_time});
+        my $token2 = $m->generate_refresh_token($test_user_id, $test_app2->{app_id}, $test->{token_length}, $test->{expiry_time});
         push @tokens, $token, $token2;
 
         is length $token, $test->{full_token_length}, 'token has been created correctly with the provided length';
@@ -427,6 +428,48 @@ subtest 'refresh_token' => sub {
     $retreived_token_by_user_id = $m->get_refresh_tokens_by_user_id($user_id);
     is scalar $retreived_token_by_user_id->@*, 0, 'tokens revoked by user id correctly';
 
+    subtest 'with retry' => sub {
+        my $db_mock = Test::MockModule->new('DBIx::Connector::Pg');
+        my $token;
+        my $context;
+        my $runs = 0;
+
+        $db_mock->mock(
+            'run',
+            sub {
+                $runs++;
+                return ($token);
+            });
+
+        my $oauth_mock = Test::MockModule->new('BOM::Database::Model::OAuth');
+        $oauth_mock->mock(
+            'generate_refresh_token',
+            sub {
+                $context = [@_];
+                return $oauth_mock->original('generate_refresh_token')->(@_);
+            });
+
+        $runs = 0;
+        is $m->generate_refresh_token($test_user_id, $test_app->{app_id}, 16, 600, 5), undef, 'Give up';
+        is $runs, 6, 'Original attempt + 5 retries';
+
+        $db_mock->mock(
+            'run',
+            sub {
+                $runs++;
+
+                $token = 'ok' if $runs == 2;
+
+                return ($token);
+            });
+
+        $runs = 0;
+        is $m->generate_refresh_token($test_user_id, $test_app->{app_id}, 16, 600, 5), 'ok', 'Got a token after retry';
+        is $runs, 2, '2 runs';
+
+        $db_mock->unmock_all;
+        $oauth_mock->unmock_all;
+    };
 };
 
 done_testing();
