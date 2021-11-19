@@ -138,28 +138,6 @@ maltainvest:
       3: 0
       4: 0
       5: 0
-  JD150:
-    multiplier_range: [1, 2, 3, 4, 5]
-    commission: 0.00085
-    cancellation_commission: 0.05
-    cancellation_duration_range: []
-    stop_out_level:
-      1: 0
-      2: 0
-      3: 0
-      4: 0
-      5: 10
-  JD200:
-    multiplier_range: [1, 2, 3, 4, 5]
-    commission: 0.00080
-    cancellation_commission: 0.05
-    cancellation_duration_range: []
-    stop_out_level:
-      1: 0
-      2: 0
-      3: 0
-      4: 0
-      5: 10
   CRASH300N:
     multiplier_range: [1, 2, 3, 4, 5]
     commission: 0.00005

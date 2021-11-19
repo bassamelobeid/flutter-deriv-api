@@ -171,8 +171,6 @@ Jump 10 Index: JD10
 Volatility 100 (1s) Index: 1HZ100V
 Volatility 100 Index: R_100
 Jump 100 Index: JD100
-Jump 150 Index: JD150
-Jump 200 Index: JD200
 Volatility 200 (1s) Index: 1HZ200V
 Volatility 25 (1s) Index: 1HZ25V
 Volatility 25 Index: R_25
