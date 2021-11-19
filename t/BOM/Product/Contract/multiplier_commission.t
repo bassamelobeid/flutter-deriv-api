@@ -69,8 +69,6 @@ subtest 'commission for underlying' => sub {
         JD100       => [100, 0.000236],
         '1HZ200V'   => [1,   0.00036],
         '1HZ300V'   => [1,   0.00053],
-        JD150       => [1,   0.00085],
-        JD200       => [1,   0.00080],
         CRASH300N   => [1,   0.0002],                 #minimum commission
         BOOM300N    => [1,   0.0002],                 #minimum commission
     );
