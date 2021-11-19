@@ -839,10 +839,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     # Perform additional checks, but only for non-virtual accounts
     if (not $error and not $client->is_virtual) {
         $error = $client->validate_common_account_details({
-                secret_answer => $secret_answer,
-                secret_question =>  $client->secret_question,
-                %input
-            });
+            secret_answer   => $secret_answer,
+            secret_question => $client->secret_question,
+            %input
+        });
     }
 
     if ($error) {
@@ -1071,13 +1071,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
         }
     }
 
-    # Setting age_verification may change p2p advertiser approval via db trigger.
-    # We need to fire an event if approval has changed.
-    my $p2p_advertiser = $client->p2p_advertiser_info;
-    if ($p2p_advertiser and $input{p2p_approved} ne $p2p_advertiser->{is_approved}) {
-        BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $loginid});
-    }
-
     # Save details for all clients
     foreach my $cli (values %clients_updated) {
         my $sync_error;
@@ -1154,10 +1147,6 @@ if ($is_compliance) {
     }
 }
 
-# for hidden form fields
-my $p2p_advertiser = $client->p2p_advertiser_info;
-my $p2p_approved   = $p2p_advertiser ? $p2p_advertiser->{is_approved} : '';
-
 client_search_and_navigation($client, $self_post);
 
 # view client's statement/portfolio/profit table
@@ -1206,6 +1195,12 @@ Bar("$loginid STATUSES", {nav_link => "STATUSES"});
 if (my $statuses = build_client_warning_message($loginid)) {
     print $statuses;
 }
+
+p2p_advertiser_approval_check($client, request()->params);
+
+# for hidden form fields
+my $p2p_advertiser = $client->_p2p_advertiser_cached;
+my $p2p_approved   = $p2p_advertiser ? $p2p_advertiser->{is_approved} : '';
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',

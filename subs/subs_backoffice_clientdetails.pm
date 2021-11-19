@@ -776,6 +776,10 @@ sub build_client_warning_message {
     my $client   = BOM::User::Client->new({'loginid' => $login_id})
         || return "<p>The Client's details can not be found [$login_id]</p>";
     my $broker = $client->broker;
+
+    my $p2p_advertiser = $client->_p2p_advertiser_cached;
+    my $p2p_approved   = $p2p_advertiser ? $p2p_advertiser->{is_approved} : '';
+
     my @output;
 
     my $edit_client_with_status = sub {
@@ -896,6 +900,7 @@ sub build_client_warning_message {
         $output .= '<button class="btn btn--primary" name="status_op" value="remove">Remove selected</button> ';
         $output .= '<button class="btn btn--primary" name="status_op" value="remove_siblings">Remove selected including siblings</button> ';
         $output .= '<button class="btn btn--primary" name="status_op" value="sync">Copy selected to siblings</button>';
+        $output .= '<input type="hidden" name="p2p_approved" value="' . $p2p_approved . '">';
         $output .= '</div>';
         $output .= '</form>';
 
@@ -2437,6 +2442,31 @@ sub create_dropdown {
     return $options if $args{only_options};
 
     return "<select name='$args{name}'>$options</select>";
+}
+
+=head2 p2p_advertiser_approval_check
+
+Checks if p2p advertiser approval has changed based on hidden form field 
+"p2p_approved" which contains the previous approval state.
+
+=over 4
+
+=item * C<client> - the client instance
+
+=item * C<params> - a hashref of the user inputs
+
+=back
+
+=cut
+
+sub p2p_advertiser_approval_check {
+    my ($client, $params) = @_;
+
+    return unless exists $params->{p2p_approved};
+    my $p2p_advertiser = $client->_p2p_advertiser_cached or return;
+    if ($params->{p2p_approved} ne $p2p_advertiser->{is_approved}) {
+        BOM::Platform::Event::Emitter::emit('p2p_advertiser_approval_changed', {client_loginid => $client->loginid});
+    }
 }
 
 1;

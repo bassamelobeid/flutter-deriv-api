@@ -143,14 +143,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         }
     }
 
-    my $p2p_advertiser = $client->p2p_advertiser_info;
-    if ($p2p_advertiser and defined $p2p_approved) {
-        # Setting statuses may change p2p advertiser approval via db trigger.
-        # We need to fire an event if approval has changed.
-        BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $client->loginid})
-            if $p2p_approved ne $p2p_advertiser->{is_approved};
-    }
-
+    p2p_advertiser_approval_check($client, request()->params);
 }
 
 if (scalar @invalid_logins > 0) {
