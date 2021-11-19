@@ -198,7 +198,10 @@ subtest $method => sub {
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
     is $resp_loginid, $new_loginid, 'correct oauth token';
 
-    my $oauth_token = $rpc_ct->result->{oauth_token};
+    my $oauth_token   = $rpc_ct->result->{oauth_token};
+    my $refresh_token = $rpc_ct->result->{refresh_token};
+
+    like $refresh_token, qr/^r1/, 'Got a refresh token';
 
     ok $emitted{"signup_$resp_loginid"}, "signup event emitted";
 
@@ -520,6 +523,9 @@ subtest $method => sub {
             'It should return expected error message');
 
         $new_client->set_default_account("USD");
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error;
+        is $rpc_ct->result->{refresh_token}, undef, 'No refresh token generated for the second account';
+        ok $rpc_ct->result->{oauth_token} =~ /^a1-.*/, 'OAuth token generated for the second account';
     };
 
     subtest 'Create multiple accounts in CR' => sub {

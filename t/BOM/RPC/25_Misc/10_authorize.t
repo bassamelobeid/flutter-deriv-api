@@ -881,7 +881,7 @@ subtest 'logout' => sub {
     my $oauth_model = BOM::Database::Model::OAuth->new;
     my $app_id      = $oauth_model->get_app_id_by_token($token);
 
-    my ($refresh_token) = $oauth_model->generate_refresh_token(29, $user->{id}, 60 * 60 * 24, $app_id);
+    my ($refresh_token) = $oauth_model->generate_refresh_token($user->{id}, $app_id);
 
     my $params = {
         email        => $email,

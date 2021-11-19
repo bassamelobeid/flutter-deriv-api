@@ -35,6 +35,12 @@ use BOM::User;
 use BOM::Rules::Engine;
 use LandingCompany::Wallet;
 
+use constant {
+    TOKEN_GENERATION_ATTEMPTS => 5,
+    REFRESH_TOKEN_LENGTH      => 29,
+    REFRESH_TOKEN_TIMEOUT     => 60 * 60 * 24 * 60    # 60 days.
+};
+
 requires_auth('trading', 'wallet');
 
 sub _create_oauth_token {
@@ -405,6 +411,14 @@ rpc "new_account_virtual",
         $client  = create_virtual_account($args);
         $account = $client->default_account;
 
+        my $oauth_model = BOM::Database::Model::OAuth->new;
+        my $refresh_token;
+
+        # this is the first account of the user
+        if (scalar $client->user->clients == 1) {
+            $refresh_token = $oauth_model->generate_refresh_token($client->binary_user_id, $params->{source});
+        }
+
         return {
             client_id   => $client->loginid,
             email       => $client->email,
@@ -412,6 +426,7 @@ rpc "new_account_virtual",
             balance     => formatnumber('amount', $account->currency_code(), $account->balance),
             oauth_token => _create_oauth_token($params->{source}, $client->loginid),
             type        => $args->{type},
+            $refresh_token ? (refresh_token => $refresh_token) : (),
         };
     } catch ($e) {
         my $error_map = BOM::RPC::v3::Utility::error_map();
