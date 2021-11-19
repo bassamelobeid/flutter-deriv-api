@@ -1045,7 +1045,7 @@ subtest 'update user password' => sub {
 
     my $create_new_refresh_token = sub {
         my ($user_id, $app_id) = @_;
-        $oauth->generate_refresh_token(29, $user_id, 60 * 60 * 24, $app_id);
+        $oauth->generate_refresh_token($user_id, $app_id, 29, 60 * 60 * 24);
     };
 
     foreach (@app_ids) {
