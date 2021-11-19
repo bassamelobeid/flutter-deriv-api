@@ -63,11 +63,6 @@ use constant {
 };
 
 use constant {
-    REFRESH_TOKEN_LENGTH  => 29,
-    REFRESH_TOKEN_TIMEOUT => 60 * 60 * 24 * 60            # 60 days.
-};
-
-use constant {
     LOGIN_URI              => '/oauth2/authorize',        # redirect to this uri if an error occur in one_time_token endpoint.
     DEFAULT_APP_ID         => 16929,                      # default redirect to deriv login page.
     DEFAULD_APP_BRAND_NAME => 'deriv'
@@ -280,22 +275,8 @@ sub login {
     my $user = $login->{user};
     return $c->_make_error('NO_USER_IDENTITY') unless $user;
 
-    my $refresh_token;
-    try {
-        for (0 .. TOKEN_GENERATION_ATTEMPTS) {
-            die +{
-                code   => "TOKEN_GENERATION_FAILD",
-                status => 500
-            } if $_ == TOKEN_GENERATION_ATTEMPTS;
-
-            $refresh_token = $oauth_model->generate_refresh_token(REFRESH_TOKEN_LENGTH, $user->{id}, REFRESH_TOKEN_TIMEOUT, $app_id);
-            last if $refresh_token;
-        }
-    } catch ($e) {
-        $log->errorf("Error: refresh token generation faild: %s", $e);
-        return $c->_make_error($e->{code}, $e->{status});
-    }
-
+    my $refresh_token = $oauth_model->generate_refresh_token($user->{id}, $app_id)
+        || $c->_make_error('TOKEN_GENERATION_FAILD', 500);
     my $client = $clients->[0];
     return $c->_make_error('NO_USER_IDENTITY') unless $client;
 

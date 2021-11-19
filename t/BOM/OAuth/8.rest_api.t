@@ -127,10 +127,7 @@ subtest 'verify' => sub {
     my $url = '/api/v1/verify';
 
     note "Non json request body";
-    warning_like {
-        $t->post_ok($url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
-    }
-    qr/domain/;
+    $t->post_ok($url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
 
     $is_official_app = 0;
     # unofficial app is restricted
@@ -157,10 +154,7 @@ subtest 'authorize' => sub {
     my $solution = hmac_sha256_hex($challenge, 'tok3n');
 
     note "Non json request body";
-    warning_like {
-        $t->post_ok($url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
-    }
-    qr/domain/;
+    $t->post_ok($url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
 
     # should've been ok but no token in our app_token table
     $post->(
@@ -272,10 +266,7 @@ subtest 'login' => sub {
     my $login_url = '/api/v1/login';
 
     note "Non json request body";
-    warning_like {
-        $t->post_ok($login_url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
-    }
-    qr/domain/;
+    $t->post_ok($login_url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
 
     note "Wrong token";
     $post->(
@@ -709,10 +700,7 @@ subtest 'pta_login' => sub {
     my $mock_app_id   = _generate_app_id('Test App 3', 'https://www.example3.com/', ['payments', 'read', 'trade', 'admin']);
 
     note "Non json request body";
-    warning_like {
-        $t->post_ok($pta_login_url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
-    }
-    qr/domain/;
+    $t->post_ok($pta_login_url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
 
     note "Wrong token";
     $post->(
@@ -912,24 +900,15 @@ subtest 'one_time_token' => sub {
     note "Blocked client ip";
     my $block_redis_key = "oauth::blocked_by_ip::127.0.0.1";
     $redis->set($block_redis_key, 1);
-    warning_like {
-        $t->get_ok($one_time_token_endpoint)->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
-    }
-    qr /domain/;
+    $t->get_ok($one_time_token_endpoint)->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
     $redis->del($block_redis_key);
 
     $block_redis_key = 'oauth::blocked_by_user::' . $system_user->id;
     $redis->set($block_redis_key, 1);
-    warning_like {
-        $t->get_ok($one_time_token_endpoint)->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
-    }
-    qr /domain/;
-    $redis->del($block_redis_key);
+    $t->get_ok($one_time_token_endpoint)->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
 
-    warning_like {
-        $t->get_ok($one_time_token_endpoint)->status_is(302);
-    }
-    qr/domain/;
+    $redis->del($block_redis_key);
+    $t->get_ok($one_time_token_endpoint)->status_is(302);
 };
 
 subtest 'Too many attempts' => sub {
@@ -1116,10 +1095,7 @@ subtest 'app_id' => sub {
     my $one_time_token_endpoint = "$pta_login_url/$one_time_token";
 
     my $client_ip = $raw_response->tx->original_remote_address;
-
-    warning_like {
-        $t->get_ok($one_time_token_endpoint)->status_is(302);
-    }
+    $t->get_ok($one_time_token_endpoint)->status_is(302);
     qr/domain/;
 };
 
