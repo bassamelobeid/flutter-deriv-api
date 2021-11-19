@@ -36,6 +36,9 @@
             "oauth_token" : {
                "type" : "string"
             },
+            "refresh_token" : {
+               "type" : "string"
+            },
             "email" : {
                "pattern" : "^[_2]$",
                "type" : "string"
