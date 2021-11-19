@@ -15,7 +15,6 @@ use warnings;
 use feature 'state';
 no indirect;
 
-use Try::Tiny;
 use JSON::MaybeUTF8;
 use Log::Any qw($log);
 use Format::Util::Numbers qw(get_min_unit financialrounding);
@@ -62,18 +61,21 @@ our %LOCAL_CURRENCY_FOR_COUNTRY = do {
     my %rare_country_currencies = (aq => 'AAD');
 
     map {
-        $_ => $rare_country_currencies{lc($_)} // try {
-            Locale::Object::Currency->new(country_code => $_)->code;
-        } catch {
-            $log->warnf('unsupported country provided: %s', $_);
-            return undef;
+        my $country_code = $_;
+        my $currency_code;
+        $currency_code = $rare_country_currencies{lc($country_code)};
+        unless ($currency_code) {
+            my $currency = Locale::Object::Currency->new(country_code => $country_code);
+            if ($currency) {
+                $currency_code = $currency->code;
+            }
         }
+        $country_code => $currency_code;
     } Locale::Country::all_country_codes();
 };
 
 sub local_currency_for_country {
     my ($country_code) = @_;
-    return undef unless $country_code;
     return $LOCAL_CURRENCY_FOR_COUNTRY{lc($country_code)};
 }
 
