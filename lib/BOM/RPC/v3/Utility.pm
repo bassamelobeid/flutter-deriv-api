@@ -96,7 +96,7 @@ sub validation_checks {
 
         my $err;
         try {
-            $err = BOM::Transaction::Validation->new({clients => $client})->$act($client);
+            $err = BOM::Transaction::Validation->new({clients => [{client => $client}]})->$act($client);
         } catch {
             warn "Error happened when call before_action $act";
             $err = Error::Base->cuss({
@@ -1206,7 +1206,7 @@ sub cashier_validation {
 
         return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
             unless ($source_bypass_verification
-            or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
+            or BOM::Transaction::Validation->new({clients => [{client => $client}]})->allow_paymentagent_withdrawal($client));
     }
 
     my $validation_type = $type =~ /^(payment_withdraw|paymentagent_withdraw)$/ ? 'withdraw' : $type;

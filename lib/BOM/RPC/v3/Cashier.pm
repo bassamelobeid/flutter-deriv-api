@@ -45,7 +45,6 @@ use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Services::Crypto;
 use BOM::RPC::v3::Trading;
 use BOM::RPC::v3::Utility qw(log_exception);
-use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
