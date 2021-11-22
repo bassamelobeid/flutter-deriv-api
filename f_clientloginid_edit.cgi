@@ -660,7 +660,6 @@ if ($input{delete_existing_192}) {
     ) if BOM::Platform::ProveID->new(client => $client)->delete_existing_reports();
 }
 
-my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
 # AFFILIATE COC APPROVAL & RISK DISCLAIMER EMAIL
 if ($is_compliance) {
     if ($input{risk_disclaimer_email_checkbox} eq 'on') {

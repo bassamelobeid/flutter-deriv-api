@@ -294,8 +294,8 @@
                                     <option value="[% option.index %]">[% option.reason %]</option>
                                 [% END %]
                             </select>
-                            <div id="custom_rejection_remark" class="row" style="display:none;"> 
-                                     <textarea style="width:100%;"  placeholder="Write your reason" name="other_reason" id="other_reason_id" value="other" required></textarea>
+                            <div class="row custom_rejection_remark" style="display:none;"> 
+                                     <textarea style="width:100%;" class="other_reason_field"  placeholder="Write your reason" name="other_reason" value="other"></textarea>
                             </div>
                                 <input class="btn btn--secondary" type="submit" name="action" value="Reject"/>   
                         </form>
@@ -387,14 +387,12 @@ function bulkUpdateRemark(el_remark) {
 function bulkUpdateReason(el_rejection_reason) {
     const trx_id = el_rejection_reason.getAttribute('data-trxid');
 
-    if(el_rejection_reason.value == "other"){
-        document.getElementById("custom_rejection_remark").style.display= 'block';
-        document.getElementById("other_reason_id").required = true;
-    }else{
-        document.getElementById("custom_rejection_remark").style.display= 'none';
-        document.getElementById("other_reason_id").required = false;
-    }
-    
+    const is_other = el_rejection_reason.value === 'other';
+    const el_tr   = el_rejection_reason.closest('tr');
+
+    el_tr.querySelector('.custom_rejection_remark').style.display = is_other ? 'block' : 'none';
+    el_tr.querySelector('.other_reason_field').required = is_other;
+
     if (selected_transactions[trx_id]) {
         selected_transactions[trx_id].rejection_reason = el_rejection_reason.value;
         bulkUpdateForm();
