@@ -13,6 +13,7 @@ use Data::UUID;
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use IO::Async::Loop;
+use Net::Async::HTTP;
 use Log::Any qw($log);
 use YAML::XS qw(LoadFile);
 use Locale::Country qw(country2code);
@@ -339,8 +340,6 @@ Returns Future object. Future object will be done if succeed, fail otherwise.
 sub _invoke {
     my ($cmd, $srv_type, $srv_key, $prefix, $param) = @_;
 
-    my $in = encode_json(_prepare_params(%$param));
-
     # IO::Async keeps this around as a singleton, so it's safe to call ->new, and
     # better than tracking in a local `state` variable since if we happen to fork
     # then we can trust the other IO::Async users to take care of clearing the
@@ -349,73 +348,151 @@ sub _invoke {
     my $f             = $loop->new_future;
     my $request_start = [Time::HiRes::gettimeofday];
 
-    my $dd_tags     = ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
-    my $process_pid = $loop->run_child(
-        command   => [@MT5_WRAPPER_COMMAND, $cmd, $srv_type, $srv_key],
-        stdin     => $in,
-        on_finish => sub {
-            my (undef, $exitcode, $out, $err) = @_;
-            $log->errorf("MT5 PHP call error: %s from %s", $err, $in) if defined($err) && length($err);
+    my $dd_tags                = ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
+    my $mt5_proxy_usage_status = BOM::Config::Runtime->instance->app_config->system->mt5->http_proxy->{$srv_type}->$srv_key || 0;
 
-            stats_timing('mt5.call.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => $dd_tags});
+    if ($mt5_proxy_usage_status) {
+        my $http = Net::Async::HTTP->new(
+            decode_content => 1,
+            fail_on_error  => 1,
+        );
+        $loop->add($http);
 
-            if ($exitcode) {
-                stats_inc('mt5.call.php_nonzero_status', {tags => $dd_tags});
-                $log->debugf("MT5 PHP call nonzero status: %s", $exitcode);
+        if ($cmd eq "UserAdd") {
+            $param->{pass_main}     = delete $param->{mainPassword};
+            $param->{pass_investor} = delete $param->{investPassword};
+        } elsif ($cmd eq "UserPasswordChange") {
+            $param->{password} = delete $param->{new_password};
+        }
 
-                return $f->fail(
-                    "binary_mt5 exited non-zero status ($exitcode)",
-                    mt5 => $cmd,
-                    $err
-                );
-            }
+        my $in            = encode_json(_prepare_params(%$param));
+        my $config        = BOM::Config::mt5_webapi_config();
+        my $mt5_proxy_url = $config->{mt5_http_proxy_url};
 
-            $out =~ s/[\x0D\x0A]//g;
-            try {
-                $out = decode_json($out);
+        return $http->POST($mt5_proxy_url . '/' . $srv_type . '_' . $srv_key . '/' . $cmd, $in, content_type => 'application/json')->then(
+            sub {
+                my ($result) = @_;
+                my $out = $result->content;
+                $out =~ s/[\x0D\x0A]//g;
+                try {
+                    $out = decode_json($out);
 
-                if ($out->{error}) {
-
-                    # needed as both of them return same code for different reason.
-                    if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
-                        $out->{ret_code} .= $cmd;
+                    # Converting all keys down to 2nd level to lowercase in order to prevent case related key errors
+                    if (ref $out eq ref {}) {
+                        $out = {map { lc $_ => $out->{$_} } keys %$out};
+                        foreach my $key (keys %$out) {
+                            if (ref $out->{$key} eq ref {}) {
+                                $out->{$key} = {map { lc $_ => $out->{$key}->{$_} } keys %{$out->{$key}}};
+                            }
+                        }
                     }
-                    $f->fail(_future_error($out));
 
-                } else {
-                    # Append login prefixes for mt5 used id.
-                    if ($out->{user} && $out->{user}{login}) {
-                        $out->{user}{login} = $prefix . $out->{user}{login};
-                    } elsif ($out->{login}) {
-                        $out->{login} = $prefix . $out->{login};
+                    if ($out->{error}) {
+                        if ($out->{code} && !defined $out->{ret_code}) {
+                            $out->{ret_code} = $out->{code};
+                        }
+                        # needed as both of them return same code for different reason.
+                        if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
+                            $out->{ret_code} .= $cmd;
+                        }
+                        $f->fail(_future_error($out));
+                    } else {
+                        if ($cmd eq "UserAdd") {
+                            $out->{login} = $out->{user}->{login};
+                        } elsif ($cmd eq "UserGet") {
+                            delete $out->{user}->{apidata};
+                        } elsif ($cmd eq "GroupGet") {
+                            delete $out->{group}->{symbols};
+                        }
+
+                        # Append login prefixes for mt5 used id.
+                        if ($out->{user} && $out->{user}{login}) {
+                            $out->{user}{login} = $prefix . $out->{user}{login};
+                        }
+
+                        if ($out->{login}) {
+                            $out->{login} = $prefix . $out->{login};
+                        }
+
+                        return $f->done($out);
                     }
-                    $f->done($out);
+                } catch ($e) {
+                    chomp $e;
+                    $f->fail($e, mt5 => $cmd);
                 }
-            } catch ($e) {
-                chomp $e;
-                $f->fail($e, mt5 => $cmd);
-            }
-        },
-    );
+            });
+    } else {
+        my $in = encode_json(_prepare_params(%$param));
 
-    my $process_timeout = BOM::Config::mt5_webapi_config()->{request_timeout} // 15;
+        my $process_pid = $loop->run_child(
+            command   => [@MT5_WRAPPER_COMMAND, $cmd, $srv_type, $srv_key],
+            stdin     => $in,
+            on_finish => sub {
+                my (undef, $exitcode, $out, $err) = @_;
+                $log->errorf("MT5 PHP call error: %s from %s", $err, $in) if defined($err) && length($err);
 
-    # Catch will be triggered whenever $f fails due to any reason
-    # Or when timout reaches before PHP process respond. In this case we trigger connectionTimeout error
-    #   and kill the PHP process which hasn't responded on time
-    return Future->wait_any($f, $loop->timeout_future(after => $process_timeout))->catch(
-        sub {
-            my ($err) = @_;
+                stats_timing('mt5.call.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => $dd_tags});
 
-            if ($err eq 'Timeout') {
+                if ($exitcode) {
+                    stats_inc('mt5.call.php_nonzero_status', {tags => $dd_tags});
+                    $log->debugf("MT5 PHP call nonzero status: %s", $exitcode);
 
-                # Kill PHP process if timeout reaches before any response
-                kill 9, $process_pid;
-                return Future->fail(_future_error({ret_code => 9}));
-            }
+                    return $f->fail(
+                        "binary_mt5 exited non-zero status ($exitcode)",
+                        mt5 => $cmd,
+                        $err
+                    );
+                }
 
-            return Future->fail($err);
-        });
+                $out =~ s/[\x0D\x0A]//g;
+
+                try {
+                    $out = decode_json($out);
+
+                    if ($out->{error}) {
+
+                        # needed as both of them return same code for different reason.
+                        if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
+                            $out->{ret_code} .= $cmd;
+                        }
+                        $f->fail(_future_error($out));
+
+                    } else {
+                        # Append login prefixes for mt5 used id.
+                        if ($out->{user} && $out->{user}{login}) {
+                            $out->{user}{login} = $prefix . $out->{user}{login};
+                        } elsif ($out->{login}) {
+                            $out->{login} = $prefix . $out->{login};
+                        }
+
+                        $f->done($out);
+                    }
+                } catch ($e) {
+                    chomp $e;
+                    $f->fail($e, mt5 => $cmd);
+                }
+            },
+        );
+
+        my $process_timeout = BOM::Config::mt5_webapi_config()->{request_timeout} // 15;
+
+        # Catch will be triggered whenever $f fails due to any reason
+        # Or when timout reaches before PHP process respond. In this case we trigger connectionTimeout error
+        #   and kill the PHP process which hasn't responded on time
+        return Future->wait_any($f, $loop->timeout_future(after => $process_timeout))->catch(
+            sub {
+                my ($err) = @_;
+
+                if ($err eq 'Timeout') {
+
+                    # Kill PHP process if timeout reaches before any response
+                    kill 9, $process_pid;
+                    return Future->fail(_future_error({ret_code => 9}));
+                }
+
+                return Future->fail($err);
+            });
+    }
 }
 
 sub create_user {
@@ -612,6 +689,9 @@ sub get_users_logins {
 
 sub _future_error {
     my ($response) = @_;
+    if ($response->{code} && _get_error_mapping($response->{code}) ne 'unknown') {
+        $response->{ret_code} = $response->{code};
+    }
 
     return {
         code  => $response->{ret_code} ? _get_error_mapping($response->{ret_code}) : $response->{code},
