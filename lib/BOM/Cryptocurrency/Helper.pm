@@ -5,6 +5,7 @@ use warnings;
 
 use BOM::Config::Redis;
 use BOM::CTC::Database;
+use JSON::MaybeXS qw(encode_json);
 use DataDog::DogStatsd::Helper qw/stats_inc/;
 use BOM::CTC::Constants qw(:datadog);
 
@@ -203,19 +204,24 @@ sub get_withdrawal_error_txn {
 =head2 revert_txn_status_to_processing
 
 This sub changes the withdrawal transaction's status from "ERROR" to "PROCESSING" by getting the id
+Returns list of reverted tx ids.
 
 =cut
 
 sub revert_txn_status_to_processing {
-    my ($txn_id, $currency, $prev_approver, $staff) = @_;
+    my ($txid_approver_mapping, $currency, $staff) = @_;
 
     my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
 
-    $dbic->run(
+    return $dbic->run(
         fixup => sub {
-            $_->do("SELECT * from payment.ctc_reset_error_to_processing(?::BIGINT, ?::TEXT, ?::TEXT, ?::TEXT)",
-                undef, $txn_id, $currency, $prev_approver, $staff);
-        });
+            return $_->selectall_arrayref(
+                'SELECT * from payment.ctc_reset_error_to_processing(?::JSONB, ?::TEXT, ?::TEXT)',
+                {Slice => {}},
+                encode_json($txid_approver_mapping),
+                $currency, $staff
+            );
+        }) // [];
 }
 
 1;

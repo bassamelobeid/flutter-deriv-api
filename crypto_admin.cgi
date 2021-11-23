@@ -124,31 +124,52 @@ if (%input && $input{req_type}) {
 
         if ($req_type eq 'gt_revert_processing_txn') {
             code_exit_BO("No transaction selected") unless $input{txn_checkbox};
-
-            my @txn_to_process = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
+            code_exit_BO("ERROR: Missing variable staff name. Please check!") unless $staff;
             my %messages;
 
-            foreach my $txn_id (sort { $a <=> $b } @txn_to_process) {
-                my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_id);
+            my @txn_to_process = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
 
-                code_exit_BO("ERROR: Missing variable staff name. Please check!") unless $staff;
+            my %h_txn_to_process = map { $_ => $redis_read->get(REVERT_ERROR_TXN_RECORD . $_) } @txn_to_process;
+            #gather txn already approved by caller previously or first time
+            for (sort { $a <=> $b } @txn_to_process){
+                if(!$h_txn_to_process{$_}){
+                    push @{$messages{"<p class='success'>Following transaction(s) has been successfully approved. Needs one more approver.<br />%s</p>"}}, $_;
+                    $redis_write->setex(REVERT_ERROR_TXN_RECORD . $_, 3600, $staff);
+                }elsif($h_txn_to_process{$_} && $h_txn_to_process{$_} eq $staff){
+                    push @{$messages{"<p class='error'>The following transaction(s) have previously been approved by you.<br />%s</p>"}}, $_;
+                    $redis_write->setex(REVERT_ERROR_TXN_RECORD . $_, 3600, $staff);
+                }
+            }
+            
+            my $txid_approver_mapping = [];
+            #preparing txn list already approved by other staff to send it to db for approval.
+            #making array of hash like {id=>123, approver => "approverName"}
+            for(grep { $h_txn_to_process{$_} && $h_txn_to_process{$_} ne $staff} @txn_to_process){
+                push @{$txid_approver_mapping}, { id => $_."", approver => $h_txn_to_process{$_}};
+            }
 
-                if ($approver && $approver ne $staff) {
-                    try {
-                        BOM::Cryptocurrency::Helper::revert_txn_status_to_processing($txn_id, $input{gt_currency}, $approver, $staff);
+            #approving the list of txn if already aproved previously by other users
+            if(scalar $txid_approver_mapping->@*){
+                try{
 
-                        push @{$messages{"<p class='success'>Following transaction(s) has been successfully reverted.<br />%s</p>"}}, $txn_id;
-                        $redis_write->del(REVERT_ERROR_TXN_RECORD . $txn_id);
-                    } catch ($e) {
-                        push @{$messages{"<p class='error'>The revert of following transaction(s) failed. Error: $e<br />%s</p>"}}, $txn_id;
+                    my $reverted = BOM::Cryptocurrency::Helper::revert_txn_status_to_processing($txid_approver_mapping, $input{gt_currency}, $staff);
+                    
+                    for ($reverted->@*) {
+                        push @{$messages{"<p class='success'>Following transaction(s) has been successfully reverted.<br />%s</p>"}}, $_->{id};
+                        $redis_write->del(REVERT_ERROR_TXN_RECORD . $_->{id});
                     }
-                } elsif ($approver) {
-                    push @{$messages{"<p class='error'>The following transaction(s) previously approved by you.<br />%s</p>"}}, $txn_id;
-                } else {
-                    push @{$messages{
-                            "<p class='success'>Following transaction(s) has been successfully approved. Needs one more approver.<br />%s</p>"}},
-                        $txn_id;
-                    $redis_write->setex(REVERT_ERROR_TXN_RECORD . $txn_id, 3600, $staff);
+
+                    if(scalar $reverted->@* == 0 || (scalar $reverted->@* && scalar $txid_approver_mapping->@* != scalar $reverted->@*)){
+                        my %to_delete = map { $_->{id} => 1 } $reverted->@*;
+                        my @failed_txns = map{$_->{id}} grep { ! $to_delete{$_->{id}} } $txid_approver_mapping->@*;
+                        push @{$messages{"<p class='error'>The revert of following transaction(s) failed. Error: ".
+                            "Another withdrawal transaction with same address is still being processed, ".
+                            "please wait for the pending transaction to be completed before trying to revert it<br />%s</p>"}}, join ",", sort { $a <=> $b } @failed_txns;;
+                    }
+
+                }catch ($e) {
+                        push @{$messages{"<p class='error'>The revert of following transaction(s) failed. Error: $e<br />%s</p>"}}, 
+                             join ",", map{$_->{id}}$txid_approver_mapping->@*;
                 }
             }
 
