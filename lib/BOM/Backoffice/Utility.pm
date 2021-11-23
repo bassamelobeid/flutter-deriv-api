@@ -53,6 +53,7 @@ sub payment_agent_column_labels {
         code_of_conduct_approval_date => 'Code of conduct approval date',
         target_country                => 'Target Countries',
         affiliate_id                  => 'Affiliate id',
+        risk_level                    => 'Risk Level',
     };
 }
 

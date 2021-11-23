@@ -21,6 +21,7 @@ BOM::Backoffice::Sysinit::init();
 
 use constant MAP_FIELDS => {
     pa_name                      => 'payment_agent_name',
+    pa_risk_level                => 'risk_level',
     pa_coc_approval              => 'code_of_conduct_approval',
     pa_email                     => 'email',
     pa_tel                       => 'phone',

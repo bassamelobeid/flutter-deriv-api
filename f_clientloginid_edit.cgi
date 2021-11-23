@@ -1049,7 +1049,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
             } elsif ($key eq 'client_aml_risk_classification' && BOM::Backoffice::Auth0::has_authorisation(['Compliance'])) {
                 $cli->aml_risk_classification($input{$key});
-
             } elsif ($key eq 'mifir_id'
                 and $cli->mifir_id eq ''
                 and $broker eq 'MF')
@@ -1242,8 +1241,8 @@ if ($payment_agent) {
     print '<div class="row"><table class="border small">';
 
     foreach my $column (
-        qw/payment_agent_name url email phone information supported_banks commission_deposit commission_withdrawal
-        min_withdrawal max_withdrawal affiliate_id code_of_conduct_approval
+        qw/payment_agent_name risk_level url email phone information supported_banks commission_deposit
+        commission_withdrawal min_withdrawal max_withdrawal affiliate_id code_of_conduct_approval
         code_of_conduct_approval_date is_authenticated is_listed currency_code/
         )
     {

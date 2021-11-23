@@ -690,6 +690,39 @@ sub get_payment_agent_registration_form {
             },
         ]};
 
+    my $input_field_risk_level = {
+        'label' => {
+            'text' => 'Risk Level',
+            'for'  => 'pa_risk_level'
+        },
+        'input' => HTML::FormBuilder::Select->new(
+            'id'      => 'pa_risk_level',
+            'name'    => 'pa_risk_level',
+            'options' => [{
+                    value => 'low',
+                    text  => 'Low'
+                },
+                {
+                    value => 'standard',
+                    text  => 'Standard'
+                },
+                {
+                    value => 'high',
+                    text  => 'High',
+                },
+                {
+                    value => 'manual override - low',
+                    text  => 'Manual override - Low'
+                },
+                {
+                    value => 'manual override - standard',
+                    text  => 'Manual override - Standard'
+                },
+                {
+                    value => 'manual override - high',
+                    text  => 'Manual override - High',
+                }])};
+
     my $input_field_pa_coc_approval = {
         'label' => {
             'text' => 'Code of conduct approval' . ($coc_approval_time ? " <br/> (approved on $coc_approval_time)" : ''),
@@ -1068,6 +1101,7 @@ sub get_payment_agent_registration_form {
     my $fieldset = $form_object->add_fieldset({});
 
     $fieldset->add_field($input_field_pa_name);
+    $fieldset->add_field($input_field_risk_level);
     $fieldset->add_field($input_field_pa_url);
     $fieldset->add_field($input_field_pa_email);
     $fieldset->add_field($input_field_pa_tel);

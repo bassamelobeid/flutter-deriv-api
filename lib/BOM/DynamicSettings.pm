@@ -344,7 +344,13 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
                 )
         ],
-        compliance => [qw(compliance.fake_names.corporate_patterns compliance.fake_names.accepted_consonant_names)],
+        compliance => [qw(
+                compliance.fake_names.corporate_patterns
+                compliance.fake_names.accepted_consonant_names
+                compliance.payment_agents.standard_risk_level
+                compliance.payment_agents.high_risk_level
+                )
+        ],
         # these settings are configured in separate pages. No need to reconfigure them in Dynamic Settings/Others.
         exclude => [qw(
                 payments.transfer_between_accounts.fees.default.fiat_fiat
