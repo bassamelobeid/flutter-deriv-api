@@ -756,6 +756,20 @@ compliance:
           isa: ArrayRef
           global: 1
           default: ['md']
+    payment_agents:
+      description: "Payment Agent settings"
+      isa: section
+      contains:
+        standard_risk_level:
+          description: "Standard risk will be applied when yearly PA transactions reach this amount (USD value)."
+          isa: Num
+          global: 1
+          default: 1000
+        high_risk_level:
+          description: "High risk will be applied when yearly PA transactions reach this amount (USD value)."
+          isa: Num
+          global: 1
+          default: 10000
 system:
   description: "Various parameters determining core application functionality"
   isa: section
