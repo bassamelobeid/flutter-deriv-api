@@ -30,6 +30,7 @@ __PACKAGE__->meta->setup(
         
         code_of_conduct_approval      => { type => 'boolean'},
         code_of_conduct_approval_time => { type => 'timestamp'},
+        risk_level                    => { type => 'text', not_null => 1 },
     ],
 
     primary_key_columns => [ 'client_loginid' ],
