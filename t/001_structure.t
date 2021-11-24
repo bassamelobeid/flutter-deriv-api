@@ -3,11 +3,13 @@ use strict;
 use warnings;
 use Test::Warnings;
 
-if (my $r =
-    `git grep BOM::|grep -v -e BOM::Test -e BOM::Database -e BOM::Platform -e BOM::Config -e BOM::Config -e BOM::Config -e BOM::User -e BOM::Config`)
-{
+my $r;
+if ($r = `git grep BOM::|grep -v -e BOM::Test -e BOM::Database -e BOM::Platform -e BOM::Rules -e BOM::Config -e BOM::User`) {
     print $r;
     ok 0, "Wrong structure dependency $r";
+} elsif ($r = `git grep BOM::Rules -- './*' ':(exclude)*.t'`) {
+    print $r;
+    ok 0, "Wrong structure dependency $r - Rule engine cannot be imported in any bom-platform module, except test scripts.";
 } else {
     ok 1, "Structure dependency is OK";
 }

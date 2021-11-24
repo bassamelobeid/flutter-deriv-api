@@ -15,9 +15,10 @@ use BOM::User::Client;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
+use BOM::Rules::Engine;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_2, $mlt_client, $mf_client, $mx_client) = ('CashierForwardError');
+my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_2, $mlt_client, $mf_client, $mx_client, $rule_engine) = ('CashierForwardError');
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 
@@ -68,23 +69,27 @@ subtest prepare => sub {
     $user_client->add_client($mf_client);
     $user_client->add_client($mx_client);
 
+    $rule_engine = BOM::Rules::Engine->new(
+        stop_on_failure => 0,
+        client          => [$vr_client, $cr_client, $cr_client_2, $mlt_client, $mf_client, $mx_client]);
+
     pass "Prepration successful";
 };
 
 subtest 'basic tests' => sub {
 
-    my $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'withdraw');
+    my $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'withdraw', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'This is a virtual-money account. Please switch to a real-money account to access cashier.',
         'Correct error message';
     is $res->{status}, undef, 'no status';
 
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
     is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
     cmp_deeply $res->{status}, ['ASK_CURRENCY'], 'correct status';
 
-    $res = BOM::Platform::Client::CashierValidation::validate('CR332112', 'deposit');
+    $res = BOM::Platform::Client::CashierValidation::validate('CR332112', 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for invalid loginid';
     is $res->{error}->{message_to_client}, 'Invalid account.', 'Correct error message for invalid loginid';
     cmp_deeply $res->{status}, undef, 'correct status';
@@ -96,13 +101,13 @@ subtest 'System suspend' => sub {
 
     $app_config->system->suspend->payments(1);
 
-    my $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client);
+    my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.',
         'Payments suspended error for fiat client';
     cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
 
-    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.',
         'Payments suspended error for crypto client';
@@ -112,32 +117,32 @@ subtest 'System suspend' => sub {
 
     $app_config->system->suspend->cashier(1);
 
-    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.',
         'Cashier suspended error for fiat client';
     cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
 
-    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'deposit', 0, $rule_engine);
     unlike $res->{error}->{message_to_client} // '', '/cashier is temporarily unavailable/', 'crypto client is unaffected';
 
     $app_config->system->suspend->cashier(0);
 
     $app_config->system->suspend->cryptocashier(1);
 
-    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, crypto cashier is temporarily unavailable due to system maintenance.',
         'Cashier suspended error for crypto client';
     cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
 
-    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     unlike $res->{error}->{message_to_client} // '', '/cashier is temporarily unavailable/', 'fiat client is unaffected';
 
     $app_config->system->suspend->cryptocashier(0);
 
     $app_config->system->suspend->cryptocurrencies('BTC');
-    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}{message_to_client}, 'Sorry, crypto cashier is temporarily unavailable due to system maintenance.', 'Crypto currency suspended';
     $app_config->system->suspend->cryptocurrencies('');
 };
@@ -148,7 +153,7 @@ subtest 'Cashier validation common' => sub {
     $cr_client->residence('');
     $cr_client->save();
 
-    my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
+    my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for no residence';
     is $res->{error}->{message_to_client}, 'Please set your country of residence.', 'Correct error message for no residence';
     cmp_deeply $res->{status}, set('no_residence'), 'correct status';
@@ -158,7 +163,7 @@ subtest 'Cashier validation common' => sub {
     $cr_client->status->set('cashier_locked', 'system', 'pending investigations');
     $cr_client->save();
 
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code if client is cashier locked';
     is $res->{error}->{message_to_client}, 'Your cashier is locked.', 'Correct error message if client is cashier locked';
     cmp_deeply $res->{status}, set('cashier_locked_status'), 'correct status';
@@ -166,7 +171,7 @@ subtest 'Cashier validation common' => sub {
     $cr_client->status->clear_cashier_locked;
     $cr_client->status->set('disabled', 'system', 'pending investigations');
 
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code as its disabled';
     is $res->{error}->{message_to_client}, 'Your account is disabled.', 'Correct error message as its disabled';
     cmp_deeply $res->{status}, set('disabled_status'), 'correct status';
@@ -175,7 +180,7 @@ subtest 'Cashier validation common' => sub {
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->mock(is_financial_assessment_complete => 0);
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for financial assessment not complete';
     is $res->{error}->{message_to_client}, 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
         'Correct error message for incomplete FA';
@@ -195,13 +200,14 @@ subtest 'Cashier validation common' => sub {
         checksum                   => 'CE114E4501D2F4E2DCEA3E17B546F339'
     });
     $cr_client->save;
+    $cr_client->{documents} = undef;    # force it to reload documents
 
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, undef, 'Correct error code for expired documents but expired check not required';
 
     $mock_client->mock(is_document_expiry_check_required => sub { note "mocked Client->is_document_expiry_check_required returning true"; 1 });
 
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, 'CashierForwardError', 'Correct error code for expired documents with expired check required';
     is $res->{error}->{message_to_client},
         'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.',
@@ -224,7 +230,7 @@ subtest 'Cashier validation common' => sub {
         'message_to_client' => 'Your profile appears to be incomplete. Please update your personal details to continue.'
     };
 
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw', 0, $rule_engine);
     is_deeply($res->{error}, $expected, 'lc withdrawal requirements validated');
     cmp_deeply $res->{status}, set('ASK_FIX_DETAILS'), 'correct status';
     cmp_deeply $res->{missing_fields}, ['address_city'], 'missing fields for withdrawal returned';
@@ -233,13 +239,13 @@ subtest 'Cashier validation common' => sub {
     $cr_client->save;
 
     $mock_client->mock(missing_requirements => 'first_name');
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
-    cmp_deeply $res->{missing_fields}, ['first_name'], 'missing fields for deposit returned';
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
+    cmp_deeply $res->{missing_fields}, ['first_name'], 'missing fields for deposit returned', 0, $rule_engine;
     $mock_client->unmock_all();
 
     my $excluded_until = '2000-01-01';
     $mock_client->redefine('get_self_exclusion_until_date' => $excluded_until);
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
 
     cmp_deeply(
         $res,
@@ -261,7 +267,7 @@ subtest 'Cashier validation common' => sub {
 subtest 'Cashier validation deposit' => sub {
     $cr_client->status->set('unwelcome', 'system', 'pending investigations');
 
-    my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for unwelcome client';
     is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.', 'Correct error message for unwelcome client';
     cmp_deeply $res->{status}, set('unwelcome_status'), 'correct status';
@@ -269,7 +275,7 @@ subtest 'Cashier validation deposit' => sub {
     $cr_client->status->clear_unwelcome;
 
     $app_config->system->suspend->cryptocurrencies_deposit(['BTC']);
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'deposit');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'deposit', 0, $rule_engine);
     is $res->{error}{message_to_client}, 'Deposits are temporarily unavailable for BTC. Please try later.', 'crypto currency deposit suspended';
     cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
     $app_config->system->suspend->cryptocurrencies_deposit([]);
@@ -279,7 +285,7 @@ subtest 'Cashier validation deposit' => sub {
 subtest 'Cashier validation withdraw' => sub {
     $cr_client->status->set('no_withdrawal_or_trading', 'system', 'pending investigations');
 
-    my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
+    my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for no_withdrawal_or_trading';
     is $res->{error}->{message_to_client}, 'Your account is restricted to deposits only.', 'Correct error message for no_withdrawal_or_trading';
     cmp_deeply $res->{status}, set('no_withdrawal_or_trading_status'), 'correct status';
@@ -288,7 +294,7 @@ subtest 'Cashier validation withdraw' => sub {
 
     $cr_client->status->set('withdrawal_locked', 'system', 'pending investigations');
 
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw', 0, $rule_engine);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for withdrawal locked';
     is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.', 'Correct error message for withdrawal locked';
     cmp_deeply $res->{status}, set('withdrawal_locked_status'), 'correct status';
@@ -296,7 +302,7 @@ subtest 'Cashier validation withdraw' => sub {
     $cr_client->status->clear_withdrawal_locked;
 
     $app_config->system->suspend->cryptocurrencies_withdrawal(['BTC']);
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'withdraw');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'withdraw', 0, $rule_engine);
     is $res->{error}{message_to_client}, 'Withdrawals are temporarily unavailable for BTC. Please try later.', 'crypto currency withdrawal suspended';
     cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
     $app_config->system->suspend->cryptocurrencies_withdrawal([]);
@@ -305,7 +311,7 @@ subtest 'Cashier validation withdraw' => sub {
     $mock_client->mock(is_financial_assessment_complete => 1);
     $cr_client_2->aml_risk_classification('high');
     $cr_client_2->save;
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'withdraw');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'withdraw', 0, $rule_engine);
 
     cmp_deeply(
         $res,
@@ -330,7 +336,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->mock(is_financial_assessment_complete => 1);
 
-        my $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        my $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit', 0, $rule_engine);
         is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
         is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
         cmp_deeply $res->{status}, set('ASK_CURRENCY', 'ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
@@ -338,21 +344,21 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mf_client->set_default_account('EUR');
         $mf_client->save;
 
-        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit', 0, $rule_engine);
         is $res->{error}->{code},              'ASK_AUTHENTICATE',                  'Correct error code for not authenticated';
         is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message for not authenticated';
         cmp_deeply $res->{status}, set('ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
 
         $mock_client->mock(fully_authenticated => sub { note "mocked Client->fully_authenticated returning true"; 1 });
 
-        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit', 0, $rule_engine);
         is $res->{error}->{code},              'ASK_FINANCIAL_RISK_APPROVAL',          'Correct error code';
         is $res->{error}->{message_to_client}, 'Financial Risk approval is required.', 'Correct error message';
         cmp_deeply $res->{status}, set('ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
 
         $mf_client->status->set('financial_risk_approval', 'system', 'Accepted approval');
 
-        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit', 0, $rule_engine);
         is $res->{error}->{code}, 'ASK_TIN_INFORMATION', 'Correct error code';
         is $res->{error}->{message_to_client},
             'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
@@ -362,34 +368,35 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mf_client->tax_residence($mf_client->residence);
         $mf_client->save;
 
-        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit', 0, $rule_engine);
         is $res->{error}->{code}, 'ASK_TIN_INFORMATION',
             'Correct error code as tax identification number is also needed for database trigger to set status';
         cmp_deeply $res->{status}, set('ASK_TIN_INFORMATION'), 'correct status';
 
         $mf_client->tax_identification_number('111-222-333');
         $mf_client->save;
+        $mf_client->{status} = undef;    #force it to reload
 
         # retail client can also deposit
-        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit', 0, $rule_engine);
         is $res, undef, 'Validation passed for retail client';
 
         $mf_client->status->set("professional");
 
-        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit', 0, $rule_engine);
         is $res, undef, 'Validation passed for professional client';
 
         $mf_client->tax_residence(undef);
         $mf_client->tax_identification_number(undef);
         $mf_client->save;
 
-        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit', 0, $rule_engine);
         is $res, undef, 'Validation passed, making tax residence undef will not delete status';
 
         my $mf_residence = $mf_client->residence;
         $mf_client->residence('gb');
         $mf_client->save;
-        is BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit'), undef,
+        is BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit', 0, $rule_engine), undef,
             'UK MF client does not need ukgc_funds_protection';
         $mf_client->residence($mf_residence);
         $mf_client->save;
@@ -402,7 +409,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mlt_client->set_default_account('EUR');
         $mlt_client->save;
 
-        my $res = BOM::Platform::Client::CashierValidation::validate($mlt_client->loginid, 'deposit');
+        my $res = BOM::Platform::Client::CashierValidation::validate($mlt_client->loginid, 'deposit', 0, $rule_engine);
         is $res->{error}->{code}, 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'Correct error code';
         is $res->{error}->{message_to_client}, 'Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
             'Correct error message';
@@ -412,7 +419,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
 
     };
     subtest 'gb as residence' => sub {
-        my $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit');
+        my $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit', 0, $rule_engine);
         is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
         is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
         cmp_deeply $res->{status}, set('ASK_CURRENCY'), 'correct status';
@@ -421,7 +428,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mx_client->residence('gb');
         $mx_client->save;
 
-        $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit');
+        $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit', 0, $rule_engine);
         is $res->{error}->{code},              'ASK_UK_FUNDS_PROTECTION',         'Correct error code';
         is $res->{error}->{message_to_client}, 'Please accept Funds Protection.', 'Correct error message';
         cmp_deeply $res->{status}, set('ASK_UK_FUNDS_PROTECTION'), 'correct status';
@@ -429,7 +436,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mx_client->status->set('ukgc_funds_protection',      'system', '1');
         $mx_client->status->set('max_turnover_limit_not_set', 'system', '1');
 
-        $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit');
+        $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit', 0, $rule_engine);
         is $res->{error}->{code}, 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'Correct error code';
         is $res->{error}->{message_to_client}, 'Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
             'Correct error message';
@@ -437,7 +444,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
 
         $mx_client->status->clear_max_turnover_limit_not_set;
 
-        is BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit'), undef, 'Validation passed';
+        is BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit', 0, $rule_engine), undef, 'Validation passed';
     };
 };
 

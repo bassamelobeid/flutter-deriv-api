@@ -19,6 +19,7 @@ use Scalar::Util qw(looks_like_number);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use Format::Util::Numbers qw/get_min_unit financialrounding/;
 use List::Util qw(any);
+use Syntax::Keyword::Try;
 
 use BOM::User::Client;
 use LandingCompany::Registry;
@@ -26,6 +27,7 @@ use LandingCompany::Registry;
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw/request localize/;
 use BOM::Config::CurrencyConfig;
+use BOM::Platform::Utility qw(error_map);
 
 # custom error codes to override the default error code CashierForwardError
 use constant OVERRIDE_ERROR_CODES => qw(
@@ -39,10 +41,31 @@ use constant OVERRIDE_ERROR_CODES => qw(
     ASK_FIX_DETAILS
 );
 
+# a mapping from error codes to the FE status codes.
+my %error_to_status_mapping = (
+    NoResidence                 => 'no_residence',
+    SetExistingAccountCurrency  => 'ASK_CURRENCY',
+    CashierLocked               => 'cashier_locked_status',
+    DisabledAccount             => 'disabled_status',
+    CurrencyNotApplicable       => 'illegal_currency',
+    DocumentsExpired            => 'documents_expired',
+    NotAuthenticated            => 'ASK_AUTHENTICATE',
+    FinancialRiskNotApproved    => 'ASK_FINANCIAL_RISK_APPROVAL',
+    NoTaxInformation            => 'ASK_TIN_INFORMATION',
+    NoUkgcFundsProtection       => 'ASK_UK_FUNDS_PROTECTION',
+    NoMaxTuroverLimit           => 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET',
+    UnwelcomeStatus             => 'unwelcome_status',
+    CashierRequirementsMissing  => 'ASK_FIX_DETAILS',
+    NoWithdrawalOrTradingStatus => 'no_withdrawal_or_trading_status',
+    WithdrawalLockedStatus      => 'withdrawal_locked_status',
+    HighRiskNotAuthenticated    => 'ASK_AUTHENTICATE',
+    system_maintenance_crypto   => 'system_maintenance'
+);
+
 =head2 validate
 
 Validates various checks related to cashier including
-regulation, compliance requirements
+regulation and compliance requirements.
 
 =over 4
 
@@ -52,6 +75,8 @@ regulation, compliance requirements
 
 =item * C<is_internal> - true when this is an internal transfer.
 
+=item * C<rule_engine> - a rule engine object (please note that we are not allowed to create rule engine objects in this repo)
+
 =back
 
 Returns undef for successful validation or a hashref containing error details.
@@ -59,201 +84,83 @@ Returns undef for successful validation or a hashref containing error details.
 =cut
 
 sub validate {
-    my ($loginid, $action, $is_internal) = @_;
+    my ($loginid, $action, $is_internal, $rule_engine) = @_;
 
     my $client = BOM::User::Client->get_client_instance($loginid, 'replica') or return _create_error(localize('Invalid account.'));
+    $action =~ s/^withdraw$/withdrawal/;
 
-    my @validations = (\&base_validation);
-    push @validations, \&deposit_validation  if $action eq 'deposit';
-    push @validations, \&withdraw_validation if $action eq 'withdraw';
+    my $errors   = check_availability($client, $action) // {};
+    my $currency = $client->account ? $client->account->currency_code : '';
 
-    for my $sub (@validations) {
-        my $res = $sub->($client, $is_internal);
-        return $res if $res->{error};
-    }
+    my $failed_rules;
+
+    my $rules_result = $rule_engine->verify_action(
+        'cashier_validation',
+        loginid     => $loginid,
+        action      => $action,
+        currency    => $currency,
+        is_internal => $is_internal ? 1 : 0,
+        # Keep the rule engine from stopping on failure
+        rule_engine_context => {stop_on_failure => 0});
+    $failed_rules = $rules_result->failed_rules;
+
+    _convert_rule_failure_to_cashier_error($failed_rules // [], $errors);
+
+    return $errors if $errors->{error};
 
     return undef;
 }
 
-=head2 base_validation
+=head2 check_availability
 
-Check general rules that determines the cashier is locked completely or not.
+Checks cashier availability. It verifies different global app settings that may suspend payments, cashier or currencies.
+There is no business rule checked here.
+It takes followng arguments:
 
 =over 4
 
-=item * C<client> - an instance of L<BOM::User::Client>.
+=item * C<$client> - An object of the type L<BOM::User::Client>.
+
+=item * C<action> - it can be either B<deposit> or B<withdrawal>.
 
 =back
 
-Returns empty hashref for successful validation or a hashref containing error details.
+Returns undef for successful validation or a hashref containing error details.
 
 =cut
 
-sub base_validation {
-    my ($client, $is_internal) = @_;
+sub check_availability {
+    my ($client, $action) = @_;
+
+    $action =~ s/^withdraw$/withdrawal/;
 
     my $errors = {};
-
-    _add_error($errors, localize('Sorry, cashier is temporarily unavailable due to system maintenance.'), 'system_maintenance')
+    _add_error_by_code($errors, 'system_maintenance')
         if (BOM::Config::CurrencyConfig::is_payment_suspended());
 
-    _add_error($errors, localize('This is a virtual-money account. Please switch to a real-money account to access cashier.'))
+    _add_error_by_code($errors, 'system_maintenance')
+        if (BOM::Config::CurrencyConfig::is_payment_suspended());
+
+    _add_error_by_code($errors, 'virtual_account')
         if $client->is_virtual;
 
-    my $currency = $client->default_account ? $client->default_account->currency_code : '';
-    _add_error($errors, localize('Please set the currency.'), 'ASK_CURRENCY') unless $currency;
+    return $errors if $errors->{error};
 
+    my $currency      = $client->account ? $client->account->currency_code : '';
     my $currency_type = LandingCompany::Registry::get_currency_type($currency);
 
-    _add_error($errors, localize('Sorry, cashier is temporarily unavailable due to system maintenance.'), 'system_maintenance')
+    _add_error_by_code($errors, 'system_maintenance')
         if $currency_type eq 'fiat' and BOM::Config::CurrencyConfig::is_cashier_suspended();
 
-    _add_error($errors, localize('Sorry, crypto cashier is temporarily unavailable due to system maintenance.'), 'system_maintenance')
+    _add_error_by_code($errors, 'system_maintenance_crypto')
         if $currency_type eq 'crypto'
         and (BOM::Config::CurrencyConfig::is_crypto_cashier_suspended() or BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency));
 
-    _add_error($errors, localize('Please set your country of residence.'), 'no_residence') unless $client->residence;
+    _add_error($errors, localize('Deposits are temporarily unavailable for [_1]. Please try later.', $currency), 'system_maintenance')
+        if $currency_type eq 'crypto' && BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended($currency);
 
-    # better to do generic error validation before landing company or account specific
-    _add_error($errors, localize('Your cashier is locked.'),   'cashier_locked_status') if $client->status->cashier_locked;
-    _add_error($errors, localize('Your account is disabled.'), 'disabled_status')       if $client->status->disabled;
-
-    my $landing_company = $client->landing_company;
-    _add_error($errors, localize('[_1] transactions may not be performed with this account.', $currency))
-        unless $landing_company->is_currency_legal($currency);
-
-    _add_error($errors, localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
-        'FinancialAssessmentRequired')
-        unless $client->is_financial_assessment_complete or $is_internal;
-
-    _add_error($errors,
-        localize('Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.'),
-        'documents_expired')
-        if $client->documents->expired;
-
-    # landing company or country specific validations
-    if ($landing_company->short eq 'maltainvest') {
-        _add_error($errors, localize('Please authenticate your account.'), 'ASK_AUTHENTICATE') unless $client->fully_authenticated;
-
-        _add_error($errors, localize('Financial Risk approval is required.'), 'ASK_FINANCIAL_RISK_APPROVAL')
-            unless $client->status->financial_risk_approval;
-
-        _add_error($errors,
-            localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
-            'ASK_TIN_INFORMATION')
-            unless $client->status->crs_tin_information;
-    }
-
-    my $config = request()->brand->countries_instance->countries_list->{$client->residence};
-
-    if ($client->landing_company->short ne 'maltainvest'
-        && ($config->{need_set_max_turnover_limit} || $client->landing_company->check_max_turnover_limit_is_set))
-    {
-        # MX only
-        _add_error($errors, localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION')
-            if $config->{ukgc_funds_protection} && !$client->status->ukgc_funds_protection;
-
-        _add_error(
-            $errors,
-            localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.'),
-            'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET'
-        ) if $client->status->max_turnover_limit_not_set;
-    }
-
-    return $errors;
-}
-
-=head2 deposit_validation
-
-Check deposit specific rules that determines the deposit is locked or not.
-
-=over 4
-
-=item * C<client> - an instance of L<BOM::User::Client>.
-
-=back
-
-Returns empty hashref for successful validation or a hashref containing error details.
-
-=cut
-
-sub deposit_validation {
-    my ($client) = @_;
-
-    my $errors = {};
-
-    my $lim = $client->get_self_exclusion_until_date;
-    _add_error(
-        $errors,
-        localize(
-            'You have chosen to exclude yourself from trading on our website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact us via live chat.',
-            $lim
-        ),
-        'SelfExclusion',
-        {excluded_until => $lim},
-    ) if $lim;
-
-    _add_error($errors, localize('Your account is restricted to withdrawals only.'), 'unwelcome_status')
-        if $client->status->unwelcome;
-
-    if (my @missing_fields = $client->missing_requirements('deposit')) {
-        _add_error($errors, localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
-            'ASK_FIX_DETAILS', {fields => \@missing_fields});
-        $errors->{missing_fields} = \@missing_fields;
-    }
-
-    if ($client->default_account) {
-        my $currency = $client->default_account->currency_code;
-        if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
-            _add_error($errors, localize('Deposits are temporarily unavailable for [_1]. Please try later.', $currency), 'system_maintenance')
-                if BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended($currency);
-        }
-    }
-
-    return $errors;
-}
-
-=head2 withdraw_validation
-
-Check withdrawal specific rules that determines the withdrawal is locked or not.
-
-=over 4
-
-=item * C<client> - an instance of L<BOM::User::Client>.
-
-=back
-
-Returns empty hashref for successful validation or a hashref containing error details.
-
-=cut
-
-sub withdraw_validation {
-    my ($client) = @_;
-
-    my $errors = {};
-
-    _add_error($errors, localize('Your account is restricted to deposits only.'), 'no_withdrawal_or_trading_status')
-        if $client->status->no_withdrawal_or_trading;
-
-    _add_error($errors, localize('Your account is locked for withdrawals.'), 'withdrawal_locked_status')
-        if $client->status->withdrawal_locked;
-
-    _add_error($errors, localize('Please authenticate your account.'), 'ASK_AUTHENTICATE')
-        if $client->risk_level eq 'high' and not $client->fully_authenticated;
-
-    if (my @missing_fields = $client->missing_requirements('withdrawal')) {
-        _add_error($errors, localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
-            'ASK_FIX_DETAILS', {fields => \@missing_fields});
-        $errors->{missing_fields} = \@missing_fields;
-    }
-
-    if ($client->default_account) {
-        my $currency = $client->default_account->currency_code;
-        if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
-            _add_error($errors, localize('Withdrawals are temporarily unavailable for [_1]. Please try later.', $currency), 'system_maintenance')
-                if BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended($currency);
-        }
-    }
+    _add_error($errors, localize('Withdrawals are temporarily unavailable for [_1]. Please try later.', $currency), 'system_maintenance')
+        if $currency_type eq 'crypto' && $action eq 'withdrawal' && BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended($currency);
 
     return $errors;
 }
@@ -418,8 +325,78 @@ Returns nothing.
 sub _add_error {
     my ($current, $message, $code, $details) = @_;
 
-    $current->{error} = _create_error($message, $code, $details)->{error} unless $current->{error};
+    $current->{error} //= _create_error($message, $code, $details)->{error};
     push $current->{status}->@*, $code if $code;
+
+    $current->{missing_fields} = $details->{fields} if $code && ($code eq 'ASK_FIX_DETAILS');
+}
+
+=head2 _add_error_by_code
+
+Takes the first error message and accumulated FE codes, just like B<_add_error>; but it takes error codes 
+and generates localized error messages.
+
+=over 4
+
+=item * C<current> - hashref to be updated in-place.
+
+=item * C<code> - error code to be returned by api, optional.
+
+=item * C<args> - hashref of additional error info, like B<details> and message localization B<params>.
+
+=back
+
+Returns nothing.
+
+=cut
+
+sub _add_error_by_code {
+    my ($current, $code, %args) = @_;
+
+    my $message = localize(error_map->{$code}, ref $args{params} eq 'ARRAY' ? $args{params}->@* : $args{params});
+    my $details = $args{details};
+
+    $code = $error_to_status_mapping{$code} // $code;
+
+    # some errors were generated without an error code; let's keep it the same as of now.
+    $code = undef if $code =~ qr/virtual_account|illegal_currency/;
+
+    _add_error($current, $message, $code, $details);
+}
+
+=head2 _convert_rule_failure_to_cashier_error
+
+Processes the list of failures returned by rule-engine and 
+adds combines them into the pre-existing error using B<_add_error_by_code>.
+It takes the following args:
+
+=over 4
+
+=item * C<rule_failures> - Arrayref of faulures 
+
+=item * C<errors> - previous cashier validation errors combined into a single hash-ref.
+
+=back
+
+Returns nothing.
+
+=cut
+
+sub _convert_rule_failure_to_cashier_error {
+    my ($rule_failures, $errors) = @_;
+
+    return 1 unless scalar @$rule_failures;
+
+    # if the first rule has failed with exception, there's something basically wrong.
+    die $rule_failures->[0] unless ref $rule_failures->[0];
+
+    for my $failure (@$rule_failures) {
+        last unless ref $failure;
+
+        _add_error_by_code($errors, $failure->{error_code}, %$failure);
+    }
+
+    return 1;
 }
 
 1;
