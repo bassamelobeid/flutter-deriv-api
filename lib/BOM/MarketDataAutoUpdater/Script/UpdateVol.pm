@@ -45,8 +45,8 @@ sub script_run {
     my ($class);
     if ($opt eq 'forex') {
         if (is_within_rollover_period($datetime)) {
-            die "Forex vol surface is currently not being updated";
-
+            # Forex vol surface is currently not being updated during rollover period
+            return;
         } else {
             $class = 'BOM::MarketDataAutoUpdater::Forex';
         }
