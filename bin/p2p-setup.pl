@@ -53,6 +53,9 @@ use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Database::AuthDB;
+use BOM::Rules::Engine;
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 $SIG{__DIE__} = sub {
     return if $^S;
@@ -292,8 +295,10 @@ if ($create_order) {
     section_title('Creating Buy Order');
 
     my $order_buy = $client->p2p_order_create(
-        advert_id => $advert_sell->{id},
-        amount    => $advert_sell->{min_order_amount});
+        advert_id   => $advert_sell->{id},
+        amount      => $advert_sell->{min_order_amount},
+        rule_engine => $rule_engine,
+    );
 
     $log->infof('Order info: %s', $order_buy);
 
@@ -329,7 +334,8 @@ if ($create_order) {
         advert_id    => $advert_buy->{id},
         amount       => $advert_buy->{min_order_amount},
         payment_info => 'Come home with one of those giant checks',
-        contact_info => 'Yell my name three times'
+        contact_info => 'Yell my name three times',
+        rule_engine  => $rule_engine,
     );
 
     $log->infof('Sell Order info: %s', $order_sell);
@@ -341,8 +347,10 @@ if ($disputes) {
 
     for ((1 .. 3)) {
         my $order_buy = $client->p2p_order_create(
-            advert_id => $advert_sell->{id},
-            amount    => $advert_sell->{min_order_amount});
+            advert_id   => $advert_sell->{id},
+            amount      => $advert_sell->{min_order_amount},
+            rule_engine => $rule_engine,
+        );
 
         $client->db->dbic->dbh->do(
             "UPDATE p2p.p2p_order SET status = 'timed-out',  expire_time = NOW() - INTERVAL '1 day' WHERE id = " . $order_buy->{id});

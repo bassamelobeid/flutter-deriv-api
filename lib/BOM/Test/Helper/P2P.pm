@@ -6,10 +6,13 @@ use warnings;
 use BOM::Test::Helper::Client;
 use BOM::User;
 use BOM::Config;
+use BOM::Rules::Engine;
 use Carp;
 use Test::More;
 use Test::MockModule;
 use Date::Utility;
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 my $advertiser_num;
 my $client_num;
@@ -114,6 +117,7 @@ sub create_order {
         expiry       => $expiry,
         payment_info => $param{payment_info},
         contact_info => $param{contact_info},
+        rule_engine  => $rule_engine,
     );
 
     # NOW() in db will not be affected when we mock time in tests, so we need to adjust order creation time
