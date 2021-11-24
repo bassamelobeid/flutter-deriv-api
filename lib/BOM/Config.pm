@@ -317,5 +317,4 @@ sub redis_cfds_config {
     state $config = YAML::XS::LoadFile('/etc/rmg/redis-cfds.yml');
     return $config;
 }
-
 1;
