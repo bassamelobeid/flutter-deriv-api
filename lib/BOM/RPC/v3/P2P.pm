@@ -26,6 +26,7 @@ use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::User;
 use BOM::RPC::v3::Utility qw(log_exception);
+use BOM::Rules::Engine;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 
@@ -255,10 +256,11 @@ sub p2p_rpc {
             my $acc = $client->default_account;
 
             return $code->(
-                client     => $client,
-                account    => $acc,
-                app_config => $app_config,
-                params     => $params
+                client      => $client,
+                account     => $acc,
+                app_config  => $app_config,
+                params      => $params,
+                rule_engine => BOM::Rules::Engine->new(client => $client),
             );
         } catch ($exception) {
             my ($err_code, $err_code_db, $err_params, $err_details);
@@ -602,7 +604,11 @@ p2p_rpc p2p_order_create => sub {
 
     my $client = $args{client};
 
-    return $client->p2p_order_create($args{params}{args}->%*, source => $args{params}{source});
+    return $client->p2p_order_create(
+        $args{params}{args}->%*,
+        source      => $args{params}{source},
+        rule_engine => $args{rule_engine},
+    );
 };
 
 =head2 p2p_order_list

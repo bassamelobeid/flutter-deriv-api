@@ -180,7 +180,13 @@ subtest 'get account status' => sub {
                 "cashier is locked for virtual accounts"
             );
 
-            $mocked_cashier_validation->mock('base_validation', {error => 1});
+            # base validatioon: empty action type
+            my $validation = {'' => {error => 1}};
+            $mocked_cashier_validation->redefine(
+                validate => sub {
+                    my ($loginid, $action) = @_;
+                    return $validation->{$action};
+                });
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
@@ -192,7 +198,7 @@ subtest 'get account status' => sub {
                 "cashier is locked correctly."
             );
 
-            $mocked_cashier_validation->mock('base_validation', {});
+            $validation->{''} = {};
             $result = $c->tcall('get_account_status', {token => $token_cr});
 
             cmp_deeply(
@@ -201,7 +207,7 @@ subtest 'get account status' => sub {
                 "cashier is not locked for correctly"
             );
 
-            $mocked_cashier_validation->mock('withdraw_validation', {error => 1});
+            $validation->{withdrawal} = {error => 1};
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
@@ -213,7 +219,7 @@ subtest 'get account status' => sub {
                 "withdrawal is locked correctly"
             );
 
-            $mocked_cashier_validation->mock('withdraw_validation', {});
+            $validation->{withdrawal} = {};
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
@@ -221,7 +227,7 @@ subtest 'get account status' => sub {
                 "withdrawal is not locked correctly"
             );
 
-            $mocked_cashier_validation->mock('deposit_validation', {error => 1});
+            $validation->{deposit} = {error => 1};
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
@@ -233,7 +239,7 @@ subtest 'get account status' => sub {
                 "deposit is not locked correctly"
             );
 
-            $mocked_cashier_validation->mock('deposit_validation', {});
+            $validation->{deposit} = {};
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
@@ -241,7 +247,10 @@ subtest 'get account status' => sub {
                 "deposit is not locked correctly"
             );
 
-            $mocked_cashier_validation->mock('deposit_validation', {error => 1}, 'withdraw_validation', {error => 1});
+            $validation = {
+                ''         => {},
+                deposit    => {error => 1},
+                withdrawal => {error => 1}};
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},

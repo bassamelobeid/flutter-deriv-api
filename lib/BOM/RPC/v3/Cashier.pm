@@ -52,6 +52,7 @@ use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
 use BOM::TradingPlatform;
+use BOM::Rules::Engine;
 
 requires_auth('trading', 'wallet');
 
@@ -670,20 +671,35 @@ rpc paymentagent_transfer => sub {
         };
     }
 
+    my $rule_engine   = BOM::Rules::Engine->new(client => [$client_fm, $client_to]);
+    my $validation_fm = BOM::Platform::Client::CashierValidation::validate($loginid_fm, 'withdraw', 1, $rule_engine);
+    my $validation_to = BOM::Platform::Client::CashierValidation::validate($loginid_to, 'deposit',  1, $rule_engine);
+    if (exists $validation_to->{error}) {
+        # to_clinet's data should not be visible for who is transferring so the error message is replaced by a general one unless for sepcific messages
+        my $msg = localize('You cannot transfer to account [_1]', $loginid_to);
+        $msg .= localize(', as their cashier is locked.')   if $validation_to->{error}->{message_to_client} eq 'Your cashier is locked.';
+        $msg .= localize(', as their account is disabled.') if $validation_to->{error}->{message_to_client} eq 'Your account is disabled.';
+        $msg .= localize(', as their verification documents have expired.')
+            if $validation_to->{error}->{message_to_client} =~ /Your identity documents have expired/;
+        $validation_to->{error}->{message_to_client} = $msg;
+    }
+
     try {
         $client_fm->validate_payment(
-            currency => $currency,
-            amount   => -$amount,    #negative amount
+            currency    => $currency,
+            amount      => -$amount,
+            rule_engine => $rule_engine,
         );
     } catch ($e) {
         chomp $e;
         return $error_sub->($e);
-    }
+    };
 
     try {
         $client_to->validate_payment(
-            currency => $currency,
-            amount   => $amount,
+            currency    => $currency,
+            amount      => $amount,
+            rule_engine => $rule_engine,
         );
     } catch ($e) {
         chomp $e;
@@ -994,9 +1010,11 @@ rpc paymentagent_withdraw => sub {
 
     my $withdraw_error;
     try {
+        # what about the opposite side???
         $client->validate_payment(
-            currency => $currency,
-            amount   => -$amount,    #withdraw action use negative amount
+            currency    => $currency,
+            amount      => -$amount,                                     #withdraw action use negative amount
+            rule_engine => BOM::Rules::Engine->new(client => $client),
         );
     } catch ($e) {
         log_exception();
@@ -1578,12 +1596,15 @@ rpc transfer_between_accounts => sub {
             if $amount > $client_from->default_account->balance;
     }
 
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_from, $client_to]);
+
     try {
         $client_from->is_virtual
             || $client_from->validate_payment(
             currency          => $currency,
             amount            => -1 * $amount,
             internal_transfer => 1,
+            rule_engine       => $rule_engine,
             )
             || die "validate_payment [$loginid_from]";
     } catch ($err) {
@@ -1617,6 +1638,7 @@ rpc transfer_between_accounts => sub {
             currency          => $to_currency,
             amount            => $to_amount,
             internal_transfer => 1,
+            rule_engine       => $rule_engine,
             )
             || die "validate_payment [$loginid_to]";
     } catch ($err) {

@@ -50,6 +50,7 @@ use BOM::Platform::Client::CashierValidation;
 use BOM::User;
 use BOM::Transaction::Validation;
 use BOM::Config;
+use BOM::Rules::Engine;
 
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(longcode log_exception);
@@ -1209,8 +1210,9 @@ sub cashier_validation {
             or BOM::Transaction::Validation->new({clients => [{client => $client}]})->allow_paymentagent_withdrawal($client));
     }
 
+    my $rule_engine     = BOM::Rules::Engine->new(client => $client);
     my $validation_type = $type =~ /^(payment_withdraw|paymentagent_withdraw)$/ ? 'withdraw' : $type;
-    my $validation      = BOM::Platform::Client::CashierValidation::validate($client->loginid, $validation_type, $error_code);
+    my $validation      = BOM::Platform::Client::CashierValidation::validate($client->loginid, $validation_type, 1, $rule_engine);
     return create_error($validation->{error}) if exists $validation->{error};
 
     return;

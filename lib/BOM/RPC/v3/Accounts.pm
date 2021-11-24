@@ -1010,12 +1010,16 @@ rpc get_account_status => sub {
 
     push(@$status, 'needs_affiliate_coc_approval') if $client->user->affiliate_coc_approval_required;
 
-    my $base_validation     = BOM::Platform::Client::CashierValidation::base_validation($client);
-    my $deposit_validation  = BOM::Platform::Client::CashierValidation::deposit_validation($client);
-    my $withdraw_validation = BOM::Platform::Client::CashierValidation::withdraw_validation($client);
+    my $rule_engine = BOM::Rules::Engine->new(
+        client          => $client,
+        stop_on_failure => 0
+    );
+    my $base_validation     = BOM::Platform::Client::CashierValidation::validate($client->loginid, '',           0, $rule_engine);
+    my $deposit_validation  = BOM::Platform::Client::CashierValidation::validate($client->loginid, 'deposit',    0, $rule_engine);
+    my $withdraw_validation = BOM::Platform::Client::CashierValidation::validate($client->loginid, 'withdrawal', 0, $rule_engine);
 
-    my @cashier_validation     = map { ($_->{status} // [])->@* } $base_validation, $deposit_validation, $withdraw_validation;
-    my @cashier_missing_fields = map { ($_->{missing_fields} // [])->@* } $deposit_validation, $withdraw_validation;
+    my @cashier_validation     = uniq map { ($_->{status} // [])->@* } $base_validation, $deposit_validation, $withdraw_validation;
+    my @cashier_missing_fields = uniq map { ($_->{missing_fields} // [])->@* } $deposit_validation, $withdraw_validation;
 
     if ($base_validation->{error} or ($deposit_validation->{error} and $withdraw_validation->{error})) {
         push @$status, 'cashier_locked';

@@ -1600,6 +1600,7 @@ async_rpc "mt5_deposit",
                         currency          => $fm_client->default_account->currency_code(),
                         amount            => -1 * $amount,
                         internal_transfer => 1,
+                        rule_engine       => BOM::Rules::Engine->new(client => $fm_client),
                     );
                 } catch ($e) {
                     return create_error_future(
@@ -2228,7 +2229,8 @@ sub _mt5_validate_and_get_amount {
             ) if $amount > financialrounding('amount', $source_currency, $max);
 
             unless ($client->is_virtual and _is_account_demo($mt5_group)) {
-                my $validation = BOM::Platform::Client::CashierValidation::validate($loginid, $action_counterpart);
+                my $rule_engine = BOM::Rules::Engine->new(client => $client);
+                my $validation  = BOM::Platform::Client::CashierValidation::validate($loginid, $action_counterpart, 0, $rule_engine);
                 return create_error_future($error_code, {message => $validation->{error}->{message_to_client}}) if exists $validation->{error};
             }
 

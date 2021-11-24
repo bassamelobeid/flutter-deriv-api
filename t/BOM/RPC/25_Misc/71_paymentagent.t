@@ -479,7 +479,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         $dry_run = 0;
         reset_transfer_testargs();
-
         $test = 'Transfer fails if amount exceeds client balance';
         $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/exceeds client balance/, $test);
@@ -558,8 +557,8 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->status->clear_unwelcome;
         $Bob->save;
 
-        $test = 'Transfer fails if agent authentication documents are expired';
-        $mock_documents->mock(expired => sub { shift->client->loginid eq $Alice_id ? 1 : 0 });
+        $test = 'Transfer fails if all client authentication documents are expired';
+        $mock_documents->mock(expired => sub { shift->client->loginid eq $Alice_id ? 1 : 0 });    # force to reloaded
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client},
             'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.', $test);
@@ -674,7 +673,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         ##
         ## Landing company limit testing
         ##
-
         $test = 'Transfer fails if amount is over the lifetime limit for landing company svg';
         my $lc_short = $Alice->landing_company->short;
         my $wd       = convert_currency($payment_withdrawal_limits->{$lc_short}, 'USD', $test_currency) - $test_amount + $amount_boost;
@@ -800,6 +798,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->set_default_account($test_currency);
         $Bob->set_default_account($test_currency);
         $payment_agent_args->{currency_code} = $test_currency;
+        $mock_landingcompany->redefine('is_currency_legal' => 1);
         # make him payment agent
         $Bob->payment_agent($payment_agent_args);
         $Bob->save;
@@ -977,6 +976,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $auth_document_args->{expiration_date} = '1999-12-31';
         my ($doc) = $Alice->add_client_authentication_document($auth_document_args);
         $Alice->save;
+        $Alice->{documents} = undef;
         $mock_user_client->mock('is_document_expiry_check_required', sub { 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/Your identity documents have expired/, $test);
@@ -1138,6 +1138,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
 
         ## Cleanup:
         $mock_utility->unmock('is_verification_token_valid');
+        $mock_landingcompany->unmock('is_currency_legal');
 
     };
 
