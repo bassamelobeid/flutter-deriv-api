@@ -17,8 +17,10 @@ use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Event::Emitter;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (request localize);
 use BOM::Platform::Context::Request;
+use BOM::Platform::Utility qw(error_map);
+use BOM::Rules::Engine;
 
 has 'type' => (
     is       => 'ro',
@@ -31,6 +33,31 @@ my %type_mapping = (
     payout_inprogress => 'withdrawal',
     payout_rejected   => 'withdrawal_reversal',
     payout_cancelled  => 'withdrawal_reversal',
+);
+
+my %custom_errors = (
+    SelfExclusionLimitExceeded => {
+        message => localize(
+            "This deposit will cause your account balance to exceed your limit of [_1] [_2]. To proceed with this deposit, please <a href=\"[_3]\">adjust your self exclusion settings</a>."
+        ),
+        link => 'self_exclusion_url',
+    },
+    BalanceExceeded => {
+        message => localize("This deposit will cause your account balance to exceed your <a href=\"[_3]\">account limit</a> of [_1] [_2]."),
+        link    => 'account_limits_url',
+    },
+    WithdrawalLimit => {
+        message => localize(
+            "We're unable to process your withdrawal request because it exceeds the limit of [_1] [_2]. Please <a href=\"[_3]\">authenticate your account</a> before proceeding with this withdrawal."
+        ),
+        link => 'authentication_url'
+    },
+    WithdrawalLimitReached => {
+        message => localize(
+            "You've reached the maximum withdrawal limit of [_1] [_2]. Please <a href=\"[_3]\">authenticate your account</a> before proceeding with this withdrawal."
+        ),
+        link => 'authentication_url'
+    },
 );
 
 =head2 _handle_qualifying_payments
@@ -133,6 +160,34 @@ sub validate_params {
     return $c->validate(@required);
 }
 
+=head2 _genrate_payment_error_message
+
+Generates a localized error message from the error returned by C<payment_validation>>.
+
+=cut
+
+sub _genrate_payment_error_message {
+    my $error = shift;
+
+    # no need to process unknown erros
+    return $error unless ref($error) eq 'HASH';
+
+    # if message  is already localized (cashier validation errors), lets return it
+    return $error->{message_to_client} if $error->{message_to_client};
+
+    my $code    = $error->{error_code} // 'InternalCashierError';
+    my $params  = $error->{params};
+    my $message = error_map->{$code};
+
+    if ($custom_errors{$code}) {
+        $message = $custom_errors{$code}->{message};
+        my $link_name = $custom_errors{$code}->{link};
+        push @$params, request()->brand->$link_name;
+    }
+
+    return localize($message, @$params);
+}
+
 sub validate_as_payment {
     my $c   = shift;
     my $log = $c->env->{log};
@@ -158,13 +213,14 @@ sub validate_as_payment {
     try {
         $client->set_default_account($currency);
         $client->validate_payment(
-            currency        => $currency,
-            amount          => $signed_amount,
-            action_type     => $action,
-            use_brand_links => 1,
+            currency              => $currency,
+            amount                => $signed_amount,
+            action_type           => $action,
+            die_with_error_object => 1,
+            rule_engine           => BOM::Rules::Engine->new(client => $client),
         );
     } catch ($err) {
-        return $c->throw(403, $err);
+        return $c->throw(403, _genrate_payment_error_message($err));
     }
 
     $log->debug("$action validation passed");
