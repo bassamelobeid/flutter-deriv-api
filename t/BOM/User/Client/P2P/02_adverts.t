@@ -14,6 +14,9 @@ use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config::Redis;
+use BOM::Rules::Engine;
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -750,8 +753,9 @@ subtest 'Deleting ads' => sub {
     cmp_deeply(
         exception {
             $client->p2p_order_create(
-                advert_id => $advert->{id},
-                amount    => 10
+                advert_id   => $advert->{id},
+                amount      => 10,
+                rule_engine => $rule_engine,
             )
         },
         {error_code => 'AdvertNotFound'},

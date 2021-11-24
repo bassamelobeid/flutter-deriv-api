@@ -9,6 +9,9 @@ use Guard;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
@@ -55,11 +58,12 @@ subtest 'sell ads' => sub {
     cmp_ok($advertiser->p2p_advertiser_info->{balance_available}, '==', 20, 'new client specific limit');
     is($client->p2p_advert_list(type => 'sell')->@*, 1, 'ad is shown');
 
-    my $err = exception { $client->p2p_order_create(advert_id => $advert->{id}, amount => 25) };
+    my $err = exception { $client->p2p_order_create(advert_id => $advert->{id}, amount => 25, rule_engine => $rule_engine) };
     is($err->{error_code}, 'OrderCreateFailAdvertiser', 'cannot create order exceeding advertisers irreversible balance');
 
     $client->db->dbic->dbh->do('SELECT betonmarkets.manage_client_limit_by_cashier(?,?,?)', undef, $advertiser->loginid, 'p2p', 0.25);
-    lives_ok { $order = $client->p2p_order_create(advert_id => $advert->{id}, amount => 25) } 'can create order after advertiser limit raised';
+    lives_ok { $order = $client->p2p_order_create(advert_id => $advert->{id}, amount => 25, rule_engine => $rule_engine) }
+    'can create order after advertiser limit raised';
 
     cmp_ok($advertiser->balance_for_cashier('p2p'), '==', 0, 'advertiser balance is zero');
 
@@ -88,7 +92,7 @@ subtest 'buy ads' => sub {
     );
     is($client->p2p_advert_list(type => 'buy')->@*, 1, 'buy ad is shown');
 
-    my $err = exception { $client->p2p_order_create(advert_id => $advert->{id}, amount => 25) };
+    my $err = exception { $client->p2p_order_create(advert_id => $advert->{id}, amount => 25, rule_engine => $rule_engine) };
     is($err->{error_code}, 'OrderCreateFailClientBalance', 'cannot create order with 0 balance');
 
     BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p(20);
@@ -104,7 +108,8 @@ subtest 'buy ads' => sub {
     my %params = (
         advert_id    => $advert->{id},
         contact_info => 'x',
-        payment_info => 'x'
+        payment_info => 'x',
+        rule_engine  => $rule_engine
     );
     $err = exception { $client->p2p_order_create(amount => 25, %params) };
     is($err->{error_code}, 'OrderCreateFailClientBalance', 'order amount exceeds balance');

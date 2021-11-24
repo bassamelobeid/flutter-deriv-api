@@ -253,6 +253,7 @@ sub validate_transfer {
             currency          => $local_currency,
             amount            => $send_amount,
             internal_transfer => 1,
+            rule_engine       => $self->rule_engine,
         );
     } catch ($e) {
         chomp($e);

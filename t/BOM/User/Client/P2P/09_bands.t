@@ -11,9 +11,12 @@ use BOM::Test::Helper::Client;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
 use Test::Fatal;
 use Test::Exception;
 use Guard;
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 populate_exchange_rates({EUR => 2});
 BOM::Test::Helper::P2P::bypass_sendbird();
@@ -142,8 +145,9 @@ subtest 'Check client band limits' => sub {
 
     # test client can create order for ad_1
     $test_client->p2p_order_create(
-        advert_id => $ad_1->{id},
-        amount    => 30
+        advert_id   => $ad_1->{id},
+        amount      => 30,
+        rule_engine => $rule_engine,
     );
 
     my $advertiser_2 = BOM::Test::Helper::P2P::create_advertiser(
@@ -168,8 +172,9 @@ subtest 'Check client band limits' => sub {
     # test client cannot create order for a different ad (ad2) because of exceding daily buy limit
     my $err = exception {
         $test_client->p2p_order_create(
-            advert_id => $ad_2->{id},
-            amount    => 25
+            advert_id   => $ad_2->{id},
+            amount      => 25,
+            rule_engine => $rule_engine,
         );
     };
 
@@ -339,8 +344,9 @@ sub order {
     my ($advert_id, $amount) = @_;
     $client = BOM::Test::Helper::P2P::create_advertiser(currency => 'EUR');
     $client->p2p_order_create(
-        advert_id => $advert_id,
-        amount    => $amount
+        advert_id   => $advert_id,
+        amount      => $amount,
+        rule_engine => $rule_engine,
     );
 }
 

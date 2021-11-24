@@ -6,6 +6,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::Fatal;
 use Test::MockTime qw(set_fixed_time restore_time);
 use Test::MockModule;
 
@@ -14,6 +15,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::User;
 use BOM::User::Password;
+use BOM::Rules::Engine;
 
 use Date::Utility;
 
@@ -42,15 +44,15 @@ my $client_details = {
     non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
 };
 
+my $client = $user->create_client(%$client_details);
+$client->set_default_account('USD');
 my %deposit = (
     currency     => 'USD',
     amount       => 1_000,
     remark       => 'here is money',
-    payment_type => 'free_gift'
+    payment_type => 'free_gift',
+    rule_engine  => BOM::Rules::Engine->new(client => $client),
 );
-
-my $client = $user->create_client(%$client_details);
-$client->set_default_account('USD');
 
 $client->status->set('unwelcome', 'calum', '..dont like you, sorry.');
 
@@ -86,9 +88,13 @@ subtest 'max balance messages' => sub {
     qr/^This deposit will cause your account balance to exceed your account limit of \d+ \w+\.$/,
         'cannot deposit an amount that puts client over maximum balance.';
 
-    throws_ok { $client->validate_payment(%deposit, amount => 1_000_000, use_brand_links => 1) }
-    qr/^This deposit will cause your account balance to exceed your <a href=".+?">account limit<\/a> of \d+ \w+\.$/,
-        'correct error message with use_brand_links=1';
+    is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000, die_with_error_object => 1) },
+        {
+        error_code => 'BalanceExceeded',
+        params     => [300000, 'USD'],
+        rule       => 'deposit.total_balance_limits'
+        },
+        'correct error message with die_with_error_object=1';
 
     $client->set_exclusion();
     $client->self_exclusion->max_balance(1000);
@@ -98,9 +104,13 @@ subtest 'max balance messages' => sub {
     qr/^This deposit will cause your account balance to exceed your limit of \d+ \w+\. To proceed with this deposit, please adjust your self exclusion settings\.$/,
         'cannot deposit an amount that puts client over self exclusion max balance.';
 
-    throws_ok { $client->validate_payment(%deposit, amount => 1_000_000, use_brand_links => 1) }
-    qr/^This deposit will cause your account balance to exceed your limit of \d+ \w+\. To proceed with this deposit, please <a href=".+?">adjust your self exclusion settings<\/a>\.$/,
-        'CTA added with use_brand_links=1';
+    is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000, die_with_error_object => 1) },
+        {
+        error_code => 'SelfExclusionLimitExceeded',
+        params     => [1000, 'USD'],
+        rule       => 'deposit.total_balance_limits'
+        },
+        'CTA added with die_with_error_object=1';
 
 };
 
@@ -138,6 +148,7 @@ subtest 'GB fund protection' => sub {
 
     my $client_iom = $user_iom->create_client(%$client_details_iom);
     $client_iom->set_default_account('GBP');
+    $deposit_iom{rule_engine} = BOM::Rules::Engine->new(client => $client_iom);
 
     throws_ok { $client_iom->validate_payment(%deposit_iom) } qr/Please accept Funds Protection./, 'GB residence needs to accept fund protection';
 
@@ -153,11 +164,12 @@ subtest 'deposit limit' => sub {
             return $lc->short eq 'iom';
         });
 
-    my $client_iom = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MX'});
-    my $client_cr  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client_iom  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MX'});
+    my $client_cr   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_cr, $client_iom]);
     for my $client ($client_iom, $client_cr) {
         $client->set_default_account('USD');
-        is_deeply $client->get_deposit_limits, {}, 'depost settings are empty in the beginning';
+        is_deeply $client->get_deposit_limits, {}, 'deposit settings are empty in the beginning';
         $client->set_exclusion();
         $user->add_client($client);
     }
@@ -189,9 +201,10 @@ subtest 'deposit limit' => sub {
         my $payment_time = Date::Utility->new($payment->{payment_time})->epoch;
 
         my $one_usd_payment = {
-            currency => 'USD',
-            amount   => 1,
-            remark   => 'additional deposit',
+            currency    => 'USD',
+            amount      => 1,
+            remark      => 'additional deposit',
+            rule_engine => $rule_engine,
         };
 
         # move time forward to 1 day less than limit duration

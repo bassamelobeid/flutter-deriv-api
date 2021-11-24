@@ -16,6 +16,7 @@ use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use Test::Fatal;
 use Test::MockModule;
+use BOM::Rules::Engine;
 
 populate_exchange_rates();
 
@@ -25,6 +26,8 @@ BOM::Test::Helper::P2P::bypass_sendbird();
 my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock('emit' => sub { push @emitted_events, [@_] });
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 subtest 'Creating new buy order' => sub {
 
@@ -53,6 +56,7 @@ subtest 'Creating new buy order' => sub {
             expiry       => 7200,
             payment_info => 'blah',
             contact_info => 'blah',
+            rule_engine  => $rule_engine,
         );
     };
     is $err->{error_code}, 'AdvertiserNotFoundForOrder', 'Client should be an advertiser to create an order';
@@ -65,6 +69,7 @@ subtest 'Creating new buy order' => sub {
             expiry       => 7200,
             payment_info => 'blah',
             contact_info => 'blah',
+            rule_engine  => $rule_engine,
         );
     };
     is $err->{error_code}, 'AdvertiserNotApprovedForOrder', 'Client should be an approved advertiser to create an order';
@@ -81,6 +86,7 @@ subtest 'Creating new buy order' => sub {
             expiry       => 7200,
             payment_info => 'blah',
             contact_info => 'blah',
+            rule_engine  => $rule_engine,
         );
     };
     is $err1->{error_code}, 'OrderPaymentContactInfoNotAllowed', 'Cannot provide payment/contact info for buy order';
@@ -88,9 +94,10 @@ subtest 'Creating new buy order' => sub {
     @emitted_events = ();
 
     my $new_order = $client->p2p_order_create(
-        advert_id => $advert_info->{id},
-        amount    => $order_amount,
-        expiry    => 7200,
+        advert_id   => $advert_info->{id},
+        amount      => $order_amount,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
     );
 
     ok($escrow->account->balance == $order_amount, 'Money is deposited to Escrow account');
@@ -195,9 +202,10 @@ subtest 'Creating two orders from two clients' => sub {
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
 
     my $order_data1 = $client1->p2p_order_create(
-        advert_id => $advert_info->{id},
-        amount    => 50,
-        expiry    => 7200,
+        advert_id   => $advert_info->{id},
+        amount      => 50,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
     );
 
     ok($order_data1, 'Order is created');
@@ -209,9 +217,10 @@ subtest 'Creating two orders from two clients' => sub {
     ok($order_data1->{amount} == 50, 'Amount for new order is correct');
 
     my $order_data2 = $client2->p2p_order_create(
-        advert_id => $advert_info->{id},
-        amount    => 50,
-        expiry    => 7200,
+        advert_id   => $advert_info->{id},
+        amount      => 50,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
     );
 
     ok($order_data2, 'Order is created');
@@ -244,9 +253,10 @@ subtest 'Creating two orders from one client for two adverts' => sub {
     ok($advertiser2->account->balance == $amount, 'advertiser balance is correct');
 
     my $order_data1 = $client->p2p_order_create(
-        advert_id => $advert_info_1->{id},
-        amount    => 50,
-        expiry    => 7200
+        advert_id   => $advert_info_1->{id},
+        amount      => 50,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
     );
 
     ok($order_data1, 'Order is created');
@@ -258,9 +268,10 @@ subtest 'Creating two orders from one client for two adverts' => sub {
     ok($order_data1->{amount} == 50, 'Amount for new order is correct');
 
     my $order_data2 = $client->p2p_order_create(
-        advert_id => $advert_info_2->{id},
-        amount    => 50,
-        expiry    => 7200,
+        advert_id   => $advert_info_2->{id},
+        amount      => 50,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
     );
 
     ok($order_data2, 'Order is created');
@@ -289,9 +300,10 @@ subtest 'Creating two new orders from one client for one advert' => sub {
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
 
     my $order_data = $client->p2p_order_create(
-        advert_id => $advert_info->{id},
-        amount    => 50,
-        expiry    => 7200,
+        advert_id   => $advert_info->{id},
+        amount      => 50,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
     );
 
     ok($order_data, 'Order is created');
@@ -304,9 +316,10 @@ subtest 'Creating two new orders from one client for one advert' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => 50,
-            expiry    => 7200,
+            advert_id   => $advert_info->{id},
+            amount      => 50,
+            expiry      => 7200,
+            rule_engine => $rule_engine,
         );
     };
     is $err->{error_code}, 'OrderAlreadyExists', 'Could not create order, got error code OrderAlreadyExists';
@@ -328,9 +341,10 @@ subtest 'Creating order for advertiser own order' => sub {
 
     my $err = exception {
         $advertiser->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => 100,
-            expiry    => 7200,
+            advert_id   => $advert_info->{id},
+            amount      => 100,
+            expiry      => 7200,
+            rule_engine => $rule_engine,
         );
     };
     is $err->{error_code}, 'InvalidAdvertOwn', 'Got correct error code';
@@ -357,9 +371,10 @@ subtest 'Creating order below minimum amount' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => 1,
-            expiry    => 7200,
+            advert_id   => $advert_info->{id},
+            amount      => 1,
+            expiry      => 7200,
+            rule_engine => $rule_engine,
         );
     };
     is $err->{error_code}, 'OrderMinimumNotMet', 'Could not create order, got error code OrderMinimumNotMet';
@@ -390,9 +405,10 @@ subtest 'Creating order outside min-max range' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $min_amount - 1,
-            expiry    => 7200,
+            advert_id   => $advert_info->{id},
+            amount      => $min_amount - 1,
+            expiry      => 7200,
+            rule_engine => $rule_engine,
         );
     };
     is $err->{error_code}, 'OrderMinimumNotMet', 'Could not create order, got error code OrderMinimumNotMet';
@@ -400,9 +416,10 @@ subtest 'Creating order outside min-max range' => sub {
 
     $err = exception {
         $client->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $max_amount + 1,
-            expiry    => 7200,
+            advert_id   => $advert_info->{id},
+            amount      => $max_amount + 1,
+            expiry      => 7200,
+            rule_engine => $rule_engine,
         );
     };
     is $err->{error_code}, 'OrderMaximumExceeded', 'Got correct error code';
@@ -430,9 +447,10 @@ subtest 'Creating order without escrow' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $amount,
-            expiry    => 7200,
+            advert_id   => $advert_info->{id},
+            amount      => $amount,
+            expiry      => 7200,
+            rule_engine => $rule_engine,
         );
     };
     is $err->{error_code}, 'EscrowNotFound', 'EscrowNotFound';
@@ -465,7 +483,8 @@ subtest 'Buyer tries to place an order for an advert with a different currency' 
             advert_id   => $advert_info->{id},
             amount      => $amount,
             expiry      => 7200,
-            description => $description
+            description => $description,
+            rule_engine => $rule_engine,
         );
     };
     is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
@@ -493,9 +512,10 @@ subtest 'Buyer tries to place an order for an advert of another country' => sub 
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $amount,
-            expiry    => 7200,
+            advert_id   => $advert_info->{id},
+            amount      => $amount,
+            expiry      => 7200,
+            rule_engine => $rule_engine,
         );
     };
     is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
@@ -527,7 +547,8 @@ subtest 'Buy adverts' => sub {
         amount       => $amount,
         expiry       => 7200,
         payment_info => 'order pay info',
-        contact_info => 'order contact info'
+        contact_info => 'order contact info',
+        rule_engine  => $rule_engine,
     );
 
     BOM::Test::Helper::Client::top_up($client, $client->currency, $amount);
@@ -605,8 +626,9 @@ subtest 'Buyer tries to place an order for an advert of a non-approved advertise
 
     my $err = exception {
         $buyer->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $order_amount
+            advert_id   => $advert_info->{id},
+            amount      => $order_amount,
+            rule_engine => $rule_engine,
         )
     };
 
@@ -635,8 +657,9 @@ subtest 'Buyer tries to place an order for an advert of a non-listed advertiser'
 
     my $err = exception {
         $buyer->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $order_amount
+            advert_id   => $advert_info->{id},
+            amount      => $order_amount,
+            rule_engine => $rule_engine,
         )
     };
 
@@ -665,6 +688,7 @@ subtest 'Seller with empty balance tries to place an "sell" order' => sub {
             amount       => $ad_amount,
             payment_info => 'payment info',
             contact_info => 'contact info',
+            rule_engine  => $rule_engine,
         )
     };
 
@@ -694,8 +718,9 @@ subtest 'Buyer tries to place an order for an inactive ad' => sub {
 
     my $err = exception {
         $buyer->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $ad_amount,
+            advert_id   => $advert_info->{id},
+            amount      => $ad_amount,
+            rule_engine => $rule_engine,
         )
     };
 
@@ -725,8 +750,9 @@ subtest 'Buyer tries to place a "buy" order with an amount that exceeds the adve
 
     my $err = exception {
         $buyer->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $order_amount
+            advert_id   => $advert_info->{id},
+            amount      => $order_amount,
+            rule_engine => $rule_engine,
         )
     };
 
@@ -753,6 +779,7 @@ subtest 'Seller tries to place an order bigger than the ad amount' => sub {
             amount       => $advert_info->{amount} * 2,
             contact_info => 'xxx',
             payment_info => 'xxx',
+            rule_engine  => $rule_engine,
         )
     };
 
@@ -775,8 +802,10 @@ subtest 'Buyer tries to place an order for an advert of an unapproved advertiser
     my $buyer = BOM::Test::Helper::P2P::create_advertiser();
     my $err   = exception {
         $buyer->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $advert_info->{amount})
+            advert_id   => $advert_info->{id},
+            amount      => $advert_info->{amount},
+            rule_engine => $rule_engine,
+        )
     };
 
     is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
@@ -796,8 +825,9 @@ subtest 'Daily order limit' => sub {
             amount => 100
         );
         $buyer->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => 10
+            advert_id   => $advert_info->{id},
+            amount      => 10,
+            rule_engine => $rule_engine,
         );
     }
 
@@ -808,8 +838,9 @@ subtest 'Daily order limit' => sub {
 
     my $err = exception {
         $buyer->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => 10
+            advert_id   => $advert_info->{id},
+            amount      => 10,
+            rule_engine => $rule_engine,
         );
     };
 
@@ -844,20 +875,25 @@ subtest 'payment validation' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
 
     $mock_client->mock(
-        'validate_payment',
-        sub {
+        'validate_payment' => sub {
             my ($self, %args) = @_;
             if ($self->loginid eq $client->loginid) {
                 ok $args{amount} > 0, 'sell ad is validated as client deposit';
                 die "fail client reason\n";
             }
-        });
+        },
+        _p2p_orders => sub { return [1] });
 
+    my %args = (
+        advert_id => $advert->{id},
+        amount    => 10,
+    );
+    like exception { $client->p2p_order_create(%args) },
+        qr/Rule engine object is missing/, 'Rule engine object is required (unless skip_rule argument is used)';
+
+    $args{rule_engine} = $rule_engine;
     my $err = exception {
-        $client->p2p_order_create(
-            advert_id => $advert->{id},
-            amount    => 10
-        );
+        $client->p2p_order_create(%args);
     };
     cmp_deeply(
         $err,
@@ -865,7 +901,7 @@ subtest 'payment validation' => sub {
             error_code     => 'OrderCreateFailClient',
             message_params => ['fail client reason']
         },
-        'Client validate_payment failed error has details'
+        'Client validate_payment failed error has details - fails with rule engine object'
     );
 
     $mock_client->mock(
@@ -879,12 +915,14 @@ subtest 'payment validation' => sub {
         });
 
     $err = exception {
-        $client->p2p_order_create(
-            advert_id => $advert->{id},
-            amount    => 10
-        );
+        $client->p2p_order_create(%args);
     };
-    cmp_deeply($err, {error_code => 'OrderCreateFailAdvertiser'}, 'Advertiser validate_payment failed error has no details');
+    cmp_deeply(
+        $err,
+        {error_code => 'OrderCreateFailAdvertiser'},
+        'Advertiser validate_payment failed error has no details - fails with a rule-engine object'
+    );
+    $mock_client->unmock_all;
 
     ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
 
@@ -906,6 +944,7 @@ subtest 'payment validation' => sub {
             amount       => 10,
             payment_info => 'x',
             contact_info => 'x',
+            rule_engine  => $rule_engine,
         );
     };
     cmp_deeply($err, undef, 'validate_payment pass');
@@ -921,8 +960,9 @@ subtest 'amount rounding' => sub {
 
     is exception {
         $order = $client->p2p_order_create(
-            advert_id => $advert->{id},
-            amount    => 10.123,
+            advert_id   => $advert->{id},
+            amount      => 10.123,
+            rule_engine => $rule_engine,
         )
     }, undef, 'can create an order with amount of excessive precision';
 

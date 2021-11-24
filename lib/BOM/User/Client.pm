@@ -60,6 +60,7 @@ use BOM::Config::Onfido;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::User::IdentityVerification;
+use BOM::Platform::Utility qw(error_map);
 
 use Carp qw(croak confess);
 
@@ -2661,7 +2662,10 @@ This will move funds from advertiser to escrow.
 sub p2p_order_create {
     my ($self, %param) = @_;
 
-    my ($advert_id, $amount, $expiry, $payment_info, $contact_info, $source) = @param{qw/advert_id amount expiry payment_info contact_info source/};
+    my ($advert_id, $amount, $expiry, $payment_info, $contact_info, $source, $rule_engine) =
+        @param{qw/advert_id amount expiry payment_info contact_info source rule_engine/};
+
+    die 'Rule engine object is missing' unless $rule_engine;
 
     my $client_info = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotFoundForOrder'}    unless $client_info;
@@ -2766,8 +2770,10 @@ sub p2p_order_create {
 
     try {
         $self->validate_payment(
-            amount   => $amount_client,
-            currency => $advert_info->{account_currency});
+            amount      => $amount_client,
+            currency    => $advert_info->{account_currency},
+            rule_engine => $rule_engine,
+        );
     } catch ($e) {
         chomp($e);
         die +{
@@ -2778,8 +2784,10 @@ sub p2p_order_create {
 
     try {
         $advertiser->validate_payment(
-            amount   => $amount_advertiser,
-            currency => $advert_info->{account_currency});
+            amount      => $amount_advertiser,
+            currency    => $advert_info->{account_currency},
+            rule_engine => $rule_engine,
+        );
     } catch {
         die +{
             error_code => 'OrderCreateFailAdvertiser',
@@ -4912,238 +4920,45 @@ sub _p2p_check_payment_methods_in_use {
 
 =cut
 
-=head2 _check_deposit_limits
-
-Checks the amount to be deposited against client's daily, weekly, and monthly deposit limits.
-
-=cut
-
-sub _check_deposit_limits {
-    my ($self, $amount) = @_;
-
-    return unless $self->landing_company->deposit_limit_enabled;
-
-    my $deposit_limits = $self->get_deposit_limits();
-
-    my %limit_days_to_name = (
-        1  => 'daily',
-        7  => '7day',
-        30 => '30day',
-    );
-
-    my $period_end = Date::Utility->new;
-
-    for my $limit_days (sort { $a <=> $b } keys %limit_days_to_name) {
-        my $limit_name   = $limit_days_to_name{$limit_days};
-        my $limit_amount = $deposit_limits->{$limit_name};
-
-        next unless defined $limit_amount;
-
-        # Call get_total_deposit and validate against limits
-        my $period_start = $period_end->minus_time_interval("${limit_days}d");
-
-        my ($deposit_over_period) = $self->db->dbic->run(
-            fixup => sub {
-                return $_->selectrow_array('SELECT payment.get_total_deposit(?,?,?,?)',
-                    undef, $self->loginid, $period_start->datetime, $period_end->datetime, '{mt5_transfer}');
-            }) // 0;
-
-        die "Deposit exceeds $limit_name limit [$limit_amount]. Aggregated deposit over period [$deposit_over_period]. Current amount [$amount].\n"
-            if ($deposit_over_period + $amount) > $limit_amount;
-    }
-}
-
 sub validate_payment {
     my ($self, %args) = @_;
-    my $currency        = $args{currency} || die "no currency\n";
-    my $amount          = $args{amount}   || die "no amount\n";
-    my $action_type     = $amount > 0 ? 'deposit' : 'withdrawal';
-    my $account         = $self->default_account || die "no account\n";
-    my $accbal          = $account->balance;
-    my $acccur          = $account->currency_code();
-    my $absamt          = abs($amount);
-    my $use_brand_links = $args{use_brand_links};
+    my $currency    = $args{currency} || die "no currency\n";
+    my $amount      = $args{amount}   || die "no amount\n";
+    my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
+    my $rule_engine = $args{rule_engine};
+    # this argument is used by paymentapi to generate it's own custom error messages.
+    my $die_with_error_object = $args{die_with_error_object};
 
     # validate expects 'deposit'/'withdraw' so if action_type is 'withdrawal' should be replaced to 'withdraw'
-    my $validation =
-        BOM::Platform::Client::CashierValidation::validate($self->loginid, $action_type =~ s/withdrawal/withdraw/r, $args{internal_transfer});
-    die "$validation->{error}->{message_to_client}\n" if exists $validation->{error};
-
-    die "Payment currency [$currency] not client currency [$acccur].\n"
-        if $currency ne $acccur;
-
-    if ($action_type eq 'deposit') {
-
-        if (    $self->landing_company->short eq 'malta'
-            and $self->is_first_deposit_pending
-            and ($args{payment_type} // '') eq 'affiliate_reward')
-        {
-            $self->{mlt_affiliate_first_deposit} = 1;
-        }
-        my $max_balance = $self->get_limit({'for' => 'account_balance'});
-
-        if (($amount + $accbal) > $max_balance) {
-
-            if (    $self->get_self_exclusion
-                and defined $self->get_self_exclusion->max_balance
-                and $self->get_self_exclusion->max_balance < $self->fixed_max_balance // 0)
-            {
-                die sprintf(
-                    "This deposit will cause your account balance to exceed your limit of %s %s. To proceed with this deposit, please <a href=\"%s\">adjust your self exclusion settings</a>.\n",
-                    $max_balance, $currency, request()->brand->self_exclusion_url,
-                ) if $use_brand_links;
-
-                die sprintf(
-                    "This deposit will cause your account balance to exceed your limit of %s %s. To proceed with this deposit, please adjust your self exclusion settings.\n",
-                    $max_balance, $currency);
-            } else {
-                die sprintf(
-                    "This deposit will cause your account balance to exceed your <a href=\"%s\">account limit</a> of %s %s.\n",
-                    request()->brand->account_limits_url,
-                    $max_balance, $currency
-                ) if $use_brand_links;
-
-                die sprintf("This deposit will cause your account balance to exceed your account limit of %s %s.\n", $max_balance, $currency);
-            }
-        }
-
-        $self->_check_deposit_limits($amount);
+    my $validation = BOM::Platform::Client::CashierValidation::check_availability($self, $action_type);
+    if (exists $validation->{error}) {
+        die $die_with_error_object ? $validation->{error} : "$validation->{error}->{message_to_client}\n";
     }
 
-    if ($action_type eq 'withdrawal') {
+    try {
+        $rule_engine->verify_action(
+            'validate_payment',
+            loginid             => $self->loginid,
+            currency            => $currency,
+            action              => $action_type,
+            amount              => $amount,
+            is_internal         => $args{internal_transfer} ? 1 : 0,
+            brand               => request->brand(),
+            rule_engine_context => {
+                client_list     => [$self],
+                stop_on_failure => 1,
+            })
+    } catch ($e) {
+        die $e unless ref $e;
 
-        my $formatted_accbal = formatnumber('amount', $currency, $accbal);
-        die "Withdrawal amount [$absamt $currency] exceeds client balance [$formatted_accbal $currency].\n"
-            if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $accbal);
+        my $code    = $e->{error_code} or die $e;
+        my $message = error_map->{$code};
+        my $params  = $e->{params} // [];
 
-        if (my $frozen = $self->get_withdrawal_limits->{frozen_free_gift}) {
-            my $unfrozen = financialrounding('amount', $currency, $accbal - $frozen);
-            die(
-                localize(
-                    "Withdrawal is [_2] [_1] but balance [_3] includes frozen bonus [_4].",
-                    $currency,         formatnumber('amount', $currency, $absamt),
-                    $formatted_accbal, formatnumber('amount', $currency, $frozen))
-                    . "\n"
-            ) if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $unfrozen);
-        }
+        die $e if $die_with_error_object;
 
-        return 1 if $self->fully_authenticated;
-        # disable withdrawal limit for rpc/internal_transfer_exclude_limit
-        return 1 if $args{internal_transfer};
-
-        my $lc = $self->landing_company->short;
-        my $lc_limits;
-        my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
-        $lc_limits = $withdrawal_limits->{$lc};
-        die "Invalid landing company - $lc\n" unless $lc_limits;
-        my $lc_currency = $lc_limits->{currency};
-
-        my $limit_reached_error = sub {
-            my ($amount, $currency) = @_;
-
-            $amount = formatnumber('amount', $currency, $amount);
-
-            if ($use_brand_links) {
-                # note: when this is moved to bom-rules, these use_brand_links messages should be moved to bom-payment-api.
-                my $auth_url = request()->brand->authentication_url;
-                die sprintf(
-                    "You've reached the maximum withdrawal limit of %s %s. Please <a href=\"%s\">authenticate your account</a> before proceeding with this withdrawal.\n",
-                    $amount, $currency, $auth_url);
-            }
-            die sprintf(
-                "You've reached the maximum withdrawal limit of %s %s. Please authenticate your account before proceeding with this withdrawal.\n",
-                $amount, $currency);
-        };
-
-        my $limit_error = sub {
-            my ($amount, $currency) = @_;
-
-            $amount = formatnumber('amount', $currency, $amount);
-
-            if ($use_brand_links) {
-                my $auth_url = request()->brand->authentication_url;
-                die sprintf(
-                    "We're unable to process your withdrawal request because it exceeds the limit of %s %s. Please <a href=\"%s\">authenticate your account</a> before proceeding with this withdrawal.\n",
-                    $amount, $currency, $auth_url);
-            }
-            die sprintf(
-                "We're unable to process your withdrawal request because it exceeds the limit of %s %s. Please authenticate your account before proceeding with this withdrawal.\n",
-                $amount, $currency);
-        };
-
-        if ($self->landing_company->lifetime_withdrawal_limit_check) {
-            # Withdrawals to date
-            my $wd_epoch = $account->total_withdrawals();
-
-            # If currency is not the same as the lc's currency, convert withdrawals so far and withdrawal amount
-            if ($currency ne $lc_currency) {
-                $wd_epoch = convert_currency($wd_epoch, $currency, $lc_currency) if $wd_epoch > 0;
-                $absamt   = convert_currency($absamt,   $currency, $lc_currency) if $absamt > 0;
-            }
-
-            # total withdrawal inclusive of this one
-            my $total_wd = financialrounding('amount', $currency, $wd_epoch + $absamt);
-            my $wd_left  = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
-
-            $limit_reached_error->($lc_limits->{lifetime_limit}, $lc_currency) if $wd_left <= 0;
-
-            if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
-                if ($currency ne $lc_currency) {
-                    $limit_error->(convert_currency($wd_left, $lc_currency, $currency), $currency);
-                } else {
-                    $limit_error->($wd_left, $currency);
-                }
-            }
-
-            if ($total_wd >= financialrounding('amount', $currency, $lc_limits->{lifetime_limit})) {
-                BOM::Platform::Event::Emitter::emit('withdrawal_limit_reached', {loginid => $self->loginid});
-            }
-
-        } else {
-            my $for_days = $lc_limits->{for_days};
-            my $since    = Date::Utility->new->minus_time_interval("${for_days}d");
-
-            # Obtains limit
-            my $wd_since_limit = $lc_limits->{limit_for_days};
-            my $wd_epoch_limit = $lc_limits->{lifetime_limit};
-
-            # Obtains payments over the lifetime of the account
-            my $wd_epoch = $account->total_withdrawals();
-
-            # Obtains payments over the last x days
-            my $wd_since = $account->total_withdrawals($since);
-
-            # Converts payments over lifetime of the account and the last x days
-            my $wd_since_converted = convert_currency($wd_since, $currency, $lc_currency);
-            my $wd_epoch_converted = convert_currency($wd_epoch, $currency, $lc_currency);
-
-            # Amount withdrawable over the last x days
-            my $wd_since_left = $wd_since_limit - $wd_since_converted;
-            $limit_reached_error->($wd_since_limit, $lc_currency) if $wd_since_left <= 0;
-
-            # Amount withdrawable over the lifetime of the account
-            my $wd_epoch_left = $wd_epoch_limit - $wd_epoch_converted;
-            $limit_reached_error->($wd_epoch_limit, $lc_currency) if $wd_epoch_left <= 0;
-
-            # Withdrawable amount left between the two amounts - The smaller is used
-            my $wd_left_min = List::Util::min($wd_since_left, $wd_epoch_left);
-
-            # Withdrawable amount is converted from the limit config currency to clients' currency and rounded
-            my $wd_left = financialrounding('amount', $currency, convert_currency($wd_left_min, $lc_currency, $currency));
-
-            if (financialrounding('amount', $currency, $absamt) > $wd_left) {
-                # lock cashier and unwelcome if its MX (as per compliance, check with compliance if you want to remove it)
-                if ($lc eq 'iom') {
-                    $self->status->multi_set_clear({
-                        set        => ['cashier_locked', 'unwelcome'],
-                        staff_name => 'system',
-                        reason     => 'Exceeds withdrawal limit',
-                    });
-                }
-                $limit_error->($wd_left, $currency);
-            }
-        }
-    }
+        die localize($message, @$params) . "\n";
+    };
 
     return 1;
 }
@@ -5180,7 +4995,8 @@ sub deposit_virtual_funds {
 # where each {payment_gateway_code} is a subclass of payment and is a 1-to-1 table.
 
 # 'smart_payment' is a one-stop shop which will validate, and choose the appropriate
-# payment_gateway, based on the payment_type.  Its skip_validation flag is only for
+# payment_gateway, based on the payment_type.
+# Validations can be skipped by calling without a rule_engine in cases like
 # some legacy tests which assume that the balance already got out of range somehow.
 #######################################
 
@@ -5188,8 +5004,9 @@ sub smart_payment {
     my ($self, %args) = @_;
     my $payment_type         = $args{payment_type} || die "no payment_type";
     my $payment_gateway_code = $args{payment_gateway_code};
+    my $rule_engine          = $args{rule_engine};
 
-    $self->validate_payment(%args) unless delete $args{skip_validation};
+    $self->validate_payment(%args) if $rule_engine;
 
     # each 'payment_type' implies a 'payment_gateway'..
     my %gateway_map = (
@@ -5642,7 +5459,8 @@ sub payment_affiliate_reward {
     my $staff        = $args{staff}        || 'system';
     my $source       = $args{source};
 
-    my $account = $self->set_default_account($currency);
+    my $account                     = $self->set_default_account($currency);
+    my $mlt_affiliate_first_deposit = ($amount > 0 && $self->landing_company->short eq 'malta' && $self->is_first_deposit_pending);
 
     my ($trx) = $account->add_payment_transaction({
             amount               => $amount,
@@ -5656,10 +5474,8 @@ sub payment_affiliate_reward {
         },
         {});    # <- TODO: affiliate_reward table is redundant
 
-    if (exists $self->{mlt_affiliate_first_deposit} and $self->{mlt_affiliate_first_deposit}) {
+    if ($mlt_affiliate_first_deposit) {
         $self->status->setnx('cashier_locked', 'system', 'MLT client received an affiliate reward as first deposit');
-
-        delete $self->{mlt_affiliate_first_deposit};
     }
 
     return $trx;

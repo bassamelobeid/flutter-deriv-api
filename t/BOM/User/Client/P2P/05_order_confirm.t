@@ -8,12 +8,15 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
+
 use Test::Fatal;
 use Test::MockModule;
 use Test::Exception;
 use Test::Deep;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+my $rule_engine = BOM::Rules::Engine->new();
 
 my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -473,8 +476,9 @@ subtest 'Advertiser confirms pending buy order' => sub {
     my $client = BOM::Test::Helper::P2P::create_advertiser();
 
     my $order = $client->p2p_order_create(
-        advert_id => $advert_info->{id},
-        amount    => $advert_info->{amount},
+        advert_id   => $advert_info->{id},
+        amount      => $advert_info->{amount},
+        rule_engine => $rule_engine,
     );
 
     my $err = exception {
@@ -500,8 +504,9 @@ subtest 'Client confirms not pending (cancelled) buy order' => sub {
     my $client = BOM::Test::Helper::P2P::create_advertiser();
 
     my $order = $client->p2p_order_create(
-        advert_id => $advert_info->{id},
-        amount    => $advert_info->{amount},
+        advert_id   => $advert_info->{id},
+        amount      => $advert_info->{amount},
+        rule_engine => $rule_engine,
     );
 
     ok $client->p2p_order_cancel(id => $order->{id}), 'Client cancels the order';
@@ -533,6 +538,7 @@ subtest 'Client confirms pending sell order' => sub {
         amount       => $advert_info->{amount},
         contact_info => 'contact info',
         payment_info => 'payment info',
+        rule_engine  => $rule_engine,
     );
 
     my $err = exception {
@@ -562,6 +568,7 @@ subtest 'Advertiser confirms not pending (cancelled) sell order' => sub {
         amount       => $advert_info->{amount},
         contact_info => 'contact info',
         payment_info => 'payment info',
+        rule_engine  => $rule_engine,
     );
 
     ok $advertiser->p2p_order_cancel(id => $order->{id});

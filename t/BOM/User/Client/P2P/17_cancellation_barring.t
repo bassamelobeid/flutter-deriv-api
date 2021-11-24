@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
+use BOM::Rules::Engine;
 use Test::Fatal;
 use Test::Exception;
 
@@ -20,6 +21,8 @@ BOM::Test::Helper::P2P::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->cancellation_grace_period(10);
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 my %emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -110,8 +113,11 @@ subtest general => sub {
         message_params => [$block_until->datetime]};
 
     delete $client->{_p2p_advertiser_cached};
-    cmp_deeply(exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1) }, $expected_error, 'barred for create order',);
-    cmp_deeply(exception { $client->p2p_advert_create(%ad_params) },                          $expected_error, 'barred for create ad',);
+    cmp_deeply(
+        exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1, rule_engine => $rule_engine) },
+        $expected_error, 'barred for create order',
+    );
+    cmp_deeply(exception { $client->p2p_advert_create(%ad_params) }, $expected_error, 'barred for create ad',);
 
     is $client->p2p_advertiser_info->{blocked_until}, $block_until->epoch, 'p2p_advertiser_info returns blocked_until';
     is $advertiser->p2p_advertiser_info(id => $client->p2p_advertiser_info->{id})->{blocked_until}, undef, 'other advertiser cannot see it';
@@ -123,13 +129,19 @@ subtest general => sub {
     lives_ok { $client->p2p_order_cancel(id => $ord3->{id}) } 'can cancel ad when barred';
     ok !defined($emitted_events{p2p_advertiser_cancel_at_fault}) && !defined($emitted_events{p2p_advertiser_temp_banned}), 'no events sent';
 
-    cmp_deeply(exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1) }, $expected_error, 'bar time does not increase',);
+    cmp_deeply(
+        exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1, rule_engine => $rule_engine) },
+        $expected_error, 'bar time does not increase',
+    );
 
     tt_hours(22);
-    cmp_deeply(exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1) }, $expected_error, 'still blocked after 12 hours',);
+    cmp_deeply(
+        exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1, rule_engine => $rule_engine) },
+        $expected_error, 'still blocked after 12 hours',
+    );
 
     tt_hours(1);
-    lives_ok { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1) } 'can create order at hour 25';
+    lives_ok { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1, rule_engine => $rule_engine) } 'can create order at hour 25';
     lives_ok { $client->p2p_advert_create(%ad_params) } 'can create ad at hour 25';
 
     is $client->p2p_advertiser_info->{blocked_until}, undef, 'p2p_advertiser_info blocked_until is undef now';
@@ -184,7 +196,7 @@ subtest 'timeouts and disputes' => sub {
     $client->p2p_expire_order(id => $ord4->{id});
     delete $client->{_p2p_advertiser_cached};
     cmp_deeply(
-        exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 10) },
+        exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 10, rule_engine => $rule_engine) },
         {
             error_code     => 'TemporaryBar',
             message_params => [Date::Utility->new->plus_time_interval('24h')->datetime]

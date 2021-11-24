@@ -47,7 +47,8 @@ my $email  = $u->email;
 # produce some payments
 $c->validate_payment({
     amount   => 100,
-    currency => 'GBP'
+    currency => 'GBP',
+    rule_engine => $rule_engine
 });
 $c->payment_account_transfer({
     toClient => $some_client_id,

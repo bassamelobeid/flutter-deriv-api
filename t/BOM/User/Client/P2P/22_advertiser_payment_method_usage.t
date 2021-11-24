@@ -11,6 +11,9 @@ use JSON::MaybeXS;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 my $json = JSON::MaybeXS->new;
 BOM::Test::Helper::P2P::bypass_sendbird();
@@ -256,7 +259,15 @@ subtest 'sell orders' => sub {
     my %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
 
     cmp_deeply(
-        exception { $client->p2p_order_create(advert_id => $advert->{id}, amount => 10, contact_info => 'x', payment_method_ids => [keys %methods]) },
+        exception {
+            $client->p2p_order_create(
+                advert_id          => $advert->{id},
+                amount             => 10,
+                contact_info       => 'x',
+                payment_method_ids => [keys %methods],
+                rule_engine        => $rule_engine
+            )
+        },
         {
             error_code     => 'PaymentMethodNotInAd',
             message_params => ['Method 2']
@@ -268,7 +279,9 @@ subtest 'sell orders' => sub {
         advert_id          => $advert->{id},
         amount             => 10,
         contact_info       => 'x',
-        payment_method_ids => [$methods_by_tag{m1}, $methods_by_tag{m2}]);
+        payment_method_ids => [$methods_by_tag{m1}, $methods_by_tag{m2}],
+        rule_engine        => $rule_engine
+    );
     is $order->{payment_method}, 'method1', 'order create payment_method';
 
     my $pm_details = {
@@ -346,7 +359,14 @@ subtest 'buy orders' => sub {
             }])->%*;
 
     cmp_deeply(
-        exception { $client->p2p_order_create(advert_id => $advert->{id}, amount => 10, payment_method_ids => [keys %methods]); },
+        exception {
+            $client->p2p_order_create(
+                advert_id          => $advert->{id},
+                amount             => 10,
+                payment_method_ids => [keys %methods],
+                rule_engine        => $rule_engine
+            );
+        },
         {error_code => 'OrderPaymentContactInfoNotAllowed'},
         'cannot provide payment_method_ids for buy order'
     );
@@ -372,8 +392,9 @@ subtest 'buy orders' => sub {
     is $client->p2p_advert_list(payment_method => ['method1'])->[0]{id}, $advert->{id}, 'search ad list by method';
 
     my $order = $client->p2p_order_create(
-        advert_id => $advert->{id},
-        amount    => 10
+        advert_id   => $advert->{id},
+        amount      => 10,
+        rule_engine => $rule_engine,
     );
     is $order->{payment_method},       undef, 'undef payment_method returned from order create';
     is $order->{payment_method_names}, undef, 'undef payment_method_names returned from order create';

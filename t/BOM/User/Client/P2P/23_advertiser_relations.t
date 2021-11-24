@@ -9,6 +9,9 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
+use BOM::Rules::Engine;
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
@@ -243,8 +246,9 @@ subtest 'blocking' => sub {
     cmp_deeply(
         exception {
             $me->p2p_order_create(
-                advert_id => $other1_ad->{id},
-                amount    => 10
+                advert_id   => $other1_ad->{id},
+                amount      => 10,
+                rule_engine => $rule_engine,
             );
         },
         {error_code => 'AdvertiserBlocked'},
@@ -254,8 +258,9 @@ subtest 'blocking' => sub {
     cmp_deeply(
         exception {
             $other1->p2p_order_create(
-                advert_id => $my_ad->{id},
-                amount    => 10
+                advert_id   => $my_ad->{id},
+                amount      => 10,
+                rule_engine => $rule_engine,
             );
         },
         {error_code => 'InvalidAdvertForOrder'},
@@ -263,8 +268,9 @@ subtest 'blocking' => sub {
     );
 
     my $order = $me->p2p_order_create(
-        advert_id => $other2_ad->{id},
-        amount    => 10
+        advert_id   => $other2_ad->{id},
+        amount      => 10,
+        rule_engine => $rule_engine,
     );
 
     $me->p2p_advertiser_relations(add_blocked => [$other1->_p2p_advertiser_cached->{id}, $other2->_p2p_advertiser_cached->{id}]);

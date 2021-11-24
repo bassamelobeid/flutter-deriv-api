@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Rules::Engine;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -22,9 +23,9 @@ my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(advertiser => 
 my $client = BOM::Test::Helper::P2P::create_advertiser(client_details => {%$client_names});
 
 my $order = $client->p2p_order_create(
-    advert_id => $advert->{id},
-    amount    => 10
-);
+    advert_id   => $advert->{id},
+    amount      => 10,
+    rule_engine => BOM::Rules::Engine->new());
 
 my $names_shown = sub {
     my ($order, $desc) = @_;

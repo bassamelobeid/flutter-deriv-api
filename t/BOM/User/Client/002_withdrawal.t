@@ -7,6 +7,7 @@ use warnings;
 use Test::MockTime qw( set_fixed_time);
 use Test::More;
 use Test::Exception;
+use Test::Fatal;
 use Test::MockModule;
 use File::Spec;
 use JSON::MaybeXS;
@@ -21,6 +22,7 @@ use Future;
 
 use BOM::User;
 use BOM::User::Password;
+use BOM::Rules::Engine;
 
 my $password = 'jskjd8292922';
 my $email    = 'test' . rand(999) . '@binary.com';
@@ -67,13 +69,6 @@ my %new_client_details = (
     non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
 );
 
-sub new_client {
-    my $currency = shift;
-    my $c        = $user->create_client(%new_client_details, @_);
-    $c->set_default_account($currency);
-    $c;
-}
-
 my %withdrawal = (
     currency     => 'USD',
     amount       => -100,
@@ -95,6 +90,20 @@ my %withdrawal_btc = (%withdrawal, currency => 'BTC');
 
 my %deposit_ltc    = (%deposit,    currency => 'LTC');
 my %withdrawal_ltc = (%withdrawal, currency => 'LTC');
+
+sub new_client {
+    my $currency = shift;
+    my $c        = $user->create_client(%new_client_details, @_);
+    $c->set_default_account($currency);
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $c);
+
+    for my $payment (\%deposit, \%withdrawal, \%deposit_eur, \%withdrawal_eur, \%deposit_btc, \%withdrawal_btc, \%deposit_ltc, \%withdrawal_ltc) {
+        $payment->{rule_engine} = $rule_engine;
+    }
+
+    return $c;
+}
 
 subtest 'General' => sub {
     plan tests => 1;
@@ -131,7 +140,7 @@ subtest "withdraw vs Balance" => sub {
     plan tests => 1;
     my $client = new_client('USD');
     $client->smart_payment(%deposit);
-    throws_ok { $client->validate_payment(%withdrawal, amount => -100.01) } qr/Withdrawal amount .* USD] exceeds client balance .* USD/,
+    throws_ok { $client->validate_payment(%withdrawal, amount => -100.01) } qr/Withdrawal amount \[.* USD\] exceeds client balance \[.* USD\]/,
         "Withdraw more than balance";
 };
 
@@ -158,9 +167,13 @@ subtest 'CR withdrawal' => sub {
         qr/We're unable to process your withdrawal request because it exceeds the limit of 10000.00 USD. Please authenticate your account before proceeding with this withdrawal./,
             'Non-Authed CR withdrawal greater than USD10K';
 
-        throws_ok { $client->validate_payment(%withdrawal, amount => -10001, use_brand_links => 1) }
-        qr/We're unable to process your withdrawal request because it exceeds the limit of 10000.00 USD. Please <a href=".+?">authenticate your account<\/a> before proceeding with this withdrawal./,
-            'Correct message with use_brand_links=1';
+        is_deeply exception { $client->validate_payment(%withdrawal, amount => -10001, die_with_error_object => 1) },
+            {
+            error_code => 'WithdrawalLimit',
+            params     => ['10000.00', 'USD'],
+            rule       => 'withdrawal.landing_company_limits'
+            },
+            'Correct message with die_with_error_object=1';
 
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Non-Authed CR withdrawal USD10K';
 
@@ -177,9 +190,13 @@ subtest 'CR withdrawal' => sub {
             qr/You've reached the maximum withdrawal limit of 10000.00 USD. Please authenticate your account before proceeding with this withdrawal/,
                 'withdrawal_limit_reached';
 
-            throws_ok { $client->validate_payment(%withdrawal, amount => -100, use_brand_links => 1) }
-            qr/You've reached the maximum withdrawal limit of 10000.00 USD. Please <a href=".+?">authenticate your account<\/a> before proceeding with this withdrawal/,
-                'Correct message with use_brand_links=1';
+            is_deeply exception { $client->validate_payment(%withdrawal, amount => -100, die_with_error_object => 1) },
+                {
+                error_code => 'WithdrawalLimitReached',
+                params     => ['10000.00', 'USD'],
+                rule       => 'withdrawal.landing_company_limits'
+                },
+                'Correct message with die_with_error_object=1';
         };
 
         $mock_events->unmock_all();

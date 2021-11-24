@@ -6,6 +6,9 @@ use Test::Deep;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
@@ -40,8 +43,9 @@ is $adv1->p2p_advert_list(id => $buy_ad1->{id})->[0]{advertiser_details}{total_c
 is $adv1->p2p_advert_list(id => $buy_ad2->{id})->[0]{advertiser_details}{total_completion_rate}, undef, 'no completion rate yet or advertiser 2';
 
 my $order = $adv1->p2p_order_create(
-    advert_id => $sell_ad2->{id},
-    amount    => 10
+    advert_id   => $sell_ad2->{id},
+    amount      => 10,
+    rule_engine => $rule_engine,
 );
 $adv1->p2p_order_cancel(id => $order->{id});
 
@@ -49,13 +53,15 @@ $order = $adv2->p2p_order_create(
     advert_id    => $buy_ad1->{id},
     amount       => 11,
     contact_info => 'x',
-    payment_info => 'x'
+    payment_info => 'x',
+    rule_engine  => $rule_engine,
 );
 $adv1->p2p_order_cancel(id => $order->{id});
 
 $order = $adv2->p2p_order_create(
-    advert_id => $sell_ad1->{id},
-    amount    => 10
+    advert_id   => $sell_ad1->{id},
+    amount      => 10,
+    rule_engine => $rule_engine,
 );
 $adv2->p2p_order_confirm(id => $order->{id});
 $adv1->p2p_order_confirm(id => $order->{id});
@@ -64,7 +70,8 @@ $order = $adv1->p2p_order_create(
     advert_id    => $buy_ad2->{id},
     amount       => 11,
     contact_info => 'x',
-    payment_info => 'x'
+    payment_info => 'x',
+    rule_engine  => $rule_engine,
 );
 $adv2->p2p_order_confirm(id => $order->{id});
 $adv1->p2p_order_confirm(id => $order->{id});

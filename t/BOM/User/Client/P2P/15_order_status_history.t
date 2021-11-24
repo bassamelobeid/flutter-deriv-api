@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use BOM::Test::Helper::P2P;
+use BOM::Rules::Engine;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
@@ -23,8 +24,9 @@ my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(advertiser => 
 my $client = BOM::Test::Helper::P2P::create_advertiser(client_details => {%$client_names});
 
 my $order = $client->p2p_order_create(
-    advert_id => $advert->{id},
-    amount    => 4
+    advert_id   => $advert->{id},
+    amount      => 4,
+    rule_engine => BOM::Rules::Engine->new(),
 );
 
 my @statuses       = qw/timed-out pending timed-out disputed disputed dispute-refunded dispute-completed/;

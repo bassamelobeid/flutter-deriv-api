@@ -12,9 +12,12 @@ use BOM::Test::Helper::Client;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
 use Test::Fatal;
 use Test::Exception;
 use Test::MockModule;
+
+my $rule_engine = BOM::Rules::Engine->new();
 
 populate_exchange_rates();
 
@@ -473,9 +476,10 @@ subtest 'Returning dispute fields' => sub {
     my $client       = BOM::Test::Helper::P2P::create_advertiser();
     my $order_amount = 100;
     my $new_order    = $client->p2p_order_create(
-        advert_id => $advert_info->{id},
-        amount    => $order_amount,
-        expiry    => 7200,
+        advert_id   => $advert_info->{id},
+        amount      => $order_amount,
+        expiry      => 7200,
+        rule_engine => $rule_engine,
     );
 
     my $expected_response = {
