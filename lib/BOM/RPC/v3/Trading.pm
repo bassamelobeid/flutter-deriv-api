@@ -672,6 +672,8 @@ sub change_investor_password {
         account_id   => $account_id
     )->else(
         sub {
+            my $error = shift;
+            die $error if $error->{code} and $error->{code} eq 'InvalidPassword';
 
             BOM::Platform::Event::Emitter::emit(
                 'trading_platform_investor_password_change_failed',

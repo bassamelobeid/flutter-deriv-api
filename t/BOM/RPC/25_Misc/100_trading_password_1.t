@@ -567,13 +567,13 @@ subtest 'investor password reset' => sub {
     };
 
     $mock_mt5->mock(
-        password_change => sub {
-            return Future->fail({
-                code => 'InvalidPassword',
-            });
-        },
         password_check => sub {
             return Future->done({status => 1});
+        },
+        password_change => sub {
+            return Future->fail({
+                code => 'Timeout',
+            });
         },
     );
 
@@ -632,28 +632,21 @@ subtest 'investor password change' => sub {
 
     my $mock_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
     $mock_mt5->mock(
-        password_change => sub {
-            my ($args) = @_;
-            if ($args->{new_password} eq 'InvestPwd123@!') {
-                return Future->done(1);
-            }
-            return Future->fail({
-                code => 'InvalidPassword',
-            });
-        },
         # mock mt5 password_check API
         password_check => sub {
             my ($status) = @_;
 
             if ($status->{password} ne 'Abcd1234@!') {
                 return Future->fail({
-                    code  => 'InvalidPassword',
-                    error => 'Invalid account password',
+                    code => 'InvalidPassword',
                 });
             }
-
             return Future->done({status => 1});
-        });
+        },
+        password_change => sub {
+            return Future->done(1);
+        },
+    );
 
     $params->{args}->{account_id}   = $mt5_loginid;
     $params->{args}->{old_password} = 'Abcd1234@!';
@@ -674,14 +667,16 @@ subtest 'investor password change' => sub {
     );
     undef $last_event;
 
+    $params->{args}->{old_password} = 'wrong';
+    $c->call_ok($method, $params)->has_error->error_code_is('InvalidPassword')->error_message_is('Forgot your password? Please reset your password.');
+    is $last_event, undef, 'no event emitted';
+    undef $last_event;
+
     $mock_mt5->mock(
-        password_change => sub {
-            return Future->fail({
-                code => 'InvalidPassword',
-            });
-        },
         password_check => sub {
-            return Future->done({status => 1});
+            return Future->fail({
+                code => 'Timeout',
+            });
         },
     );
 
