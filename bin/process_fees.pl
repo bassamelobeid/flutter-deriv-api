@@ -154,7 +154,8 @@ read_csv_row_and_callback(
                         if $statement_comment !~ /transaction_id=$transaction_id/;
                 }
 
-                try { $client->validate_payment(currency => $currency, amount => $signed_amount) } catch ($e) {
+                my $rule_engine = BOM::Rules::Engine->new(client => $client);
+                try { $client->validate_payment(currency => $currency, amount => $signed_amount, rule_engine => $rule_engine) } catch ($e) {
                     $error = $e
                 };
                 last if $error;
@@ -209,6 +210,7 @@ read_csv_row_and_callback(
                         staff             => $staff,
                         payment_processor => $payment_processor,
                         trace_id          => $trace_id,
+                        rule_engine       => BOM::Rules::Engine->new(client => $client),
                     );
                 } catch ($e) {
                     $err = $e;

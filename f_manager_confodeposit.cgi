@@ -24,6 +24,7 @@ use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
 use BOM::Platform::Event::Emitter;
+use BOM::Rules::Engine;
 use Log::Any qw($log);
 
 BOM::Backoffice::Sysinit::init();
@@ -205,14 +206,27 @@ unless ($params{skip_validation}) {
 
     print qq[<p><em>You can override this with "Override Status Checks"</em></p>];
 
-    my $cli = $client;
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $toClient]);
+    my $cli         = $client;
     try {
         if ($ttype eq 'TRANSFER') {
-            $cli->validate_payment(%params, amount => -$amount);
+            $cli->validate_payment(
+                %params,
+                amount      => -$amount,
+                rule_engine => $rule_engine
+            );
             $cli = $toClient;
-            $cli->validate_payment(%params, amount => $amount);
+            $cli->validate_payment(
+                %params,
+                amount      => $amount,
+                rule_engine => $rule_engine
+            );
         } else {
-            $cli->validate_payment(%params, amount => $signed_amount);
+            $cli->validate_payment(
+                %params,
+                amount      => $signed_amount,
+                rule_engine => $rule_engine
+            );
         }
         1;
     } catch ($err) {
@@ -270,10 +284,12 @@ try {
             staff        => $clerk,
         );
     } elsif ($ttype eq 'CREDIT' || $ttype eq 'DEBIT' || $ttype eq 'WITHDRAWAL_REVERSAL') {
-        my $trx = $client->smart_payment(
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
+        my $trx         = $client->smart_payment(
             %params,    # these are payment-type-specific params from the html form.
             amount => $signed_amount,
             staff  => $clerk,
+            ($params{skip_validation} ? () : (rule_engine => $rule_engine)),
         );
 
         BOM::Platform::Event::Emitter::emit(

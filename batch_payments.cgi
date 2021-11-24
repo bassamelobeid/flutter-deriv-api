@@ -24,6 +24,8 @@ use BOM::User::AuditLog;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
+
 use Log::Any qw($log);
 BOM::Backoffice::Sysinit::init();
 
@@ -148,9 +150,9 @@ read_csv_row_and_callback(
 
             unless ($skip_validation) {
                 $client->validate_payment(
-                    currency => $currency,
-                    amount   => $signed_amount
-                );
+                    currency    => $currency,
+                    amount      => $signed_amount,
+                    rule_engine => BOM::Rules::Engine->new(client => $client));
             }
 
             # check pontential duplicate entry
@@ -209,6 +211,7 @@ read_csv_row_and_callback(
                         staff        => $clerk,
                     );
                 } else {
+                    my $rule_engine = BOM::Rules::Engine->new(client => $client);
                     $trx = $client->smart_payment(
                         currency          => $currency,
                         amount            => $signed_amount,
@@ -220,7 +223,7 @@ read_csv_row_and_callback(
                         transaction_type  => $transaction_type,
                         trace_id          => $trace_id,
                         transaction_id    => $transaction_id,
-                        ($skip_validation ? (skip_validation => 1) : ()),
+                        ($skip_validation ? () : (rule_engine => $rule_engine)),
                     );
                 }
             } catch ($e) {
