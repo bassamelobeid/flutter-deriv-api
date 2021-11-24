@@ -6,6 +6,7 @@ use Test::Deep;
 use BOM::Event::Actions::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Rules::Engine;
 use RedisDB;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
@@ -112,8 +113,9 @@ subtest 'single ad' => sub {
     ok !$redis->reply_ready, 'no publish because we already saw this ad';
 
     my $order = $client->p2p_order_create(
-        advert_id => $advert_id,
-        amount    => 10
+        advert_id   => $advert_id,
+        amount      => 10,
+        rule_engine => BOM::Rules::Engine->new(),
     );
 
     BOM::Event::Actions::P2P::p2p_adverts_updated({
