@@ -535,7 +535,8 @@ subtest 'copy payment agent details and related' => sub {
         'supported_banks'               => 'Visa,bank_transfer',
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '1111aaaa',
-        'code_of_conduct_approval_time' => '2020-01-01T00:00:00'
+        'code_of_conduct_approval_time' => '2020-01-01T00:00:00',
+        'risk_level'                    => 'low',
     };
     $client1->payment_agent($args1);
     $client1->save;
@@ -563,7 +564,8 @@ subtest 'copy payment agent details and related' => sub {
         'supported_banks'               => 'Master card',
         'code_of_conduct_approval'      => 0,
         'affiliate_id'                  => '2222bbbbb',
-        'code_of_conduct_approval_time' => '2021-02-02'
+        'code_of_conduct_approval_time' => '2021-02-02',
+        'risk_level'                    => 'low',
     };
     $client2->payment_agent($args2);
     $client2->save;
