@@ -18,6 +18,21 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Utility qw(random_email_address);
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
+my $mock_config = Test::MockModule->new('BOM::Config');
+$mock_config->mock(
+    's3' => {
+        desk => {
+            aws_bucket            => 'dummy',
+            aws_access_key_id     => 'dummy',
+            aws_secret_access_key => 'dummy',
+        },
+        document_auth => {
+            aws_bucket            => 'dummy',
+            aws_access_key_id     => 'dummy',
+            aws_secret_access_key => 'dummy',
+        },
+    });
+
 subtest client_anonymization => sub {
     my $BRANDS = BOM::Platform::Context::request()->brand();
 
@@ -84,8 +99,9 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
     $mock_customerio->mock('anonymize_user', sub { return Future->fail(0) });
 
-    # mock BOM::Platform::Desk error response
+    # # mock BOM::Platform::Desk error response
     my $mock_s3_desk = Test::MockModule->new('BOM::Platform::Desk');
+    $mock_s3_desk->mock(_s3_client_instance => undef);
     $mock_s3_desk->mock(
         'anonymize_user',
         sub {

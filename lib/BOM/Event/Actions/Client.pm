@@ -300,7 +300,6 @@ async sub document_upload {
             client            => $client,
             document_entry    => $document_entry,
             uploaded_by_staff => $uploaded_manually_by_staff,
-            loginid           => $loginid,
         };
 
         return await _upload_poa_document($document_args) if $is_poa_document;
@@ -409,12 +408,12 @@ This subroutine handles uploading POA documents
 async sub _upload_poa_document {
     my $args = shift;
 
-    my ($client, $document_entry, $uploaded_by_staff, $loginid) = @{$args}{qw/client document_entry uploaded_by_staff loginid/};
+    my ($client, $document_entry, $uploaded_by_staff) = @{$args}{qw/client document_entry uploaded_by_staff/};
 
     $client->propagate_clear_status('allow_poa_resubmission');
 
     await BOM::Event::Services::Track::document_upload({
-            loginid    => $loginid,
+            client     => $client,
             properties => {
                 uploaded_manually_by_staff => $uploaded_by_staff,
                 %$document_entry
@@ -434,14 +433,14 @@ async sub _upload_to_onfido {
 
     my $data = shift;
 
-    my ($args, $client, $document_entry, $uploaded_by_staff, $loginid) = @{$data}{qw/args client document_entry uploaded_by_staff loginid/};
+    my ($args, $client, $document_entry, $uploaded_by_staff) = @{$data}{qw/args client document_entry uploaded_by_staff/};
 
-    $log->debugf('Applying Onfido verification process for client %s', $loginid);
+    $log->debugf('Applying Onfido verification process for client %s', $client->loginid);
 
     my $file_data = $args->{content};
 
     await BOM::Event::Services::Track::document_upload({
-            loginid    => $loginid,
+            client     => $client,
             properties => {
                 issuing_country            => $args->{issuing_country},
                 uploaded_manually_by_staff => $uploaded_by_staff,
@@ -1082,7 +1081,7 @@ async sub onfido_doc_ready_for_upload {
 
             if ($document_info) {
                 await BOM::Event::Services::Track::document_upload({
-                    loginid    => $client->loginid,
+                    client     => $client,
                     properties => $document_info
                 });
             } else {
@@ -1435,7 +1434,7 @@ sub account_closure {
             use_event             => 1,
         });
 
-    return BOM::Event::Services::Track::account_closure($data);
+    return BOM::Event::Services::Track::account_closure({%$data, client => $client});
 }
 
 =head2 account_reactivated
@@ -1487,7 +1486,7 @@ sub account_reactivated {
             use_event             => 0
         }) if $client->landing_company->social_responsibility_check_required;
 
-    return BOM::Event::Services::Track::account_reactivated($args);
+    return BOM::Event::Services::Track::account_reactivated({%$args, client => $client});
 }
 
 =head2 _email_client_account_verification
@@ -2322,7 +2321,7 @@ async sub payment_deposit {
 
     BOM::Platform::Event::Emitter::emit('check_name_changes_after_first_deposit', {loginid => $client->loginid});
 
-    return BOM::Event::Services::Track::payment_deposit($args);
+    return BOM::Event::Services::Track::payment_deposit({%$args, client => $client});
 }
 
 =head2 on_user_payment_accounts_limit_reached
@@ -2513,7 +2512,7 @@ sub signup {
         $log->warnf('Failed to emit %s event for loginid %s, while processing the signup event: %s', $emitting, $client->loginid, $error);
     };
 
-    return BOM::Event::Services::Track::signup(@args);
+    return BOM::Event::Services::Track::signup({%$data, client => $client});
 }
 
 =head2 transfer_between_accounts

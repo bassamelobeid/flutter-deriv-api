@@ -1234,6 +1234,7 @@ subtest 'transfer between accounts event' => sub {
                 time          => '2020-01-09T10:00:00Z',
                 brand         => 'deriv',
                 lang          => 'ID',
+                loginid       => $test_client->loginid,
             },
         },
         'identify context is properly set for transfer_between_account'
@@ -1275,6 +1276,7 @@ subtest 'transfer between accounts event' => sub {
                 time               => '2020-01-09T10:00:00Z',
                 brand              => 'deriv',
                 lang               => 'ID',
+                loginid            => $test_client->loginid,
             },
         },
         'identify context is properly set for transfer_between_account'
@@ -2470,7 +2472,6 @@ subtest 'Deriv X events' => sub {
         my ($customer, %args) = @track_args;
         is $args{event}, $event, "$event event name";
         is $args{properties}{first_name}, $payload->{properties}{first_name}, "$event properties";
-        is $customer->traits->{email}, $client->email, "$event customer email";
     }
 
 };

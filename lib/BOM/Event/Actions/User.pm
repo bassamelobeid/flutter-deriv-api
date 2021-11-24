@@ -50,12 +50,6 @@ sub login {
     return BOM::Event::Services::Track::login(@args);
 }
 
-sub multiplier_hit_type {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::multiplier_hit_type(@args);
-}
-
 =head2 profile_change
 
 It is triggered for each B<changing in user profile> event emitted, delivering it to Segment.
@@ -72,7 +66,6 @@ It can be called with the following parameters:
 =cut
 
 sub profile_change {
-    my @args   = @_;
     my $params = shift;
 
     my $loginid = $params->{loginid};
@@ -124,7 +117,7 @@ sub profile_change {
     $client->update_status_after_auth_fa()
         if any { $params->{properties}->{updated_fields}->{$_} } qw/mifir_id tax_residence tax_identification_number/;
 
-    return BOM::Event::Services::Track::profile_change(@args);
+    return BOM::Event::Services::Track::profile_change({%$params, client => $client});
 }
 
 =head2 verify_false_profile_info

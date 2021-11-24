@@ -27,83 +27,84 @@ BOM::Event::Services::Track
 
 =head1 DESCRIPTION
 
- Provides functions for tracking events.
+Provides functions for tracking events.
 
 =cut
+
+# loginid, lang and brand are always sent for events, and do not need to be inlcuded here.
 
 my %EVENT_PROPERTIES = (
     identify => [
         qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country unsubscribed)
     ],
-    login  => [qw (loginid browser device ip new_signin_activity location app_name brand)],
-    signup =>
-        [qw (loginid type subtype currency landing_company date_joined first_name last_name phone address age country provider brand email_consent)],
+    login  => [qw (browser device ip new_signin_activity location app_name)],
+    signup => [qw (type subtype currency landing_company date_joined first_name last_name phone address age country provider email_consent)],
     transfer_between_accounts => [
         qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
-            is_to_account_pa gateway_code remark time id brand)
+            is_to_account_pa gateway_code remark time id)
     ],
-    account_closure     => [qw(loginid closing_reason loginids_disabled loginids_failed email_consent brand)],
-    account_reactivated => [qw(loginid needs_poi profile_url resp_trading_url live_chat_url brand)],
-    app_registered => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id brand)],
-    app_updated    => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id brand)],
-    app_deleted    => [qw(loginid app_id brand)],
-    api_token_created => [qw(loginid name scopes brand)],
-    api_token_deleted => [qw(loginid name scopes brand)],
-    profile_change    => [
-        qw(loginid first_name last_name date_of_birth account_opening_reason address_city address_line_1 address_line_2 address_postcode citizen
-            residence address_state allow_copiers email_consent phone place_of_birth request_professional_status tax_identification_number tax_residence brand)
+    account_closure     => [qw(closing_reason loginids_disabled loginids_failed email_consent)],
+    account_reactivated => [qw(needs_poi profile_url resp_trading_url live_chat_url)],
+    app_registered      => [qw(name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
+    app_updated         => [qw(name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
+    app_deleted         => [qw(app_id)],
+    api_token_created   => [qw(name scopes)],
+    api_token_deleted   => [qw(name scopes)],
+    profile_change      => [
+        qw(first_name last_name date_of_birth account_opening_reason address_city address_line_1 address_line_2 address_postcode citizen
+            residence address_state allow_copiers email_consent phone place_of_birth request_professional_status tax_identification_number tax_residence)
     ],
     mt5_signup => [
-        qw(loginid account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id brand mt5_server mt5_server_location mt5_server_region mt5_server_environment)
+        qw(account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id mt5_server mt5_server_location mt5_server_region mt5_server_environment)
     ],
-    mt5_password_changed      => [qw(loginid mt5_loginid brand)],
-    mt5_inactive_notification => [qw(loginid email name closure_date accounts brand)],
-    document_upload           => [qw(loginid document_type expiration_date file_name id upload_date uploaded_manually_by_staff brand)],
+    mt5_password_changed      => [qw(mt5_loginid)],
+    mt5_inactive_notification => [qw(email name closure_date accounts)],
+    document_upload           => [qw(document_type expiration_date file_name id upload_date uploaded_manually_by_staff)],
     set_financial_assessment  => [
-        qw(loginid education_level employment_industry estimated_worth income_source net_income occupation account_turnover binary_options_trading_experience
+        qw(education_level employment_industry estimated_worth income_source net_income occupation account_turnover binary_options_trading_experience
             binary_options_trading_frequency cfd_trading_experience cfd_trading_frequency employment_status forex_trading_experience forex_trading_frequency other_instruments_trading_experience
-            other_instruments_trading_frequency source_of_wealth brand)
+            other_instruments_trading_frequency source_of_wealth)
     ],
-    self_exclude            => [qw(loginid unsubscribed brand)],
-    p2p_advertiser_approved => [qw(loginid brand)],
+    self_exclude            => [qw(unsubscribed)],
+    p2p_advertiser_approved => [],
     p2p_order_created       => [
-        qw(loginid user_role order_type  order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate brand)
+        qw(user_role order_type  order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate)
     ],
     p2p_order_buyer_has_paid => [
-        qw(loginid user_role order_type  order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate brand)
+        qw(user_role order_type order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate)
     ],
     p2p_order_seller_has_released => [
-        qw(loginid user_role order_type  order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate brand)
+        qw(user_role order_type order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate)
     ],
     p2p_order_cancelled => [
-        qw(loginid user_role order_type  order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate brand)
+        qw(user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
     ],
     p2p_order_expired => [
-        qw(buyer_has_confirmed loginid user_role order_type  order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate brand)
+        qw(buyer_has_confirmed user_role order_type  order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
     ],
     p2p_order_dispute => [
-        qw(dispute_reason disputer loginid user_role order_type  order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate brand)
+        qw(dispute_reason disputer user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
     ],
     p2p_order_timeout_refund => [
-        qw(loginid user_role order_type  order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate brand)
+        qw(user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
     ],
     p2p_order_dispute_complete => [
-        qw(dispute_reason disputer loginid user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
+        qw(dispute_reason disputer user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
     ],
     p2p_order_dispute_refund => [
-        qw(dispute_reason disputer loginid user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
+        qw(dispute_reason disputer user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
     ],
     p2p_order_dispute_fraud_complete => [
-        qw(dispute_reason disputer loginid user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
+        qw(dispute_reason disputer user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
     ],
     p2p_order_dispute_fraud_refund => [
-        qw(dispute_reason disputer loginid user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
+        qw(dispute_reason disputer user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
     ],
-    p2p_archived_ad     => [qw(loginid adverts brand)],
-    multiplier_hit_type => [qw(loginid contract_id hit_type profit sell_price currency)],
-    payment_deposit     => [qw(loginid payment_processor transaction_id is_first_deposit trace_id amount payment_fee currency payment_method remark)],
-    payment_withdrawal  => [qw(loginid transaction_id trace_id amount payment_fee currency payment_method)],
-    payment_withdrawal_reversal                      => [qw(loginid transaction_id trace_id amount payment_fee currency payment_method)],
+    p2p_archived_ad             => [qw(adverts)],
+    multiplier_hit_type         => [qw(contract_id hit_type profit sell_price currency)],
+    payment_deposit             => [qw(payment_processor transaction_id is_first_deposit trace_id amount payment_fee currency payment_method remark)],
+    payment_withdrawal          => [qw(transaction_id trace_id amount payment_fee currency payment_method)],
+    payment_withdrawal_reversal => [qw(transaction_id trace_id amount payment_fee currency payment_method)],
     trading_platform_account_created                 => [qw(first_name login account_id account_type market_type platform)],
     trading_platform_password_reset_request          => [qw(first_name verification_url code platform)],
     trading_platform_password_changed                => [qw(first_name contact_url type logins platform)],
@@ -112,11 +113,10 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_changed       => [qw(first_name contact_url type login)],
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
-    risk_disclaimer_resubmission                     => [qw(loginid website_name title salutation)],
-    p2p_advert_created                               =>
-        [qw(loginid advert_id type account_currency local_currency country amount rate min_order_amount max_order_amount is_visible)],
-    p2p_advertiser_cancel_at_fault => [qw(loginid order_id cancels_remaining)],
-    p2p_advertiser_temp_banned     => [qw(loginid order_id block_end_time)],
+    risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
+    p2p_advert_created => [qw(advert_id type account_currency local_currency country amount rate min_order_amount max_order_amount is_visible)],
+    p2p_advertiser_cancel_at_fault => [qw(order_id cancels_remaining)],
+    p2p_advertiser_temp_banned     => [qw(order_id block_end_time)],
 );
 
 # Put the events that shouldn't care about brand or app_id source to get fired.
@@ -223,9 +223,9 @@ It can be called with the following named parameters:
 
 =over
 
-=item * C<loginid> - required. Login Id of the user.
+=item * C<client> - required. Client instance.
 
-=item * C<properties> - Free-form dictionary of event properties, with B<loginid> and B<currency> automatically added.
+=item * C<properties> - event proprerties.
 
 =back
 
@@ -233,37 +233,37 @@ It can be called with the following named parameters:
 
 sub signup {
     my ($args)     = @_;
-    my $loginid    = $args->{loginid};
+    my $client     = $args->{client};
     my $properties = $args->{properties};
 
-    my $client = _validate_params($loginid, 'signup');
+    # traits will be used for identify
+    my $traits = _create_traits($client);
+    $traits->{signup_brand} = request->brand_name;
 
-    return Future->done unless $client;
-    my $customer = _create_customer($client);
+    if ($properties->{utm_tags}) {
+        $traits->{$_} = $properties->{utm_tags}{$_} for keys $properties->{utm_tags}->%*;
+        delete $properties->{utm_tags};
+    }
 
-    $properties->{loginid} = $loginid;
+    # properties will be sent for the event itself
+    $properties->{$_} = $traits->{$_} for grep { $traits->{$_} } qw(first_name last_name phone address age country);
+
+    $properties->{currency}        = $client->account->currency_code if $client->account;
+    $properties->{landing_company} = $client->landing_company->short;
+    $properties->{date_joined}     = $client->date_joined;
+    $properties->{email_consent}   = $client->user->email_consent;
 
     my $user_connect = BOM::Database::Model::UserConnect->new;
     $properties->{provider} = $client->user ? $user_connect->get_connects_by_user_id($client->user->{id})->[0] // 'email' : 'email';
 
-    # Although we have user profile we also want to have some information on event itself
-    my @items = grep { $customer->{$_} } qw(currency landing_company date_joined);
-    @{$properties}{@items} = @{$customer}{@items};
-    my @traits = grep { $customer->{traits}->{$_} } qw(first_name last_name phone address age country);
-    @{$properties}{@traits} = @{$customer->{traits}}{@traits};
-    $log->debugf('Track signup event for client %s', $loginid);
+    return track_event(
+        event                => 'signup',
+        properties           => $properties,
+        client               => $client,
+        traits               => $traits,
+        is_identify_required => 1
+    );
 
-    if ($properties->{utm_tags}) {
-        @{$customer->{traits}}{keys $properties->{utm_tags}->%*} = values $properties->{utm_tags}->%*;
-        delete $properties->{utm_tags};
-    }
-
-    $customer->{traits}->{signup_brand} = request->brand_name;
-    $properties->{email_consent} = $client->user->email_consent // 0;
-
-    $properties->{lang} = uc($client->user->preferred_language // request->language) unless $properties->{lang};
-
-    return Future->needs_all(_send_identify_request($customer), _send_track_request($customer, $properties, 'signup'));
 }
 
 =head2 api_token_created
@@ -309,7 +309,7 @@ sub account_closure {
 
     return track_event(
         event                => 'account_closure',
-        loginid              => $args->{loginid},
+        client               => $args->{client},
         properties           => $args,
         is_identify_required => 1,
     );
@@ -326,7 +326,7 @@ sub account_reactivated {
 
     return track_event(
         event      => 'account_reactivated',
-        loginid    => $args->{loginid},
+        client     => $args->{client},
         properties => $args,
     );
 }
@@ -338,7 +338,7 @@ It can be called with the following parameters:
 
 =over
 
-=item * C<loginid> - required. Login Id of the user.
+=item * C<client> - required. Client instance
 
 =item * C<properties> - Free-form dictionary of event properties.
 
@@ -347,18 +347,12 @@ It can be called with the following parameters:
 =cut
 
 sub new_mt5_signup {
-    my $args       = dclone(shift());
-    my $properties = {$args->{properties}->%*};
-
-    die 'mt5 loginid is required' unless $properties->{mt5_login_id};
-
-    $properties->{mt5_loginid} = delete $properties->{mt5_login_id};
-    delete $properties->{cs_email};
+    my ($args) = @_;
 
     return track_event(
         event      => 'mt5_signup',
-        loginid    => $args->{loginid},
-        properties => $properties
+        client     => $args->{client},
+        properties => $args,
     );
 }
 
@@ -379,14 +373,11 @@ It can be called with the following parameters:
 
 sub mt5_password_changed {
     my ($args) = @_;
-    my $properties = $args->{properties} // {};
-
-    die 'mt5 loginid is required' unless $properties->{mt5_loginid};
 
     return track_event(
         event      => 'mt5_password_changed',
         loginid    => $args->{loginid},
-        properties => $properties
+        properties => $args,
     );
 }
 
@@ -397,9 +388,9 @@ It can be called with the following parameters:
 
 =over
 
-=item * C<loginid> - required. Login Id of the user.
+=item * C<client> - required. Client instance.
 
-=item * C<properties> - Free-form dictionary of event properties.
+=item * C<properties> - Free-form dictionary of event properties containing key updated_fields.
 
 =back
 
@@ -407,26 +398,25 @@ It can be called with the following parameters:
 
 sub profile_change {
     my ($args)     = @_;
-    my $loginid    = $args->{loginid};
+    my $client     = $args->{client};
     my $properties = $args->{properties} // {};
 
-    my $client = _validate_params($loginid, 'profile_change');
-    return Future->done unless $client;
-    my $customer = _create_customer($client);
+    my $traits = _create_traits($client);
 
-    $properties->{loginid} = $loginid;
     # Modify some properties to be more readable in segment
-    $properties->{updated_fields}->{address_state} = $customer->{traits}->{address}->{state} if $properties->{updated_fields}->{address_state};
+    $properties->{updated_fields}{address_state} = $traits->{address}{state} if $properties->{updated_fields}{address_state};
     foreach my $field (qw /citizen residence place_of_birth/) {
-        $properties->{updated_fields}->{$field} = Locale::Country::code2country($properties->{updated_fields}->{$field})
-            if (defined $properties->{updated_fields}->{$field} and $properties->{updated_fields}->{$field} ne '');
+        $properties->{updated_fields}{$field} = Locale::Country::code2country($properties->{updated_fields}{$field})
+            if (defined $properties->{updated_fields}{$field} and $properties->{updated_fields}{$field} ne '');
     }
-    $log->debugf('Track profile_change event for client %s', $loginid);
 
-    $properties->{updated_fields}->{lang} = uc($client->user->preferred_language // request->language) unless $properties->{updated_fields}->{lang};
-
-    return Future->needs_all(_send_identify_request($customer),
-        _send_track_request($customer, {$properties->{updated_fields}->%*, loginid => $loginid}, 'profile_change'));
+    return track_event(
+        event                => 'profile_change',
+        properties           => $properties->{updated_fields},
+        client               => $client,
+        traits               => $traits,
+        is_identify_required => 1,
+    );
 }
 
 =head2 transfer_between_accounts
@@ -478,7 +468,7 @@ It can be called with the following parameters:
 
 =over
 
-=item * C<loginid> - required. Login Id of the user.
+=item * C<client> - required. Client instance.
 
 =item * C<properties> - Free-form dictionary of event properties.
 
@@ -490,14 +480,12 @@ sub document_upload {
     my ($args) = @_;
     my $properties = {$args->{properties}->%*};
 
-    delete $properties->{comments};
-    delete $properties->{document_id};
     $properties->{upload_date} = _time_to_iso_8601($properties->{upload_date} // die('required time'));
     $properties->{uploaded_manually_by_staff} //= 0;
 
     return track_event(
         event      => 'document_upload',
-        loginid    => $args->{loginid},
+        client     => $args->{client},
         properties => $properties
     );
 }
@@ -579,7 +567,7 @@ sub set_financial_assessment {
     return track_event(
         event      => 'set_financial_assessment',
         loginid    => $args->{loginid},
-        properties => {$args->{params}->%*, loginid => $args->{loginid}},
+        properties => $args->{params},
     );
 }
 
@@ -857,25 +845,23 @@ It takes the following arguments:
 
 =over 4
 
-=item * C<advert> - a B<p2p.p2p_advert> record from database.
+=item * C<client> - client instance.
+
+=item * C<adverts> - a B<p2p.p2p_advert> record from database.
 
 =back
 
-Returns, a Future representing the track event request.
+Returns a Future representing the track event request.
 
 =cut
 
 sub p2p_archived_ad {
-    my ($params) = @_;
-    my ($loginid, $adverts) = @{$params}{qw/loginid adverts/};
+    my ($args) = @_;
 
     return track_event(
         event      => 'p2p_archived_ad',
-        loginid    => $loginid,
-        properties => {
-            loginid => $loginid,
-            adverts => $adverts,
-        },
+        client     => $args->{client},
+        properties => $args,
     );
 }
 
@@ -992,21 +978,13 @@ sub _p2p_order_track {
     return Future->needs_all(
         track_event(
             event      => $event,
-            loginid    => $parties->{buyer}->loginid,
-            properties => {
-                _p2p_properties($order, $parties, 'buyer')->%*,
-                lang => $parties->{buyer}->user->preferred_language // request->language,
-                $extras->%*
-            },
+            client     => $parties->{buyer},
+            properties => {_p2p_properties($order, $parties, 'buyer')->%*, $extras->%*},
         ),
         track_event(
             event      => $event,
-            loginid    => $parties->{seller}->loginid,
-            properties => {
-                _p2p_properties($order, $parties, 'seller')->%*,
-                lang => $parties->{seller}->user->preferred_language // request->language,
-                $extras->%*
-            },
+            client     => $parties->{seller},
+            properties => {_p2p_properties($order, $parties, 'seller')->%*, $extras->%*},
         ),
     );
 }
@@ -1035,7 +1013,6 @@ sub _p2p_properties {
     my ($order, $parties, $side) = @_;
 
     return {
-        loginid          => $parties->{$side}->loginid,
         user_role        => $side,
         order_type       => $order->{type},
         order_id         => $order->{id},
@@ -1073,6 +1050,7 @@ sub _payment_track {
     return track_event(
         event      => $event,
         loginid    => $args->{loginid},
+        client     => $args->{client},
         properties => $args,
     );
 }
@@ -1080,17 +1058,24 @@ sub _payment_track {
 =head2 track_event
 
 A public method that performs event validation and tracking by Segment B<track> and (if requested) B<identify> API calls.
+All tracking events should be sent via this method to ensure they are validated correctly.
+C<loginid>, C<lang> and C<brand> will be automatically added to all track properties.
+
 Takes the following named parameters:
 
 =over 4
 
 =item * C<event> - Name of the event to be emitted.
 
-=item * C<loginid> - Loginid of the client.
+=item * C<loginid> - Loginid of the client, optional if client is provided.
+
+=item * C<client> - Client instance, optional if loginid is provided.
 
 =item * C<properties> - event proprties as a hash ref (optional).
 
 =item * C<is_identify_required> - a binary flag determining wether or not make an B<identify> API call (optional)
+
+=item * C<traits> - Segment traits to be used when C<is_identify_required> is true (optional - defaults to _create_traits())
 
 =item * C<brand> - the brand associated with the event as a L<Brands> object (optional - defaults to request's brand)
 
@@ -1103,120 +1088,70 @@ Takes the following named parameters:
 sub track_event {
     my %args = @_;
 
-    my $client = _validate_params($args{loginid}, $args{event}, $args{brand}, $args{app_id});
+    my $client = $args{client} // ($args{loginid} ? BOM::User::Client->get_client_instance($args{loginid}) : undef);
+    die $args{event} . ' tracking triggered with an invalid or no loginid and no client. Please inform backend team if it continues to occur.'
+        unless $client;
 
-    return Future->done unless $client;
-    my $customer = _create_customer($client, $args{brand});
+    return Future->done unless _validate_event($args{event}, $args{brand}, $args{app_id});
+
+    my %customer_args = (user_id => $client->binary_user_id);
+    $customer_args{traits} = $args{traits} // _create_traits($client) if $args{is_identify_required};
+    my $customer = _api->new_customer(%customer_args);
+
+    my $context = _create_context($args{brand});
 
     $log->debugf('Tracked %s for client %s', $args{event}, $args{loginid});
-
-    my $enforced_lang = $args{properties}{lang};
 
     return Future->needs_all(
         _send_track_request(
             $customer,
             {
+                loginid => $client->loginid,
+                lang    => uc($client->user->preferred_language // request->language // ''),
+                brand   => $args{brand}->{name} // request->brand->name,
                 ($args{properties} // {})->%*,
-                # CustomerIOTranslation script expects 'lang' as event language properties
-                # https://github.com/regentmarkets/bom-backoffice/blob/master/lib/BOM/Backoffice/Script/CustomerIOTranslation.pm#L578
-                lang => uc($enforced_lang // $client->user->preferred_language // request->language),
             },
             $args{event},
-            $args{brand}
+            $context,
         ),
         $args{is_identify_required}
-        ? _send_identify_request(
-            $customer,
-            $args{brand})
+        ? $customer->identify(context => $context)
         : Future->done,
     );
-}
-
-=head2 _time_to_iso_8601 
-
-Convert the format of the database time to iso 8601 time that is sutable for Segment
-Arguments:
-
-=over
-
-=item * C<time> - required. Database time.
-
-=back
-
-=cut
-
-sub _time_to_iso_8601 {
-    my $time = shift;
-    my ($y_m_d, $h_m_s)          = split(' ', $time);
-    my ($year, $month, $day)     = split('-', $y_m_d);
-    my ($hour, $minute, $second) = split(':', $h_m_s);
-    return Time::Moment->from_epoch(
-        Time::Moment->new(
-            year   => $year,
-            month  => $month,
-            day    => $day,
-            hour   => $hour,
-            minute => $minute,
-            second => $second
-        )->epoch
-    )->to_string;
-}
-
-=head2 _send_identify_request
-
-A private method that makes a Segment B<identify> API call.
-It is called with the following parameters:
-
-=over
-
-=item * C<customer> - required. Customer object included traits.
-
-=item * C<brand> - (optional) The request brand as a <Brands> object.
-
-=back
-
-=cut
-
-sub _send_identify_request {
-    my ($customer, $brand) = (@_);
-
-    my $context = _create_context($brand);
-
-    return $customer->identify(context => $context);
 }
 
 =head2 _send_track_request
 
 A private method that makes a Segment B<track> API call, just letting valid(known) properties to pass through.
+This should only be called by C<track_event> and not called directly.
 It is called with the following parameters:
 
 =over
 
-=item * C<customer> - Customer object included traits.
+=item * C<customer> - Customer object, traits are not needed.
 
 =item * C<properties> - Free-form dictionary of event properties.
 
 =item * C<event> - The event name that will be sent to the Segment.
 
-=item * C<brand> - (optional) The request brand as a <Brands> object.
+=item * C<context> - Request context.
 
 =back
 
 =cut
 
 sub _send_track_request {
-    my ($customer, $properties, $event, $brand) = @_;
-    my $context = _create_context($brand);
+    my ($customer, $properties, $event, $context) = @_;
 
-    die "Unknown event <$event> tracking request was triggered by the client $customer->{client_loginid}" unless $EVENT_PROPERTIES{$event};
+    die "Unknown event <$event> tracking request was triggered" unless $EVENT_PROPERTIES{$event};
 
     # filter invalid or unknown properties out
-    my $valid_event_properties = [$EVENT_PROPERTIES{$event}->@*, 'lang'];
+    my $valid_event_properties = [$EVENT_PROPERTIES{$event}->@*, 'loginid', 'lang', 'brand'];
     my $valid_properties       = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } @$valid_event_properties};
 
     return $customer->track(
         event      => $event,
-        properties => {$valid_properties->%*, brand => $brand->{name} // request->brand->name},
+        properties => $valid_properties,
         context    => $context,
     );
 }
@@ -1243,9 +1178,9 @@ sub _create_context {
     };
 }
 
-=head2 _create_customer
+=head2 _create_traits
 
-Create customer from client information.
+Create customer traits for segement identify call.
 Arguments:
 
 =over
@@ -1258,8 +1193,8 @@ Arguments:
 
 =cut
 
-sub _create_customer {
-    my ($client, $brand, $properties) = @_;
+sub _create_traits {
+    my ($client, $brand) = @_;
     $brand //= request->brand;
 
     my @siblings     = $client->user ? $client->user->clients(include_disabled => 1) : ($client);
@@ -1313,76 +1248,55 @@ sub _create_customer {
         $client_age = $dob->delta_years(Time::Moment->now_utc);
     }
 
-    my $has_exclude_until = $client->get_self_exclusion  ? $client->get_self_exclusion->exclude_until : undef;
-    my $unsubscribed      = $client->user->email_consent ? 'false'                                    : 'true';
-    if (
-        defined(
-            # Set unsubscribed to 'true', when `self_exclude` event is triggered
-            # or check for exclude_until, when other events are triggered
-            $properties->{unsubscribed} || $has_exclude_until
-        ))
-    {
-        $unsubscribed = 'true';
-    }
+    my $has_exclude_until = $client->get_self_exclusion                              ? $client->get_self_exclusion->exclude_until : undef;
+    my $unsubscribed      = (not $client->user->email_consent or $has_exclude_until) ? 'true'                                     : 'false';
 
-    my $customer = _api->new_customer(
-        user_id => $client->binary_user_id(),
-        traits  => {
-            # Reserved traits
-            address => {
-                street      => $client->address_line_1 . " " . $client->address_line_2,
-                town        => $client->address_city,
-                state       => $client->state ? BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) : '',
-                postal_code => $client->address_postcode,
-                country     => Locale::Country::code2country($client->residence),
-            },
-            age => $client_age,
-            #avatar: not_supported,
-            birthday => $client->date_of_birth,
-            #company: not_supported,
-            created_at => Date::Utility->new($created_at)->datetime_iso8601,
-            #description: not_supported,
-            email      => $client->email,
-            first_name => $client->first_name,
-            #gender     => not_supported for Deriv,
-            #id: not_supported,
-            last_name => $client->last_name,
-            #name: automatically filled
-            phone => $client->phone,
-            #title: not_supported,
-            #username: not_supported,
-            #website: website,
+    return {
+        # Reserved traits
+        address => {
+            street      => $client->address_line_1 . " " . $client->address_line_2,
+            town        => $client->address_city,
+            state       => $client->state ? BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) : '',
+            postal_code => $client->address_postcode,
+            country     => Locale::Country::code2country($client->residence),
+        },
+        age => $client_age,
+        #avatar: not_supported,
+        birthday => $client->date_of_birth,
+        #company: not_supported,
+        created_at => Date::Utility->new($created_at)->datetime_iso8601,
+        #description: not_supported,
+        email      => $client->email,
+        first_name => $client->first_name,
+        #gender     => not_supported for Deriv,
+        #id: not_supported,
+        last_name => $client->last_name,
+        #name: automatically filled
+        phone => $client->phone,
+        #title: not_supported,
+        #username: not_supported,
+        #website: website,
 
-            # Custom traits
-            country                     => Locale::Country::code2country($client->residence),
-            currencies                  => join(',', sort(keys %currencies)),
-            mt5_loginids                => join(',', sort(@mt5_loginids)),
-            landing_companies           => @landing_companies ? join ',' => uniq sort @landing_companies : 'virtual',
-            available_landing_companies => $available_landing_companies,
-            provider                    => $provider,
-            salutation                  => $client->salutation,
+        # Custom traits
+        country                     => Locale::Country::code2country($client->residence),
+        currencies                  => join(',', sort(keys %currencies)),
+        mt5_loginids                => join(',', sort(@mt5_loginids)),
+        landing_companies           => @landing_companies ? join ',' => uniq sort @landing_companies : 'virtual',
+        available_landing_companies => $available_landing_companies,
+        provider                    => $provider,
+        salutation                  => $client->salutation,
 
-            # subscribe or unsubscribed
-            unsubscribed => $unsubscribed,
-        });
-    # Will use this attributes as properties in some events like signup
-    $customer->{currency}        = $client->account ? $client->account->currency_code : '';
-    $customer->{landing_company} = $client->landing_company->short // '';
-    $customer->{date_joined}     = $client->date_joined            // '';
-    $customer->{client_loginid}  = $client->loginid;
-
-    return $customer;
+        # subscribe or unsubscribed
+        unsubscribed => $unsubscribed,
+    };
 }
 
-=head2 _validate_params
+=head2 _validate_event
 
-Check if required params are valid or not.
+Check if an event can be sent for the provided/current brand and app id.
 Arguments:
 
-
 =over
-
-=item * C<loginid> - required. Login Id of the user.
 
 =item * C<event> - required. event name.
 
@@ -1392,12 +1306,12 @@ Arguments:
 
 =back
 
-Returns a L<BOM::User::Client> object constructed by C<loginid> arg.
+Returns 1 if allowed.
 
 =cut
 
-sub _validate_params {
-    my ($loginid, $event, $brand, $app_id) = @_;
+sub _validate_event {
+    my ($event, $brand, $app_id) = @_;
     $brand  //= request->brand;
     $app_id //= request->app_id;
 
@@ -1406,39 +1320,6 @@ sub _validate_params {
         return undef;
     }
 
-    return undef unless _validate_brand($event, $brand, $app_id);
-    die "$event tracking triggered without a loginid. Please inform backend team if it continues to occur." unless $loginid;
-
-    my $client = BOM::User::Client->get_client_instance($loginid)
-        or die "$event tracking triggered with an invalid loginid $loginid. Please inform backend team if it continues to occur.";
-
-    return $client;
-}
-
-=head2 _validate_brand
-
-Check if current brand and/or app id are valid.
-
-Arguments:
-
-=over
-
-=item * C<event> - required the event name.
-
-=item * C<brand> - required C<Brands> object.
-
-=item * C<app_id> - required the source app id.
-
-=back
-
-Returns a boolean that indicates the validation status.
-
-=cut
-
-sub _validate_brand {
-    my ($event, $brand, $app_id) = @_;
-
-    # Return true if the event is whitelisted
     return 1 if any { $_ eq $event } @SKIP_BRAND_VALIDATION;
 
     unless ($brand->is_track_enabled) {
@@ -1452,6 +1333,36 @@ sub _validate_brand {
     }
 
     return 1;
+}
+
+=head2 _time_to_iso_8601 
+
+Convert the format of the database time to iso 8601 time that is sutable for Segment
+Arguments:
+
+=over
+
+=item * C<time> - required. Database time.
+
+=back
+
+=cut
+
+sub _time_to_iso_8601 {
+    my $time = shift;
+    my ($y_m_d, $h_m_s)          = split(' ', $time);
+    my ($year, $month, $day)     = split('-', $y_m_d);
+    my ($hour, $minute, $second) = split(':', $h_m_s);
+    return Time::Moment->from_epoch(
+        Time::Moment->new(
+            year   => $year,
+            month  => $month,
+            day    => $day,
+            hour   => $hour,
+            minute => $minute,
+            second => $second
+        )->epoch
+    )->to_string;
 }
 
 1;

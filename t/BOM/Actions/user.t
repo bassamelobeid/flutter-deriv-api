@@ -129,7 +129,8 @@ subtest 'login event' => sub {
             new_signin_activity => $new_signin_activity,
             app_name            => '',
             brand               => 'deriv',
-            lang                => 'ID'
+            lang                => 'ID',
+            loginid             => $test_client->loginid,
         }
         },
         'identify context and properties is properly set.';
@@ -189,7 +190,8 @@ subtest 'login event' => sub {
             new_signin_activity => $new_signin_activity,
             app_name            => '',
             brand               => 'deriv',
-            lang                => 'ID'
+            lang                => 'ID',
+            loginid             => $test_client->loginid,
         }
         },
         'idenify context and properties is properly set after new signin activity.';
@@ -233,7 +235,8 @@ subtest 'login event' => sub {
                 new_signin_activity => 0,
                 app_name            => 'in the name of 100',
                 brand               => 'deriv',
-                lang                => 'ID'
+                lang                => 'ID',
+                loginid             => $virtual_client->loginid,
             }
             },
             'App name matches request->app_id.';
@@ -323,7 +326,8 @@ subtest 'user profile change event' => sub {
             'citizen'        => 'Afghanistan',
             'place_of_birth' => 'Afghanistan',
             'residence'      => 'Afghanistan',
-            'lang'           => 'ID'
+            'lang'           => 'ID',
+            'loginid'        => $test_client->loginid,
         }
         },
         'properties are set properly for user profile change event';

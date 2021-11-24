@@ -447,7 +447,8 @@ subtest 'mt5 inactive notification' => sub {
             closure_date => $today->plus_days(4)->epoch,
             accounts     => $args->{accounts}->{4},
             brand        => 'deriv',
-            lang         => 'EN'
+            lang         => 'EN',
+            loginid      => $test_client->loginid,
         }
         },
         'properties of the first event tracking is correct';
@@ -468,7 +469,8 @@ subtest 'mt5 inactive notification' => sub {
             closure_date => $today->plus_days(14)->epoch,
             accounts     => $args->{accounts}->{14},
             brand        => 'deriv',
-            lang         => 'EN'
+            lang         => 'EN',
+            loginid      => $test_client->loginid,
         }
         },
         'properties of the second event tracking is correct';

@@ -397,7 +397,7 @@ sub archived_ad {
     die 'Empty ads' unless scalar $ads->@*;
 
     return BOM::Event::Services::Track::p2p_archived_ad({
-        loginid => $loginid,
+        client  => $client,
         adverts => [map { $client->_p2p_adverts(id => $_, limit => 1)->@* } $ads->@*],
     });
 }
@@ -577,7 +577,6 @@ sub _track_p2p_order_event {
     return Future->done(1) unless ($method);
 
     return $method->(
-        loginid => $loginid,
         order   => $order_details,
         parties => $parties,
     );

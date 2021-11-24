@@ -187,7 +187,7 @@ sub new_mt5_signup {
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
     return unless $client;
 
-    my $id = $data->{mt5_login_id};
+    my $id = $data->{mt5_login_id} or die 'mt5 loginid is required';
 
     my $cache_key  = "MT5_USER_GROUP::" . $id;
     my $group      = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'group');
@@ -252,10 +252,9 @@ sub new_mt5_signup {
     $data->{type_label}     = ucfirst $type_label;                     # Frontend-ish label (Synthetic, Financial, Financial STP)
     $data->{mt5_integer_id} = $id =~ s/${\BOM::User->MT5_REGEX}//r;    # This one is just the numeric ID
 
-    return BOM::Event::Services::Track::new_mt5_signup({
-        loginid    => $data->{loginid},
-        properties => $data
-    });
+    my %track_properties = (%$data, client => $client);
+    $track_properties{mt5_loginid} = delete $track_properties{mt5_login_id};    # track event field is different
+    return BOM::Event::Services::Track::new_mt5_signup(\%track_properties);
 }
 
 =head2 mt5_password_changed
@@ -274,11 +273,9 @@ It can be called with the following parameters:
 sub mt5_password_changed {
     my ($args) = @_;
 
-    return BOM::Event::Services::Track::mt5_password_changed({
-        loginid    => $args->{loginid},
-        properties => $args
-    });
+    die 'mt5 loginid is required' unless $args->{mt5_loginid};
 
+    return BOM::Event::Services::Track::mt5_password_changed($args);
 }
 
 =head2 send_mt5_account_opening_email

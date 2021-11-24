@@ -89,14 +89,15 @@ subtest 'General event validation - filtering by brand' => sub {
     request($req);
 
     like exception { BOM::Event::Services::Track::track_event(event => 'login')->get },
-        qr/login tracking triggered without a loginid. Please inform backend team if it continues to occur./, 'Missing loginid exception';
+        qr/login tracking triggered with an invalid or no loginid and no client. Please inform backend team if it continues to occur./,
+        'Missing loginid exception';
 
     like exception { BOM::Event::Services::Track::track_event(event => 'login', loginid => 'CR1234')->get },
-        qr/login tracking triggered with an invalid loginid CR1234. Please inform backend team if it continues to occur./,
+        qr/login tracking triggered with an invalid or no loginid and no client. Please inform backend team if it continues to occur./,
         'Invalid loginid exception';
 
     like exception { BOM::Event::Services::Track::track_event(event => 'UNKNOWN', loginid => $test_client->loginid)->get },
-        qr/Unknown event <UNKNOWN> tracking request was triggered by the client CR10000/,
+        qr/Unknown event <UNKNOWN> tracking request was triggered/,
         'Unknown event exception';
 
     $segment_response = Future->fail('dummy test failure');
@@ -105,7 +106,7 @@ subtest 'General event validation - filtering by brand' => sub {
     is @identify_args, 0, 'Segment identify is not invoked';
     ok @track_args, 'Segment track is invoked';
     my ($customer, %args) = @track_args;
-    test_segment_customer($customer);
+
     my $expected_args = {
         'context' => {
             'active' => 1,
@@ -114,8 +115,9 @@ subtest 'General event validation - filtering by brand' => sub {
         },
         'event'      => 'login',
         'properties' => {
-            'brand' => 'deriv',
-            'lang'  => 'ID',
+            'brand'   => 'deriv',
+            'lang'    => 'ID',
+            'loginid' => $test_client->loginid,
         }};
     is_deeply \%args, $expected_args;
 
@@ -130,16 +132,16 @@ subtest 'General event validation - filtering by brand' => sub {
     ok @track_args, 'Segment track is invoked';
     ($customer, %args) = @track_args;
     $expected_args->{properties} = {
-        'brand' => 'deriv',
-        'lang'  => 'ID'
+        'brand'   => 'deriv',
+        'lang'    => 'ID',
+        'loginid' => $test_client->loginid,
     };
     is_deeply \%args, $expected_args, 'track request args are correct - invalid property filtered out';
-    test_segment_customer($customer);
 
     undef @track_args;
     ok BOM::Event::Services::Track::track_event(
         event                => 'login',
-        loginid              => $test_client->loginid,
+        client               => $test_client,
         properties           => {browser => 'fire-chrome'},
         is_identify_required => 1
     )->get, 'event emitted successfully';
@@ -171,7 +173,10 @@ subtest 'General event validation - filtering by brand' => sub {
 
         undef @track_args;
         undef @identify_args;
-        is BOM::Event::Services::Track::track_event(event => 'login')->get, undef, 'Response is empty when brand is not \'deriv\' or \'binary\'';
+        is BOM::Event::Services::Track::track_event(
+            event   => 'login',
+            loginid => $test_client->loginid
+        )->get, undef, 'Response is empty when brand is not \'deriv\' or \'binary\'';
         is @identify_args, 0, 'Segment identify is not invoked';
         is @track_args,    0, 'Segment track is not invoked';
 
@@ -248,7 +253,7 @@ subtest 'General event validation - filtering by brand' => sub {
         $user->update_email_fields(email_consent => 1);
         ok BOM::Event::Services::Track::track_event(
             event                => 'profile_change',
-            loginid              => $test_client->loginid,
+            client               => $test_client,
             properties           => {email_consent => 1},
             is_identify_required => 1,
             brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
@@ -269,6 +274,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     email_consent => 1,
                     brand         => 'deriv',
                     lang          => 'ID',
+                    loginid       => $test_client->loginid,
                 },
             },
             'identify context is properly set for profile_change'
@@ -284,7 +290,7 @@ subtest 'General event validation - filtering by brand' => sub {
         $user->update_email_fields(email_consent => 0);
         ok BOM::Event::Services::Track::track_event(
             event      => 'account_closure',
-            loginid    => $test_client->loginid,
+            client     => $test_client,
             properties => {
                 closing_reason => 'Test',
                 email_consent  => 0,
@@ -309,6 +315,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     closing_reason => 'Test',
                     email_consent  => 0,
                     lang           => 'ID',
+                    loginid        => $test_client->loginid,
                 },
             },
             'identify context is properly set for account_closure'
@@ -349,6 +356,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     brand        => 'deriv',
                     unsubscribed => 1,
                     lang         => 'ID',
+                    loginid      => $test_client->loginid,
                 },
             },
             'identify context is properly set for self_exclude event'
@@ -362,7 +370,7 @@ subtest 'General event validation - filtering by brand' => sub {
         $user->update_email_fields(email_consent => 1);
         ok BOM::Event::Services::Track::track_event(
             event                => 'profile_change',
-            loginid              => $test_client->loginid,
+            client               => $test_client,
             properties           => {email_consent => 1},
             is_identify_required => 1,
             brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
@@ -383,6 +391,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     brand         => 'deriv',
                     email_consent => 1,
                     lang          => 'ID',
+                    loginid       => $test_client->loginid,
                 },
             },
             'identify context is properly set for profile_change'
@@ -410,6 +419,8 @@ subtest 'General event validation - filtering by brand' => sub {
                 payment_fee       => '0',
                 currency          => 'USD',
                 payment_method    => 'VISA',
+                lang              => 'ID',
+                loginid           => $test_client->loginid,
             },
             brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
@@ -436,6 +447,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     currency          => 'USD',
                     payment_method    => 'VISA',
                     lang              => 'ID',
+                    loginid           => $test_client->loginid,
                 },
             },
             'track args is properly set for doughflow payment_deposit'
@@ -471,6 +483,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     currency => 'USD',
                     remark   => 'test123',
                     lang     => 'ID',
+                    loginid  => $test_client->loginid,
                 },
             },
             'track args is properly set for cryptocashier payment_deposit'
@@ -491,6 +504,8 @@ subtest 'General event validation - filtering by brand' => sub {
                 payment_fee    => '0',
                 currency       => 'USD',
                 payment_method => 'VISA',
+                lang           => 'ID',
+                loginid        => $test_client->loginid,
             },
             brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
@@ -515,6 +530,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     currency       => 'USD',
                     payment_method => 'VISA',
                     lang           => 'ID',
+                    loginid        => $test_client->loginid,
                 },
             },
             'track args is properly set for doughflow payment_withdrawal'
@@ -548,6 +564,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     amount   => '-10',
                     currency => 'USD',
                     lang     => 'ID',
+                    loginid  => $test_client->loginid,
                 },
             },
             'track args is properly set for cryptocashier payment_withdrawal'
@@ -569,6 +586,7 @@ subtest 'General event validation - filtering by brand' => sub {
                 currency       => 'USD',
                 payment_method => 'VISA',
                 lang           => 'ID',
+                loginid        => $test_client->loginid,
             },
             brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
@@ -593,6 +611,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     currency       => 'USD',
                     payment_method => 'VISA',
                     lang           => 'ID',
+                    loginid        => $test_client->loginid,
                 },
             },
             'track args is properly set for payment_withdrawal_reversal'
@@ -630,6 +649,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     unsubscribed => 1,
                     brand        => 'deriv',
                     lang         => 'ES',
+                    loginid      => $test_client->loginid,
                 },
             },
             'track lang args is correct'
@@ -691,10 +711,10 @@ subtest 'brand/offical app id validation' => sub {
     my ($deriv_app_id)  = $deriv->whitelist_apps->%*;
     my ($binary_app_id) = $binary->whitelist_apps->%*;
 
-    ok BOM::Event::Services::Track::_validate_params($test_client->loginid,  'dummy', $deriv,  $deriv_app_id),  'Whitelisted app id and brand';
-    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv,  $binary_app_id), 'Restricted app id or brand';
-    ok BOM::Event::Services::Track::_validate_params($test_client->loginid,  'dummy', $binary, $binary_app_id), 'Whitelisted app id and brand';
-    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $deriv_app_id),  'Restricted app id or brand';
+    ok BOM::Event::Services::Track::_validate_event('dummy',  $deriv,  $deriv_app_id),  'Whitelisted app id and brand';
+    ok !BOM::Event::Services::Track::_validate_event('dummy', $deriv,  $binary_app_id), 'Restricted app id or brand';
+    ok BOM::Event::Services::Track::_validate_event('dummy',  $binary, $binary_app_id), 'Whitelisted app id and brand';
+    ok !BOM::Event::Services::Track::_validate_event('dummy', $binary, $deriv_app_id),  'Restricted app id or brand';
 
     subtest 'whitelist' => sub {
         # These events return 1 regardless of the brand / app_id
@@ -703,7 +723,7 @@ subtest 'brand/offical app id validation' => sub {
             'p2p_order_expired', 'p2p_order_dispute',        'p2p_order_timeout_refund',
         );
 
-        ok BOM::Event::Services::Track::_validate_brand($_, $binary, -1000), "$_ is whitelisted" foreach @whitelisted_events;
+        ok BOM::Event::Services::Track::_validate_event($_, $binary, -1000), "$_ is whitelisted" foreach @whitelisted_events;
     };
 };
 

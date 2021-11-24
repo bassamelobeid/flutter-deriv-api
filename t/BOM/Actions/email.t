@@ -98,11 +98,6 @@ subtest 'email events - risk disclaimer resubmission' => sub {
         'event properties are ok';
 
     is $args{context}{locale}, 'ES', "got correct preferred language";
-
-    is $customer->traits->{salutation}, $client->salutation, "got correct customer salutation";
-    is $customer->traits->{first_name}, $client->first_name, "got correct customer first_name";
-    is $customer->traits->{last_name},  $client->last_name,  "got correct customer last_name";
-    is $customer->traits->{email},      $client->email,      "got correct customer email";
 };
 
 done_testing;

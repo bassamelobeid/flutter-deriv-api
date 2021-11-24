@@ -257,7 +257,7 @@ subtest 'segment tracking' => sub {
 
     my @expected_track_event_args = ({
             event      => 'p2p_order_timeout_refund',
-            loginid    => $client->loginid,
+            client     => isa('BOM::User::Client'),
             properties => {
                 user_role        => 'buyer',
                 order_type       => 'buy',
@@ -266,19 +266,17 @@ subtest 'segment tracking' => sub {
                 buyer_user_id    => $client->binary_user_id,
                 seller_user_id   => $advertiser->binary_user_id,
                 currency         => $order->{account_currency},
-                loginid          => $client->loginid,
                 exchange_rate    => $order->{rate_display},
                 local_currency   => $order->{local_currency},
                 buyer_nickname   => $order->{client_details}->{name}     // '',
                 seller_nickname  => $order->{advertiser_details}->{name} // '',
                 amount           => $order->{amount},
                 order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
-                lang             => 'EN'
             }
         },
         {
             event      => 'p2p_order_timeout_refund',
-            loginid    => $advertiser->loginid,
+            client     => isa('BOM::User::Client'),
             properties => {
                 user_role        => 'seller',
                 order_type       => 'buy',
@@ -286,14 +284,12 @@ subtest 'segment tracking' => sub {
                 buyer_user_id    => $client->binary_user_id,
                 seller_user_id   => $advertiser->binary_user_id,
                 currency         => $order->{account_currency},
-                loginid          => $advertiser->loginid,
                 exchange_rate    => $order->{rate_display},
                 local_currency   => $order->{local_currency},
                 buyer_nickname   => $order->{client_details}->{name}     // '',
                 seller_nickname  => $order->{advertiser_details}->{name} // '',
                 amount           => $order->{amount},
                 order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
-                lang             => 'EN'
             }});
 
     cmp_deeply $track_event_args[0], superhashof($expected_track_event_args[0]), 'Track event params are looking good for buyer';

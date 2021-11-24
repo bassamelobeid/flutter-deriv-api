@@ -96,8 +96,6 @@ Handler for sending client's email event.
 
 Note: Client's details ("traits") is already recorded in customer.io, don't send these as an additional properties unless needed.
 
-Refer to L<BOM::Event::Services::Track::_create_customer>.
-
 =back
 
 =cut
