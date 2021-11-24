@@ -142,20 +142,23 @@ sub change_investor_password {
     die +{error_code => 'MT5InvalidAccount'} unless $mt5_login;
 
     my $old_password = $args{old_password};
-    if ($old_password) {
-        my $error = BOM::MT5::User::Async::password_check({
+
+    return (
+        $old_password
+        ? BOM::MT5::User::Async::password_check({
                 login    => $account_id,
                 password => $old_password,
                 type     => 'investor',
-            })->get;
-        die $error if $error->{code};
-    }
-
-    return BOM::MT5::User::Async::password_change({
-        login        => $account_id,
-        new_password => $new_password,
-        type         => 'investor',
-    });
+            })
+        : Future->done
+    )->then(
+        sub {
+            BOM::MT5::User::Async::password_change({
+                login        => $account_id,
+                new_password => $new_password,
+                type         => 'investor',
+            });
+        });
 }
 
 =head2 get_account_info
