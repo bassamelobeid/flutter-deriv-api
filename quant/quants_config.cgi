@@ -235,7 +235,7 @@ if ($r->params->{'delete_limit'}) {
     }
     $delete_error = "permission denied: no write access" if $disabled_write;
 
-    $args_content = join(q{, }, map { qq{$_ => $r->params->{$_}} } keys %{$r->params});
+    $args_content = join(q{, }, map { "$_:" . $r->params->{$_} } keys %{$r->params});
     BOM::Backoffice::QuantsAuditLog::log($staff, "deleteclientlimit", $args_content);
 
     BOM::Database::Helper::UserSpecificLimit->new({
