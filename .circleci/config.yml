@@ -1,0 +1,53 @@
+jobs:
+  build:
+    docker:
+    - auth:
+        password: $DOCKERHUB_PASSWORD
+        username: circle4regentmarkets
+      image: regentmarkets/debian-ci:stable
+      user: nobody
+    steps:
+    - add_ssh_keys:
+        fingerprints:
+        - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
+    - checkout
+    - run:
+        name: Update git repositories
+        command: /opt/circle/prepare-test.sh
+    - run:
+        name: Start services
+        command: |
+          start_services
+          touch /tmp/services.ready
+        background: true
+    - run:
+        name: Wait for services to start up
+        command: |
+          count=0
+          while [ ! -f /tmp/services.ready ]; do
+              echo 'Still waiting for services...'
+              (( count++ )) && (( count >= 20 )) && break
+              sleep 1
+          done
+    - run:
+        command: |
+          source /etc/profile.d/perl5.sh
+          make test
+        name: Run test
+    working_directory: /home/git/regentmarkets/bom-commission-management-service
+version: 2
+workflows:
+  build-workflow:
+    jobs: &1
+    - build:
+        context: perl
+  daily:
+    jobs: *1
+    triggers:
+    - schedule:
+        cron: 2 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  version: 2
