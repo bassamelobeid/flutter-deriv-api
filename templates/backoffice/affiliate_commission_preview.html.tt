@@ -1,0 +1,117 @@
+<form id='affiliate_commission_preview'>
+    <p>If you want to update multiple affiliate payment details, please separate the id with ','</p>
+    <p><b>Preview supports a maximum of 5000 records</b></p>
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+    <table>
+        <tr>
+            <td><label for="affiliate_provider">Affiliate platform:</label></td>
+            <td>
+                <select name="affiliate_provider">
+                    [% FOREACH prov IN affiliate_provider %]
+                        <option value="[% prov %]">[% prov %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><label for="list_unpaid">List only unpaid:</label></td>
+            <td>
+                <select name="list_unpaid">
+                        <option value="1" selected="selected">yes</option>
+                        <option value="0">no</option>
+                </select>
+            </td>
+            <td>** Selecting 'no' will list both paid and unpaid commission</td>
+        </tr>
+        <tr>
+            <td>Date: </td>
+            <td><input type="text" name="date" ></input></td>
+            <td>** (E.g. 2021-10-25) Leave it blank to preview all days</td>
+        </tr>
+        <tr>
+            <td>Affiliate ID: </td>
+            <td><input type="text" name="affiliate_id" ></input></td>
+            <td>** Support comma separated affiliate id or leave it blank to preview all affiliates</td>
+        </tr>
+        <tr>
+            <td><input id="hex_id" type="hidden" name="hex" value="[% hex | none %]"></input></td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="AffiliateTransactionPreview()" value="Preview"></td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="AffiliateTransactionPreview(1)" value="Make Payment"></td>
+        </tr>
+    </table>
+    <p class="transaction_preview"></p>
+</form>
+
+<div id="transaction_preview">
+</div>
+
+<script>
+var upload_url = "[% upload_url | none %]";
+var cfd_provider = "[% provider | none %]";
+
+function AffiliateTransactionPreview(pay){
+    var el = \$('#affiliate_commission_preview');
+    var result = el.find('.transaction_preview');
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: upload_url,
+        data: {
+            preview_affiliate_transaction: 1,
+            affiliate_id: el.find('input[name="affiliate_id"]').val(),
+            provider: el.find('select[name="affiliate_provider"]').val(),
+            list_unpaid: el.find('select[name="list_unpaid"]').val(),
+            cfd_provider: cfd_provider,
+            date: el.find('input[name="date"]').val(),
+            hex: el.find('input[name="hex"]').val(),
+            make_payment: pay
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('ok').css('color', 'var(--color-green)');
+            }
+
+            if (typeof config.headers != 'undefined') {
+                var div = \$('div#transaction_preview');
+                var table = '<table><tr>';
+
+                for (var y=0; y < config.headers.length; y++) {
+                    table += '<th>'+ config.headers[y] +'</th>';
+                }
+
+                table += '</th>';
+
+                for (var i=0; i < config.records.length; i++) {
+                    table += '<tr class="'+config.records[i][0]+'">';
+                    for (var x=0; x < config.records[i].length; x++) {
+                        table += '<td>'+ config.records[i][x] +'</td>';
+                    }
+                    table +='</tr>';
+                }
+                table += '</table>';
+                div.empty();
+                div.append(table);
+            }
+
+            if (typeof config.updated != 'undefined') {
+                for (var z=0; z < config.updated.length; z++) {
+                    var deal_id = config.updated[z][0];
+                    var txn_id  = config.updated[z][1];
+                    \$('div#transaction_preview').find('tr[class="'+deal_id+'"]').find('td:eq(13)').text(txn_id);
+                }
+            }
+
+            if (typeof config.hex != 'undefined') {
+                \$('input#hex_id').val(config.hex);
+            }
+        }
+    });
+}
+</script>
