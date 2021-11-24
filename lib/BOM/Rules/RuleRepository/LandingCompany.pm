@@ -14,7 +14,6 @@ use strict;
 use warnings;
 
 use List::MoreUtils qw(uniq);
-use Brands;
 
 use BOM::Rules::Registry qw(rule);
 
@@ -84,7 +83,7 @@ rule 'landing_company.currency_is_allowed' => {
         my $account_type = $args->{account_type} // '';
         # Allowed currencies for wallet account opening should be figured out by country of residence rather than the context landing company (svg).
         if ($account_type eq 'wallet') {
-            my $countries_instance = Brands->new->countries_instance;
+            my $countries_instance = $context->brand($args)->countries_instance;
             my $company            = $countries_instance->gaming_company_for_country($client->residence)
                 // $countries_instance->gaming_company_for_country($client->residence) // '';
 

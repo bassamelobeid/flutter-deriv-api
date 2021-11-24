@@ -14,7 +14,6 @@ use strict;
 use warnings;
 
 use List::Util;
-use Brands;
 
 use BOM::Rules::Registry qw(rule);
 
@@ -28,7 +27,7 @@ rule 'residence.market_type_is_available' => {
         my $residence       = $context->residence($args);
         my $landing_company = $context->landing_company_object($args);
 
-        my $countries_instance = Brands->new->countries_instance;
+        my $countries_instance = $context->brand($args)->countries_instance;
 
         my $companies = {
             synthetic => $countries_instance->gaming_company_for_country($context->residence($args)),
@@ -51,7 +50,7 @@ rule 'residence.is_signup_allowed' => {
         my ($self, $context, $args) = @_;
         my $residence = $context->residence($args);
 
-        my $countries_instance = Brands->new->countries_instance;
+        my $countries_instance = $context->brand($args)->countries_instance;
 
         $self->fail('InvalidAccount') unless $countries_instance->is_signup_allowed($residence);
 
@@ -65,7 +64,7 @@ rule 'residence.not_restricted' => {
         my ($self, $context, $args) = @_;
         my $residence = $context->residence($args);
 
-        my $countries_instance = Brands->new->countries_instance;
+        my $countries_instance = $context->brand($args)->countries_instance;
 
         $self->fail('InvalidResidence') if $countries_instance->restricted_country($residence);
 

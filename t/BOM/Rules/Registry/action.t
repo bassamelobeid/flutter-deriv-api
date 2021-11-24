@@ -83,14 +83,15 @@ subtest 'Verification' => sub {
     is_deeply \@rule_args, [$rule1, $context, 'args', $rule2, $context, 'args', $failing_rule1, $context, 'args', $failing_rule2, $context, 'args'],
         'Context and args are correctly passed to rule codes';
     is_deeply $result->failed_rules,
-        [{
-            rule    => 'failing_rule1',
-            failure => +{error_code => "Something went wrong on rule 1"}
+        [
+        +{
+            rule       => 'failing_rule1',
+            error_code => "Something went wrong on rule 1"
         },
-        {
-            rule    => 'failing_rule2',
-            failure => +{error_code => "Something went wrong on rule 2"}
-        },
+        +{
+            rule       => 'failing_rule2',
+            error_code => "Something went wrong on rule 2"
+        }
         ],
         'failed rules are as expectation';
     is_deeply $result->passed_rules, ['rule1', 'rule2'], 'passed rules are as expectation';

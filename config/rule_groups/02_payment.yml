@@ -1,0 +1,22 @@
+validate_payment:
+  description: Validates a payment
+  required_arguments:
+    - loginid
+    - action
+    - is_internal
+    - amount
+    - currency
+  ruleset:
+    - type: group
+      rule_group: cashier_validation
+    - payment.currency_matches_account
+    - type: conditional
+      on: action
+      rules_per_value:
+        deposit:
+          - deposit.total_balance_limits
+          - deposit.periodical_balance_limits
+        withdrawal:
+          - withdrawal.less_than_balance
+          - withdrawal.only_unfrozen_balance
+          - withdrawal.landing_company_limits

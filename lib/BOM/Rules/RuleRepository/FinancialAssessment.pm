@@ -31,4 +31,16 @@ rule 'financial_assessment.required_sections_are_complete' => {
     },
 };
 
+rule 'financial_asssessment.completed' => {
+    description => "Checks financial assessment and fails if it's required by client's landing company, but missing.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        $self->fail('FinancialAssessmentRequired') unless $client->is_financial_assessment_complete();
+
+        return 1;
+    },
+};
+
 1;

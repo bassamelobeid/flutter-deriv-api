@@ -11,4 +11,3 @@ demo_group:
       on: landing_company
       rules_per_value:
         malta: currency.account_is_not_crypto
-        default: pass

@@ -76,12 +76,9 @@ sub append_failure {
 
     $self->{has_failure} = 1;
 
-    push $self->{failed_rules}->@*,
-        {
-        rule    => $rule,
-        failure => $error
-        };
-    $self->{errors}->{$error->{error_code} // $error->{code}} = 1 if exists $error->{error_code} || exists $error->{code};
+    $error->{rule} = $rule if ref $error;
+    push $self->{failed_rules}->@*, $error;
+    $self->{errors}->{$error->{error_code} // $error->{code}} = 1 if ref $error && ($error->{error_code} // $error->{code});
 
     return $self;
 }

@@ -14,6 +14,13 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
 });
+my $user = BOM::User->create(
+    email          => 'rule_client@binary.com',
+    password       => 'abcd',
+    email_verified => 1,
+);
+$user->add_client($client);
+$user->add_client($client_vr);
 
 subtest 'rule profile.address_postcode_mandatory' => sub {
     my $rule_name   = 'profile.address_postcode_mandatory';
@@ -210,6 +217,283 @@ subtest 'rule client.forbidden_postcodes' => sub {
     $client->address_postcode('E1AC');
     $client->save;
     ok $rule_engine->apply_rules($rule_name, %args), 'Test passes with valid postcode';
+};
+
+my $rule_name = 'client.not_desalbed';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    $client->status->set('disabled', 'test', 'test');
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'DisabledAccount',
+        rule       => $rule_name
+        },
+        'Error for disabled client';
+
+    $client->status->clear_disabled;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if client is not disabled';
+};
+
+$rule_name = 'client.documents_not_expired';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    my $mock_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $mock_documents->redefine(expired => 1);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'DocumentsExpired',
+        rule       => $rule_name
+        },
+        'Error for expired docs';
+
+    $mock_documents->redefine(expired => 0);
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if docs are not expired';
+
+    $mock_documents->unmock_all;
+};
+
+$rule_name = 'client.fully_authenticated';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine(fully_authenticated => 0);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'NotAuthenticated',
+        rule       => $rule_name
+        },
+        'Error for unauthenticated client';
+
+    $mock_client->redefine(fully_authenticated => 1);
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if client is authenticated';
+
+    $mock_client->unmock_all;
+};
+
+$rule_name = 'client.financial_risk_approval_status';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    $client->status->clear_financial_risk_approval;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'FinancialRiskNotApproved',
+        rule       => $rule_name
+        },
+        'Error if client has not approved risks';
+
+    $client->status->set('financial_risk_approval', 'test', 'test');
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes with risk approval';
+};
+
+$rule_name = 'client.crs_tax_information_status';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    $client->status->clear_crs_tin_information;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'NoTaxInformation',
+        rule       => $rule_name
+        },
+        'Error if client has not approved risks';
+
+    $client->status->set('crs_tin_information', 'test', 'test');
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes with risk approval';
+};
+
+$rule_name = 'client.check_max_turnover_limit';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    my $lc_check_max_turnover;
+    my $mock_landing_company = Test::MockModule->new('LandingCompany');
+    $mock_landing_company->redefine(check_max_turnover_limit_is_set => sub { $lc_check_max_turnover });
+
+    my $country_config = {};
+    my $mock_countries = Test::MockModule->new('Brands::Countries');
+    $mock_countries->redefine(countries_list => sub { return +{$client->residence => $country_config}; });
+
+    my @test_cases = ({
+            name                          => 'None requires - none set',
+            lc_check_max_turnover         => 0,
+            country_config                => {},
+            ukgc_funds_protection_status  => 0,
+            max_turnover_limit_set_status => 0,
+            error                         => undef,
+        },
+        {
+            name                          => 'Company requires max turnover - none set',
+            lc_check_max_turnover         => 1,
+            country_config                => {},
+            ukgc_funds_protection_status  => 0,
+            max_turnover_limit_set_status => 0,
+            error                         => 'NoMaxTuroverLimit',
+        },
+        {
+            name                          => 'Company requires max turnover - max turnver is set',
+            lc_check_max_turnover         => 1,
+            country_config                => {},
+            ukgc_funds_protection_status  => 0,
+            max_turnover_limit_set_status => 1,
+            error                         => undef,
+        },
+        {
+            name                          => 'Residence requires max turnover - none set',
+            lc_check_max_turnover         => 0,
+            country_config                => {need_set_max_turnover_limit => 1},
+            ukgc_funds_protection_status  => 0,
+            max_turnover_limit_set_status => 0,
+            error                         => 'NoMaxTuroverLimit',
+        },
+        {
+            name                          => 'Residence requires max turnover - max turnover is set',
+            lc_check_max_turnover         => 0,
+            country_config                => {need_set_max_turnover_limit => 1},
+            ukgc_funds_protection_status  => 0,
+            max_turnover_limit_set_status => 1,
+            error                         => undef,
+        },
+        {
+            name                  => 'Residence requires max turnover and ukgc - only max turnover is set',
+            lc_check_max_turnover => 0,
+            country_config        => {
+                need_set_max_turnover_limit => 1,
+                ukgc_funds_protection       => 1,
+            },
+            ukgc_funds_protection_status  => 0,
+            max_turnover_limit_set_status => 1,
+            error                         => 'NoUkgcFundsProtection',
+        },
+        {
+            name                  => 'Residence requires max turnover and ukgc - max turnover and ukgc are set',
+            lc_check_max_turnover => 0,
+            country_config        => {
+                need_set_max_turnover_limit => 1,
+                ukgc_funds_protection       => 1,
+            },
+            ukgc_funds_protection_status  => 1,
+            max_turnover_limit_set_status => 1,
+            error                         => undef,
+        },
+    );
+
+    for my $test_case (@test_cases) {
+        $lc_check_max_turnover = $test_case->{lc_check_max_turnover};
+        $country_config        = $test_case->{country_config};
+        $client->status->set('ukgc_funds_protection',      'test', 'test') if $test_case->{ukgc_funds_protection_status};
+        $client->status->set('max_turnover_limit_not_set', 'test', 'test') unless $test_case->{max_turnover_limit_set_status};
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+            $test_case->{error}
+            ? {
+            error_code => $test_case->{error},
+            rule       => $rule_name
+            }
+            : undef,
+            "testing: $test_case->{name}";
+
+        $client->status->clear_ukgc_funds_protection;
+        $client->status->clear_max_turnover_limit_not_set;
+    }
+
+    $mock_landing_company->unmock_all;
+    $mock_countries->unmock_all;
+};
+
+$rule_name = 'client.no_unwelcome_status';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    $client->status->set('unwelcome', 'test', 'test');
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'UnwelcomeStatus',
+        rule       => $rule_name
+        },
+        'Error for unwelcome client';
+
+    $client->status->clear_unwelcome;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if client is not unwecome';
+};
+
+$rule_name = 'client.no_withdrawal_or_trading_lock_status';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    $client->status->set('no_withdrawal_or_trading', 'test', 'test');
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'NoWithdrawalOrTradingStatus',
+        rule       => $rule_name
+        },
+        'Error for locked client';
+
+    $client->status->clear_no_withdrawal_or_trading;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if client is not locked';
+};
+
+$rule_name = 'client.no_withdrawal_locked_status';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    $client->status->set('withdrawal_locked', 'test', 'test');
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'WithdrawalLockedStatus',
+        rule       => $rule_name
+        },
+        'Error for locked client';
+
+    $client->status->clear_withdrawal_locked;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if client is not locked';
+};
+
+$rule_name = 'client.high_risk_authenticated';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    my $risk_level    = 'low';
+    my $authenticated = 0;
+    my $mock_client   = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine(
+        risk_level          => sub { $risk_level },
+        fully_authenticated => sub { $authenticated });
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if risk level is row and unauthenticated';
+    $risk_level = 'high';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'HighRiskNotAuthenticated',
+        rule       => $rule_name
+        },
+        'Error for high risk client';
+
+    $authenticated = 1;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if high risk client is autyenticated';
 };
 
 done_testing();

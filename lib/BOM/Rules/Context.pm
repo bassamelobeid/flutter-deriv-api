@@ -15,6 +15,7 @@ use warnings;
 
 use Moo;
 use LandingCompany::Registry;
+use Brands;
 use BOM::Platform::Context qw(request);
 
 =head2 BUILDARGS
@@ -34,10 +35,41 @@ around BUILDARGS => sub {
     return $class->$orig(
         _cache          => \%cache,
         stop_on_failure => $stop_on_failure,
-        times_invoked   => 0,
         client_list     => $client_list,
     );
 };
+
+=head2 clone
+
+Creates a copy of the context object. It is also possible to override the object's attribute by the following named args:
+
+=over 4
+
+item C<client_list> An array-ref of context clients.
+
+item C<stop_on_failure> Rule engine's operation mode (die on failure or report all rules checked)
+
+=back
+
+=cut
+
+sub clone {
+    my ($self, %override) = @_;
+
+    return BOM::Rules::Context->new(
+        client_list     => $self->client_list,
+        stop_on_failure => $self->stop_on_failure,
+        %override
+    );
+}
+
+=head2 client_list
+
+The list of known clients.
+
+=cut
+
+has client_list => (is => 'ro');
 
 =head2 stop_on_failure
 
@@ -154,7 +186,7 @@ sub get_country {
 
     die 'Country code is required' unless $country_code;
 
-    $self->_cache->{"country_$country_code"} //= request()->brand->countries_instance->countries_list->{$country_code};
+    $self->_cache->{"country_$country_code"} //= Brands->new->countries_instance->countries_list->{$country_code};
 
     return $self->_cache->{"country_$country_code"};
 }
@@ -220,6 +252,26 @@ sub residence {
     die 'Either residence or loginid is required' unless $args->{loginid} // $args->{residence};
 
     return $args->{residence} // $self->client($args)->residence;
+}
+
+=head2 brand
+
+Get the brand object. It accepts one argument:
+
+=over 4
+
+=item C<args> event args as a hashref; expected to contain B<brand> (a brand name).
+
+=back
+
+Returns an object of type L<Brands>.
+
+=cut
+
+sub brand {
+    my ($self, $args) = @_;
+
+    return Brands->new(name => $args->{brand});
 }
 
 1;

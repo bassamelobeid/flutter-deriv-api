@@ -26,7 +26,7 @@ rule 'trading_account.should_match_landing_company' => {
         my $market_type        = $args->{market_type} // '';
         my $user               = $client->user;
         my $residence          = $client->residence;
-        my $countries_instance = request()->brand->countries_instance;
+        my $countries_instance = $context->brand($args)->countries_instance;
         my $countries_list     = $countries_instance->countries_list;
         my $lc_type            = $market_type eq 'synthetic' ? 'gaming' : $market_type;
 
@@ -94,7 +94,7 @@ rule 'trading_account.should_provide_tax_details' => {
         my ($self, $context, $args) = @_;
         my $client = $context->client($args);
 
-        my $countries_instance      = request()->brand->countries_instance;
+        my $countries_instance      = $context->brand($args)->countries_instance;
         my $market_type             = $args->{market_type}      // '';
         my $sub_account_type        = $args->{sub_account_type} // '';
         my $residence               = $client->residence;

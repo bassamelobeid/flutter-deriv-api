@@ -67,7 +67,8 @@ rule 'transfers.limits' => {
     description => "Validates the minimum and maximum limits for transfers on the given platform",
     code        => sub {
         my ($self, $context, $args) = @_;
-        my $client          = $context->client($args);
+        my $client = $context->client($args);
+        # TODO: better to get the brand name from arguments
         my $brand_name      = request()->brand->name;
         my $platform        = $args->{platform} // '';
         my $action          = $args->{action}   // '';

@@ -1,0 +1,5 @@
+validate_payment:
+  description: A temporary action for payment validation. It will be removed after the enclosed rule group is integrated into all actions.
+  ruleset:
+    - type: group
+      rule_group: validate_payment

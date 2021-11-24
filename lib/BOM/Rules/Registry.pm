@@ -121,7 +121,6 @@ sub _register_rule_groups {
     %group_registry = ();
 
     for my $file (_get_config_files('rule_groups')) {
-        next unless $file =~ /\.yml$/;
 
         my $config;
         try {
@@ -166,7 +165,6 @@ sub register_actions {
     _register_rule_groups();
 
     for my $file (_get_config_files('actions')) {
-        next unless $file =~ /\.yml$/;
 
         my $config;
         try {
@@ -219,6 +217,8 @@ sub _get_config_files {
 
     my @files = readdir $dir;
     closedir $dir;
+
+    @files = sort(grep { /\.yml$/ } @files);
 
     return @files;
 }

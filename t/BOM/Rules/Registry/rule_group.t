@@ -116,11 +116,9 @@ subtest 'Ruleset' => sub {
         errors       => {'Something went wrong' => 1},
         has_failure  => 1,
         failed_rules => [{
-                rule    => 'failing',
-                failure => {
-                    rule       => 'failing',
-                    error_code => 'Something went wrong'
-                }}
+                rule       => 'failing',
+                error_code => 'Something went wrong'
+            }
         ],
         passed_rules => ['rule1']
         },

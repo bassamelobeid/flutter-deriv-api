@@ -6,6 +6,7 @@ use Test::Fatal;
 use Test::MockModule;
 
 use BOM::Rules::Engine;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my %financial_data = (
     "forex_trading_experience"             => "Over 3 years",
@@ -53,6 +54,16 @@ my $assessment_keys = {
     ],
 };
 
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+my $user = BOM::User->create(
+    email          => 'rule_financial_assessment@binary.com',
+    password       => 'abcd',
+    email_verified => 1,
+);
+$user->add_client($client);
+
 subtest 'rule financial_assessment.required_sections_are_complete' => sub {
     my $rule_name = 'financial_assessment.required_sections_are_complete';
 
@@ -90,6 +101,27 @@ subtest 'rule financial_assessment.required_sections_are_complete' => sub {
 
     lives_ok { $engine->apply_rules($rule_name, %financial_data, landing_company => $_) } "Financial assessment is complete with all data - $_"
         for @landing_companies;
+};
+
+my $rule_name = 'financial_asssessment.completed';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine(is_financial_assessment_complete => 0);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'FinancialAssessmentRequired',
+        rule       => $rule_name
+        },
+        'Error for in complete FA';
+
+    $mock_client->redefine(is_financial_assessment_complete => 1);
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if FA is compeleted';
+
+    $mock_client->unmock_all;
 };
 
 done_testing();

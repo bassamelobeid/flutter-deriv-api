@@ -31,7 +31,7 @@ rule 'profile.date_of_birth_complies_minimum_age' => {
         my $dob_date = eval { Date::Utility->new($args->{date_of_birth}) };
         $self->fail('InvalidDateOfBirth') unless $dob_date;
 
-        my $countries_instance = request()->brand->countries_instance;
+        my $countries_instance = $context->brand($args)->countries_instance;
         # Get the minimum age from the client's residence
         my $min_age = $countries_instance && $countries_instance->minimum_age_for_country($residence);
         $self->fail("InvalidResidence") unless $min_age;
@@ -59,8 +59,6 @@ rule 'profile.valid_profile_countries' => {
     description => "Place of birth, residence and citizenship must be valid countries.",
     code        => sub {
         my ($self, $context, $args) = @_;
-
-        my $brand = request()->brand;
 
         $self->fail("InvalidPlaceOfBirth")
             if $args->{place_of_birth} && !$context->get_country($args->{place_of_birth});

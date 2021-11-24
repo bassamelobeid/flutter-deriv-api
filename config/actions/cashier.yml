@@ -1,0 +1,5 @@
+cashier_validation:
+  description: A temporary action for deposit and withdrawal validation. It will be removed after the enclosed rule group is integrated into all upper-level actions.
+  ruleset:
+  - type: group
+    rule_group: cashier_validation

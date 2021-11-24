@@ -23,8 +23,9 @@ subtest 'append_failure' => sub {
     is $result->has_failure, 1, 'has_failure value changed to 1 correctly';
     is_deeply $result->failed_rules,
         [{
-            rule    => 'rule 1',
-            failure => {error_code => 'ErrorCode1'}}
+            rule       => 'rule 1',
+            error_code => 'ErrorCode1'
+        }
         ],
         'failed_rule is updated correctly';
     is_deeply $result->errors, {'ErrorCode1' => 1}, 'errors array has updated correctly';
@@ -34,15 +35,13 @@ subtest 'append_failure' => sub {
     is $result->has_failure, 1, 'has_failure is still 1 correctly';
     is_deeply $result->failed_rules,
         [{
-            rule    => 'rule 1',
-            failure => {error_code => 'ErrorCode1'}
+            rule       => 'rule 1',
+            error_code => 'ErrorCode1'
         },
         {
-            rule    => 'rule 2',
-            failure => {
-                error_code => 'ErrorCode2',
-                other      => 'value'
-            },
+            rule       => 'rule 2',
+            error_code => 'ErrorCode2',
+            other      => 'value'
         }
         ],
         'failed_rule is updated correctly';
@@ -89,16 +88,16 @@ subtest 'merge test 1' => sub {
     is $result_merged->has_failure, 1, 'has_failure is 1 correctly';
     is_deeply $result_merged->failed_rules,
         [{
-            rule    => 'rule 1',
-            failure => {error_code => 'ErrorCode1'}
+            rule       => 'rule 1',
+            error_code => 'ErrorCode1'
         },
         {
-            rule    => 'rule 2',
-            failure => {error_code => 'ErrorCode2'}
+            rule       => 'rule 2',
+            error_code => 'ErrorCode2'
         },
         {
-            rule    => 'rule 3',
-            failure => {error_code => 'ErrorCode3'}
+            rule       => 'rule 3',
+            error_code => 'ErrorCode3'
         },
         ],
         'failed_rule values are correct';
@@ -131,11 +130,9 @@ subtest 'merge test 2' => sub {
     is $result_merged->has_failure, 1, 'has_failure is 1 correctly';
     is_deeply $result_merged->failed_rules,
         [{
-            rule    => 'rule 1',
-            failure => {
-                error_code => 'ErrorCode1',
-                other      => 'value'
-            },
+            rule       => 'rule 1',
+            error_code => 'ErrorCode1',
+            other      => 'value'
         }
         ],
         'failed_rule values are correct';

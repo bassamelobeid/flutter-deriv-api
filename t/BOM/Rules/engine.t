@@ -16,13 +16,13 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 subtest 'Context initialization' => sub {
     my $rule_engine = BOM::Rules::Engine->new(stop_on_failure => 0);
-    is $rule_engine->context->stop_on_failure, 0, 'stop_on_failure is saved in the context';
+    is $rule_engine->context->stop_on_failure, 0, 'stop_on_failure = 0 is saved in the context';
 
     $rule_engine = BOM::Rules::Engine->new();
+    is $rule_engine->context->stop_on_failure, 1, 'Stop_on_failure is defaulted  to 1.';
 
     $rule_engine = BOM::Rules::Engine->new(stop_on_failure => 1);
-    is $rule_engine->context->stop_on_failure, 1,
-        'Context loginid, landing_company and residence are not saved in context by rule-engine constructor.';
+    is $rule_engine->context->stop_on_failure, 1, 'stop_on_failure = 1 is saved in the context';
 };
 
 subtest 'Verify an action' => sub {
@@ -45,7 +45,7 @@ subtest 'Verify an action' => sub {
     is scalar @action_verify_args, 3, 'Number of args is correct';
     my ($action, $context, $args) = @action_verify_args;
     is $action, $test_action, 'Correct action is sought';
-    is $context, $rule_engine_1->context, 'Action verification is trggered with correct context';
+    is_deeply $context, $rule_engine_1->context, 'Action verification is trggered with correct context';
     is_deeply $args, {}, 'Action is verified with empty args';
 
     undef @action_verify_args;
@@ -58,7 +58,7 @@ subtest 'Verify an action' => sub {
     is scalar @action_verify_args, 3, 'Number of args is correct';
     ($action, $context, $args) = @action_verify_args;
     is $action, $test_action, 'Correct action is sought';
-    is $context, $rule_engine_1->context, 'Action verification is trggered with correct context';
+    is_deeply $context, $rule_engine_1->context, 'Action verification is trggered with correct context';
     is_deeply $args,
         {
         a => 1,
@@ -118,7 +118,7 @@ subtest 'Applying rules' => sub {
     is scalar @rule_args, 3, 'Number of args is correct';
     my ($rule, $context, $args) = @rule_args;
     is $rule, $test_rule, 'Correct rule is found';
-    is $context, $rule_engine_1->context, 'Rule context is correct';
+    is_deeply $context, $rule_engine_1->context, 'Rule context is correct';
     is_deeply $args,
         {
         a => 1,
@@ -137,33 +137,36 @@ subtest 'Applying rules' => sub {
 
     is_deeply exception { $rule_engine_1->apply_rules('failing rule') }, {code => 'DummyError'}, 'Correct exception for the failing rule';
 
+    my $full_report = {
+        has_failure  => 1,
+        failed_rules => [{
+                rule => 'failing rule',
+                code => 'DummyError'
+            }
+        ],
+        errors       => {DummyError => 1},
+        passed_rules => []};
+    is_deeply $rule_engine_1->apply_rules('failing rule', rule_engine_context => {stop_on_failure => 0}),
+        $full_report, 'override_context can override stop-on-failure';
+
     my $rule_engine_2 = BOM::Rules::Engine->new(
         client          => $client,
         stop_on_failure => 0
     );
 
-    is_deeply $rule_engine_2->apply_rules('failing rule'),
-        {
-        has_failure  => 1,
-        failed_rules => [{
-                rule    => 'failing rule',
-                failure => {code => 'DummyError'}}
-        ],
-        errors       => {DummyError => 1},
-        passed_rules => []
-        },
-        'Correct result for a failing rule';
+    is_deeply $rule_engine_2->apply_rules('failing rule'), $full_report, 'Correct report for a failing rule';
 
     is_deeply $rule_engine_2->apply_rules(['failing rule', 'test rule 1', 'failing rule2']),
         {
         has_failure  => 1,
         failed_rules => [{
-                rule    => 'failing rule',
-                failure => {code => 'DummyError'}
+                rule => 'failing rule',
+                code => 'DummyError'
             },
             {
-                rule    => 'failing rule2',
-                failure => {code => 'DummyError2'}}
+                rule => 'failing rule2',
+                code => 'DummyError2'
+            }
         ],
         errors => {
             DummyError  => 1,
@@ -215,13 +218,11 @@ subtest 'Sample rule-gruop and action' => sub {
     is $result->has_failure, 1, 'One rule has failed';
     is_deeply $result->failed_rules,
         [{
-            rule    => 'profile.valid_profile_countries',
-            failure => {
-                rule       => 'profile.valid_profile_countries',
-                error_code => 'InvalidPlaceOfBirth',
-            }}];
+            rule       => 'profile.valid_profile_countries',
+            error_code => 'InvalidPlaceOfBirth',
+        }];
     is_deeply $result->passed_rules,
-        ['client.is_not_virtual', 'residence.not_restricted', 'landing_company.currency_is_allowed', 'currency.is_available_for_change', 'pass'],
+        ['client.is_not_virtual', 'residence.not_restricted', 'landing_company.currency_is_allowed', 'currency.is_available_for_change'],
         "Correct list of applied rules";
 };
 

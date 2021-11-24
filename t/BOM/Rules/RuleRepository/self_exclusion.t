@@ -27,7 +27,8 @@ subtest "rule $rule_name" => sub {
         {
         error_code => 'SelfExclusion',
         params     => $excluded_until,
-        rule       => $rule_name
+        rule       => $rule_name,
+        details    => {excluded_until => $excluded_until}
         },
         'Client is already self-excluded';
 

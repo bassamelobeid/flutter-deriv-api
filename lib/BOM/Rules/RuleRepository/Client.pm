@@ -106,4 +106,122 @@ rule 'client.forbidden_postcodes' => {
     },
 };
 
+rule 'client.not_desalbed' => {
+    description => 'It dies if client is disabled, passes otherwise.',
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('DisabledAccount') if $context->client($args)->status->disabled;
+
+        return 1;
+    }
+};
+
+rule 'client.documents_not_expired' => {
+    description => "It dies if client's POI documents are expired.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('DocumentsExpired') if $context->client($args)->documents->expired;
+
+        return 1;
+    }
+};
+
+rule 'client.fully_authenticated' => {
+    description => "Checks if client is fully authenticated (POI and POA).",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('NotAuthenticated') unless $context->client($args)->fully_authenticated;
+
+        return 1;
+    }
+};
+
+rule 'client.financial_risk_approval_status' => {
+    description => "Checks if client has approved financial risks.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('FinancialRiskNotApproved') unless $context->client($args)->status->financial_risk_approval;
+
+        return 1;
+    }
+};
+
+rule 'client.crs_tax_information_status' => {
+    description => "Checks if client has tax information status.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('NoTaxInformation') unless $context->client($args)->status->crs_tin_information;
+
+        return 1;
+    }
+};
+
+rule 'client.check_max_turnover_limit' => {
+    description => "Checks if max turnover limits (and ukgc funds protection) are not missing if they are required.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $client = $context->client($args);
+        my $config = $context->brand($args)->countries_instance->countries_list->{$client->residence};
+
+        return 1 unless ($config->{need_set_max_turnover_limit} || $client->landing_company->check_max_turnover_limit_is_set);
+
+        $self->fail('NoUkgcFundsProtection') if $config->{ukgc_funds_protection} && !$client->status->ukgc_funds_protection;
+        $self->fail('NoMaxTuroverLimit')     if $client->status->max_turnover_limit_not_set;
+
+        return 1;
+    }
+};
+
+rule 'client.no_unwelcome_status' => {
+    description => "Fails if client is marked by unwelcome status.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('UnwelcomeStatus') if $context->client($args)->status->unwelcome;
+
+        return 1;
+    }
+};
+
+rule 'client.no_withdrawal_or_trading_lock_status' => {
+    description => "Fails if client is marked by no_withdrawal_or_trading status.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('NoWithdrawalOrTradingStatus') if $context->client($args)->status->no_withdrawal_or_trading;
+
+        return 1;
+    }
+};
+
+rule 'client.no_withdrawal_locked_status' => {
+    description => "Fails if client is marked by withdrawal lock status.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('WithdrawalLockedStatus') if $context->client($args)->status->withdrawal_locked;
+
+        return 1;
+    }
+};
+
+rule 'client.high_risk_authenticated' => {
+    description => "Fails if client is high risk, without authentication.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        $self->fail('HighRiskNotAuthenticated')
+            if $client->risk_level eq 'high' and not $client->fully_authenticated;
+
+        return 1;
+    }
+};
+
 1;

@@ -26,7 +26,10 @@ rule 'self_exclusion.not_self_excluded' => {
         die 'Client is missing' unless $client;
 
         my $excluded_until = $client->get_self_exclusion_until_date;
-        $self->fail('SelfExclusion', params => $excluded_until) if $excluded_until;
+        $self->fail(
+            'SelfExclusion',
+            params  => $excluded_until,
+            details => {excluded_until => $excluded_until}) if $excluded_until;
 
         return 1;
     },

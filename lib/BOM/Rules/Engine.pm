@@ -52,7 +52,10 @@ use BOM::Rules::RuleRepository::FinancialAssessment;
 use BOM::Rules::RuleRepository::SelfExclusion;
 use BOM::Rules::RuleRepository::IdentityVerification;
 use BOM::Rules::RuleRepository::Paymentagent;
+use BOM::Rules::RuleRepository::Cashier;
+use BOM::Rules::RuleRepository::Payment;
 use BOM::Rules::RuleRepository::P2P;
+
 use BOM::Rules::Registry qw(get_action);
 use BOM::Rules::Context;
 
@@ -70,7 +73,7 @@ around BUILDARGS => sub {
 
     my $client      = $constructor_args{client} // [];
     my $client_list = ref($client) eq 'ARRAY' ? $client : [$client];
-    die 'Invalid client object' unless all { ref($_) eq 'BOM::User::Client' } @$client_list;
+    die 'Invalid client object' unless all { $_->isa('BOM::User::Client') } @$client_list;
 
     return $class->$orig(context => BOM::Rules::Context->new(%constructor_args, client_list => $client_list));
 };
@@ -91,7 +94,13 @@ Verifies an B<action> by checking the configured B<rules> against current B<cont
 
 =item C<action_name> the name of action to be verified
 
-=item C<args> arguments of the action as a hash
+=item C<args> In addition to action arguments, it accepts the following special key:
+
+=over 4
+
+=item C<rule_engine_contex> With this special argument you can override rule engine's context attributes, like I<stop_on_failure>.
+
+=back
 
 =back
 
@@ -107,7 +116,10 @@ sub verify_action {
     my $action = BOM::Rules::Registry::get_action($action_name);
     die "Unknown action '$action_name' cannot be verified" unless $action;
 
-    return $action->verify($self->context, \%args);
+    my $rule_engine_context = delete($args{rule_engine_context}) // {};
+    my $context             = $self->context->clone(%$rule_engine_context);
+
+    return $action->verify($context, \%args);
 }
 
 =head2 apply_rules
@@ -118,7 +130,13 @@ Applies any number of B<rules> independently from any action. It takes following
 
 =item C<rules> an array-ref containing the list of rules to be applied
 
-=item C<args> action arguments as a hash
+=item C<args> In addition to rule arguments, it accepts the following special key:
+
+=over 4
+
+=item C<rule_engine_contex> With this special argument you can override rule engine's context attributes, like I<stop_on_failure>.
+
+=back
 
 =back
 
@@ -131,13 +149,16 @@ sub apply_rules {
 
     $rules = [$rules] unless ref $rules;
 
+    my $rule_engine_context = delete($args{rule_engine_context}) // {};
+    my $context             = $self->context->clone(%$rule_engine_context);
+
     my $final_results = BOM::Rules::Result->new();
     for my $rule_name (@$rules) {
         my $rule = BOM::Rules::Registry::get_rule($rule_name);
 
         die "Unknown rule '$rule_name' cannot be applied" unless $rule;
 
-        $final_results->merge($rule->apply($self->context, \%args));
+        $final_results->merge($rule->apply($context, \%args));
     }
 
     return $final_results;
