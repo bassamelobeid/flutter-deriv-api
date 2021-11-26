@@ -218,7 +218,7 @@ sub validate_as_payment {
             action_type           => $action,
             die_with_error_object => 1,
             rule_engine           => BOM::Rules::Engine->new(client => $client),
-        );
+        ) unless $c->type eq 'deposit';
     } catch ($err) {
         return $c->throw(403, _genrate_payment_error_message($err));
     }

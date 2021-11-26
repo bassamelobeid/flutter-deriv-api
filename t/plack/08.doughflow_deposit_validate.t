@@ -34,4 +34,16 @@ my $resp = JSON::MaybeXS->new->decode(Encode::decode_utf8($r->content));
 is $resp->{allowed},   0,                                                                                 'failed status';
 like $resp->{message}, qr[(Attribute \(amount\) does not pass the type constraint|Invalid money amount)], 'Correct error message on response body';
 
+subtest 'cashier validation' => sub {
+    BOM::User::Client->new({loginid => $loginid})->status->set('cashier_locked', 'system', 'testing');
+
+    my $req = deposit_validate(
+        loginid => $loginid,
+    );
+
+    my $resp = JSON::MaybeXS->new->decode(Encode::decode_utf8($req->content));
+    is $resp->{allowed}, 0,                         'validation fails when cashier_locked';
+    is $resp->{message}, 'Your cashier is locked.', 'Correct error message in response body';
+};
+
 done_testing();

@@ -10,6 +10,7 @@ use Test::MockModule;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::ClientDB;
 use BOM::User;
+use BOM::User::Client;
 
 use APIHelper qw/ balance deposit request decode_json /;
 
@@ -177,6 +178,17 @@ subtest 'payment params' => sub {
         like $res->{remark}, qr/$k=$params{$k}/, "$k in remark";
         is $res->{$k}, $params{$k}, "$k saved in doughflow table";
     }
+};
+
+subtest 'skip deposit validation' => sub {
+
+    BOM::User::Client->new({loginid => $loginid})->status->set('cashier_locked', 'system', 'testing');
+
+    my $req = deposit(
+        loginid => $loginid,
+    );
+
+    is $req->code, 201, 'Successful deposit even when cashier_locked';
 };
 
 subtest 'PA withdrawal is disabled on deposit' => sub {

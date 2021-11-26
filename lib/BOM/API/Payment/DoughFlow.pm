@@ -229,9 +229,7 @@ sub record_failed_withdrawal_POST {
 
 =head2 shared_payment_method_POST
 
-Implements the RecordFailedWithdrawal Doughflow request.
-DoughFlow has provision to notify our platform upon the failure
-of customer withdrawal.
+Implements the shared_payment_method Doughflow request.
 
 Returns a hashref with the following keys
 
