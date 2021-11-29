@@ -122,6 +122,10 @@ if (!$is_client_only_cr) {
     }
 } else {
     $dcc_code = "N/A";
+    unless ($new_email) {
+        print "New email address is not provided";
+        code_exit_BO();
+    }
 }
 
 if ($email ne $new_email) {
