@@ -24,6 +24,7 @@ use BOM::MT5::User::Async;
 
 use Log::Any qw($log);
 use Log::Any::Adapter ('DERIV', log_level => 'info');
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use Metrics::Any::Adapter qw(DogStatsd);
 use Metrics::Any qw($metrics), strict => 0;
@@ -37,6 +38,46 @@ $loop->add(
     ));
 
 my $connection_lost = 1;
+
+sub populate_mt5_group_cache {
+
+    my ($cache_key, $loginid, $group, $rights) = @_;
+
+    # We keep users with group for
+    # an hour, else (users that are
+    # either archived or deleted) we
+    # cache for 5 minutes
+    my $ttl = $group ? 3600 : 300;
+    $group  //= 'Deleted';
+    $rights //= 0x0004;
+
+    my $mt5_details = {
+        'group'  => $group,
+        'rights' => $rights,
+    };
+
+    $redis->hmset($cache_key, %$mt5_details)->then(
+        sub {
+            $redis->expire($cache_key, $ttl);
+        }
+    )->on_done(
+        sub {
+            $log->debugf('Cached ID [%s] group [%s]', $loginid, $group);
+            $metrics->inc_counter('mt5.group_populator.item_processed');
+        });
+}
+
+sub log_failed_get_user {
+    my ($loginid, $response) = @_;
+
+    my $resp_code = ($response && $response->{code}) ? $response->{code} : 'NO_RESPONSE_CODE';
+
+    # if response is NotFound, it's most probably Archived or Deleted account in MT5 , log level should be debugf otherwise errorf
+    my $log_level = $resp_code eq 'NotFound' ? 'debugf' : 'errorf';
+    $log->$log_level('Failure when retrieving group for [%s] - %s', $loginid, $response);
+    $metrics->inc_counter('mt5.group_populator.item_failed');
+    Future->done({});
+}
 
 (
     try_repeat {
@@ -72,10 +113,12 @@ my $connection_lost = 1;
                 $log->debugf('Processing pending ID [%s]', $loginid);
 
                 my $cache_key = 'MT5_USER_GROUP::' . $loginid;
+
                 $redis->hgetall($cache_key)->then(
                     sub {
                         my ($data) = @_;
                         my $group = $data->[0];
+
                         if ($group) {
                             $log->debugf('Details found for ID [%s] - %s', $loginid, $group);
                             $metrics->inc_counter('mt5.group_populator.item_cached');
@@ -90,12 +133,7 @@ my $connection_lost = 1;
                         return BOM::MT5::User::Async::get_user($loginid)->else(
                             sub {
                                 my ($response) = @_;
-                                my $resp_code = ($response && $response->{code}) ? $response->{code} : '';
-                                # if response is NotFound its most probably Archived account in MT5 , log level should be debugf otherwise errorf
-                                my $log_level = $resp_code eq 'NotFound' ? 'debugf' : 'errorf';
-                                $log->$log_level('Failure when retrieving group for [%s] - %s', $loginid, [@_]);
-                                $metrics->inc_counter('mt5.group_populator.item_failed');
-                                Future->done({});
+                                log_failed_get_user($loginid, $response);
                             }
                         )->then(
                             sub {
@@ -103,29 +141,25 @@ my $connection_lost = 1;
                                 my $group  = $data->{'group'};
                                 my $rights = $data->{'rights'};
 
-                                # Keep things around for an hour,
-                                # long enough to be useful but
-                                # try not to keep bad data too long...
-                                # but 5 minutes is good enough for
-                                # a negative cache.
-                                my $ttl = $group ? 3600 : 300;
-                                $group  //= 'Archived';
-                                $rights //= 0x0004;
+                                if (defined($group)) {
+                                    populate_mt5_group_cache($cache_key, $loginid, $group, $rights);
+                                } else {
+                                    return BOM::MT5::User::Async::get_user_archive($loginid)->else(
+                                        sub {
+                                            my ($response) = @_;
+                                            log_failed_get_user($loginid, $response);
+                                        }
+                                    )->then(
+                                        sub {
+                                            my ($response) = @_;
+                                            my $archived_group = $response->{'group'};
 
-                                $metrics->inc_counter('mt5.group_populator.item_processed');
-                                my $mt5_details = {
-                                    'group'  => $group,
-                                    'rights' => $rights,
-                                };
+                                            $group = 'Archived' if defined($archived_group);
 
-                                $redis->hmset($cache_key, %$mt5_details)->then(
-                                    sub {
-                                        $redis->expire($cache_key, $ttl);
-                                    }
-                                )->on_done(
-                                    sub {
-                                        $log->debugf('Cached ID [%s] group [%s]', $loginid, $group);
-                                    });
+                                            populate_mt5_group_cache($cache_key, $loginid, $group, $rights);
+
+                                        });
+                                }
                             });
                     });
             }
