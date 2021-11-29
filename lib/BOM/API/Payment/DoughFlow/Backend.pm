@@ -335,62 +335,70 @@ sub write_transaction_line {
         payment_method => $payment_method,
     };
 
-    if ($c->type eq 'deposit') {
-        # should be executed before saving the payment in the database
-        my $is_first_deposit = $client->is_first_deposit_pending;
+    try {
+        if ($c->type eq 'deposit') {
+            # should be executed before saving the payment in the database
+            my $is_first_deposit = $client->is_first_deposit_pending;
 
-        $trx = $client->payment_doughflow(%payment_args);
+            $trx = $client->payment_doughflow(%payment_args);
 
-        BOM::Platform::Event::Emitter::emit(
-            'payment_deposit',
-            {
-                $event_args->%*,
-                transaction_id     => $trx->{id},
-                is_first_deposit   => $is_first_deposit,
-                account_identifier => $account_identifier,
-                payment_processor  => $payment_processor,    # only deposit has payment_processor
-                payment_type       => $payment_type,
-            }) if ($trx);
+            BOM::Platform::Event::Emitter::emit(
+                'payment_deposit',
+                {
+                    $event_args->%*,
+                    transaction_id     => $trx->{id},
+                    is_first_deposit   => $is_first_deposit,
+                    account_identifier => $account_identifier,
+                    payment_processor  => $payment_processor,    # only deposit has payment_processor
+                    payment_type       => $payment_type,
+                }) if ($trx);
 
-        # Social responsibility checks for MLT/MX clients
-        $client->increment_social_responsibility_values({net_deposits => $amount})
-            if ($client->landing_company->social_responsibility_check_required);
+            # Social responsibility checks for MLT/MX clients
+            $client->increment_social_responsibility_values({net_deposits => $amount})
+                if ($client->landing_company->social_responsibility_check_required);
 
-        _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
-    } elsif ($c->type =~ /^(payout_created|payout_inprogress)$/) {
-        # Don't allow balances to ever go negative! Include any fee in this test.
-        my $balance = $client->default_account->balance;
-        if ($amount + $fee > $balance) {
-            my $plusfee = $fee ? " plus fee $fee" : '';
-            return $c->status_bad_request(
-                "Requested withdrawal amount $amount$plusfee $currency_code exceeds client balance $balance $currency_code");
+            _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
+        } elsif ($c->type =~ /^(payout_created|payout_inprogress)$/) {
+            # Don't allow balances to ever go negative! Include any fee in this test.
+            my $balance = $client->default_account->balance;
+            if ($amount + $fee > $balance) {
+                my $plusfee = $fee ? " plus fee $fee" : '';
+                return $c->status_bad_request(
+                    "Requested withdrawal amount $amount$plusfee $currency_code exceeds client balance $balance $currency_code");
+            }
+
+            $payment_args{amount} = -$amount;
+            $trx = $client->payment_doughflow(%payment_args);
+
+            BOM::Platform::Event::Emitter::emit('payment_withdrawal', {$event_args->%*, transaction_id => $trx->{id}}) if ($trx);
+
+            # Social responsibility checks for MLT/MX clients
+            $client->increment_social_responsibility_values({
+                    net_deposits => -$amount,
+                }) if ($client->landing_company->social_responsibility_check_required);
+
+            # Payout request with freezing funds need to be counted
+            if ($client->is_payout_freezing_funds_enabled) {
+                $client->incr_df_payouts_count($trace_id);
+            }
+            _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
+
+        } elsif ($c->type =~ /^(payout_cancelled|payout_rejected)$/) {
+            if ($bonus) {
+                return $c->status_bad_request('Bonuses are not allowed for withdrawal reversals');
+            }
+            $payment_args{payment_fee} = -$fee;
+            $trx = $client->payment_doughflow(%payment_args);
+
+            # Payout request with freezing funds is done
+            $client->decr_df_payouts_count($trace_id);
+
+            BOM::Platform::Event::Emitter::emit('payment_withdrawal_reversal', {$event_args->%*, transaction_id => $trx->{id}}) if ($trx);
         }
-
-        $payment_args{amount} = -$amount;
-        $trx = $client->payment_doughflow(%payment_args);
-        BOM::Platform::Event::Emitter::emit('payment_withdrawal', {$event_args->%*, transaction_id => $trx->{id}}) if ($trx);
-
-        # Social responsibility checks for MLT/MX clients
-        $client->increment_social_responsibility_values({
-                net_deposits => -$amount,
-            }) if ($client->landing_company->social_responsibility_check_required);
-
-        # Payout request with freezing funds need to be counted
-        if ($client->is_payout_freezing_funds_enabled) {
-            $client->incr_df_payouts_count($trace_id);
-        }
-        _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
-    } elsif ($c->type =~ /^(payout_cancelled|payout_rejected)$/) {
-        if ($bonus) {
-            return $c->status_bad_request('Bonuses are not allowed for withdrawal reversals');
-        }
-        $payment_args{payment_fee} = -$fee;
-        $trx = $client->payment_doughflow(%payment_args);
-
-        # Payout request with freezing funds is done
-        $client->decr_df_payouts_count($trace_id);
-
-        BOM::Platform::Event::Emitter::emit('payment_withdrawal_reversal', {$event_args->%*, transaction_id => $trx->{id}}) if ($trx);
+    } catch ($e) {
+        # BI106 is duplicate trace_id + transaction_type
+        return $c->status_bad_request($e->[1]) if ref $e eq 'ARRAY' and $e->[0] eq 'BI106';
+        die $e;
     }
 
     if ($fee) {

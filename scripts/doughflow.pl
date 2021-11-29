@@ -57,18 +57,15 @@ GetOptions(
     'f|fee=f'                 => \my $fee,
     'pp|payment_processor=s'  => \my $payment_processor,
     'pm|payment_method=s'     => \my $payment_method,
-    'p|shared_loginid=s'      => \my $shared_loginid,      # Only needed for `shared_payment_method`
+    'p|shared_loginid=s'      => \my $shared_loginid,       # Only needed for `shared_payment_method`
     'pt|payment_type=s'       => \my $payment_type,
-    'id|account_identifier=s' => \my $account_identifier
+    'id|account_identifier=s' => \my $account_identifier,
+    'tx=i'                    => \my $transaction_id,
 );
 die $usage unless ($action && $endpoint_url && $secret_key && $client_loginid);
 
 $log_level ||= 'info';
-Log::Any::Adapter->import(
-    qw(DERIV),
-    stdout    => 'text',
-    log_level => $log_level
-);
+Log::Any::Adapter->import(qw(DERIV), log_level => $log_level);
 
 die 'ERROR: action must be one of ' . (join ', ', keys %$actions) . ". $usage" unless $action and exists($actions->{$action});
 die "ERROR: endpoint url must be specified. $usage"                            unless $endpoint_url;
@@ -95,7 +92,8 @@ my $params = {
     trace_id           => $trace_id,
     payment_type       => $payment_type,
     account_identifier => $account_identifier,
-    defined $fee ? (fee => $fee) : (),
+    defined $fee            ? (fee            => $fee)            : (),
+    defined $transaction_id ? (transaction_id => $transaction_id) : (),
 };
 
 # DF doesn't know both the payment processor and the payment method for all operations
