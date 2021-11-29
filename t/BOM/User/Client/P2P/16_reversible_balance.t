@@ -39,7 +39,6 @@ subtest 'sell ads' => sub {
         remark            => 'x',
         amount            => 100,
         payment_processor => $processor,
-        trace_id          => 1
     );
 
     BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p(25);
@@ -75,7 +74,6 @@ subtest 'sell ads' => sub {
         remark            => 'x',
         amount            => 100,
         payment_processor => 'goldbars',
-        trace_id          => 1
     );
     cmp_ok($advertiser->p2p_advertiser_info->{balance_available}, '==', 125, 'non reversible deposit completely included');
 };
@@ -101,7 +99,6 @@ subtest 'buy ads' => sub {
         remark            => 'x',
         amount            => 100,
         payment_processor => $processor,
-        trace_id          => 1
     );
     cmp_ok($client->p2p_advertiser_info->{balance_available}, '==', 20, 'client balance');
 
