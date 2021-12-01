@@ -1314,3 +1314,12 @@ marketing:
             isa: Num
             default: 30
             global: 1
+payment_agents:
+  description: "Payment Agents program settings"
+  isa: section
+  contains:
+    initial_deposit_per_country:
+      description: 'Initial deposit requirement per country'
+      isa: json_string
+      default: '{}'
+      global: 1

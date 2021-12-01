@@ -77,12 +77,28 @@ use BOM::Config::Redis;
 
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
+use BOM::Config::AuditedChronicleWriter;
 
 sub get_chronicle_writer {
     return Data::Chronicle::Writer->new(
         publish_on_set => 1,
         cache_writer   => BOM::Config::Redis::redis_replicated_write(),
         dbic           => dbic(),
+    );
+}
+
+# Same as get_chronicle_writer but this one will add a "staff" field to the json stored in chronicle
+
+sub get_audited_chronicle_writer {
+    my ($staff) = @_;
+
+    die 'You must specify the staff name' unless $staff;
+
+    return BOM::Config::AuditedChronicleWriter->new(
+        publish_on_set => 1,
+        cache_writer   => BOM::Config::Redis::redis_replicated_write(),
+        dbic           => dbic(),
+        staff          => $staff
     );
 }
 
