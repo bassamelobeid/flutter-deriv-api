@@ -73,7 +73,7 @@ Bar($title);
 
 my $current_date = Date::Utility->new->date_yyyymmdd;
 $current_date =~ s/-//g;
-my $filename = 'ip-search-'.$current_date;
+my $filename = 'ip-search-' . $current_date;
 BOM::Backoffice::Request::template()->process(
     'backoffice/ip_search.html.tt',
     {

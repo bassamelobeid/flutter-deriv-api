@@ -180,6 +180,20 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
     </div>~;
 }
 
+# PAYMENT AGENTS
+if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
+    print qq~
+    <div class="card">
+        <div class="card__label toggle">
+            Payment Agents
+        </div>
+        <div class="card__content">
+            <h3>Dynamic settings</h3>       
+            <a href="payment_agents_dynamic_settings.cgi" class="btn btn--primary">Go to Payment Agents dynamic settings</a>
+        </div>
+    </div>~;
+}
+
 # P2P
 print qq~
     <div class="card">

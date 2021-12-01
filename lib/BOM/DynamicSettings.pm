@@ -23,6 +23,7 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
 use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Auth0;
 
 # Limiting minimum amount transferable to 1 USD so it would not hit lowerbound
 #The background of this (or lower bound) is to cater for the scenario below:
@@ -32,6 +33,17 @@ use BOM::Backoffice::Request qw(request);
 # left is 0.01 USD. And when converted, it is 0.008 EUR, which is lower
 # than the minimum unit of EUR, and this will cause an error.
 use constant MINIMUM_ALLOWABLE_USD_AMOUNT => 1;
+
+use constant AUTHORISATIONS => {
+    shutdown_suspend => ['IT'],
+    quant            => ['Quants'],
+    it               => ['IT'],
+    others           => ['IT'],
+    payments         => ['IT'],
+    crypto           => ['IT'],
+    compliance       => ['Compliance'],
+    payment_agents   => ['IT'],
+};
 
 sub textify_obj {
     my $type  = shift;
@@ -49,7 +61,7 @@ sub save_settings {
     if ($submitted) {
         my $app_config = BOM::Config::Runtime->instance->app_config;
         # pass in the writer before setting any config
-        $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+        $app_config->chronicle_writer(BOM::Config::Chronicle::get_audited_chronicle_writer(BOM::Backoffice::Auth0::get_staffname()));
 
         my $setting_revision   = $app_config->global_revision();
         my $submitted_revision = $settings->{'revision'};
@@ -388,6 +400,7 @@ sub get_settings_by_group {
                 payments.p2p.disputed_timeout
                 payments.p2p.payment_method_countries
                 payments.p2p.archive_ads_days
+                payment_agents.initial_deposit_per_country
                 )]};
 
     my $settings;
