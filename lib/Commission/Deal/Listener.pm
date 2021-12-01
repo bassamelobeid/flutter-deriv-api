@@ -141,13 +141,13 @@ async sub start {
     my $group = $self->{redis_consumer_group};
 
     try { await $redis->xgroup('CREATE', $self->{redis_stream}, $group, '$', 'MKSTREAM') } catch ($e) {
-        $log->infof("Consumer group %s already exists", $group);
+        $log->debugf("Consumer group %s already exists", $group);
     };
 
     # this stream is from RPC
     my $update_stream = $self->{provider} . '::real_signup';
     try { await $redis->xgroup('CREATE', $update_stream, $group, '$', 'MKSTREAM') } catch ($e) {
-        $log->infof("Consumer group %s already exists", $group);
+        $log->debugf("Consumer group %s already exists", $group);
     };
 
     $self->_check_pending_data_from_stream()->retain->on_fail(
@@ -166,7 +166,7 @@ async sub start {
                 my ($stream_name, $stream_data) = $stream->[0]->@*;
                 if ($stream_name eq $self->{redis_stream}) {
                     my $processed = await $self->_process_deals($stream_data);
-                    $log->infof("%s number of deals recorded.", $processed);
+                    $log->debugf("%s number of deals recorded.", $processed);
                 } elsif ($stream_name eq $update_stream) {
                     await $self->_update_client_map($stream_data, $update_stream);
                 }
@@ -218,7 +218,7 @@ async sub _update_client_map {
         my $id      = $data->[0];
         my %payload = $data->[1]->@*;
         $self->{_client_map}{$payload{account_id}} = 1;
-        $log->infof("%s added to client map", $payload{account_id});
+        $log->debugf("%s added to client map", $payload{account_id});
         await $self->{redis}->xack($update_stream, $self->{redis_consumer_group}, $id);
     }
 }
@@ -238,10 +238,10 @@ async sub _process_deals {
         my %payload = $data->[1]->@*;
         $log->debugf("processing stream id %s with payload %s", $id, \%payload);
         my $dx_deal = Commission::Deal::DXTrade->new(%payload);
-        next unless $dx_deal->is_valid;
+        next if not $dx_deal->is_valid or $dx_deal->is_test_account;
         my $deal_id = await $self->_insert_into_db($id, $dx_deal);
         if ($deal_id) {
-            $log->infof("deal [%s] for stream id %s saved", $deal_id, $id);
+            $log->debugf("deal [%s] for stream id %s saved", $deal_id, $id);
             await $self->{redis}->xack($self->{redis_stream}, $self->{redis_consumer_group}, $id);
             $number_of_deals_processed++;
         }
@@ -297,7 +297,7 @@ async sub _check_pending_data_from_stream {
         my $pending = await $self->{redis}
             ->execute_command('XAUTOCLAIM', $self->{redis_stream}, $self->{redis_consumer_group}, 'IDLE', 300000, '0-0', 'COUNT', 100);
         my $processed_pending = await $self->_process_deals($pending->[1]);
-        $log->infof("%s pending messages processed", $processed_pending);
+        $log->debugf("%s pending messages processed", $processed_pending);
 
         await $self->_remove_pending();
 

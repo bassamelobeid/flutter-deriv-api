@@ -114,4 +114,15 @@ Is deal filled and valid to be processed
 =cut
 
 sub is_valid { shift->{status} eq 'COMPLETED' ? 1 : 0 }
+
+=head2 is_test_account
+
+Is this deal performed with a test account
+
+=cut
+
+sub is_test_account {
+    return shift->loginid !~ /^DXR\d+$/ ? 1 : 0;
+}
+
 1;
