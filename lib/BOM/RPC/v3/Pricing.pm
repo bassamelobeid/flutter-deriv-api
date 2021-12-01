@@ -15,6 +15,7 @@ my $json = JSON::MaybeXS->new->allow_blessed;
 
 rpc send_ask => sub {
     my ($params) = @_;
+    $params->{landing_company} = $params->{landing_company} ? $params->{landing_company} : "virtual";
 
     # TODO: clean up send_ask so it does not change it's arguments.
     my $args = dclone $params;
