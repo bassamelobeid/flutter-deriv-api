@@ -103,12 +103,14 @@ sub _get_ask {
     my ($args_copy, $app_markup_percentage) = @_;
     my $streaming_params = delete $args_copy->{streaming_params};
     my ($contract, $response, $contract_parameters);
+    my $country_code;
 
     my $tv = [Time::HiRes::gettimeofday];
     $args_copy->{app_markup_percentage} = $app_markup_percentage // 0;
 
     try {
-        $contract = produce_contract($args_copy);
+        $contract     = produce_contract($args_copy);
+        $country_code = $args_copy->{country_code}
     } catch ($e) {
         my $message_to_client = _get_error_message($e, $args_copy);
         my $details           = _get_error_details($e);
@@ -125,7 +127,7 @@ sub _get_ask {
 
     try {
         $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
-        my $country_code;
+
         if ($args_copy->{token_details} and exists $args_copy->{token_details}->{loginid}) {
             my $client = BOM::User::Client->new({
                 loginid      => $args_copy->{token_details}->{loginid},
