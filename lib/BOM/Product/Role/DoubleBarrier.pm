@@ -181,7 +181,7 @@ sub _validate_barrier {
         }
     }
 
-    if ($self->category_code eq 'callputspread' and $current_spot) {
+    if (not $self->for_sale and $self->category_code eq 'callputspread' and $current_spot) {
         my $low_barrier_diff  = $self->underlying->pipsized_value(abs($low_barrier->as_absolute - $current_spot));
         my $high_barrier_diff = $self->underlying->pipsized_value(abs($high_barrier->as_absolute - $current_spot));
 

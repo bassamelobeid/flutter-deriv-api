@@ -158,6 +158,151 @@ subtest 'suspend early sellback' => sub {
     ok !$c->is_valid_to_sell, 'invalid to sell';
     is $c->primary_validation_error->message, 'early sellback disabled for underlying', 'message - early sellback disabled for underlying';
     is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+    BOM::Config::Runtime->instance->app_config->quants->contract_types->suspend_early_sellback($orig);
+};
+
+subtest 'callputspreads suspend early sellback' => sub {
+
+    my $original_disable_sellback      = BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback;
+    my $original_min_duration          = BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration;
+    my $original_suspend_markets       = BOM::Config::Runtime->instance->app_config->quants->markets->suspend_early_sellback;
+    my $original_suspend_underlyings   = BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_early_sellback;
+    my $original_suspend_contract_type = BOM::Config::Runtime->instance->app_config->quants->contract_types->suspend_early_sellback;
+
+    BOM::Config::Runtime->instance->app_config->quants->markets->suspend_early_sellback([]);
+    BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_early_sellback([]);
+    BOM::Config::Runtime->instance->app_config->quants->contract_types->suspend_early_sellback([]);
+    my $args = {
+        bet_type     => 'CALLSPREAD',
+        underlying   => 'R_10',
+        date_start   => $now,
+        date_pricing => $now->epoch + 300,
+        high_barrier => 'S10P',
+        low_barrier  => 'S-10P',
+        duration     => '30m',
+        currency     => 'USD',
+        payout       => 100,
+    };
+
+    subtest 'Volatility Indices' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $now->epoch + 1,   $args->{underlying}],
+            [100, $now->epoch + 300, $args->{underlying}],
+            [100, $now->epoch + 400, $args->{underlying}]);
+
+        subtest 'CALLSPREAD' => sub {
+            my $c = produce_contract($args);
+            ok !$c->is_expired, 'contract is not expired';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(0);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(900);    #15 minutes
+            $c = produce_contract($args);
+            ok $c->is_valid_to_sell, 'is valid to sell';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(1);
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'early sellback disabled for call/put Spreads';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(0);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(1500);    # 25 minutes
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'remaing contract duration should be more than 1500 seconds for sellback';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(1800);    # 30 minutes
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'remaing contract duration should be more than 1800 seconds for sellback';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+        };
+
+        subtest 'PUTSPREAD' => sub {
+            $args->{bet_type} = 'PUTSPREAD';
+            $c = produce_contract($args);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(0);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(900);     # 15 minutes
+            ok $c->is_valid_to_sell, 'is valid to sell';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(1);
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'early sellback disabled for call/put Spreads';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(0);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(1500);    # 25 minutes
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'remaing contract duration should be more than 1500 seconds for sellback';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+        };
+    };
+    subtest 'Forex' => sub {
+        $args->{underlying} = 'frxAUDUSD';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $now->epoch + 1,   $args->{underlying}],
+            [100, $now->epoch + 300, $args->{underlying}],
+            [100, $now->epoch + 400, $args->{underlying}]);
+
+        subtest 'CALLSPREAD' => sub {
+            my $c = produce_contract($args);
+            ok !$c->is_expired, 'contract is not expired';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(0);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(900);    #15 minutes
+            $c = produce_contract($args);
+            ok $c->is_valid_to_sell, 'is valid to sell';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(1);
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'early sellback disabled for call/put Spreads';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(0);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(1500);    # 25 minutes
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'remaing contract duration should be more than 1500 seconds for sellback';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(1800);    # 30 minutes
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'remaing contract duration should be more than 1800 seconds for sellback';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+        };
+        subtest 'PUTSPREAD' => sub {
+            $args->{bet_type} = 'PUTSPREAD';
+            $c = produce_contract($args);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(0);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(900);     # 15 minutes
+            ok $c->is_valid_to_sell, 'is valid to sell';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(1);
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'early sellback disabled for call/put Spreads';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback(0);
+            BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration(1500);    # 25 minutes
+            $c = produce_contract($args);
+            ok !$c->is_valid_to_sell, 'is invalid to sell';
+            is $c->primary_validation_error->message, 'remaing contract duration should be more than 1500 seconds for sellback';
+            is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+        };
+    };
+
+    BOM::Config::Runtime->instance->app_config->quants->callputspreads->disable_sellback($original_disable_sellback);
+    BOM::Config::Runtime->instance->app_config->quants->callputspreads->minimum_allowed_sellback_duration($original_min_duration);
+    BOM::Config::Runtime->instance->app_config->quants->markets->suspend_early_sellback($original_suspend_markets);
+    BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_early_sellback($original_suspend_underlyings);
+    BOM::Config::Runtime->instance->app_config->quants->contract_types->suspend_early_sellback($original_suspend_contract_type);
 };
 
 done_testing();

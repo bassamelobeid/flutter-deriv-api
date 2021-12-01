@@ -233,6 +233,22 @@ sub _validate_offerings {
             }
         }
 
+        if ($self->code =~ /^(CALL|PUT)SPREAD$/ and $quants_config->callputspreads->disable_sellback) {
+            return {
+                message           => 'early sellback disabled for call/put Spreads',
+                message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
+            };
+        }
+
+        my $min_duration = $quants_config->callputspreads->minimum_allowed_sellback_duration;
+
+        if ($self->code =~ /^(CALL|PUT)SPREAD$/ and $min_duration >= $self->remaining_time->seconds) {
+            return {
+                message           => "remaing contract duration should be more than $min_duration seconds for sellback",
+                message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
+            };
+        }
+
         if (my @suspend_markets = @{$quants_config->markets->suspend_early_sellback // []}) {
             if (any { $_ eq $self->underlying->market->name } @suspend_markets) {
                 return {
