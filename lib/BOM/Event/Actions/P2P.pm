@@ -37,7 +37,8 @@ use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use BOM::Event::Utility qw(exception_logged);
-use List::Util qw(first);
+use List::Util qw(any first);
+use Future::AsyncAwait;
 use Template::AutoFilter;
 use Encode;
 
@@ -145,7 +146,7 @@ It returns a Future object.
 
 =cut
 
-sub order_updated {
+async sub order_updated {
     my $data = shift;
     my @args = qw(client_loginid order_id);
 
@@ -181,13 +182,22 @@ sub order_updated {
 
     stats_inc('p2p.order.status.updated.count', {tags => ["status:$order->{status}"]});
 
-    return _track_p2p_order_event(
-        loginid       => $loginid,
-        order         => $order,
-        order_details => $order_response,
-        order_event   => $order_event,
-        parties       => $parties,
-    );
+    try {
+        await _track_p2p_order_event(
+            loginid       => $loginid,
+            order         => $order,
+            order_details => $order_response,
+            order_event   => $order_event,
+            parties       => $parties,
+        )
+    } catch ($e) {
+        $log->errorf("Failed to track p2p order event %s: %s", $order_event, $e);
+    }
+
+    _freeze_chat_channel($order->{chat_channel_url})
+        if $order->{chat_channel_url} and any { $order->{status} eq $_ } qw/completed cancelled refunded dispute-refunded dispute-completed/;
+
+    return 1;
 }
 
 =head2 dispute_expired
@@ -592,6 +602,23 @@ sub _get_advertiser_channel_name {
     my $client = shift;
 
     return join q{::} => map { uc($_) } ("P2P::ADVERTISER::NOTIFICATION", $client->broker);
+}
+
+=head2 _freeze_chat_channel
+
+Freezes a sendbird chat channel, which prevents users sending messages.
+
+=over 4
+
+=item * C<channel> - required. Sendbird chat channel url.
+
+=back
+
+=cut
+
+sub _freeze_chat_channel {
+    my $channel = shift;
+    return BOM::User::Utility::sendbird_api()->view_group_chat(channel_url => $channel)->set_freeze(1);
 }
 
 1;

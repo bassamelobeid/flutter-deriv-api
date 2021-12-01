@@ -56,7 +56,7 @@ subtest 'p2p order event validation' => sub {
     undef @identify_args;
     undef @track_args;
 
-    is $handler->({}), 0, 'retruns zero on error';
+    is $handler->({})->get, 0, 'retruns zero on error';
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    0, 'Segment track is not called';
 
