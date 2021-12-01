@@ -302,6 +302,9 @@ rpc website_status => sub {
                     or $app_config->system->suspend->p2p
             ) ? 1 : 0,
         },
+        payment_agents => {
+            initial_deposit_per_country => decode_json($app_config->payment_agents->initial_deposit_per_country),
+        },
     };
 };
 

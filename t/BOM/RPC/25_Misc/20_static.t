@@ -15,6 +15,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::User::Password;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use JSON::MaybeXS qw(decode_json encode_json);
 
 populate_exchange_rates();
 
@@ -407,6 +408,30 @@ subtest 'p2p_config' => sub {
     $p2p_config->enabled(0);
     is $c->call_ok(%params)->result->{p2p_config}{disabled}, 1, 'p2p disabled';
 
+};
+
+subtest 'payment_agents config' => sub {
+    my $config                = BOM::Config::Runtime->instance->app_config;
+    my $payment_agents_config = {
+        initial_deposit_per_country => decode_json($config->payment_agents->initial_deposit_per_country),
+    };
+
+    my %params = (
+        website_status => {
+            language => 'EN',
+            args     => {website_status => 1}});
+
+    cmp_deeply($c->call_ok(%params)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
+
+    $payment_agents_config->{initial_deposit_per_country}->{br} = 10000;
+    $config->payment_agents->initial_deposit_per_country(encode_json($payment_agents_config->{initial_deposit_per_country}));
+    cmp_deeply($c->call_ok(%params)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
+
+    $payment_agents_config->{initial_deposit_per_country}->{default} = 20000;
+    $payment_agents_config->{initial_deposit_per_country}->{ec}      = 200;
+    delete $payment_agents_config->{initial_deposit_per_country}->{br};
+    $config->payment_agents->initial_deposit_per_country(encode_json($payment_agents_config->{initial_deposit_per_country}));
+    cmp_deeply($c->call_ok(%params)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
 };
 
 done_testing();
