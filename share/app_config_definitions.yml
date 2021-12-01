@@ -729,6 +729,20 @@ quants:
           global: 1
           isa: ArrayRef
           default: []
+    callputspreads:
+      description: "call/put_spreads variables"
+      isa: section
+      contains:
+        disable_sellback:
+          description: "Suspend sellback for call/put spreads"
+          isa: Bool
+          default: 0
+          global: 1
+        minimum_allowed_sellback_duration:
+          description: "Sell back is not allowed if the remaining contract duration is less than or equal to specified time value (in seconds) "
+          isa: Num
+          default: 900
+          global: 1
     custom_client_profiles:
       description: "Custom client limits specification."
       isa: json_string
