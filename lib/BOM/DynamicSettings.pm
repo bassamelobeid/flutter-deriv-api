@@ -289,6 +289,8 @@ sub get_settings_by_group {
                 quants.underlyings.suspend_buy
                 quants.underlyings.suspend_trades
                 quants.underlyings.suspend_early_sellback
+                quants.callputspreads.disable_sellback
+                quants.callputspreads.minimum_allowed_sellback_duration
                 )
         ],
         it => [qw(
