@@ -97,7 +97,7 @@ sub website_status {
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_}
                         for
-                        qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config crypto_config p2p_config|;
+                        qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config crypto_config p2p_config payment_agents|;
 
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
