@@ -76,7 +76,7 @@ PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
 sub notify_crypto_withdrawal_rejected {
-    my ($loginid, $reason, $app_id) = @_;
+    my ($loginid, $reason, $app_id, $other_reason) = @_;
     $reason //= "unknown";
     my $client = BOM::User::Client->new({loginid => $loginid});
 
@@ -91,7 +91,7 @@ sub notify_crypto_withdrawal_rejected {
         reason         => $reason,
         client_loginid => $client->loginid,
         brand_name     => ucfirst $brand->name,
-        other_reason   => request()->param('other_reason'),
+        other_reason   => $other_reason,
     };
 
     send_email({
@@ -340,7 +340,7 @@ if ($view_action eq 'withdrawals') {
             @params_list = map { +{$bulk_data->{$_}->%*, trx_id => $_} } sort keys $bulk_data->%*;
         } else {
             my %params = request()->params->%*;
-            @params_list = {%params{qw(trx_id amount remark rejection_reason loginid app_id)}};
+            @params_list = {%params{qw(trx_id amount remark rejection_reason loginid app_id other_reason)}};
         }
 
         my %trx_actions_map = (
@@ -721,7 +721,8 @@ Returns error if there is any.
 sub withdrawal_reject {
     my %args = @_;
 
-    my ($trx_id, $remark, $rejection_reason, $loginid, $staff, $dbic, $app_id) = @args{qw(trx_id remark rejection_reason loginid staff dbic  app_id)};
+    my ($trx_id, $remark, $rejection_reason, $loginid, $staff, $dbic, $app_id, $other_reason) =
+        @args{qw(trx_id remark rejection_reason loginid staff dbic app_id other_reason)};
 
     code_exit_BO('Please select a reason for rejection to notify client')
         unless $rejection_reason;
@@ -730,7 +731,7 @@ sub withdrawal_reject {
         unless defined REJECTION_REASONS->{$rejection_reason};
 
     if ($rejection_reason eq "other") {
-        $remark .= request()->param('other_reason');
+        $remark .= $other_reason;
     } else {
         $remark .= "[@{[ REJECTION_REASONS->{$rejection_reason}->{remark} ]}]";
     }
@@ -741,7 +742,7 @@ sub withdrawal_reject {
         });
 
     unless ($error) {
-        notify_crypto_withdrawal_rejected($loginid, $rejection_reason, $app_id);
+        notify_crypto_withdrawal_rejected($loginid, $rejection_reason, $app_id, $other_reason);
         BOM::CTC::Utility::emit_transaction_updated($trx_id);
     }
 

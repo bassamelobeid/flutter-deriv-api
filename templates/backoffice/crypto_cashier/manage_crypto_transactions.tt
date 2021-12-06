@@ -205,7 +205,7 @@
                 [% END %]
                 [% IF view_type == 'pending' && trx.transaction_type == 'withdrawal' && view_action == 'withdrawals' %]
                     <td>
-                       <input type="checkbox" value="[% trx.id %]" data-amount="[% trx.amount %]" data-loginid="[% trx.client_loginid %]" onclick="bulkToggleSelected(this)" />
+                       <input type="checkbox" value="[% trx.id %]" id="check_[% trx.id %]" data-amount="[% trx.amount %]" data-loginid="[% trx.client_loginid %]" onclick="bulkToggleSelected(this)" />
                     </td>
                 [% END %]
                 <td valign="top">
@@ -368,11 +368,11 @@ function bulkToggleSelected(el_chk) {
             loginid         : el_chk.getAttribute('data-loginid'),
             remark          : el_row.querySelector('textarea[name="remark"]').value.trim(),
             rejection_reason: el_row.querySelector('select[name="rejection_reason"]').value,
+            other_reason    : el_row.querySelector('textarea[name="other_reason"]').value.trim()
         };
     } else {
         delete selected_transactions[trx_id];
     }
-
     bulkUpdateForm();
 }
 
@@ -460,19 +460,34 @@ function bulkCalculate() {
 }
 
 function bulkConfirm() {
-    const bulk_data = bulkCalculate();
+    try {
+        const bulk_data = bulkCalculate();
 
-    if (!bulk_data.trx_count) {
-        alert('Error: No transaction selected.');
+        if (!bulk_data.trx_count) {
+            alert('Error: No transaction selected.');
+            return false;
+        }
+
+        for (let trx_id in selected_transactions) {
+            let checkbox = document.getElementById('check_' + trx_id);
+
+            bulkToggleSelected(checkbox);
+
+            if (selected_transactions[trx_id]['rejection_reason'] == 'other' && selected_transactions[trx_id]['other_reason'] == '' ){
+                alert('Error: rejection reason is empty.');
+                return false;
+            } 
+        }
+
+        return confirm(
+            `Are you sure you want to perform Bulk action as below?
+            - Selected transactions: \${bulk_data.trx_count}
+                (Remarks: \${bulk_data.remarks_count}, Rejection reasons: \${bulk_data.reasons_count})
+            - Total Amount: \${bulk_data.total_amount} [% currency %]`
+        );
+    } catch (e) {
         return false;
     }
-
-    return confirm(
-        `Are you sure you want to perform Bulk action as below?
-  - Selected transactions: \${bulk_data.trx_count}
-      (Remarks: \${bulk_data.remarks_count}, Rejection reasons: \${bulk_data.reasons_count})
-  - Total Amount: \${bulk_data.total_amount} [% currency %]`
-    );
 }
 
 
