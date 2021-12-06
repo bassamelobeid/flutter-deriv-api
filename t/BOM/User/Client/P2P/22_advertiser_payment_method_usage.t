@@ -77,7 +77,6 @@ subtest 'adverts' => sub {
         payment_method_ids => [keys %methods],
     );
 
-    is $advert->{payment_method}, 'method1,method2', 'payment method names';
     cmp_deeply $advert->{payment_method_details}, \%methods, 'payment method details';
 
     is exception {
@@ -89,18 +88,11 @@ subtest 'adverts' => sub {
     }, undef, 'can disable methods';
 
     my $ad_info = $client->p2p_advert_info(id => $advert->{id});
-    is $ad_info->{payment_method}, 'method2', 'disabled method not shown on ad info';
     cmp_deeply $ad_info->{payment_method_details}, \%methods, 'payment method details';
-
-    cmp_deeply $client->p2p_advertiser_adverts->[0]{payment_method_names}, ['Method 2'], 'advertiser adverts shows method name only';
 
     my $otherclient = BOM::Test::Helper::P2P::create_advertiser;
     $ad_info = $otherclient->p2p_advert_info(id => $advert->{id});
     ok !exists $ad_info->{payment_method_details}, 'payment_method_details not returned for other client from p2p_advert_info';
-    cmp_deeply $ad_info->{payment_method_names}, ['Method 2'], 'payment method names returned to other client from p2p_advert_info';
-
-    cmp_deeply $otherclient->p2p_advert_list(payment_method => ['method2'])->[0]{payment_method_names}, ['Method 2'],
-        'payment method names returned to other client from p2p_advert_list';
 
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(update => {$methods_by_tag{m3} => {is_enabled => 0}}) },
@@ -136,7 +128,7 @@ subtest 'adverts' => sub {
     my $update = $client->p2p_advert_update(
         id                 => $advert->{id},
         payment_method_ids => [@methods_by_tag{qw/m4 m5/}]);
-    is $update->{payment_method}, 'method1', 'update method name';
+    #is $update->{payment_method}, 'method1', 'update method name';
 
     my $pm_details = {
         $methods_by_tag{m4} => $methods{$methods_by_tag{m4}},
@@ -206,13 +198,6 @@ subtest 'adverts' => sub {
         'can provide valid methods'
     );
 
-    is $advert->{payment_method}, 'method1,method2', 'payment method for buy ad';
-
-    is $client->p2p_advert_update(
-        id             => $advert->{id},
-        payment_method => ''
-    )->{payment_method}, 'method1,method2', 'empty payment method update ignored';
-
     cmp_deeply(
         exception {
             $client->p2p_advert_update(
@@ -226,11 +211,6 @@ subtest 'adverts' => sub {
         },
         'cannot update with invalid method'
     );
-
-    is $client->p2p_advert_update(
-        id             => $advert->{id},
-        payment_method => 'method3, method1, method2'
-    )->{payment_method}, 'method1,method2,method3', 'can update with valid methods';
 };
 
 subtest 'sell orders' => sub {
@@ -240,8 +220,6 @@ subtest 'sell orders' => sub {
         payment_method => 'method1,method3'
     );
     my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
-
-    is $client->p2p_advert_list(payment_method => ['method3'])->[0]{id}, $advert->{id}, 'advert list query by method';
 
     my %methods = $client->p2p_advertiser_payment_methods(
         create => [{
@@ -294,12 +272,9 @@ subtest 'sell orders' => sub {
     cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details,
         'payment_method_details returned from order_info for pending order';
 
-    cmp_deeply $client->p2p_order_list->[0]{payment_method_names}, ['Method 1'], 'payment method names in order list';
-
     my $order_info = $advertiser->p2p_order_info(id => $order->{id});
     is $order_info->{payment_method}, 'method1', 'counterparty gets payment_method';
     cmp_deeply $order_info->{payment_method_details}, $pm_details, 'counterparty gets payment_method_details';
-    cmp_deeply $advertiser->p2p_order_list->[0]{payment_method_names}, ['Method 1'], 'counterparty payment method names in order list';
 
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(update => {$methods_by_tag{m1} => {is_enabled => 0}}) },
@@ -396,8 +371,6 @@ subtest 'buy orders' => sub {
         amount      => 10,
         rule_engine => $rule_engine,
     );
-    is $order->{payment_method},       undef, 'undef payment_method returned from order create';
-    is $order->{payment_method_names}, undef, 'undef payment_method_names returned from order create';
 
     my $pm_details = {
         $methods_by_tag{m1} => $methods{$methods_by_tag{m1}},
@@ -451,20 +424,6 @@ subtest 'buy orders' => sub {
             error_code => 'PaymentMethodParam',
         },
         'cannot set payment_method directly'
-    );
-
-    cmp_deeply(
-        exception {
-            $advertiser->p2p_advert_update(
-                id                 => $advert->{id},
-                payment_method_ids => [$methods_by_tag{m1}, $methods_by_tag{m2}],
-            )
-        },
-        {
-            error_code     => 'PaymentMethodRemoveActiveOrders',
-            message_params => ['Method 2']
-        },
-        'advertiser cannnot remove a payment method name from ad with active order'
     );
 
     $advertiser->p2p_order_confirm(id => $order->{id});

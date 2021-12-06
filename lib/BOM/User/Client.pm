@@ -2600,7 +2600,7 @@ sub p2p_advert_update {
         }
 
         if ($advert_info->{active_orders} > 0) {
-            my @ad_methods     = split ',', $advert_info->{payment_method};
+            my @ad_methods     = split ',', ($advert_info->{payment_method} // '');
             my $removed_method = first {
                 my $m = $_;
                 none { $m eq $_ } @method_names
