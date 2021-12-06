@@ -9,6 +9,8 @@
     <head>
         <title><%= l('Log in') %> | <%= ucfirst($website_domain) %> </title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="Log in to your Deriv online trading account and start trading on the most popular financial markets.">
+        <meta name="keywords" content="online trading, deriv trading, online trading account, deriv account">
 
         <link rel="shortcut icon" href="https://<%= $website_domain %>/icons/icon-48x48.png"/>
         <link rel="apple-touch-icon" sizes="48x48" href="https://<%= $website_domain %>/icons/icon-48x48.png"/>
