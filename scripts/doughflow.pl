@@ -42,6 +42,8 @@ Usage: $0
     -pt, --payment_type        Payment type e.g. CreditCard
     -id, --account_identifier  Account identifier e.g. masked credit card number
     -l, --log                  debug, info or error
+    --brand,                   brand, binary or deriv, default: deriv
+    --lang,                    2 letter language code, default: en
 ";
 
 require Log::Any::Adapter;
@@ -60,6 +62,8 @@ GetOptions(
     'p|shared_loginid=s'      => \my $shared_loginid,       # Only needed for `shared_payment_method`
     'pt|payment_type=s'       => \my $payment_type,
     'id|account_identifier=s' => \my $account_identifier,
+    'brand=s'                 => \my $brand,
+    'lang=s'                  => \my $lang,
     'tx=i'                    => \my $transaction_id,
 );
 die $usage unless ($action && $endpoint_url && $secret_key && $client_loginid);
@@ -93,6 +97,8 @@ my $params = {
     payment_type       => $payment_type,
     account_identifier => $account_identifier,
     defined $fee            ? (fee            => $fee)            : (),
+    defined $lang           ? (udef1          => $lang)           : (),
+    defined $brand          ? (udef2          => $brand)          : (),
     defined $transaction_id ? (transaction_id => $transaction_id) : (),
 };
 

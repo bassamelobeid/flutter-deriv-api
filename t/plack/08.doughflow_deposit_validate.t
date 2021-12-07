@@ -3,6 +3,7 @@ use warnings;
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
+use Test::MockModule;
 use APIHelper qw(balance deposit_validate);
 use Encode;
 use JSON::MaybeXS;

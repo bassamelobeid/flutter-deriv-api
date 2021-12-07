@@ -16,8 +16,7 @@ use Format::Util::Numbers qw/financialrounding/;
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Payment::DoughFlow;
-use BOM::Platform::Event::Emitter;
-use BOM::Platform::Context qw (request localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Context::Request;
 use BOM::Platform::Utility qw(error_map);
 use BOM::Rules::Engine;
@@ -212,6 +211,8 @@ sub validate_as_payment {
 
     try {
         $client->set_default_account($currency);
+        # deposits are not validated becaause we already did so for deposit_validate
+        # and at this point we are holding the client funds from payment processor
         $client->validate_payment(
             currency              => $currency,
             amount                => $signed_amount,
@@ -219,6 +220,28 @@ sub validate_as_payment {
             die_with_error_object => 1,
             rule_engine           => BOM::Rules::Engine->new(client => $client),
         ) unless $c->type eq 'deposit';
+
+        if ($action eq 'deposit' and not $client->status->age_verification) {
+            my $processor = $c->request_parameters->{payment_processor} // '';
+
+            my $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({client_loginid => $client->loginid});
+
+            my ($doughflow_method) = $doughflow_datamapper->get_doughflow_methods({
+                    processor => $processor,
+                    method    => ''            # we do not expect payment_method to be sent for deposit_validate
+                })->@*;
+
+            if ($doughflow_method and $doughflow_method->{deposit_poi_required}) {
+                $client->status->upsert('allow_document_upload', 'system', "Deposit attempted with method requiring POI ($processor)");
+
+                my $msg = localize(
+                    'To use this method for deposits, we’ll need to verify your identity. Click [_1] here[_2] to start the verification process, or choose another deposit method.',
+                    '<a href="' . request()->brand->authentication_url({language => request()->language}) . '">',
+                    '</a>'
+                );
+                die "$msg\n";
+            }
+        }
     } catch ($err) {
         return $c->throw(403, _genrate_payment_error_message($err));
     }
