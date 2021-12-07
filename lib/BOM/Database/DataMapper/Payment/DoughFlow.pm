@@ -103,6 +103,22 @@ sub is_duplicate_payment {
     return;
 }
 
+=head2 get_doughflow_methods
+
+Query defined payment methods by reversible, processor and method.
+
+=cut
+
+sub get_doughflow_methods {
+    my $self = shift;
+    my $args = shift;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM payment.get_doughflow_methods(?, ?, ?)', {Slice => {}}, $args->@{qw/reversible processor method/});
+        });
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
