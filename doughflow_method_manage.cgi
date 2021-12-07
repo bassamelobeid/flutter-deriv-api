@@ -55,14 +55,17 @@ if (my $id = $input{delete_confirm}) {
 
 if ($input{update_confirm}) {
     try {
-        die "Cannot have empty processor and method\n" unless $input{payment_processor} or $input{payment_method};
+        validate(%input);
         my ($result) = $db->run(
             fixup => sub {
                 $_->selectrow_array(
-                    "UPDATE payment.doughflow_method SET payment_processor = ?, payment_method = ?, reversible = ?
+                    "UPDATE payment.doughflow_method SET payment_processor = ?, payment_method = ?, reversible = ?, deposit_poi_required = ?
                         WHERE id = ? AND NOT EXISTS (SELECT 1 FROM payment.doughflow_method WHERE payment_processor = ? AND payment_method = ? AND id <> ?)
                         RETURNING COALESCE(NULLIF(payment_processor,''), '[empty]') ||' - ' || COALESCE(NULLIF(payment_method,''), '[empty]')",
-                    undef, @input{qw/payment_processor payment_method reversible update_confirm payment_processor payment_method update_confirm/});
+                    undef,
+                    @input{
+                        qw/payment_processor payment_method reversible deposit_poi_required update_confirm payment_processor payment_method update_confirm/
+                    });
             });
         $result ? ($success = $result . ' method has been saved') : die "duplicate or does not exist\n";
     } catch ($e) {
@@ -72,14 +75,14 @@ if ($input{update_confirm}) {
 
 if ($input{create}) {
     try {
-        die "Cannot have empty processor and method\n" unless $input{payment_processor} or $input{payment_method};
+        validate(%input);
         my ($result) = $db->run(
             fixup => sub {
                 $_->selectrow_array(
-                    "INSERT INTO payment.doughflow_method (payment_processor, payment_method, reversible) VALUES (?, ?, ?)
+                    "INSERT INTO payment.doughflow_method (payment_processor, payment_method, reversible, deposit_poi_required) VALUES (?, ?, ?, ?)
                         ON CONFLICT(payment_processor, payment_method) DO NOTHING
                         RETURNING COALESCE(NULLIF(payment_processor,''), '[empty]') ||' - ' || COALESCE(NULLIF(payment_method,''), '[empty]')",
-                    undef, @input{qw/payment_processor payment_method reversible/});
+                    undef, @input{qw/payment_processor payment_method reversible deposit_poi_required/});
             });
         $result ? ($success = $result . ' method has been created') : die "duplicated method\n";
     } catch ($e) {
@@ -118,5 +121,11 @@ BOM::Backoffice::Request::template()->process(
         error   => $error,
         check   => $check,
     });
+
+sub validate {
+    my %input = @_;
+    die "Cannot have empty processor and method\n" unless $input{payment_processor} or $input{payment_method};
+    die "Cannot specify method if Deposit POI Required is enabled\n" if $input{deposit_poi_required} and $input{payment_method};
+}
 
 code_exit_BO();

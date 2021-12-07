@@ -52,6 +52,15 @@
                             </select>
                         </td>
                     </tr>
+                    <tr>
+                        <td class="label">Deposit POI required</td>
+                        <td>
+                            <select name="deposit_poi_required">
+                                <option value="1" [% item.deposit_poi_required && 'selected' %]>YES</option>
+                                <option value="0" [% !item.deposit_poi_required && 'selected' %]>NO</option>
+                            </select>
+                        </td>
+                    </tr>                    
                 </table>
                 [% IF item %]
                 <button type="submit" class="btn btn--primary" name="update_confirm" value="[% item.id %]">Save</button>
@@ -68,10 +77,11 @@
 <div class="card">
     <div class="card__label toggle">Methods for [% broker %]</div>
     <div class="card__content">
-        <p>Processor and method values must exactly match the values sent by Doughflow:</p>
+        <p>Processor and method values must exactly match the values sent by Doughflow for the type of event:</p>
             <ol>
-                <li><b>Deposits</b> will always have a processor, but method can be empty.</li>
-                <li><b>Withdrawals</b> will always have empty processor, but always have a method. E.g. all Visa withdrawals are method = VISA and processor = [empty].</li>
+                <li><b>Deposit</b> will always have a processor, but method can be empty.</li>
+                <li><b>Withdrawal</b> will always have empty processor and always have a method. E.g. all Visa withdrawals are method = VISA and processor = [empty].</li>
+                <li><b>Deposit validation</b> will always have empty method. Deposit POI Required check is run on this event, so method should be empty when this attribute is set.</li>
             </ol>
         <table class="sortable border">
             <thead>
@@ -79,6 +89,7 @@
                     <th scope="col">Processor</th>
                     <th scope="col">Method</th>
                     <th scope="col">Reversible</th>
+                    <th scope="col">Deposit POI</th>
                     <th></th>
                 </tr>
             </thead>
@@ -89,6 +100,7 @@
                     <td>[% m.payment_processor || '<span style="color: LightGrey">[empty]</span>' | none %]</td>
                     <td>[% m.payment_method || '<span style="color: LightGrey">[empty]</span>' | none %]</td>
                     <td>[% IF m.reversible %]Yes[% ELSE %]No[% END %]</td>
+                    <td>[% IF m.deposit_poi_required %]Yes[% ELSE %]No[% END %]</td>
                     <td><a href="?edit=[% m.id %]&broker=[% broker %]">Edit</a>&nbsp;&nbsp;&nbsp;
                         <a href="?delete=[% m.id %]&broker=[% broker %]">Delete</a>&nbsp;&nbsp;&nbsp;
                         <a href="?check=1&payment_processor=[% m.payment_processor %]&payment_method=[% m.payment_method %]&broker=[% broker %]">Check transactions</a>
