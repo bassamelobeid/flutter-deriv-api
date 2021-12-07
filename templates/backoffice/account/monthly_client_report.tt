@@ -36,6 +36,7 @@
             [ 'free_gift',          'Free Gift' ],
             [ 'internal_transfer',  'Internal Transfer' ],
             [ 'mt5_transfer',       'MT5 Transfer'],
+            [ 'dxtrade_transfer',   'DXTrade Transfer'],
             [ 'payment_fee',        'Payment Fee' ],
             [ 'arbitrary_markup',   'Arbitrary Markup Payment' ],
             [ 'crypto_cashier',     'Crypto Cashier' ],

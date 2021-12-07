@@ -65,16 +65,22 @@ my $sql = <<'START' . ($payment_filter ? <<"FILTER" : '') . <<'END';
         p.payment_time,
         CASE WHEN mt5_amount IS NOT NULL 
             THEN
-                'mt5_transfer'
+                'mt5_transfer' 
+            WHEN dxtrade_amount IS NOT NULL 
+            THEN
+                'dxtrade_transfer'
             ELSE
                 p.payment_gateway_code
         END  as payment_gateway_code,
         p.payment_type_code,
         acc.currency_code,
         p.amount,
-        (COALESCE (pt.amount, pgtp.amount, mt5_amount))* -1 AS transferred_amount,
+        (COALESCE (pt.amount, pgtp.amount, mt5_amount, dx.dxtrade_amount))* -1 AS transferred_amount,
         COALESCE ((SELECT ta.currency_code FROM transaction.account ta WHERE  pgtp.account_id = ta.id OR pt.account_id = ta.id),
-         mt5_currency_code) AS currency_code_to,
+         mt5_currency_code,
+        CASE WHEN dxtrade_amount IS NOT NULL
+            THEN 'USD'
+        END) AS currency_code_to,
          p.transfer_fees ,
         TRIM(p.remark)
     from transaction.account acc
@@ -88,6 +94,8 @@ my $sql = <<'START' . ($payment_filter ? <<"FILTER" : '') . <<'END';
     LEFT JOIN payment.payment pgtp ON pgt.corresponding_payment_id = pgtp.id
     --mt5
     LEFT JOIN payment.mt5_transfer mt ON p.id = mt.payment_id
+    --dxtrade
+    LEFT JOIN payment.dxtrade_transfer as dx ON dx.payment_id = p.id 
     where
         p.payment_time >= ?   -- b0
     and p.payment_time <  ?   -- b1
