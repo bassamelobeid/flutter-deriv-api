@@ -13,7 +13,10 @@ use BOM::User::Client::PaymentAgent;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my $pa        = BOM::User::Client::PaymentAgent->new({loginid => 'CR0020'});
+my $pa = BOM::User::Client::PaymentAgent->new({loginid => 'CR0020'});
+$pa->status('authorized');
+$pa->save;
+
 my $pa_client = $pa->client;
 my $client    = BOM::User::Client->new({loginid => 'CR0021'});
 
