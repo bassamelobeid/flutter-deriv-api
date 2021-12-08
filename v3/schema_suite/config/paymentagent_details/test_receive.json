@@ -44,10 +44,22 @@
                     "type": "string",
                     "pattern" : "^The best person you can find$"
                 },
-                "is_authenticated": {
-                    "type": "integer",
-                    "enum": [
-                        0
+                "status": {
+                    "description": "Indicates the status of the Payment Agent.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "enum": [
+                                "applied",
+                                "verified",
+                                "authorized",
+                                "suspended",
+                                "rejected"
+                            ]
+                        },
+                        {
+                            "type": "null"
+                        }
                     ]
                 },
                 "is_listed": {

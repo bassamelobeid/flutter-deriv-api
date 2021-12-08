@@ -67,8 +67,8 @@ $agent_usd->payment_agent({
     summary               => 'Test Summary',
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    is_authenticated      => 't',
     target_country        => 'id',
+    status                => 'authorized',
 });
 $agent_usd->save;
 
