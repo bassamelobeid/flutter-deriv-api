@@ -50,9 +50,9 @@ my $object_pa = $pa_client->payment_agent({
     summary               => 'Test Summary',
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    is_authenticated      => 't',
+    status                => 'authorized',
     currency_code         => 'USD',
-    is_listed             => 't'
+    is_listed             => 't',
 });
 $pa_client->save;
 $pa_client->get_payment_agent->set_countries(['id', 'pk']);
@@ -127,9 +127,9 @@ my $object_pa2 = $pa_client_2->payment_agent({
     summary               => 'Test Summary',
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    is_authenticated      => 't',
+    status                => 'authorized',
     currency_code         => 'USD',
-    is_listed             => 'f'
+    is_listed             => 'f',
 });
 $pa_client_2->save;
 
@@ -189,9 +189,9 @@ $pa_client_3->payment_agent({
     summary               => 'Test Summary',
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    is_authenticated      => 't',
+    status                => 'authorized',
     currency_code         => 'USD',
-    is_listed             => 'f'
+    is_listed             => 'f',
 });
 $pa_client_3->save;
 BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries(['us']);
@@ -335,7 +335,7 @@ subtest 'validate payment agent details' => sub {
         'min_withdrawal'                => $min_max->{minimum},
         'commission_deposit'            => 5,
         'commission_withdrawal'         => 4,
-        'is_authenticated'              => 0,
+        'status'                        => undef,
         'is_listed'                     => 0,
         'supported_banks'               => 'Visa,bank_transfer',
         'code_of_conduct_approval'      => 1,
@@ -363,7 +363,7 @@ subtest 'validate payment agent details' => sub {
         'min_withdrawal'                => $min_max->{minimum},
         'commission_deposit'            => 5,
         'commission_withdrawal'         => 4,
-        'is_authenticated'              => 0,
+        'status'                        => undef,
         'is_listed'                     => 0,
         'supported_banks'               => 'Visa,bank_transfer',
         'code_of_conduct_approval'      => 1,
@@ -398,12 +398,12 @@ subtest 'validate payment agent details' => sub {
         'commission_deposit'            => 1,
         'commission_withdrawal'         => 3,
         'min_withdrawal'                => 10,
-        'is_authenticated'              => 1,
+        'status'                        => 'authorized',
         'is_listed'                     => 1,
         'supported_banks'               => 'Visa,bank_transfer',
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '123abcd',
-        'code_of_conduct_approval_time' => 1000
+        'code_of_conduct_approval_time' => 1000,
     );
 
     @args{qw(payment_agent_name min_withdrawal max_withdrawal)} = ('test name', -1, -1);
@@ -530,7 +530,7 @@ subtest 'copy payment agent details and related' => sub {
         'max_withdrawal'                => 100,
         'commission_deposit'            => 1,
         'commission_withdrawal'         => 3,
-        'is_authenticated'              => 1,
+        'status'                        => 'authorized',
         'is_listed'                     => 1,
         'supported_banks'               => 'Visa,bank_transfer',
         'code_of_conduct_approval'      => 1,
@@ -559,7 +559,7 @@ subtest 'copy payment agent details and related' => sub {
         'max_withdrawal'                => 0.1,
         'commission_deposit'            => 4,
         'commission_withdrawal'         => 5,
-        'is_authenticated'              => 0,
+        'status'                        => undef,
         'is_listed'                     => 0,
         'supported_banks'               => 'Master card',
         'code_of_conduct_approval'      => 0,

@@ -216,7 +216,7 @@ sub validate_payment_agent_details {
     my $client = $self->client;
 
     # initialze non-null fields
-    $args->{$_} //= 0 for qw(is_authenticated is_listed);
+    $args->{is_listed} //= 0;
     $args->{email}          ||= $client->email;
     $args->{target_country} ||= $client->residence;
     $args->{phone}          ||= $client->phone;
@@ -314,10 +314,10 @@ sub validate_payment_agent_details {
         if ($args->{max_withdrawal} < $args->{min_withdrawal});
 
     # let the empty optional fields get their default values
-    $args->{affiliate_id}     //= '';
-    $args->{summary}          //= '';
-    $args->{is_listed}        //= 0;
-    $args->{is_authenticated} //= 0;
+    $args->{affiliate_id} //= '';
+    $args->{summary}      //= '';
+    $args->{is_listed}    //= 0;
+    $args->{status} = undef if (!length $args->{status});
 
     if ($args->{code_of_conduct_approval}) {
         # If coc time is already set, don't touch it; otherwise set to current time.

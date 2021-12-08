@@ -1494,7 +1494,9 @@ sub documents {
 sub is_pa_and_authenticated {
     my $self = shift;
     return 0 unless my $pa = $self->get_payment_agent();
-    return $pa->is_authenticated ? 1 : 0;
+
+    my $status = $pa->status // '';
+    return $status eq 'authorized' ? 1 : 0;
 }
 
 sub is_same_user_as {

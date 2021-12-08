@@ -21,22 +21,22 @@ is($class, 'BOM::User::Client::PaymentAgent', 'Class is BOM::User::Client::Payme
 #################################
 # testing: intrinsic attributes
 
-ok($payment_agent->is_authenticated, "payment agent is authenticated");
+is($payment_agent->status, undef, 'default status applied');
 
 Test::Exception::lives_ok {
-    $payment_agent->is_authenticated('');
+    $payment_agent->status('suspended');
     $payment_agent->save();
     $payment_agent->set_countries(['id', 'in']);
 }
-"set PaymentAgent authenticated to 'undef'";
+"set PaymentAgent status to 'suspended'";
 
-ok(!$payment_agent->is_authenticated, "payment agent is not authenticated");
+is($payment_agent->status, 'suspended', 'default status suspended');
 
 #################################
 # testing: save
 
 Test::Exception::lives_ok {
-    $payment_agent->is_authenticated(1);
+    $payment_agent->status('authorized');
     $payment_agent->payment_agent_name('new name');
     $payment_agent->summary('new summary');
     $payment_agent->code_of_conduct_approval(1);
