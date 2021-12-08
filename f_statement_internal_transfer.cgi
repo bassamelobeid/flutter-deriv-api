@@ -67,7 +67,7 @@ if (not $client) {
 my $loginid_bar = $loginid;
 my $pa          = $client->payment_agent;
 Bar($loginid_bar);
-print "<span class='error'>PAYMENT AGENT</span>" if ($pa and $pa->is_authenticated);
+print "<span class='error'>PAYMENT AGENT</span>" if ($pa and $pa->status and $pa->status eq 'authorized');
 
 my $tel          = $client->phone;
 my $citizen      = Locale::Country::code2country($client->citizen);

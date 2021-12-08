@@ -1243,7 +1243,7 @@ if ($payment_agent) {
     foreach my $column (
         qw/payment_agent_name risk_level url email phone information supported_banks commission_deposit
         commission_withdrawal min_withdrawal max_withdrawal affiliate_id code_of_conduct_approval
-        code_of_conduct_approval_date is_authenticated is_listed currency_code/
+        code_of_conduct_approval_date status is_listed currency_code/
         )
     {
 

@@ -84,7 +84,7 @@ $loginid_bar .= ' (DEPO & WITH ONLY)' if ($deposit_withdrawal_only);
 my $pa = $client->payment_agent;
 
 Bar($loginid_bar);
-print "<span class='error'>PAYMENT AGENT</span>" if ($pa and $pa->is_authenticated);
+print "<span class='error'>PAYMENT AGENT</span>" if ($pa and $pa->status and $pa->status eq 'authorized');
 
 # We either choose the dropdown currency from transaction page or use the client currency for quick jump
 my $currency         = $client->currency;

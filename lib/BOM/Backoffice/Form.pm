@@ -976,17 +976,53 @@ sub get_payment_agent_registration_form {
     };
 
     # Input field for pa_auth
-    my $input_field_pa_auth = {
+    my $input_field_pa_status = {
         'label' => {
-            'text' => 'AUTHORISED PAYMENT AGENT?',
-            'for'  => 'pa_auth'
+            'text' => 'PAYMENT AGENT STATUS',
+            'for'  => 'pa_status',
         },
         'input' => HTML::FormBuilder::Select->new(
-            'id'      => 'pa_auth',
-            'name'    => 'pa_auth',
+            'id'      => 'pa_status',
+            'name'    => 'pa_status',
             'values'  => ['0'],
-            'options' => _select_yes_no(),
+            'options' => [{
+                    value => '',
+                    text  => 'Please select'
+                },
+                {
+                    value => 'applied',
+                    text  => 'Applied'
+                },
+                {
+                    value => 'verified',
+                    text  => 'Verified'
+                },
+                {
+                    value => 'authorized',
+                    text  => 'Authorized'
+                },
+                {
+                    value => 'suspended',
+                    text  => 'Suspended'
+                },
+                {
+                    value => 'rejected',
+                    text  => 'Rejected'
+                },
+            ],
         )};
+
+    my $input_field_pa_status_comments = {
+        'label' => {
+            'text' => 'Status comments',
+            'for'  => 'pa_status_comment',
+        },
+        'input' => {
+            'id'        => 'pa_status_comment',
+            'name'      => 'pa_status_comment',
+            'type'      => 'text',
+            'maxlength' => 500,
+        }};
 
     # Input field for pa_listed
     my $input_field_pa_listed = {
@@ -1115,8 +1151,11 @@ sub get_payment_agent_registration_form {
     $fieldset->add_field($input_field_pa_max_withdrawal);
     $fieldset->add_field($input_field_pa_affiliate_id);
     $fieldset->add_field($input_field_pa_coc_approval);
-    if ($input_field_pa_auth) {
-        $fieldset->add_field($input_field_pa_auth);
+    if ($input_field_pa_status) {
+        $fieldset->add_field($input_field_pa_status);
+    }
+    if ($input_field_pa_status_comments) {
+        $fieldset->add_field($input_field_pa_status_comments);
     }
     if ($input_field_pa_listed) {
         $fieldset->add_field($input_field_pa_listed);

@@ -9,6 +9,7 @@ use Syntax::Keyword::Try;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use Format::Util::Numbers qw/financialrounding/;
 
+use List::MoreUtils qw(any);
 use BOM::User::Client::PaymentAgent;
 use BOM::User qw( is_payment_agents_suspended_in_country );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -31,11 +32,12 @@ use constant MAP_FIELDS => {
     pa_max_withdrawal            => 'max_withdrawal',
     pa_min_withdrawal            => 'min_withdrawal',
     pa_info                      => 'information',
-    pa_auth                      => 'is_authenticated',
+    pa_status                    => 'status',
     pa_listed                    => 'is_listed',
     pa_supported_payment_methods => 'supported_banks',
     pa_countries                 => 'target_country',
     pa_affiliate_id              => 'affiliate_id',
+    pa_status_comment            => 'status_comment',
 };
 
 sub _prepare_display_values {
@@ -60,6 +62,12 @@ my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 my $loginid         = request()->param('loginid');
 my $whattodo        = request()->param('whattodo');
 my $encoded_loginid = encode_entities($loginid);
+my $status          = request->param('pa_status') // '';
+my $status_comment  = request->param('pa_status_comment');
+
+if (any { $_ eq $status } qw/suspended verified rejected/) {
+    code_exit_BO("Error : payment agent status <b>$status</b> should include a comment") unless $status_comment;
+}
 
 Bar('Payment Agent Setting');
 
@@ -153,7 +161,7 @@ if ($whattodo eq 'show') {
     code_exit_BO("Invalid withdrawal commission amount: it should be between 0 and 9") unless $pa_comm_with >= 0 and $pa_comm_with <= 9;
 
     my %args = map { MAP_FIELDS->{$_} => request()->param($_) } keys MAP_FIELDS->%*;
-    $args{$_} = ($args{$_} eq 'yes') for (qw/is_authenticated is_listed code_of_conduct_approval/);
+    $args{$_} = ($args{$_} eq 'yes') for (qw/is_listed code_of_conduct_approval/);
     $args{currency_code} = $currency;
 
     $args{skip_coc_validation} = 1 if $editing;
