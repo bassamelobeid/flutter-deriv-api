@@ -45,8 +45,8 @@ $pa_client->payment_agent({
     summary               => 'Test Summary',
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    is_authenticated      => 't',
     currency_code         => 'USD',
+    status                => 'authorized',
 });
 $pa_client->save;
 $pa_client->get_payment_agent->set_countries(['id']);
@@ -68,8 +68,8 @@ $pa_client->payment_agent({
     summary               => 'Test Summary Another',
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    is_authenticated      => 't',
     currency_code         => 'BTC',
+    status                => 'authorized',
 });
 $pa_client->save;
 $pa_client->get_payment_agent->set_countries(['id']);
@@ -90,8 +90,8 @@ $pa_client->payment_agent({
     summary               => "Test ~!@#$%^&*()_+,.<>/?;:'\"[]{}",
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    is_authenticated      => 't',
     currency_code         => 'ETH',
+    status                => 'authorized',
 });
 $pa_client->save;
 $pa_client->get_payment_agent->set_countries(['id']);
@@ -214,8 +214,8 @@ subtest 'suspend countries' => sub {
         summary               => 'Test Summary Another',
         commission_deposit    => 0,
         commission_withdrawal => 0,
-        is_authenticated      => 't',
         currency_code         => 'USD',
+        status                => 'authorized',
     };
 
     my $params = {
@@ -377,8 +377,8 @@ subtest 'PAs without currency' => sub {
         summary               => "Summary",
         commission_deposit    => 2,
         commission_withdrawal => 2,
-        is_authenticated      => 't',
         currency_code         => '',
+        status                => 'authorized',
     });
 
     warning_like {

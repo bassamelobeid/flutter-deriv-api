@@ -606,7 +606,7 @@ rpc paymentagent_transfer => sub {
     }
 
     return $error_sub->(localize('Your account needs to be authenticated to perform payment agent transfers.'))
-        unless $payment_agent->is_authenticated;
+        unless $payment_agent->status eq 'authorized';
 
     my $rpc_error = _validate_paymentagent_limits(
         error_sub     => $error_sub,
@@ -940,7 +940,7 @@ rpc paymentagent_withdraw => sub {
     my $pa_client = $paymentagent->client;
     return $error_sub->(
         localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is not authorized.", $pa_client->loginid))
-        unless $paymentagent->is_authenticated;
+        unless $paymentagent->status eq 'authorized';
 
     return $error_sub->(localize('Payment agent withdrawals are not allowed for specified accounts.'))
         if ($client->broker ne $paymentagent->broker);

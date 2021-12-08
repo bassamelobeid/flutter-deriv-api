@@ -1540,8 +1540,9 @@ rpc get_settings => sub {
             allow_copiers                  => $client->allow_copiers // 0,
             non_pep_declaration            => $client->non_pep_declaration_time ? 1 : 0,
             client_tnc_status              => $client->accepted_tnc_version,
-            request_professional_status    => $client->status->professional_requested                               ? 1 : 0,
-            is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
+            request_professional_status    => $client->status->professional_requested ? 1 : 0,
+            is_authenticated_payment_agent =>
+                ($client->payment_agent and $client->payment_agent->status and $client->payment_agent->status eq 'authorized') ? 1 : 0,
         };
     }
     return $settings;
@@ -2872,7 +2873,6 @@ rpc paymentagent_create => sub {
 
     # some attributes are editable exclusively from backoffice
     delete $args->{is_listed};
-    delete $args->{is_authenticated};
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
@@ -2913,7 +2913,7 @@ rpc paymentagent_create => sub {
     my $loginid = $client->loginid;
     my $brand   = request->brand;
     my $message = "Client $loginid has submitted the payment agent application form with following content:\n\n";
-    $message .= join("\n", map { "$_: $args->{$_}" } sort keys %$args);
+    $message .= join("\n", map { "$_:" . ($args->{$_} // '') } sort keys %$args);
     send_email({
         from    => $brand->emails('system'),
         to      => $brand->emails('pa_livechat'),
@@ -2936,7 +2936,7 @@ rpc paymentagent_details => sub {
             message_to_client => localize('You have not applied for being payment agent yet.')}) unless $payment_agent;
 
     my %result = map { $_ => $payment_agent->$_ }
-        qw(payment_agent_name url email phone  information currency_code target_country max_withdrawal min_withdrawal commission_deposit commission_withdrawal is_authenticated is_listed code_of_conduct_approval affiliate_id);
+        qw(payment_agent_name url email phone  information currency_code target_country max_withdrawal min_withdrawal commission_deposit commission_withdrawal status is_listed code_of_conduct_approval affiliate_id);
     $result{supported_payment_methods} = $payment_agent->{supported_banks} ? [split(',', $payment_agent->{supported_banks})] : [];
     # affiliate IDs are null for old payment agents.
     $result{affiliate_id} //= '';

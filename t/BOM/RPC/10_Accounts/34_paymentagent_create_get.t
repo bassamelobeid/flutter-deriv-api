@@ -143,11 +143,11 @@ subtest 'paymentagent set and get' => sub {
         'min_withdrawal'            => $min_max->{minimum},
         'commission_deposit'        => 5,
         'commission_withdrawal'     => 4,
-        'is_authenticated'          => 0,
         'is_listed'                 => 0,
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => '',
         'supported_payment_methods' => ['Visa', 'bank_transfer'],
+        'status'                    => undef,
     };
     my $result = $c->call_ok('paymentagent_details', $get_params)->has_no_system_error->has_no_error->result;
     delete $result->{stash};
@@ -194,12 +194,12 @@ subtest 'call with non-empty args' => sub {
         'min_withdrawal'            => 2,
         'commission_withdrawal'     => 4,
         'commission_deposit'        => 5,
-        'is_authenticated'          => 1,
         'is_listed'                 => 1,
         'affiliate_id'              => 'test token',
         'supported_payment_methods' => ['Visa'],
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => 'abcd1234',
+        'status'                    => undef,
     };
 
     $c->call_ok('paymentagent_create', $set_params)->has_no_error;
@@ -216,11 +216,11 @@ subtest 'call with non-empty args' => sub {
         'min_withdrawal'            => 2,
         'commission_withdrawal'     => 4,
         'commission_deposit'        => 5,
-        'is_authenticated'          => 0,
         'is_listed'                 => 0,
         'supported_payment_methods' => ['Visa'],
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => 'abcd1234',
+        'status'                    => undef,
     };
     my $result = $c->call_ok('paymentagent_details', $get_params)->has_no_system_error->has_no_error->result;
     delete $result->{stash};
@@ -235,12 +235,14 @@ subtest 'call with non-empty args' => sub {
         map { $_ => $pa->$_ } (keys %$expected_values),
     }, $expected_values, 'PA details are correct';
 
+    $expected_values->{status} //= '';
+
     ok $email_args, 'An email is sent';
     my $brand = request->brand;
     is $email_args->{from},    $brand->emails('system'),      'email source is correct';
     is $email_args->{to},      $brand->emails('pa_livechat'), 'email receiver is correct';
     is $email_args->{subject}, "Payment agent application submitted by " . $client->loginid, 'Email subject is correct';
-    like $email_args->{message}->[0], qr/$_: $expected_values->{$_}/, "The field $_ is included in the email body" for keys %$expected_values;
+    like $email_args->{message}->[0], qr/$_:$expected_values->{$_}/, "The field $_ is included in the email body" for keys %$expected_values;
 };
 
 subtest 'paymentagent create erors' => sub {
@@ -270,11 +272,11 @@ subtest 'paymentagent create erors' => sub {
         'min_withdrawal'            => 2,
         'commission_withdrawal'     => 4,
         'commission_deposit'        => 5,
-        'is_authenticated'          => 1,
         'is_listed'                 => 1,
         'supported_payment_methods' => ['Visa'],
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => 'abcd12347',
+        'status'                    => undef,
     };
 
     $c->call_ok('paymentagent_create', $set_params)

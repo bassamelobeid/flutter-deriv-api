@@ -102,7 +102,7 @@ my $payment_agent_args = {
     summary               => 'Test Summary',
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    is_authenticated      => 't',
+    status                => 'authorized',
 };
 
 #make him payment agent

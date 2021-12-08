@@ -1013,7 +1013,7 @@ subtest 'transfer with fees' => sub {
         summary               => 'Test Summary',
         commission_deposit    => 0,
         commission_withdrawal => 0,
-        is_authenticated      => 'f',
+        status                => 'suspended',
         currency_code         => 'BTC',
     });
 
@@ -1356,8 +1356,8 @@ subtest 'transfer with no fee' => sub {
         summary               => 'Test Summary',
         commission_deposit    => 0,
         commission_withdrawal => 0,
-        is_authenticated      => 't',
         currency_code         => 'BTC',
+        status                => 'authorized',
     };
 
     $client_cr_pa_btc->payment_agent($pa_args);
@@ -1365,8 +1365,8 @@ subtest 'transfer with no fee' => sub {
     #save target countries for PA
     $client_cr_pa_btc->get_payment_agent->set_countries(['id', 'in']);
 
-    $pa_args->{is_authenticated} = 'f';
-    $pa_args->{currency_code}    = 'USD';
+    $pa_args->{status}        = 'suspended';
+    $pa_args->{currency_code} = 'USD';
     $client_cr_pa_usd->payment_agent($pa_args);
     $client_cr_pa_usd->save();
     #save target countries for PA

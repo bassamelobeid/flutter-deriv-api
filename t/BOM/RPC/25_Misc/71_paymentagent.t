@@ -51,7 +51,7 @@ my $payment_agent_args = {
     summary               => 'Test Summary',
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    is_authenticated      => 't',
+    status                => 'authorized',
 };
 
 ## For client authentication document tests.
@@ -584,11 +584,11 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
 
         $test = 'Transfer fails if payment agent is not authenticated';
-        $Alice->payment_agent->is_authenticated(0);
+        $Alice->payment_agent->status('suspended');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, "Your account needs to be authenticated to perform payment agent transfers.", $test);
-        $Alice->payment_agent->is_authenticated(1);
+        $Alice->payment_agent->status('authorized');
         $Alice->save;
 
         $test = 'Transfer fails if given currency does not match payment agent currency';
