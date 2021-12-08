@@ -18,7 +18,6 @@ __PACKAGE__->meta->setup(
         summary               => { type => 'varchar', length => 255, not_null => 1 },
         commission_deposit    => { type => 'numeric', not_null => 1 },
         commission_withdrawal => { type => 'numeric', not_null => 1 },
-        is_authenticated      => { type => 'boolean', not_null => 1 },
         api_ip                => { type => 'varchar', length => 64 },
         currency_code         => { type => 'text', not_null => 1 },
         target_country        => { type => 'varchar', default => '', length => 255, not_null => 1 },
@@ -29,7 +28,19 @@ __PACKAGE__->meta->setup(
         affiliate_id          => { type => 'varchar', length => 100 },
         
         code_of_conduct_approval      => { type => 'boolean'},
-        code_of_conduct_approval_time => { type => 'timestamp'},
+        code_of_conduct_approval_time => { type => 'timestamp'},    
+        status                        => {
+             type => 'enum', 
+             check_in => [ 
+                'applied',
+                'verified',
+                'authorized',
+                'suspended',
+                'rejected'
+            ], 
+            db_type => 'betonmarkets.payment_agent_status', 
+        },
+        status_comment        => { type => 'varchar' },
         risk_level                    => { type => 'text', not_null => 1 },
     ],
 
