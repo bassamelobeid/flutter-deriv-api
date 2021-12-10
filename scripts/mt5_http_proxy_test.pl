@@ -25,10 +25,12 @@ use BOM::User::Password;
 use BOM::Config;
 
 GetOptions(
-    'l|log=s'         => \(my $log_level = 'debug'),
-    'd|dry_run=s'     => \(my $dry_run   = 0),
-    'm|mt5_loginid=s' => \my $mt5_loginid,
-    'h|help'          => \my $help,
+    'l|log=s'          => \(my $log_level = 'debug'),
+    'd|dry_run=s'      => \(my $dry_run   = 0),
+    'm|mt5_loginid=s'  => \my $mt5_loginid,
+    'e|environment=s'  => \my $environment,
+    's|trade_server=s' => \my $trade_server,
+    'h|help'           => \my $help,
 );
 
 require Log::Any::Adapter;
@@ -41,6 +43,7 @@ $loop->add(
     my $http = Net::Async::HTTP->new(
         decode_content => 1,
         fail_on_error  => 1,
+        timeout        => 10,
     ));
 
 my $user;
@@ -146,6 +149,9 @@ async sub do_mt5_request {
 
         foreach my $server_type (keys %servers) {
             foreach my $server_identifier (@{$servers{$server_type}}) {
+                next if ($environment  and $environment ne $server_type);
+                next if ($trade_server and $trade_server ne $server_identifier);
+
                 $log->debug('----------------------------------------');
                 $log->debugf('>>>>> Server details: %s:%s', $server_type, $server_identifier);
                 try {
