@@ -17,6 +17,7 @@
       "landing_company_details" : {
          "required" : [
             "shortcode",
+            "support_professional_client",
             "legal_default_currency",
             "country",
             "has_reality_check",
@@ -30,6 +31,12 @@
             "shortcode" : {
                "type" : "string",
                "pattern" : "^[_1]$"
+            },
+            "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  1
+               ]
             },
             "legal_default_currency" : {
                "type" : "string",

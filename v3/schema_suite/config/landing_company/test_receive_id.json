@@ -19,7 +19,7 @@
             "mt_financial_company" : {
                "properties" : {
                   "financial" : {
-                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
+                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "support_professional_client", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
                       "type": "object",
                      "has_reality_check" : {
                         "type" : "integer",
@@ -36,6 +36,12 @@
                      "shortcode" : {
                         "type" : "string",
                         "pattern" : "^vanuatu$"
+                     },
+                     "support_professional_client" : {
+                        "type" : "integer",
+                        "enum" : [
+                           0
+                        ]
                      },
                      "legal_allowed_contract_categories" : {
                         "minItems" : 1,
@@ -74,7 +80,7 @@
                      }
                   },
                   "financial_stp" : {
-                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
+                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "support_professional_client", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
                      "type" : "object",
                      "legal_allowed_markets" : {
                         "items" : {
@@ -99,6 +105,12 @@
                      "shortcode" : {
                         "pattern" : "^labuan$",
                         "type" : "string"
+                     },
+                     "support_professional_client" : {
+                        "type" : "integer",
+                        "enum" : [
+                           0
+                        ]
                      },
                      "legal_default_currency" : {
                         "type" : "string",
@@ -128,7 +140,7 @@
                      }
                   },
                   "swap_free" : {
-                     "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
+                     "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "support_professional_client", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
                      "type": "object",
                     "has_reality_check" : {
                        "type" : "integer",
@@ -145,6 +157,12 @@
                     "shortcode" : {
                        "type" : "string",
                        "pattern" : "^vanuatu$"
+                    },
+                    "support_professional_client" : {
+                     "type" : "integer",
+                     "enum" : [
+                        0
+                     ]
                     },
                     "legal_allowed_contract_categories" : {
                        "minItems" : 1,
@@ -232,6 +250,12 @@
                         "type" : "string",
                         "pattern" : "^svg$"
                      },
+                     "support_professional_client" : {
+                        "type" : "integer",
+                        "enum" : [
+                           0
+                        ]
+                     },
                      "legal_default_currency" : {
                         "type" : "string",
                         "pattern" : "^USD$"
@@ -285,6 +309,12 @@
                         "type" : "string",
                         "pattern" : "^svg$"
                      },
+                     "support_professional_client" : {
+                        "type" : "integer",
+                        "enum" : [
+                           0
+                        ]
+                     },
                      "legal_default_currency" : {
                         "type" : "string",
                         "pattern" : "^USD$"
@@ -300,6 +330,7 @@
             "financial_company" : {
                "required" : [
                   "shortcode",
+                  "support_professional_client",
                   "legal_default_currency",
                   "country",
                   "has_reality_check",
@@ -313,6 +344,12 @@
                   "shortcode" : {
                      "pattern" : "^svg$",
                      "type" : "string"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "enum" : [
+                        0
+                     ]
                   },
                   "legal_default_currency" : {
                      "pattern" : "^USD$",
@@ -393,6 +430,12 @@
                      "type" : "string",
                      "pattern" : "^svg$"
                   },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "enum" : [
+                        0
+                     ]
+                  },
                   "has_reality_check" : {
                      "type" : "integer",
                      "pattern" : "^0$"
@@ -422,6 +465,7 @@
                   "country",
                   "legal_default_currency",
                   "shortcode",
+                  "support_professional_client",
                   "has_reality_check",
                   "legal_allowed_contract_categories",
                   "name"

@@ -45,6 +45,12 @@
                "pattern" : "^[_1]$",
                "type" : "string"
             },
+            "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  0
+               ]
+            },
             "has_reality_check" : {
                "enum" : [1],
                "type" : "integer"
@@ -88,6 +94,7 @@
             "legal_default_currency",
             "country",
             "shortcode",
+            "support_professional_client",
             "has_reality_check",
             "legal_allowed_contract_categories",
             "address",

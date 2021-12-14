@@ -36,6 +36,12 @@
                 "pattern" : "^[_1]$",
                 "type" : "string"
              },
+             "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  0
+               ]
+            },
              "address" : {
                 "type" : "null"
              },

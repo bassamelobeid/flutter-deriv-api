@@ -16,6 +16,7 @@
             "legal_allowed_contract_categories",
             "has_reality_check",
             "shortcode",
+            "support_professional_client",
             "country",
             "legal_default_currency",
             "legal_allowed_currencies",

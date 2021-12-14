@@ -63,6 +63,12 @@
                   "shortcode" : {
                      "type" : "string",
                      "pattern" : "^maltainvest$"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "enum" : [
+                        1
+                     ]
                   }
                },
                "required" : [
