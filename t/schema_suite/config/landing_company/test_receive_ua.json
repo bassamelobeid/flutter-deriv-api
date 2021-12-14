@@ -28,6 +28,7 @@
       "financial_company" : {
          "required" : [
             "shortcode",
+            "support_professional_client",
             "legal_default_currency",
             "has_reality_check",
             "name",
@@ -213,6 +214,12 @@
                "pattern" : "^svg$",
                "type" : "string"
             },
+            "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  0
+               ]
+            },
             "name" : {
                "pattern" : "^Deriv \\(SVG\\) LLC$",
                "type" : "string"
@@ -236,6 +243,7 @@
             "name",
             "legal_default_currency",
             "shortcode",
+            "support_professional_client",
             "currency_config",
             "address",
             "requirements",
@@ -381,6 +389,12 @@
                "pattern" : "^svg$",
                "type" : "string"
             },
+            "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  0
+               ]
+            },
             "requirements" : {
                "properties" : {},
                "patternProperties" : {
@@ -452,6 +466,7 @@
                   "name",
                   "legal_default_currency",
                   "shortcode",
+                  "support_professional_client",
                   "requirements",
                   "legal_allowed_contract_categories",
                   "has_reality_check",
@@ -599,6 +614,10 @@
                      "type" : "string",
                      "description" : "Landing Company short code"
                   },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "description" : "Flag that indicates whether the landing company supports professional accounts or not"
+                  },
                   "requirements" : {
                      "additionalProperties" : false,
                      "type" : "object",
@@ -672,6 +691,7 @@
                   "address",
                   "legal_default_currency",
                   "shortcode",
+                  "support_professional_client",
                   "country",
                   "currency_config",
                   "legal_allowed_currencies",
@@ -697,6 +717,10 @@
                   "shortcode" : {
                      "description" : "Landing Company short code",
                      "type" : "string"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "description" : "Flag that indicates whether the landing company supports professional accounts or not"
                   },
                   "country" : {
                      "description" : "Landing Company country of incorporation",
@@ -872,6 +896,7 @@
                   "address",
                   "legal_default_currency",
                   "shortcode",
+                  "support_professional_client",
                   "country",
                   "currency_config",
                   "legal_allowed_currencies",
@@ -897,6 +922,10 @@
                   "shortcode" : {
                      "description" : "Landing Company short code",
                      "type" : "string"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "description" : "Flag that indicates whether the landing company supports professional accounts or not"
                   },
                   "country" : {
                      "description" : "Landing Company country of incorporation",
@@ -1249,6 +1278,10 @@
                      "type" : "string",
                      "description" : "Landing Company short code"
                   },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "description" : "Flag that indicates whether the landing company supports professional accounts or not"
+                  },
                   "name" : {
                      "type" : "string",
                      "description" : "Landing Company legal name"
@@ -1269,6 +1302,7 @@
                   "legal_allowed_currencies",
                   "legal_default_currency",
                   "shortcode",
+                  "support_professional_client",
                   "name",
                   "address"
                ],
@@ -1447,6 +1481,10 @@
                      "type" : "string",
                      "description" : "Landing Company short code"
                   },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "description" : "Flag that indicates whether the landing company supports professional accounts or not"
+                  },
                   "name" : {
                      "type" : "string",
                      "description" : "Landing Company legal name"
@@ -1467,6 +1505,7 @@
                   "legal_allowed_currencies",
                   "legal_default_currency",
                   "shortcode",
+                  "support_professional_client",
                   "name",
                   "address"
                ],
@@ -1493,6 +1532,7 @@
                   "requirements",
                   "legal_default_currency",
                   "shortcode",
+                  "support_professional_client",
                   "name",
                   "address",
                   "currency_config",
@@ -1547,6 +1587,10 @@
                   "shortcode" : {
                      "type" : "string",
                      "description" : "Landing Company short code"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "description" : "Flag that indicates whether the landing company supports professional accounts or not"
                   },
                   "name" : {
                      "description" : "Landing Company legal name",
@@ -1701,6 +1745,7 @@
                   "name",
                   "legal_default_currency",
                   "shortcode",
+                  "support_professional_client",
                   "requirements",
                   "legal_allowed_contract_categories",
                   "has_reality_check",
@@ -1844,6 +1889,10 @@
                   "shortcode" : {
                      "type" : "string",
                      "description" : "Landing Company short code"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "description" : "Flag that indicates whether the landing company supports professional accounts or not"
                   },
                   "requirements" : {
                      "type" : "object",

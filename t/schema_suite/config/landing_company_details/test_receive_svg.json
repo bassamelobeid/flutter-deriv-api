@@ -6,6 +6,7 @@
    "description" : null,
    "required" : [
       "shortcode",
+      "support_professional_client",
       "legal_default_currency",
       "legal_allowed_contract_categories",
       "has_reality_check",
@@ -34,6 +35,12 @@
       "shortcode" : {
          "type" : "string",
          "pattern" : "^[_1]$"
+      },
+      "support_professional_client" : {
+         "type" : "integer",
+         "enum" : [
+            0
+         ]
       },
       "currency_config" : {
          "additionalProperties" : false,

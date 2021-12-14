@@ -7,6 +7,7 @@
    "required" : [
       "legal_default_currency",
       "shortcode",
+      "support_professional_client",
       "address",
       "legal_allowed_markets",
       "legal_allowed_currencies",
@@ -33,6 +34,12 @@
       "shortcode" : {
          "pattern" : "^[_1]$",
          "type" : "string"
+      },
+      "support_professional_client" : {
+         "type" : "integer",
+         "enum" : [
+            0
+         ]
       },
       "legal_default_currency" : {
          "type" : "string",

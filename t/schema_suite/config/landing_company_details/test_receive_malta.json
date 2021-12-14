@@ -11,6 +11,7 @@
       "legal_default_currency",
       "address",
       "shortcode",
+      "support_professional_client",
       "changeable_fields",
       "currency_config",
       "requirements"
@@ -70,6 +71,12 @@
       "shortcode" : {
          "type" : "string",
          "pattern" : "^[_1]$"
+      },
+      "support_professional_client" : {
+         "type" : "integer",
+         "enum" : [
+            0
+         ]
       },
       "legal_default_currency" : {
          "type" : "string",

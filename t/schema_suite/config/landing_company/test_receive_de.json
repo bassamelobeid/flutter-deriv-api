@@ -155,6 +155,7 @@
          "required": [
             "address",
             "shortcode",
+            "support_professional_client",
             "legal_default_currency",
             "legal_allowed_contract_categories",
             "name",
@@ -348,6 +349,12 @@
             "shortcode": {
                "type": "string",
                "pattern": "^maltainvest$"
+            },
+            "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  1
+               ]
             },
             "legal_default_currency": {
                "pattern": "^EUR$",
@@ -361,6 +368,7 @@
          "required": [
             "address",
             "shortcode",
+            "support_professional_client",
             "legal_default_currency",
             "legal_allowed_contract_categories",
             "name",
@@ -554,6 +562,12 @@
             "shortcode": {
                "type": "string",
                "pattern": "^maltainvest$"
+            },
+            "support_professional_client" : {
+               "type" : "integer",
+               "enum" : [
+                  0
+               ]
             },
             "legal_default_currency": {
                "pattern": "^EUR$",

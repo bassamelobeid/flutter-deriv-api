@@ -453,6 +453,8 @@ Returns a hashref containing the following:
 
 =item * has_reality_check
 
+=item * support_professional_client
+
 =back
 
 Takes a single C<$lc> object that contains the following methods:
@@ -474,6 +476,8 @@ Takes a single C<$lc> object that contains the following methods:
 =item * legal_allowed_contract_categories
 
 =item * has_reality_check
+
+=item * support_professional_client
 
 =back
 
@@ -503,6 +507,7 @@ sub __build_landing_company {
         currency_config                   => market_pricing_limits($payout_currencies, $lc->short, $lc->legal_allowed_markets),
         requirements                      => $lc->requirements,
         changeable_fields                 => $lc->changeable_fields,
+        support_professional_client       => $lc->support_professional_client,
     };
 }
 

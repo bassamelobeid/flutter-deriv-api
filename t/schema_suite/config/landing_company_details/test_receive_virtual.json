@@ -3,6 +3,7 @@
    "required" : [
       "legal_default_currency",
       "shortcode",
+      "support_professional_client",
       "legal_allowed_currencies",
       "country",
       "stash",
@@ -224,6 +225,12 @@
       "shortcode" : {
          "pattern" : "^[_1]$",
          "type" : "string"
+      },
+      "support_professional_client" : {
+         "type" : "integer",
+         "enum" : [
+            0
+         ]
       }
    }
 }

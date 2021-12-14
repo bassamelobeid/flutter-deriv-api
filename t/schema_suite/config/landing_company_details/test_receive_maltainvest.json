@@ -13,7 +13,8 @@
       "legal_allowed_contract_categories",
       "changeable_fields",
       "currency_config",
-      "requirements"
+      "requirements",
+      "support_professional_client"
    ],
    "additionalProperties" : false,
    "title" : null,
@@ -144,6 +145,12 @@
       "shortcode" : {
          "type" : "string",
          "pattern" : "^[_1]$"
+      },
+      "support_professional_client" : {
+         "type" : "integer",
+         "enum" : [
+            1
+         ]
       },
       "requirements" : {
          "type" : "object",
