@@ -301,93 +301,95 @@ subtest 'minmum stake' => sub {
     is $error->message_to_client->[1], '1.00';
 };
 
-subtest 'take profit cap and precision' => sub {
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
-    my $args = {
-        bet_type    => 'MULTUP',
-        underlying  => 'R_100',
-        amount_type => 'stake',
-        amount      => 10,
-        multiplier  => 10,
-        currency    => 'USD',
-        limit_order => {
-            take_profit => 10000 + 0.01,
-        },
+SKIP: {
+    skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
+    subtest 'take profit cap and precision' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
+        my $args = {
+            bet_type    => 'MULTUP',
+            underlying  => 'R_100',
+            amount_type => 'stake',
+            amount      => 10,
+            multiplier  => 10,
+            currency    => 'USD',
+            limit_order => {
+                take_profit => 10000 + 0.01,
+            },
+        };
+        my $c     = produce_contract($args);
+        my $error = exception { $c->is_valid_to_buy };
+        is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
+        is $error->message_to_client->[1], '90.00', 'max at 90.00';
+
+        $args->{limit_order}->{take_profit} = 0.000001;
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message, 'too many decimal places', 'message - too many decimal places';
+        is $c->primary_validation_error->message_to_client->[0], 'Only [_1] decimal places allowed.';
+        is $c->primary_validation_error->message_to_client->[1], 2;
     };
-    my $c     = produce_contract($args);
-    my $error = exception { $c->is_valid_to_buy };
-    is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
-    is $error->message_to_client->[1], '90.00', 'max at 90.00';
 
-    $args->{limit_order}->{take_profit} = 0.000001;
-    $c = produce_contract($args);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'too many decimal places', 'message - too many decimal places';
-    is $c->primary_validation_error->message_to_client->[0], 'Only [_1] decimal places allowed.';
-    is $c->primary_validation_error->message_to_client->[1], 2;
-};
+    subtest 'stop loss cap' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
+        my $args = {
+            bet_type    => 'MULTUP',
+            underlying  => 'R_100',
+            amount_type => 'stake',
+            amount      => 10,
+            multiplier  => 10,
+            currency    => 'USD',
+            limit_order => {
+                stop_loss => 11,
+            },
+        };
+        my $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message, 'stop loss too high', 'message - stop loss too high';
+        is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
+        is $c->primary_validation_error->message_to_client->[1], '10.00';
 
-subtest 'stop loss cap' => sub {
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
-    my $args = {
-        bet_type    => 'MULTUP',
-        underlying  => 'R_100',
-        amount_type => 'stake',
-        amount      => 10,
-        multiplier  => 10,
-        currency    => 'USD',
-        limit_order => {
-            stop_loss => 11,
-        },
+        my $mocked_lo = Test::MockModule->new('BOM::Product::Contract::Multup');
+        $mocked_lo->mock(
+            '_multiplier_config',
+            sub {
+                return {
+                    multiplier_range            => [10],
+                    commission                  => 5.0366490434625e-05,
+                    cancellation_commission     => 0.05,
+                    cancellation_duration_range => ['5m', '10m', '15m', '30m', '60m'],
+                    stop_out_level              => 10
+                };
+            });
+
+        $c = produce_contract($args);
+
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message, 'stop loss too high', 'message - stop loss too high';
+        is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
+        is $c->primary_validation_error->message_to_client->[1], '9.00';
+
+        $mocked_lo->unmock_all;
+        $mocked->unmock_all;
+        $args->{limit_order}->{stop_loss} = 0.09;
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message, 'stop loss too low', 'message - stop loss too low';
+        is $c->primary_validation_error->message_to_client->[0], 'Please enter a stop loss amount that\'s higher than [_1].';
+        is $c->primary_validation_error->message_to_client->[1], '0.10';
+
+        $args->{limit_order}->{stop_loss} = 0.1;
+        $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy';
+
+        $args->{amount}                   = 100;
+        $args->{limit_order}->{stop_loss} = 0.11;
+        $c                                = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message, 'stop loss lower than pnl', 'message - stop loss lower than pnl';
+        is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss must be higher than commission ([_1]).';
+        is $c->primary_validation_error->message_to_client->[1], '0.50';
     };
-    my $c = produce_contract($args);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'stop loss too high', 'message - stop loss too high';
-    is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
-    is $c->primary_validation_error->message_to_client->[1], '10.00';
-
-    my $mocked_lo = Test::MockModule->new('BOM::Product::Contract::Multup');
-    $mocked_lo->mock(
-        '_multiplier_config',
-        sub {
-            return {
-                multiplier_range            => [10],
-                commission                  => 5.0366490434625e-05,
-                cancellation_commission     => 0.05,
-                cancellation_duration_range => ['5m', '10m', '15m', '30m', '60m'],
-                stop_out_level              => 10
-            };
-        });
-
-    $c = produce_contract($args);
-
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'stop loss too high', 'message - stop loss too high';
-    is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
-    is $c->primary_validation_error->message_to_client->[1], '9.00';
-
-    $mocked_lo->unmock_all;
-    $mocked->unmock_all;
-    $args->{limit_order}->{stop_loss} = 0.09;
-    $c = produce_contract($args);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'stop loss too low', 'message - stop loss too low';
-    is $c->primary_validation_error->message_to_client->[0], 'Please enter a stop loss amount that\'s higher than [_1].';
-    is $c->primary_validation_error->message_to_client->[1], '0.10';
-
-    $args->{limit_order}->{stop_loss} = 0.1;
-    $c = produce_contract($args);
-    ok $c->is_valid_to_buy, 'valid to buy';
-
-    $args->{amount}                   = 100;
-    $args->{limit_order}->{stop_loss} = 0.11;
-    $c                                = produce_contract($args);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'stop loss lower than pnl', 'message - stop loss lower than pnl';
-    is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss must be higher than commission ([_1]).';
-    is $c->primary_validation_error->message_to_client->[1], '0.50';
-};
-
+}
 # setting commission to zero for easy calculation
 $mocked->mock('commission',        sub { return 0 });
 $mocked->mock('commission_amount', sub { return 0 });
