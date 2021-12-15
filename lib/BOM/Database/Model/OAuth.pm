@@ -77,6 +77,43 @@ sub get_names_by_app_id {
     return $app;
 }
 
+=head2 add_official_app
+
+add an app_id to official_apps table
+
+=over 4
+
+=item * C<app_id> - application ID
+
+=item * C<is_primary> - is primary website
+
+=item * C<is_internal> - is internal 
+
+=back
+
+Return app_id and is_primary_website and is_internal
+
+=cut
+
+sub add_official_app {
+    my ($self, $app_id, $is_primary, $is_internal) = @_;
+
+    my $result = $self->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare("
+        INSERT INTO oauth.official_apps
+            (app_id, is_primary_website, is_internal)
+        VALUES
+            (?, ?, ?)
+        RETURNING * ");
+            $sth->execute($app_id, $is_primary, $is_internal || 0,);
+
+            return $sth->fetchrow_hashref();
+        });
+
+    return $result;
+}
+
 =head2 is_official_app
 
 Checks if the app is among official
