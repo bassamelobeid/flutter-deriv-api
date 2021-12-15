@@ -60,13 +60,18 @@ my $broker = request()->broker_code;
 my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 
 my $loginid         = request()->param('loginid');
-my $whattodo        = request()->param('whattodo');
+my $whattodo        = request()->param('whattodo') // '';
 my $encoded_loginid = encode_entities($loginid);
 my $status          = request->param('pa_status') // '';
 my $status_comment  = request->param('pa_status_comment');
 
 if (any { $_ eq $status } qw/suspended verified rejected/) {
     code_exit_BO("Error : payment agent status <b>$status</b> should include a comment") unless $status_comment;
+}
+
+
+unless ($loginid) {
+    code_exit_BO('Please provide client loginid.', 'Payment Agent Setting', BOM::Backoffice::Utility::redirect_login());
 }
 
 Bar('Payment Agent Setting');
