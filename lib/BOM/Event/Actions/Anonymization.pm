@@ -3,6 +3,7 @@ package BOM::Event::Actions::Anonymization;
 use strict;
 use warnings;
 
+use Future;
 use Future::AsyncAwait;
 use List::Util qw( uniqstr );
 use Log::Any qw( $log );
@@ -20,6 +21,11 @@ use BOM::Platform::Context;
 use BOM::Platform::Desk;
 use BOM::Platform::ProveID;
 use BOM::Platform::Token::API;
+use IO::Async::Loop;
+use BOM::Event::Services;
+use LandingCompany::Registry;
+use BOM::Platform::Email qw(send_email);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 # Load Brands object globally
 my $BRANDS = BOM::Platform::Context::request()->brand();
@@ -33,6 +39,21 @@ use constant ERROR_MESSAGE_MAPPING => {
     deskError             => "couldn't anonymize user from s3 desk",
     closeIOError          => "couldn't anonymize user from Close.io",
 };
+
+use constant DF_ANONYMIZATION_KEY               => 'DF_ANONYMIZATION_QUEUE';
+use constant DF_ANONYMIZATION_RETRY_COUNTER_KEY => 'DF_ANONYMIZATION_RETRY_COUNTER::';
+use constant DF_ANONYMIZATION_RETRY_TTL         => 3600;
+use constant DF_ANONYMIZATION_MAX_RETRY         => 3;
+
+my $loop = IO::Async::Loop->new;
+$loop->add(my $services = BOM::Event::Services->new);
+
+{
+
+    sub _redis_payment_write {
+        return $services->redis_payment_write();
+    }
+}
 
 =head2 anonymize_client
 
@@ -222,6 +243,9 @@ async sub _anonymize {
             include_disabled   => 1,
             include_duplicated => 1,
         );
+
+        my $redis = _redis_payment_write();
+
         # Anonymize data for all the user's clients
         foreach my $cli (@clients_hashref) {
             # Skip mt5 because we dont want to anonymize third parties yet
@@ -249,7 +273,10 @@ async sub _anonymize {
             $token->remove_by_loginid($cli->loginid);
 
             $cli->anonymize_client();
+
+            await _df_anonymize($redis, $cli);
         }
+
         return "userNotFound" unless $client->anonymize_associated_user_return_list_of_siblings();
     } catch ($error) {
         exception_logged();
@@ -257,6 +284,110 @@ async sub _anonymize {
         return "anonymizationFailed";
     }
     return "successful";
+}
+
+=head2 _df_anonymize
+
+Push a new DF anonymization request in the Redis queue.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$redis> - a redis client instance
+
+=item * C<$cli> - the client to be anonymized
+
+=back
+
+Returns a L<Future> for the result of the Redis ZADD command.
+
+=cut
+
+async sub _df_anonymize {
+    my ($redis, $cli) = @_;
+
+    # skip DF anonymization if virtual
+    return if $cli->is_virtual;
+
+    # skip crypto accounts for DF anonymization
+    return unless $cli->currency;
+
+    return unless LandingCompany::Registry::get_currency_type($cli->currency) eq 'fiat';
+
+    return await $redis->zadd(DF_ANONYMIZATION_KEY, time, join('|', $cli->loginid, $cli->currency, $cli->landing_company->name));
+}
+
+=head2 df_anonymization_done
+
+Callback for DF anonymization process done.
+
+It takes a hashref with the following structure:
+
+=over 4
+
+=item * C<loginid> - The client loginid 
+
+=item * C<response> - raw response from DF anonymizator endpoint
+
+=back
+
+Returns B<1> on success.
+
+=cut
+
+async sub df_anonymization_done {
+    my $args = shift;
+
+    my $loginid = $args->{loginid};
+
+    return undef unless $loginid;
+
+    my $cli = BOM::User::Client->new({loginid => $loginid});
+
+    return undef unless $cli;
+
+    my $response = $args->{response} || return;
+    my $code     = $response->{data} || return;
+    my $redis    = _redis_payment_write();
+
+    if ($code =~ /^6 -/) {
+        my $counter = await $redis->incr(DF_ANONYMIZATION_RETRY_COUNTER_KEY . $loginid);
+
+        if ($counter <= DF_ANONYMIZATION_MAX_RETRY) {
+            # retry
+            $log->warnf('DF Anonymization retry: %s (%d times)', $loginid, $counter);
+            stats_inc('df_anonymization.result.retry', {tags => ["loginid:$loginid"]});
+            await _df_anonymize($redis, $cli);
+        } else {
+            # give up
+            $log->errorf('DF Anonymization max retry attempts reached: %s', $loginid);
+            stats_inc('df_anonymization.result.max_retry', {tags => ["loginid:$loginid"]});
+        }
+
+        await $redis->expire(DF_ANONYMIZATION_RETRY_COUNTER_KEY . $loginid, DF_ANONYMIZATION_RETRY_TTL);
+    } else {
+        my $from_email = $BRANDS->emails('no-reply');
+        my $to_email   = $BRANDS->emails('compliance');
+
+        if ($code eq 'OK') {
+            stats_inc('df_anonymization.result.success');
+        } else {
+            $log->errorf('DF Anonymization error code: %s for %s', $code, $loginid);
+            stats_inc('df_anonymization.result.error', {tags => ["result:$code", "loginid:$loginid"]});
+        }
+
+        # send the email with response from df api
+        send_email({
+            from                  => $from_email,
+            to                    => $to_email,
+            subject               => 'Doughflow Anonymization Report for ' . $cli->loginid,
+            message               => ["Result of doughflow anonymization process:<br/>", "<pre>" . $code . "</pre>"],
+            email_content_is_html => 1,
+        });
+    }
+
+    return 1;
 }
 
 1;

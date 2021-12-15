@@ -184,5 +184,18 @@ sub redis_replicated_read {
     }
 }
 
+sub redis_payment_write {
+    my ($self) = @_;
+
+    return $self->{redis_payment_write} //= do {
+        my $redis_config = BOM::Config::Redis::redis_config('payment', 'write');
+        $self->add_child(
+            my $service = Net::Async::Redis->new(
+                uri  => $redis_config->{uri},
+                auth => $redis_config->{password}));
+        $service;
+    }
+}
+
 1;
 

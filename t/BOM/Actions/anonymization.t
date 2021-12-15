@@ -3,6 +3,8 @@ use warnings;
 
 use Test::More;
 use Test::Deep;
+use Log::Any::Test;
+use Log::Any qw($log);
 use Test::MockModule;
 use BOM::Event::Actions::Anonymization;
 use BOM::Test;
@@ -17,6 +19,41 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Utility qw(random_email_address);
 use JSON::MaybeUTF8 qw(decode_json_utf8);
+use IO::Async::Loop;
+use BOM::Event::Services;
+use LandingCompany::Registry;
+
+my $redis      = BOM::Event::Actions::Anonymization::_redis_payment_write();
+my $redis_mock = Test::MockModule->new('Net::Async::Redis');
+my $df_queue   = [];
+my $df_partial = [];
+
+my $mocked_config = Test::MockModule->new('BOM::Config');
+$mocked_config->mock(
+    s3 => sub {
+        return {
+            document_auth => {map { $_ => 1 } qw(aws_access_key_id aws_secret_access_key aws_bucket)},
+            desk          => {map { $_ => 1 } qw(aws_access_key_id aws_secret_access_key aws_bucket)},
+        };
+    });
+
+$redis_mock->mock(
+    'zadd',
+    sub {
+        push $df_queue->@*, $_[3];
+
+        my @payload = split(/\|/, $_[3]);
+        my $cli     = BOM::User::Client->new({loginid => $payload[0]});
+
+        subtest $cli->loginid . ' DF queue' => sub {
+            ok !$cli->is_virtual, 'Client added to DF queue is not virtual';
+            is LandingCompany::Registry::get_currency_type($payload[1]), 'fiat', 'Currency added to DF queue is not crypto';
+            is $cli->landing_company->name, $payload[2], 'Landing company name enqueued';
+            push $df_partial->@*, $cli->loginid;
+        };
+
+        return $redis_mock->original('zadd')->(@_);
+    });
 
 my $mock_config = Test::MockModule->new('BOM::Config');
 $mock_config->mock(
@@ -55,7 +92,7 @@ subtest client_anonymization => sub {
     is $result, undef, "Return undef when loginid is not provided.";
 
     mailbox_clear();
-    $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid});
+    $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid})->get;
     my $msg = mailbox_search(subject => qr/Anonymization report for/);
 
     # It should send an notification email to compliance
@@ -63,14 +100,19 @@ subtest client_anonymization => sub {
     like($msg->{body},    qr/has at least one active client/,             qq/Compliance receive an email if user shouldn't anonymize./);
 
     mailbox_clear();
-    $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => 'MX009'});
-    $msg    = mailbox_search(subject => qr/Anonymization report for/);
+    $df_partial = [];
+    $result     = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => 'MX009'})->get;
+    $msg        = mailbox_search(subject => qr/Anonymization report for/);
 
     # It should send an notification email to compliance
     like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance receive an report of anonymization./);
     like($msg->{body}, qr/Getting client object failed. Please check if loginid is correct or client exist./, qq/user not found failure/);
 
     cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
+
+    cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
+
+    cmp_bag $df_partial, [], 'Nothing added to the DF queue';
 };
 
 subtest client_anonymization_vrtc_without_siblings => sub {
@@ -108,7 +150,7 @@ subtest client_anonymization_vrtc_without_siblings => sub {
             return Future->fail(0);
         });
 
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid})->get;
     ok($result, 'Returns 1 after user anonymized.');
 
     # Retrieve anonymized user from database by id
@@ -125,8 +167,9 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     # mock BOM::Platform::Desk success response
     $mock_s3_desk->mock('anonymize_user', sub { return Future->done(1) });
 
-    $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
-    ok($result, 'Returns 1 after user anonymized.');
+    $df_partial = [];
+    $result     = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid})->get;
+    is($result, 1, 'Returns 1 after user anonymized.');
 
     # Retrieve anonymized user from database by id
     @anonymized_clients = $user->clients(include_disabled => 1);
@@ -134,6 +177,10 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     is $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was anonymized' for @anonymized_clients;
 
     ok((grep { $_->broker_code eq 'VRTC' } @anonymized_clients), 'VRTC client was anonymized');
+
+    cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
+
+    cmp_bag $df_partial, [], 'Nothing added to the DF queue';
 };
 
 subtest client_anonymization_vrtc_with_siblings => sub {
@@ -161,14 +208,18 @@ subtest client_anonymization_vrtc_with_siblings => sub {
     my $mock_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
     $mock_anonymization->mock('_send_anonymization_report', sub { return 1 });
 
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
-    ok($result, 'Returns 1 after user anonymized.');
+    $df_partial = [];
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid})->get;
+    is($result, 1, 'Returns 1 after user anonymized.');
 
     # Retrieve anonymized user from database by id
     my @anonymized_clients = $user->clients(include_disabled => 1);
 
     isnt $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was NOT anonymized' for @anonymized_clients;
 
+    cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
+
+    cmp_bag $df_partial, [], 'Nothing added to the DF queue';
 };
 
 subtest bulk_anonymization => sub {
@@ -196,7 +247,7 @@ subtest bulk_anonymization => sub {
     is $result, undef, "Return undef when client's list is not provided.";
 
     mailbox_clear();
-    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines});
+    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines})->get;
     my $msg = mailbox_search(subject => qr/Anonymization report for/);
 
     # It should send an notification email to compliance
@@ -219,8 +270,8 @@ subtest bulk_anonymization => sub {
     $mock_s3_desk->mock('anonymize_user', sub { return Future->fail(0) });
 
     mailbox_clear();
-    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines});
-    ok($result, 'Returns 1 after user anonymized.');
+    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines})->get;
+    is($result, 1, 'Returns 1 after user anonymized.');
 
     $msg = mailbox_search(subject => qr/Anonymization report for/);
 
@@ -246,8 +297,12 @@ subtest bulk_anonymization => sub {
 
     mailbox_clear();
 
-    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines});
-    ok($result, 'Returns 1 after user anonymized.');
+    $df_partial = [];
+
+    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines})->get;
+    is($result, 1, 'Returns 1 after user anonymized.');
+
+    my $df_anon = [];
 
     foreach my $user (@users) {
         # Retrieve anonymized user from database by id
@@ -261,9 +316,14 @@ subtest bulk_anonymization => sub {
                 $disabled_status->{reason},
                 'Anonymized client',
                 sprintf('Client (%s) is disabled because it was anonymized.', $anonymized_client->loginid));
+
+            push $df_anon->@*, $anonymized_client->loginid unless $anonymized_client->is_virtual;
         }
     }
 
+    cmp_bag $df_partial, $df_anon, 'Expected clientes added to the DF queue';
+
+    cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
 };
 
 subtest users_clients_will_set_to_disabled_after_anonymization => sub {
@@ -325,12 +385,15 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
         });
 
     # Anonymize user
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid});
+    $df_partial = [];
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid})->get;
 
-    ok($result, 'Returns 1 after user anonymized.');
+    is($result, 1, 'Returns 1 after user anonymized.');
     # Retrieve anonymized user from database by id
     my $anonymized_user    = BOM::User->new(id => $user_id);
     my @anonymized_clients = $anonymized_user->clients(include_disabled => 1);
+
+    my $df_anon = [];
 
     foreach my $anonymized_client (@anonymized_clients) {
         my $disabled_status = $anonymized_client->status->disabled;
@@ -339,7 +402,13 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
             $disabled_status->{reason},
             'Anonymized client',
             sprintf('Client (%s) is disabled because it was anonymized.', $anonymized_client->loginid));
+
+        push $df_anon->@*, $anonymized_client->loginid unless $anonymized_client->is_virtual;
     }
+
+    cmp_bag $df_partial, $df_anon, 'Expected clientes added to the DF queue';
+
+    cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
 };
 
 subtest 'Anonymization disabled accounts' => sub {
@@ -388,8 +457,10 @@ subtest 'Anonymization disabled accounts' => sub {
     $user->add_client($cr_client);
 
     # Anonymize user
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid});
-    ok($result, 'Returns 1 after user anonymized.');
+    $df_partial = [];
+
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid})->get;
+    is($result, 1, 'Returns 1 after user anonymized.');
 
     # Retrieve anonymized user from database by id
     my @anonymized_clients = $user->clients(include_disabled => 1);
@@ -397,6 +468,241 @@ subtest 'Anonymization disabled accounts' => sub {
     is $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was anonymized' for @anonymized_clients;
 
     ok((grep { $_->broker_code eq 'CR' } @anonymized_clients), 'CR client was anonymized');
+
+    cmp_bag $df_partial, [map { $_->is_virtual ? () : $_->loginid } @anonymized_clients], 'Expected clients added to the DF queue';
+
+    cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
+};
+
+subtest 'DF Anonymization skips crypto accounts' => sub {
+    # Mock BOM::User module
+    my $mock_user_module = Test::MockModule->new('BOM::User');
+    $mock_user_module->mock(valid_to_anonymize => 1);
+
+    # Mock BOM::User::Client module
+    my $mock_client_module = Test::MockModule->new('BOM::User::Client');
+    $mock_client_module->mock(remove_client_authentication_docs_from_S3 => 1);
+
+    # Bypass CloseIO API calling and mock success response
+    my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
+    $mock_closeio->mock('anonymize_user', 1);
+
+    # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
+    my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
+    $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
+
+    my $email = random_email_address;
+
+    # Create a user
+    my $user = BOM::User->create(
+        email    => $email,
+        password => BOM::User::Password::hashpw('password'));
+    my $user_id = $user->id;
+
+    my $client_details = {
+        date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
+        broker_code => 'VRTC',
+    };
+    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+
+    $client_details->{broker_code} = 'CR';
+    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+    $cr_client->account('BTC');
+
+    # Disable CR client before anonymization
+    $cr_client->status->set('disabled', 'system', 'Some reason for disabling');
+
+    # Add clients to the user.
+    $user->add_client($vr_client);
+    $user->add_client($cr_client);
+
+    # Anonymize user
+    $df_partial = [];
+
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid})->get;
+    is($result, 1, 'Returns 1 after user anonymized.');
+
+    cmp_bag $df_partial, [], 'Nothing added to the DF queue';
+
+    cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
+};
+
+subtest 'DF anonymization done' => sub {
+    my $mock = Test::MockModule->new('BOM::Event::Actions::Anonymization');
+    my $stats_inc;
+    $mock->mock(
+        'stats_inc',
+        sub {
+            my $key     = shift;
+            my $content = shift;
+
+            $stats_inc = {($key => $content), $stats_inc ? $stats_inc->%* : ()};
+            return;
+        });
+
+    my $payload = {};
+
+    ok !BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Needs a loginid';
+
+    $payload = {loginid => 'MX0'};
+
+    ok !BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Needs a valid loginid';
+
+    my $email = random_email_address;
+
+    # Create a user
+    my $user = BOM::User->create(
+        email    => $email,
+        password => BOM::User::Password::hashpw('password'));
+    my $user_id = $user->id;
+
+    my $client_details = {
+        date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
+        broker_code => 'VRTC',
+    };
+    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+
+    $client_details->{broker_code} = 'CR';
+    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+
+    $payload = {loginid => $cr_client->loginid};
+
+    ok !BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Needs a response';
+
+    $payload = {
+        loginid  => $cr_client->loginid,
+        response => {}};
+
+    ok !BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Needs response data';
+
+    my $loginid = $cr_client->loginid;
+
+    subtest 'DF result is OK' => sub {
+        $payload = {
+            loginid  => $loginid,
+            response => {
+                data => 'OK',
+            },
+        };
+
+        mailbox_clear();
+        $log->clear();
+        $stats_inc = {};
+
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+
+        is($result, 1, 'Returns 1 after user anonymized.');
+
+        my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report for $loginid/);
+        ok $msg, 'DF anonymization report email sent';
+        ok $msg->{body} =~ /OK/, 'OK message';
+
+        cmp_deeply $stats_inc,
+            {
+            'df_anonymization.result.success' => undef,
+            },
+            'Dog was called just as expected';
+
+        cmp_deeply $log->msgs(), [], 'No logs generated for the OK response';
+    };
+
+    subtest 'DF result is error' => sub {
+        $payload = {
+            loginid  => $loginid,
+            response => {
+                data => '3 - PIN has recent (12 months) transaction activity',
+            },
+        };
+
+        mailbox_clear();
+        $log->clear();
+        $stats_inc = {};
+
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+
+        is($result, 1, 'Returns 1 after user anonymized.');
+
+        my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report for $loginid/);
+        ok $msg, 'DF anonymization report email sent';
+        ok $msg->{body} =~ /3 \- PIN has recent \(12 months\) transaction activity/, 'Error message';
+
+        cmp_deeply $stats_inc,
+            {
+            'df_anonymization.result.error' => {tags => ["result:3 - PIN has recent (12 months) transaction activity", "loginid:$loginid"]},
+            },
+            'Dog was called just as expected';
+
+        $log->contains_ok(qr/DF Anonymization error code: 3 \- PIN has recent \(12 months\) transaction activity for $loginid/,
+            'Error log generated');
+    };
+
+    subtest 'DF result is to retry' => sub {
+        $payload = {
+            loginid  => $loginid,
+            response => {
+                data => '6 - New generated PIN already exists. Try executing the store procedure again.',
+            },
+        };
+
+        mailbox_clear();
+        $log->clear();
+        $stats_inc  = {};    # Anonymize user
+        $df_partial = [];
+
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+
+        is($result, 1, 'Returns 1 after user anonymized.');
+
+        my $msg = mailbox_search(subject => qr/.*/);
+        ok !$msg, 'No email sent';
+
+        cmp_deeply $stats_inc,
+            {
+            'df_anonymization.result.retry' => {tags => ["loginid:CR10011"]},
+            },
+            'Dog was called just as expected';
+
+        $log->contains_ok(qr/DF Anonymization retry: $loginid/, 'Error log generated');
+
+        cmp_bag $df_partial, [$loginid], 'Client added to the DF queue (retry)';
+
+        cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
+    };
+
+    subtest 'DF result is to retry, but max retry is hit' => sub {
+        $payload = {
+            loginid  => $loginid,
+            response => {
+                data => '6 - New generated PIN already exists. Try executing the store procedure again.',
+            },
+        };
+
+        mailbox_clear();
+        $log->clear();
+        $stats_inc = {};
+        $redis->set('DF_ANONYMIZATION_RETRY_COUNTER::' . $loginid, 100)->get;
+        $df_partial = [];
+
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+
+        is($result, 1, 'Returns 1 after user anonymized.');
+
+        my $msg = mailbox_search(subject => qr/.*/);
+        ok !$msg, 'No email sent';
+
+        cmp_deeply $stats_inc,
+            {
+            'df_anonymization.result.max_retry' => {tags => ["loginid:CR10011"]},
+            },
+            'Dog was called just as expected';
+
+        $log->contains_ok(qr/DF Anonymization max retry attempts reached: $loginid/, 'Error log generated');
+
+        cmp_bag $df_partial, [], 'Nothing added to the DF queue';
+
+        cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
+    };
+    $mock->unmock_all;
 };
 
 done_testing()
