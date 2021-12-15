@@ -23,4 +23,11 @@ my $dashboard = BOM::RiskReporting::Dashboard->new(
 my $report = $dashboard->_payment_and_profit_report;
 is_deeply([sort keys %$report], ['big_deposits', 'big_losers', 'big_winners', 'big_withdrawals', 'watched'], "keys correct");
 is(scalar(@{$report->{big_deposits}}), '10', 'big_deposits number correct');
+
+subtest 'no such coin' => sub {
+    my $currency = 'NO_SUCH_COIN';
+    my $amount   = $dashboard->amount_in_usd(100, $currency);
+    is($amount, 0, $currency . ' is not a valid currency');
+};
+
 done_testing;

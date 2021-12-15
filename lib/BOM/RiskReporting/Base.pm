@@ -87,9 +87,11 @@ sub _build__usd_rates {
 }
 
 sub amount_in_usd {
-    my ($self, $amount, $currency) = @_;
-
-    return $amount * $self->_usd_rates->{uc $currency};
+    my $self     = shift;
+    my $amount   = shift                             // 0;
+    my $currency = shift                             // '';
+    my $rate     = $self->_usd_rates->{uc $currency} // do { $log->warnf("Cannot find usd rates for : %s", $currency); 0 };
+    return $amount * $rate;
 }
 
 sub _db {
