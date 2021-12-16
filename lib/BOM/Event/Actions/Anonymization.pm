@@ -322,69 +322,70 @@ async sub _df_anonymize {
 
 Callback for DF anonymization process done.
 
-It takes a hashref with the following structure:
+It takes a hashref whose keys are loginids and the values are the raw response from df api anonymization endpoint.
 
-=over 4
+The df api anonymization endpoint will always contain a `data` key whose value is a string that describes the result of the
+anonymization process for the loginid given.
 
-=item * C<loginid> - The client loginid 
-
-=item * C<response> - raw response from DF anonymizator endpoint
-
-=back
-
-Returns B<1> on success.
+Returns B<1>.
 
 =cut
 
 async sub df_anonymization_done {
     my $args = shift;
+    my $bulk = [];
 
-    my $loginid = $args->{loginid};
+    for my $loginid (keys $args->%*) {
+        my $cli = BOM::User::Client->new({loginid => $loginid});
 
-    return undef unless $loginid;
+        next unless $cli;
 
-    my $cli = BOM::User::Client->new({loginid => $loginid});
+        my $code  = $args->{$loginid}->{data} || next;
+        my $redis = _redis_payment_write();
 
-    return undef unless $cli;
+        if ($code =~ /^6 -/) {
+            my $counter = await $redis->incr(DF_ANONYMIZATION_RETRY_COUNTER_KEY . $loginid);
 
-    my $response = $args->{response} || return;
-    my $code     = $response->{data} || return;
-    my $redis    = _redis_payment_write();
+            if ($counter <= DF_ANONYMIZATION_MAX_RETRY) {
+                # retry
+                $log->warnf('DF Anonymization retry: %s (%d times)', $loginid, $counter);
+                stats_inc('df_anonymization.result.retry', {tags => ["loginid:$loginid"]});
+                await _df_anonymize($redis, $cli);
+            } else {
+                # give up
+                $log->errorf('DF Anonymization max retry attempts reached: %s', $loginid);
+                stats_inc('df_anonymization.result.max_retry', {tags => ["loginid:$loginid"]});
+            }
 
-    if ($code =~ /^6 -/) {
-        my $counter = await $redis->incr(DF_ANONYMIZATION_RETRY_COUNTER_KEY . $loginid);
-
-        if ($counter <= DF_ANONYMIZATION_MAX_RETRY) {
-            # retry
-            $log->warnf('DF Anonymization retry: %s (%d times)', $loginid, $counter);
-            stats_inc('df_anonymization.result.retry', {tags => ["loginid:$loginid"]});
-            await _df_anonymize($redis, $cli);
+            await $redis->expire(DF_ANONYMIZATION_RETRY_COUNTER_KEY . $loginid, DF_ANONYMIZATION_RETRY_TTL);
         } else {
-            # give up
-            $log->errorf('DF Anonymization max retry attempts reached: %s', $loginid);
-            stats_inc('df_anonymization.result.max_retry', {tags => ["loginid:$loginid"]});
-        }
+            push $bulk->@*, "<tr><td>$loginid</td><td>$code</td></tr>";
 
-        await $redis->expire(DF_ANONYMIZATION_RETRY_COUNTER_KEY . $loginid, DF_ANONYMIZATION_RETRY_TTL);
-    } else {
+            if ($code eq 'OK') {
+                stats_inc('df_anonymization.result.success');
+            } else {
+                $log->errorf('DF Anonymization error code: %s for %s', $code, $loginid);
+                stats_inc('df_anonymization.result.error', {tags => ["result:$code", "loginid:$loginid"]});
+            }
+        }
+    }
+
+    if (scalar $bulk->@*) {
         my $from_email = $BRANDS->emails('no-reply');
         my $to_email   = $BRANDS->emails('compliance');
 
-        if ($code eq 'OK') {
-            stats_inc('df_anonymization.result.success');
-        } else {
-            $log->errorf('DF Anonymization error code: %s for %s', $code, $loginid);
-            stats_inc('df_anonymization.result.error', {tags => ["result:$code", "loginid:$loginid"]});
-        }
-
         # send the email with response from df api
         send_email({
-            from                  => $from_email,
-            to                    => $to_email,
-            subject               => 'Doughflow Anonymization Report for ' . $cli->loginid,
-            message               => ["Result of doughflow anonymization process:<br/>", "<pre>" . $code . "</pre>"],
-            email_content_is_html => 1,
-        });
+                from    => $from_email,
+                to      => $to_email,
+                subject => 'Doughflow Anonymization Report',
+                message => [
+                    "Result of doughflow anonymization process:<br/><br/>",
+                    "<table border='1'><tr><th>Loginid</th><th>Result</th><tr>",
+                    $bulk->@*, "</table>"
+                ],
+                email_content_is_html => 1,
+            });
     }
 
     return 1;

@@ -540,47 +540,44 @@ subtest 'DF anonymization done' => sub {
             return;
         });
 
-    my $payload = {};
+    subtest 'empty payload' => sub {
+        my $payload = {};
 
-    ok !BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Needs a loginid';
+        mailbox_clear();
+        $stats_inc = {};
+        $log->clear();
 
-    $payload = {loginid => 'MX0'};
+        ok BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Event processed';
 
-    ok !BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Needs a valid loginid';
+        my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report/);
+        ok !$msg, 'No email was sent';
 
-    my $email = random_email_address;
-
-    # Create a user
-    my $user = BOM::User->create(
-        email    => $email,
-        password => BOM::User::Password::hashpw('password'));
-    my $user_id = $user->id;
-
-    my $client_details = {
-        date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
-        broker_code => 'VRTC',
+        cmp_deeply $stats_inc, {}, 'Dog was not called';
+        cmp_deeply $log->msgs(), [], 'No logs generated';
     };
-    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
 
-    $client_details->{broker_code} = 'CR';
-    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+    subtest 'invalod loginid' => sub {
+        my $payload = {CR0 => {data => 'OK'}};
 
-    $payload = {loginid => $cr_client->loginid};
+        mailbox_clear();
+        $stats_inc = {};
+        $log->clear();
 
-    ok !BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Needs a response';
+        ok BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Event processed';
 
-    $payload = {
-        loginid  => $cr_client->loginid,
-        response => {}};
+        my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report/);
+        ok !$msg, 'No email was sent';
 
-    ok !BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get, 'Needs response data';
+        cmp_deeply $stats_inc, {}, 'Dog was not called';
+        cmp_deeply $log->msgs(), [], 'No logs generated';
+    };
 
-    my $loginid = $cr_client->loginid;
+    ## Create a user
+    my $loginid = get_loginid('emailanon11111@binary.com');
 
     subtest 'DF result is OK' => sub {
-        $payload = {
-            loginid  => $loginid,
-            response => {
+        my $payload = {
+            $loginid => {
                 data => 'OK',
             },
         };
@@ -593,7 +590,7 @@ subtest 'DF anonymization done' => sub {
 
         is($result, 1, 'Returns 1 after user anonymized.');
 
-        my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report for $loginid/);
+        my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report/);
         ok $msg, 'DF anonymization report email sent';
         ok $msg->{body} =~ /OK/, 'OK message';
 
@@ -607,9 +604,8 @@ subtest 'DF anonymization done' => sub {
     };
 
     subtest 'DF result is error' => sub {
-        $payload = {
-            loginid  => $loginid,
-            response => {
+        my $payload = {
+            $loginid => {
                 data => '3 - PIN has recent (12 months) transaction activity',
             },
         };
@@ -622,7 +618,7 @@ subtest 'DF anonymization done' => sub {
 
         is($result, 1, 'Returns 1 after user anonymized.');
 
-        my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report for $loginid/);
+        my $msg = mailbox_search(subject => qr/Doughflow Anonymization/);
         ok $msg, 'DF anonymization report email sent';
         ok $msg->{body} =~ /3 \- PIN has recent \(12 months\) transaction activity/, 'Error message';
 
@@ -637,16 +633,15 @@ subtest 'DF anonymization done' => sub {
     };
 
     subtest 'DF result is to retry' => sub {
-        $payload = {
-            loginid  => $loginid,
-            response => {
+        my $payload = {
+            $loginid => {
                 data => '6 - New generated PIN already exists. Try executing the store procedure again.',
             },
         };
 
         mailbox_clear();
         $log->clear();
-        $stats_inc  = {};    # Anonymize user
+        $stats_inc  = {};
         $df_partial = [];
 
         my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
@@ -658,7 +653,7 @@ subtest 'DF anonymization done' => sub {
 
         cmp_deeply $stats_inc,
             {
-            'df_anonymization.result.retry' => {tags => ["loginid:CR10011"]},
+            'df_anonymization.result.retry' => {tags => ["loginid:$loginid"]},
             },
             'Dog was called just as expected';
 
@@ -670,9 +665,8 @@ subtest 'DF anonymization done' => sub {
     };
 
     subtest 'DF result is to retry, but max retry is hit' => sub {
-        $payload = {
-            loginid  => $loginid,
-            response => {
+        my $payload = {
+            $loginid => {
                 data => '6 - New generated PIN already exists. Try executing the store procedure again.',
             },
         };
@@ -692,7 +686,7 @@ subtest 'DF anonymization done' => sub {
 
         cmp_deeply $stats_inc,
             {
-            'df_anonymization.result.max_retry' => {tags => ["loginid:CR10011"]},
+            'df_anonymization.result.max_retry' => {tags => ["loginid:$loginid"]},
             },
             'Dog was called just as expected';
 
@@ -702,7 +696,75 @@ subtest 'DF anonymization done' => sub {
 
         cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
     };
+
+    subtest 'Mixed results' => sub {
+        ## Create a user
+        my $loginid2 = get_loginid('emailanon22222@binary.com');
+
+        ## Create a user
+        my $loginid3 = get_loginid('emailanon33333@binary.com');
+
+        my $payload = {
+            $loginid => {
+                data => '6 - New generated PIN already exists. Try executing the store procedure again.',
+            },
+            $loginid2 => {
+                data => 'OK',
+            },
+            $loginid3 => {
+                data => '3 - PIN has recent (12 months) transaction activity',
+            },
+        };
+
+        mailbox_clear();
+        $log->clear();
+        $stats_inc = {};
+        $redis->set('DF_ANONYMIZATION_RETRY_COUNTER::' . $loginid, 100)->get;
+        $df_partial = [];
+
+        my $result = BOM::Event::Actions::Anonymization::df_anonymization_done($payload)->get;
+
+        is($result, 1, 'Returns 1 after user anonymized.');
+
+        my $msg = mailbox_search(subject => qr/.*/);
+        ok $msg, 'Email sent';
+        ok $msg->{body} =~ /3 \- PIN has recent \(12 months\) transaction activity/, 'Error message';
+        ok $msg->{body} =~ /OK/,                                                     'OK message';
+
+        cmp_deeply $stats_inc,
+            {
+            'df_anonymization.result.max_retry' => {tags => ["loginid:$loginid"]},
+            'df_anonymization.result.error'     => {tags => ["result:3 - PIN has recent (12 months) transaction activity", "loginid:$loginid3"]},
+            'df_anonymization.result.success'   => undef,
+            },
+            'Dog was called just as expected';
+
+        $log->contains_ok(qr/DF Anonymization max retry attempts reached: $loginid/, 'Error log generated');
+
+        cmp_bag $df_partial, [], 'Nothing added to the DF queue';
+
+        cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
+    };
+
     $mock->unmock_all;
 };
+
+sub get_loginid {
+    my $user = BOM::User->create(
+        email    => shift,
+        password => BOM::User::Password::hashpw('password'));
+    my $user_id = $user->id;
+
+    my $client_details = {
+        date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
+        broker_code => 'VRTC',
+    };
+    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+
+    $client_details->{broker_code} = 'CR';
+    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+
+    return $cr_client->loginid;
+}
 
 done_testing()
