@@ -290,7 +290,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     <tr>
         <td class="label">Postcode</td>
-        <td>: <input type="text" name="postcode" value="[% client.postcode %]" size="10" data-lpignore="true" /></td>
+        <td>: <input type="text" name="address_postcode" value="[% client.postcode %]" size="10" data-lpignore="true" /></td>
     </tr>
     <tr>
         <td class="label">Residence</td>

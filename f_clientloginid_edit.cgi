@@ -840,13 +840,16 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
         $error = $client->validate_common_account_details({
             secret_answer   => $secret_answer,
             secret_question => $client->secret_question,
-            %input
+            %input,
         });
     }
 
     if ($error) {
-        my $message = $error->{error};
-        print "<p class='notify notify--warning'>ERROR: $message </p>";
+        my $message   = $error->{error};
+        my $err_field = $error->{details}->{field} // '';
+        $err_field = " on $err_field" if $err_field;
+
+        print "<p class='notify notify--warning'>ERROR: $message $err_field</p>";
         code_exit_BO("<p><a class='link' href='$self_href'>&laquo; Return to client details</a></p>");
     }
 
@@ -947,7 +950,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
             address_2
             city
             state
-            postcode
+            address_postcode
             place_of_birth
             restricted_ip_address
             salutation
@@ -1118,7 +1121,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
 
     BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $client->loginid})
-        if (any { exists $input{$_} } qw(address_1 address_2 city state postcode));
+        if (any { exists $input{$_} } qw(address_1 address_2 city state address_postcode));
 }
 
 =head2 Trading Experience & Financial Information

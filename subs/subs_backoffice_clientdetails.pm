@@ -2106,7 +2106,7 @@ sub client_text_field_validation_info {
             message => 'Within 35 characters, use only letters, spaces, hyphens, full-stops or apostrophes',
             name    => 'City/Town',
         },
-        postcode => {
+        address_postcode => {
             pattern => q/^[\w\s-]{0,20}$/,
             message => 'Within 20 characters, use only letters, spaces, underscore or hyphens',
             name    => 'Postal Code',
