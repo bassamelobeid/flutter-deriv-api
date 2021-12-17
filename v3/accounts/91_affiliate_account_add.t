@@ -14,6 +14,7 @@ use BOM::Database::Model::OAuth;
 use await;
 
 ## do not send email
+use LandingCompany::Registry;
 use Test::MockModule;
 my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
@@ -37,8 +38,11 @@ my %details = (
     secret_question        => 'Favourite dish',
     secret_answer          => 'nasi lemak,teh tarik',
     account_opening_reason => 'Speculative',
-    affiliate_plan         => 'turnover'
+    affiliate_plan         => 'turnover',
+    currency               => 'USD',
 );
+
+my $lc = LandingCompany::Registry->get_by_broker('AFF');
 
 subtest 'new affiliate account' => sub {
     my $res = $t->await::affiliate_account_add(\%details, {timeout => 10});
@@ -60,11 +64,11 @@ subtest 'new affiliate account' => sub {
     $res = $t->await::affiliate_account_add(\%details, {timeout => 10});
     cmp_deeply $res->{affiliate_account_add},
         {
-        oauth_token               => 'dummy',
-        landing_company           => 'Dummy LC',
+        oauth_token               => re('^a1-.+$'),
+        landing_company           => $lc->name,
         currency                  => 'USD',
-        landing_company_shortcode => 'dummy',
-        client_id                 => 'AFF0000000001'
+        landing_company_shortcode => $lc->short,
+        client_id                 => re('^AFF[0-9]+$'),
         };
 };
 
