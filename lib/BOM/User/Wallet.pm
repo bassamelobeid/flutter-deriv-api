@@ -60,6 +60,14 @@ Returns whether this client instance is a wallet.
 
 sub is_wallet { 1 }
 
+=head2 is_affiliate
+
+Returns whether this client instance is an affiliate.
+
+=cut
+
+sub is_affiliate { 0 }
+
 =head2 can_trade
 
 Returns whether this client instance can perform trading.

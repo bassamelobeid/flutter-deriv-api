@@ -6475,6 +6475,16 @@ sub is_wallet {
     return 0;
 }
 
+=head2 is_affiliate
+
+Returns whether this client instance is an affiliate.
+
+=cut
+
+sub is_affiliate {
+    return 0;
+}
+
 =head2 account_type
 
 Returns account type as a string. There are two account types as the moment: trading and wallet.
@@ -6516,6 +6526,13 @@ sub get_client_instance {
 
     if (LandingCompany::Wallet::get_wallet_for_broker($broker_code)) {
         return BOM::User::Wallet->new({
+            loginid      => $loginid,
+            db_operation => $db_operation // 'replica'
+        });
+    }
+
+    if (LandingCompany::Registry->get_by_broker($broker_code)->is_for_affiliates) {
+        return BOM::User::Affiliate->new({
             loginid      => $loginid,
             db_operation => $db_operation // 'replica'
         });

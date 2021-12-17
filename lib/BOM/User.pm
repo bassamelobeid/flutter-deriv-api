@@ -22,6 +22,7 @@ use BOM::User::Static;
 use BOM::User::Utility;
 use BOM::User::Client;
 use BOM::User::Wallet;
+use BOM::User::Affiliate;
 use BOM::User::Onfido;
 use BOM::User::RiskScreen;
 use BOM::TradingPlatform;
@@ -237,6 +238,26 @@ sub create_wallet {
     } finally {
         BOM::Platform::Redis::release_lock($lock_name);
     }
+}
+
+=head2 create_affiliate
+
+Creates a new affiliate account
+
+=over 4
+
+=item * C<args> new affiliate details
+
+=back
+
+=cut
+
+sub create_affiliate {
+    my ($self, %args) = @_;
+    $args{binary_user_id} = $self->{id};
+    my $client = BOM::User::Affiliate->register_and_return_new_client(\%args);
+    $self->add_client($client);
+    return $client;
 }
 
 =head2 login

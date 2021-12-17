@@ -36,8 +36,9 @@ subtest 'initial methods' => sub {
 
     my $wallet_client = BOM::User::Client->get_client_instance($wallet->loginid);
     isa_ok($wallet_client, 'BOM::User::Wallet', 'get_client_instance()');
-    ok($wallet_client->is_wallet,  'wallet client is_wallet is true');
-    ok(!$wallet_client->can_trade, 'wallet client can_trade is false');
+    ok($wallet_client->is_wallet,     'wallet client is_wallet is true');
+    ok(!$wallet_client->can_trade,    'wallet client can_trade is false');
+    ok(!$wallet_client->is_affiliate, 'wallet client is_affiliate is false');
 
     my $dummy_lc_data = {testing => 'some value'};
 
