@@ -50,6 +50,7 @@ CH
 VRCH
 DW
 VRDW
+AFF
 \.
 
 --
