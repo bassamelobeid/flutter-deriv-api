@@ -65,6 +65,5 @@ while ($s->recv(my $buf, 40960)) {
     my @tm = localtime;
     my ($port, $ip) = sockaddr_in $s->peername;
     $ip = inet_ntoa $ip;
-    printf "%04d-%02d-%02d %02d:%02d:%02d (%s:%s): %s\n",
-        $tm[5]+1900, $tm[4]+1, @tm[3,2,1,0], $ip, $port, $buf;
+    printf "%04d-%02d-%02d %02d:%02d:%02d (%s:%s): %s\n", $tm[5] + 1900, $tm[4] + 1, @tm[3, 2, 1, 0], $ip, $port, $buf;
 }
