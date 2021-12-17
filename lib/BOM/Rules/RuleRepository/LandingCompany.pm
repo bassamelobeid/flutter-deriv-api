@@ -29,8 +29,9 @@ rule 'landing_company.accounts_limit_not_reached' => {
         my $landing_company = $context->landing_company_object($args);
 
         my $account_type = $args->{account_type} // '';
-        # Only regulated landing companies and trading accounts are limitted.
-        my $number_of_accounts_limited = $landing_company->is_eu && ($account_type ne 'wallet');
+        # Regulated landing companies and trading accounts are limitted.
+        # Landing companies for affiliates are also limited.
+        my $number_of_accounts_limited = ($landing_company->is_eu && ($account_type ne 'wallet')) || $landing_company->is_for_affiliates;
 
         return 1 unless $number_of_accounts_limited;
 
@@ -63,6 +64,9 @@ rule 'landing_company.required_fields_are_non_empty' => {
             my @missing_wallet_fields = grep { not $args->{$_} } (qw/currency payment_method/);
             push @missing, @missing_wallet_fields;
         }
+
+        # Affiliate Landing Company requires extra info
+        push @missing, 'affiliate_plan' if $landing_company->is_for_affiliates and not $args->{affiliate_plan};
 
         $self->fail('InsufficientAccountDetails', details => {missing => [@missing]}) if @missing;
 

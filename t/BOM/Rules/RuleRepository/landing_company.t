@@ -107,6 +107,19 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
     );
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes when client has the data';
 
+    $mock_lc->redefine(is_for_affiliates => sub { return 1; });
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'InsufficientAccountDetails',
+        details    => {missing => [qw(affiliate_plan)]},
+        rule       => $rule_name
+        },
+        'Error with missing client data';
+
+    $args{affiliate_plan} = 'turnover';
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes when client has the data';
+
     $mock_lc->unmock_all;
 };
 

@@ -34,7 +34,7 @@ rule 'residence.market_type_is_available' => {
             financial => $countries_instance->financial_company_for_country($context->residence($args)),
         };
 
-        if ($account_type eq 'wallet') {
+        if ($account_type eq 'wallet' || $account_type eq 'affiliate') {
             $self->fail('InvalidAccount') unless List::Util::any { $_ } values %$companies;
         } else {
             $self->fail('InvalidAccount') if $context->landing_company($args) ne ($companies->{$market_type} // '');

@@ -35,6 +35,7 @@ use warnings;
 
 use YAML::XS;
 use Moo;
+use Scalar::Util qw(blessed);
 use List::Util qw(all);
 
 use BOM::User::Client;
@@ -73,7 +74,7 @@ around BUILDARGS => sub {
 
     my $client      = $constructor_args{client} // [];
     my $client_list = ref($client) eq 'ARRAY' ? $client : [$client];
-    die 'Invalid client object' unless all { $_->isa('BOM::User::Client') } @$client_list;
+    die 'Invalid client object' unless all { blessed($_) && $_->isa('BOM::User::Client') } @$client_list;
 
     return $class->$orig(context => BOM::Rules::Context->new(%constructor_args, client_list => $client_list));
 };

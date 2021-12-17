@@ -68,6 +68,28 @@ subtest 'rule residence.market_type_is_available' => sub {
     $companies->{financial} = 'svg';
     lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Succeeds after setting the same landing company';
 
+    subtest 'affiliate type' => sub {
+        $mock_countries->redefine(
+            gaming_company_for_country    => sub { return undef },
+            financial_company_for_country => sub { return undef });
+
+        $args->{market_type}  = 'affiliate';
+        $args->{account_type} = 'affiliate';
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+            {
+            error_code => 'InvalidAccount',
+            rule       => $rule_name
+            },
+            'correct error when there is no landing_company';
+
+        $mock_countries->redefine(
+            gaming_company_for_country    => sub { return $companies->{synthetic} },
+            financial_company_for_country => sub { return $companies->{financial} });
+
+        lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Succeeds after setting valid lc companies';
+
+    };
+
     $mock_countries->unmock_all;
 };
 
