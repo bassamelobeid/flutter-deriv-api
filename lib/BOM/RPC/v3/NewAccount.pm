@@ -901,8 +901,12 @@ sub _new_account_post_process {
     } catch {
         return BOM::RPC::v3::Utility::client_error()
     };
+    # Set affiliate data if required
+    if ($new_client->landing_company->is_for_affiliates) {
+        $new_client->set_affiliate_info({affiliate_plan => $args->{affiliate_plan}});
+    }
 
-    if ($args->{account_type} eq 'trading') {
+    if (any { $args->{account_type} eq $_ } qw/trading affiliate/) {
 
         update_financial_assessment($client->user, decode_fa($client->financial_assessment()))
             if $args->{market_type} eq 'synthetic' && $client->financial_assessment();
@@ -1046,12 +1050,32 @@ Will return the following data:
 rpc "affiliate_account_add", sub {
     my $params = shift;
 
+    my ($client, $args) = @{$params}{qw/client args/};
+
+    my $broker  = 'AFF';
+    my $company = LandingCompany::Registry->get_by_broker($broker);
+
+    my $response = create_new_real_account(
+        client          => $client,
+        args            => $args,
+        account_type    => 'affiliate',
+        broker_code     => $broker,
+        market_type     => 'affiliate',
+        environment     => request()->login_env($params),
+        ip              => $params->{client_ip} // '',
+        source          => $params->{source},
+        landing_company => $company->short,
+    );
+    return $response if exists $response->{error};
+
+    my $new_client = $response->{client};
+
     return {
-        client_id                 => 'AFF0000000001',
-        landing_company           => 'Dummy LC',
-        landing_company_shortcode => 'dummy',
-        oauth_token               => 'dummy',
-        currency                  => 'USD',
+        client_id                 => $new_client->loginid,
+        landing_company           => $new_client->landing_company->name,
+        landing_company_shortcode => $new_client->landing_company->short,
+        oauth_token               => $response->{oauth_token},
+        $args->{currency} ? (currency => $new_client->currency) : (),
     };
 };
 
