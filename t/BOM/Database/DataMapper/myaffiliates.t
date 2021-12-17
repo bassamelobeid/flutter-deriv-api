@@ -36,5 +36,5 @@ cmp_ok($activities->{'MX1001'}->{'withdrawals'},        '==', 0,            'Che
 cmp_ok($activities->{'MX1001'}->{'deposits'},           '==', 0,            'Check if activity deposits is correct for myaffiliate');
 cmp_ok($activities->{'MX1001'}->{'pnl'},                '==', 0,            'Check if activity pnl is correct for myaffiliate');
 cmp_ok($activities->{'MX1001'}->{'turnover_others'},    '==', 0,            'Check if activity turnover_others is correct for myaffiliate');
-cmp_ok($activities->{'MX1001'}->{'turnover_intradays'}, '==', 75,           'Check if turnover_intradays factors is correct for myaffiliate');
+cmp_ok($activities->{'MX1001'}->{'turnover_intradays'}, '==', 0,            'Check if turnover_intradays factors is correct for myaffiliate');
 cmp_ok($activities->{'MX1001'}->{'first_funded_date'},  'eq', '2011-03-09', 'Check if activity first_funded_date is correct for myaffiliate');
