@@ -53,4 +53,6 @@ test_sendrecv 'trading_times/test_send.json',  'trading_times/test_receive.json'
 test_sendrecv 'residence_list/test_send.json', 'residence_list/test_receive.json';
 test_sendrecv 'states_list/test_send.json',    'states_list/test_receive.json';
 
+test_sendrecv 'crypto_config/test_send.json', 'crypto_config/test_receive.json';
+
 finish;

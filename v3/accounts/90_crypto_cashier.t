@@ -146,6 +146,35 @@ subtest 'Crypto cashier calls' => sub {
     cmp_deeply $ws_response->{cashier_payments}, $rpc_response, 'Expected response for cashier_payments received';
 };
 
+subtest 'crypto_config call' => sub {
+
+    my $rpc_response    = {};
+    my $mocked_response = Test::MockObject->new();
+    $mocked_response->mock('is_error', sub { 0 });
+    $mocked_response->mock('result',   sub { $rpc_response });
+    {
+        no warnings qw(redefine once);    ## no critic (ProhibitNoWarnings)
+
+        *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
+            return $mocked_response;
+        }
+    }
+
+    $rpc_response = {
+        currencies_config => {
+            BTC => {minimum_withdrawal => 0.00059166},
+            ETH => {minimum_withdrawal => 0.01030783},
+        },
+    };
+    my $ws_response = $t->await::crypto_config({
+        crypto_config => '1',
+    });
+
+    test_schema(crypto_config => $ws_response);
+    cmp_deeply $ws_response->{crypto_config}, $rpc_response, 'Expected response for crypto_config received';
+
+};
+
 $t->finish_ok;
 
 done_testing();
