@@ -5,13 +5,13 @@ use warnings;
 
 =head1 NAME
 
-dd.pl - capture messages that would be sent to datadog
+DD.pl - capture messages that would be sent to datadog
 
 =head1 SYNOPSIS
 
     DATADOG_AGENT_HOST=... \
     DATADOG_AGENT_PORT=... \
-    dd.pl
+    DD.pl
 
 =head1 DESCRIPTION
 
@@ -28,7 +28,7 @@ first shut down your local DD-agent:
 
 Next you simply start this script:
 
-  dd.pl
+  DD.pl
 
 It will print messages like these:
 
