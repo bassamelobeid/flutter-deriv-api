@@ -52,6 +52,7 @@ use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
 use BOM::TradingPlatform;
+use BOM::Config::Redis;
 use BOM::Rules::Engine;
 
 requires_auth('trading', 'wallet');
@@ -59,7 +60,8 @@ requires_auth('trading', 'wallet');
 use Log::Any qw($log);
 
 use constant MAX_DESCRIPTION_LENGTH => 250;
-use constant HANDOFF_TOKEN_TTL      => 5 * 60;    # 5 Minutes
+use constant HANDOFF_TOKEN_TTL      => 5 * 60;                             # 5 Minutes
+use constant CRYPTO_CONFIG_KEY      => "REDIS_CRYPTO_CURRENCIES_CONFIG";
 
 my $payment_limits = BOM::Config::payment_limits;
 
@@ -2067,5 +2069,65 @@ rpc 'cashier_payments', sub {
     my $crypto_service = BOM::RPC::v3::Services::Crypto->new($params);
     return $crypto_service->transactions($client->loginid, $args->{transaction_type});
 };
+
+=head2 _crypto_config
+
+Returns crypto config from bom config
+
+=cut
+
+sub _crypto_config {
+
+    my @all_crypto_currencies = LandingCompany::Registry::all_crypto_currencies();
+    my %crypto_config;
+    for my $currency (@all_crypto_currencies) {
+        next if BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency);
+        my $converted = eval {
+            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($currency),
+                'USD', $currency);
+        };
+        $crypto_config{$currency}->{minimum_withdrawal} = 0 + financialrounding('amount', $currency, $converted) if $converted;
+    }
+
+    return {
+        currencies_config => \%crypto_config,
+    };
+}
+
+rpc 'crypto_config',
+    auth => [],    # unauthenticated
+    sub {
+    my $params = shift;
+
+    my $currency_code = $params->{args}{currency_code} // '';    #not uppercasing currency code bcs we do have currency like eUSDT.
+
+    if ($currency_code && !BOM::Config::CurrencyConfig::is_valid_crypto_currency($currency_code)) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'CryptoInvalidCurrency',
+            message_to_client => localize('The provided currency [_1] is not a valid cryptocurrency.', $currency_code),
+        });
+    }
+
+    # Retrieve from redis
+    my $redis_read = BOM::Config::Redis::redis_replicated_read();
+    my $result     = $redis_read->get(CRYPTO_CONFIG_KEY);
+
+    if ($result) {
+        $result = decode_json($result);
+    } else {
+        #get the config from bom config if not available via redis
+        $result = _crypto_config();
+    }
+
+    # Return all
+    return $result unless $currency_code;
+
+    # Return the requested currency only
+    return {
+        currencies_config => {
+            $currency_code => $result->{currencies_config}{$currency_code} // {},
+        },
+    };
+    };
 
 1;

@@ -16,6 +16,12 @@ use BOM::User;
 use LWP::UserAgent;
 require Test::NoWarnings;
 
+use BOM::Config::Redis;
+use JSON::MaybeXS qw(encode_json);
+use Format::Util::Numbers qw/financialrounding/;
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+populate_exchange_rates();
+
 # this must be declared at the end, otherwise BOM::Test::Email will fail
 use Test::Most;
 
@@ -302,6 +308,54 @@ subtest 'validate_amount' => sub {
         'Invalid amount. Amount provided can not have more than 5 decimal places.',
         'Too many decimals'
     );
+};
+
+subtest 'api crypto_config' => sub {
+
+    #should get response from bom config
+    my $result = $rpc_ct->call_ok(
+        'crypto_config',
+        {
+            language => 'EN',
+            args     => {crypto_config => 1}})->has_no_system_error->has_no_error->result;
+
+    my @all_crypto_currencies = LandingCompany::Registry::all_crypto_currencies();
+    my @crypto_currency       = grep { !BOM::Config::CurrencyConfig::is_crypto_currency_suspended($_) } @all_crypto_currencies;
+
+    #testing response from bom config as response is not set in redis yet.
+    cmp_ok(
+        0 + financialrounding(
+            'amount', $_,
+            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($_), 'USD', $_)
+        ),
+        '==',
+        $result->{currencies_config}->{$_}->{minimum_withdrawal},
+        "API:crypto_config => Minimum withdrawal in USD is correct for $_"
+    ) for @crypto_currency;
+
+    #testing response from redis
+    my $redis_write            = BOM::Config::Redis::redis_replicated_write();
+    my $expected_result        = {currencies_config => {map { $_ => {minimum_withdrawal => 3} } @crypto_currency}};
+    my $common_expected_result = {
+        stash => {
+            valid_source               => 1,
+            app_markup_percentage      => 0,
+            source_bypass_verification => 0,
+        },
+    };
+    $expected_result = {$common_expected_result->%*, $expected_result->%*};
+    $redis_write->set("REDIS_CRYPTO_CURRENCIES_CONFIG", encode_json($expected_result));
+
+    #this call should response from redis as above we have set already redis key/val.
+    $rpc_ct->call_ok(
+        'crypto_config',
+        {
+            language => 'EN',
+            args     => {crypto_config => 1}}
+    )->has_no_system_error->has_no_error->result_is_deeply($expected_result, "Correct response from redis for crypto api");
+
+    $redis_write->del('REDIS_CRYPTO_CURRENCIES_CONFIG');
+
 };
 
 done_testing();
