@@ -22,6 +22,10 @@ my @doughflow_sportsbooks_mock = (
     'Binary Investments Ltd USD',
     'Binary Investments Ltd EUR',
     'Binary Investments Ltd GBP',
+    'Binary Services Ltd USD',
+    'Binary Services Ltd EUR',
+    'Binary Services Ltd GBP',
+    'Binary Services Ltd AUD',
 );
 
 my @doughflow_deriv_sportsbooks_mock = (
@@ -37,6 +41,10 @@ my @doughflow_deriv_sportsbooks_mock = (
     'Deriv Investments Ltd USD',
     'Deriv Investments Ltd EUR',
     'Deriv Investments Ltd GBP',
+    'Deriv Services Ltd USD',
+    'Deriv Services Ltd EUR',
+    'Deriv Services Ltd GBP',
+    'Deriv Services Ltd AUD',
 );
 
 sub _test_data {

@@ -5,7 +5,7 @@ use Guard;
 use JSON::MaybeXS;
 use Date::Utility;
 
-use Test::More (tests => 4);
+use Test::More (tests => 5);
 use Test::Exception;
 use Test::Warn;
 use Test::MockModule;
@@ -533,6 +533,45 @@ subtest 'create account' => sub {
         ok !$client_vr_new->status->allow_poi_resubmission, 'allow_poi_resubmission status must not set or copied for virtual accounts';
         ok !$client_vr_new->status->allow_poa_resubmission, 'allow_poa_resubmission status must not set or copied for virtual accounts';
     };
+};
+
+subtest 'create affiliate' => sub {
+    my ($vr_client, $aff, $user);
+    lives_ok {
+        my $vr_acc = create_vr_acc({
+            email     => 'afftest@binary.com',
+            password  => 'okcomputer',
+            residence => 'br',
+        });
+        ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+    }
+    'create VR acc';
+
+    lives_ok {
+        $aff = BOM::Platform::Account::Real::default::create_account({
+                from_client => $vr_client,
+                user        => $user,
+                details     => {
+                    broker_code              => 'AFF',
+                    type                     => 'affiliate',
+                    email                    => 'afftest@binary.com',
+                    client_password          => 'okcomputer',
+                    residence                => 'br',
+                    first_name               => 'test',
+                    last_name                => 'asdf',
+                    address_line_1           => 'super st',
+                    address_city             => 'sao paulo',
+                    phone                    => '+381902941243',
+                    secret_question          => 'Mother\'s maiden name',
+                    secret_answer            => 'the iron maiden',
+                    account_opening_reason   => 'Hedging',
+                    non_pep_declaration_time => Date::Utility->new()->_plus_years(1)->date_yyyymmdd,
+                },
+            });
+    }
+    'create AFF acc';
+
+    isa_ok $aff->{client}, 'BOM::User::Affiliate', 'Expected package for AFF';
 };
 
 sub create_vr_acc {

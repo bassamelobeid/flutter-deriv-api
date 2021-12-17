@@ -30,6 +30,8 @@ sub create_account {
     try {
         if ($type eq 'wallet') {
             $client = $user->create_wallet(%$details);
+        } elsif ($type eq 'affiliate') {
+            $client = $user->create_affiliate(%$details);
         } else {
             $client = $user->create_client(%$details);
         }
