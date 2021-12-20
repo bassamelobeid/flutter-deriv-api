@@ -367,13 +367,14 @@ sub add_customerio_emails {
         for my $campaign (@$campaigns) {
             next unless $campaign->{updateable};
             my $type = $campaign->{template}{type};
+            my $name = $campaign->{name};
 
             my $result = $cio->process_camapign($campaign);
             for my $string ($result->{strings}->@*) {
                 my $msgid = $self->msg_id($string->{loc_text});
                 if ($self->is_id_unique($msgid)) {
                     print $fh "\n";
-                    print $fh "msgctxt \"Customer IO $type content \"\n";
+                    print $fh "msgctxt \"Customer.io $type: $name \"\n";
                     print $fh $msgid . "\n";
                     print $fh "msgstr \"\"\n";
                 }
