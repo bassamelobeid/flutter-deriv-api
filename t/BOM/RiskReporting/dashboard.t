@@ -24,6 +24,16 @@ my $report = $dashboard->_payment_and_profit_report;
 is_deeply([sort keys %$report], ['big_deposits', 'big_losers', 'big_winners', 'big_withdrawals', 'watched'], "keys correct");
 is(scalar(@{$report->{big_deposits}}), '10', 'big_deposits number correct');
 
+my @crypto_pairs = LandingCompany::Registry::all_currencies();
+
+subtest 'All pairs' => sub {
+    my $amount;
+    for (@crypto_pairs) {
+        $amount = $dashboard->amount_in_usd(100, $_);
+        isnt($amount, 0, 'Found usd rates for ' . $_);
+    }
+};
+
 subtest 'no such coin' => sub {
     my $currency = 'NO_SUCH_COIN';
     my $amount   = $dashboard->amount_in_usd(100, $currency);

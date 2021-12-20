@@ -69,7 +69,6 @@ if (any { $_ eq $status } qw/suspended verified rejected/) {
     code_exit_BO("Error : payment agent status <b>$status</b> should include a comment") unless $status_comment;
 }
 
-
 unless ($loginid) {
     code_exit_BO('Please provide client loginid.', 'Payment Agent Setting', BOM::Backoffice::Utility::redirect_login());
 }
