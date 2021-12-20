@@ -33,7 +33,7 @@ LTC:
     decimal_places: 8
     dust_relay_tx_fee: 0.0003 # in LTC/kB
     sweep:
-        address: MN42N4FdC6scDQzAW1W3kUJeawcjECDRvB
+        address: ltc1qhhmvwuw6kvpe09uern97wyvsrdfpha7ahtzhmzazz72580fns8wqls7ssx
     thirdparty_api:
         bitgo:
             url: https://bitgo.com/api/v2/ltc
