@@ -32,7 +32,7 @@ sub _get_payout_currencies {
     }
 
     # @additional_currencies is for adding additional currencies that is not available in LandingCompany::Registry::get('svg')->legal_allowed_currencies
-    my @additional_currencies = qw(JPY);
+    my @additional_currencies = qw(JPY CHF);
     push @payout_currencies, @additional_currencies;
 
     return \@payout_currencies;
