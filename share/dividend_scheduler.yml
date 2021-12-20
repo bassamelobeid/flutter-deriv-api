@@ -15,16 +15,21 @@ symbols:
     - AAPL
     - ADS
     - AIG
+    - AIR
+    - AIRF
     - ABNB
     - AMZN
+    - AMD
     - BA
     - BABA
     - BAC
     - BAY
     - BMW
+    - BOSS
     - BIIB
     - C
     - CRM
+    - CONG
     - CSCO
     - DAL
     - DBK
@@ -33,25 +38,34 @@ symbols:
     - EBAY
     - FB
     - FDX
+    - FOX
     - GM
     - GOOG
     - GS
     - HPQ
+    - HD
     - IBM
     - INTC
     - JNJ
     - JPM
     - KO
+    - LHAG
     - MA
     - MCD
     - MRNA
     - MSFT
+    - NESN
     - NFLX
     - NKE
+    - NOVN
     - NVDA
+    - PEP
     - PFE
     - PG
+    - PSHG
+    - PUMG
     - PYPL
+    - SONY
     - TEVA
     - TSLA
     - TWTR
