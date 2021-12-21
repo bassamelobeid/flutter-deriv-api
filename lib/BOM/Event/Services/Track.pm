@@ -55,7 +55,7 @@ my %EVENT_PROPERTIES = (
             residence address_state allow_copiers email_consent phone place_of_birth request_professional_status tax_identification_number tax_residence)
     ],
     mt5_signup => [
-        qw(account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id mt5_server mt5_server_location mt5_server_region mt5_server_environment)
+        qw(account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id brand mt5_server mt5_server_location mt5_server_region mt5_server_environment mt5_dashboard_url live_chat_url)
     ],
     mt5_password_changed      => [qw(mt5_loginid)],
     mt5_inactive_notification => [qw(email name closure_date accounts)],

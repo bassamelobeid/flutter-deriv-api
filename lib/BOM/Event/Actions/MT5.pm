@@ -231,15 +231,6 @@ sub new_mt5_signup {
         $data->{mt5_server_region}      = $mt5_server_geolocation->{region};
         $data->{mt5_server_location}    = $mt5_server_geolocation->{location};
         $data->{mt5_server_environment} = BOM::Config::MT5->new(group => $data->{mt5_group})->server_environment();
-
-        # Sending email to client about mt5 account opening
-        send_mt5_account_opening_email({
-            mt5_login_id    => $id,
-            mt5_group       => $data->{mt5_group},
-            mt5_region      => $data->{mt5_server_region},
-            mt5_environment => $data->{mt5_server_environment},
-            client          => $client
-        });
     } catch ($e) {
         $log->errorf('Unable to send email to client for new mt5 account open due to error: %s', $e);
     }
@@ -252,8 +243,14 @@ sub new_mt5_signup {
     $data->{type_label}     = ucfirst $type_label;                     # Frontend-ish label (Synthetic, Financial, Financial STP)
     $data->{mt5_integer_id} = $id =~ s/${\BOM::User->MT5_REGEX}//r;    # This one is just the numeric ID
 
-    my %track_properties = (%$data, client => $client);
-    $track_properties{mt5_loginid} = delete $track_properties{mt5_login_id};    # track event field is different
+    my $brand            = request()->brand;
+    my %track_properties = (
+        %$data,
+        client            => $client,
+        mt5_dashboard_url => $brand->mt5_dashboard_url({language => request->language}),
+        live_chat_url     => $brand->live_chat_url({language => request->language}),
+    );
+    $track_properties{mt5_loginid} = delete $track_properties{mt5_login_id};
     return BOM::Event::Services::Track::new_mt5_signup(\%track_properties);
 }
 
@@ -276,73 +273,6 @@ sub mt5_password_changed {
     die 'mt5 loginid is required' unless $args->{mt5_loginid};
 
     return BOM::Event::Services::Track::mt5_password_changed($args);
-}
-
-=head2 send_mt5_account_opening_email
-
-Sends an email to client regarding mt5 account opening.
-It needs a hashref as param, expected keys:
-
-=over 4
-
-=item * C<mt5_login_id> - mt5 login id
-
-=item * C<mt5_group> - mt5 group
-
-=item * C<client> - the client itself, so we can email him/her and customize email template
-
-=back
-
-=cut
-
-sub send_mt5_account_opening_email {
-    my $params       = shift;
-    my $brand        = request()->brand;
-    my $mt5_login_id = $params->{mt5_login_id};
-    my $mt5_group    = $params->{mt5_group};
-    my $client       = $params->{client};
-
-    # This is just for Binary customers
-    # Deriv emails are handled by Segment
-    return unless $brand->send_signin_email_enabled;
-    return unless $mt5_login_id;
-    return unless $mt5_group;
-
-    my $mt5_details = parse_mt5_group($mt5_group);
-    my $type_label  = $mt5_details->{market_type};
-    $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
-    my $mt5_type_label    = ucfirst $type_label =~ s/stp$/STP/r;
-    my $mt5_category      = $mt5_details->{account_type};
-    my $mt5_loginid       = $mt5_login_id =~ s/${\BOM::User->MT5_REGEX}//r;
-    my $email             = $client->email;
-    my $client_first_name = $client->first_name;
-    my $lang              = lc(request()->language // 'en');
-    my $website_name      = $brand->website_name;
-
-    my $url_params = {
-        language => request->language,
-    };
-
-    send_email({
-            from          => $brand->emails('no-reply'),
-            to            => $email,
-            subject       => localize('Your MT5 account is ready!'),
-            template_name => 'mt5_account_opening',
-            template_args => {
-                mt5_loginid       => $mt5_loginid,
-                mt5_category      => $mt5_category,
-                mt5_type_label    => $mt5_type_label,
-                mt5_region        => $params->{mt5_region},
-                mt5_environment   => $params->{mt5_environment},
-                client_first_name => $client_first_name,
-                lang              => $lang,
-                website_name      => $website_name,
-                live_chat_url     => $brand->live_chat_url($url_params),
-            },
-            use_email_template => 1,
-        });
-
-    return;
 }
 
 =head2 mt5_inactive_notification

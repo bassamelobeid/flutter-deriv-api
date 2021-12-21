@@ -47,23 +47,23 @@ $mock_brands->mock(
         return (grep { $_ eq $self->name } @enabled_brands);
     });
 
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+
+$client->email('jw@deriv.com');
+$client->first_name('John');
+$client->last_name('Wick');
+$client->salutation('MR');
+$client->save;
+
+my $user = BOM::User->create(
+    email          => $client->email,
+    password       => "hello",
+    email_verified => 1,
+)->add_client($client);
+
 subtest 'email events - risk disclaimer resubmission' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-
-    $client->email('jw@deriv.com');
-    $client->first_name('John');
-    $client->last_name('Wick');
-    $client->salutation('MR');
-    $client->save;
-
-    my $user = BOM::User->create(
-        email          => $client->email,
-        password       => "hello",
-        email_verified => 1,
-    )->add_client($client);
-
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
         language   => 'EN',
@@ -99,5 +99,7 @@ subtest 'email events - risk disclaimer resubmission' => sub {
 
     is $args{context}{locale}, 'ES', "got correct preferred language";
 };
+
+$mock_segment->unmock_all;
 
 done_testing;

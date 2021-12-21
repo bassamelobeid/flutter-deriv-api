@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Test::Deep;
 use Test::More;
 use Test::Fatal;
 use Time::Moment;
@@ -18,6 +19,7 @@ use BOM::User::Utility qw(parse_mt5_group);
 
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
+
 my (@identify_args, @track_args);
 my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
 $mock_segment->redefine(
@@ -47,14 +49,18 @@ my $user = BOM::User->create(
 );
 $user->add_client($test_client);
 $user->add_loginid('MT1000');
+
 my $mocked_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
 $mocked_mt5->mock('update_user', sub { Future->done({}) });
+
 my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my @emitter_args;
 $mocked_emitter->mock('emit', sub { @emitter_args = @_ });
+
 my $mocked_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
 my @datadog_args;
 $mocked_datadog->mock('stats_inc', sub { @datadog_args = @_ });
+
 subtest 'test unrecoverable error' => sub {
     $mocked_mt5->mock('get_user', sub { Future->done({error => 'Not found'}) });
     is(BOM::Event::Actions::MT5::sync_info({loginid => $test_client->loginid}), 0, 'return 0 because there is error');
@@ -149,20 +155,22 @@ subtest 'mt5 track event' => sub {
             event      => 'mt5_signup',
             properties => {
                 loginid                => $test_client->loginid,
-                'account_type'         => 'gaming',
-                'language'             => 'EN',
-                'mt5_group'            => 'real\\p02_ts02\\synthetic\\svg_std_usd',
-                'mt5_loginid'          => 'MTR90000',
-                'sub_account_type'     => 'financial',
-                'client_first_name'    => $test_client->first_name,
-                'type_label'           => ucfirst $type_label,
-                'mt5_integer_id'       => '90000',
+                account_type           => 'gaming',
+                language               => 'EN',
+                mt5_group              => 'real\\p02_ts02\\synthetic\\svg_std_usd',
+                mt5_loginid            => 'MTR90000',
+                sub_account_type       => 'financial',
+                client_first_name      => $test_client->first_name,
+                type_label             => ucfirst $type_label,
+                mt5_integer_id         => '90000',
                 brand                  => 'deriv',
                 mt5_server_location    => 'South Africa',
                 mt5_server_region      => 'Africa',
                 mt5_server             => 'p02_ts02',
                 mt5_server_environment => 'Deriv-Server-02',
-                lang                   => 'ID'
+                lang                   => 'ID',
+                mt5_dashboard_url      => 'https://app.deriv.com/mt5?lang=id',
+                live_chat_url          => 'https://deriv.com/id/?is_livechat_open=true'
             }
             },
             'properties are set properly for new mt5 account event';
@@ -260,130 +268,6 @@ subtest 'sanctions' => sub {
         'Sanctions checked with correct comment';
 
     $mock_sanctions->unmock_all;
-};
-
-subtest 'mt5 account opening mail' => sub {
-    # Mocking send_email
-    my $mail_args;
-
-    my $mocker_mt5 = Test::MockModule->new('BOM::Event::Actions::MT5');
-    $mocker_mt5->mock(
-        'send_email',
-        sub {
-            $mail_args = shift;
-            return $mocker_mt5->original('send_email')->($mail_args);
-        });
-
-    # We'll permutate brands, mt5 account types and real/demo accounts
-    my $setup = {
-        brands   => ['deriv',     'binary'],
-        types    => ['financial', 'synthetic'],
-        category => ['real',      'demo'],
-        langs    => ['en',        'es']};
-
-    # Perform tests
-    for my $brand (@{$setup->{brands}}) {
-        for my $type (@{$setup->{types}}) {
-            for my $category (@{$setup->{category}}) {
-                for my $lang (@{$setup->{langs}}) {
-                    my $subtest = "mt5 $type $category account opening for $brand customer ($lang)";
-
-                    subtest $subtest => sub {
-                        # Setup random data
-                        my $mt5_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                            broker_code => 'CR',
-                            email       => sprintf('test+%s@binary.com', int(rand(9000000))),
-                        });
-
-                        my $mt5_user = BOM::User->create(
-                            email          => $mt5_client->email,
-                            password       => "some_fancy_sequence_314159265",
-                            email_verified => 1,
-                        );
-                        $mt5_user->add_client($mt5_client);
-
-                        my $generated_loginid = sprintf('MT%s%s', $category eq 'demo' ? 'D' : 'R', int(rand(90000000)));
-                        $mt5_user->add_loginid($generated_loginid);
-
-                        # Set up brand request with desired language
-                        my $branded_localized_request = BOM::Platform::Context::Request->new(
-                            brand_name => $brand,
-                            language   => $lang,
-                            ($brand eq 'deriv' ? (app_id => $app_id) : ()));
-                        request($branded_localized_request);
-
-                        my $server = $category eq 'demo' ? 'p01_ts01' : 'p02_ts02';
-
-                        my $args = {
-                            loginid            => $mt5_client->loginid,
-                            'account_type'     => 'gaming',
-                            'mt5_group'        => sprintf('%s\\%s\\%s\\svg_std_usd', $category, $server, $type),
-                            'mt5_login_id'     => $generated_loginid,
-                            'language'         => uc $lang,
-                            'cs_email'         => 'test_cs@bin.com',
-                            'sub_account_type' => $type
-                        };
-
-                        mailbox_clear();
-                        my $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
-                        my $result         = $action_handler->($args)->get;
-
-                        # Note for binary requests we expect undef
-                        my $expected_mt5_result = $brand eq 'deriv' ? 1 : undef;
-                        is $result, $expected_mt5_result, "Successfull MT5 account opening for $brand customer ($lang), $type $category account";
-
-                        # Note subject is localized
-                        my $subject = localize('Your MT5 account is ready!', ucfirst $category);
-                        my $email   = mailbox_search(
-                            email   => $mt5_client->email,
-                            subject => qr/\Q$subject\E/
-                        );
-
-                        ok(!$email, 'Email not sent for deriv customer') if $brand eq 'deriv';
-                        ok($email,  'Email sent for binary customer')    if $brand eq 'binary';
-
-                        # The next line caused warnings :-/
-                        #next unless $email;
-
-                        if ($email) {
-                            # If a mail is sent we may test its content
-                            subtest 'Email content' => sub {
-                                my $brand_ref   = request()->brand;
-                                my $mt5_details = parse_mt5_group($args->{mt5_group});
-                                my $type_label  = $mt5_details->{market_type};
-                                $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
-                                my $expected_mt5_loginid = $args->{mt5_login_id} =~ s/${\BOM::User->MT5_REGEX}//r;
-                                my $expected_mail_args   = {
-                                    from          => $brand_ref->emails('no-reply'),
-                                    to            => $mt5_client->email,
-                                    subject       => $subject,
-                                    template_name => 'mt5_account_opening',
-                                    template_args => {
-                                        mt5_loginid       => $expected_mt5_loginid,
-                                        mt5_category      => $category,
-                                        mt5_type_label    => ucfirst $type_label =~ s/stp$/STP/r,
-                                        mt5_region        => $category eq 'demo' ? 'Europe'     : 'Africa',
-                                        mt5_environment   => $category eq 'demo' ? 'Deriv-Demo' : 'Deriv-Server-02',
-                                        client_first_name => $mt5_client->first_name,
-                                        lang              => $lang,
-                                        website_name      => $brand_ref->website_name,
-                                        live_chat_url     => $brand_ref->live_chat_url({language => $lang}),
-                                        tnc_approval_url  => $brand_ref->tnc_approval_url({language => $lang}),
-                                        help_centre_url   => $brand_ref->help_centre_url({language => $lang}),
-                                    },
-                                    use_email_template => 1,
-                                };
-
-                                is_deeply $mail_args, $expected_mail_args, 'Email content is correct';
-                            };
-                        }
-                    };
-                }
-            }
-        }
-    }
-
-    $mocker_mt5->unmock_all;
 };
 
 subtest 'mt5 inactive notification' => sub {
