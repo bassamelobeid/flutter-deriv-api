@@ -11,6 +11,7 @@ use Carp;
 use Test::More;
 use Test::MockModule;
 use Date::Utility;
+use JSON::MaybeXS;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
@@ -18,6 +19,7 @@ my $advertiser_num;
 my $client_num;
 my $mock_sb;
 my $mock_sb_user;
+my $mock_config;
 
 {
     my ($current_escrow, $original_escrow);
@@ -218,6 +220,37 @@ sub set_order_disputable {
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?)', undef, $order_id, 'timed-out');
         });
+}
+
+=head2 create_payment_methods
+
+Creates dummy payment method definitions that advertisers can create with p2p_advertiser_payment_methods().
+Method ids will be method1 - method10.
+
+=cut
+
+sub create_payment_methods {
+
+    my $methods;
+    for my $i (1 .. 10) {
+        $methods->{"method$i"} = {
+            display_name => "Method $i",
+            type         => 'ewallet',
+            fields       => {
+                tag => {
+                    display_name => 'ID',
+                    required     => 0
+                }
+            },
+        };
+    }
+
+    $mock_config = Test::MockModule->new('BOM::Config');
+    $mock_config->mock('p2p_payment_methods' => $methods);
+
+    my %country_config = map { $_ => {mode => 'exclude'} } keys %$methods;
+    my $json           = JSON::MaybeXS->new->encode(\%country_config);
+    BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries($json);
 }
 
 1;
