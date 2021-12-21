@@ -34,6 +34,7 @@ my %init_config_values = (
     'payments.p2p.available'                => $app_config->payments->p2p->available,
     'payments.p2p.escrow'                   => $app_config->payments->p2p->escrow,
     'payments.p2p.payment_method_countries' => $app_config->payments->p2p->payment_method_countries,
+    'payments.p2p.payment_methods_enabled'  => $app_config->payments->p2p->payment_methods_enabled,
 );
 
 $app_config->set({'system.suspend.p2p'     => 0});
@@ -44,6 +45,7 @@ $app_config->set({
         'payments.p2p.payment_method_countries' => $json->encode({
                 bank_transfer => {mode => 'exclude'},
                 other         => {mode => 'exclude'}})});
+$app_config->set({'payments.p2p.payment_methods_enabled' => 1});
 
 scope_guard {
     for my $key (keys %init_config_values) {
@@ -100,13 +102,6 @@ subtest 'sell ads' => sub {
     my $client       = BOM::Test::Helper::P2P::create_advertiser;
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test', ['payments']);
     $t->await::authorize({authorize => $client_token});
-
-    #$resp = $t->await::p2p_advert_list({
-    #    p2p_advert_list => 1,
-    #    payment_method  => ['bank_transfer', 'other'],
-    #});
-    #is $resp->{p2p_advert_list}{list}[0]{id}, $advert->{id}, 'search ads by payment methods';
-    #cmp_deeply $resp->{p2p_advert_list}{list}[0]{payment_method_names}, ['Bank Transfer'], 'payment method names in advert list';
 
     $resp = $t->await::p2p_order_create({
         p2p_order_create => 1,
@@ -199,39 +194,48 @@ subtest 'sell orders' => sub {
     $t->await::authorize({authorize => $advertiser_token});
 
     my $resp = $t->await::p2p_advert_create({
-        p2p_advert_create => 1,
-        type              => 'buy',
-        amount            => 100,
-        local_currency    => 'IDR',
-        rate              => 1,
-        min_order_amount  => 0.1,
-        max_order_amount  => 10,
-        payment_method    => 'bank_transfer',
+        p2p_advert_create    => 1,
+        type                 => 'buy',
+        amount               => 100,
+        local_currency       => 'IDR',
+        rate                 => 1,
+        min_order_amount     => 0.1,
+        max_order_amount     => 10,
+        payment_method_names => ['bank_transfer'],
     });
     my $advert = $resp->{p2p_advert_create};
+    cmp_deeply $resp->{p2p_advert_create}{payment_method_names}, ['Bank Transfer'], 'ad create pm names';
 
     $resp = $t->await::p2p_advert_update({
-        p2p_advert_update => 1,
-        id                => $advert->{id},
-        payment_method    => 'other,bank_transfer',
+        p2p_advert_update    => 1,
+        id                   => $advert->{id},
+        payment_method_names => ['other', 'bank_transfer'],
     });
-    #is $resp->{p2p_advert_update}{payment_method}, 'bank_transfer,other', 'update ad payment_method';
+
+    cmp_deeply $resp->{p2p_advert_update}{payment_method_names}, ['Bank Transfer', 'Other'], 'update ad pm names';
 
     $resp = $t->await::p2p_advert_info({
         p2p_advert_info => 1,
         id              => $advert->{id},
     });
-    #is $resp->{p2p_advert_info}{payment_method}, 'bank_transfer,other', 'ad info payment_method';
+
+    cmp_deeply $resp->{p2p_advert_info}{payment_method_names}, ['Bank Transfer', 'Other'], 'ad info pm names';
+
+    $resp = $t->await::p2p_advertiser_adverts({
+        p2p_advertiser_adverts => 1,
+    });
+    cmp_deeply $resp->{p2p_advertiser_adverts}{list}[0]{payment_method_names}, ['Bank Transfer', 'Other'], 'advertiser adverts pm names';
 
     my $client       = BOM::Test::Helper::P2P::create_advertiser(balance => 1000);
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test', ['payments']);
     $t->await::authorize({authorize => $client_token});
 
-    # $resp = $t->await::p2p_advert_list({
-    #     p2p_advert_list => 1,
-    #     payment_method  => ['other'],
-    # });
-    # is $resp->{p2p_advert_list}{list}[0]{id}, $advert->{id}, 'search ads by payment method';
+    $resp = $t->await::p2p_advert_list({
+        p2p_advert_list => 1,
+        payment_method  => ['other'],
+    });
+    is $resp->{p2p_advert_list}{list}[0]{id}, $advert->{id}, 'search ads by payment method';
+    cmp_deeply $resp->{p2p_advert_list}{list}[0]{payment_method_names}, ['Bank Transfer', 'Other'], 'ad list pm names';
 
     $resp = $t->await::p2p_advertiser_payment_methods({
             p2p_advertiser_payment_methods => 1,
@@ -260,7 +264,7 @@ subtest 'sell orders' => sub {
         p2p_order_list => 1,
     });
 
-    #cmp_deeply $resp->{p2p_order_list}{list}[0]{payment_method_names}, ['Bank Transfer'], 'payment method names in order list';
+    cmp_deeply $resp->{p2p_order_list}{list}[0]{payment_method_names}, ['Bank Transfer'], 'payment method names in order list';
 
     $t->await::authorize({authorize => $advertiser_token});
 

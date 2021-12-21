@@ -307,9 +307,10 @@ subtest 'create advert (sell)' => sub {
         'max amount';
     ok $advert->{price} == $advert_params{rate} && $advert->{price_display} == $advert_params{rate}, 'price';
     ok $advert->{rate} == $advert_params{rate}  && $advert->{rate_display} == $advert_params{rate},  'rate';
-    is $advert->{type},         $advert_params{type},         'type';
-    is $advert->{payment_info}, $advert_params{payment_info}, 'payment_info';
-    is $advert->{contact_info}, $advert_params{contact_info}, 'contact_info';
+    is $advert->{type},          $advert_params{type},         'type';
+    is $advert->{payment_info},  $advert_params{payment_info}, 'payment_info';
+    is $advert->{contact_info},  $advert_params{contact_info}, 'contact_info';
+    is $advert->{active_orders}, 0, 'active_orders';
 
     BOM::User::Script::P2PDailyMaintenance->new->run;
     $advert->{days_until_archive} = 10;    # not returned for new ad
@@ -341,7 +342,7 @@ subtest 'create advert (sell)' => sub {
         my %expected = %$advert;
         # Fields that should only be visible to advert owner
         delete @expected{
-            qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info days_until_archive payment_method_ids)
+            qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info days_until_archive payment_method_ids active_orders)
         };
         cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
     };
@@ -504,6 +505,9 @@ subtest 'dispute a order' => sub {
 
 subtest 'p2p_advert_update' => sub {
 
+    BOM::Test::Helper::P2P::bypass_sendbird();
+    my $advertiser       = BOM::Test::Helper::P2P::create_advertiser();
+    my $token_advertiser = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token', ['payments']);
     $t->await::authorize({authorize => $token_advertiser});
 
     my $advert = $t->await::p2p_advert_create({
@@ -517,19 +521,38 @@ subtest 'p2p_advert_update' => sub {
     });
     test_schema('p2p_advert_update', $resp, 'empty update');
 
+    my %updates = (
+        is_active        => 0,
+        contact_info     => 'call me',
+        description      => 'great ad',
+        local_currency   => 'ABC',
+        max_order_amount => 1,
+        min_order_amount => 0.1,
+        payment_info     => 'pay fast',
+        rate             => 0.5,
+        remaining_amount => 10,
+    );
+
     $resp = $t->await::p2p_advert_update({
         p2p_advert_update => 1,
         id                => $advert->{id},
-        is_active         => 0,
+        %updates,
     });
-    test_schema('p2p_advert_update', $resp, 'actual update');
+    test_schema('p2p_advert_update', $resp);
+
+    for my $k (keys %updates) {
+        is $resp->{p2p_advert_update}{$k}, $updates{$k}, "$k updated";
+    }
+    is $resp->{p2p_advert_update}{amount}, 10, 'amount updated';
 
     $resp = $t->await::p2p_advert_update({
         p2p_advert_update => 1,
         id                => $advert->{id},
         delete            => 1,
     });
-    test_schema('p2p_advert_update', $resp, 'delete ad');
+    test_schema('p2p_advert_update', $resp);
+    ok $resp->{p2p_advert_update}{deleted}, 'delete ad successfully';
+
 };
 
 subtest 'show real names' => sub {
