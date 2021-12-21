@@ -1,6 +1,8 @@
-<p>P2P is enabled for these landing companies: [% enabled_lc.join(', ').upper %].</p>
-
 <form action="[% request.url_for('backoffice/p2p_dynamic_settings.cgi') %]" method="post">
+    <input type="hidden" name="revision" value="[% revision %]"/>
+    <button type="submit" class="btn btn--primary" name="save" value="1">Save Dynamic Settings</button></td>
+    <hr/>
+    <p>P2P is enabled for these landing companies: [% enabled_lc.join(', ').upper %].</p>    
     [% FOR setting IN settings.keys.sort %]
         <hr/>
         <h3>[% setting %]</h3>
@@ -31,26 +33,5 @@
         [% END %]
     [% END %]
     <hr/>
-    <h3>Payment methods countries</h3>
-    <table class="small alternate">
-        <thead><tr><th>Name</th><th>ID</th></th><th>Show in countries</th><th>Defined countries, comma delimited 2 digit country codes</th></tr></thead>
-    [% FOR pm IN payment_methods.keys.sort %]
-        <tr>
-            <td>[% payment_methods.$pm.display_name %]</td>
-            <td>[% pm %]</td>
-            <td valign="top">
-                <select name="pm-mode_[% pm %]">
-                    <option value="include" [% payment_method_countries.$pm.mode == 'include' && 'selected' %]>Only in defined countries</option>
-                    <option value="exclude" [% payment_method_countries.$pm.mode == 'exclude' && 'selected' %]>All except defined countries</option>
-                </select>
-            </td>
-            <td>
-                <input name="pm-countries_[% pm %]" value="[% payment_method_countries.$pm.countries.join(',') %]" style="width: 300px;">
-            </td>            
-        </tr>
-    [% END %]
-    </table>
-    <hr/>
-    <input type="hidden" name="revision" value="[% revision %]"/>
     <button type="submit" class="btn btn--primary" name="save" value="1">Save Dynamic Settings</button></td>
 </form>

@@ -247,7 +247,10 @@ print qq~
                 </form>
             </div>
             <div class="card__content">
-                <!-- for future use -->
+                <h3>Payment Method management</h3>
+                <form action="~ . request()->url_for('backoffice/p2p_payment_method_manage.cgi') . qq~" method="get">
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
             </div>
         </div>
     </div>~;

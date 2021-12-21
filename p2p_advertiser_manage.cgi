@@ -166,6 +166,8 @@ if ($output{advertiser}) {
     $output{advertiser}{total_completion_rate} =
         $output{advertiser}{completion_rate} ? sprintf("%.1f", $output{advertiser}{completion_rate} * 100) : undef;
 
+    $output{payment_methods} = $client->p2p_advertiser_payment_methods;
+
     my $ads = $db->run(
         fixup => sub {
             $_->selectall_arrayref(
@@ -175,6 +177,13 @@ if ($output{advertiser}) {
         });
 
     map { $_->{is_visible} = ($_->{is_active} and $_->{can_order} and $_->{advertiser_is_approved} and $_->{advertiser_is_listed}) ? 1 : 0 } @$ads;
+
+    my $payment_method_defs = $client->p2p_payment_methods;
+    for my $ad (@$ads) {
+        $ad->{is_visible} = ($ad->{is_active} and $ad->{can_order} and $ad->{advertiser_is_approved} and $ad->{advertiser_is_listed}) ? 1 : 0;
+        $ad->{payment_method_names} = join ', ',
+            map { exists $payment_method_defs->{$_} ? $payment_method_defs->{$_}{display_name} : $_ } ($ad->{payment_method_names} // [])->@*;
+    }
 
     # pagination
     my $page_size = 30;

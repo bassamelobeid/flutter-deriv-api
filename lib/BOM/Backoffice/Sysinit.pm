@@ -143,6 +143,7 @@ my $permissions = {
     'quant/dividend_schedulers/edit_dividend_scheduler.cgi'                   => ['Quants'],
     'quant/dividend_schedulers/dividend_scheduler_controller.cgi'             => ['Quants'],
     'quant/dividend_schedulers/index_dividend_scheduler.cgi'                  => ['Quants'],
+    'p2p_payment_method_manage.cgi'                                           => ['IT'],             # additional check in page for Quants
     'payment_agents_dynamic_settings.cgi'                                     => ['IT'],
     'dynamic_settings_audit_trail.cgi'                                        => ['ALL'],            # will have its own validation per setting
 };
