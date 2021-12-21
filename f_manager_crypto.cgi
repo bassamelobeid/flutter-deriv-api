@@ -557,7 +557,7 @@ EOF
 
     print '</tbody></table></div>';
 } elsif ($view_action eq 'run') {
-    my $cmd = request()->param('command');
+    my $cmd = request()->param('command') // 'getwallet';
 
     if ($cmd eq 'getwallet') {
         my $get_balance = $currency_wrapper->get_wallet_balance();
