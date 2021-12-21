@@ -264,27 +264,10 @@ subtest 'Adverts' => sub {
     $c->call_ok('p2p_advertiser_info', $params)
         ->has_no_system_error->has_error->error_code_is('AdvertiserNotFound', 'Get info of non-existent advertiser');
 
-    for my $numeric_field (qw(amount max_order_amount min_order_amount rate)) {
-        $params->{args} = {$advert_params->%*};
-
-        for (-1, 0) {
-            $params->{args}{$numeric_field} = $_;
-            $c->call_ok('p2p_advert_create', $params)
-                ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
-                ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
-        }
-    }
-
     $params->{args} = +{$advert_params->%*};
     $params->{args}{min_order_amount} = $params->{args}{max_order_amount} + 1;
     $c->call_ok('p2p_advert_create', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_order_amount cannot be greater than max_order_amount');
-
-    $params->{args}                   = {$advert_params->%*};
-    $params->{args}{amount}           = 80;
-    $params->{args}{max_order_amount} = $params->{args}{amount} + 1;
-    $c->call_ok('p2p_advert_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidMaxAmount', 'Advert amount cannot be less than max_order_amount');
 
     $params->{args} = {$advert_params->%*};
     $params->{args}{max_order_amount} = $app_config->payments->p2p->limits->maximum_order + 1;

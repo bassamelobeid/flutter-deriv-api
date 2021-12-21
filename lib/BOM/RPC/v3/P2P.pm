@@ -58,12 +58,13 @@ our %ERROR_MAP = do {
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
         # System or country limitations
-        NoCountry            => localize("Please set your country of residence."),
-        NoCurrency           => localize("Please set your account currency."),
-        P2PDisabled          => localize("Deriv P2P is currently unavailable. Please check back later."),
-        RestrictedCountry    => localize("Deriv P2P is unavailable in your country."),
-        RestrictedCurrency   => localize("[_1] is not supported at the moment."),
-        UnavailableOnVirtual => localize("Deriv P2P is unavailable on demo accounts. Please switch to your real account."),
+        NoCountry              => localize("Please set your country of residence."),
+        NoCurrency             => localize("Please set your account currency."),
+        P2PDisabled            => localize("Deriv P2P is currently unavailable. Please check back later."),
+        PaymentMethodsDisabled => localize("The payment method feature is not available on P2P yet. Please check back later."),
+        RestrictedCountry      => localize("Deriv P2P is unavailable in your country."),
+        RestrictedCurrency     => localize("[_1] is not supported at the moment."),
+        UnavailableOnVirtual   => localize("Deriv P2P is unavailable on demo accounts. Please switch to your real account."),
 
         # Client status
         NoLocalCurrency  => localize("We cannot recognise your local currency. Please contact our Customer Support team."),    # TODO maybe this?
@@ -72,18 +73,20 @@ our %ERROR_MAP = do {
 
         # Invalid data
         AdvertContactInfoRequired          => localize("Please provide your contact details."),
-        AdvertPaymentContactInfoNotAllowed => localize("Payment and contact information are not needed for buy ads."),
-        AdvertPaymentInfoRequired          => localize("Please provide your payment details."),
+        AdertPaymentMethodsNotAllowed      => localize("Saved payment methods cannot be provided for buy ads. Please provide payment method names."),
+        AdvertPaymentMethodNamesNotAllowed => localize("Payment method names cannot be provided for sell ads. Please provide saved payment methods."),
         AlreadyInProgress                  => localize("Order is in progress. Changes are no longer allowed."),
         InvalidListLimit                   => localize("Please enter a limit value that's greater than 0."),
         InvalidListOffset                  => localize("The offset value cannot be negative. Please enter 0 or higher."),
-        InvalidMaxAmount                   => localize("This value should be less than or equal to the ad amount."),
-        InvalidMinMaxAmount => localize("The minimum order amount should be less than or equal to the maximum ad amount. Please adjust the value."),
-        InvalidNumericValue => localize("Please enter a value that's greater than 0."),
-        MaximumExceeded     => localize("Maximum ad limit is [_1] [_2]. Please adjust the value."),
-        BelowPerOrderLimit  => localize("Minimum ad order amount is [_1] [_2]. Please adjust the value."),
-        MaxPerOrderExceeded => localize("Maximum ad order amount is [_1] [_2]. Please adjust the value."),
-        MinPriceTooSmall    => localize("Minimum order amount is [_1]. Please adjust the value."),
+        InvalidMinMaxAmount                =>
+            localize("The minimum order amount should be less than or equal to the maximum order amount. Please adjust the value."),
+        MaximumExceeded          => localize("Maximum ad limit is [_1] [_2]. Please adjust the value."),
+        MaximumExceededNewAmount => localize(
+            "Maximum ad limit is [_1] [_4], and [_2] [_4] has been used by existing orders, so the new amount will be [_3] [_4]. Please adjust the value"
+        ),
+        BelowPerOrderLimit                => localize("Minimum ad order amount is [_1] [_2]. Please adjust the value."),
+        MaxPerOrderExceeded               => localize("Maximum ad order amount is [_1] [_2]. Please adjust the value."),
+        MinPriceTooSmall                  => localize("Minimum order amount is [_1]. Please adjust the value."),
         OrderContactInfoRequired          => localize("Please provide your contact details."),
         OrderPaymentContactInfoNotAllowed => localize("Buy orders do not require payment and contact information."),
         OrderPaymentInfoRequired          => localize("Please provide your payment details."),
@@ -164,21 +167,23 @@ our %ERROR_MAP = do {
         MissingPaymentMethodField => localize('[_1] is a required field for payment method [_2]. Please provide a value.'),
         DuplicatePaymentMethod    => localize('You have a payment method with the same values for [_1].'),
         PaymentMethodUsedByAd     =>
-            localize('This payment method is in use by the following ad(s): [_1]. Please add other payment methods to the ad, or deactivate the ad.'),
+            localize('This payment method is in use by the following ad(s): [_1]. Please add other payment methods to the ad, or delete the ad.'),
         PaymentMethodUsedByOrder    => localize('This payment method is in use by the following order(s): [_1]. Please wait until it completes.'),
         PaymentMethodInUse          => localize('This payment method is in use by multiple ads and/or orders, and cannot be deleted or deactivated.'),
         AdvertNoPaymentMethod       => localize('This advert has no payment methods. Please add at least one before activating it.'),
         InvalidPaymentMethods       => localize('Invalid payment methods provided.'),
         ActivePaymentMethodRequired => localize('At least one active payment method is required.'),
-        AdvertPaymentMethodRequired => localize("Please provide a payment method."),
-        PaymentMethodRemoveActiveOrders => localize('You must keep a [_1] payment method on this advert while it has active orders.'),
-        PaymentMethodNotInAd            => localize('[_1] is not available as a payment method for this advert.'),
-        PaymentMethodParam              => localize('Payment method can not be changed for sell ads.'),
-        AdvertiserRelationSelf          => localize('You may not assign your own Advertiser ID as favourite or blocked.'),
-        InvalidAdvertiserID             => localize('Invalid Advertiser ID provided.'),
-        AdvertiserBlocked               => localize('You cannot place an order on the advert, because you have blocked the advertiser.'),
-        InvalidAdvertForOrder           => localize('It is not possible to place an order on this advert. Please choose another advert.'),
-        AdvertInfoMissingParam          => localize('An advert ID must be provided when not subscribing.'),
+        AdvertPaymentMethodRequired => localize("Please provide a payment method for this advert."),
+        AdvertPaymentInfoRequired   => localize("Please provide your payment details."),
+        PaymentMethodRemoveActiveOrders   => localize('You must keep a [_1] payment method on this advert while it has active orders.'),
+        PaymentMethodRemoveActiveOrdersDB => localize('You cannot remove payment methods used by active orders on this advert.'),
+        PaymentMethodNotInAd              => localize('[_1] is not available as a payment method for this advert.'),
+        AdvertPaymentMethodParam          => localize('Payment method field cannot be combined with other payment methods.'),
+        AdvertiserRelationSelf            => localize('You may not assign your own Advertiser ID as favourite or blocked.'),
+        InvalidAdvertiserID               => localize('Invalid Advertiser ID provided.'),
+        AdvertiserBlocked                 => localize('You cannot place an order on the advert, because you have blocked the advertiser.'),
+        InvalidAdvertForOrder             => localize('It is not possible to place an order on this advert. Please choose another advert.'),
+        AdvertInfoMissingParam            => localize('An advert ID must be provided when not subscribing.'),
     );
 };
 
@@ -202,6 +207,8 @@ our %DB_ERRORS = (
     BI240 => 'OrderCreateFailAmount',
     BI242 => 'OrderRefundInvalid',
     BI243 => 'OrderCreateFailBalance',
+    BI244 => 'ActivePaymentMethodRequired',
+    BI245 => 'PaymentMethodRemoveActiveOrdersDB',
 );
 
 sub DB_ERROR_PARAMS {

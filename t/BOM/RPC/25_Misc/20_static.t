@@ -379,6 +379,7 @@ subtest 'p2p_config' => sub {
         order_daily_limit           => 9,
         order_payment_period        => 10,
         disabled                    => bool(0),
+        payment_methods_enabled     => bool(1),
     );
 
     $p2p_config->archive_ads_days($vals{adverts_archive_period});
@@ -393,6 +394,7 @@ subtest 'p2p_config' => sub {
     $p2p_config->order_timeout($vals{order_payment_period} * 60);
     $p2p_config->enabled(1);
     $config->system->suspend->p2p(0);
+    $p2p_config->payment_methods_enabled(1);
 
     my %params = (
         website_status => {

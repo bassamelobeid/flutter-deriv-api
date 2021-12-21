@@ -301,6 +301,8 @@ rpc website_status => sub {
                 not $p2p_config->enabled
                     or $app_config->system->suspend->p2p
             ) ? 1 : 0,
+            payment_methods_enabled => $p2p_config->payment_methods_enabled,
+
         },
         payment_agents => {
             initial_deposit_per_country => decode_json($app_config->payment_agents->initial_deposit_per_country),
