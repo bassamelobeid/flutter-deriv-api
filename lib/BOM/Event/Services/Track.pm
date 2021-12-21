@@ -114,7 +114,8 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
-    p2p_advert_created => [qw(advert_id type account_currency local_currency country amount rate min_order_amount max_order_amount is_visible)],
+    p2p_advert_created                               =>
+        [qw(advert_id created_time type account_currency local_currency country amount rate min_order_amount max_order_amount is_visible)],
     p2p_advertiser_cancel_at_fault => [qw(order_id cancels_remaining)],
     p2p_advertiser_temp_banned     => [qw(order_id block_end_time)],
 );
