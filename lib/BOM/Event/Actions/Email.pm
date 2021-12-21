@@ -109,6 +109,9 @@ sub send_client_email {
             request->%*,
             language => $language,
         });
+
+        # Set the explicitly passed language $args->{language} as the "lang" event property in Customer.io
+        $args->{properties}{lang} = $language;
     }
 
     $args->{properties}{title} = localize($args->{properties}{title});
