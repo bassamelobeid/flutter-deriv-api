@@ -267,10 +267,10 @@ Returns $data with unchanged ads removed.
 sub p2p_on_advert_view {
     my ($advertiser_id, $data) = @_;
 
-    # client specific fields will be stored in redis as field/loginid
+    # client specific fields will be stored in redis as field/loginid. advertiser_ fields are ones that are within advertiser_details in the ad structure.
     my %fields = (
-        common            => [qw(payment_method is_active max_order_amount_limit max_order_amount_limit_display)],
-        client            => [qw(is_visible remaining_amount remaining_amount_display)],
+        common            => [qw(payment_method payment_method_names is_active local_currency rate min_order_amount_limit max_order_amount_limit)],
+        client            => [qw(is_visible payment_info contact_info active_orders amount remaining_amount min_order_amount max_order_amount)],
         advertiser_common => [qw(total_completion_rate)],
         advertiser_client => [qw(is_favourite is_blocked)],
     );
@@ -327,8 +327,12 @@ sub p2p_on_advert_view {
 
     for my $id (keys %$new_state) {
         for my $loginid (keys $new_state->{$id}->%*) {
-            $state->{$id}{$_} = $new_state->{$id}{$loginid}{$_} for ($fields{common}->@*, $fields{advertiser_common}->@*);
-            $state->{$id}{$_}{$loginid} = $new_state->{$id}{$loginid}{$_} for ($fields{client}->@*, $fields{advertiser_client}->@*);
+            for my $field (keys $new_state->{$id}{$loginid}->%*) {
+                my $val = $new_state->{$id}{$loginid}{$field};
+                $val                            = join(',', sort @$val) if ref $val eq 'ARRAY';
+                $state->{$id}{$field}           = $val if any { $_ eq $field } ($fields{common}->@*, $fields{advertiser_common}->@*);
+                $state->{$id}{$field}{$loginid} = $val if any { $_ eq $field } ($fields{client}->@*, $fields{advertiser_client}->@*);
+            }
         }
     }
 

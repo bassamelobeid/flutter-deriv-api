@@ -26,6 +26,7 @@ $mock_config->mock(
     'p2p_payment_methods' => {
         method1 => {
             display_name => 'Method 1',
+            type         => 'ewallet',
             fields       => {
                 field1 => {display_name => 'Field 1'},
                 field2 => {
@@ -35,6 +36,7 @@ $mock_config->mock(
         },
         method2 => {
             display_name => 'Method 2',
+            type         => 'ewallet',
             fields       => {
                 field3 => {display_name => 'Field 3'},
                 field4 => {display_name => 'Field 4'}}
@@ -50,11 +52,23 @@ my $advertiser;
 
 subtest 'create' => sub {
 
+    $runtime_config->payment_methods_enabled(0);
+
     cmp_deeply(exception { $client->p2p_advertiser_payment_methods }, {error_code => 'AdvertiserNotRegistered'}, 'advertiser not registered');
 
     $advertiser = $client->p2p_advertiser_create(name => 'bob');
 
     cmp_deeply($client->p2p_advertiser_payment_methods, {}, 'new advertiser gets empty list');
+
+    cmp_deeply(
+        exception { $client->p2p_advertiser_payment_methods(create => [{method => 'method1', field1 => 'f1 val', field2 => 'field2 val'}]) },
+        {
+            error_code => 'PaymentMethodsDisabled',
+        },
+        'pm feature disabled'
+    );
+
+    $runtime_config->payment_methods_enabled(1);
 
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(create => [{method => 'method1', field1 => 'f1 val', field2 => 'field2 val'}]) },
@@ -106,6 +120,7 @@ subtest 'create' => sub {
         ],
         bag({
                 method       => 'method1',
+                type         => 'ewallet',
                 display_name => 'Method 1',
                 is_enabled   => bool(0),
                 fields       => {
@@ -117,6 +132,7 @@ subtest 'create' => sub {
             },
             {
                 method       => 'method2',
+                type         => 'ewallet',
                 display_name => 'Method 2',
                 is_enabled   => bool(1),
                 fields       => {
@@ -171,7 +187,20 @@ subtest 'create' => sub {
 
 subtest 'update' => sub {
     my $existing = $client->p2p_advertiser_payment_methods;
+
     my ($id) = grep { $existing->{$_}{method} eq 'method1' } keys %$existing;
+
+    $runtime_config->payment_methods_enabled(0);
+
+    cmp_deeply(
+        exception { $client->p2p_advertiser_payment_methods(update => {$id => {is_enabled => 1}}) },
+        {
+            error_code => 'PaymentMethodsDisabled',
+        },
+        'pm feature disabled'
+    );
+
+    $runtime_config->payment_methods_enabled(1);
 
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(update => {-1 => {is_enabled => 1}}) },
@@ -202,6 +231,7 @@ subtest 'update' => sub {
         )->{$id},
         {
             method       => 'method1',
+            type         => 'ewallet',
             display_name => 'Method 1',
             is_enabled   => bool(1),
             fields       => {
@@ -230,6 +260,18 @@ subtest 'update' => sub {
 subtest 'delete' => sub {
     my $existing = $client->p2p_advertiser_payment_methods;
     my ($id) = grep { $existing->{$_}{method} eq 'method1' } keys %$existing;
+
+    $runtime_config->payment_methods_enabled(0);
+
+    cmp_deeply(
+        exception { $client->p2p_advertiser_payment_methods(delete => [$id]) },
+        {
+            error_code => 'PaymentMethodsDisabled',
+        },
+        'pm feature disabled'
+    );
+
+    $runtime_config->payment_methods_enabled(1);
 
     cmp_deeply(exception { $client->p2p_advertiser_payment_methods(delete => [-1]) }, {error_code => 'PaymentMethodNotFound'}, 'Invalid method id');
 
@@ -279,6 +321,38 @@ subtest 'combo operations' => sub {
         'Update plus create'
     );
 
+};
+
+subtest 'update duplicate' => sub {
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+
+    my $methods = $advertiser->p2p_advertiser_payment_methods(
+        create => [{
+                method => 'method1',
+                field1 => 'aaa',
+                field2 => 'aaa',
+            },
+            {
+                method => 'method1',
+                field1 => 'aaa',
+                field2 => 'bbb',
+            }]);
+
+    my ($id) = grep { $methods->{$_}{fields}{field2}{value} eq 'bbb' } keys %$methods;
+    note $id;
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advertiser_payment_methods(
+                update => {$id => {field2 => 'aaa'}},
+            )
+        },
+        {
+            error_code     => 'DuplicatePaymentMethod',
+            message_params => ['Method 1']
+        },
+        'cannot create duplicate by updating a method'
+    );
 };
 
 done_testing();

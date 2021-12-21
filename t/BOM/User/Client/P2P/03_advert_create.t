@@ -19,13 +19,17 @@ use BOM::Rules::Engine;
 my $rule_engine = BOM::Rules::Engine->new();
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2P::create_payment_methods();
 
 my $email = 'p2p_adverts_test@binary.com';
 
-BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
-BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
-BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_barring->count(3);
-BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_barring->period(24);
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+
+$config->limits->maximum_advert(100);
+$config->escrow([]);
+$config->cancellation_barring->count(3);
+$config->cancellation_barring->period(24);
+$config->payment_methods_enabled(1);
 
 my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -66,7 +70,7 @@ my %advert_params = (
 
 # advert fields that should only be shown to the owner
 my @sensitive_fields =
-    qw(amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info payment_method_ids);
+    qw(amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info payment_method_ids active_orders payment_method_details);
 
 subtest 'Creating advert from non-advertiser' => sub {
     my %params = %advert_params;
@@ -241,25 +245,8 @@ subtest 'Creating advert' => sub {
         balance => 2.4
     );
 
-    my %params = %advert_params;
-    for my $numeric_field (qw(amount max_order_amount min_order_amount rate)) {
-        %params = %advert_params;
-
-        $params{$numeric_field} = -1;
-        cmp_deeply(
-            exception {
-                $advertiser->p2p_advert_create(%params);
-            },
-            {
-                error_code => 'InvalidNumericValue',
-                details    => {fields => [$numeric_field]},
-            },
-            "Error when numeric field '$numeric_field' is not greater than 0"
-        );
-    }
-
-    %params = %advert_params;
-    my $maximum_advert = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert;
+    my %params         = %advert_params;
+    my $maximum_advert = $config->limits->maximum_advert;
     $params{amount} = $maximum_advert + 1;
     cmp_deeply(
         exception {
@@ -269,21 +256,7 @@ subtest 'Creating advert' => sub {
             error_code     => 'MaximumExceeded',
             message_params => [num($maximum_advert), $params{account_currency}]
         },
-        'Error when amount exceeds BO advert limit'
-    );
-
-    %params = %advert_params;
-    my $maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
-    $params{max_order_amount} = $maximum_order + 1;
-    cmp_deeply(
-        exception {
-            $advertiser->p2p_advert_create(%params);
-        },
-        {
-            error_code     => 'MaxPerOrderExceeded',
-            message_params => [num($maximum_order), $params{account_currency}],
-        },
-        'Error when max_order_amount exceeds BO order limit'
+        'amount validation'
     );
 
     %params = %advert_params;
@@ -293,37 +266,20 @@ subtest 'Creating advert' => sub {
             $advertiser->p2p_advert_create(%params);
         },
         {error_code => 'InvalidMinMaxAmount'},
-        'Error when min_order_amount is more than max_order_amount'
+        'min max validation'
     );
 
     %params = %advert_params;
-    $params{amount} = $params{max_order_amount} - 1;
+    $params{rate} = 0.0000001;
     cmp_deeply(
         exception {
             $advertiser->p2p_advert_create(%params);
         },
-        {error_code => 'InvalidMaxAmount'},
-        'Error when max_order_amount is more than amount'
-    );
-
-    %params = %advert_params;
-    $params{type} = 'buy';
-    cmp_deeply(
-        exception {
-            $advertiser->p2p_advert_create(%params);
+        {
+            error_code     => 'RateTooSmall',
+            message_params => ['0.000001'],
         },
-        {error_code => 'AdvertPaymentContactInfoNotAllowed'},
-        'Error when payment/contact info provided for buy advert'
-    );
-
-    %params = %advert_params;
-    $params{payment_info} = ' ';
-    cmp_deeply(
-        exception {
-            $advertiser->p2p_advert_create(%params);
-        },
-        {error_code => 'AdvertPaymentInfoRequired'},
-        'Error when payment info not provided for buy advert'
+        'rate validation'
     );
 
     %params = %advert_params;
@@ -333,7 +289,87 @@ subtest 'Creating advert' => sub {
             $advertiser->p2p_advert_create(%params);
         },
         {error_code => 'AdvertContactInfoRequired'},
-        'Error when contact info not provided for buy advert'
+        'contact info validation'
+    );
+
+    %params = %advert_params;
+    $params{payment_method} = ' ';
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'AdvertPaymentMethodRequired'},
+        'Error when payment method not provided for sell advert'
+    );
+
+    %params = %advert_params;
+    $params{payment_info} = ' ';
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'AdvertPaymentInfoRequired'},
+        'Error when payment info not provided for sell advert'
+    );
+
+    %params                 = %advert_params;
+    $params{payment_method} = ' ';
+    $params{type}           = 'buy';
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'AdvertPaymentMethodRequired'},
+        'Error when payment method not provided for buy advert'
+    );
+
+    %params                     = %advert_params;
+    $params{payment_method}     = 'x';
+    $params{payment_method_ids} = [1, 2, 3];
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'AdvertPaymentMethodParam'},
+        'Error when both payment_method and payment_method_ids are provided for sell advert'
+    );
+
+    %params                       = %advert_params;
+    $params{payment_method}       = 'x';
+    $params{type}                 = 'buy';
+    $params{payment_method_names} = ['x', 'y', 'z'];
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'AdvertPaymentMethodParam'},
+        'Error when both payment_method and payment_method_names are provided for buy advert'
+    );
+
+    %params                     = %advert_params;
+    $params{payment_method}     = '';
+    $params{payment_method_ids} = [1, 2, 3];
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'InvalidPaymentMethods'},
+        'payment_method_ids validation'
+    );
+
+    %params                       = %advert_params;
+    $params{payment_method}       = '';
+    $params{type}                 = 'buy';
+    $params{payment_method_names} = ['x', 'y', 'z'];
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(%params);
+        },
+        {
+            error_code     => 'InvalidPaymentMethod',
+            message_params => subsetof('x', 'y', 'z'),
+        },
+        'payment_method_names validation'
     );
 
     undef $emitted_events;
@@ -366,7 +402,6 @@ subtest 'Creating advert' => sub {
         min_order_amount_limit         => num($params{min_order_amount}),
         min_order_amount_limit_display => num($params{min_order_amount}),
         payment_method                 => $params{payment_method},
-        payment_method_names           => ['Bank Transfer'],
         payment_info                   => $params{payment_info},
         contact_info                   => $params{contact_info},
         price                          => num($params{rate}),
@@ -382,8 +417,17 @@ subtest 'Creating advert' => sub {
             name                  => $name,
             total_completion_rate => undef,
         },
-        is_visible => bool(1),
+        is_visible    => bool(1),
+        active_orders => 0,
     };
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'DuplicateAdvert'},
+        'Duplicate validation'
+    );
 
     cmp_deeply($advert, $expected_advert, "advert_create returns expected fields");
 
@@ -804,39 +848,6 @@ subtest 'p2p_advert_info' => sub {
     };
 };
 
-subtest 'payment method validation' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
-
-    cmp_deeply(
-        exception { $advertiser->p2p_advert_create(%advert_params, payment_method => ' ') },
-        {error_code => 'AdvertPaymentInfoRequired'},
-        'spaces only'
-    );
-
-    cmp_deeply(
-        exception { $advertiser->p2p_advert_create(%advert_params, payment_method => 'nonsense') },
-        {
-            error_code     => 'InvalidPaymentMethod',
-            message_params => ['nonsense']
-        },
-        'invalid method'
-    );
-
-    cmp_deeply(
-        exception { $advertiser->p2p_advert_create(%advert_params, payment_method => 'bank_transfer,bogus,other') },
-        {
-            error_code     => 'InvalidPaymentMethod',
-            message_params => ['bogus']
-        },
-        'mix of good and bad'
-    );
-
-    my $ad;
-    is exception { $ad = $advertiser->p2p_advert_create(%advert_params, payment_method => ' other, bank_transfer ') }, undef, 'valid methods';
-    is $ad->{payment_method}, 'bank_transfer,other', 'payment_method field parsed correctly';
-
-};
-
 subtest 'is_visible flag and subscription event' => sub {
     my $client        = BOM::Test::Helper::P2P::create_advertiser(balance => 1);
     my $advertiser_id = $client->_p2p_advertiser_cached->{id};
@@ -920,17 +931,25 @@ subtest 'subscriptions' => sub {
 
     cmp_deeply decode_json_utf8($redis->get($key)), {}, 'no ads, no state saved in redis';
 
-    my $advert = (BOM::Test::Helper::P2P::create_advert(client => $client1))[1];
+    my $pms = $client1->p2p_advertiser_payment_methods(create => [{method => 'method1'}, {method => 'method2'}]);
+
+    my $advert = (
+        BOM::Test::Helper::P2P::create_advert(
+            client             => $client1,
+            type               => 'sell',
+            payment_method     => '',
+            payment_method_ids => [keys %$pms]))[1];
 
     cmp_deeply($client1->p2p_advert_info(subscribe => 1), $expected_response, 'response when subscribe to all with an ad');
 
     my $state = decode_json_utf8($redis->get($key));
+
     cmp_deeply [keys %$state], [$advert->{id}], 'state saved';
+    cmp_set [keys $state->{$advert->{id}}{active_orders}->%*], [$client1->loginid], 'client specific state saved';
 
     my $client2 = BOM::Test::Helper::Client::create_client();
     $client2->account('USD');
 
-    $redis->del($key);
     my $resp = $client2->p2p_advert_info(
         id        => $advert->{id},
         subscribe => 1
@@ -941,7 +960,7 @@ subtest 'subscriptions' => sub {
     cmp_deeply($resp, {%$advert, %$expected_response}, 'response for other client subscribing to ad');
 
     $state = decode_json_utf8($redis->get($key));
-    cmp_deeply [keys %$state], [$advert->{id}], 'state saved';
+    cmp_set [keys $state->{$advert->{id}}{active_orders}->%*], [$client1->loginid, $client2->loginid], 'client specific state saved';
 };
 
 done_testing();

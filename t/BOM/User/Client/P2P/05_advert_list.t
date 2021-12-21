@@ -113,8 +113,9 @@ subtest 'show real name' => sub {
 
     ($advertiser, $ad) = BOM::Test::Helper::P2P::create_advert(
         local_currency => 'xxx',
-        client         => $advertiser
+        client         => $advertiser,
     );
+
     cmp_deeply($ad->{advertiser_details}, superhashof($names), 'create ad: real names returned');
 
     $res = $client1->p2p_advert_list(id => $ad->{id})->[0]->{advertiser_details};
@@ -128,6 +129,7 @@ subtest 'show real name' => sub {
         is_active => 0
     )->{advertiser_details};
     cmp_deeply($res, superhashof($names), 'ad update: real names returned');
+
 };
 
 subtest 'search by advertiser name' => sub {

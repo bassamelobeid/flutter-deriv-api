@@ -24,10 +24,12 @@ subtest p2p_payment_methods => sub {
         'p2p_payment_methods' => {
             bigpay => {
                 display_name => 'Big Pay',
+                type         => 'ewallet',
                 fields       => {account => {display_name => 'Account number'}}
             },
             other => {
                 display_name => 'Other',
+                type         => 'other',
                 fields       => {
                     note => {
                         display_name => 'Note',
@@ -48,6 +50,7 @@ subtest p2p_payment_methods => sub {
         {
             bigpay => {
                 display_name => 'Big Pay',
+                type         => 'ewallet',
                 fields       => {
                     account => {
                         display_name => 'Account number',
@@ -74,6 +77,7 @@ subtest p2p_payment_methods => sub {
         {
             other => {
                 display_name => 'Other',
+                type         => 'other',
                 fields       => {
                     note => {
                         display_name => 'Note',
