@@ -24,6 +24,7 @@ use BOM::Platform::Context qw( localize request );
 use BOM::Platform::Email qw( send_email );
 use BOM::Platform::Event::Emitter;
 use BOM::User::Client;
+use Email::Stuffer;
 use BOM::Event::Actions::P2P;
 
 use Brands;
@@ -77,6 +78,7 @@ sub set_age_verification {
 
     # gb residents cannot trade synthetics on demo account while not age verified
     my $config = request->brand->countries_instance->countries_list->{$client->residence};
+
     if ($config->{require_age_verified_for_synthetic}) {
         my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
         $setter->($vr_acc);
@@ -92,9 +94,34 @@ sub set_age_verification {
 
     $client->update_status_after_auth_fa($reason);
 
+    # After client age verification, if we find a pending POA, notify CS.
+    if ($client->get_poa_status eq 'pending') {
+        _send_CS_email_POA_pending($client);
+    }
     BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client => $client});
 
     return undef;
+}
+
+=head2 _send_CS_email_POA_pending
+
+Sends an email to CS about a pending POA after age verification.
+
+=cut
+
+sub _send_CS_email_POA_pending {
+    my $client = shift;
+
+    # skip the email when is not needed
+    return undef unless $client->status->age_verification;
+    return undef if $client->fully_authenticated();
+
+    my $brand      = request->brand;
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('authentications');
+
+    Email::Stuffer->from($from_email)->to($to_email)->subject('Pending POA document for: ' . $client->loginid)
+        ->text_body('There is a pending proof of address document for ' . $client->loginid)->send();
 }
 
 sub handle_under_age_client {
