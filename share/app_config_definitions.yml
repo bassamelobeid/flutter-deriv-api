@@ -348,6 +348,11 @@ payments:
           isa: Int
           global: 1
           default: 0
+        payment_methods_enabled:
+          description: 'To be enabled when all FE apps have the ability to create and use advertiser payment methods.'
+          isa: Bool
+          global: 1
+          default: 0
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
