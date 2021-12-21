@@ -8,6 +8,7 @@ use Test::Deep;
 use Test::MockModule;
 use List::Util qw(pairs);
 use JSON::MaybeUTF8 qw(:v1);
+use Date::Utility;
 
 use BOM::User::Client;
 use BOM::Test::Helper::P2P;
@@ -435,6 +436,7 @@ subtest 'Creating advert' => sub {
         $emitted_events->{p2p_advert_created},
         [{
                 loginid          => $advertiser->loginid,
+                created_time     => Date::Utility->new($advert->{created_time})->datetime_yyyymmdd_hhmmss,
                 advert_id        => $advert->{id},
                 type             => $params{type},
                 account_currency => $params{account_currency},

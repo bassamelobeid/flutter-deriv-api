@@ -2405,6 +2405,7 @@ sub p2p_advert_create {
     BOM::Platform::Event::Emitter::emit(
         p2p_advert_created => {
             loginid          => $self->loginid,
+            created_time     => Date::Utility->new($response->{created_time})->db_timestamp,
             advert_id        => $response->{id},
             type             => $response->{type},
             account_currency => $response->{account_currency},
