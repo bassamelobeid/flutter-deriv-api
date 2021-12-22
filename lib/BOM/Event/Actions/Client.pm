@@ -38,12 +38,14 @@ use Text::Levenshtein::XS;
 use Array::Utils qw(intersect);
 use Scalar::Util qw(blessed);
 use Text::Trim qw(trim);
+use WebService::MyAffiliates;
 
 use BOM::Config;
 use BOM::Config::Onfido;
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
+use BOM::Database::CommissionDB;
 use BOM::Database::UserDB;
 use BOM::Event::Actions::Common;
 use BOM::Event::Services;
@@ -3095,6 +3097,90 @@ sub check_name_changes_after_first_deposit {
     }
 
     return 1;
+}
+
+=head2 link_affiliate_client
+
+Add an affiliated client to commission database.
+
+=over 4
+
+=item * token - the affiliate token (MyAffiliates token)
+
+=item * loginid - the loginid of the client account that needs to be linked to the affiliate
+
+=item * binary_user_id - unique identifier for a binary user in user database
+
+=item * platform - the platform string. (E.g. dxtrade)
+
+=back
+
+=cut
+
+my $aff;
+
+sub link_affiliate_client {
+    my $args = shift;
+
+    my ($myaffiliate_token, $loginid, $binary_user_id, $platform) = @{$args}{'token', 'loginid', 'binary_user_id', 'platform'};
+
+    my $config = BOM::Config::third_party()->{myaffiliates};
+
+    $aff //= WebService::MyAffiliates->new(
+        user    => $config->{user},
+        pass    => $config->{pass},
+        host    => $config->{host},
+        timeout => 10
+    );
+
+    unless ($aff) {
+        DataDog::DogStatsd::Helper::stats_inc('myaffiliates.' . $platform . '.failure.get_aff_id', 1);
+        $log->warnf("Unable to connect to MyAffiliate to parse token %s to link %s", $myaffiliate_token, $loginid);
+        return;
+    }
+
+    my $myaffiliate_id = $aff->get_affiliate_id_from_token($myaffiliate_token);
+
+    unless ($myaffiliate_id) {
+        DataDog::DogStatsd::Helper::stats_inc('myaffiliates.' . $platform . '.failure.get_aff_id', 1);
+        $log->warnf("Unable to parse token %s", $myaffiliate_token);
+        return;
+    }
+
+    my $commission_db = BOM::Database::CommissionDB::rose_db();
+
+    my $affiliate_id;
+    try {
+        my ($res) = $commission_db->dbic->run(
+            fixup => sub {
+                $_->selectall_array('SELECT id FROM affiliate.affiliate WHERE external_affiliate_id=?', undef, $myaffiliate_id);
+            });
+        die "can't fine affiliate_id for $myaffiliate_id" unless $res;
+        $affiliate_id = $res->[0];
+    } catch ($e) {
+        $log->warnf("Unable to get affiliate id for %s. Error [%s]", $myaffiliate_id, $e);
+    }
+
+    unless ($affiliate_id) {
+        DataDog::DogStatsd::Helper::stats_inc('myaffiliates.' . $platform . '.failure.get_internal_aff_id', 1);
+        $log->warnf("Unable to get affiliate id for %s", $myaffiliate_id);
+        return;
+    }
+
+    try {
+        $commission_db->dbic->run(
+            ping => sub {
+                $_->do('SELECT * FROM affiliate.add_new_affiliate_client(?,?,?,?)', undef, $loginid, $platform, $binary_user_id, $affiliate_id);
+            });
+
+        # notify commission deal listener about a new sign up
+        my $stream = join '::', ($platform, 'real_signup');
+        BOM::Config::Redis::redis_cfds_write()->execute('xadd', $stream, '*', 'platform', $platform, 'account_id', $loginid);
+    } catch ($e) {
+        $log->warnf("Unable to add client %s to affiliate.affiliate_client table. Error [%s]", $loginid, $e);
+    }
+
+    return;
 }
 
 1;

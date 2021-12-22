@@ -122,6 +122,7 @@ my $action_mapping = {
     p2p_advert_created                               => \&BOM::Event::Actions::P2P::advert_created,
     p2p_advertiser_cancel_at_fault                   => \&BOM::Event::Actions::P2P::advertiser_cancel_at_fault,
     p2p_advertiser_temp_banned                       => \&BOM::Event::Actions::P2P::advertiser_temp_banned,
+    cms_add_affiliate_client                         => \&BOM::Event::Actions::Client::link_affiliate_client,
     df_anonymization_done                            => \&BOM::Event::Actions::Anonymization::df_anonymization_done,
 };
 
