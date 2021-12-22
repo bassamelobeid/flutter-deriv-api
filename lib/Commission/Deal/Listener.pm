@@ -270,7 +270,7 @@ async sub _insert_into_db {
                 $deal->volume,  $deal->spread,     $deal->price,   $currency,           $deal->transaction_time
             )->single;
         } else {
-            $log->warnf("account not in client map [%s]", $deal->loginid);
+            $log->debugf("account not in client map [%s]", $deal->loginid);
         }
     } catch ($e) {
         # database error could return a Postgres::Error object.
