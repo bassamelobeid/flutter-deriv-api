@@ -13,9 +13,8 @@ use Array::Utils qw(array_minus);
 use Format::Util::Numbers qw(financialrounding formatnumber);
 use Digest::SHA1 qw(sha1_hex);
 use BOM::Platform::Context qw(request);
-use WebService::MyAffiliates;
+use BOM::Platform::Event::Emitter;
 use BOM::Config;
-use BOM::Database::CommissionDB;
 
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use BOM::Config::Redis;
@@ -271,7 +270,14 @@ sub new_account {
 
     # If client has affiliate token, link the client to the affiliate.
     if (my $token = $self->client->myaffiliates_token and $args{account_type} ne 'demo') {
-        $self->_link_client($token, $account_id, $self->client->binary_user_id);
+        BOM::Platform::Event::Emitter::emit(
+            'cms_add_affiliate_client',
+            {
+                binary_user_id => $self->client->binary_user_id,
+                token          => $token,
+                loginid        => $account_id,
+                platform       => PLATFORM_ID
+            });
     }
 
     $account->{account_id} = $account_id;
@@ -969,115 +975,4 @@ sub insert_payment_details {
         });
 }
 
-## PRIVATE METHODS ##
-
-=head2 _link_client
-
-If a client comes from an affiliate link, we need know link this client to the affiliate.
-
-=over 4
-
-=item * $myaffiliate_token = token from MyAffiliates platform
-
-=item * $dx_loginid = login id for dxtrade
-
-=item * $binary_user_id = deriv binary user id
-
-=back
-
-Returns the affiliate id.
-
-=cut
-
-sub _link_client {
-    my ($self, $myaffiliate_token, $dx_loginid, $binary_user_id) = @_;
-
-    my $aff = $self->_myaffiliates();
-
-    unless ($aff) {
-        stats_inc('myaffiliates.dxtrade.failure.get_aff_id', 1);
-        $dxapi_log->warnf("Unable to connect to MyAffiliate to parse token %s to link %s", $myaffiliate_token, $dx_loginid);
-        return;
-    }
-
-    my $myaffiliate_id = $aff->get_affiliate_id_from_token($myaffiliate_token);
-
-    unless ($myaffiliate_id) {
-        stats_inc('myaffiliates.dxtrade.failure.get_aff_id', 1);
-        $dxapi_log->warnf("Unable to parse token %s", $myaffiliate_token);
-        return;
-    }
-
-    my $affiliate_id;
-    try {
-        my ($res) = $self->_commission_db->dbic->run(
-            fixup => sub {
-                $_->selectall_array('SELECT id FROM affiliate.affiliate WHERE external_affiliate_id=?', undef, $myaffiliate_id);
-            });
-        die "can't fine affiliate_id for $myaffiliate_id" unless $res;
-        $affiliate_id = $res->[0];
-    } catch ($e) {
-        $dxapi_log->warnf("Unable to get affiliate id for %s. Error [%s]", $myaffiliate_id, $e);
-    }
-
-    unless ($affiliate_id) {
-        stats_inc('myaffiliates.dxtrade.failure.get_internal_aff_id', 1);
-        $dxapi_log->warnf("Unable to get affiliate id for %s", $myaffiliate_id);
-        return;
-    }
-
-    try {
-        $self->_commission_db->dbic->run(
-            ping => sub {
-                $_->do('SELECT * FROM affiliate.add_new_affiliate_client(?,?,?,?)', undef, $dx_loginid, PLATFORM_ID, $binary_user_id, $affiliate_id);
-            });
-
-        # notify commission deal listener about a new sign up
-        my $stream = join '::', (PLATFORM_ID, 'real_signup');
-        BOM::Config::Redis::redis_cfds_write()->execute('xadd', $stream, '*', 'platform', PLATFORM_ID, 'account_id', $dx_loginid);
-    } catch ($e) {
-        $dxapi_log->warnf("Unable to add client %s to affiliate.affiliate_client table. Error [%s]", $dx_loginid, $e);
-    }
-
-    return;
-}
-
-my $commission_db;
-
-=head2 _commission_db
-
-Return commission db.
-
-=cut
-
-sub _commission_db {
-    my $self = shift;
-
-    $commission_db //= BOM::Database::CommissionDB::rose_db();
-
-    return $commission_db;
-}
-
-my $aff;
-
-=head2 _myaffiliates
-
-Returns C<WebService::MyAffiliates> object.
-
-=cut
-
-sub _myaffiliates {
-    my $self = @_;
-
-    my $config = BOM::Config::third_party()->{myaffiliates};
-
-    $aff //= WebService::MyAffiliates->new(
-        user    => $config->{user},
-        pass    => $config->{pass},
-        host    => $config->{host},
-        timeout => 10
-    );
-
-    return $aff;
-}
 1;
