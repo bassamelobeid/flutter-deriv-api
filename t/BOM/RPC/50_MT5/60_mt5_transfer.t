@@ -503,7 +503,7 @@ subtest 'multi currency transfers' => sub {
     };
 
     $mock_fees->unmock('transfer_between_accounts_fees');
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 };
 
 subtest 'Transfers Limits' => sub {
@@ -576,7 +576,7 @@ subtest 'Transfers Limits' => sub {
     $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('Transfers should have been stopped')
         ->error_code_is('MT5WithdrawalError', 'More than maximum amount - correct error code')
         ->error_message_like(qr/maximum amount .* is $expected_usd_max.* USD/, 'InvalidMaxAmount - correct error message');
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 };
 
 subtest 'Suspended Transfers Currencies' => sub {
@@ -606,7 +606,7 @@ subtest 'Suspended Transfers Currencies' => sub {
 
     };
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 };
 
 subtest 'Simple withdraw' => sub {

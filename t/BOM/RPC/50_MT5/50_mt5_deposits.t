@@ -198,7 +198,7 @@ subtest 'deposit' => sub {
         ->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
     $test_client->status->clear_mt5_withdrawal_locked;
 
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 
 };
 
@@ -298,7 +298,7 @@ subtest 'virtual topup' => sub {
         $status_mock->unmock_all;
     };
 
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 
 };
 
@@ -343,7 +343,7 @@ subtest 'virtual deposit' => sub {
 
     is $test_wallet_vr->default_account->balance + 0, 0, "Correct balance after deposited to mt5 account";
 
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 
 };
 
@@ -376,7 +376,7 @@ subtest 'mx_deposit' => sub {
 
     $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')
         ->error_code_is('MT5DepositError', 'Transfers to MT5 not allowed error_code')->error_message_like(qr/not allow MT5 trading/);
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 };
 
 subtest 'mx_withdrawal' => sub {
@@ -408,7 +408,7 @@ subtest 'mx_withdrawal' => sub {
 
     $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
         ->error_message_like(qr/not allow MT5 trading/);
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 };
 
 subtest 'withdrawal' => sub {
@@ -465,7 +465,7 @@ subtest 'withdrawal' => sub {
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
 
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 };
 
 subtest 'virtual withdrawal' => sub {
@@ -501,7 +501,7 @@ subtest 'virtual withdrawal' => sub {
 
     is $test_wallet_vr->default_account->balance + 0, 150, "Correct balance after withdrawal from mt5 account";
 
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 };
 
 subtest 'labuan withdrawal' => sub {
@@ -653,7 +653,7 @@ subtest 'mf_withdrawal' => sub {
     cmp_ok $test_mf_client->default_account->balance, '==', 350, "Correct balance after withdrawal";
 
     $has_valid_documents = undef;
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 };
 
 subtest 'mf_deposit' => sub {
@@ -709,7 +709,7 @@ subtest 'mf_deposit' => sub {
 
     cmp_ok $test_mf_client->default_account->balance, '==', 650, "Correct balance after deposit";
     $has_valid_documents = undef;
-    $demo_account_mock->unmock;
+    $demo_account_mock->unmock_all();
 };
 subtest 'labuan deposit' => sub {
 
