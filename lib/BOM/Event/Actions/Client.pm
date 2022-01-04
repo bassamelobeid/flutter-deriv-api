@@ -3163,7 +3163,6 @@ sub link_affiliate_client {
 
     unless ($affiliate_id) {
         DataDog::DogStatsd::Helper::stats_inc('myaffiliates.' . $platform . '.failure.get_internal_aff_id', 1);
-        $log->warnf("Unable to get affiliate id for %s", $myaffiliate_id);
         return;
     }
 
