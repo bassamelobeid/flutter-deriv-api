@@ -1531,11 +1531,12 @@ subtest 'segment document upload' => sub {
 
     undef @track_args;
 
+    my $doc_expiration_date = Date::Utility->new()->plus_years(1)->date_yyyymmdd;
     $args = {
         document_type     => 'national_identity_card',
         document_format   => 'PNG',
         document_id       => '1234',
-        expiration_date   => '2022-01-01',
+        expiration_date   => $doc_expiration_date,
         expected_checksum => '123456',
         page_type         => undef,
     };
