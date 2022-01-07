@@ -63,7 +63,7 @@ my $existing_aff_clients = $commissiondb->dbic->run(
 my %existing = map { $_->[0] => 1 } @$existing_aff_clients;
 
 my $total = scalar(@$users);
-$log->infof("%s records found", $total);
+$log->debugf("%s records found", $total);
 
 my $starting_count  = 0;
 my $total_processed = 0;
@@ -71,7 +71,7 @@ my $total_skip      = 0;
 foreach my $data (@$users) {
     if ($starting_count >= $max_count) {
         $total_processed += $starting_count;
-        $log->infof("Processed %s & skipped %s out of total %s records", $total_processed, $total_skip, $total);
+        $log->debugf("Processed %s & skipped %s out of total %s records", $total_processed, $total_skip, $total);
         sleep $interval;
         $starting_count = 0;
     }
