@@ -3155,10 +3155,9 @@ sub link_affiliate_client {
             fixup => sub {
                 $_->selectall_array('SELECT id FROM affiliate.affiliate WHERE external_affiliate_id=?', undef, $myaffiliate_id);
             });
-        die "can't fine affiliate_id for $myaffiliate_id" unless $res;
-        $affiliate_id = $res->[0];
+        $affiliate_id = $res->[0] if $res;
     } catch ($e) {
-        $log->warnf("Unable to get affiliate id for %s. Error [%s]", $myaffiliate_id, $e);
+        $log->warnf("Exception thrown while querying data for affiliate [%s] error [%s]", $myaffiliate_id, $e);
     }
 
     unless ($affiliate_id) {
