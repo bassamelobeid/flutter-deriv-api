@@ -33,7 +33,7 @@ GetOptions(
     'h|help'           => \my $help,
 );
 
-require Log::Any::Adapter;
+require Log::Any::Adapter::DERIV;
 Log::Any::Adapter->set(qw(Stdout), log_level => $log_level);
 
 my $loop = IO::Async::Loop->new;
