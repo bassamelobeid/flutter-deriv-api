@@ -116,6 +116,21 @@ jobs:
             make unit_test_validation
       - store_test_results:
           path: /var/tmp/test-output
+  memory_test:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: MemoryTest
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make memory_test
+      - store_test_results:
+          path: /var/tmp/test-output
   pricing:
     <<: *default
     steps:
@@ -349,6 +364,8 @@ workflows:
       - product_contract_extended:
           context: perl
       - validation:
+          context: perl
+      - memory_test:
           context: perl
       - pricing:
           context: perl

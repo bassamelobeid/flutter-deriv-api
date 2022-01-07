@@ -8,6 +8,7 @@ CORETESTS=unit_test_product_contract \
 TESTS=test syntax
 
 PRODUCTALL=unit_test_validation \
+      memory_test \
       unit_test_product_contract \
       unit_test_product_contract_settlement \
       unit_test_product_contract_extended \
@@ -45,7 +46,10 @@ unit_test_product_contract_finder:
 	@$(PROVE) -r t/BOM/Product/ContractFinder/
 
 unit_test_validation:
-	@$(PROVE) -r t/BOM/Product/Validation/
+	@$(PROVE) -r t/BOM/Product/Validation/*.t
+
+memory_test:
+	@$(PROVE) -r t/BOM/Product/Validation/MemoryTest/
 
 unit_test_volatility:
 	@$(PROVE) -r t/BOM/Product/Volatility/
