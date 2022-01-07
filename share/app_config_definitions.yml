@@ -1135,6 +1135,11 @@ system:
       description: "Configuration for MT5"
       isa: section
       contains:
+        parallel_run:
+          description: "Enable parallel running of MT5 Proxy (read only calls) with PHP script"
+          isa: Bool
+          default: 0
+          global: 1
         load_balance:
           description: "Load balancer for MT5 trader servers for regions."
           isa: section
@@ -1203,11 +1208,11 @@ system:
                       default: 100
                       global: 1
         http_proxy:
-          description: "HTTP Proxy API swith config for MT5"
+          description: "HTTP Proxy API switch config for MT5"
           isa: section
           contains:
             demo:
-              description: "Demo HTTP Proxy API swith config for MT5"
+              description: "Demo HTTP Proxy API switch config for MT5"
               isa: section
               contains:
                 p01_ts01:
