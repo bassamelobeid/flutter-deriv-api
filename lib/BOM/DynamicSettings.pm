@@ -521,6 +521,8 @@ sub get_extra_validation {
         'payments.transfer_between_accounts.minimum.default'         => \&_validate_transfer_min_default,
         'payments.transfer_between_accounts.minimum.MT5'             => \&_validate_transfer_trading_platform,
         'payments.transfer_between_accounts.minimum.dxtrade'         => \&_validate_transfer_trading_platform,
+        'payments.p2p.limits.maximum_advert'                         => \&_validate_positive_number,
+        'payments.p2p.limits.maximum_order'                          => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.dxtrade'          => \&_validate_positive_number,
