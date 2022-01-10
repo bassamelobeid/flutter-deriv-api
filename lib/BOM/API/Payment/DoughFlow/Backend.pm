@@ -218,6 +218,7 @@ sub validate_as_payment {
             amount                => $signed_amount,
             action_type           => $action,
             die_with_error_object => 1,
+            payment_type          => 'doughflow',
             rule_engine           => BOM::Rules::Engine->new(client => $client),
         ) unless $c->type eq 'deposit';
 
