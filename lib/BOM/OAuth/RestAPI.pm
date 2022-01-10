@@ -301,7 +301,8 @@ sub login {
     return $c->render(
         json => {
             tokens        => \@tokens,
-            refresh_token => $refresh_token
+            refresh_token => $refresh_token,
+            %$login{qw/social_type/},
         },
         status => 200
     );
@@ -390,7 +391,7 @@ sub pta_login {
         my $number_of_keys = scalar keys($url_params->%*);
         return $c->_make_error('TOO_MANY_PARAMETERS', 400) if $number_of_keys > URL_PARAMS_LENGTH;
 
-        return $c->_make_error('INVALID_URL_PARAMS', 400) if $number_of_keys && join('', $url_params->%*) !~ /^\w+$/;
+        return $c->_make_error('INVALID_URL_PARAMS', 400) if $number_of_keys && join('', $url_params->%*) !~ /^[\w.-]+$/;
     }
 
     my $one_time_token_params = encode_json_utf8({
@@ -648,6 +649,8 @@ sub _perform_social_login {
 
     my $user_connect = BOM::Database::Model::UserConnect->new;
     my $user         = eval { BOM::User->new(email => $email) };
+    my $type         = $user ? 'login' : 'signup';
+
     if ($user) {
         die +{
             code => "NO_LOGIN_SIGNUP",
@@ -754,6 +757,8 @@ sub _perform_social_login {
     _verify_otp($c, $result->{user}, defang($c->req->json->{one_time_password}));
 
     $redis->del(ONE_ALL_TEMP_KEY . $connection_token);
+
+    $result->{social_type} = $type;
 
     return $result;
 }

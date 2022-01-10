@@ -258,7 +258,7 @@ subtest 'login' => sub {
             app_id   => $app_id,
             expire   => $expire,
             solution => $solution
-        })->status_is(200)->json_has('/token', 'Response has a token')->tx->res->json;
+        })->status_is(200)->json_has('/token', 'Response has a token')->json_is('/social_type', undef)->tx->res->json;
 
     my $jwt_token = $response->{token};
     ok $jwt_token, 'Got the JWT token from the JSON response';
@@ -389,7 +389,7 @@ subtest 'login' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', undef);
 
         # Updating system_user to is_totp_enabled
         $system_user->update_totp_fields(is_totp_enabled => 1);
@@ -438,7 +438,7 @@ subtest 'login' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', undef);
     };
 
     # Mocking OneAll Data
@@ -530,7 +530,7 @@ subtest 'login' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', 'login');
         ok $oneall_hit, 'OneAll API was hit';
 
         # Updating social_user to is_totp_enabled
@@ -586,7 +586,7 @@ subtest 'login' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', 'login');
 
         ok !$oneall_hit, 'OneAll API was skipped';
         ok !$redis->get('ONE::ALL::TEMP::true'), 'OneAll response cache is deleted after successful login';
@@ -605,7 +605,7 @@ subtest 'login' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens');
+            })->status_is(200)->json_has('/tokens')->json_is('/social_type', 'signup');
 
         is $events->{signup}->{properties}->{type},    'trading', 'track args type=trading';
         is $events->{signup}->{properties}->{subtype}, 'virtual', 'track args subtype=virtual';
@@ -691,7 +691,9 @@ subtest 'pta_login' => sub {
         },
         {
             Authorization => "Bearer $jwt_token",
-        })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->tx->res->json;
+        }
+    )->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', undef)
+        ->tx->res->json;
 
     my $refresh_token = $response->{refresh_token};
     ok $refresh_token, 'Get refresh_token from JSON response';
@@ -811,6 +813,21 @@ subtest 'pta_login' => sub {
             Authorization => "Bearer $jwt_token",
         })->status_is(400)->json_is('/error_code', 'INVALID_URL_PARAMS');
 
+    note 'dot and dash should be valid characters in the url params';
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $destination_app_id,
+            refresh_token => $refresh_token,
+            url_params    => {
+                utm_xxx => "1.0",
+                utm_zzz => "1-0"
+            }
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(200);
+
     note "Blocked user";
     $block_redis_key = 'oauth::blocked_by_user::' . $system_user->id;
     $redis->set($block_redis_key, 1);
@@ -877,7 +894,9 @@ subtest 'one_time_token' => sub {
         },
         {
             Authorization => "Bearer $jwt_token",
-        })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->tx->res->json;
+        }
+    )->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', undef)
+        ->tx->res->json;
 
     my $refresh_token = $response->{refresh_token};
     my $pta_login_url = '/api/v1/pta_login';
@@ -1038,7 +1057,9 @@ subtest 'app_id' => sub {
         },
         {
             Authorization => "Bearer $jwt_token",
-        })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->tx->res->json;
+        }
+    )->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', undef)
+        ->tx->res->json;
 
     my $refresh_token = $response->{refresh_token};
     ok $refresh_token, 'Get refresh_token from JSON response';
@@ -1209,7 +1230,7 @@ subtest 'account reactivation' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', undef);
 
         $response = $post->(
             $login_url,
