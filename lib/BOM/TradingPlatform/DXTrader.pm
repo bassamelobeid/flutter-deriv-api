@@ -450,6 +450,7 @@ sub deposit {
         platform_currency => $account->{currency},
         account_type      => $account->{account_type},
         currency          => $args{currency},
+        payment_type      => 'dxtrade_transfer',
     );
 
     my %txn_details = (

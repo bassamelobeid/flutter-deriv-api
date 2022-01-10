@@ -193,7 +193,8 @@ Returns hashref of validated amounts or dies with error.
 sub validate_transfer {
     my ($self, %args) = @_;
 
-    my ($action, $send_amount, $platform_currency, $account_type) = @args{qw/ action amount platform_currency account_type /};
+    my ($action, $send_amount, $platform_currency, $account_type, $payment_type) =
+        @args{qw/ action amount platform_currency account_type payment_type/};
     my ($recv_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent, $fees_in_client_currency);
 
     $self->rule_engine->verify_action(
@@ -250,10 +251,10 @@ sub validate_transfer {
 
     try {
         $self->client->validate_payment(
-            currency          => $local_currency,
-            amount            => $send_amount,
-            internal_transfer => 1,
-            rule_engine       => $self->rule_engine,
+            currency     => $local_currency,
+            amount       => $send_amount,
+            payment_type => $payment_type,
+            rule_engine  => $self->rule_engine,
         );
     } catch ($e) {
         chomp($e);

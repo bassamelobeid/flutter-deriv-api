@@ -2702,9 +2702,10 @@ sub p2p_order_create {
 
     try {
         $self->validate_payment(
-            amount      => $amount_client,
-            currency    => $advert_info->{account_currency},
-            rule_engine => $rule_engine,
+            amount       => $amount_client,
+            currency     => $advert_info->{account_currency},
+            payment_type => 'p2p',
+            rule_engine  => $rule_engine,
         );
     } catch ($e) {
         chomp($e);
@@ -2716,9 +2717,10 @@ sub p2p_order_create {
 
     try {
         $advertiser->validate_payment(
-            amount      => $amount_advertiser,
-            currency    => $advert_info->{account_currency},
-            rule_engine => $rule_engine,
+            amount       => $amount_advertiser,
+            currency     => $advert_info->{account_currency},
+            payment_type => 'p2p',
+            rule_engine  => $rule_engine,
         );
     } catch {
         die +{
@@ -5046,10 +5048,12 @@ sub _p2p_check_payment_methods_in_use {
 
 sub validate_payment {
     my ($self, %args) = @_;
-    my $currency    = $args{currency} || die "no currency\n";
-    my $amount      = $args{amount}   || die "no amount\n";
-    my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
-    my $rule_engine = $args{rule_engine};
+
+    my $currency     = $args{currency} || die "no currency\n";
+    my $amount       = $args{amount}   || die "no amount\n";
+    my $action_type  = $amount > 0 ? 'deposit' : 'withdrawal';
+    my $payment_type = $args{payment_type} // '';
+    my $rule_engine  = $args{rule_engine};
     # this argument is used by paymentapi to generate it's own custom error messages.
     my $die_with_error_object = $args{die_with_error_object};
 
@@ -5059,6 +5063,11 @@ sub validate_payment {
         die $die_with_error_object ? $validation->{error} : "$validation->{error}->{message_to_client}\n";
     }
 
+    # todo: extend rule engine to support conditional rules matching multiple values
+    my @internal = qw(internal_transfer mt5_transfer dxtrade_transfer);
+    # internal_transfer is included because it can lead to external withdrawal via crypto
+    my @p2p_restricted = qw(internal_transfer doughflow payment_agent_transfer);
+
     try {
         $rule_engine->verify_action(
             'validate_payment',
@@ -5066,7 +5075,8 @@ sub validate_payment {
             currency            => $currency,
             action              => $action_type,
             amount              => $amount,
-            is_internal         => $args{internal_transfer} ? 1 : 0,
+            is_internal         => (any { $payment_type eq $_ } @internal)       ? 1 : 0,
+            is_p2p_restricted   => (any { $payment_type eq $_ } @p2p_restricted) ? 1 : 0,
             brand               => request->brand(),
             rule_engine_context => {
                 client_list     => [$self],
