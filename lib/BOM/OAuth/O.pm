@@ -465,6 +465,7 @@ sub _website_domain {
 
     return 'binary.me' if $app_id == 15284;
     return 'deriv.me'  if $app_id == 1411;
+    return 'deriv.be'  if $app_id == 30767;
 
     return lc $c->stash('brand')->website_name;
 }
