@@ -1597,10 +1597,10 @@ async_rpc "mt5_deposit",
             } else {
                 try {
                     $fm_client->validate_payment(
-                        currency          => $fm_client->default_account->currency_code(),
-                        amount            => -1 * $amount,
-                        internal_transfer => 1,
-                        rule_engine       => BOM::Rules::Engine->new(client => $fm_client),
+                        currency     => $fm_client->default_account->currency_code(),
+                        amount       => -1 * $amount,
+                        payment_type => 'mt5_transfer',
+                        rule_engine  => BOM::Rules::Engine->new(client => $fm_client),
                     );
                 } catch ($e) {
                     return create_error_future(

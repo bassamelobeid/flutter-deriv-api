@@ -688,9 +688,10 @@ rpc paymentagent_transfer => sub {
 
     try {
         $client_fm->validate_payment(
-            currency    => $currency,
-            amount      => -$amount,
-            rule_engine => $rule_engine,
+            currency     => $currency,
+            amount       => -$amount,
+            payment_type => 'payment_agent_transfer',
+            rule_engine  => $rule_engine,
         );
     } catch ($e) {
         chomp $e;
@@ -699,9 +700,10 @@ rpc paymentagent_transfer => sub {
 
     try {
         $client_to->validate_payment(
-            currency    => $currency,
-            amount      => $amount,
-            rule_engine => $rule_engine,
+            currency     => $currency,
+            amount       => $amount,
+            payment_type => 'payment_agent_transfer',
+            rule_engine  => $rule_engine,
         );
     } catch ($e) {
         chomp $e;
@@ -1014,9 +1016,10 @@ rpc paymentagent_withdraw => sub {
     try {
         # what about the opposite side???
         $client->validate_payment(
-            currency    => $currency,
-            amount      => -$amount,                                     #withdraw action use negative amount
-            rule_engine => BOM::Rules::Engine->new(client => $client),
+            currency     => $currency,
+            amount       => -$amount,                                     #withdraw action use negative amount
+            payment_type => 'payment_agent_transfer',
+            rule_engine  => BOM::Rules::Engine->new(client => $client),
         );
     } catch ($e) {
         log_exception();
@@ -1603,10 +1606,10 @@ rpc transfer_between_accounts => sub {
     try {
         $client_from->is_virtual
             || $client_from->validate_payment(
-            currency          => $currency,
-            amount            => -1 * $amount,
-            internal_transfer => 1,
-            rule_engine       => $rule_engine,
+            currency     => $currency,
+            amount       => -1 * $amount,
+            payment_type => 'internal_transfer',
+            rule_engine  => $rule_engine,
             )
             || die "validate_payment [$loginid_from]";
     } catch ($err) {
@@ -1631,21 +1634,21 @@ rpc transfer_between_accounts => sub {
         my $msg = (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '';
         $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
         $msg = $err                   if $err =~ m/Your identity documents have expired/i;
+        $msg = $err                   if $err =~ m/Deriv P2P/;
         return $error_audit_sub->("validate_payment failed for $loginid_from [$err]", $msg);
     }
 
     try {
         $client_to->is_virtual
             || $client_to->validate_payment(
-            currency          => $to_currency,
-            amount            => $to_amount,
-            internal_transfer => 1,
-            rule_engine       => $rule_engine,
+            currency     => $to_currency,
+            amount       => $to_amount,
+            payment_type => 'internal_transfer',
+            rule_engine  => $rule_engine,
             )
             || die "validate_payment [$loginid_to]";
     } catch ($err) {
         log_exception();
-
         my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
         $msg = localize("Your account balance will exceed set limits. Please specify a lower amount.")
             if ($err =~ /Balance would exceed limit/);
