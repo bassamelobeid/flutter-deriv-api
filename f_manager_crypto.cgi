@@ -6,7 +6,7 @@ use warnings;
 no indirect;
 
 use Date::Utility;
-use Format::Util::Numbers qw/financialrounding formatnumber/;
+use Format::Util::Numbers qw/financialrounding formatnumber commas/;
 use JSON::MaybeXS;
 use HTML::Entities;
 use List::UtilsBy qw(rev_nsort_by sort_by extract_by);
@@ -209,7 +209,9 @@ my $display_transactions = sub {
     # Assign USD equivalent value
     for my $trx (@$trxns) {
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
-        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
+
+        my $formatted_usd_amount = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
+        $trx->{usd_amount}       = commas($formatted_usd_amount);
 
         $trx->{statement_link} = request()->url_for(
             'backoffice/f_manager_history.cgi',
