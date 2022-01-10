@@ -64,7 +64,7 @@ subtest 'dxtrade' => sub {
     $params->{args}{market_type} = 'synthetic';
     $params->{args}{password}    = 'wrong';
     $c->call_ok('trading_platform_new_account', $params)->has_error->error_code_is('PasswordError')
-        ->error_message_is('Provided password is incorrect.', 'wrong password');
+        ->error_message_is('That password is incorrect. Please try again.', 'wrong password');
 
     $params->{args}{password} = 'Abcd1234';
     my $dx_syn = $c->call_ok('trading_platform_new_account', $params)->has_no_error->result;

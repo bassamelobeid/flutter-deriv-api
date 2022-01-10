@@ -199,7 +199,7 @@ subtest 'password change with mt5 accounts' => sub {
         }};
 
     # should fail when using the wrong old password
-    $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')->error_message_is('Provided password is incorrect.');
+    $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')->error_message_is('That password is incorrect. Please try again.');
 
     # should pass when using the correct old password
     $params->{args}->{old_password} = 'Efgh4567';

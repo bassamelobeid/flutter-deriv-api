@@ -54,8 +54,8 @@ subtest 'change password' => sub {
                 user_pass    => '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ='
             }
         )->{error}->{message_to_client},
-        'Provided password is incorrect.',
-        'Provided password is incorrect.',
+        'That password is incorrect. Please try again.',
+        'That password is incorrect. Please try again.',
     );
     is(
         BOM::RPC::v3::Utility::check_password({
@@ -181,7 +181,7 @@ subtest 'change password' => sub {
     $params->{args}{old_password} = 'old_password';
     $params->{cs_email}           = 'cs@binary.com';
     $params->{client_ip}          = '127.0.0.1';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Provided password is incorrect.');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'That password is incorrect. Please try again.');
     $params->{args}{old_password} = $password;
     $params->{args}{new_password} = $password;
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Current password and new password cannot be the same.');

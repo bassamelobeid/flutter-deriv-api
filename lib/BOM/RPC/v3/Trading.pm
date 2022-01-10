@@ -60,7 +60,7 @@ my %ERROR_MAP = do {
             localize('This request must be made using a connection authorized by the Deriv account involved in the transfer.'),
         PlatformTransferRealParams => localize('A Deriv account ID and amount must be provided for real accounts.'),
         PasswordRequired           => localize('A new password is required'),
-        PasswordError              => localize('Provided password is incorrect.'),
+        PasswordError              => localize('That password is incorrect. Please try again.'),
         PasswordReset              => localize('Please reset your password to continue.'),
         OldPasswordRequired        => localize('Old password cannot be empty.'),
         NoOldPassword              => localize('Old password cannot be provided until a trading password has been set.'),
