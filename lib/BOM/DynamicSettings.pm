@@ -339,6 +339,8 @@ sub get_settings_by_group {
                 payments.autoapproval.max_mt5_net_transfer_enabled
                 payments.autoapproval.max_mt5_net_transfer
                 payments.autoapproval.disabled_sportsbooks
+                payments.p2p_withdrawal_limit
+                payments.p2p_deposits_lookback
                 )
         ],
         crypto => [qw(
