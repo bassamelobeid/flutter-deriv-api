@@ -515,8 +515,15 @@ subtest 'currency config' => sub {
         'correct empty address as no external sweep address set for USDK';
 };
 
-subtest 'antarctic dollar currency test (aq => AAD)' => sub {
-    is BOM::Config::CurrencyConfig::local_currency_for_country('aq'), 'AAD', 'local_currency_for_antarctic';
+subtest 'rare currencies config' => sub {
+    is BOM::Config::CurrencyConfig::local_currency_for_country('aq'), 'AAD', 'local currency for Antarctic';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('cw'), 'USD', 'local currency for Curacao';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('sx'), 'USD', 'local currency for Sint Maarten (Dutch part)';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('bl'), 'EUR', 'local currency for Saint-Barthemy';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('ax'), 'EUR', 'local currency for Aland Islands';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('mf'), 'EUR', 'local currency for Saint-Martin (French part)';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('an'), 'ANG', 'local currency for Netherlands Antilles';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('ss'), 'SSP', 'local currency for South Sudan';
 };
 
 subtest 'undefined currency' => sub {

@@ -58,7 +58,16 @@ our %LOCAL_CURRENCY_FOR_COUNTRY = do {
 
     # locale.db is not updated with antarctica dollar currency then instead of change it we create a hash for
     # saving rare currencies like AAD (antarctica dollar)
-    my %rare_country_currencies = (aq => 'AAD');
+    my %rare_country_currencies = (
+        aq => 'AAD',    # Antarctica
+        cw => 'USD',    # Curacao
+        sx => 'USD',    # Sint Maarten (Dutch part)
+        bl => 'EUR',    # Saint-Barthemy
+        ax => 'EUR',    # Aland Islands
+        mf => 'EUR',    # Saint-Martin (French part)
+        ss => 'SSP',    # South Sudan
+        an => 'ANG',    # Netherlands Antilles
+    );
 
     map {
         my $country_code = $_;
@@ -71,7 +80,7 @@ our %LOCAL_CURRENCY_FOR_COUNTRY = do {
             }
         }
         $country_code => $currency_code;
-    } Locale::Country::all_country_codes();
+    } Locale::Country::all_country_codes(), 'an';    # Because an not avaible on Locale::Country::all_country_codes() then we append it.
 };
 
 sub local_currency_for_country {
