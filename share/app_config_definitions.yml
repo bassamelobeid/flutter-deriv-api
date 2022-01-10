@@ -75,17 +75,27 @@ payments:
       isa: section
       contains:
         ctc:
-          description: 'Crypto cashier global limit'
+          description: 'Percentage of reversible deposits available to withdraw via Crypto cashier.'
           isa: Num
           global: 1
           default: 100
         p2p:
-          description: 'P2P global limit'
+          description: 'Percentage of reversible deposits available to sell via P2P.'
           isa: Num
           global: 1
           default: 100
     reversible_deposits_lookback:
       description: 'Number of days within which a deposit can be counted as reversible.'
+      isa: Num
+      global: 1
+      default: 180
+    p2p_withdrawal_limit:
+      description: 'Percentage of net P2P deposits (over previous p2p_deposits_lookback days) available to withdraw via Doughflow, internal transfer, and PA withdrawal.'
+      isa: Num
+      global: 1
+      default: 100
+    p2p_deposits_lookback:
+      description: 'Number of previous days over which to aggregate net P2P deposits for p2p_withdrawal_limit.'
       isa: Num
       global: 1
       default: 180
