@@ -24,8 +24,8 @@ scope_guard {
     });
 };
 
-subtest 'Default config for parallel run is enabled' => sub {
-    is(BOM::MT5::User::Async::_is_parallel_run_enabled, 1, 'parallel_run enabled by default');
+subtest 'Default config for parallel run is disabled' => sub {
+    is(BOM::MT5::User::Async::_is_parallel_run_enabled, 0, 'parallel_run disabled by default');
 };
 
 subtest 'Zero for disabled' => sub {
