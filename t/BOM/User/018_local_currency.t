@@ -15,7 +15,7 @@ my %mapping = (
     ID => 'IDR',
     NG => 'NGN',
     BR => 'BRL',
-    AX => undef,
+    AX => 'EUR',
     '' => undef,
 );
 
