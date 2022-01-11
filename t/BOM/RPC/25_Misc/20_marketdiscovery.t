@@ -109,6 +109,8 @@ subtest 'active_symbols for whitelisted apps' => sub {
                 active_symbols => 'brief',
             }};
         my %expected_symbol_count = (
+            30767 => 83,
+            30768 => 69,
             11780 => 83,
             1408  => 0,
             16303 => 83,
