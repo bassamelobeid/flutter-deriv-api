@@ -65,7 +65,7 @@ subtest 'change password to wrong one' => sub {
         new_password    => $new_password
     });
     is $change_password->{error}->{code}, 'PasswordError';
-    ok $change_password->{error}->{message} =~ /Provided password is incorrect/;
+    ok $change_password->{error}->{message} =~ /That password is incorrect. Please try again./;
     test_schema('change_password', $change_password);
 
     $change_password = $t->await::change_password({
