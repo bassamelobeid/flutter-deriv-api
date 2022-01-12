@@ -422,6 +422,8 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 <th>Status</th>
                 <th>Status Messages</th>
                 <th>Updated At</th>
+                <th>Full Name</th>
+                <th>Date of Birth</th>
             </tr>
             [% IF idv_records.size > 0 %]
                 [% FOREACH record IN idv_records %]
@@ -441,6 +443,8 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                             [% END %]
                         </td>
                         <td>[% record.updated_at %]</td>
+                        <td title='[% record.tooltip %]'>[% record.full_name %]</td>
+                        <td title='[% record.tooltip %]'>[% record.dob %]</td>
                     </tr>
                 [% END %]
             [% ELSE %]

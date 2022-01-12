@@ -44,6 +44,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::User::Onfido;
 use BOM::User::IdentityVerification;
 use BOM::RPC::v3::Accounts;
+use BOM::Platform::Client::IdentityVerification;
 use 5.010;
 
 =head1 subs_backoffice_clientdetails
@@ -538,11 +539,29 @@ SQL
     my $messages;
     if ($idv_records) {
         for my $idv_record ($idv_records->@*) {
+            $messages                      = [];
             $messages                      = eval { decode_json_utf8 $idv_record->{status_messages} } if $idv_record->{status_messages};
             $idv_record->{status_messages} = [map { $rejected_reasons{$_} ? localize($rejected_reasons{$_}) : $_ } $messages->@*];
             $idv_record->{issuing_country} = $countries_instance->country_from_code($idv_record->{issuing_country});
             $idv_record->{document_expiration_date} ||= "Lifetime Valid";
             $idv_record->{document_expiration_date} = "-" if uc($idv_record->{status}) eq "FAILED";
+
+            my $idv_document_check = $idv_model->get_document_check_detail($idv_record->{document_id});
+            my $response;
+
+            next unless $idv_document_check;
+            try {
+                $response = decode_json_utf8 $idv_document_check->{response} if $idv_document_check->{response};
+                $response = BOM::Platform::Client::IdentityVerification::transform_response($idv_document_check->{provider}, $response) // $response;
+                $idv_record->{full_name} = $response->{full_name};
+                $idv_record->{dob}       = $response->{date_of_birth};
+            } catch ($error) {
+                $idv_record->{full_name} = 'Error';
+                $idv_record->{dob}       = 'Error';
+            }
+            if (BOM::Platform::Client::IdentityVerification::is_mute_provider($idv_document_check->{provider})) {
+                $idv_record->{tooltip} = $idv_document_check->{provider} . " provider does not return personal data";
+            }
         }
     }
 
