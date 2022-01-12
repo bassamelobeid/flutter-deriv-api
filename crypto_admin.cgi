@@ -25,6 +25,7 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 use constant REVERT_ERROR_TXN_RECORD => "CRYPTO::ERROR::TXN::ID::";
+use constant BUMP_TXN_RECORD         => "CRYPTO::BUMP::TXN::ID::";
 
 # Check if a staff is logged in
 BOM::Backoffice::Auth0::get_staff();
@@ -204,7 +205,6 @@ if (%input && $input{req_type}) {
         } catch ($e) {
             $template_details->{response} = +{error => $e};
         };
-
         BOM::Backoffice::Request::template()
             ->process('backoffice/crypto_admin/result_' . lc($template_currency_mapper->{$currency_selected} // $currency_selected) . '.html.tt',
             $template_details, undef, {binmode => ':utf8'});
@@ -219,11 +219,14 @@ sub _get_currency {
 sub _get_function_map {
     my ($currency, $currency_wrapper, $input) = @_;
 
-    my $address       = length $input->{address}       ? $input->{address}            : undef;
-    my $txn_hash      = length $input->{txn_hash}      ? $input->{txn_hash}           : undef;
-    my $amount        = length $input->{amount}        ? $input->{amount}             : undef;
-    my $confirmations = length $input->{confirmations} ? int($input->{confirmations}) : undef;
-    my $limit         = length $input->{limit}         ? int($input->{limit})         : undef;
+    my $address = length $input->{address} ? $input->{address} : undef;
+    $input->{txn_hash} =~ s/^\s+|\s+$//g if $input->{txn_hash};
+    my $txn_hash        = length $input->{txn_hash}        ? $input->{txn_hash}           : undef;
+    my $amount          = length $input->{amount}          ? $input->{amount}             : undef;
+    my $confirmations   = length $input->{confirmations}   ? int($input->{confirmations}) : undef;
+    my $limit           = length $input->{limit}           ? int($input->{limit})         : undef;
+    my $max_fee_per_gas = length $input->{max_fee_per_gas} ? $input->{max_fee_per_gas}    : 0;
+    my $staff           = BOM::Backoffice::Auth0::get_staffname();
 
     die "Invalid address" if ($address && !$currency_wrapper->is_valid_address($address));
 
@@ -308,6 +311,28 @@ sub _get_function_map {
         get_transaction_receipt => sub {
             die "Transaction hash must be specified" unless length $txn_hash;
             $currency_wrapper->get_transaction_receipt($txn_hash);
+        },
+        bump_eth_transaction => sub {
+            die "ETH:Transaction hash must be specified" unless length $txn_hash;
+            my $old_transaction = $currency_wrapper->get_transaction($txn_hash);
+            die sprintf("Could not find transaction on blockchain with hash: %s", $txn_hash) unless $old_transaction;
+            die sprintf("Confirmed transaction cannot be bumped. hash: %s",       $txn_hash) if $old_transaction->{blockNumber};
+            my $redis_write         = BOM::Config::Redis::redis_replicated_write();
+            my $redis_read          = BOM::Config::Redis::redis_replicated_read();
+            my $approved_previously = $redis_read->get(BUMP_TXN_RECORD . $txn_hash);
+            my $max_fee_per_gas_msg = ($max_fee_per_gas) ? $max_fee_per_gas : 'Not provided';
+            #bump if its second person's approval
+            if ($approved_previously && $approved_previously ne $staff) {
+                $redis_write->del(BUMP_TXN_RECORD . $txn_hash);
+                return $currency_wrapper->bump_fee_transaction($txn_hash, $max_fee_per_gas);
+            }
+            my $approval_message =
+                !$approved_previously
+                ? 'Transaction has been successfully approved for bump.'
+                : 'This transaction is already approved by you for bump.';    # $approved_previously eq $staff
+            $redis_write->setex(BUMP_TXN_RECORD . $txn_hash, 3600, $staff);
+            return sprintf('<p>%s. Needs one more approver.</p><b>Transaction hash:</b> %s, <b>Max fee per gas(Gwei):</b> %s',
+                $approval_message, $txn_hash, $max_fee_per_gas_msg);
         },
     } if $currency eq 'ETH';
 }

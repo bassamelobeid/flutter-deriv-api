@@ -72,11 +72,19 @@
                 { label => 'Confirmations', name => 'confirmations', type => 'number' },
             ],
         },
+        bump_eth_transaction => {
+            title    => 'Bump transaction',
+            description => 'Use this when transaction need to be bump. It requires two persons authentication to complete the process.',
+            elements => [
+                { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 80, value => '' },
+                { label => 'Max fee per gas(Gwei)',  name => 'max_fee_per_gas', size => 4, value => '' },
+            ],
+        },
     };
     currency_forms = {
         BTC => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address'],
         UST => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'list_transactions'],
-        ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas', 'get_transaction_receipt'],
+        ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas', 'get_transaction_receipt','bump_eth_transaction'],
     };
 %]
 
