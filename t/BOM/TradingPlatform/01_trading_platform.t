@@ -113,32 +113,4 @@ subtest 'Instantiate the platform without factory' => sub {
     isa_ok(BOM::TradingPlatform->new_base(), 'BOM::TradingPlatform');
 };
 
-subtest 'MT5 suspend' => sub {
-
-    my $user = BOM::User->create(
-        email    => 'dsds@binary.com',
-        password => 'Abcd1234'
-    );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $user->add_client($client);
-    $user->add_loginid('DXD1000');
-
-    $user->add_loginid('MTR1000');
-
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(1);
-    my $mt5 = BOM::TradingPlatform->new(
-        platform => 'mt5',
-        client   => $user->get_default_client());
-
-    cmp_deeply(
-        exception { $mt5->change_password(password => 'Abcd1234') },
-        {error_code => 'MT5Suspended'},
-        'correct error_code when one of mt5 servers is suspended'
-    );
-
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
-};
-
 done_testing();

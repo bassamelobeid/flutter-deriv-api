@@ -73,12 +73,6 @@ sub change_password {
     my $password = $args{password};
 
     my @mt5_loginids = $self->client->user->get_mt5_loginids;
-    unless (@mt5_loginids) {
-        $self->client->user->update_trading_password($password);
-        return;
-    }
-
-    die +{error_code => 'MT5Suspended'} if $self->is_any_mt5_servers_suspended;
 
     my (@valid_logins, $res);
 
@@ -92,6 +86,18 @@ sub change_password {
                     if $result->is_failed and not(ref $result->failure eq 'HASH' and ($result->failure->{code} // '') eq 'NotFound');
             }
         })->get;
+
+    for (@valid_logins) {
+        my $group = $self->get_group($_);
+
+        my $server_key = BOM::MT5::User::Async::get_trading_server_key({login => $_}, $group);
+        die +{error_code => 'MT5Suspended'} if $self->is_mt5_server_suspended($group, $server_key);
+    }
+
+    unless (@mt5_loginids) {
+        $self->client->user->update_trading_password($password);
+        return;
+    }
 
     my @mt5_password_change =
         map { BOM::MT5::User::Async::password_change({login => $_, new_password => $password, type => 'main'})->set_label($_) } @valid_logins;
@@ -216,23 +222,31 @@ sub config {
     }
 }
 
-=head2 is_any_mt5_servers_suspended
+=head2 is_mt5_server_suspended
 
-Returns 1 if any of the MT5 servers is currently suspended, returns 0 otherwise
+Returns 1 if MT5 server is currently suspended, returns 0 otherwise
 
 =cut
 
-sub is_any_mt5_servers_suspended {
-    my ($self) = @_;
+sub is_mt5_server_suspended {
+    my ($self, $group_type, $trade_server) = @_;
 
     my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5;
 
-    my $mt5_config = $self->config->webapi_config();
-    for my $group_type (qw(demo real)) {
-        return 1 if first { $app_config->suspend->all || $app_config->suspend->$group_type->$_->all } sort keys %{$mt5_config->{$group_type}};
-    }
+    return $app_config->suspend->{$group_type}->{$trade_server}->all || $app_config->suspend->all;
+}
 
-    return 0;
+=head2 get_group
+
+Using regex to return what group the account id belongs to 
+
+=cut
+
+sub get_group {
+    my ($self, $account_id) = @_;
+
+    return 'real' if $account_id =~ /^MTR\d+$/;
+    return 'demo' if $account_id =~ /^MTD\d+$/;
 }
 
 1;

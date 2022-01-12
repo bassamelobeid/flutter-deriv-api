@@ -116,6 +116,63 @@ ok BOM::User::Password::checkpw('secret', $client->user->trading_password), 'MT5
 
 $mt5_config->suspend->real->p01_ts01->all(0);
 
+subtest 'MT5 demo server suspended' => sub {
+    $mt5_config->suspend->demo->p01_ts01->all(1);
+    cmp_deeply(
+        exception { $mt5->change_password(password => 'secret') },
+        {error_code => 'MT5Suspended'},
+        'Password change fails with demo server suspended'
+    );
+};
+
+subtest 'MT5 real server suspended' => sub {
+    $mt5_config->suspend->real->p01_ts01->all(1);
+    cmp_deeply(
+        exception { $mt5->change_password(password => 'secret') },
+        {error_code => 'MT5Suspended'},
+        'Password change fails with demo server suspended'
+    );
+};
+
+subtest 'MT5 other server suspend' => sub {
+    $mt5_config->suspend->all(0);
+    $mt5_config->suspend->real->p01_ts01->all(0);
+    $mt5_config->suspend->demo->p01_ts01->all(0);
+    $mt5_config->suspend->demo->p01_ts02->all(1);
+    $mt5_config->suspend->real->p01_ts03->all(1);
+
+    cmp_deeply(
+        $mt5->change_password(password => 'secret'),
+        {successful_logins => [$mt5_account{demo}{login}, $mt5_account{real}{login}]},
+        'Accounts only in demo->p01_ts01 and real->p01_ts01 , suspending other trade server with not affect anything'
+    );
+};
+
+subtest 'MT5 archived account server is suspended' => sub {
+    $mt5_config->suspend->all(0);
+    $mt5_config->suspend->real->p01_ts01->all(0);
+    $mt5_config->suspend->demo->p01_ts01->all(1);
+
+    $mock_mt5->mock(
+        'get_user',
+        sub {
+            my $mt5_loginid = shift;
+            if ($mt5_loginid eq $mt5_account{demo}{login}) {
+                return Future->fail('NotFound');
+            }
+            return Future->done({login => $mt5_loginid});
+        });
+
+    cmp_deeply(
+        $mt5->change_password(password => 'secret'),
+        {
+            successful_logins => [$mt5_account{real}{login}],
+            failed_logins     => [$mt5_account{demo}{login}],
+        },
+        'Not expecting MT5Suspended error as only archived account server is suspended'
+    );
+};
+
 $mock_mt5->mock(
     'password_change',
     sub {
