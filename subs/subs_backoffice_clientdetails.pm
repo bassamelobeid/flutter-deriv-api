@@ -18,6 +18,7 @@ use LandingCompany::Registry;
 use List::MoreUtils qw(any);
 use BOM::Config::Onfido;
 use Log::Any qw($log);
+use YAML::XS qw(LoadFile);
 
 use BOM::Transaction::Utility;
 use BOM::Config;
@@ -572,6 +573,7 @@ SQL
         $risk_disclaimer_resubmission_updated_at = Date::Utility->new($updated_at)->datetime;
         $risk_disclaimer_resubmission_updated_by = $redis->hget($key . 'meta', 'staff_name');
     }
+    my @countries_disallow_residence_change = LoadFile("/home/git/regentmarkets/bom-backoffice/config/countries_disallow_residence_change.yml");
 
     my $template_param = {
         balance              => $balance,
@@ -644,7 +646,8 @@ SQL
         risk_screen                        => $risk_screen,
         is_compliance                      => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
         risk_disclaimer_updated_at         => $risk_disclaimer_resubmission_updated_at,
-        risk_disclaimer_updated_by         => $risk_disclaimer_resubmission_updated_by
+        risk_disclaimer_updated_by         => $risk_disclaimer_resubmission_updated_by,
+        disallow_residence_change          => @countries_disallow_residence_change
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

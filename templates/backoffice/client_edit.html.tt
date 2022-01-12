@@ -887,12 +887,23 @@ function get_to_reject_files() {
 
 function residence_change(sel) {
 
+    var disallow_residence_change = {
+        country:[
+        [% FOREACH field IN disallow_residence_change %]
+            "[% field %]",
+        [% END %]
+        ],
+    };
+    
     var e = document.getElementById("original_residence");
     var original_residence = e.text;
 
     var new_residence = sel.options[sel.selectedIndex].text;
 
-    if(!confirm("Client's original residence is " + original_residence + "\n\nAre you sure you want to change to " + new_residence + "?")) {
+    if (disallow_residence_change.country.includes(original_residence)){
+        alert("Residence for " + original_residence + " cannot be changed");
+        sel.selectedIndex = e.index;
+    }else if (!confirm("Client's original residence is " + original_residence + "\n\nAre you sure you want to change to " + new_residence + "?")) {
         // Always return to the original residence
         sel.selectedIndex = e.index;
     }
