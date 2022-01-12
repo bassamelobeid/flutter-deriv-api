@@ -2509,7 +2509,7 @@ subtest 'get account status' => sub {
 
             $test_client->status->upsert('allow_document_upload', 'system', 'ANYTHING_ELSE');
             $result = $c->tcall($method, {token => $token});
-            cmp_deeply($result->{status}, superbagof(qw(idv_disallowed allow_document_upload)), 'idv not allowed correctly for ANYTHING_ELSE');
+            cmp_deeply($result->{status}, noneof(qw(idv_disallowed)), 'idv allowed correctly for ANYTHING_ELSE');
 
             $mocked_client->mock('get_onfido_status', 'expired');
             $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');

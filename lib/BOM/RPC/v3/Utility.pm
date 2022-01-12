@@ -1303,9 +1303,6 @@ sub is_idv_disallowed {
     return 1 if $client->status->allow_poi_resubmission;
 
     if ($client->status->allow_document_upload) {
-        return 1 if none { $_ eq $client->status->allow_document_upload->{reason} // '' }
-        qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/;
-
         my $manual_status = $client->get_manual_poi_status();
         return 1 if $manual_status eq 'expired' or $manual_status eq 'rejected';
 
