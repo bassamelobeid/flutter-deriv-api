@@ -369,6 +369,8 @@ sub get_settings_by_group {
                 payments.crypto.withdrawal_processing_max_duration
                 payments.crypto.gas_limit_incremental_percentage
                 payments.crypto.withdrawal.min_usd
+                payments.crypto.auto_update.approve
+                payments.crypto.auto_update.reject
                 payments.sweep.reserve_balance
                 payments.sweep.min_transfer
                 payments.sweep.max_transfer

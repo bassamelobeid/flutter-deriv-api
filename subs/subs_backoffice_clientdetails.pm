@@ -202,6 +202,20 @@ my $UNTRUSTED_STATUS = [{
         'code'        => 'shared_payment_method',
         'show_reason' => 'yes'
     },
+    {
+        'linktype'    => 'cryptoautorejectdisabled',
+        'comments'    => 'Disable auto reject for crypto payouts',
+        'code'        => 'crypto_auto_reject_disabled',
+        'show_reason' => 'yes',
+        'explanation' => 'Prevents Auto Rejecting client crypto payouts.',
+    },
+    {
+        'linktype'    => 'cryptoautoapprovedisabled',
+        'comments'    => 'Disable auto approve for crypto payouts',
+        'code'        => 'crypto_auto_approve_disabled',
+        'show_reason' => 'yes',
+        'explanation' => 'Prevents Auto Approving client crypto payouts.',
+    },
 ];
 
 sub get_document_type_category_mapping {
