@@ -36,14 +36,11 @@ use BOM::Platform::Context qw( localize request );
 use BOM::Platform::Utility;
 use BOM::User::IdentityVerification;
 use BOM::User::Client;
+use BOM::Platform::Client::IdentityVerification;
 use Brands::Countries;
 
 use constant TRIGGER_MAP => {
     smile_identity => \&_trigger_smile_identity,
-};
-
-use constant TRANSFORMER_MAP => {
-    smile_identity => \&_transform_smile_identity_response,
 };
 
 use constant RESULT_STATUS => {
@@ -127,8 +124,7 @@ async sub verify_identity {
 
         my ($status, $response_hash, $message) = @result;
 
-        my $transformed_resp = $response_hash;
-        $transformed_resp = TRANSFORMER_MAP->{$provider}($response_hash) if exists TRANSFORMER_MAP->{$provider};
+        my $transformed_resp = BOM::Platform::Client::IdentityVerification::transform_response($provider, $response_hash) // $response_hash;
 
         if ($status eq RESULT_STATUS->{pass}) {
 
