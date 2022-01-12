@@ -935,4 +935,32 @@ sub get_crypto_withdrawal_min_usd {
     return $minimum_withdrawal_config->{$currency};
 }
 
+=head2 get_crypto_payout_auto_update_global_status
+
+Get the global status of crypto auto approve or auto reject from backoffice dynamic settings
+
+=over 4
+
+=item * C<action> - required - Action to check  - approve or reject
+
+=back
+
+Returns 1 if enabled from backoffice, otherwise 0.
+
+=cut
+
+sub get_crypto_payout_auto_update_global_status {
+    my ($action) = @_;
+
+    return 0 unless $action;
+
+    if (lc($action) eq 'approve') {
+        return app_config()->payments->crypto->auto_update->approve;
+    } elsif (lc($action) eq 'reject') {
+        return app_config()->payments->crypto->auto_update->reject;
+    }
+
+    return 0;
+}
+
 1;

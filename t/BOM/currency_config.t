@@ -565,6 +565,25 @@ subtest 'get_currency_internal_sweep_config' => sub {
     });
 };
 
+subtest 'get_crypto_payout_auto_update_global_status' => sub {
+
+    my $apps_config = BOM::Config::Runtime->instance->app_config();
+
+    $apps_config->payments->crypto->auto_update->approve(0);
+    $apps_config->payments->crypto->auto_update->reject(0);
+
+    is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status(),          0, 'returns false when no action has been passed');
+    is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('approve'), 0, 'should returns false when auto approve is disabled');
+    is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('reject'),  0, 'should return false when auto reject is disabled');
+
+    $apps_config->payments->crypto->auto_update->approve(1);
+    is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('approve'), 1, 'should return true when auto approve is enabled');
+
+    $apps_config->payments->crypto->auto_update->reject(1);
+    is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('reject'), 1, 'should return true when auto reject is enabled');
+
+};
+
 $mock_app_config->unmock_all();
 
 done_testing();

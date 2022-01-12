@@ -468,6 +468,20 @@ payments:
               description: "The minimum withdrawal amount in USD"
               default: '{"BTC":25,"LTC":5,"ETH":25,"BUSD":25,"DAI":25,"EURS":25,"IDK":5,"PAX":25,"TUSD":25,"USB":25,"USDC":25,"USDK":25,"eUSDT":25,"UST":25}'
               global: 1
+        auto_update:
+          description: "Enable crypto withdrawal auto approve and reject"
+          isa: section
+          contains:
+            approve:
+              isa: Bool
+              description: "Enable this to start running auto approval service for crypto payouts"
+              default: 1
+              global: 1
+            reject:
+              isa: Bool
+              description: "Enable this to start running auto reject service for crypto payouts"
+              default: 0
+              global: 1
     sweep:
       description: 'Sweep related limit configuration'
       isa: section
