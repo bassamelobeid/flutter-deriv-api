@@ -449,7 +449,11 @@ subtest 'password reset with mt5 accounts' => sub {
         },
     };
 
-    $c->call_ok($method, $params)->has_error->error_code_is('MT5Suspended')->error_message_is('MT5 account management is currently suspended.');
+    # only able to change demo account which is in demo\p01_ts01\financial\svg_std_usd
+    # password change fails for real account which is in suspended server real\p01_ts03\synthetic\svg_std_usd\01
+    $c->call_ok($method, $params)->has_error->error_code_is('PlatformPasswordChangeError')
+        ->error_message_is(
+        'Due to a network issue, we couldn\'t update the password for some of your accounts. Please check your email for more details.');
 
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 
