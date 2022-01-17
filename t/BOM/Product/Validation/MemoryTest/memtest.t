@@ -186,7 +186,8 @@ sub _get_barrier {
 
 subtest 'memory cycle test' => sub {
     foreach my $underlying (@underlyings) {
-        my $u_symbol     = $underlying->symbol;
+        my $u_symbol = $underlying->symbol;
+        diag("underlying symbol $u_symbol");
         my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => $u_symbol,
             epoch      => $now->epoch,
