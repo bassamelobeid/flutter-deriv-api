@@ -2377,6 +2377,13 @@ sub p2p_advert_create {
     $param{advertiser_id} = $advertiser_info->{id};
     $param{is_active}     = 1;                        # needed for validation
 
+    my $market_rate;
+    try {
+        $market_rate = convert_currency(1, $param{account_currency}, $param{local_currency});
+    } catch {
+        # no rate available
+    }
+
     $self->_validate_advert(%param);
 
     my ($id) = $self->db->dbic->run(
@@ -2417,6 +2424,15 @@ sub p2p_advert_create {
             max_order_amount => $response->{max_order_amount_display},
             is_visible       => $response->{is_visible},
         });
+
+    if ($market_rate) {
+        # for sell, higher than the market rate = postive score.
+        # for buy, lower than the market rate = positive score.
+        # At or better than market is recorded as zero.
+        my $diff = $param{type} eq 'sell' ? $param{rate} - $market_rate : $market_rate - $param{rate};
+        $diff = List::Util::max($diff, 0) / $market_rate;
+        $self->_p2p_record_stat($self->loginid, 'ADVERT_RATES', $id, $diff);
+    }
 
     delete $response->{days_until_archive};    # guard against almost impossible race condition
     return $response;
@@ -3225,11 +3241,10 @@ sub p2p_resolve_order_dispute {
                 $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?, ?, ?)', undef, $id, $escrow->loginid, 4, $staff, $txn_time, $is_manual, $fraud);
             });
 
-        $self->_p2p_record_stat($buyer,  'BUY_COMPLETED',  $id, $amount);
-        $self->_p2p_record_stat($seller, 'SELL_COMPLETED', $id, $amount);
-        $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $buyer,  1);
-        $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $seller, 1);
         $self->_p2p_record_stat($buyer, 'BUY_COMPLETION', $id, 1);
+        $self->_p2p_record_stat($buyer, 'BUY_COMPLETED',  $id, $amount);
+        $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $buyer, 1);
+        $redis->hincrbyfloat(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $buyer, $amount);
 
         if ($fraud) {
             # seller fraud
@@ -3237,7 +3252,12 @@ sub p2p_resolve_order_dispute {
             $self->_p2p_order_fraud('sell', $order);
         } else {
             $self->_p2p_record_stat($seller, 'SELL_COMPLETION', $id, 1);
+            $self->_p2p_record_stat($seller, 'SELL_COMPLETED',  $id, $amount);
+            $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $seller, 1);
+            $redis->hincrbyfloat(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $seller, $amount);
+            $self->_p2p_record_partners($order);
         }
+
         $advertiser_for_update = $order->{type} eq 'sell' ? $order->{client_id} : $order->{advertiser_id};
 
     } else {
@@ -3896,10 +3916,7 @@ sub _p2p_client_buy_confirm {
             $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order->{id}, 1);
         });
 
-    # for calculating release times
-    my $redis = BOM::Config::Redis->redis_p2p_write();
-    $redis->hset(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $result->{id}, time);
-
+    $self->_p2p_order_buy_confirmed($result);
     return $result;
 }
 
@@ -4002,10 +4019,7 @@ sub _p2p_advertiser_sell_confirm {
             $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order->{id}, 1);
         });
 
-    # for calculating release times
-    my $redis = BOM::Config::Redis->redis_p2p_write();
-    $redis->hset(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $result->{id}, time);
-
+    $self->_p2p_order_buy_confirmed($result);
     return $result;
 }
 
@@ -4084,16 +4098,20 @@ sub _advertiser_details {
         is_approved                => $advertiser->{is_approved},
         is_listed                  => $advertiser->{is_listed},
         default_advert_description => $advertiser->{default_advert_description} // '',
-        total_completion_rate      => defined $advertiser->{completion_rate} ? sprintf("%.1f", $advertiser->{completion_rate} * 100) : undef,
         buy_completion_rate        => $stats{buy_completion_rate},
         buy_orders_count           => $stats{buy_completed_count},
-        sell_orders_count          => $stats{sell_completed_count},
+        buy_orders_amount          => $stats{buy_completed_amount},
         sell_completion_rate       => $stats{sell_completion_rate},
+        sell_orders_count          => $stats{sell_completed_count},
+        sell_orders_amount         => $stats{sell_completed_amount},
+        total_completion_rate      => defined $advertiser->{completion_rate} ? sprintf("%.1f", $advertiser->{completion_rate} * 100) : undef,
         total_orders_count         => $stats{total_orders_count},
+        total_turnover             => $stats{total_turnover},
+        buy_time_avg               => $stats{buy_time_avg},
         release_time_avg           => $stats{release_time_avg},
         cancel_time_avg            => $stats{cancel_time_avg},
-        basic_verification         => $stats{basic_verification},
-        full_verification          => $stats{full_verification},
+        partner_count              => $stats{partner_count},
+        advert_rates               => $stats{advert_rates},
         favourited                 => $advertiser->{favourited} // 0,
     };
 
@@ -4153,7 +4171,11 @@ sub _advert_details {
     my ($self, $list, $amount) = @_;
     my (@results, $payment_method_defs);
 
+    my $redis    = BOM::Config::Redis->redis_p2p();
+    my $start_ts = Date::Utility->new->minus_time_interval('720h')->epoch;    # for 30 day completed order count
+
     for my $advert (@$list) {
+
         my $result = {
             account_currency               => $advert->{account_currency},
             country                        => $advert->{country},
@@ -4215,11 +4237,13 @@ sub _advert_details {
                 : (),
                 $advert->{advertiser_favourite} ? (is_favourite => 1) : (),
                 $advert->{advertiser_blocked}   ? (is_blocked   => 1) : (),
+                completed_orders_count =>
+                    $redis->zcount(join('::', P2P_STATS_REDIS_PREFIX, $advert->{advertiser_loginid}, 'BUY_COMPLETED'),  $start_ts, '+inf') +
+                    $redis->zcount(join('::', P2P_STATS_REDIS_PREFIX, $advert->{advertiser_loginid}, 'SELL_COMPLETED'), $start_ts, '+inf'),
             },
         };
 
         if ($advert->{is_active} and $self->loginid eq $advert->{advertiser_loginid}) {
-            my $redis = BOM::Config::Redis->redis_p2p();
             if (my $archive_date = $redis->hget(P2P_ARCHIVE_DATES_KEY, $advert->{id})) {
                 my $days = Date::Utility->new($archive_date)->days_between(Date::Utility->new);
                 $result->{days_until_archive} = $days < 0 ? 0 : $days;
@@ -4363,6 +4387,29 @@ sub _p2p_record_stat {
     return undef;
 }
 
+=head2 _p2p_record_partners
+
+Records trading partners for a successfully completed order.
+
+Takes the following arguments:
+
+=over
+
+=item * C<order> - order hashref
+
+=back
+
+=cut
+
+sub _p2p_record_partners {
+    my ($self, $order) = @_;
+
+    my $redis = BOM::Config::Redis->redis_p2p_write();
+    $redis->sadd(join('::', P2P_STATS_REDIS_PREFIX, $order->{client_loginid},     'ORDER_PARTNERS'), $order->{advertiser_id});
+    $redis->sadd(join('::', P2P_STATS_REDIS_PREFIX, $order->{advertiser_loginid}, 'ORDER_PARTNERS'), $order->{client_id});
+    return;
+}
+
 =head2 _p2p_advertiser_stats
 
 Returns P2P advertiser statistics
@@ -4394,30 +4441,38 @@ sub _p2p_advertiser_stats {
 
     # items are "id|amount", "id|time" or "id|boolean"
     my %raw;
-    for my $key (qw/BUY_COMPLETED SELL_COMPLETED ORDER_CANCELLED BUY_FRAUD SELL_FRAUD CANCEL_TIMES RELEASE_TIMES BUY_COMPLETION SELL_COMPLETION/) {
+    for my $key (
+        qw/BUY_COMPLETED SELL_COMPLETED ORDER_CANCELLED BUY_FRAUD SELL_FRAUD CANCEL_TIMES BUY_TIMES RELEASE_TIMES BUY_COMPLETION SELL_COMPLETION ADVERT_RATES/
+        )
+    {
         $raw{$key} = [map { (split /\|/, $_)[1] } $redis->zrangebyscore($key_prefix . $key, $start_ts, '+inf')->@*];
     }
 
     my $stats = {
-        total_orders_count    => $redis->hget(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $loginid) // 0,
-        buy_completed_count   => scalar $raw{BUY_COMPLETED}->@*,
-        buy_completed_amount  => List::Util::sum($raw{BUY_COMPLETED}->@*) // 0,
+        total_orders_count  => $redis->hget(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $loginid) // 0,
+        total_turnover      => financialrounding('amount', $self->currency, $redis->hget(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $loginid) // 0),
+        buy_completed_count => scalar $raw{BUY_COMPLETED}->@*,
+        buy_completed_amount  => financialrounding('amount', $self->currency, List::Util::sum($raw{BUY_COMPLETED}->@*) // 0),
         sell_completed_count  => scalar $raw{SELL_COMPLETED}->@*,
-        sell_completed_amount => List::Util::sum($raw{SELL_COMPLETED}->@*) // 0,
+        sell_completed_amount => financialrounding('amount', $self->currency, List::Util::sum($raw{SELL_COMPLETED}->@*) // 0),
         cancel_count          => scalar $raw{ORDER_CANCELLED}->@*,
-        cancel_amount         => List::Util::sum($raw{ORDER_CANCELLED}->@*) // 0,
+        cancel_amount         => financialrounding('amount', $self->currency, List::Util::sum($raw{ORDER_CANCELLED}->@*) // 0),
         buy_fraud_count       => scalar $raw{BUY_FRAUD}->@*,
-        buy_fraud_amount      => List::Util::sum($raw{BUY_FRAUD}->@*) // 0,
+        buy_fraud_amount      => financialrounding('amount', $self->currency, List::Util::sum($raw{BUY_FRAUD}->@*) // 0),
         sell_fraud_count      => scalar $raw{SELL_FRAUD}->@*,
-        sell_fraud_amount     => List::Util::sum($raw{SELL_FRAUD}->@*) // 0,
-        cancel_time_avg     => $raw{CANCEL_TIMES}->@*  ? sprintf("%.0f", List::Util::sum($raw{CANCEL_TIMES}->@*) / $raw{CANCEL_TIMES}->@*)   : undef,
+        sell_fraud_amount     => financialrounding('amount', $self->currency, List::Util::sum($raw{SELL_FRAUD}->@*) // 0),
+        buy_time_avg        => $raw{BUY_TIMES}->@*     ? sprintf("%.0f", List::Util::sum($raw{BUY_TIMES}->@*) / $raw{BUY_TIMES}->@*)         : undef,
         release_time_avg    => $raw{RELEASE_TIMES}->@* ? sprintf("%.0f", List::Util::sum($raw{RELEASE_TIMES}->@*) / $raw{RELEASE_TIMES}->@*) : undef,
+        cancel_time_avg     => $raw{CANCEL_TIMES}->@*  ? sprintf("%.0f", List::Util::sum($raw{CANCEL_TIMES}->@*) / $raw{CANCEL_TIMES}->@*)   : undef,
         buy_completion_rate => $raw{BUY_COMPLETION}->@*
         ? sprintf("%.1f", (List::Util::sum($raw{BUY_COMPLETION}->@*) / $raw{BUY_COMPLETION}->@*) * 100)
         : undef,
         sell_completion_rate => $raw{SELL_COMPLETION}->@*
         ? sprintf("%.1f", (List::Util::sum($raw{SELL_COMPLETION}->@*) / $raw{SELL_COMPLETION}->@*) * 100)
         : undef,
+        advert_rates => $raw{ADVERT_RATES}->@* ? sprintf("%.2f", (List::Util::sum($raw{ADVERT_RATES}->@*) / $raw{ADVERT_RATES}->@*) * 100)
+        : undef,
+        partner_count => $redis->scard($key_prefix . 'ORDER_PARTNERS'),
     };
 
     return $stats;
@@ -4454,6 +4509,34 @@ sub _p2p_advertiser_relation_lists {
         blocked_advertisers   => $lists->{block}     // []};
 }
 
+=head2 _p2p_order_buy_confirmed
+
+Called when order is buy confirmed by client as $self.
+
+Takes the following argument:
+
+=over 4
+
+=item * C<order> - result of p2p.order_confirm* db function as hashref.
+
+=back
+
+=cut
+
+sub _p2p_order_buy_confirmed {
+    my ($self, $order) = @_;
+
+    # for calculating release times
+    my $redis = BOM::Config::Redis->redis_p2p_write();
+    $redis->hset(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $order->{id}, time);
+
+    # for advertiser stats
+    my $confirm_time = time - Date::Utility->new($order->{created_time})->epoch;
+    $self->_p2p_record_stat($self->{loginid}, 'BUY_TIMES', $order->{id}, $confirm_time);
+
+    return;
+}
+
 =head2 _p2p_order_completed
 
 Called when an order is completed as a result of seller confirmation.
@@ -4482,6 +4565,9 @@ sub _p2p_order_completed {
     $self->_p2p_record_stat($seller, 'SELL_COMPLETION', $id, 1);
     $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $buyer,  1);
     $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $seller, 1);
+    $redis->hincrbyfloat(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $buyer,  $amount);
+    $redis->hincrbyfloat(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $seller, $amount);
+    $self->_p2p_record_partners($order);
 
     if (my $buy_confirm_time = $redis->hget(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $id)) {
         my $elapsed = time - $buy_confirm_time;

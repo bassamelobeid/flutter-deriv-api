@@ -107,6 +107,7 @@ subtest 'advertiser Registration' => sub {
         basic_verification    => 0,
         buy_completion_rate   => undef,
         buy_orders_count      => num(0),
+        buy_orders_amount     => num(0),
         cancel_time_avg       => undef,
         full_verification     => 0,
         release_time_avg      => undef,
@@ -114,10 +115,15 @@ subtest 'advertiser Registration' => sub {
         sell_orders_count     => num(0),
         total_completion_rate => undef,
         total_orders_count    => num(0),
+        sell_orders_amount    => num(0),
         show_name             => 0,
         balance_available     => num(0),
         cancels_remaining     => 3,
         favourited            => 0,
+        buy_time_avg          => undef,
+        partner_count         => 0,
+        total_turnover        => num(0),
+        advert_rates          => undef,
         %params
     };
 
@@ -414,9 +420,10 @@ subtest 'Creating advert' => sub {
         type                           => $params{type},
         counterparty_type              => $params{counterparty_type},
         advertiser_details             => {
-            id                    => $advertiser->p2p_advertiser_info->{id},
-            name                  => $name,
-            total_completion_rate => undef,
+            id                     => $advertiser->p2p_advertiser_info->{id},
+            name                   => $name,
+            total_completion_rate  => undef,
+            completed_orders_count => 0,
         },
         is_visible    => bool(1),
         active_orders => 0,

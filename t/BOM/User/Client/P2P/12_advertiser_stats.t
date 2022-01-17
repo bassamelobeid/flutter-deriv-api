@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use Test::Fatal;
 use Test::Exception;
 use Date::Utility;
@@ -21,23 +22,28 @@ BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_grace_pe
 BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_barring->count(10);
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
+populate_exchange_rates({IDR => 1});
 
-my ($advertiser, $client, $advert, $order);
+my ($advertiser, $client, $advert, $order, $stats_cli, $stats_adv);
 
 my %default_stats = (
     'buy_orders_count'      => 0,
+    'buy_orders_amount'     => '0.00',
     'sell_orders_count'     => 0,
+    'sell_orders_amount'    => '0.00',
     'total_orders_count'    => 0,
-    'cancel_time_avg'       => undef,
+    'total_turnover'        => '0.00',
+    'buy_time_avg'          => undef,
     'release_time_avg'      => undef,
+    'cancel_time_avg'       => undef,
     'total_completion_rate' => undef,
     'buy_completion_rate'   => undef,
     'sell_completion_rate'  => undef,
     'basic_verification'    => 0,
     'full_verification'     => 0,
+    'partner_count'         => 0,
+    'advert_rates'          => undef,
 );
-my $stats_cli = {%default_stats};
-my $stats_adv = {%default_stats};
 
 my $dt = Date::Utility->new('2000-01-01T00:00:00Z');
 
@@ -67,12 +73,12 @@ $client_mock->mock(
         return $response;
     });
 
+reset_stats();
+
 subtest 'verification' => sub {
-    eval {
-        ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-        check_stats($advertiser, $stats_adv, 'stats for new advertiser');
-    };
-    note explain $@;
+
+    $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
+    check_stats($advertiser, $stats_adv, 'stats for new advertiser');
 
     $advertiser->status->set('age_verification', 'system', 'testing');
     $stats_adv->{basic_verification} = 1;
@@ -86,6 +92,15 @@ subtest 'verification' => sub {
 subtest 'sell ads' => sub {
     tt_secs(0);
 
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        client         => $advertiser,
+        type           => 'sell',
+        local_currency => 'IDR',
+    );
+
+    $stats_adv->{advert_rates} = '0.00';
+    check_stats($advertiser, $stats_adv, 'advertiser stats after order created');
+
     ($client, $order) = BOM::Test::Helper::P2P::create_order(
         client    => $client,
         advert_id => $advert->{id},
@@ -96,19 +111,27 @@ subtest 'sell ads' => sub {
     check_stats($advertiser, $stats_adv, 'advertiser stats after order created');
     check_stats($client,     $stats_cli, 'client stats after order created');
 
+    tt_secs(500);
     $client->p2p_order_confirm(id => $order->{id});
+    $stats_cli->{buy_time_avg} = 500;
     check_stats($advertiser, $stats_adv, 'advertiser stats after buyer confim');
     check_stats($client,     $stats_cli, 'client stats after buyer confirm');
 
-    tt_secs(1000);
+    tt_secs(500);
     $advertiser->p2p_order_confirm(id => $order->{id});
     $stats_adv->{total_orders_count}   = ++$stats_cli->{total_orders_count};
     $stats_adv->{sell_orders_count}    = ++$stats_cli->{buy_orders_count};
-    $stats_adv->{release_time_avg}     = 1000;
+    $stats_adv->{release_time_avg}     = 500;
     $stats_adv->{sell_completion_rate} = $stats_adv->{total_completion_rate} = '100.0';
     $stats_cli->{buy_completion_rate}  = $stats_cli->{total_completion_rate} = '100.0';
+    $stats_cli->{total_turnover}       = $stats_adv->{total_turnover}        = $stats_cli->{buy_orders_amount} = $stats_adv->{sell_orders_amount} =
+        $order->{amount};
+    $stats_adv->{partner_count} = ++$stats_cli->{partner_count};
     check_stats($advertiser, $stats_adv, 'advertiser stats after seller confim');
     check_stats($client,     $stats_cli, 'client stats after seller confirm');
+
+    is $client->p2p_advert_info(id => $advert->{id})->{advertiser_details}{completed_orders_count}, 1,
+        'advertiser completed_orders_count increases after buy order completed';
 
     ($client, $order) = BOM::Test::Helper::P2P::create_order(
         client    => $client,
@@ -153,21 +176,31 @@ subtest 'sell ads' => sub {
     tt_secs(60 * 24 * 60 * 60);    #+60d
     $client->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser_totals_daily SET day = day - 60');
 
+    is $client->p2p_advert_info(id => $advert->{id})->{advertiser_details}{completed_orders_count}, 0,
+        'advert advertiser completed_orders_count resets in future';
+
     ($client, $order) = BOM::Test::Helper::P2P::create_order(
         client    => $client,
         advert_id => $advert->{id},
         amount    => 2
     );
-    $client->p2p_order_confirm(id => $order->{id});
     tt_secs(5);
+    $client->p2p_order_confirm(id => $order->{id});
+    tt_secs(10);
     $advertiser->p2p_order_confirm(id => $order->{id});
     $stats_cli->{total_orders_count}  = ++$stats_adv->{total_orders_count};
     $stats_cli->{buy_orders_count}    = $stats_adv->{sell_orders_count} = 1;
-    $stats_adv->{release_time_avg}    = 5;
+    $stats_cli->{buy_time_avg}        = 5;
+    $stats_adv->{release_time_avg}    = 10;
     $stats_cli->{cancel_time_avg}     = undef;
     $stats_cli->{buy_completion_rate} = $stats_cli->{total_completion_rate} = '100.0';
+    $stats_cli->{total_turnover}      = $stats_adv->{total_turnover}        = '3.00';
+    $stats_cli->{buy_orders_amount}   = $stats_adv->{sell_orders_amount}    = '2.00';
+    $stats_adv->{advert_rates}        = undef;
     check_stats($advertiser, $stats_adv, 'advertiser stats in future');
     check_stats($client,     $stats_cli, 'client stats in future');
+    is $client->p2p_advert_info(id => $advert->{id})->{advertiser_details}{completed_orders_count}, 1,
+        'advert advertiser completed_orders_count increases after buy order completed';
 
     ($client, $order) = BOM::Test::Helper::P2P::create_order(
         client    => $client,
@@ -181,19 +214,28 @@ subtest 'sell ads' => sub {
 };
 
 subtest 'buy ads' => sub {
+
     ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
-        client => $advertiser,
-        type   => 'buy'
+        client         => $advertiser,
+        type           => 'buy',
+        local_currency => 'IDR',
     );
+
+    $stats_adv->{advert_rates} = '0.00';
+    check_stats($advertiser, $stats_adv, 'advertiser stats after order created');
+
     ($client, $order) = BOM::Test::Helper::P2P::create_order(
         client    => $client,
         advert_id => $advert->{id},
-        amount    => 1
+        amount    => 3
     );
+
     check_stats($advertiser, $stats_adv, 'advertiser stats after order created');
     check_stats($client,     $stats_cli, 'client stats after order created');
 
+    tt_secs(500);
     $advertiser->p2p_order_confirm(id => $order->{id});
+    $stats_adv->{buy_time_avg} = 500;
     check_stats($advertiser, $stats_adv, 'advertiser stats after buyer confirm');
     check_stats($client,     $stats_cli, 'client stats after buyer confirm');
 
@@ -204,8 +246,13 @@ subtest 'buy ads' => sub {
     $stats_cli->{release_time_avg}     = 1200;
     $stats_cli->{sell_completion_rate} = $stats_cli->{total_completion_rate} = '100.0';
     $stats_adv->{buy_completion_rate}  = $stats_adv->{total_completion_rate} = '100.0';
+    $stats_cli->{total_turnover}       = $stats_adv->{total_turnover}        = '6.00';
+    $stats_cli->{sell_orders_amount}   = $stats_adv->{buy_orders_amount}     = '3.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after seller confirm');
     check_stats($client,     $stats_cli, 'client stats after seller confirm');
+
+    is $client->p2p_advert_info(id => $advert->{id})->{advertiser_details}{completed_orders_count}, 2,
+        'advert advertiser completed_orders_count after sell order completed';
 
     ($client, $order) = BOM::Test::Helper::P2P::create_order(
         client    => $client,
@@ -237,21 +284,18 @@ subtest 'buy ads' => sub {
 };
 
 subtest 'dispute resolution - fraud' => sub {
-    my ($client, $advertiser, $advert, $order);
-    my $stats_cli = {%default_stats};
-    my $stats_adv = {%default_stats};
 
     subtest 'advertiser seller fraud' => sub {
+        reset_stats();
+
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
             type           => 'sell',
-            client         => $advertiser,
             local_currency => 'aaa',
         );
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             advert_id => $advert->{id},
             amount    => 1,
-            client    => $client,
         );
 
         BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
@@ -269,25 +313,23 @@ subtest 'dispute resolution - fraud' => sub {
 
         $stats_adv->{total_completion_rate} = $stats_adv->{sell_completion_rate} = '0.0';
         $stats_cli->{total_completion_rate} = $stats_cli->{buy_completion_rate}  = '100.0';
-        $stats_adv->{sell_orders_count}     = 1;
-        $stats_adv->{total_orders_count}    = 1;
-        $stats_cli->{buy_orders_count}      = 1;
-        $stats_cli->{total_orders_count}    = 1;
+        $stats_cli->{total_orders_count}    = $stats_cli->{buy_orders_count}     = 1;
+        $stats_cli->{total_turnover}        = $stats_cli->{buy_orders_amount}    = $order->{amount};
         check_stats($advertiser, $stats_adv, 'advertiser stats');
         check_stats($client,     $stats_cli, 'client stats');
     };
 
     subtest 'advertiser buyer fraud' => sub {
+        reset_stats();
+
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
             type           => 'buy',
-            client         => $advertiser,
             local_currency => 'aaa',
         );
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             advert_id => $advert->{id},
             amount    => 1,
-            client    => $client,
         );
 
         BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
@@ -303,22 +345,22 @@ subtest 'dispute resolution - fraud' => sub {
             fraud  => 1,
         );
 
-        $stats_adv->{buy_completion_rate} = '0.0';
+        $stats_adv->{total_completion_rate} = $stats_adv->{buy_completion_rate} = '0.0';
         check_stats($advertiser, $stats_adv, 'advertiser stats');
         check_stats($client,     $stats_cli, 'client stats');
     };
 
     subtest 'client seller fraud' => sub {
+        reset_stats();
+
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
             type           => 'buy',
-            client         => $advertiser,
-            local_currency => 'bbb',
+            local_currency => 'aaa',
         );
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             advert_id => $advert->{id},
             amount    => 1,
-            client    => $client,
         );
 
         BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
@@ -334,29 +376,25 @@ subtest 'dispute resolution - fraud' => sub {
             fraud  => 1,
         );
 
-        $stats_adv->{buy_completion_rate}   = '50.0';
-        $stats_adv->{total_completion_rate} = '33.3';
-        $stats_adv->{buy_orders_count}      = 1;
-        $stats_adv->{total_orders_count}    = 2;
-        $stats_cli->{sell_orders_count}     = 1;
-        $stats_cli->{total_orders_count}    = 2;
-        $stats_cli->{sell_completion_rate}  = '0.0';
-        $stats_cli->{total_completion_rate} = '50.0';
+        $stats_adv->{total_completion_rate} = $stats_adv->{buy_completion_rate}  = '100.0';
+        $stats_cli->{total_completion_rate} = $stats_cli->{sell_completion_rate} = '0.0';
+        $stats_adv->{total_orders_count}    = $stats_adv->{buy_orders_count}     = 1;
+        $stats_adv->{total_turnover}        = $stats_adv->{buy_orders_amount}    = $order->{amount};
         check_stats($advertiser, $stats_adv, 'advertiser stats');
         check_stats($client,     $stats_cli, 'client stats');
     };
 
     subtest 'client buyer fraud' => sub {
+        reset_stats();
+
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
             type           => 'sell',
-            client         => $advertiser,
-            local_currency => 'bbb',
+            local_currency => 'aaa',
         );
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             advert_id => $advert->{id},
             amount    => 1,
-            client    => $client,
         );
 
         BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
@@ -372,8 +410,7 @@ subtest 'dispute resolution - fraud' => sub {
             fraud  => 1,
         );
 
-        $stats_cli->{buy_completion_rate}   = '50.0';
-        $stats_cli->{total_completion_rate} = '33.3';
+        $stats_cli->{total_completion_rate} = $stats_cli->{buy_completion_rate} = '0.0';
         check_stats($advertiser, $stats_adv, 'advertiser stats');
         check_stats($client,     $stats_cli, 'client stats');
     };
@@ -381,21 +418,17 @@ subtest 'dispute resolution - fraud' => sub {
 
 subtest 'dispute resolution - no fraud' => sub {
 
-    my ($client, $advertiser, $advert, $order);
-    my $stats_cli = {%default_stats};
-    my $stats_adv = {%default_stats};
-
     subtest 'sell ad complete' => sub {
+        reset_stats();
+
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
             type           => 'sell',
-            client         => $advertiser,
-            local_currency => 'ccc',
+            local_currency => 'aaa',
         );
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             advert_id => $advert->{id},
             amount    => 1,
-            client    => $client,
         );
 
         BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
@@ -415,21 +448,24 @@ subtest 'dispute resolution - no fraud' => sub {
         $stats_cli->{total_completion_rate} = $stats_cli->{buy_completion_rate}  = '100.0';
         $stats_adv->{sell_orders_count}     = $stats_adv->{total_orders_count}   = 1;
         $stats_cli->{buy_orders_count}      = $stats_cli->{total_orders_count}   = 1;
+        $stats_cli->{total_turnover}        = $stats_adv->{total_turnover} = $stats_cli->{buy_orders_amount} = $stats_adv->{sell_orders_amount} =
+            $order->{amount};
+        $stats_adv->{partner_count} = ++$stats_cli->{partner_count};
         check_stats($advertiser, $stats_adv, 'advertiser stats');
         check_stats($client,     $stats_cli, 'client stats');
     };
 
     subtest 'buy ad refund' => sub {
+        reset_stats();
+
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
             type           => 'buy',
-            client         => $advertiser,
-            local_currency => 'ccc',
+            local_currency => 'aaa',
         );
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             advert_id => $advert->{id},
             amount    => 1,
-            client    => $client,
         );
 
         BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
@@ -445,23 +481,22 @@ subtest 'dispute resolution - no fraud' => sub {
             fraud  => 0,
         );
 
-        $stats_adv->{buy_completion_rate}   = '0.0';
-        $stats_adv->{total_completion_rate} = '50.0';
+        $stats_adv->{buy_completion_rate} = $stats_adv->{total_completion_rate} = '0.0';
         check_stats($advertiser, $stats_adv, 'advertiser stats');
         check_stats($client,     $stats_cli, 'client stats');
     };
 
     subtest 'buy ad complete' => sub {
+        reset_stats();
+
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
             type           => 'buy',
-            client         => $advertiser,
-            local_currency => 'ddd',
+            local_currency => 'aaa',
         );
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             advert_id => $advert->{id},
             amount    => 1,
-            client    => $client,
         );
 
         BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
@@ -477,29 +512,28 @@ subtest 'dispute resolution - no fraud' => sub {
             fraud  => 0,
         );
 
-        $stats_adv->{buy_completion_rate}   = '50.0';
-        $stats_adv->{total_completion_rate} = '66.7';
-        $stats_adv->{buy_orders_count}      = 1;
-        $stats_adv->{total_orders_count}    = 2;
-        $stats_cli->{sell_orders_count}     = 1;
-        $stats_cli->{total_orders_count}    = 2;
-        $stats_cli->{sell_completion_rate}  = '100.0';
-        $stats_cli->{total_completion_rate} = '100.0';
+        $stats_adv->{total_completion_rate} = $stats_adv->{buy_completion_rate}  = '100.0';
+        $stats_cli->{total_completion_rate} = $stats_cli->{sell_completion_rate} = '100.0';
+        $stats_adv->{buy_orders_count}      = $stats_cli->{total_orders_count}   = 1;
+        $stats_cli->{sell_orders_count}     = $stats_adv->{total_orders_count}   = 1;
+        $stats_cli->{total_turnover}        = $stats_adv->{total_turnover} = $stats_cli->{sell_orders_amount} = $stats_adv->{buy_orders_amount} =
+            $order->{amount};
+        $stats_adv->{partner_count} = ++$stats_cli->{partner_count};
         check_stats($advertiser, $stats_adv, 'advertiser stats');
         check_stats($client,     $stats_cli, 'client stats');
     };
 
     subtest 'sell ad refund' => sub {
+        reset_stats();
+
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
             type           => 'sell',
-            client         => $advertiser,
-            local_currency => 'ddd',
+            local_currency => 'aaa',
         );
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             advert_id => $advert->{id},
             amount    => 1,
-            client    => $client,
         );
 
         BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
@@ -515,8 +549,7 @@ subtest 'dispute resolution - no fraud' => sub {
             fraud  => 0,
         );
 
-        $stats_cli->{buy_completion_rate}   = '50.0';
-        $stats_cli->{total_completion_rate} = '66.7';
+        $stats_cli->{total_completion_rate} = $stats_cli->{buy_completion_rate} = '0.0';
         check_stats($advertiser, $stats_adv, 'advertiser stats');
         check_stats($client,     $stats_cli, 'client stats');
     };
@@ -526,6 +559,73 @@ subtest 'different advertiser' => sub {
     my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser;
     my $res         = $advertiser->p2p_advertiser_info(id => $advertiser2->p2p_advertiser_info->{id});
     cmp_deeply($res, superhashof(\%default_stats), 'stats are for new advertiser');
+};
+
+subtest 'trade partners' => sub {
+    my ($advertiser, $ad)     = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client1,    $order1) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $ad->{id},
+        amount    => 10
+    );
+    my ($client2, $order2) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $ad->{id},
+        amount    => 10
+    );
+    $client1->p2p_order_confirm(id => $order1->{id});
+    $client2->p2p_order_confirm(id => $order2->{id});
+    $advertiser->p2p_order_confirm(id => $order1->{id});
+    $advertiser->p2p_order_confirm(id => $order2->{id});
+
+    is $advertiser->p2p_advertiser_info->{partner_count}, 2, 'advertiser has 2 partners';
+    is $client1->p2p_advertiser_info->{partner_count},    1, 'client A has 1 partner';
+    is $client2->p2p_advertiser_info->{partner_count},    1, 'client B has 1 partner';
+};
+
+subtest 'advert rates' => sub {
+    $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        type             => 'buy',
+        local_currency   => 'IDR',
+        rate             => 0.95,
+        min_order_amount => 1,
+        max_order_amount => 2,
+    );
+
+    is $advertiser->p2p_advertiser_info->{advert_rates}, '5.00', 'buy rate';
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        client           => $advertiser,
+        type             => 'buy',
+        local_currency   => 'IDR',
+        rate             => 2,
+        min_order_amount => 2.1,
+        max_order_amount => 3,
+    );
+
+    is $advertiser->p2p_advertiser_info->{advert_rates}, '2.50', 'buy rate better than market is counted as zero';
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        client           => $advertiser,
+        type             => 'sell',
+        local_currency   => 'IDR',
+        rate             => 1.1,
+        min_order_amount => 1,
+        max_order_amount => 2,
+    );
+
+    is $advertiser->p2p_advertiser_info->{advert_rates}, '5.00', 'sell rate';
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        client           => $advertiser,
+        type             => 'sell',
+        local_currency   => 'IDR',
+        rate             => 0.8,
+        min_order_amount => 2.1,
+        max_order_amount => 3,
+    );
+
+    is $advertiser->p2p_advertiser_info->{advert_rates}, '3.75', 'sell rate better than market is counted as zero';
 };
 
 BOM::Test::Helper::P2P::reset_escrow();
@@ -539,4 +639,9 @@ sub check_stats {
     my ($client, $expected, $desc) = @_;
     delete $client->{_p2p_advertiser_cached};
     cmp_deeply($client->p2p_advertiser_info, superhashof($expected), $desc);
+}
+
+sub reset_stats {
+    $stats_cli = {%default_stats};
+    $stats_adv = {%default_stats};
 }
