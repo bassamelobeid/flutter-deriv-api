@@ -715,6 +715,7 @@ method subscribe($connection, $connection_number) {
         $log->debug(" Trying to get params for $contract_type , $symbol for the $retry_count time");
         $retry_count++;
     }
+    die "Cannot get valid params for $contract_type, $symbol after retry $retry_count times\n";
     $log->debug("Subscribing with \n" . $json->encode($params));
     my $subscription;
     try {
