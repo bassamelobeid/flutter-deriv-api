@@ -44,6 +44,12 @@ LTC:
             methods:
                 fee: /
                 txs: /txs/
+        fraud:
+            url: https://www.bitcoinabuse.com/api
+            report_url: https://www.bitcoinabuse.com/reports
+            methods:
+                check: /reports/check
+                download: /download/forever
 ETH:
     withdrawal:
         timeout: "5d"
@@ -55,6 +61,12 @@ ETH:
     internal_transaction_max_age: 8 # Hours
     sweep:
         address: 0x8064bcf4a7892b99c1ce4b92d23252ab2fa129b6 # multis.co address
+    thirdparty_api:
+        fraud:
+            report_url: https://cryptoscamdb.org/address
+            url: https://api.cryptoscamdb.org
+            methods:
+                check: /v1/check/
 BUSD:
     withdrawal:
         timeout: "3d"
