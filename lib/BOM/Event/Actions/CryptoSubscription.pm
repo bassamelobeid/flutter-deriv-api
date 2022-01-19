@@ -18,6 +18,7 @@ use BOM::CTC::Helper;
 use BOM::CTC::Utility;
 use BOM::Event::Utility qw(exception_logged);
 use BOM::CTC::TP::API::BTC;
+use BOM::CTC::TP::API::ETH;
 
 =head1 NAME
 
@@ -48,25 +49,22 @@ sub subscription {
     _set_deposit_swept($transaction);
 }
 
-my $loop = IO::Async::Loop->new;
-my $tp_api;
+=head2 get_currency
 
-=head2 _tp_api
+return the currency object
 
-Private subroutine whose purpose is to add the async
-C<BOM::CTC::TP::API::BTC> into the C<IO::Async::Loop>
-so to use safe the async subs contained in the
-C<BOM::CTC::TP::API::BTC>
+=over 4
 
-Returns a C<BOM::CTC::TP::API::BTC> object
+=item * C<$currency> - currency code
+
+=back
 
 =cut
 
-sub _tp_api {
-    return $tp_api //= do {
-        $loop->add($tp_api = BOM::CTC::TP::API::BTC->new());
-        $tp_api;
-    }
+sub get_currency {
+    my $currency = shift;
+
+    return BOM::CTC::Currency->new(currency_code => $currency);
 }
 
 =head2 set_pending_transaction
@@ -94,7 +92,7 @@ try it again after some seconds.
 sub set_pending_transaction {
     my $transaction   = shift;
     my $currency_code = $transaction->{currency};
-    my $currency      = BOM::CTC::Currency->new(currency_code => $currency_code);
+    my $currency      = get_currency($currency_code);
     my $error;
 
     my $to_address   = $transaction->{to};
@@ -469,8 +467,6 @@ sub emit_new_address_call {
 calls the subroutine which checks the address if
 exists in the third party
 
-Note that this works only for BTC at the moment
-
 =over 4
 
 =item * C<address> the address to check
@@ -485,31 +481,26 @@ sub fraud_address {
 
     my $data = shift;
 
-    my $address       = $data->{address};
     my $currency_code = $data->{currency_code};
+    my $currency      = get_currency($currency_code);
+    my $address       = $data->{address};
 
-    my $check = _tp_api()->tp_fraud_address($address)->get;
+    my $tp_result = $currency->thirdparty_api_client->tp_fraud_address($address)->get;
 
     # if the address is found, then we need to insert it in the database,
-    # otherwise, we can either just exit or send a message to the logs
-    # that the address is not found on the third party
+    # otherwise, we can either just exit or increment `subscription.fraud_address` metric on datadog
+    # process_fraudulent_address returns count of fraud reported for the address, if the address is not fraud the count will be 0
+    my $count = $currency->process_fraudulent_address($tp_result);
 
-    my $response = $check->{response_result};
-    unless ($response) {
-        $log->warnf("An error occured communicating with Bitcoinabuse for: %s, with response result: %s", $address, $check->{response_error});
-        return 0;
-    }
-    my $found = $response->{count} > 0 && defined $response->{address} ? 1 : 0;
-
-    if ($found) {
-        my $dbic = BOM::CTC::Database->new();
-        my $rows = $dbic->insert_fraud_addresses($currency_code, $check->{response_result}->{address}, $check->{response_result}->{count});
-
-        $log->warnf("An error occurred while insterting fraud address in database") unless ($rows);
+    if ($count) {
+        my $dbic              = BOM::CTC::Database->new();
+        my $validated_address = $currency->get_valid_address($address)->{address};
+        my $rows              = $dbic->insert_fraud_addresses($currency_code, $validated_address, $count);
+        $log->warnf("An error occured while inserting fraud address in database. address: %s, currency_code: %s", $validated_address, $currency_code)
+            unless ($rows);
     }
 
-    return $found;
-
+    return $count ? 1 : 0;
 }
 
 =head2 _set_deposit_swept
