@@ -28,6 +28,12 @@ sub _config {
     return BOM::Config::crypto()->{$currency_code}->{thirdparty_api}->{fraud};
 }
 
+our $currency_switch;
+sub _get_currency_object {
+    my $currency = shift;
+    return $currency_switch->{$currency} //= BOM::CTC::Currency->new(currency_code => $currency);
+}
+
 my $s_address  = request()->param('s_address');
 my $loginid    = request()->param('loginid');
 my $from_date  = trim(request()->param('from_date'));
@@ -71,11 +77,11 @@ if (request()->param('json_data')) {
     }
 }
 
-# this is to create the link for each address
-# currently only works on BTC|LTC|UST addresses
+# this is to create the link for each fraud address
 foreach my $row ($data->@*) {
-    my $currency_code = $row->{currency_code};
-    $currency_code = "BTC" if $currency_code =~ m/BTC|LTC|UST/sg;
+
+    my $currency     = _get_currency_object($row->{currency_code});
+    my $currency_code = $currency->parent_currency // $currency->currency_code;
 
     $row->{link} = sprintf("%s/%s", _config($currency_code)->{report_url}, $row->{address});
 }
