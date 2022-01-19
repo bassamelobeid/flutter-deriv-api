@@ -27,6 +27,7 @@ if ($r->param('create_dividend_scheduler')) {
         short_tax             => $r->param('short_tax'),
         dividend_deal_comment => $r->param('dividend_deal_comment'),
         applied_datetime      => $r->param('applied_datetime'),
+        skip_holiday_check    => $r->param('skip_holiday_check'),
     };
 
     my $validated_arg = BOM::Backoffice::DividendSchedulerTool::validate_params($args);
@@ -61,6 +62,7 @@ if ($r->param('update_dividend_scheduler')) {
         short_tax             => $r->param('short_tax'),
         dividend_deal_comment => $r->param('dividend_deal_comment'),
         applied_datetime      => $r->param('applied_datetime'),
+        skip_holiday_check    => $r->param('skip_holiday_check'),
     };
 
     my $validated_arg = BOM::Backoffice::DividendSchedulerTool::validate_params($args);

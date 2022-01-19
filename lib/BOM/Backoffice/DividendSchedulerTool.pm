@@ -49,11 +49,18 @@ sub validate_params {
     return {error => "Comment is required"}              if !$args->{dividend_deal_comment};
     return {error => "Applied Datetime is required"}     if !$args->{applied_datetime};
 
-    my $applied_datetime     = Date::Utility->new($args->{applied_datetime} . ":00");
-    my $trading_calendar     = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
-    my $mt5_symbols_mapping  = BOM::Config::QuantsConfig->get_mt5_symbols_mapping;
-    my $underlying           = create_underlying($mt5_symbols_mapping->{$args->{symbol}});
-    my $closing_trading_time = $trading_calendar->closing_on($underlying->exchange, $applied_datetime);
+    my $applied_datetime    = Date::Utility->new($args->{applied_datetime} . ":00");
+    my $trading_calendar    = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
+    my $mt5_symbols_mapping = BOM::Config::QuantsConfig->get_mt5_symbols_mapping;
+    my $underlying          = create_underlying($mt5_symbols_mapping->{$args->{symbol}});
+
+    # We need to add "skip holiday validation" feature to enable dividend scheduled on selected holiday
+    my $valid_trading_time;
+    if ($trading_calendar->closing_on($underlying->exchange, $applied_datetime) || $args->{skip_holiday_check}) {
+        $valid_trading_time = 1;
+    } else {
+        $valid_trading_time = 0;
+    }
 
     # We need to hardcode this as the trading time in mt5 is not the same at binary
     my $closing_hour = $applied_datetime->is_dst_in_zone($underlying->exchange->trading_timezone) ? 21 : 22;
@@ -103,7 +110,7 @@ sub validate_params {
     }
 
     # Validate when the market is closed(on the weekend or holiday)
-    if ($closing_trading_time) {
+    if ($valid_trading_time) {
         if ($applied_datetime->hour >= $closing_hour and $applied_datetime->hour < ($closing_hour + 1)) {
             my $formated_datetime = Date::Utility->new($applied_datetime)->datetime_yyyymmdd_hhmmss;
             $args->{applied_datetime} = $formated_datetime;
@@ -136,15 +143,17 @@ sub create {
     my $short_tax             = $args->{short_tax};
     my $dividend_deal_comment = $args->{dividend_deal_comment};
     my $applied_datetime      = $args->{applied_datetime};
+    my $skip_holiday_check    = $args->{skip_holiday_check};
 
-    my $SQLquery = 'SELECT FROM cfd.create_adjustment_dividend_schedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    my $SQLquery = 'SELECT FROM cfd.create_adjustment_dividend_schedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
     try {
         _dbic_dividend_scheduler->run(
             fixup => sub {
                 $_->selectrow_hashref(
-                    $SQLquery,      undef,     $platform_type,  $server_name, $symbol,                $currency,
-                    $long_dividend, $long_tax, $short_dividend, $short_tax,   $dividend_deal_comment, $applied_datetime
+                    $SQLquery, undef,          $platform_type, $server_name,    $symbol,
+                    $currency, $long_dividend, $long_tax,      $short_dividend, $short_tax,
+                    $dividend_deal_comment, $applied_datetime, $skip_holiday_check
                 );
             });
 
@@ -222,8 +231,9 @@ sub update {
     my $short_tax             = $args->{short_tax};
     my $dividend_deal_comment = $args->{dividend_deal_comment};
     my $applied_datetime      = $args->{applied_datetime};
+    my $skip_holiday_check    = $args->{skip_holiday_check};
 
-    my $SQLquery = 'SELECT FROM cfd.update_adjustment_dividend_schedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    my $SQLquery = 'SELECT FROM cfd.update_adjustment_dividend_schedule(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
     try {
         _dbic_dividend_scheduler->run(
@@ -231,7 +241,7 @@ sub update {
                 $_->selectrow_hashref(
                     $SQLquery,  undef,     $schedule_id,   $platform_type, $server_name,
                     $symbol,    $currency, $long_dividend, $long_tax,      $short_dividend,
-                    $short_tax, $dividend_deal_comment, $applied_datetime
+                    $short_tax, $dividend_deal_comment, $applied_datetime, $skip_holiday_check
                 );
             });
 

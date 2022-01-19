@@ -65,6 +65,10 @@
                 <label for="applied_datetime">Applied date and time(GMT)</label>
                 <input type="datetime-local" name="applied_datetime" data-lpignore="true" style="color:black;"/>
             </td>
+            <td>
+                <input type="checkbox" name="skip_holiday_check" id="skip_holiday_check" data-lpignore="true"/>
+                <label for="skip_holiday_check">Skip holiday <b style="color: red;">(Warning: Only check this if you are really sure!!)</b></label>
+            </td>
         </tr>
         <tr>
             <td><input type="button" class="btn btn--primary" onClick="saveDividendScheduler()" value="Save"></td>
@@ -90,6 +94,15 @@
         var short_tax = el.find('input[name="short_tax"]').val();
         var dividend_deal_comment = el.find('input[name="dividend_deal_comment"]').val();
         var applied_datetime = el.find('input[name="applied_datetime"]').val();
+        var skip_holiday_check_temp = \$('#skip_holiday_check');
+        var skip_holiday_check;
+
+        if (skip_holiday_check_temp.is(':checked')) {
+            skip_holiday_check = '1';
+        }
+        else {
+            skip_holiday_check = '0';
+        }
 
         result.text('processing ...').css('color', 'black');
         var data = {
@@ -104,6 +117,7 @@
             short_tax: short_tax.toString(),
             dividend_deal_comment: dividend_deal_comment,
             applied_datetime: applied_datetime,
+            skip_holiday_check: skip_holiday_check,
         };
 
         \$.ajax({
