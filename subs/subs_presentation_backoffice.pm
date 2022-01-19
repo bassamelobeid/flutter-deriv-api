@@ -18,6 +18,7 @@ use BOM::JavascriptConfig;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::CGI::SettingWebsiteStatus;
+use BOM::Backoffice::Sysinit;
 
 our ($vk_BarIsDoneOnce, $vk_didBOtopPRES,);
 
@@ -226,64 +227,74 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
 
     ServerWarningBar();
 
+    my $main_sections_list = [{
+            link => 'f_broker_login',
+            text => 'Login Page'
+        },
+        {
+            link => 'f_bo_enquiry',
+            text => 'Transaction Reports'
+        },
+        {
+            link => 'f_accountingreports',
+            text => 'Accounting Reports'
+        },
+        {
+            link => 'f_manager',
+            text => 'Deposits & Withdrawals'
+        },
+        {
+            link => 'f_clientloginid',
+            text => 'Client Management'
+        }];
+
+    my $misc_tools_list = [{
+            link => 'f_investigative',
+            text => 'Investigative Tools'
+        },
+        {
+            link => 'f_client_anonymization',
+            text => 'Client Anonymization'
+        },
+        {
+            link => 'f_client_bulk_authentication',
+            text => 'Bulk Authentication'
+        },
+        {
+            link => 'crypto_admin',
+            text => 'Crypto Tools'
+        },
+        {
+            link => 'dividend_scheduler_tool',
+            text => 'Dividend Scheduler Tool'
+        }];
+
+    # check access of each memory tab before adding to list
+    @$main_sections_list = grep { BOM::Backoffice::Sysinit::_check_access(sprintf("/%s.cgi", $_->{link})) } @$main_sections_list;
+    @$misc_tools_list    = grep { BOM::Backoffice::Sysinit::_check_access(sprintf("/%s.cgi", $_->{link})) } @$misc_tools_list;
     my @menu_items = ({
             text => 'Main Sections',
-            list => [{
-                    link => 'f_broker_login',
-                    text => 'Login Page'
-                },
-                {
-                    link => 'f_bo_enquiry',
-                    text => 'Transaction Reports'
-                },
-                {
-                    link => 'f_accountingreports',
-                    text => 'Accounting Reports'
-                },
-                {
-                    link => 'f_manager',
-                    text => 'Deposits & Withdrawals'
-                },
-                {
-                    link => 'f_clientloginid',
-                    text => 'Client Management'
-                }]
-        },
-        {
-            text => 'Misc. Tools',
-            list => [{
-                    link => 'f_investigative',
-                    text => 'Investigative Tools'
-                },
-                {
-                    link => 'f_client_anonymization',
-                    text => 'Client Anonymization'
-                },
-                {
-                    link => 'f_client_bulk_authentication',
-                    text => 'Bulk Authentication'
-                },
-                {
-                    link => 'crypto_admin',
-                    text => 'Crypto Tools'
-                },
-                {
-                    link => 'dividend_scheduler_tool',
-                    text => 'Dividend Scheduler Tool'
-                },
-            ]
-        },
-        {
-            text => 'Log Out',
-            list => [{
-                    link    => 'login',
-                    text    => 'Log Out',
-                    options => {whattodo => 'logout'}
-                },
-            ]
-
+            list => $main_sections_list
         },
     );
+    # main_sections_list will always be populated
+    # misc_tools_list may be empty
+    if (scalar @$misc_tools_list != 0) {
+        push @menu_items,
+            {
+            text => 'Misc. Tools',
+            list => $misc_tools_list
+            };
+    }
+    push @menu_items,
+        {
+        text => 'Log Out',
+        list => [{
+                link    => 'login',
+                text    => 'Log Out',
+                options => {whattodo => 'logout'}
+            },
+        ]};
     my $current_script = request()->http_handler->script_name;
 
     print qq~
