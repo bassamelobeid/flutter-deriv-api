@@ -27,7 +27,7 @@ sub is_within_threshold ($$;$) {    ## no critic (Subroutines::ProhibitSubroutin
     try {
         $redis->del(BOM::Test::REDIS_KEY_COUNTER);
     } catch ($e) {
-        die $e unless $e =~ /EADONLY You can't write against a read only slave/;
+        die $e unless $e =~ /^READONLY\b/;
     }
     return undef;
 }
