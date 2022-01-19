@@ -14,6 +14,7 @@ use BOM::Transaction::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Product::ContractFactory qw(produce_contract);
 use ExpiryQueue;
+use Log::Any qw($log);
 
 =head1 NAME
 
@@ -269,6 +270,10 @@ sub update {
 
     # because of replication delay we need to bring it up to date
     my $mult = $res_table->{$fmb->{id}};
+    if (!$mult) {
+        $log->warnf("Additional log for Redmine #18015 - received parameters %s with result table %s, full FMB detail %s",
+            $update_args, $res_table, $fmb);
+    }
     $fmb = {$fmb->%*, $mult->%*};
 
     $self->fmb($fmb);
