@@ -15,8 +15,12 @@ my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 
 $mock_fees->mock(
     transfer_between_accounts_fees => sub {
         return {
-            'USD' => {'EUR' => 20},
-            'EUR' => {'USD' => 5}};
+            'USD' => {
+                'EUR' => 20,
+                'BTC' => 10
+            },
+            'EUR' => {'USD' => 5},
+        };
     });
 
 my $mock_trading_platform = Test::MockModule->new('BOM::TradingPlatform', no_auto => 1);
@@ -291,6 +295,7 @@ subtest 'deposit' => sub {
         },
         'currency conversion with fees'
     );
+
 };
 
 subtest 'withdrawal' => sub {
@@ -300,10 +305,12 @@ subtest 'withdrawal' => sub {
         email       => 'withdrawal@test.com'
     });
     $client->account('USD');
-    BOM::User->create(
+
+    my $user = BOM::User->create(
         email    => $client->email,
         password => 'test'
-    )->add_client($client);
+    );
+    $user->add_client($client);
     my $dxtrader = BOM::TradingPlatform->new_base(
         client      => $client,
         rule_engine => BOM::Rules::Engine->new(client => $client));
@@ -344,6 +351,51 @@ subtest 'withdrawal' => sub {
         'currency conversion with fees'
     );
 
+    # crypto to fiat
+    my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'withdrawal@test.com'
+    });
+    $client_btc->account('BTC');
+    $user->add_client($client_btc);
+    my $dxtrader_btc = BOM::TradingPlatform->new_base(
+        client      => $client_btc,
+        rule_engine => BOM::Rules::Engine->new(client => $client_btc));
+
+    populate_exchange_rates({BTC => 10000});
+    BOM::Test::Helper::Client::top_up($client_btc, 'BTC', 1);
+    cmp_deeply exception {
+        $dxtrader_btc->validate_transfer(
+            action            => 'withdrawal',
+            amount            => 101,
+            platform_currency => 'USD',
+            account_type      => 'real',
+        )
+    },
+        {
+        error_code     => 'InvalidMaxAmount',
+        message_params => ['100.00', 'USD'],
+        rule           => 'transfers.limits',
+        },
+        'Correct max limit for USD withdrawal from BTC account';
+
+    cmp_deeply(
+        $dxtrader_btc->validate_transfer(
+            action            => 'withdrawal',
+            amount            => 100,
+            platform_currency => 'USD',
+            account_type      => 'real',
+        ),
+        {
+            fee_calculated_by_percent => '10',
+            fees                      => 10,
+            fees_in_client_currency   => '0.00100000',
+            fees_percent              => 10,
+            min_fee                   => '0.01',
+            recv_amount               => '0.00900000'
+        },
+        'currency conversion with fees'
+    );
 };
 
 done_testing();

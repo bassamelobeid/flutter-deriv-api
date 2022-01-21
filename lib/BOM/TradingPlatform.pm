@@ -252,7 +252,7 @@ sub validate_transfer {
     try {
         $self->client->validate_payment(
             currency     => $local_currency,
-            amount       => $send_amount,
+            amount       => ($action eq 'deposit' ? $send_amount : $recv_amount),
             payment_type => $payment_type,
             rule_engine  => $self->rule_engine,
         );
