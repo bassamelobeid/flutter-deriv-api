@@ -210,6 +210,44 @@ subtest $rule_name => sub {
     $advertiser->p2p_order_confirm(id => $order->{id});
     $client_p2p->p2p_order_confirm(id => $order->{id});
     ok $rule_engine->apply_rules($rule_name, %args), 'P2P sells are aggregated to zero so rule passes';
+
+    subtest 'exclude payment agents' => sub {
+        my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+
+        my $client = BOM::Test::Helper::P2P::create_advertiser();
+        my (undef, $order) = BOM::Test::Helper::P2P::create_order(
+            client    => $client,
+            advert_id => $advert->{id},
+            amount    => 10
+        );
+
+        $client->p2p_order_confirm(id => $order->{id});
+        $advertiser->p2p_order_confirm(id => $order->{id});
+
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
+        my %args        = (
+            loginid  => $client->loginid,
+            currency => 'USD',
+            action   => 'withdrawal',
+            amount   => -10,
+        );
+
+        $client->payment_agent({status => 'applied'});
+
+        cmp_deeply(
+            exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+                error_code => 'P2PDepositsWithdrawalZero',
+                params     => [num(0), num(10), 'USD'],
+                rule       => $rule_name,
+            },
+            'Rule fails for applied PA'
+        );
+
+        $client->payment_agent->status('authorized');
+        ok $rule_engine->apply_rules($rule_name, %args), 'Rule passes for authorized PA';
+    };
+
 };
 
 done_testing();

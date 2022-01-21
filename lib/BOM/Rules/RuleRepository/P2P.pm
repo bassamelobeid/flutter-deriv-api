@@ -50,6 +50,8 @@ rule 'p2p.withdrawal_check' => {
         my $currency = $client->currency;
         my $days     = BOM::Config::Runtime->instance->app_config->payments->p2p_deposits_lookback;
 
+        return 1 if $client->payment_agent and ($client->payment_agent->status // '') eq 'authorized';
+
         my ($net_p2p) = $client->db->dbic->run(
             fixup => sub {
                 return $_->selectrow_array('SELECT payment.aggregate_payments_by_type(?,?,?)', undef, $client->account->id, 'p2p', $days);
