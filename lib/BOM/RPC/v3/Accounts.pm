@@ -2633,7 +2633,10 @@ rpc account_closure => sub {
     my $loginid = $client->loginid;
     my $error;
 
+    my $oauth = BOM::Database::Model::OAuth->new;
     foreach my $client (@accounts_to_disable) {
+        # revoke access_token
+        $oauth->revoke_tokens_by_loginid($loginid);
         try {
             $client->status->upsert('disabled', $loginid, $closing_reason) unless $client->status->disabled;
             $client->status->upsert('closed',   $loginid, $closing_reason) unless $client->status->closed;
@@ -2644,6 +2647,8 @@ rpc account_closure => sub {
             $loginids_disabled_failed .= $client->loginid . ' ';
         }
     }
+    # revoke refresh_token
+    $oauth->revoke_refresh_tokens_by_user_id($user->id);
 
     # Return error if NO loginids have been disabled
     return $error if ($error && $loginids_disabled_success eq '');

@@ -16,6 +16,7 @@ use Test::BOM::RPC::Accounts;
 use Test::BOM::RPC::QueueClient;
 use BOM::Test::Script::DevExperts;
 use BOM::Config::Runtime;
+use BOM::Database::Model::OAuth;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 # disable routing to demo p01_ts02
@@ -235,6 +236,62 @@ subtest 'account closure' => sub {
     ok($test_client_vr->status->closed,   'Virtual account self-closed status');
     ok($test_client->status->closed,      'CR account self-closed status');
 
+};
+
+subtest 'one time token expiration on account closure' => sub {
+    my $oauth = BOM::Database::Model::OAuth->new;
+    my $email = 'test@email.com';
+
+    # Create user
+    my $user = BOM::User->create(
+        email    => $email,
+        password => 'PassWord123'
+    );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email,
+    });
+    $client->set_default_account('USD');
+
+    my $user_id = $user->{id};
+    my @app_ids;
+
+    for (0 .. 2) {
+        my $app = $oauth->create_app({
+            name         => "Test App$_",
+            user_id      => $user_id,
+            scopes       => ['read', 'trade', 'admin'],
+            redirect_uri => "https://www.example$_.com/"
+        });
+
+        push @app_ids, $app->{app_id};
+    }
+
+    my $create_new_refresh_token = sub {
+        my ($user_id, $app_id) = @_;
+        $oauth->generate_refresh_token($user_id, $app_id, 29, 60 * 60 * 24);
+    };
+
+    foreach (@app_ids) {
+        $create_new_refresh_token->($user_id, $_);
+    }
+
+    my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
+    is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
+
+    my $token = $m->create_token($client->loginid, 'test token');
+
+    #call account closure
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+
+    $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
+
+    is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly after account closure';
 };
 
 subtest 'Account closure MT5 balance' => sub {
