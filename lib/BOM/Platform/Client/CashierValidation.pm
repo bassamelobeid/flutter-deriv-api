@@ -39,6 +39,7 @@ use constant OVERRIDE_ERROR_CODES => qw(
     ASK_UK_FUNDS_PROTECTION
     ASK_SELF_EXCLUSION_MAX_TURNOVER_SET
     ASK_FIX_DETAILS
+    FinancialAssessmentRequired
 );
 
 # a mapping from error codes to the FE status codes.

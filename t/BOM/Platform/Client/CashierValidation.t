@@ -181,7 +181,7 @@ subtest 'Cashier validation common' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->mock(is_financial_assessment_complete => 0);
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit', 0, $rule_engine);
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for financial assessment not complete';
+    is $res->{error}->{code}, 'FinancialAssessmentRequired', 'Correct error code for financial assessment not complete';
     is $res->{error}->{message_to_client}, 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
         'Correct error message for incomplete FA';
     cmp_deeply $res->{status}, set('FinancialAssessmentRequired'), 'correct status';
