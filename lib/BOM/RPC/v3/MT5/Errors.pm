@@ -5,6 +5,10 @@ use warnings;
 
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize request);
+use List::Util qw(any);
+
+# error codes that should always be returned
+use constant OVERRIDE_ERROR_CODES => [qw(FinancialAssessmentRequired)];
 
 =head1 BOM::RPC::v3::MT5::Errors
 
@@ -64,10 +68,10 @@ my %category_message_mapping = do {
             localize('Your existing account does not allow MT5 trading. To open an MT5 account, please upgrade to a financial account.'),
         GamingAccountMissing =>
             localize('Your existing account does not allow MT5 trading. To open an MT5 account, please upgrade to a gaming account.'),
-        NoAgeVerification            => localize("You haven't verified your age. Please contact us for more information."),
-        FinancialAssessmentMandatory => localize('Please complete your financial assessment.'),
-        TINDetailsMandatory          => localize('We require your tax information for regulatory purposes. Please fill in your tax information.'),
-        MT5Duplicate                 => localize(
+        NoAgeVerification           => localize("You haven't verified your age. Please contact us for more information."),
+        FinancialAssessmentRequired => localize('Please complete your financial assessment.'),
+        TINDetailsMandatory         => localize('We require your tax information for regulatory purposes. Please fill in your tax information.'),
+        MT5Duplicate                => localize(
             "An account already exists with the information you provided. If you've forgotten your username or password, please contact us."),
         MissingID                    => localize('Your login ID is missing. Please check the details and try again.'),
         MissingAmount                => localize('Please enter the amount you want to transfer.'),
@@ -148,6 +152,7 @@ sub format_error {
         $message = localize($message, @params);
     }
     $error_code = $options->{override_code} if $options->{override_code};
+    $error_code = $options->{original_code} if any { ($options->{original_code} // '') eq $_ } OVERRIDE_ERROR_CODES->@*;
 
     return $self->_create_error($error_code, $message, $options->{details});
 }

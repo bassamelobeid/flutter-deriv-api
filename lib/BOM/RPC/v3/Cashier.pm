@@ -59,9 +59,12 @@ requires_auth('trading', 'wallet');
 
 use Log::Any qw($log);
 
-use constant MAX_DESCRIPTION_LENGTH => 250;
-use constant HANDOFF_TOKEN_TTL      => 5 * 60;                             # 5 Minutes
-use constant CRYPTO_CONFIG_KEY      => "REDIS_CRYPTO_CURRENCIES_CONFIG";
+use constant {
+    MAX_DESCRIPTION_LENGTH        => 250,
+    HANDOFF_TOKEN_TTL             => 5 * 60,
+    CRYPTO_CONFIG_KEY             => "REDIS_CRYPTO_CURRENCIES_CONFIG",
+    TRANSFER_OVERRIDE_ERROR_CODES => [qw(FinancialAssessmentRequired)],
+};
 
 my $payment_limits = BOM::Config::payment_limits;
 
@@ -1444,7 +1447,7 @@ rpc transfer_between_accounts => sub {
             sub {
                 my $err = shift;
                 log_exception();
-                return Future->done(_transfer_between_accounts_error($err->{error}->{message_to_client}));
+                return Future->done(_transfer_between_accounts_error($err->{error}{message_to_client}, undef, $err->{error}{code}));
             })->get;
     }
 
@@ -1756,9 +1759,10 @@ sub _get_amount_and_count {
 }
 
 sub _transfer_between_accounts_error {
-    my ($message_to_client, $message) = @_;
+    my ($message_to_client, $message, $override_code) = @_;
+    my $error_code = (any { ($override_code // '') eq $_ } TRANSFER_OVERRIDE_ERROR_CODES->@*) ? $override_code : 'TransferBetweenAccountsError';
     return BOM::RPC::v3::Utility::create_error({
-        code              => 'TransferBetweenAccountsError',
+        code              => $error_code,
         message_to_client => ($message_to_client // localize('Transfers between accounts are not available for your account.')),
         ($message) ? (message => $message) : (),
     });

@@ -746,7 +746,7 @@ async_rpc "mt5_new_account",
     my $compliance_requirements = $requirements->{compliance};
 
     if ($group !~ /^demo/) {
-        return create_error_future('FinancialAssessmentMandatory')
+        return create_error_future('FinancialAssessmentRequired')
             unless _is_financial_assessment_complete(
             client                            => $client,
             group                             => $group,
@@ -1558,6 +1558,7 @@ async_rpc "mt5_deposit",
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
         sub {
             my ($response) = @_;
+
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
 
             my $account_type;
@@ -2004,7 +2005,7 @@ sub _mt5_validate_and_get_amount {
                     financial_assessment_requirements => $requirements
                 ))
             {
-                return create_error_future('FinancialAssessmentMandatory', {override_code => $error_code});
+                return create_error_future('FinancialAssessmentRequired');
             }
 
             return create_error_future($setting->{status}->{withdrawal_locked}->{error}, {override_code => $error_code})
@@ -2231,7 +2232,11 @@ sub _mt5_validate_and_get_amount {
             unless ($client->is_virtual and _is_account_demo($mt5_group)) {
                 my $rule_engine = BOM::Rules::Engine->new(client => $client);
                 my $validation  = BOM::Platform::Client::CashierValidation::validate($loginid, $action_counterpart, 0, $rule_engine);
-                return create_error_future($error_code, {message => $validation->{error}->{message_to_client}}) if exists $validation->{error};
+                return create_error_future(
+                    $error_code,
+                    {
+                        message       => $validation->{error}{message_to_client},
+                        original_code => $validation->{error}{code}}) if exists $validation->{error};
             }
 
             return Future->done({

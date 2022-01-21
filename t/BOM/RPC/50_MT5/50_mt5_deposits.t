@@ -586,7 +586,8 @@ subtest 'labuan withdrawal' => sub {
     cmp_ok $test_client->default_account->balance, '==', 820 + 150, "Correct balance after deposit";
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok($method, $params)->has_error('Withdrawal request failed.')->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
+    $c->call_ok($method, $params)->has_error('Withdrawal request failed.')
+        ->error_code_is('FinancialAssessmentRequired', 'error code is FinancialAssessmentRequired')
         ->error_message_like(qr/complete your financial assessment/);
 
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });

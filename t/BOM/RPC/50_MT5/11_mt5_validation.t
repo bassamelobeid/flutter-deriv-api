@@ -427,10 +427,8 @@ subtest 'CR account types - high risk' => sub {
 
     financial_assessment($client, 'none');
     create_mt5_account->(
-        $c, $token, $client,
-        {account_type => 'gaming'},
-        'FinancialAssessmentMandatory',
-        'Financial assessment is required for high risk clients'
+        $c, $token, $client, {account_type => 'gaming'},
+        'FinancialAssessmentRequired', 'Financial assessment is required for high risk clients'
     );
 
     financial_assessment($client, 'financial_info');
@@ -685,7 +683,7 @@ subtest 'MF accout types' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         },
-        'FinancialAssessmentMandatory',
+        'FinancialAssessmentRequired',
         'Financial assessment is required for MF clients'
     );
 
@@ -696,7 +694,7 @@ subtest 'MF accout types' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         },
-        'FinancialAssessmentMandatory',
+        'FinancialAssessmentRequired',
         'Financial info is not enough for MF clients'
     );
 
@@ -707,7 +705,7 @@ subtest 'MF accout types' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         },
-        'FinancialAssessmentMandatory',
+        'FinancialAssessmentRequired',
         'Trading experience is not enough for MF clients'
     );
 

@@ -1605,9 +1605,10 @@ subtest 'suspended currency transfers' => sub {
 subtest 'MT5' => sub {
 
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
-    my $mock_account = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    my $mock_account   = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    my $is_fa_complete = 1;
     $mock_account->mock(
-        _is_financial_assessment_complete => sub { return 1 },
+        _is_financial_assessment_complete => sub { return $is_fa_complete },
         _throttle                         => sub { return 0 });
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->mock(fully_authenticated => sub { return 1 });
@@ -1849,9 +1850,16 @@ subtest 'MT5' => sub {
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
 
+    $is_fa_complete = 0;
+    $mock_client->mock(has_mt5_deposits => sub { return 1 });    # need this to create the error
+    $params->{args}{currency} = 'USD';
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired', 'Custom error code for FA required');
+    $is_fa_complete = 1;
+    $mock_client->unmock('has_mt5_deposits');
+
     subtest 'transfers using an account other than authenticated client' => sub {
         $params->{token} = BOM::Platform::Token::API->new->create_token($test_client_btc->loginid, 'test token');
-        $params->{args}{currency} = 'USD';
 
         $params->{args}{amount}       = 180;
         $params->{args}{account_from} = $test_client->loginid;
