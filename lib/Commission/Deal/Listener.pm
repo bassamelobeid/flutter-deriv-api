@@ -238,9 +238,15 @@ async sub _process_deals {
         my %payload = $data->[1]->@*;
         $log->debugf("processing stream id %s with payload %s", $id, \%payload);
         my $dx_deal = Commission::Deal::DXTrade->new(%payload);
-        next if not $dx_deal->is_valid or $dx_deal->is_test_account;
-        my $deal_id = await $self->_insert_into_db($id, $dx_deal);
-        if ($deal_id) {
+        # for deals from test accounts or from unaffiliated clients, we want to just acknowledge them but not saving them
+        if (not $dx_deal->is_valid or $dx_deal->is_test_account or not $self->{_client_map}->{$dx_deal->loginid}) {
+            my $reason = $dx_deal->is_test_account ? 'test account' : 'unaffiliated client';
+            $log->debugf("skipping deal [%s] for stream id [%s], reason [%s]", $dx_deal->deal_id, $id, $reason);
+            await $self->{redis}->xack($self->{redis_stream}, $self->{redis_consumer_group}, $id);
+            next;
+        }
+
+        if (my $deal_id = await $self->_insert_into_db($id, $dx_deal)) {
             $log->debugf("deal [%s] for stream id %s saved", $deal_id, $id);
             await $self->{redis}->xack($self->{redis_stream}, $self->{redis_consumer_group}, $id);
             $number_of_deals_processed++;
@@ -261,17 +267,13 @@ async sub _insert_into_db {
 
     my $deal_id;
     try {
-        if ($self->{_client_map}->{$deal->loginid}) {
-            my $currency = $self->_config_symbols_map->target_symbol($self->{provider}, $deal->underlying_symbol)->{quoted_currency};
+        my $currency = $self->_config_symbols_map->target_symbol($self->{provider}, $deal->underlying_symbol)->{quoted_currency};
 
-            ($deal_id) = await $self->{dbic}->query(
-                q{SELECT * FROM transaction.add_new_deal($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)},
-                $deal->deal_id, $self->{provider}, $deal->loginid, $deal->account_type, $deal->underlying_symbol,
-                $deal->volume,  $deal->spread,     $deal->price,   $currency,           $deal->transaction_time
-            )->single;
-        } else {
-            $log->debugf("account not in client map [%s]", $deal->loginid);
-        }
+        ($deal_id) = await $self->{dbic}->query(
+            q{SELECT * FROM transaction.add_new_deal($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)},
+            $deal->deal_id, $self->{provider}, $deal->loginid, $deal->account_type, $deal->underlying_symbol,
+            $deal->volume,  $deal->spread,     $deal->price,   $currency,           $deal->transaction_time
+        )->single;
     } catch ($e) {
         # database error could return a Postgres::Error object.
         my $error_message = ref $e ? $e->message : $e;
@@ -341,11 +343,21 @@ async sub _reconnect {
 
     # reconnect
     $self->remove_child($self->{dbic});
-    $self->add_child(
-        $self->{dbic} = Database::Async->new(
-            uri  => $self->{db_uri},
-            pool => {max => 4},
-        ));
+
+    my %parameters = (
+        pool => {
+            max => 4,
+        },
+    );
+
+    if ($self->{db_uri}) {
+        $parameters{uri} = $self->{db_uri};
+    } else {
+        $parameters{engine} = {service => $self->{db_service}};
+        $parameters{type}   = 'postgresql';
+    }
+
+    $self->add_child($self->{dbic} = Database::Async->new(%parameters));
 }
 
 =head2 _config_symbols_map
