@@ -2625,6 +2625,41 @@ sub handle_crypto_withdrawal {
     return;
 }
 
+=head2 crypto_withdrawal_email
+
+Send an email to clients after a successful withdrawal
+
+=over 4
+
+=item * C<loginid> - required. Login id of the client.
+
+=item * C<amount> - required. Amount of transaction
+
+=item * C<currency> - required. Currency type
+
+=item * C<transaction_hash> - required. Transaction hash
+
+=item * C<transaction_url> - required. Transaction url
+
+=back
+
+=cut
+
+sub crypto_withdrawal_email {
+
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::crypto_withdrawal_email({
+        loginid          => $args->{loginid},
+        transaction_hash => $args->{transaction_hash},
+        transaction_url  => $args->{transaction_url},
+        amount           => $args->{amount},
+        currency         => $args->{currency},
+        live_chat_url    => request->brand->live_chat_url,
+        title            => localize('Your [_1] withdrawal is successful', $args->{currency}),
+    });
+}
+
 =head2 aml_client_status_update
 
 Send email to compliance-alerts@binary.com if some clients that are set withdrawal_locked

@@ -127,7 +127,7 @@ subtest 'process' => sub {
                 trading_platform_investor_password_reset_request trading_platform_password_changed trading_platform_password_change_failed
                 trading_platform_investor_password_changed trading_platform_investor_password_change_failed mt5_inactive_account_closure_report bulk_authentication
                 check_name_changes_after_first_deposit p2p_adverts_updated
-                fraud_address affiliate_loginids_sync p2p_advertiser_approval_changed
+                fraud_address affiliate_loginids_sync p2p_advertiser_approval_changed crypto_withdrawal_email
                 p2p_advertiser_cancel_at_fault p2p_advertiser_temp_banned cms_add_affiliate_client df_anonymization_done/
 
         ],

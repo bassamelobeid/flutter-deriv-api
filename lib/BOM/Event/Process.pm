@@ -98,6 +98,7 @@ my $action_mapping = {
     aml_client_status_update                         => \&BOM::Event::Actions::Client::aml_client_status_update,
     self_exclude                                     => \&BOM::Event::Actions::App::self_exclude,
     crypto_withdrawal                                => \&BOM::Event::Actions::Client::handle_crypto_withdrawal,
+    crypto_withdrawal_email                          => \&BOM::Event::Actions::Client::crypto_withdrawal_email,
     client_promo_codes_upload                        => \&BOM::Event::Actions::Client::client_promo_codes_upload,
     shared_payment_method_found                      => \&BOM::Event::Actions::Client::shared_payment_method_found,
     verify_false_profile_info                        => \&BOM::Event::Actions::User::verify_false_profile_info,

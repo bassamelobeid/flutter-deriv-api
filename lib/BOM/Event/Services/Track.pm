@@ -114,6 +114,7 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
+    crypto_withdrawal_email                          => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
     p2p_advert_created                               =>
         [qw(advert_id created_time type account_currency local_currency country amount rate min_order_amount max_order_amount is_visible)],
     p2p_advertiser_cancel_at_fault => [qw(order_id cancels_remaining)],
@@ -146,6 +147,7 @@ my @SKIP_BRAND_VALIDATION = qw(
     p2p_advertiser_temp_banned
     identity_verification_rejected
     risk_disclaimer_resubmission
+    crypto_withdrawal_email
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1364,6 +1366,48 @@ sub _time_to_iso_8601 {
             second => $second
         )->epoch
     )->to_string;
+}
+
+=head2 crypto_withdrawal_email
+
+It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it to Rudderstack.
+
+=over 4
+
+=item * C<properties> - required. Event properties which contains:
+
+=over 4
+
+=item - C<loginid> - required. Login id of the client.
+
+=item - C<amount> - required. Amount of transaction
+
+=item - C<currency> - required. Currency type
+
+=item - C<transaction_hash> - required. Transaction hash
+
+=item - C<transaction_url> - required. Transaction url
+
+=item - C<live_chat_url> - required. Live-chat url
+
+=item - C<title> - required. Title
+
+=back
+
+=back
+
+=cut
+
+sub crypto_withdrawal_email {
+
+    my ($args) = @_;
+
+    return track_event(
+        event      => 'crypto_withdrawal_email',
+        loginid    => $args->{loginid},
+        properties => $args,
+    );
+
 }
 
 1;

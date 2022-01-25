@@ -2477,4 +2477,55 @@ subtest 'Deriv X events' => sub {
 
 };
 
+subtest 'crypto_withdrawal_email event' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client->email('test@deriv.com');
+    $client->first_name('Jane');
+    $client->last_name('Doe');
+    $client->salutation('MR');
+    $client->save;
+
+    my $user = BOM::User->create(
+        email          => $client->email,
+        password       => "1234",
+        email_verified => 1,
+    )->add_client($client);
+
+    undef @track_args;
+
+    BOM::Event::Actions::Client::crypto_withdrawal_email({
+            loginid          => $client->loginid,
+            amount           => '2',
+            currency         => 'ETH',
+            transaction_hash => '0xjkdf483jfh834ekjh834kdk48',
+            transaction_url  => 'https://rinkeby.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
+            live_chat_url    => 'https://deriv.com/en/?is_livechat_open=true',
+            title            => 'Your ETH withdrawal is successful',
+        })->get;
+
+    my ($customer, %args) = @track_args;
+
+    is $args{event}, 'crypto_withdrawal_email', "got correct event name";
+
+    cmp_deeply $args{properties},
+        {
+        'loginid'          => $client->loginid,
+        'brand'            => 'deriv',
+        'currency'         => 'ETH',
+        'lang'             => 'EN',
+        'amount'           => '2',
+        'transaction_hash' => '0xjkdf483jfh834ekjh834kdk48',
+        'transaction_url'  => 'https://rinkeby.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
+        'live_chat_url'    => 'https://deriv.com/en/?is_livechat_open=true',
+        'title'            => 'Your ETH withdrawal is successful',
+        },
+        'event properties are ok';
+
+    is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
 done_testing();
