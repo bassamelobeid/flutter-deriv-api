@@ -34,6 +34,7 @@ use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
 use BOM::User;
 use BOM::Rules::Engine;
 use LandingCompany::Wallet;
+use BOM::RPC::v3::MT5::Account;
 
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
@@ -1025,7 +1026,9 @@ Will do:
 
 =item - The Affiliate account (new broker code)
 
-=item - Sync to MyAffiliates
+=item - Create a MT5 real gaming account
+
+=item - Sync to MyAffiliates (TODO)
 
 =back
 
@@ -1052,8 +1055,11 @@ rpc "affiliate_account_add", sub {
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    my $broker  = 'AFF';
-    my $company = LandingCompany::Registry->get_by_broker($broker);
+    my $broker   = 'AFF';
+    my $currency = 'USD';
+    my $company  = LandingCompany::Registry->get_by_broker($broker);
+
+    $args->{currency} = $currency;
 
     my $response = create_new_real_account(
         client          => $client,

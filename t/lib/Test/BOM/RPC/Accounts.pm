@@ -49,6 +49,8 @@ our %MT5_ACCOUNTS = (
     'real\p01_ts04\synthetic\svg_std_usd\02' => '61000001',
     'real\p01_ts04\synthetic\svg_std_usd\03' => '61000001',
     'real\p01_ts04\synthetic\svg_std_usd\04' => '61000001',
+    # seychelles
+    'real\p02_ts02\synthetic\seychelles_ib_usd' => '999999',
 );
 
 our $ADD_INACTIVE_ACCOUNT = 0;

@@ -53,6 +53,7 @@ use constant MT5_SVG_FINANCIAL_MOCK_LEVERAGE => 1;
 use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
 use constant MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT => 'MT5 Virtual Money deposit';
+use constant USER_RIGHT_TRADE_DISABLED         => '0x0000000000000004';
 
 # This is the default trading server key for
 # - demo account
@@ -357,9 +358,14 @@ sub _mt5_group {
     # account creation for samoa if not allowed until the launch of deriv-crypto
     return '' if $landing_company_short eq 'samoa';
 
+    my ($server_type, $sub_account_type, $group_type);
+
+    # affiliate LC should map to seychelles
+    my $lc = LandingCompany::Registry::get($landing_company_short);
+    return 'real\p02_ts02\synthetic\seychelles_ib_usd' if $lc->is_for_affiliates();
+
     my $market_type = _get_market_type($account_type, $mt5_account_type);
 
-    my ($server_type, $sub_account_type, $group_type);
     if ($account_type eq 'demo') {
         $group_type       = $account_type;
         $server_type      = _get_server_type($account_type, $country, $market_type);
@@ -381,6 +387,9 @@ sub _mt5_group {
         );
         # as per requirements of mt5 operation team, australian financial account will not be categorised as high-risk (hr)
         $sub_account_type .= '-hr' if $market_type eq 'financial' and $country ne 'au' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
+
+        # make the sub account type ib for affiliate accounts
+        $sub_account_type = 'ib' if $lc->is_for_affiliates();
     }
 
     # restricted trading group
@@ -416,6 +425,7 @@ sub _mt5_group {
         ($group_type, $server_type, $market_type, join('_', ($landing_company_short, $sub_account_type, $currency)));
     push @group_bits, $sub_group if defined $sub_group;
     # just making sure everything is lower case!
+
     return lc(join('\\', @group_bits));
 }
 
@@ -643,7 +653,7 @@ async_rpc "mt5_new_account",
         account_type     => $company_type,
         sub_account_type => $sub_account_type
     );
-    my $company_name = $countries_instance->mt_company_for_country(%mt_args);
+    my $company_name = _get_mt_landing_company($client, \%mt_args);
     my $allow_signup = $countries_instance->mt_allow_signup_for_country(%mt_args);
 
     if (defined $user_input_trade_server && ($company_name eq 'malta' || $company_name eq 'maltainvest')) {
@@ -653,7 +663,7 @@ async_rpc "mt5_new_account",
     return create_error_future($mt5_account_category eq 'swap_free' ? 'MT5SwapFreeNotAllowed' : 'MT5NotAllowed', {params => $company_type})
         if $allow_signup eq 'disabled';
 
-    my $binary_company_name = $countries_list->{$residence}->{"${company_type}_company"};
+    my $binary_company_name = _get_landing_company($client, $company_type);
 
     my $source_client = $client;
 
@@ -667,7 +677,6 @@ async_rpc "mt5_new_account",
         @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
         $client  = (@clients > 0) ? $clients[0] : undef;
     }
-
     # No matching binary account was found; let's see what was the reason.
     unless ($client) {
         # First we check if a real mt5 accounts was being created with no real binary account existing
@@ -732,9 +741,9 @@ async_rpc "mt5_new_account",
     });
 
     my $group_config = get_mt5_account_type_config($group);
+
     # something is wrong if we're not able to get group config
     return create_error_future('permission') unless $group_config;
-
     my $config = request()->brand->countries_instance->countries_list->{$client->residence};
     if ($config->{mt5_age_verification}
         and not $client->status->age_verification)
@@ -810,6 +819,11 @@ async_rpc "mt5_new_account",
     return create_error_future('TradingPasswordRequired',
         {message => localize('Please set your MT5 password using the [_1] API.', 'trading_platform_password_change')})
         unless $client->user->trading_password;
+
+    # disable trading for affiliate accounts
+    if ($client->landing_company->is_for_affiliates) {
+        $args->{rights} = USER_RIGHT_TRADE_DISABLED;
+    }
 
     return get_mt5_logins($client, $account_type)->then(
         sub {
@@ -924,7 +938,6 @@ async_rpc "mt5_new_account",
                                 unless $agent_login;
                         }
                     }
-
                     return BOM::MT5::User::Async::create_user($args);
                 }
             )->then(
@@ -995,6 +1008,66 @@ async_rpc "mt5_new_account",
                 });
         })->catch($error_handler);
     };
+
+=head2 _get_landing_company
+
+Gets the needed Landing Company for the given combination of parameters:
+
+=over 4
+
+=item * C<$client> - The L<BOM::User::Client>  
+
+=item * C<$company_type> - The company type requested.
+
+=back
+
+Returns a landing company short name.
+
+=cut
+
+sub _get_landing_company {
+    my ($client, $company_type) = @_;
+
+    return $client->landing_company->short if $client->landing_company->is_for_affiliates;
+
+    my $brand = request()->brand;
+
+    my $countries_instance = $brand->countries_instance;
+
+    my $countries_list = $countries_instance->countries_list;
+
+    my $residence = $client->residence;
+
+    return $countries_list->{$residence}->{"${company_type}_company"};
+}
+
+=head2 _get_mt_landing_company
+
+Gets the MT Landing Company for the given combination of parameters:
+
+=over 4
+
+=item * C<$client> - The L<BOM::User::Client>  
+
+=item * C<$args> - hashref of mt5 args including: country, account type and subtype.
+
+=back
+
+Returns a landing company short name.
+
+=cut
+
+sub _get_mt_landing_company {
+    my ($client, $args) = @_;
+
+    return $client->landing_company->short if $client->landing_company->is_for_affiliates;
+
+    my $brand = request()->brand;
+
+    my $countries_instance = $brand->countries_instance;
+
+    return $countries_instance->mt_company_for_country($args->%*);
+}
 
 =head2 _is_financial_assessment_complete
 
@@ -2378,6 +2451,7 @@ sub _validate_client {
         if ($mt5_lc->documents_expiration_check_required() and not $client_obj->documents->valid());
 
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
+
     return ('SetExistingAccountCurrency', $loginid) unless $client_currency;
 
     my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;

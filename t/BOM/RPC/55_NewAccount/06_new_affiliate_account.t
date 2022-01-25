@@ -29,7 +29,10 @@ my $app = BOM::Database::Model::OAuth->new->create_app({
     scopes  => '{read,admin,trade,payments}',
     user_id => 1
 });
+
 my $app_id = $app->{app_id};
+my $rpc_ct;
+my $aff_cli;
 isnt($app_id, 1, 'app id is not 1');    # There was a bug that the created token will be always app_id 1; We want to test that it is fixed.
 
 my %emitted;
@@ -43,6 +46,8 @@ $mock_events->mock(
         $emit_data = $data;
 
         my $loginid = $data->{loginid};
+
+        return unless $loginid;
 
         ok !$emitted{$type . '_' . $loginid}, "First (and hopefully unique) signup event for $loginid" if $type eq 'signup';
 
@@ -59,14 +64,21 @@ $mock_datadog->mock(
     },
 );
 
-my $rpc_ct;
-
 my $params = {
     language => 'EN',
     source   => $app_id,
     country  => 'ru',
     args     => {},
 };
+
+my $mt5_args;
+my $mt5_mock = Test::MockModule->new('BOM::MT5::User::Async');
+$mt5_mock->mock(
+    'create_user',
+    sub {
+        ($mt5_args) = @_;
+        return $mt5_mock->original('create_user')->(@_);
+    });
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -95,6 +107,7 @@ subtest 'new affiliate account' => sub {
     $params->{args} = {
         date_of_birth  => '1989-10-10',
         affiliate_plan => undef,
+        residence      => 'br',
     };
 
     $params->{token} = $auth_token;
@@ -106,6 +119,11 @@ subtest 'new affiliate account' => sub {
     $params->{args} = {
         date_of_birth  => '1989-10-10',
         affiliate_plan => 'turnover',
+        residence      => 'br',
+        address_line_1 => 'nowhere',
+        affiliate_plan => 'turnover',
+        first_name     => 'test',
+        last_name      => 'asdf',
     };
     $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_no_error()->result;
     my $lc = LandingCompany::Registry->get_by_broker('AFF');
@@ -114,16 +132,16 @@ subtest 'new affiliate account' => sub {
     is $result->{landing_company},           $lc->name,  'Got the landing_company';
     is $result->{landing_company_shortcode}, $lc->short, 'Got the landing_company_shortcode';
     ok $result->{oauth_token} =~ /^a1-.+$/, 'Got a valid oauth_token';
-    is $result->{currency}, undef, 'Currency not set';
+    is $result->{currency}, 'USD', 'AFF accounts are always USD accounts';
 
     subtest 'affiliate info set' => sub {
-        my $cli = BOM::User::Client->rnew(loginid => $result->{client_id});
-        lives_ok { $cli = $cli->get_client_instance($cli->loginid) } 'Can retrieve an Affiliate instance';
-        isa_ok $cli, 'BOM::User::Affiliate', 'Expected affiliate instance';
+        $aff_cli = BOM::User::Client->rnew(loginid => $result->{client_id});
+        lives_ok { $aff_cli = $aff_cli->get_client_instance($aff_cli->loginid) } 'Can retrieve an Affiliate instance';
+        isa_ok $aff_cli, 'BOM::User::Affiliate', 'Expected affiliate instance';
 
-        cmp_deeply $cli->get_affiliate_info(),
+        cmp_deeply $aff_cli->get_affiliate_info(),
             {
-            affiliate_loginid => $cli->loginid,
+            affiliate_loginid => $aff_cli->loginid,
             affiliate_plan    => 'turnover'
             },
             'Expected data set';
