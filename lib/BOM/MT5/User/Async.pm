@@ -427,13 +427,13 @@ sub _invoke {
     if ($parallel_run) {
         if ($mt5_proxy_usage_enabled and exists $readonly_calls{$cmd}) {
             try {
-                _invoke_using_proxy($cmd, $srv_type, $srv_key, $prefix, $param, $loop)->get();
+                _invoke_using_proxy($cmd, $srv_type, $srv_key, $prefix, $param, $loop)->get;
             } catch ($e) {
                 my $message = $e;
                 if (blessed($e) && $e->isa('Future::Exception')) {
                     $message = "[" . $e->category . "] " . $e->message . ": " . $e->details;
                 }
-                $log->error($message);
+                $log->debugf('MT5 Proxy Error: %s', $message);
             }
         }
         return _invoke_using_php($cmd, $srv_type, $srv_key, $prefix, $param, $loop);
@@ -453,7 +453,7 @@ variable with an instance of L<IO::Async::Loop>.
 
 It returns a L<Future> with the response of the invocation. 
 
-=cut 
+=cut
 
 sub _invoke_using_proxy {
     my ($cmd, $srv_type, $srv_key, $prefix, $param, $loop) = @_;
@@ -464,6 +464,7 @@ sub _invoke_using_proxy {
     my $http          = Net::Async::HTTP->new(
         decode_content => 1,
         fail_on_error  => 1,
+        timeout        => 10,
     );
     $loop->add($http);
 
@@ -479,66 +480,85 @@ sub _invoke_using_proxy {
     my $mt5_proxy_url = $config->{mt5_http_proxy_url};
 
     my $result;
-    try {
-        $result = $http->POST($mt5_proxy_url . '/' . $srv_type . '_' . $srv_key . '/' . $cmd, $in, content_type => 'application/json')->on_ready(
-            sub {
-                stats_timing('mt5.call.proxy.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => $dd_tags});
-            })->get();
-    } catch ($e) {
-        stats_inc('mt5.call.proxy.error', {tags => $dd_tags});
-        return $f->fail('Request to MT5 Proxy failed', mt5 => $cmd);
-    }
-    stats_inc('mt5.call.proxy.successful', {tags => $dd_tags});
+    my $url = $mt5_proxy_url . '/' . $srv_type . '_' . $srv_key . '/' . $cmd;
+    $result = $http->POST($url, $in, content_type => 'application/json')->then(
+        sub {
+            my ($result) = @_;
+            stats_inc('mt5.call.proxy.successful', {tags => $dd_tags});
 
-    my $out = $result->content;
+            return $result;
+        }
+    )->else(
+        sub {
+            my $error = shift;
+            stats_inc('mt5.call.proxy.request_error', {tags => $dd_tags});
+            return $f->fail($error, mt5 => $cmd);
+        }
+    )->on_ready(
+        sub {
+            stats_timing('mt5.call.proxy.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => $dd_tags});
+        }
+    )->then(
+        sub {
+            my $result = shift;
 
-    $out =~ s/[\x0D\x0A]//g;
-    try {
-        $out = decode_json($out);
+            my $out = $result->content;
+            $out =~ s/[\x0D\x0A]//g;
+            $out = decode_json($out);
 
-        # Converting all keys down to 2nd level to lowercase in order to prevent case related key errors
-        if (ref $out eq ref {}) {
-            $out = {map { lc $_ => $out->{$_} } keys %$out};
-            foreach my $key (keys %$out) {
-                if (ref $out->{$key} eq ref {}) {
-                    $out->{$key} = {map { lc $_ => $out->{$key}->{$_} } keys %{$out->{$key}}};
+            # Converting all keys down to 2nd level to lowercase in order to prevent case related key errors
+            if (ref $out eq ref {}) {
+                $out = {map { lc $_ => $out->{$_} } keys %$out};
+                foreach my $key (keys %$out) {
+                    if (ref $out->{$key} eq ref {}) {
+                        $out->{$key} = {map { lc $_ => $out->{$key}->{$_} } keys %{$out->{$key}}};
+                    }
                 }
             }
+
+            if ($out->{error}) {
+                if ($out->{code} && !defined $out->{ret_code}) {
+                    $out->{ret_code} = $out->{code};
+                }
+                # needed as both of them return same code for different reason.
+                if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
+                    $out->{ret_code} .= $cmd;
+                }
+                stats_inc('mt5.call.proxy.error', {tags => $dd_tags});
+                return $f->fail(_future_error($out));
+            } else {
+                if ($cmd eq "UserAdd") {
+                    $out->{login} = $out->{user}->{login};
+                } elsif ($cmd eq "UserGet") {
+                    delete $out->{user}->{apidata};
+                } elsif ($cmd eq "GroupGet") {
+                    delete $out->{group}->{symbols};
+                }
+
+                # Append login prefixes for mt5 used id.
+                if ($out->{user} && $out->{user}{login}) {
+                    $out->{user}{login} = $prefix . $out->{user}{login};
+                }
+
+                if ($out->{login}) {
+                    $out->{login} = $prefix . $out->{login};
+                }
+
+                return $f->done($out);
+            }
         }
+    )->else(
+        sub {
+            my $error = shift;
 
-        if ($out->{error}) {
-            if ($out->{code} && !defined $out->{ret_code}) {
-                $out->{ret_code} = $out->{code};
-            }
-            # needed as both of them return same code for different reason.
-            if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
-                $out->{ret_code} .= $cmd;
-            }
-            $f->fail(_future_error($out));
-        } else {
-            if ($cmd eq "UserAdd") {
-                $out->{login} = $out->{user}->{login};
-            } elsif ($cmd eq "UserGet") {
-                delete $out->{user}->{apidata};
-            } elsif ($cmd eq "GroupGet") {
-                delete $out->{group}->{symbols};
+            return Future->fail($f->failure) if $f->is_failed;
+
+            unless (ref $error eq 'HASH' && $error->{error}) {
+                stats_inc('mt5.call.proxy.payload_handling_error', {tags => $dd_tags});
             }
 
-            # Append login prefixes for mt5 used id.
-            if ($out->{user} && $out->{user}{login}) {
-                $out->{user}{login} = $prefix . $out->{user}{login};
-            }
-
-            if ($out->{login}) {
-                $out->{login} = $prefix . $out->{login};
-            }
-
-            return $f->done($out);
-        }
-    } catch ($e) {
-        chomp $e;
-        $f->fail($e, mt5 => $cmd);
-    }
+            return $f->fail($error, mt5 => $cmd);
+        })->retain;
 }
 
 =head2 _invoke_using_php
@@ -547,7 +567,7 @@ Invokes MT5 command using the PHP script.
 
 Parameters and return values are the same as in L</_invoke_using_proxy>.
 
-=cut 
+=cut
 
 sub _invoke_using_php {
     my ($cmd, $srv_type, $srv_key, $prefix, $param, $loop) = @_;
@@ -588,6 +608,7 @@ sub _invoke_using_php {
                     if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
                         $out->{ret_code} .= $cmd;
                     }
+                    stats_inc('mt5.call.error', {tags => $dd_tags});
                     $f->fail(_future_error($out));
 
                 } else {
@@ -601,6 +622,7 @@ sub _invoke_using_php {
                     $f->done($out);
                 }
             } catch ($e) {
+                stats_inc('mt5.call.payload_handling_error', {tags => $dd_tags});
                 chomp $e;
                 $f->fail($e, mt5 => $cmd);
             }
@@ -659,7 +681,7 @@ sub get_user {
 }
 
 =head2 get_user_archive
-    
+
 Gets MT5 archived users by invoking a 'UserArchiveGet' call
 
 =over 4
@@ -818,6 +840,34 @@ sub get_users_logins {
             return Future->done($ret);
         });
 }
+
+=head2 _future_error
+
+Generates common error structure for MT5 related calls.
+
+It expects a HASHREF with the following attributes.
+
+=over 4
+
+=item * C<code> - Optional STRING, describing the error code.
+
+=item * C<ret_code> - Optinal STRING, describing the error code.
+
+=item * C<error> - Optional STRING, an description providing more details about the error.
+
+=back 
+
+It returns a HASREF with the following attributes
+
+=over 4
+
+=item * C<code> - A STRING representing the error being throw.
+
+=item * C<error> - A STRING with the details for the error.
+
+=back
+
+=cut
 
 sub _future_error {
     my ($response) = @_;
