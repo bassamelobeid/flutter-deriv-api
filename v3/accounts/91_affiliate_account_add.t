@@ -39,7 +39,6 @@ my %details = (
     secret_answer          => 'nasi lemak,teh tarik',
     account_opening_reason => 'Speculative',
     affiliate_plan         => 'turnover',
-    currency               => 'USD',
 );
 
 my $lc = LandingCompany::Registry->get_by_broker('AFF');
