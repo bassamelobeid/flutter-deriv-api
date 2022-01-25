@@ -19,7 +19,7 @@
         <tr>
             <td>
                 <label for="symbol">Symbol</label>
-                <select name="symbol" id="symbol" data-lpignore="true">
+                <select name="symbol" id="symbol" onchange="setSymbolCurrency(this)" data-lpignore="true">
                     [% FOREACH mt5_symbol IN mt5_symbols.sort %]
                         <option value='[% mt5_symbol %]'>[% mt5_symbol %]</option>
                     [% END %]
@@ -129,6 +129,29 @@
                     result.text(config.error).css('color', 'var(--color-red)');
                 } else {
                     result.text('saved').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+
+    function setSymbolCurrency(symbol) {
+        var el = \$('#dividend_scheduler_form');
+        var currency = \$('#currency');
+
+        var data = {
+            set_currency_symbol: 1,
+            symbol: symbol.value,
+        };
+
+        \$.ajax({
+            url: dividend_scheduler_controller_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    currency.val(config.success);
                 }
             }
         });

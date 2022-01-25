@@ -74,7 +74,7 @@ if ($r->param('update_dividend_scheduler')) {
     my $result = BOM::Backoffice::DividendSchedulerTool::update($validated_arg);
 
     my $output;
-    if ($result->{success} == 1) {
+    if ($result->{success}) {
         $output = {success => 1};
     } else {
         $output = {error => $result->{error}};
@@ -91,10 +91,28 @@ if ($r->param('destroy_dividend_scheduler')) {
     my $result = BOM::Backoffice::DividendSchedulerTool::destroy($args);
 
     my $output;
-    if ($result->{success} == 1) {
+    if ($result->{success}) {
         $output = {success => 1};
     } else {
         $output = {error => $result->{error}};
+    }
+
+    print encode_json_utf8($output);
+}
+
+if ($r->param('set_currency_symbol')) {
+    my $symbol = $r->param('symbol');
+    my $args   = {
+        symbol => $symbol,
+    };
+
+    my $result = BOM::Backoffice::DividendSchedulerTool::set_currency_symbol($args);
+
+    my $output;
+    if ($result->{success}) {
+        $output = $result;
+    } else {
+        $output = {error => "The currency for symbol $symbol is missing. Please contact Quants Dev!!"};
     }
 
     print encode_json_utf8($output);

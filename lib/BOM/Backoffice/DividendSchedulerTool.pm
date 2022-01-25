@@ -10,12 +10,20 @@ use Scalar::Util qw(looks_like_number);
 use BOM::MarketData qw(create_underlying);
 use BOM::Config::QuantsConfig qw(get_mt5_symbols_mapping);
 
-=head2 BOM::Backoffice::DividendSchedulerTool
-    BOM::Backoffice::DividendSchedulerTool act as a model that corresponds to all the data-related logic.
+=head1 Name
+
+BOM::Backoffice::DividendSchedulerTool
+
+=head1 Description
+
+Act as a model that corresponds to all the data-related logic.
+
 =cut
 
 =head2 _dbic_dividend_scheduler
-    Initiate DB connection
+
+Initiate DB connection
+
 =cut
 
 sub _dbic_dividend_scheduler {
@@ -26,9 +34,57 @@ sub _dbic_dividend_scheduler {
 }
 
 =head2 validate_params
-    BOM::Backoffice::DividendSchedulerTool::validate_params($args)
 
-    This is to validate the params before we save it.
+BOM::Backoffice::DividendSchedulerTool::validate_params($parameters)
+
+This is to validate the params before we save it.
+
+parameters:
+
+=over 4
+
+=item * C<platform_type> - 
+
+The platform type, example "mt5"
+
+=item * C<server_name> - 
+
+The server name, example "p01_ts01, ps01_ts02 etc"
+
+=item * C<symbol> - 
+
+The underlying | symbol | instrument, example "AAL, US_500, JP_225 etc"
+
+=item * C<currency> - 
+
+The symbol quoted currency, example "USD, BTC, GBP etc"
+
+=item * C<long_dividend> - 
+
+The long dividend amount and must be positive value, example "0.1, 0.2 etc"
+
+=item * C<short_dividend> - 
+
+The short dividend amount and must be negative value, example "-0.1, -0.2 etc"
+
+=item * C<long_tax> - 
+
+The long tax amount in %, example "0~100"
+
+=item * C<short_tax> - 
+
+The short tax amount in %, example "0~100"
+
+=item * C<applied_datetime> - 
+
+The dividend scheduler applied datetime, example "2021-12-14 21:21:00"
+
+=item * C<dividend_deal_comment> - 
+
+The dividend scheduler comment, example "US_500_dividend"
+
+=back
+
 =cut
 
 sub validate_params {
@@ -109,6 +165,11 @@ sub validate_params {
         return {error => 'Please choose "' . $underlying->quoted_currency_symbol . '" as the currency'};
     }
 
+    # Check if long_dividend and short_dividend have the same absolute value
+    if ($args->{long_dividend} ne abs($args->{short_dividend})) {
+        return {error => "Long Dividend and Short Dividend should have the same absolute value in postive and negative respectively."};
+    }
+
     # Validate when the market is closed(on the weekend or holiday)
     if ($valid_trading_time) {
         if ($applied_datetime->hour >= $closing_hour and $applied_datetime->hour < ($closing_hour + 1)) {
@@ -125,9 +186,56 @@ sub validate_params {
 }
 
 =head2 create
-    BOM::Backoffice::DividendSchedulerTool::create($args)
 
-    'create' will create a new dividend scheduler.
+BOM::Backoffice::DividendSchedulerTool::create($parameters)
+
+'create' will create a new dividend scheduler.
+
+parameters:
+
+=over 4
+
+=item * C<platform_type> - 
+The platform type, example "mt5"
+
+=item * C<server_name> - 
+
+The server name, example "p01_ts01, ps01_ts02 etc"
+
+=item * C<symbol> - 
+
+The underlying | symbol | instrument, example "AAL, US_500, JP_225 etc"
+
+=item * C<currency> - 
+
+The symbol quoted currency, example "USD, BTC, GBP etc"
+
+=item * C<long_dividend> - 
+
+The long dividend amount and must be positive value, example "0.1, 0.2 etc"
+
+=item * C<short_dividend> - 
+
+The short dividend amount and must be negative value, example "-0.1, -0.2 etc"
+
+=item * C<long_tax> - 
+
+The long tax amount in %, example "0~100"
+
+=item * C<short_tax> - 
+
+The short tax amount in %, example "0~100"
+
+=item * C<applied_datetime> - 
+
+The dividend scheduler applied datetime, example "2021-12-14 21:21:00"
+
+=item * C<dividend_deal_comment> - 
+
+The dividend scheduler comment, example "US_500_dividend"
+
+=back
+
 =cut
 
 sub create {
@@ -164,9 +272,21 @@ sub create {
 }
 
 =head2 show_all
-    BOM::Backoffice::DividendSchedulerTool::show_all(date), where date = YYYY-MM-DD
 
-    'show_all' will return all the exiting dividend scheduler given the date.
+BOM::Backoffice::DividendSchedulerTool::show_all(date), where date = YYYY-MM-DD
+
+'show_all' will return all the exiting dividend scheduler given the date.
+
+Example:
+
+=over 4
+
+date - The given date to filter in YYYY-MM-DD format
+
+BOM::Backoffice::DividendSchedulerTool::show_all("2021-12-14")
+
+=back
+
 =cut
 
 sub show_all {
@@ -190,9 +310,21 @@ sub show_all {
 }
 
 =head2 show
-    BOM::Backoffice::DividendSchedulerTool::show(scheduler_id)
 
-    'show' will return dividend scheduler with the given `scheduler_id`.
+BOM::Backoffice::DividendSchedulerTool::show(scheduler_id)
+
+'show' will return dividend scheduler with the given `scheduler_id`.
+
+Example:
+
+=over 4
+
+scheduler_id - The PK of the dividend scheduler
+
+BOM::Backoffice::DividendSchedulerTool::show("88")
+
+=back
+
 =cut
 
 sub show {
@@ -212,9 +344,56 @@ sub show {
 }
 
 =head2 update
-    BOM::Backoffice::DividendSchedulerTool::update(scheduler_id)
 
-    'update' will update the dividend scheduler with the given `scheduler_id`.
+BOM::Backoffice::DividendSchedulerTool::update(scheduler_id)
+
+'update' will update the dividend scheduler with the given `scheduler_id`.
+
+parameters:
+
+=over 4
+
+=item * C<platform_type> - 
+The platform type, example "mt5"
+
+=item * C<server_name> - 
+
+The server name, example "p01_ts01, ps01_ts02 etc"
+
+=item * C<symbol> - 
+
+The underlying | symbol | instrument, example "AAL, US_500, JP_225 etc"
+
+=item * C<currency> - 
+
+The symbol quoted currency, example "USD, BTC, GBP etc"
+
+=item * C<long_dividend> - 
+
+The long dividend amount and must be positive value, example "0.1, 0.2 etc"
+
+=item * C<short_dividend> - 
+
+The short dividend amount and must be negative value, example "-0.1, -0.2 etc"
+
+=item * C<long_tax> - 
+
+The long tax amount in %, example "0~100"
+
+=item * C<short_tax> - 
+
+The short tax amount in %, example "0~100"
+
+=item * C<applied_datetime> - 
+
+The dividend scheduler applied datetime, example "2021-12-14 21:21:00"
+
+=item * C<dividend_deal_comment> - 
+
+The dividend scheduler comment, example "US_500_dividend"
+
+=back
+
 =cut
 
 sub update {
@@ -252,9 +431,21 @@ sub update {
 }
 
 =head2 destroy
-    BOM::Backoffice::DividendSchedulerTool::destroy(scheduler_id)
 
-    'destroy' will delete the dividend scheduler with the given `scheduler_id`.
+BOM::Backoffice::DividendSchedulerTool::destroy(scheduler_id)
+
+'destroy' will delete the dividend scheduler with the given `scheduler_id`.
+
+Example:
+
+=over 4
+
+scheduler_id - The PK of the dividend scheduler
+
+BOM::Backoffice::DividendSchedulerTool::destroy("88")
+
+=back
+
 =cut
 
 sub destroy {
@@ -269,6 +460,37 @@ sub destroy {
             });
 
         return {success => 1};
+    } catch ($e) {
+        return {error => 'ERR: ' . $e};
+    }
+}
+
+=head2 set_currency_symbol
+
+BOM::Backoffice::DividendSchedulerTool::set_currency_symbol(symbol)
+
+Returns the currency for any mt5 symbol.
+
+Example:
+
+=over 4
+
+symbol - The instrument | underlying 
+
+BOM::Backoffice::DividendSchedulerTool::destroy("AAL")
+
+=back
+
+=cut
+
+sub set_currency_symbol {
+    my $args = shift;
+
+    try {
+        my $mt5_symbols_mapping = BOM::Config::QuantsConfig->get_mt5_symbols_mapping;
+        my $underlying          = create_underlying($mt5_symbols_mapping->{$args->{symbol}});
+
+        return {success => $underlying->quoted_currency_symbol};
     } catch ($e) {
         return {error => 'ERR: ' . $e};
     }

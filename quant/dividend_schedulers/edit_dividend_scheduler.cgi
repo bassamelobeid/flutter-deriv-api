@@ -25,7 +25,10 @@ BOM::Backoffice::Request::template()->process(
         dividend_scheduler_controller_url => request()->url_for('backoffice/quant/dividend_schedulers/dividend_scheduler_controller.cgi'),
         mt5_webapi_configs                => BOM::Config->mt5_webapi_config->{real},
         mt5_symbols                       => BOM::Config::QuantsConfig->get_dividend_scheduler_yml->{symbols}->{mt5_underlyings},
-        payout_currencies                 => _get_payout_currencies()}) || die BOM::Backoffice::Request::template()->error;
+        payout_currencies                 => _get_payout_currencies(),
+        new_dividend_scheduler_url        => request()->url_for('backoffice/quant/dividend_schedulers/new_dividend_scheduler.cgi'),
+        index_dividend_scheduler_url      => request()->url_for('backoffice/quant/dividend_schedulers/index_dividend_scheduler.cgi'),
+    }) || die BOM::Backoffice::Request::template()->error;
 
 sub _get_payout_currencies {
     my $legal_allowed_currencies = LandingCompany::Registry::get('svg')->legal_allowed_currencies;

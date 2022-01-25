@@ -92,16 +92,31 @@
             </td>
         </tr>
         <tr>
-            <td><input type="button" class="btn btn--primary" onClick="updateDividendScheduler()" value="Save"></td>
+            <td>
+                <input type="button" class="btn btn--primary" onClick="updateDividendScheduler()" value="Save">
+            </td>
             <td class="dividend_scheduler_status"></td>
         </tr>
     </table>
 </form>
 
+<br>
+
+<td>
+    <button onClick="goToMain()" type="button" class="btn btn--secondary">
+        Cancel
+    </button>
+    <button onClick="newDividendScheduler()" type="button" class="btn btn--secondary">
+        New
+    </button>
+</td>
+
 <script>
     var dividend_scheduler_controller_url = "[% dividend_scheduler_controller_url | none %]";
+    var new_dividend_scheduler_url    = "[% new_dividend_scheduler_url | none %]";
+    var index_dividend_scheduler_url = "[% index_dividend_scheduler_url | none %]";
 
-    function updateDividendScheduler(){
+    function updateDividendScheduler() {
         var el = \$('#dividend_scheduler_form');
         var result = el.find('.dividend_scheduler_status');
 
@@ -152,6 +167,40 @@
                     result.text(config.error).css('color', 'var(--color-red)');
                 } else {
                     result.text('saved').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+
+    function newDividendScheduler() {
+        location.replace(new_dividend_scheduler_url);
+    }
+
+    function goToMain() {
+        var el = \$('#dividend_scheduler_form');
+
+        var datetime = el.find('input[name="applied_datetime"]').val();
+        location.replace(index_dividend_scheduler_url + "?" + "sorted_datetime=" + datetime.split('T')[0]);
+    }
+
+    function setSymbolCurrency(symbol) {
+        var el = \$('#dividend_scheduler_form');
+        var currency = \$('#currency');
+
+        var data = {
+            set_currency_symbol: 1,
+            symbol: symbol.value,
+        };
+
+        \$.ajax({
+            url: dividend_scheduler_controller_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    currency.val(config.success);
                 }
             }
         });

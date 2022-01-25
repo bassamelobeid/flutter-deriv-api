@@ -27,7 +27,7 @@
         location.replace(index_dividend_scheduler_url + "?" + "sorted_datetime=" + sorted_datetime);
     }
 
-    function newDividendScheduler(){
+    function newDividendScheduler() {
         location.replace(new_dividend_scheduler_url);
     }
 </script>
