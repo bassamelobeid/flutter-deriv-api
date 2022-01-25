@@ -275,7 +275,8 @@ sub mt5_accounts_lookup {
         )->catch(
             sub {
                 my ($resp) = @_;
-                if (   defined $resp->{error}
+                if (   ref $resp eq 'HASH'
+                    && defined $resp->{error}
                     && ref $resp->{error} eq 'HASH'
                     && ($resp->{error}{code} eq 'NotFound' || $resp->{error}{code} eq 'MT5AccountInactive'))
                 {
