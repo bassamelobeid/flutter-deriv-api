@@ -34,30 +34,35 @@ my %type_mapping = (
     payout_cancelled  => 'withdrawal_reversal',
 );
 
-my %custom_errors = (
-    SelfExclusionLimitExceeded => {
-        message => localize(
-            "This deposit will cause your account balance to exceed your limit of [_1] [_2]. To proceed with this deposit, please <a href=\"[_3]\">adjust your self exclusion settings</a>."
-        ),
-        link => 'self_exclusion_url',
-    },
-    BalanceExceeded => {
-        message => localize("This deposit will cause your account balance to exceed your <a href=\"[_3]\">account limit</a> of [_1] [_2]."),
-        link    => 'account_limits_url',
-    },
-    WithdrawalLimit => {
-        message => localize(
-            "We're unable to process your withdrawal request because it exceeds the limit of [_1] [_2]. Please <a href=\"[_3]\">authenticate your account</a> before proceeding with this withdrawal."
-        ),
-        link => 'authentication_url'
-    },
-    WithdrawalLimitReached => {
-        message => localize(
-            "You've reached the maximum withdrawal limit of [_1] [_2]. Please <a href=\"[_3]\">authenticate your account</a> before proceeding with this withdrawal."
-        ),
-        link => 'authentication_url'
-    },
-);
+my %custom_errors = do {
+    ## no critic(TestingAndDebugging::ProhibitNoWarnings)
+    no warnings 'redefine';
+    local *localize = sub { die "you can't use params with this dummy localize() call" if @_ > 1; shift };
+    (
+        SelfExclusionLimitExceeded => {
+            message => localize(
+                "This deposit will cause your account balance to exceed your limit of [_1] [_2]. To proceed with this deposit, please <a href=\"[_3]\">adjust your self exclusion settings</a>."
+            ),
+            link => 'self_exclusion_url',
+        },
+        BalanceExceeded => {
+            message => localize("This deposit will cause your account balance to exceed your <a href=\"[_3]\">account limit</a> of [_1] [_2]."),
+            link    => 'account_limits_url',
+        },
+        WithdrawalLimit => {
+            message => localize(
+                "We're unable to process your withdrawal request because it exceeds the limit of [_1] [_2]. Please <a href=\"[_3]\">authenticate your account</a> before proceeding with this withdrawal."
+            ),
+            link => 'authentication_url'
+        },
+        WithdrawalLimitReached => {
+            message => localize(
+                "You've reached the maximum withdrawal limit of [_1] [_2]. Please <a href=\"[_3]\">authenticate your account</a> before proceeding with this withdrawal."
+            ),
+            link => 'authentication_url'
+        },
+    );
+};
 
 =head2 _handle_qualifying_payments
 
