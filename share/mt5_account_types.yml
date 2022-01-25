@@ -795,3 +795,40 @@ real\p02_ts02\synthetic\svg_std_usd\01: *real_p02ts02_svg_gaming_financial
 real\p02_ts02\synthetic\svg_std_usd\02: *real_p02ts02_svg_gaming_financial
 real\p02_ts02\synthetic\svg_std_usd\03: *real_p02ts02_svg_gaming_financial
 real\p02_ts02\synthetic\svg_std_usd\04: *real_p02ts02_svg_gaming_financial
+
+# Seycheless
+
+real\p02_ts02\synthetic\seychelles_ib_usd:
+  account_type: real
+  landing_company_short: seychelles
+  market_type: synthetic
+  sub_account_type: financial
+  server: p02_ts02
+
+real\p01_ts02\synthetic\seychelles_ibt_usd:
+  account_type: real
+  landing_company_short: seychelles
+  market_type: synthetic
+  sub_account_type: financial
+  server: p01_ts02
+
+real\p01_ts03\synthetic\seychelles_ibt_usd:
+  account_type: real
+  landing_company_short: seychelles
+  market_type: synthetic
+  sub_account_type: financial
+  server: p01_ts03
+
+real\p01_ts04\synthetic\seychelles_ibt_usd:
+  account_type: real
+  landing_company_short: seychelles
+  market_type: synthetic
+  sub_account_type: financial
+  server: p01_ts04
+
+real\p02_ts02\synthetic\seychelles_ibt_usd:
+  account_type: real
+  landing_company_short: seychelles
+  market_type: synthetic
+  sub_account_type: financial
+  server: p02_ts02
