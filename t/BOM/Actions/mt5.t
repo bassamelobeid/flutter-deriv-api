@@ -185,6 +185,71 @@ subtest 'mt5 track event' => sub {
         is scalar @identify_args, 0, 'Identify is not triggered';
     };
 
+    subtest 'mt5 seychelles group signup track' => sub {
+        my $args = {
+            loginid            => $test_client->loginid,
+            'account_type'     => 'gaming',
+            'language'         => 'EN',
+            'mt5_group'        => 'real\\p02_ts02\\synthetic\\seychelles_ib_usd',
+            'mt5_server'       => 'p02_ts02',
+            'mt5_login_id'     => 'MTR90000',
+            'language'         => 'EN',
+            'cs_email'         => 'test_cs@bin.com',
+            'sub_account_type' => 'financial'
+        };
+        undef @identify_args;
+        undef @track_args;
+
+        my $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
+        my $result         = $action_handler->($args)->get;
+        ok $result, 'Success mt5 new account result';
+
+        is scalar @track_args, 1;
+        my ($customer, %args) = $track_args[0]->@*;
+        my $mt5_details = parse_mt5_group($args->{mt5_group});
+        my $type_label  = $mt5_details->{market_type};
+        $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
+
+        is_deeply \%args,
+            {
+            context => {
+                active => 1,
+                app    => {name => 'deriv'},
+                locale => 'id'
+            },
+            event      => 'mt5_signup',
+            properties => {
+                loginid                => $test_client->loginid,
+                account_type           => 'gaming',
+                language               => 'EN',
+                mt5_group              => 'real\\p02_ts02\\synthetic\\seychelles_ib_usd',
+                mt5_loginid            => 'MTR90000',
+                sub_account_type       => 'financial',
+                client_first_name      => $test_client->first_name,
+                type_label             => ucfirst $type_label,
+                mt5_integer_id         => '90000',
+                brand                  => 'deriv',
+                mt5_server_location    => 'South Africa',
+                mt5_server_region      => 'Africa',
+                mt5_server             => 'p02_ts02',
+                mt5_server_environment => 'Deriv-Server-02',
+                lang                   => 'ID',
+                mt5_dashboard_url      => 'https://app.deriv.com/mt5?lang=id',
+                live_chat_url          => 'https://deriv.com/id/?is_livechat_open=true'
+            }
+            },
+            'properties are set properly for new mt5 account event';
+
+        is scalar(@identify_args), 0, 'Identify is not triggered';
+
+        undef @track_args;
+
+        $args->{mt5_login_id} = '';
+        like exception { $action_handler->($args)->get; }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        is scalar @track_args,    0, 'Track is not triggered';
+        is scalar @identify_args, 0, 'Identify is not triggered';
+    };
+
     subtest 'mt5 password change' => sub {
         my $args = {
             loginid => $test_client->loginid,
