@@ -119,7 +119,6 @@ my %EVENT_PROPERTIES = (
         [qw(advert_id created_time type account_currency local_currency country amount rate min_order_amount max_order_amount is_visible)],
     p2p_advertiser_cancel_at_fault => [qw(order_id cancels_remaining)],
     p2p_advertiser_temp_banned     => [qw(order_id block_end_time)],
-    unknown_login                  => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
 );
 
 # Put the events that shouldn't care about brand or app_id source to get fired.

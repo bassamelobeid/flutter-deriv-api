@@ -17,7 +17,7 @@ use BOM::Event::Actions::Email;
 use BOM::Event::Process;
 
 my $brand = Brands->new(name => 'deriv');
-my ($app_id) = sort $brand->whitelist_apps->%*;
+my ($app_id) = $brand->whitelist_apps->%*;
 
 my (@identify_args, @track_args);
 
@@ -100,58 +100,6 @@ subtest 'email events - risk disclaimer resubmission' => sub {
     is $args{context}{locale}, 'ES', "got correct preferred language";
 };
 
-subtest 'email event - unknown_login' => sub {
-    undef @identify_args;
-    undef @track_args;
-
-    my $req = BOM::Platform::Context::Request->new(
-        brand_name => 'deriv',
-        language   => 'EN',
-        app_id     => $app_id,
-    );
-    request($req);
-
-    BOM::Event::Actions::Email::send_email_generic({
-            language   => 'EN',
-            event      => 'unknown_login',
-            loginid    => $client->loginid,
-            properties => {
-                device                    => 'android',
-                app_name                  => 'my app',
-                is_reset_password_allowed => 0,
-                country                   => 'Antarctica',
-                title                     => 'New device login',
-                first_name                => 'Bob',
-                ip                        => '127.0.0.1',
-                browser                   => 'chrome',
-                password_reset_url        => $req->brand->password_reset_url({
-                        website_name => $req->brand->website_name,
-                        source       => $app_id,
-                        language     => $req->language,
-                        app_name     => 'deriv'
-                    })}})->get;
-
-    my ($customer, %args) = @track_args;
-
-    is $args{event}, 'unknown_login', "got correct event name";
-
-    cmp_deeply $args{properties},
-        {
-        brand                     => 'deriv',
-        loginid                   => $client->loginid,
-        lang                      => 'EN',
-        device                    => 'android',
-        lang                      => 'EN',
-        app_name                  => 'my app',
-        is_reset_password_allowed => 0,
-        country                   => 'Antarctica',
-        title                     => 'New device login',
-        first_name                => 'Bob',
-        ip                        => '127.0.0.1',
-        browser                   => 'chrome',
-        password_reset_url        => 'https://deriv.com/en/reset-password/'
-        },
-        'event properties are ok';
-};
+$mock_segment->unmock_all;
 
 done_testing;
