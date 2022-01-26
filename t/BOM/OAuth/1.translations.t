@@ -1,6 +1,8 @@
 use strict;
 use warnings;
 use utf8;
+
+use Test::Deep;
 use Test::More;
 use Test::Mojo;
 use Test::MockModule;
@@ -100,18 +102,41 @@ $mock_history->mock(
         return {"environment" => "IP=1.1.1.1 IP_COUNTRY=1.1.1.1 User_AGENT=ABC LANG=AU"};
     });
 
+# Mock event emitter
+my $events;
+
+my $emitter_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$emitter_mock->mock(
+    'emit',
+    sub {
+        my ($event, $event_args) = @_;
+        $events->{$event} = $event_args;
+
+        return $emitter_mock->original('emit')->(@_);
+    });
+
 BEGIN { use_ok('BOM::Platform::Email', qw(send_email)); }
 
 $redis->del("CLIENT_LOGIN_HISTORY::" . $user->id);
 
-mailbox_clear();
-
 $t = callPost($t, $email, $password, $csrf_token, "ID");
 
-my $received_email = mailbox_search(email => $email);
-like $received_email->{subject}, qr/Peringatan keamanan: Aktivitas pengaksesan terbaru/, 'email translation done';
+is $events->{send_email}->{event}, 'unknown_login', 'send_email has correct event name';
 
-like($received_email->{body}, qr/$email|ID/i, "email ID validation");
+cmp_deeply $events->{send_email}->{properties},
+    {
+    device                    => undef,
+    lang                      => 'id',
+    app_name                  => 'Test App',
+    is_reset_password_allowed => 0,
+    country                   => 'Antarctica',
+    title                     => 'Pengaksesan perangkat baru',
+    ip                        => '127.0.0.1',
+    browser                   => undef,
+    password_reset_url        => 'https://www.binary.com/id/user/lost_passwordws.html',
+    first_name                => $client_cr->first_name,
+    },
+    'expected event properties';
 
 done_testing();
 
