@@ -4201,33 +4201,13 @@ sub _advert_details {
                     and $advert->{can_order}
                     and $advert->{advertiser_is_approved}
                     and $advert->{advertiser_is_listed}
-                    and not $advert->{advertiser_blocked})
-            ? 1
+                    and not $advert->{advertiser_blocked}
+                ) ? 1
             : 0,
-            (
-                $self->loginid eq $advert->{advertiser_loginid}    # only advert owner can see these fields
-                ? (
-                    payment_info             => $advert->{payment_info} // '',
-                    contact_info             => $advert->{contact_info} // '',
-                    amount                   => financialrounding('amount', $advert->{account_currency}, $advert->{amount}),
-                    amount_display           => formatnumber('amount', $advert->{account_currency}, $advert->{amount}),
-                    min_order_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
-                    min_order_amount_display => formatnumber('amount', $advert->{account_currency}, $advert->{min_order_amount}),
-                    max_order_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount}),
-                    max_order_amount_display => formatnumber('amount', $advert->{account_currency}, $advert->{max_order_amount}),
-                    remaining_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{remaining}),
-                    remaining_amount_display => formatnumber('amount', $advert->{account_currency}, $advert->{remaining}),
-                    active_orders            => $advert->{active_orders},
-                    ($advert->{payment_method_details} and $advert->{payment_method_details}->%*)
-                    ? (payment_method_details => $advert->{payment_method_details})
-                    : ())
-                : ()
-            ),
             advertiser_details => {
                 id                    => $advert->{advertiser_id},
                 name                  => $advert->{advertiser_name},
-                total_completion_rate => defined $advert->{advertiser_completion}
-                ? sprintf("%.1f", $advert->{advertiser_completion} * 100)
+                total_completion_rate => defined $advert->{advertiser_completion} ? sprintf("%.1f", $advert->{advertiser_completion} * 100)
                 : undef,
                 $advert->{advertiser_show_name}
                 ? (
@@ -4256,6 +4236,44 @@ sub _advert_details {
                 sort map { $payment_method_defs->{$_}{display_name} }
                 grep     { exists $payment_method_defs->{$_} } $advert->{payment_method_names}->@*
             ];
+        }
+
+        if ($self->loginid eq $advert->{advertiser_loginid}) {
+            # only the advert owner can see these fields
+            $result->{payment_info}             = $advert->{payment_info} // '';
+            $result->{contact_info}             = $advert->{contact_info} // '';
+            $result->{amount}                   = financialrounding('amount', $advert->{account_currency}, $advert->{amount});
+            $result->{amount_display}           = formatnumber('amount', $advert->{account_currency}, $advert->{amount});
+            $result->{min_order_amount}         = financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount});
+            $result->{min_order_amount_display} = formatnumber('amount', $advert->{account_currency}, $advert->{min_order_amount});
+            $result->{max_order_amount}         = financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount});
+            $result->{max_order_amount_display} = formatnumber('amount', $advert->{account_currency}, $advert->{max_order_amount});
+            $result->{remaining_amount}         = financialrounding('amount', $advert->{account_currency}, $advert->{remaining});
+            $result->{remaining_amount_display} = formatnumber('amount', $advert->{account_currency}, $advert->{remaining});
+            $result->{active_orders}            = $advert->{active_orders};
+            $result->{payment_method_details}   = $advert->{payment_method_details}
+                if $advert->{payment_method_details} and $advert->{payment_method_details}->%*;
+
+            if (not $result->{is_visible}) {
+                my @reasons;
+                push @reasons, 'advert_inactive'  if not $advert->{is_active};
+                push @reasons, 'advert_max_limit' if $advert->{max_order_exceeded};
+                # advert_min_limit should only be returned for the exact reason of band minimum
+                push @reasons, 'advert_min_limit'
+                    if ($advert->{advertiser_band_min_balance} // 0) > $advert->{min_order_amount}
+                    and $advert->{max_order_amount_actual} < $advert->{advertiser_band_min_balance}
+                    and $advert->{max_order_amount_actual} > $advert->{min_order_amount};
+                push @reasons, 'advert_remaining'      if $advert->{remaining} < $advert->{min_order_amount};
+                push @reasons, 'advertiser_ads_paused' if not $advert->{advertiser_is_listed};
+                push @reasons, 'advertiser_approval'   if not $advert->{advertiser_is_approved};
+                push @reasons, 'advertiser_balance'
+                    if $advert->{type} eq 'sell' and $advert->{advertiser_available_balance} < $advert->{min_order_amount};
+                push @reasons, 'advertiser_daily_limit'
+                    if defined($advert->{advertiser_available_limit})
+                    and $advert->{advertiser_available_limit} < $advert->{min_order_amount};
+                push @reasons, 'advertiser_temp_ban' if $advert->{advertiser_temp_ban};
+                $result->{visibility_status} = \@reasons;
+            }
         }
 
         push @results, $result;

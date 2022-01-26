@@ -73,6 +73,7 @@ subtest 'updating all advert fields' => sub {
         is_active => 1
     );
     $ad_info->{is_active} = $ad_info->{is_visible} = 1;
+    delete $ad_info->{visibility_status};
     cmp_deeply($real_update, $ad_info, 'actual update returns all fields');
 
     cmp_deeply(

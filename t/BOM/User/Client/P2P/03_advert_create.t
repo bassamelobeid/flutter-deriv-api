@@ -71,7 +71,7 @@ my %advert_params = (
 
 # advert fields that should only be shown to the owner
 my @sensitive_fields =
-    qw(amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info payment_method_ids active_orders payment_method_details);
+    qw(amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info payment_method_ids active_orders payment_method_details visibility_status);
 
 subtest 'Creating advert from non-advertiser' => sub {
     my %params = %advert_params;
@@ -753,6 +753,7 @@ subtest 'Updating advert' => sub {
         is_active => 1
     );
     $ad_info->{is_active} = $ad_info->{is_visible} = 1;
+    delete $ad_info->{visibility_status};
     cmp_deeply($real_update, $ad_info, 'actual update returns all fields');
 };
 
@@ -858,11 +859,8 @@ subtest 'p2p_advert_info' => sub {
 };
 
 subtest 'is_visible flag and subscription event' => sub {
-    my $client        = BOM::Test::Helper::P2P::create_advertiser(balance => 1);
-    my $advertiser_id = $client->_p2p_advertiser_cached->{id};
 
-    undef $emitted_events;
-    my $advert = $client->p2p_advert_create(
+    my %ad_params = (
         type             => 'sell',
         amount           => 100,
         description      => 'test advert',
@@ -875,26 +873,49 @@ subtest 'is_visible flag and subscription event' => sub {
         contact_info     => 'x',
     );
 
+    my $client        = BOM::Test::Helper::P2P::create_advertiser(balance => 1);
+    my $advertiser_id = $client->_p2p_advertiser_cached->{id};
+
+    undef $emitted_events;
+    my $advert = $client->p2p_advert_create(%ad_params);
+
     cmp_deeply($emitted_events->{p2p_adverts_updated}, [{advertiser_id => $advertiser_id}], 'p2p_adverts_updated event emitted for advert create');
 
     cmp_ok $advert->{is_visible}, '==', 0, 'not visible due to low balance';
+    cmp_deeply $advert->{visibility_status}, ['advertiser_balance'], 'visibility_status contains advertiser_balance';
     BOM::Test::Helper::Client::top_up($client, $client->currency, 9);
-    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after top up';
+
+    $advert = $client->p2p_advert_info(id => $advert->{id});
+    cmp_ok $advert->{is_visible}, '==', 1, 'visible after top up';
+    ok !exists $advert->{visibility_status}, 'visibility_status absent for visible ad';
 
     $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET blocked_until=NOW() + INTERVAL '1 hour' WHERE id = $advertiser_id");
-    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 0, 'not visible due to temp block';
+    $advert = $client->p2p_advert_info(id => $advert->{id});
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible due to temp block';
+    cmp_deeply $advert->{visibility_status}, ['advertiser_temp_ban'], 'visibility_status contains advertiser_temp_ban';
     $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET blocked_until=NULL WHERE id = $advertiser_id");
     cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after temp block removed';
 
     $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_approved=FALSE WHERE id = $advertiser_id");
-    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 0, 'not visible when not approved';
+    $advert = $client->p2p_advert_info(id => $advert->{id});
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible when not approved';
+    cmp_deeply $advert->{visibility_status}, ['advertiser_approval'], 'visibility_status contains advertiser_approval';
     $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_approved=TRUE WHERE id = $advertiser_id");
     cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after approved';
 
     $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_listed=FALSE WHERE id = $advertiser_id");
-    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 0, 'not visible when not listed';
+    $advert = $client->p2p_advert_info(id => $advert->{id});
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible when not listed';
+    cmp_deeply $advert->{visibility_status}, ['advertiser_ads_paused'], 'visibility_status contains advertiser_ads_paused';
     $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_listed=TRUE WHERE id = $advertiser_id");
     cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after listed';
+
+    $config->limits->maximum_order(1);
+    $advert = $client->p2p_advert_info(id => $advert->{id});
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible when global order limit exceeded';
+    cmp_deeply $advert->{visibility_status}, ['advert_max_limit'], 'visibility_status contains advert_max_limit';
+    $config->limits->maximum_order(1000);
+    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after limit increased';
 
     my $client2 = BOM::Test::Helper::P2P::create_advertiser;
     $client2->p2p_advertiser_relations(add_blocked => [$advertiser_id]);
@@ -903,17 +924,79 @@ subtest 'is_visible flag and subscription event' => sub {
     cmp_ok $client2->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after unblocked';
 
     undef $emitted_events;
-    cmp_ok $client->p2p_advert_update(
+    $advert = $client->p2p_advert_update(
         id        => $advert->{id},
         is_active => 0
-    )->{is_visible}, '==', 0, 'not visible after deactivate';
+    );
 
     cmp_deeply($emitted_events->{p2p_adverts_updated}, [{advertiser_id => $advertiser_id}], 'p2p_adverts_updated event emitted for advert update');
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible after deactivate';
+    cmp_deeply $advert->{visibility_status}, ['advert_inactive'], 'visibility_status contains advert_inactive';
 
     cmp_ok $client->p2p_advert_update(
         id        => $advert->{id},
         is_active => 1
     )->{is_visible}, '==', 1, 'visible after activate';
+
+    $advert = $client->p2p_advert_update(
+        id               => $advert->{id},
+        remaining_amount => 0
+    );
+
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible after setting remaining to zero';
+    cmp_deeply $advert->{visibility_status}, ['advert_remaining'], 'visibility_status contains advert_remaining';
+
+    cmp_ok $client->p2p_advert_update(
+        id               => $advert->{id},
+        remaining_amount => 100
+    )->{is_visible}, '==', 1, 'visible after increasing remaining';
+
+    my $client3 = BOM::Test::Helper::P2P::create_advertiser(
+        balance        => 100,
+        currency       => 'USD',
+        client_details => {residence => 'zw'},
+    );
+    $advertiser_id = $client3->p2p_advertiser_info->{id};
+
+    $client3->db->dbic->dbh->do(
+        "INSERT INTO p2p.p2p_country_trade_band (country, trade_band, currency, max_daily_buy, max_daily_sell, min_balance) 
+        VALUES ('zw','low','USD',100,100,11), ('zw','medium','USD',100,100,NULL)"
+    );
+
+    $advert = $client3->p2p_advert_create(%ad_params);
+
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible when balance below band min';
+    cmp_deeply $advert->{visibility_status}, ['advert_min_limit'], 'visibility_status contains advert_min_limit';
+    $client3->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET trade_band = 'medium' WHERE id = ?", undef, $advertiser_id);
+    cmp_ok $client3->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after changing band';
+
+    $client3->db->dbic->dbh->do('INSERT INTO p2p.p2p_advertiser_totals_daily (advertiser_id, day, sell_amount) VALUES (?, NOW(), 100)',
+        undef, $advertiser_id);
+    $advert = $client3->p2p_advert_info(id => $advert->{id});
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible when sell limit exceeded';
+    cmp_deeply $advert->{visibility_status}, ['advertiser_daily_limit'], 'visibility_status contains advertiser_daily_limit';
+
+    $client3->db->dbic->dbh->do('DELETE FROM p2p.p2p_advertiser_totals_daily');
+    cmp_ok $client3->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after turnover reset';
+
+    $client3->db->dbic->dbh->do('INSERT INTO p2p.p2p_advertiser_totals_daily (advertiser_id, day, buy_amount) VALUES (?, NOW(), 100)',
+        undef, $advertiser_id);
+
+    $advert = $client3->p2p_advert_create(
+        type             => 'buy',
+        amount           => 100,
+        min_order_amount => 1,
+        max_order_amount => 10,
+        rate             => 1,
+        payment_method   => 'bank_transfer',
+    );
+
+    $advert = $client3->p2p_advert_info(id => $advert->{id});
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible when buy limit exceeded';
+    cmp_deeply $advert->{visibility_status}, ['advertiser_daily_limit'], 'visibility_status contains advertiser_daily_limit';
+
+    $client3->db->dbic->dbh->do('DELETE FROM p2p.p2p_advertiser_totals_daily');
+    cmp_ok $client3->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after turnover reset';
 };
 
 subtest 'subscriptions' => sub {
