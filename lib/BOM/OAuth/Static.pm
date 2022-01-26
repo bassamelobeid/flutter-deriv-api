@@ -29,6 +29,7 @@ my $config = {
         TEMP_DISABLED        => "Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.",
         DISABLED             => "This account has been disabled.",
         NO_USER_IDENTITY     => "Failed to get user identity.",
+        NEW_SIGNIN_SUBJECT   => "Security alert: New sign-in activity",
         DEVICE_ANDROID       => "android",
         DEVICE_IPHONE        => "iphone",
         BROWSER_CHROME       => "Chrome",
