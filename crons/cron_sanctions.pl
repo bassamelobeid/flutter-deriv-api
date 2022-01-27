@@ -14,6 +14,7 @@ use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Config::Redis;
 use BOM::Platform::Email qw(send_email);
+use BOM::Config::Runtime;
 use Log::Any qw($log);
 use Log::Any::Adapter qw(DERIV);
 
@@ -39,6 +40,7 @@ Log::Any::Adapter->import(qw(Stdout), log_level => $verbose ? 'info' : 'warning'
 my $sanctions = Data::Validate::Sanctions->new(
     sanction_file => BOM::Config::sanction_file(),
     eu_token      => BOM::Config::third_party()->{eu_sanctions}->{token},
+    hmt_url       => BOM::Config::Runtime->instance->app_config->compliance->sanctions->hmt_consolidated_url,
 );
 
 if ($update) {
@@ -46,7 +48,7 @@ if ($update) {
     exit 0;
 }
 
-my $reports_path = shift or die "Provide path for storing files as an argument";
+my $reports_path = shift or die "Please provide a path for storing the sanction report";
 
 # The broker codes are ordered for two reasons:
 # 1. Regulated broker codes (EU) has a higher priority
