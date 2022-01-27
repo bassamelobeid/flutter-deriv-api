@@ -982,6 +982,15 @@ compliance:
           isa: Num
           global: 1
           default: 10000
+    sanctions:
+      description: "Sanctions dynamic settings"
+      isa: section
+      contains:
+        hmt_consolidated_url:
+          description: "The url to read the UK consolidated sanctions CSV file from. It will override the hardcoded value."
+          isa: Str
+          global: 1
+          default: ""
 system:
   description: "Various parameters determining core application functionality"
   isa: section
