@@ -2,8 +2,6 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "P2P Advertiser Payment Methods (request)",
     "description": "Manage or list P2P advertiser payment methods.",
-    "beta": 1,
-    "hidden": 1,
     "type": "object",
     "auth_required": 1,
     "auth_scopes": [
