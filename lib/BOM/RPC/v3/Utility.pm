@@ -621,6 +621,14 @@ sub error_map {
         'DXNoAccount'               => localize('You do not have a Deriv X account on the provided server.'),
         'DXTokenGenerationFailed'   => localize('Token generation failed. Please try later.'),
         'OpenP2POrders'             => localize('You cannot change account currency while you have open P2P orders.'),
+
+        # Transfer between accounts
+        TransferCurrencyMismatch => localize('Currency provided is different from account currency.'),
+        TransferSetCurrency      => localize('Please set the currency for your existing account [_1].'),
+        DifferentFiatCurrencies  => localize('Account transfers are not available for accounts with different currencies.'),
+        ExchangeRatesUnavailable => localize('Sorry, transfers are currently unavailable. Please try again later.'),
+        TransferBlocked          => localize("Transfers are not allowed for these accounts."),
+
     };
 }
 
@@ -900,7 +908,7 @@ Returns an error structured by C<create_error>
 =cut
 
 sub rule_engine_error {
-    my ($error, $orverride_code) = @_;
+    my ($error, $orverride_code, %options) = @_;
 
     # For scalar errors (without error code, etc) let it be caught and logged by default RPC error handling.
     die $error unless (ref $error and ($error->{code} // $error->{error_code}));    # refactor this later to accept error_code only.
@@ -914,7 +922,8 @@ sub rule_engine_error {
     return create_error_by_code(
         $error_code, %$error,
         message_to_client => $message,
-        override_code     => $orverride_code
+        %options,
+        override_code => $orverride_code,
     );
 }
 

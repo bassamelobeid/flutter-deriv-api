@@ -1510,6 +1510,9 @@ rpc transfer_between_accounts => sub {
             ]};
     }
 
+    my $err = validate_amount($amount, $currency);
+    return _transfer_between_accounts_error($err) if $err;
+
     my ($from_currency, $to_currency) =
         ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
     $res = _validate_transfer_between_accounts(
@@ -1829,63 +1832,51 @@ sub _validate_transfer_between_accounts {
     # error out if from account has no currency set
     return _transfer_between_accounts_error(localize('Please deposit to your account.')) unless $from_currency;
 
-    # error if currency provided is not same as from account default currency
-    return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
-        if ($from_currency ne $currency);
+    my $rule_engine = BOM::Rules::Engine->new(client => [$current_client, $client_from // (), $client_to // ()]);
+    try {
+        $rule_engine->verify_action(
+            'transfer_between_accounts_part3',
+            loginid           => $current_client->loginid,
+            loginid_from      => $client_from->loginid,
+            loginid_to        => $client_to->loginid,
+            account_type_from => $client_from->account_type,
+            account_type_to   => $client_to->account_type,
+            amount            => $args->{amount},
+            currency          => $args->{currency},
+        );
+    } catch ($e) {
+        # We change some error codes to get the desired error messages for specific errors.
+        my %map_error_code = (
+            CurrencyMismatch           => 'TransferCurrencyMismatch',
+            SetExistingAccountCurrency => 'TransferSetCurrency'
+        );
+        if (ref $e eq 'HASH' && $e->{error_code}) {
+            $e->{error_code} = $map_error_code{$e->{error_code}} // $e->{error_code};
 
-    # error out if to account has no currency set, we should
-    # not set it from currency else client will be able to
-    # set same crypto for multiple account
-    return _transfer_between_accounts_error(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
-        unless $to_currency;
+            if ($e->{error_code} eq 'ExchangeRatesUnavailable') {
+                stats_event(
+                    'Exchange Rates Issue - No offering to clients',
+                    'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
+                    {
+                        alert_type => 'warning',
+                        tags       => ['currency:' . $e->{params} . '_USD']});
+            }
+        }
 
+        return BOM::RPC::v3::Utility::rule_engine_error($e, 'TransferBetweenAccountsError');
+    }
+
+    my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
+    # These rule are checking app settings; so they should be excluded from the rule engine
     # we don't allow transfer between these two currencies
     if ($from_currency ne $to_currency) {
         my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
         return _transfer_between_accounts_error(localize('Account transfers are not available between [_1] and [_2]', $from_currency, $to_currency))
             if first { $_ eq $from_currency or $_ eq $to_currency } @$disabled_for_transfer_currencies;
     }
-
-    my $err = validate_amount($amount, $currency);
-    return _transfer_between_accounts_error($err) if $err;
-
-    my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
-
-    # we don't allow fiat to fiat if they are different currency
-    # this only happens when there is an internal transfer between MLT to MF, we only allow same currency transfer
-    return _transfer_between_accounts_error(localize('Account transfers are not available for accounts with different currencies.'))
-        if (($from_currency_type eq $to_currency_type)
-        and ($from_currency_type eq 'fiat')
-        and ($currency ne $to_currency));
-
     return _transfer_between_accounts_error(localize('Transfers between accounts are currently unavailable. Please try again later.'))
         if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
         and (($from_currency_type // '') ne ($to_currency_type // ''));
-
-    # check for exchange rates offer for the cryptocurrencies
-    unless ($from_currency eq $to_currency) {
-        if ($from_currency_type eq 'crypto' && !offer_to_clients($from_currency)) {
-            stats_event(
-                'Exchange Rates Issue - No offering to clients',
-                'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
-                {
-                    alert_type => 'warning',
-                    tags       => ['currency:' . $from_currency . '_USD']});
-            return _transfer_between_accounts_error(localize('Sorry, transfers are currently unavailable. Please try again later.'));
-        }
-        if ($to_currency_type eq 'crypto' && !offer_to_clients($to_currency)) {
-            stats_event(
-                'Exchange Rates Issue - No offering to clients',
-                'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
-                {
-                    alert_type => 'warning',
-                    tags       => ['currency:' . $to_currency . '_USD']});
-            return _transfer_between_accounts_error(localize('Sorry, transfers are currently unavailable. Please try again later.'));
-        }
-    }
-
-    return _transfer_between_accounts_error(localize("Transfers are not allowed for these accounts."))
-        if (($client_from->status->transfers_blocked || $client_to->status->transfers_blocked) && $from_currency_type ne $to_currency_type);
 
     # check for internal transactions number limits
     my $daily_transfer_limit = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;

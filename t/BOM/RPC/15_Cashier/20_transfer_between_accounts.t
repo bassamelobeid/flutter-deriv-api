@@ -195,8 +195,8 @@ subtest 'call params validation' => sub {
     $params->{args}->{amount}   = 1;
     $params->{args}->{currency} = 'XXX';
     $result                     = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code},              'TransferBetweenAccountsError',   'Correct error code for invalid currency';
-    is $result->{error}->{message_to_client}, 'Please provide valid currency.', 'Correct error message for invalid amount';
+    is $result->{error}->{code},              'TransferBetweenAccountsError', 'Correct error code for invalid currency';
+    is $result->{error}->{message_to_client}, 'Invalid currency.',            'Correct error message for invalid amount';
 
     $params->{token_type}       = 'api_token';
     $params->{args}->{currency} = 'EUR';
