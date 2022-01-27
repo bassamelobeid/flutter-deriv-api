@@ -161,20 +161,22 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive_negative.
 
 # callput spread
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_offerings_validation_error.json',
-    '100', 'CALLSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150';
+    '100', 'CALLSPREAD', 'frxUSDJPY', '15', 'd', 'tight';
 
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_offerings_validation_error.json',
-    '100', 'PUTSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150';
+    '100', 'CALLSPREAD', 'R_100', '15', 'd', 'middle';
 
-test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
-    '100', 'CALLSPREAD', 'R_100', '2', 'h', '+0.01', '-0.01',
-    'Win up to USD 100.00 if Volatility 100 Index\'s exit tick is between entry spot minus 0.01 and entry spot plus 0.01 at 2 hours after contract start time.',
-    '50.29', '50.29', '65258.19';
+test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_offerings_validation_error.json',
+    '100', 'CALLSPREAD', 'frxUSDJPY', '15', 'd', 'wide';
 
-test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
-    '100', 'PUTSPREAD', 'R_100', '2', 'h', '+0.01', '-0.01',
-    'Win up to USD 100.00 if Volatility 100 Index\'s exit tick is between entry spot plus 0.01 and entry spot minus 0.01 at 2 hours after contract start time.',
-    '50.91', '50.91', '65258.19';
+test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_offerings_validation_error.json',
+    '100', 'PUTSPREAD', 'frxUSDJPY', '15', 'd', 'tight';
+
+test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_offerings_validation_error.json',
+    '100', 'PUTSPREAD', 'R_100', '15', 'd', 'middle';
+
+test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_offerings_validation_error.json',
+    '100', 'PUTSPREAD', 'frxUSDJPY', '15', 'd', 'wide';
 
 # multiplier
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'payout', '10',

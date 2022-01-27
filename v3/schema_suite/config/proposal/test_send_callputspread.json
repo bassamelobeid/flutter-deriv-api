@@ -7,6 +7,5 @@
   "symbol": "[_3]",
   "duration": "[_4]",
   "duration_unit": "[_5]",
-  "barrier": "[_6]",
-  "barrier2": "[_7]"
+  "barrier_range": "[_6]"
 }
