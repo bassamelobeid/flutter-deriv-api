@@ -38,9 +38,10 @@ use constant {
     MULTIPLIER_CONFIG => 'multiplier_config',
 };
 
-my $default_multiplier_config = LoadFile('/home/git/regentmarkets/bom-config/share/default_multiplier_config.yml');
-my $dividend_scheduler_yml    = LoadFile('/home/git/regentmarkets/bom-config/share/dividend_scheduler.yml');
-my $mt5_symbols_mapping       = LoadFile('/home/git/regentmarkets/bom-config/share/mt5-symbols.yml');
+my $default_multiplier_config     = LoadFile('/home/git/regentmarkets/bom-config/share/default_multiplier_config.yml');
+my $dividend_scheduler_yml        = LoadFile('/home/git/regentmarkets/bom-config/share/dividend_scheduler.yml');
+my $mt5_symbols_mapping           = LoadFile('/home/git/regentmarkets/bom-config/share/mt5-symbols.yml');
+my $default_barrier_multipler_yml = LoadFile('/home/git/regentmarkets/bom-config/share/default_barrier_multiplier.yml');
 
 has [qw(chronicle_reader chronicle_writer)] => (is => 'ro');
 
@@ -67,6 +68,8 @@ sub save_config {
         $config = $self->_process_commission_config($args);
     } elsif ($config_type =~ /multiplier_config/) {
         $config = $self->_process_multiplier_config($args);
+    } elsif ($config_type =~ /callputspread_barrier_multiplier/) {
+        $config = $args;
     } elsif ($config_type =~ /deal_cancellation/) {
         $config = $args;
     } else {
@@ -355,6 +358,18 @@ get_dividend_scheduler_yml will return the symbols that will be used for dividen
 
 sub get_dividend_scheduler_yml {
     return $dividend_scheduler_yml;
+}
+
+=head2 default_barrier_multipler_yml
+
+default_barrier_multipler_yml will return the default barrier multiplier that will be used for barrier calculation
+
+->default_barrier_multipler_yml
+
+=cut
+
+sub default_barrier_multipler_yml {
+    return $default_barrier_multipler_yml;
 }
 
 no Moose;
