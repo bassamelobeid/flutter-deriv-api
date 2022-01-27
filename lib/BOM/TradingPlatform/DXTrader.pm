@@ -811,6 +811,8 @@ sub call_api {
         return $resp;
     } catch ($e) {
         $self->handle_api_error($resp);
+    } finally {
+        delete $dxapi_log->context->{request};
     }
 }
 
