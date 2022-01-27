@@ -459,12 +459,34 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
 
     <tr>
-        <td class = 'label'><b style='color: blue;'>ONFIDO</b></td>
+        <td style="vertical-align: top;" class='label'><b style='color: blue;'>ONFIDO</b></td>
         <td>:
             [% IF onfido_check_result %]
                 <a href="[% onfido_check_url %]" target="_blank">
                     [% onfido_check_result FILTER upper %]
                 </a>
+
+                [% IF onfido_reported_properties %]
+                    <table width="100%" class='collapsed hover alternate'>
+                        <thead>
+                            <tr>
+                                <th>&nbsp;</th>
+                                <th>Profile</th>
+                                <th>Reported</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            [% FOREACH field IN [ 'first_name', 'last_name', 'date_of_birth' ] %]
+                                <tr>
+                                    <td>[% field.replace('_', ' ').ucfirst %]</td>
+                                    <td>[% client.$field %]</td>
+                                    <td>[% onfido_reported_properties.item(field) || 'Not reported' %]</td>
+                                </tr>
+                            [% END %]
+                        </tbody>
+                    </table>
+                [% END %]
+
             [% ELSE %]
                 <strong>
                         Check not performed

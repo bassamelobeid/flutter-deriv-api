@@ -211,7 +211,7 @@ my $display_transactions = sub {
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
 
         my $formatted_usd_amount = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
-        $trx->{usd_amount}       = commas($formatted_usd_amount);
+        $trx->{usd_amount} = commas($formatted_usd_amount);
 
         $trx->{statement_link} = request()->url_for(
             'backoffice/f_manager_history.cgi',
