@@ -64,7 +64,11 @@ subtest 'turnover' => sub {
     chomp $csv[0];
     my @header_row = split ',', $csv[0];
 
-    is_deeply([sort @header_row], [qw/Date Loginid PayoutPrice Probability ReferenceId Stake /], 'first row is header row - got correct header');
+    is_deeply(
+        [sort @header_row],
+        [qw/Date ExchangeRate Loginid PayoutPrice Probability ReferenceId Stake /],
+        'first row is header row - got correct header'
+    );
 
     my @row = split ',', $csv[1];
     is $row[0], '2017-09-01', 'got correct transaction time';
@@ -129,7 +133,11 @@ subtest "turnover $broker_code excluded" => sub {
     chomp $csv[0];
 
     my @header_row = split ',', $csv[0];
-    is_deeply([sort @header_row], [qw/Date Loginid PayoutPrice Probability ReferenceId Stake /], 'first row is header row - got correct header');
+    is_deeply(
+        [sort @header_row],
+        [qw/Date ExchangeRate Loginid PayoutPrice Probability ReferenceId Stake /],
+        'first row is header row - got correct header'
+    );
 
     my @loginids = ();
     foreach my $row (@csv) {

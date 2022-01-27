@@ -31,7 +31,7 @@ use Format::Util::Numbers qw(formatnumber);
 use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use constant HEADERS => qw(
-    date client_loginid company_profit_loss deposits turnover_ticktrade intraday_turnover other_turnover first_funded_date withdrawals first_funded_amount
+    date client_loginid company_profit_loss deposits turnover_ticktrade intraday_turnover other_turnover first_funded_date withdrawals first_funded_amount exchange_rate
 );
 
 has '+include_headers' => (
@@ -100,6 +100,7 @@ sub activity {
             push @output_fields, $first_funded_date;
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{'withdrawals'});
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * ($activity->{$loginid}->{'first_funded_amount'} // 0));
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency});
         }
 
         $csv->combine(@output_fields);

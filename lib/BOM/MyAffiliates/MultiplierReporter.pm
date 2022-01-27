@@ -34,7 +34,7 @@ use BOM::Config::Chronicle;
 use BOM::User::Client;
 
 use constant HEADERS => qw(
-    date client_loginid trade_commission commission
+    date client_loginid trade_commission commission exchange_rate
 );
 
 has '+include_headers' => (
@@ -55,12 +55,29 @@ sub activity {
 
     my $result = $self->computation();
 
-    my @output = ();
+    my $apps_by_brand = $self->get_apps_by_brand();
+
+    my $activity = $self->database_mapper()->get_clients_activity({
+        date              => $when->date_yyyymmdd,
+        only_authenticate => 'false',
+        broker_code       => undef,
+        include_apps      => $apps_by_brand->{include_apps},
+        exclude_apps      => $apps_by_brand->{exclude_apps},
+    });
+
+    my @output          = ();
+    my %conversion_hash = ();
 
     push @output, $self->format_data($self->headers_data()) if ($self->include_headers and keys %{$result});
 
     foreach my $loginid (sort keys %{$result}) {
         next if $self->is_broker_code_excluded($loginid);
+
+        my $currency = $activity->{$loginid}->{currency};
+
+        # this is for optimization else we would need to call in_usd for each record
+        # this only calls if currency is not in hash
+        $conversion_hash{$currency} = in_usd(1, $currency) unless exists $conversion_hash{$currency};
 
         my $csv           = Text::CSV->new;
         my @output_fields = (
@@ -68,6 +85,14 @@ sub activity {
             $self->prefix_field($loginid),
             formatnumber('amount', 'USD', $result->{$loginid}{trade_commission}),
             formatnumber('amount', 'USD', $result->{$loginid}{commission}));
+
+        if ($currency eq 'USD') {
+            push @output_fields, formatnumber('amount', 'USD', 1);
+        } else {
+            # we need to convert other currencies to USD as required
+            # by myaffiliates system
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency});
+        }
 
         $csv->combine(@output_fields);
         push @output, $self->format_data($csv->string);
