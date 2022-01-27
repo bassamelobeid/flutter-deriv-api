@@ -333,6 +333,13 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
             </div>
+            <div class="card__content">
+                <h3>Callputspread Barrier Multiplier</h3>
+                <form action="~
+        . request()->url_for('backoffice/quant/callputspread_barrier_multiplier/index_callputspread_barrier_multiplier.cgi') . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
         </div>
     </div>~;
 }

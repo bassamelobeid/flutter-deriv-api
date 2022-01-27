@@ -146,6 +146,9 @@ my $permissions = {
     'p2p_payment_method_manage.cgi'                                           => ['IT'],             # additional check in page for Quants
     'payment_agents_dynamic_settings.cgi'                                     => ['IT'],
     'dynamic_settings_audit_trail.cgi'                                        => ['ALL'],            # will have its own validation per setting
+
+    'quant/callputspread_barrier_multiplier/index_callputspread_barrier_multiplier.cgi'      => ['Quants'],
+    'quant/callputspread_barrier_multiplier/callputspread_barrier_multiplier_controller.cgi' => ['Quants'],
 };
 
 sub init {
