@@ -288,14 +288,13 @@ subtest 'test lookbacks slippage', sub {
 subtest 'test callputspread slippage' => sub {
     lives_ok {
         my $contract = produce_contract({
-            underlying   => 'R_100',
-            bet_type     => 'CALLSPREAD',
-            currency     => 'USD',
-            payout       => 100,
-            duration     => '2m',
-            current_tick => $tick,
-            high_barrier => 'S10P',
-            low_barrier  => 'S-10P',
+            underlying    => 'R_100',
+            bet_type      => 'CALLSPREAD',
+            currency      => 'USD',
+            payout        => 100,
+            duration      => '2m',
+            current_tick  => $tick,
+            barrier_range => 'middle',
         });
 
         my $txn = BOM::Transaction->new({
@@ -347,7 +346,7 @@ subtest 'test callputspread slippage' => sub {
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
         is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract price has changed from 50.26 USD to 50.57 USD.';
+            'The underlying market has moved too much since you priced the contract. The contract price has changed from 50.29 USD to 50.60 USD.';
 
         $txn = BOM::Transaction->new({
             client        => $cl,
@@ -368,12 +367,12 @@ subtest 'test callputspread slippage' => sub {
 
         subtest 'case 2 fmb row', sub {
             plan tests => 1;
-            is $fmb->{buy_price} + 0, $contract->ask_price, 'buy_price';
+            is $fmb->{buy_price}, $contract->ask_price, 'buy_price';
         };
 
         subtest 'case 2 qv row', sub {
             plan tests => 1;
-            is $qv1->{trade} + 0, $contract->ask_price, 'trade';
+            is $qv1->{trade}, $contract->ask_price, 'trade';
         };
     }
     'survived';

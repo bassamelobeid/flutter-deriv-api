@@ -72,14 +72,13 @@ isnt + ($acc_usd = $cl->account), 'USD', 'got USD account';
 
 subtest 'buy CALLSPREAD R_100' => sub {
     my $contract = produce_contract({
-        underlying   => 'R_100',
-        bet_type     => 'CALLSPREAD',
-        currency     => 'USD',
-        payout       => 100,
-        duration     => '2m',
-        current_tick => $tick_r100,
-        high_barrier => 'S10P',
-        low_barrier  => 'S-10P',
+        underlying    => 'R_100',
+        bet_type      => 'CALLSPREAD',
+        currency      => 'USD',
+        payout        => 100,
+        duration      => '2m',
+        current_tick  => $tick_r100,
+        barrier_range => 'middle',
     });
 
     my $txn = BOM::Transaction->new({
@@ -154,25 +153,24 @@ subtest 'buy CALLSPREAD R_100' => sub {
     # note explain $chld;
 
     subtest 'chld row', sub {
-        is $chld->{absolute_high_barrier},   undef, 'absolute_high_barrier';
-        is $chld->{absolute_low_barrier},    undef, 'absolute_low_barrier';
+        is $chld->{absolute_high_barrier},   100.52, 'absolute_high_barrier';
+        is $chld->{absolute_low_barrier},    99.48,  'absolute_low_barrier';
         is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{prediction},              undef,   'prediction';
-        is $chld->{relative_high_barrier},   'S10P',  'relative_high_barrier';
-        is $chld->{relative_low_barrier},    'S-10P', 'relative_low_barrier';
+        is $chld->{prediction},              undef, 'prediction';
+        is $chld->{relative_high_barrier},   undef, 'relative_high_barrier';
+        is $chld->{relative_low_barrier},    undef, 'relative_low_barrier';
     };
 };
 
 subtest 'buy PUTSPREAD R_100' => sub {
     my $contract = produce_contract({
-        underlying   => 'R_100',
-        bet_type     => 'PUTSPREAD',
-        currency     => 'USD',
-        payout       => 100,
-        duration     => '2m',
-        current_tick => $tick_r100,
-        high_barrier => 100,
-        low_barrier  => 99,
+        underlying    => 'R_100',
+        bet_type      => 'PUTSPREAD',
+        currency      => 'USD',
+        payout        => 100,
+        duration      => '2m',
+        current_tick  => $tick_r100,
+        barrier_range => 'wide',
     });
 
     my $txn = BOM::Transaction->new({
@@ -246,8 +244,8 @@ subtest 'buy PUTSPREAD R_100' => sub {
     # note explain $chld;
 
     subtest 'chld row', sub {
-        is $chld->{absolute_high_barrier},   100, 'absolute_high_barrier';
-        is $chld->{absolute_low_barrier},    99,  'absolute_low_barrier';
+        is $chld->{absolute_high_barrier},   105.23, 'absolute_high_barrier';
+        is $chld->{absolute_low_barrier},    94.77,  'absolute_low_barrier';
         is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
         is $chld->{prediction},              undef, 'prediction';
         is $chld->{relative_high_barrier},   undef, 'relative_high_barrier';
@@ -258,14 +256,13 @@ subtest 'buy PUTSPREAD R_100' => sub {
 
 subtest 'buy CALLSPREAD frxGBPUSD' => sub {
     my $contract = produce_contract({
-        underlying   => 'frxGBPUSD',
-        bet_type     => 'CALLSPREAD',
-        currency     => 'USD',
-        payout       => 100,
-        duration     => '3m',
-        current_tick => $tick_r100,
-        high_barrier => 'S10P',
-        low_barrier  => 'S-10P',
+        underlying    => 'frxGBPUSD',
+        bet_type      => 'CALLSPREAD',
+        currency      => 'USD',
+        payout        => 100,
+        duration      => '3m',
+        current_tick  => $tick_r100,
+        barrier_range => 'tight',
     });
 
     my $txn = BOM::Transaction->new({
@@ -340,25 +337,24 @@ subtest 'buy CALLSPREAD frxGBPUSD' => sub {
     # note explain $chld;
 
     subtest 'chld row', sub {
-        is $chld->{absolute_high_barrier},   undef, 'absolute_high_barrier';
-        is $chld->{absolute_low_barrier},    undef, 'absolute_low_barrier';
+        is $chld->{absolute_high_barrier},   100.00001, 'absolute_high_barrier';
+        is $chld->{absolute_low_barrier},    99.99999,  'absolute_low_barrier';
         is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{prediction},              undef,   'prediction';
-        is $chld->{relative_high_barrier},   'S10P',  'relative_high_barrier';
-        is $chld->{relative_low_barrier},    'S-10P', 'relative_low_barrier';
+        is $chld->{prediction},              undef, 'prediction';
+        is $chld->{relative_high_barrier},   undef, 'relative_high_barrier';
+        is $chld->{relative_low_barrier},    undef, 'relative_low_barrier';
     };
 };
 
 subtest 'buy PUTSPREAD frxGBPUSD' => sub {
     my $contract = produce_contract({
-        underlying   => 'frxGBPUSD',
-        bet_type     => 'PUTSPREAD',
-        currency     => 'USD',
-        payout       => 100,
-        duration     => '3m',
-        current_tick => $tick_r100,
-        high_barrier => 100,
-        low_barrier  => 99,
+        underlying    => 'frxGBPUSD',
+        bet_type      => 'PUTSPREAD',
+        currency      => 'USD',
+        payout        => 100,
+        duration      => '3m',
+        current_tick  => $tick_r100,
+        barrier_range => 'tight',
     });
 
     my $txn = BOM::Transaction->new({
@@ -432,8 +428,8 @@ subtest 'buy PUTSPREAD frxGBPUSD' => sub {
     # note explain $chld;
 
     subtest 'chld row', sub {
-        is $chld->{absolute_high_barrier},   100, 'absolute_high_barrier';
-        is $chld->{absolute_low_barrier},    99,  'absolute_low_barrier';
+        is $chld->{absolute_high_barrier},   100.00001, 'absolute_high_barrier';
+        is $chld->{absolute_low_barrier},    99.99999,  'absolute_low_barrier';
         is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
         is $chld->{prediction},              undef, 'prediction';
         is $chld->{relative_high_barrier},   undef, 'relative_high_barrier';
@@ -444,21 +440,13 @@ subtest 'buy PUTSPREAD frxGBPUSD' => sub {
 
 subtest 'offerings' => sub {
     my $args = {
-        bet_type     => 'PUTSPREAD',
-        currency     => 'USD',
-        payout       => 100,
-        high_barrier => 100,
-        low_barrier  => 99,
+        bet_type      => 'PUTSPREAD',
+        currency      => 'USD',
+        payout        => 100,
+        barrier_range => 'wide',
     };
     my $invalid_duration = 'Intraday duration not acceptable';
-    my $invalid_category = 'Invalid contract category';
-    foreach my $data ((
-            ['R_100',     '15s',   1],
-            ['R_100',     '14s',   0, $invalid_duration],
-            ['frxUSDJPY', '1m59s', 0, $invalid_duration],
-            ['OTC_AEX',   '1d',    0, $invalid_category],
-            ['frxXAGUSD', '1d',    0, $invalid_category]))
-    {
+    foreach my $data ((['R_100', '15s', 1], ['R_100', '14s', 0, $invalid_duration], ['frxUSDJPY', '1m59s', 0, $invalid_duration],)) {
         $args->{underlying}   = $data->[0];
         $args->{duration}     = $data->[1];
         $args->{current_tick} = $tick_r100;    # just a fake tick
@@ -482,60 +470,6 @@ subtest 'offerings' => sub {
             ok $error, 'invalid buy';
             is $error->{'-type'}, 'InvalidOfferings', 'InvalidOfferings';
             is $error->{'-mesg'}, $data->[3], $data->[3];
-        }
-    }
-};
-
-$mock_contract->unmock('is_valid_to_buy');
-
-subtest 'invalid to buy' => sub {
-    my $args = {
-        bet_type => 'PUTSPREAD',
-        currency => 'USD',
-        payout   => 100,
-    };
-
-    my $frx_error;
-    if ($now->hour >= 21) {
-        $frx_error = 'blackout period';
-    } elsif (!$trading_calendar->is_open($exchange)) {
-        $frx_error = 'underlying is closed at start';
-    } else {
-        $frx_error = 'Barrier too far from spot';
-    }
-
-    my $symmetrical_barrier_error = 'High and low barriers is not symmetrical';
-    foreach my $data ((
-            ['frxUSDJPY', '3m', 0, 'S-401P', 'S401P', 'InvalidtoBuy', $frx_error],
-            ['R_100',     '3m', 0, 'S-11P',  'S10P',  'InvalidtoBuy', $symmetrical_barrier_error],
-        ))
-    {
-        $args->{underlying}   = $data->[0];
-        $args->{duration}     = $data->[1];
-        $args->{low_barrier}  = $data->[3];
-        $args->{high_barrier} = $data->[4];
-        $args->{current_tick} = $tick_r100;    # just a fake tick
-
-        my $contract = produce_contract($args);
-        my $txn      = BOM::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            price         => 50,
-            payout        => $contract->payout,
-            amount_type   => 'payout',
-            purchase_date => $contract->date_start,
-        });
-        delete $args->{current_tick};
-        note('attempting to buy ' . JSON::MaybeXS->new->encode($args));
-        my $error = $txn->buy;
-
-        if ($data->[2]) {
-            ok !$error, 'no error';
-        } else {
-            ok $error, 'invalid buy';
-            is $error->{'-type'}, $data->[5], 'InvalidOfferings';
-            like $error->{'-mesg'}, qr/$data->[6]/, $data->[6];
-
         }
     }
 };
