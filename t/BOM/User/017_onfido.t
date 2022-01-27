@@ -783,6 +783,22 @@ subtest 'get consider reasons' => sub {
                     first_name => 'husky',
                     last_name  => 'dusky',
                 },
+            },
+            {
+                check => {
+                    id => 'test',
+                },
+                properties => {
+                    first_name    => 'husky',
+                    last_name     => 'dusky',
+                    other         => 'dusty',
+                    date_of_birth => '1999-10-10'
+                },
+                reported => {
+                    first_name    => 'husky',
+                    last_name     => 'dusky',
+                    date_of_birth => '1999-10-10'
+                },
             }];
 
         $onfido_mock->mock(

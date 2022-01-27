@@ -719,7 +719,7 @@ sub reported_properties {
 
     my ($report)   = grep { $_->{api_name} eq 'document' } values get_all_onfido_reports($client->binary_user_id, $check_id)->%*;
     my $properties = decode_json_utf8($report->{properties} // '{}');
-    my $fields     = [qw/first_name last_name/];
+    my $fields     = [qw/first_name last_name date_of_birth/];
 
     return +{map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } $fields->@*};
 }
