@@ -21,6 +21,8 @@ use BOM::Config::CurrencyConfig;
 use Format::Util::Numbers qw(formatnumber financialrounding);
 use Syntax::Keyword::Try;
 use List::Util qw/any/;
+use LandingCompany::Registry;
+use ExchangeRates::CurrencyConverter qw/offer_to_clients/;
 
 rule 'transfers.currency_should_match' => {
     description => "The currency of the account given should match the currency param when defined",
@@ -119,5 +121,92 @@ rule 'transfers.experimental_currency_email_whitelisted' => {
         return 1;
     },
 };
+
+rule 'transfers.no_different_fiat_currencies' => {
+    description => "Transfer between accounts with different fiat currencies is not permitted (fiat currencies should be the same).",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my %currencies = _get_currency_info($context, $args);
+
+        $self->fail('DifferentFiatCurrencies')
+            if $currencies{from}->{type} eq 'fiat'
+            && $currencies{to}->{type} eq 'fiat'
+            && $currencies{from}->{code} ne $currencies{to}->{code};
+
+        return 1;
+    },
+};
+
+rule 'transfers.crypto_exchange_rates_availability' => {
+    description => "Exchange rates should be available when transferring to or from crypto.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my %currencies = _get_currency_info($context, $args);
+
+        # no exchange rate are needed for same-currency transfers
+        return 1 if $currencies{from}->{code} eq $currencies{to}->{code};
+
+        for (qw/from to/) {
+            next if $currencies{$_}->{type} ne 'crypto';
+
+            my $currency = $currencies{$_}->{code};
+            $self->fail('ExchangeRatesUnavailable', params => $currency) unless ExchangeRates::CurrencyConverter::offer_to_clients($currency);
+        }
+
+        return 1;
+    },
+};
+
+rule 'transfers.clients_are_not_transfer_blocked' => {
+    description => "Fails any of the clients is transfer-blocked (the rule always passes if the currency types are the same)",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my %currencies = _get_currency_info($context, $args);
+
+        return 1 if $currencies{from}->{type} eq $currencies{to}->{type};
+
+        $self->fail('TransferBlocked')
+            if $context->client({loginid => $args->{loginid_from}})->status->transfers_blocked
+            || $context->client({loginid => $args->{loginid_to}})->status->transfers_blocked;
+
+        return 1;
+    },
+};
+
+=head2 _get_currency_info
+
+Returns a hash containing the currency code and type for each party involved in the transfer.
+It takes the following arguments:
+
+=over 4
+
+=item * C<context> - the rule engine context object
+
+=item * C<args> - action arguments as a hash-ref that contains B<loginid_from> and B<loginid_to>
+
+=back
+
+=cut
+
+sub _get_currency_info {
+    my ($context, $args) = @_;
+
+    my %currencies;
+    for (qw/from to/) {
+        my $loginid = $args->{"loginid_$_"};
+        die "Agrument loginid_$_ is missing" unless $loginid;
+
+        my $client   = $context->client({loginid => $loginid});
+        my $currency = $client->account->currency_code;
+
+        $currencies{$_}->{code} = $currency;
+        $currencies{$_}->{type} = LandingCompany::Registry::get_currency_type($currency);
+    }
+
+    return %currencies;
+}
 
 1;

@@ -99,7 +99,8 @@ subtest 'rule client.has_currency_set' => sub {
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
         error_code => 'SetExistingAccountCurrency',
-        rule       => $rule_name
+        rule       => $rule_name,
+        params     => $client->loginid
         },
         'correct error when currency is missing';
 

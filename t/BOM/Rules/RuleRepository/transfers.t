@@ -308,4 +308,181 @@ subtest 'rule transfers.experimental_currency_email_whitelisted' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, %$params) } 'Test passes when currency is experimental and email is whitelisted';
 };
 
+my $rule_name = 'transfers.no_different_fiat_currencies';
+subtest $rule_name => sub {
+    my %clients = map {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+        $client->account($_);
+        ($_ => $client);
+    } (qw/USD EUR BTC ETH/);
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [values %clients]);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Agrument loginid_from is missing/, 'Correct error for missing source loginid';
+
+    my %args = (loginid_from => $clients{'USD'}->loginid);
+    like exception { $rule_engine->apply_rules($rule_name, %args) }, qr/Agrument loginid_to is missing/,
+        'Correct error for missing receiving loginid';
+
+    $args{loginid_to} = $clients{'EUR'}->loginid;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        rule       => $rule_name,
+        error_code => 'DifferentFiatCurrencies'
+        },
+        'Transfer between fiat accounts is not allowed';
+
+    for my $to_currency (qw(USD BTC ETH)) {
+        $args{loginid_to} = $clients{$to_currency}->loginid;
+        lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Transfer between USD and $to_currency is allowed";
+    }
+    $args{loginid_from} = $clients{'BTC'}->loginid;
+    for my $to_currency (qw(USD EUR BTC ETH)) {
+        $args{loginid_to} = $clients{$to_currency}->loginid;
+        lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Transfer between BTC and $to_currency is allowed";
+    }
+};
+
+$rule_name = 'transfers.crypto_exchange_rates_availability';
+subtest $rule_name => sub {
+    my %clients = map {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+        $client->account($_);
+        ($_ => $client);
+    } (qw/USD EUR BTC ETH/);
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [values %clients]);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Agrument loginid_from is missing/, 'Correct error for missing source loginid';
+
+    my %args = (loginid_from => $clients{'USD'}->loginid);
+    like exception { $rule_engine->apply_rules($rule_name, %args) }, qr/Agrument loginid_to is missing/,
+        'Correct error for missing receiving loginid';
+
+    my $mock_currency_converter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
+
+    $args{loginid_from} = $clients{'USD'}->loginid;
+    $args{loginid_to}   = $clients{'USD'}->loginid;
+
+    $mock_currency_converter->redefine(offer_to_clients => 0);
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Exchange rates are not necessary for fiat currencies - USD";
+
+    $args{loginid_to} = $clients{'EUR'}->loginid;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Exchange rates are not necessary for fiat currencies - EUR";
+
+    $args{loginid_to} = $clients{'BTC'}->loginid;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        rule       => $rule_name,
+        error_code => 'ExchangeRatesUnavailable',
+        params     => 'BTC'
+        },
+        'Fiat to crypto transfer fails without exchange rates - BTC';
+
+    $args{loginid_from} = $clients{'BTC'}->loginid;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Exchange rates are not necessary for same currency crypto transfers - BTC";
+
+    $args{loginid_from} = $clients{'ETH'}->loginid;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        rule       => $rule_name,
+        error_code => 'ExchangeRatesUnavailable',
+        params     => 'ETH'
+        },
+        'Crypto to crypto transfer fails without exchange rates - ETH BTC';
+
+    $mock_currency_converter->redefine(offer_to_clients => 1);
+    $rule_engine->apply_rules($rule_name, %args);
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Tests passes if exchange rates are available";
+
+    $mock_currency_converter->unmock_all;
+};
+
+$rule_name = 'transfers.clients_are_not_transfer_blocked';
+subtest $rule_name => sub {
+    my %clients = map {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+        $client->account($_);
+        ($_ => $client);
+    } (qw/USD EUR BTC ETH/);
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [values %clients]);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Agrument loginid_from is missing/, 'Correct error for missing source loginid';
+
+    my %args = (loginid_from => $clients{'USD'}->loginid);
+    like exception { $rule_engine->apply_rules($rule_name, %args) }, qr/Agrument loginid_to is missing/,
+        'Correct error for missing receiving loginid';
+
+    my @test_cases = ({
+            currency => ['USD', 'USD'],
+            blocked  => [1,     1],
+            pass     => 1,
+            message  => 'Same curency with blocked clients is OK'
+        },
+        {
+            currency => ['USD', 'EUR'],
+            blocked  => [1,     1],
+            pass     => 1,
+            message  => 'Fiat curencies with blocked clients is OK'
+        },
+        {
+            currency => ['BTC', 'ETH'],
+            blocked  => [1,     1],
+            pass     => 1,
+            message  => 'Crypto curencies with blocked clients is OK'
+        },
+        {
+            currency => ['BTC', 'USD'],
+            blocked  => [1,     1],
+            pass     => 0,
+            message  => 'Crypto-fiat with blocked clients will fail'
+        },
+        {
+            currency => ['BTC', 'USD'],
+            blocked  => [1,     0],
+            pass     => 0,
+            message  => 'Crypto-fiat with from-client blocked will fail'
+        },
+        {
+            currency => ['BTC', 'USD'],
+            blocked  => [0,     1],
+            pass     => 0,
+            message  => 'Crypto-fiat with to-client blocked will fail'
+        },
+        {
+            currency => ['BTC', 'USD'],
+            blocked  => [0,     0],
+            pass     => 1,
+            message  => 'Crypto-fiat with no client blocked will pass'
+        },
+    );
+
+    for my $test_case (@test_cases) {
+        my @test_clients = map { $clients{$_} } $test_case->{currency}->@*;
+        @args{qw/loginid_from loginid_to/} = map { $_->loginid } @test_clients;
+
+        for (0, 1) {
+            $test_case->{blocked}->[$_]
+                ? $test_clients[$_]->status->setnx('transfers_blocked', 'test', 'test')
+                : $test_clients[$_]->status->clear_transfers_blocked;
+        }
+        $rule_engine = BOM::Rules::Engine->new(client => \@test_clients);
+
+        if ($test_case->{pass}) {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } $test_case->{message};
+        } else {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                {
+                rule       => $rule_name,
+                error_code => 'TransferBlocked',
+                },
+                $test_case->{message};
+        }
+    }
+};
+
 done_testing();
