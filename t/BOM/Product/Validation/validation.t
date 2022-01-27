@@ -318,7 +318,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 };
 
 subtest 'invalid barriers knocked down for great justice' => sub {
-    plan tests => 16;
+    plan tests => 13;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -397,27 +397,6 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     delete $bet_params->{low_barrier};
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/Barrier decimal error/];
-    test_error_list('buy', $bet, $expected_reasons);
-
-    # Now relative barriers for double barrier contracts
-    $bet_params->{bet_type}     = 'CALLSPREAD';
-    $bet_params->{underlying}   = 'R_100';
-    $bet_params->{duration}     = '3m';
-    $bet_params->{high_barrier} = '+0.0001';
-    $bet_params->{low_barrier}  = '-0.01';
-    $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/High barrier decimal error/];
-    test_error_list('buy', $bet, $expected_reasons);
-
-    $bet_params->{low_barrier} = '-0.001';                          # Test for low barrier offset
-    $bet                       = produce_contract($bet_params);
-    $expected_reasons          = [qr/Low barrier decimal error/];
-    test_error_list('buy', $bet, $expected_reasons);
-
-    $bet_params->{high_barrier} = '+0.000';                                        # Test for zero barrier offsets
-    $bet_params->{low_barrier}  = '-0.000';
-    $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/High and low barriers must be different/];
     test_error_list('buy', $bet, $expected_reasons);
 };
 

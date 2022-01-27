@@ -180,11 +180,8 @@ The number of ticks required from contract start time to expiry.
 
 sub ticks_to_expiry {
     my $self = shift;
-    return BOM::Product::Exception->throw(
-        error_code => 'InvalidTickExpiry',
-        error_args => [$self->code],
-        details    => {field => 'duration'},
-    );
+
+    return $self->tick_count;
 }
 
 override '_build_pricing_engine_name' => sub {

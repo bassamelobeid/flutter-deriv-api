@@ -49,6 +49,8 @@ subtest 'test everything' => sub {
                 %barriers = (barrier => 1);
             } elsif ($ref->{contract_category} eq 'highlowticks') {
                 %selected_tick = (selected_tick => 1);
+            } elsif ($ref->{contract_category} eq 'callputspread') {
+                %barriers = (barrier_range => 'middle');
             } else {
                 %barriers =
                     $ref->{barriers} == 2

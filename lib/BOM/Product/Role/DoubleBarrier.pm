@@ -40,7 +40,7 @@ sub BUILD {
     return;
 }
 
-has [qw(supplied_high_barrier supplied_low_barrier)] => (is => 'ro');
+has [qw(supplied_high_barrier supplied_low_barrier)] => (is => 'rw');
 
 has high_barrier => (
     is      => 'rw',
@@ -51,6 +51,12 @@ has high_barrier => (
 
 sub _build_high_barrier {
     my $self = shift;
+
+    if ($self->category_code eq 'callputspread' and (not $self->{supplied_high_barrier})) {
+        my $callputspread_barrier_result = $self->_get_callputspread_barrier_calculation();
+
+        $self->{supplied_high_barrier} = $callputspread_barrier_result->{high_barrier};
+    }
 
     my $high_barrier = $self->make_barrier($self->supplied_high_barrier, {barrier_kind => 'high'});
     return $high_barrier;
@@ -65,6 +71,12 @@ has low_barrier => (
 
 sub _build_low_barrier {
     my $self = shift;
+
+    if ($self->category_code eq 'callputspread' and (not $self->{supplied_low_barrier})) {
+        my $callputspread_barrier_result = $self->_get_callputspread_barrier_calculation();
+
+        $self->{supplied_low_barrier} = $callputspread_barrier_result->{low_barrier};
+    }
 
     my $low_barrier = $self->make_barrier($self->supplied_low_barrier, {barrier_kind => 'low'});
     return $low_barrier;
@@ -143,11 +155,6 @@ sub _validate_barrier {
 
     my ($min_move, $max_move) = (0.25, 2.5);
     my ($min_allowed_barrier, $max_allowed_barrier) = ($min_move * $current_spot, $max_move * $current_spot);
-    if ($self->category_code eq 'callputspread' and $self->underlying->market->name eq 'forex') {
-        my $max_allowed_pips = 400;
-        $min_allowed_barrier = $current_spot - $max_allowed_pips * $self->underlying->pip_size;
-        $max_allowed_barrier = $current_spot + $max_allowed_pips * $self->underlying->pip_size;
-    }
 
     foreach my $pair (['low' => $low_barrier], ['high' => $high_barrier]) {
         my ($label, $barrier) = @$pair;
@@ -195,4 +202,59 @@ sub _validate_barrier {
 
     return;
 }
+
+=head2 _get_callputspread_barrier_calculation
+    _get_callputspread_barrier_calculation is for callputspread barrier calculation.
+    Reason: We calculate calputspread high and low barrier differently.
+=cut
+
+sub _get_callputspread_barrier_calculation {
+    my $self = shift;
+
+    # Build underlying object
+    my $underlying = $self->underlying;
+
+    my $result;
+    # For tight barrier_range we need to use pip size for barrier calculation
+    if ($self->{build_parameters}->{barrier_range} eq 'tight') {
+        my $high_barrier = $self->current_spot + $underlying->pip_size;
+        my $low_barrier  = $self->current_spot - $underlying->pip_size;
+
+        $result = {
+            high_barrier => $high_barrier,
+            low_barrier  => $low_barrier
+        };
+    } else {
+        # This section is for 'middle' and 'wide'
+
+        # Retrieve the Annualised volatility
+        my $vol_args = {
+            delta => 50,
+            from  => $self->effective_start,
+            to    => $self->date_expiry,
+        };
+        my $vol = $self->volsurface->get_volatility($vol_args);
+
+        # Trading days per year
+        my $trading_days_per_year = $self->{underlying}->{market}->{name} eq "synthetic_index" ? "365" : "252";
+
+        # Callputspread new implemented formula
+        my $barrier_multiplier = $self->{build_parameters}->{barrier_multiplier};
+        my $distance           = $self->current_spot * $vol * ((1 / $trading_days_per_year)**0.5) * $barrier_multiplier;
+        my $high_barrier       = $self->current_spot + $distance;
+        my $low_barrier        = $self->current_spot - $distance;
+
+        # Convert to proper decimal places
+        $high_barrier = $underlying->pipsized_value($high_barrier);
+        $low_barrier  = $underlying->pipsized_value($low_barrier);
+
+        $result = {
+            high_barrier => $high_barrier,
+            low_barrier  => $low_barrier
+        };
+    }
+
+    return $result;
+}
+
 1;

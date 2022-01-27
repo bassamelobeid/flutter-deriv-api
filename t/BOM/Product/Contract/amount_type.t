@@ -43,9 +43,8 @@ subtest 'amount_type - generic' => sub {
     $args->{bet_type} = 'CALLSPREAD';
     $args->{stake}    = 100;
     delete $args->{barrier};
-    $args->{high_barrier} = 'S10P';
-    $args->{low_barrier}  = 'S-10P';
-    $error                = exception { produce_contract($args) };
+    $args->{barrier_range} = 'middle';
+    $error = exception { produce_contract($args) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Basis must be [_1] for this contract.', 'specify stake for CALLSPREAD';
     is $error->message_to_client->[1], 'payout';

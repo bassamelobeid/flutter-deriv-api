@@ -85,15 +85,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {rec
 subtest 'config' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'frxUSDJPY'], [100.10, $now->epoch + 1, 'frxUSDJPY']);
     my $c = produce_contract({
-        bet_type     => 'PUTSPREAD',
-        underlying   => 'frxUSDJPY',
-        duration     => '2h',
-        high_barrier => 'S100P',
-        low_barrier  => 'S-100P',
-        currency     => 'USD',
-        payout       => 100,
-        date_pricing => $now,
-        date_start   => $now
+        bet_type      => 'PUTSPREAD',
+        underlying    => 'frxUSDJPY',
+        duration      => '2h',
+        barrier_range => "wide",
+        currency      => 'USD',
+        payout        => 100,
+        date_pricing  => $now,
+        date_start    => $now
     });
 
     is $c->longcode->[0], 'Win up to [_7] [_6] if [_1]\'s exit tick is between [_4] and [_5] at [_3] after [_2].';
@@ -113,8 +112,8 @@ subtest 'config' => sub {
 
     SKIP: {
         skip 'no forex feed available over weekend/holiday', 1 unless $trading_calendar->is_open($exchange);
-        is $c->ask_price, 42.37,   'correct ask price';
-        is $c->bid_price, '39.50', 'correct bid price';
+        is $c->ask_price, '51.50', 'correct ask price';
+        is $c->bid_price, '48.02', 'correct bid price';
     }
 };
 

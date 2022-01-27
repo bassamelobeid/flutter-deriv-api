@@ -7,56 +7,66 @@ use Test::More;
 use Test::Warnings;
 use Test::Exception;
 use Test::MockModule;
+use Test::MockTime qw/:all/;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Config::Chronicle;
-use Quant::Framework;
-use Finance::Exchange;
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use BOM::MarketData qw(create_underlying);
 
 initialize_realtime_ticks_db();
 
-my $now    = Date::Utility->new;
-my $symbol = 'frxUSDJPY';
+my $datetime   = Date::Utility->new('2013-03-27 08:00:34');
+my $symbol     = 'frxUSDJPY';
+my $underlying = create_underlying($symbol);
+set_absolute_time($datetime->epoch);
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => 'USD',
-        recorded_date => $now
+        recorded_date => $datetime
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $symbol,
+        recorded_date => $datetime,
     });
 
 my $args = {
-    bet_type     => 'CALLSPREAD',
-    underlying   => $symbol,
-    date_start   => $now,
-    high_barrier => 'S10P',
-    low_barrier  => 'S-10P',
-    duration     => '5m',
-    currency     => 'USD',
-    payout       => 100,
+    bet_type      => 'CALLSPREAD',
+    underlying    => $symbol,
+    date_start    => $datetime,
+    date_pricing  => $datetime,
+    barrier_range => 'wide',
+    duration      => '5m',
+    currency      => 'USD',
+    payout        => 100,
 };
-
-my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
-my $exchange         = Finance::Exchange->create_exchange('FOREX');
-my $mock_date        = Test::MockModule->new('Date::Utility');
-unless ($trading_calendar->is_open($exchange)) {
-    $mock_date->mock(is_same_as => sub { 0 });
-}
 
 subtest 'intraday' => sub {
     subtest 'CALLSPREAD - exit tick higher than high barrier = full payout' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100,    $now->epoch + 1,   $symbol],
-            [100.11, $now->epoch + 299, $symbol],
-            [100,    $now->epoch + 301, $symbol]);
-        my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('5m')});
+            [100,     $datetime->epoch,       $symbol],
+            [100,     $datetime->epoch + 1,   $symbol],
+            [101.332, $datetime->epoch + 300, $symbol]);
+
+        # We need to first create the contract and fetch the shortcode
+        my $c          = produce_contract($args);
+        my $params_ref = shortcode_to_parameters($c->shortcode, $c->currency);
+        $params_ref->{date_pricing} = $datetime->plus_time_interval('5m');
+
+        # Create contract using shortcode
+        $c = produce_contract($params_ref);
         is $c->entry_tick->quote,         100,       'entry tick is 100';
-        is $c->high_barrier->as_absolute, '100.010', 'high barrier is 100.010';
-        is $c->low_barrier->as_absolute,  '99.990',  'low barrier is 99.990';
-        is $c->exit_tick->quote,          100.11,    'exit tick is 100.11';
+        is $c->high_barrier->as_absolute, '101.332', 'high barrier is 101.332';
+        is $c->low_barrier->as_absolute,  '98.668',  'low barrier is 98.668';
+        is $c->exit_tick->quote,          101.332,   'exit tick is 101.332';
         ok $c->is_expired,       'contract is expired';
         ok $c->is_valid_to_sell, 'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
@@ -66,31 +76,45 @@ subtest 'intraday' => sub {
 
     subtest 'CALLSPREAD - exit tick in between high and low barrier = partial payout' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100,    $now->epoch + 1,   $symbol],
-            [100.09, $now->epoch + 299, $symbol],
-            [100,    $now->epoch + 301, $symbol]);
-        my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('5m')});
+            [100,    $datetime->epoch,       $symbol],
+            [100,    $datetime->epoch + 1,   $symbol],
+            [99.999, $datetime->epoch + 300, $symbol]);
+
+        # We need to first create the contract and fetch the shortcode
+        my $c          = produce_contract($args);
+        my $params_ref = shortcode_to_parameters($c->shortcode, $c->currency);
+        $params_ref->{date_pricing} = $datetime->plus_time_interval('5m');
+
+        # Create contract using shortcode
+        $c = produce_contract($params_ref);
         is $c->entry_tick->quote,         100,       'entry tick is 100';
-        is $c->high_barrier->as_absolute, '100.010', 'high barrier is 100.010';
-        is $c->low_barrier->as_absolute,  '99.990',  'low barrier is 99.990';
-        is $c->exit_tick->quote,          100.09,    'exit tick is 100.89';
+        is $c->high_barrier->as_absolute, '101.332', 'high barrier is 101.332';
+        is $c->low_barrier->as_absolute,  '98.668',  'low barrier is 98.668';
+        is $c->exit_tick->quote,          99.999,    'exit tick is 99.999';
         ok $c->is_expired,       'contract is expired';
         ok $c->is_valid_to_sell, 'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
-        is $c->value, 100, 'value equal payout';
+        is $c->value, 49.9624624624623, 'value equal payout';
     };
 
     subtest 'CALLSPREAD - exit tick is lower than low barrier = zero payout' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100,   $now->epoch + 1,   $symbol],
-            [99.89, $now->epoch + 299, $symbol],
-            [100,   $now->epoch + 301, $symbol]);
-        my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('5m')});
+            [100,   $datetime->epoch,       $symbol],
+            [100,   $datetime->epoch + 1,   $symbol],
+            [98.65, $datetime->epoch + 300, $symbol]);
+
+        # We need to first create the contract and fetch the shortcode
+        my $c          = produce_contract($args);
+        my $params_ref = shortcode_to_parameters($c->shortcode, $c->currency);
+        $params_ref->{date_pricing} = $datetime->plus_time_interval('5m');
+
+        # Create contract using shortcode
+        $c = produce_contract($params_ref);
         is $c->entry_tick->quote,         100,       'entry tick is 100';
-        is $c->high_barrier->as_absolute, '100.010', 'high barrier is 100.010';
-        is $c->low_barrier->as_absolute,  '99.990',  'low barrier is 99.990';
-        is $c->exit_tick->quote,          99.89,     'exit tick is 99.89';
+        is $c->high_barrier->as_absolute, '101.332', 'high barrier is 101.332';
+        is $c->low_barrier->as_absolute,  '98.668',  'low barrier is 98.668';
+        is $c->exit_tick->quote,          98.65,     'exit tick is 98.65';
         ok $c->is_expired,       'contract is expired';
         ok $c->is_valid_to_sell, 'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
@@ -99,48 +123,95 @@ subtest 'intraday' => sub {
     };
 };
 
-# this has to be a date in the past because of some quirks in getting OHLC in the future
-$now                = Date::Utility->new('2019-03-04');
-$args->{date_start} = $now;
-$args->{duration}   = '1d';
-
-subtest 'multiday' => sub {
-    subtest 'CALLSPREAD - expired but no OHLC data' => sub {
+subtest 'intraday' => sub {
+    subtest 'CALLSPREAD - exit tick higher than high barrier = full payout' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100, $now->epoch + 1,                                                 $symbol],
-            [102, $now->epoch + 2,                                                 $symbol],
-            [100, $now->truncate_to_day->plus_time_interval('1d23h59m58s')->epoch, $symbol]);
-        my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch});
-        ok $c->expiry_daily, 'multi-day contract';
-        ok $c->is_expired,   'is expired';
-        is $c->exit_tick->quote, 100, 'exit tick is 100';
-        ok !$c->is_valid_to_sell, 'not valid to sell';
-        is $c->primary_validation_error->message, 'exit tick is inconsistent';
-        ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
-    };
+            [100,     $datetime->epoch,     $symbol],
+            [100,     $datetime->epoch + 1, $symbol],
+            [100,     $datetime->epoch + 2, $symbol],
+            [100,     $datetime->epoch + 3, $symbol],
+            [100,     $datetime->epoch + 4, $symbol],
+            [101.321, $datetime->epoch + 5, $symbol]);
 
-    subtest 'CALLSPREAD - expired with OHLC data' => sub {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => $symbol,
-            epoch      => $now->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch,
-            quote      => 100.11,
-        });
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => $symbol,
-            epoch      => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch,
-            quote      => 100,
-        });
-        my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch});
-        ok $c->expiry_daily, 'multi-day contract';
-        is $c->high_barrier->as_absolute, '100.010', 'high barrier is 100.010';
-        is $c->low_barrier->as_absolute,  '99.990',  'low barrier is 99.990';
-        is $c->exit_tick->quote,          100.11,    'exit tick is 100.11';
+        # Change to tick duration
+        $args->{duration} = '5t';
+
+        # We need to first create the contract and fetch the shortcode
+        my $c          = produce_contract($args);
+        my $params_ref = shortcode_to_parameters($c->shortcode, $c->currency);
+        $params_ref->{date_pricing} = $datetime->plus_time_interval('5s');
+
+        # Create contract using shortcode
+        $c = produce_contract($params_ref);
+        is $c->entry_tick->quote,         100,       'entry tick is 100';
+        is $c->high_barrier->as_absolute, '101.321', 'high barrier is 101.321';
+        is $c->low_barrier->as_absolute,  '98.679',  'low barrier is 98.679';
+        is $c->exit_tick->quote,          101.321,   'exit tick is 101.321';
         ok $c->is_expired,       'contract is expired';
         ok $c->is_valid_to_sell, 'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, $c->payout, 'win';
+    };
+
+    subtest 'CALLSPREAD - exit tick in between high and low barrier = partial payout' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $datetime->epoch,     $symbol],
+            [100, $datetime->epoch + 1, $symbol],
+            [100, $datetime->epoch + 2, $symbol],
+            [100, $datetime->epoch + 3, $symbol],
+            [100, $datetime->epoch + 4, $symbol],
+            [101, $datetime->epoch + 5, $symbol]);
+
+        # Change to tick duration
+        $args->{duration} = '5t';
+
+        # We need to first create the contract and fetch the shortcode
+        my $c          = produce_contract($args);
+        my $params_ref = shortcode_to_parameters($c->shortcode, $c->currency);
+        $params_ref->{date_pricing} = $datetime->plus_time_interval('5s');
+
+        # Create contract using shortcode
+        $c = produce_contract($params_ref);
+        is $c->entry_tick->quote,         100,       'entry tick is 100';
+        is $c->high_barrier->as_absolute, '101.321', 'high barrier is 101.321';
+        is $c->low_barrier->as_absolute,  '98.679',  'low barrier is 98.679';
+        is $c->exit_tick->quote,          101,       'exit tick is 101';
+        ok $c->is_expired,       'contract is expired';
+        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
+        ok !$c->require_manual_settlement,   'does not require manual settlement';
+        is $c->value, 87.8501135503407, 'value equal payout';
+    };
+
+    subtest 'CALLSPREAD - exit tick is lower than low barrier = zero payout' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100,   $datetime->epoch,     $symbol],
+            [100,   $datetime->epoch + 1, $symbol],
+            [100,   $datetime->epoch + 2, $symbol],
+            [100,   $datetime->epoch + 3, $symbol],
+            [100,   $datetime->epoch + 4, $symbol],
+            [98.65, $datetime->epoch + 5, $symbol]);
+
+        # Change to tick duration
+        $args->{duration} = '5t';
+
+        # We need to first create the contract and fetch the shortcode
+        my $c          = produce_contract($args);
+        my $params_ref = shortcode_to_parameters($c->shortcode, $c->currency);
+        $params_ref->{date_pricing} = $datetime->plus_time_interval('5s');
+
+        # Create contract using shortcode
+        $c = produce_contract($params_ref);
+        is $c->entry_tick->quote,         100,       'entry tick is 100';
+        is $c->high_barrier->as_absolute, '101.321', 'high barrier is 101.321';
+        is $c->low_barrier->as_absolute,  '98.679',  'low barrier is 98.679';
+        is $c->exit_tick->quote,          98.65,     'exit tick is 98.65';
+        ok $c->is_expired,       'contract is expired';
+        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
+        ok !$c->require_manual_settlement,   'does not require manual settlement';
+        is $c->value, 0, 'zero payout';
     };
 };
 

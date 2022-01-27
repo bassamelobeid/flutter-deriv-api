@@ -85,15 +85,14 @@ sub price_contracts {
     });
 
     my $callspread = produce_contract({
-        bet_type     => 'CALLSPREAD',
-        underlying   => 'frxUSDJPY',
-        duration     => '2h',
-        high_barrier => 100.11,
-        low_barrier  => 99.01,
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $date_start,
-        date_pricing => $date_start,
+        bet_type      => 'CALLSPREAD',
+        underlying    => 'frxUSDJPY',
+        duration      => '2h',
+        barrier_range => 'tight',
+        currency      => 'USD',
+        payout        => 100,
+        date_start    => $date_start,
+        date_pricing  => $date_start,
     });
 
     my $pricing_vol_call                     = $c->pricing_vol;

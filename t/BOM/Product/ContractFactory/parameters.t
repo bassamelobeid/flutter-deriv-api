@@ -93,7 +93,7 @@ subtest 'Invalid legacy contract' => sub {
     subtest 'get_bid for legacy sold callputSpread contracts should not fail for InvalidMinPayout/Stake' => sub {
         my $lower_than_min_amount = '0.95';
         my $bet_params            = {
-            high_barrier               => "S7000000P",
+            barrier_range              => "wide",
             amount                     => $lower_than_min_amount,
             underlying                 => "R_75",
             amount_type                => "payout",
@@ -107,8 +107,7 @@ subtest 'Invalid legacy contract' => sub {
             currency                   => "USD",
             starts_as_forward_starting => 0,
             bet_type                   => "CALLSPREAD",
-            fixed_expiry               => undef,
-            low_barrier                => "S-800P"
+            fixed_expiry               => undef
         };
         lives_ok { produce_contract($bet_params) };
     };

@@ -24,17 +24,17 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 subtest 'config' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [100.10, $now->epoch + 1, 'R_100']);
     my $c = produce_contract({
-        bet_type     => 'CALLSPREAD',
-        underlying   => 'R_100',
-        duration     => '5h',
-        high_barrier => 100.11,
-        low_barrier  => 99.01,
-        currency     => 'USD',
-        payout       => 100,
+        bet_type      => 'CALLSPREAD',
+        underlying    => 'R_100',
+        duration      => '2h',
+        barrier_range => "middle",
+        currency      => 'USD',
+        payout        => 100,
+        date_start    => $now,
+        date_pricing  => $now,
     });
     is $c->longcode->[0], 'Win up to [_7] [_6] if [_1]\'s exit tick is between [_5] and [_4] at [_3] after [_2].';
     is $c->longcode->[2][0], 'contract start time';
-    is $c->longcode->[3]->{value}, 18000;
     ok !$c->is_binary, 'non-binary';
     ok $c->two_barriers,       'two barriers';
     is $c->pricing_code,       'CALLSPREAD',    'pricing code is CALLSPREAD';
@@ -49,24 +49,23 @@ subtest 'config' => sub {
 
 subtest 'ask/bid price' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [100.10, $now->epoch + 1, 'R_100']);
-    my $expiry = $now->plus_time_interval('2m');
+    my $expiry = $now->plus_time_interval('2h');
     my $args   = {
-        bet_type     => 'CALLSPREAD',
-        underlying   => 'R_100',
-        date_start   => $now,
-        date_pricing => $now,
-        date_expiry  => $expiry,
-        high_barrier => 100,
-        low_barrier  => 99,
-        currency     => 'USD',
-        payout       => 100,
+        bet_type      => 'CALLSPREAD',
+        underlying    => 'R_100',
+        date_start    => $now,
+        date_pricing  => $now,
+        date_expiry   => $expiry,
+        barrier_range => "wide",
+        currency      => 'USD',
+        payout        => 100,
     };
     my $c = produce_contract($args);
-    is $c->multiplier, 100, 'multiplier is 100';
-    is $c->pricing_engine->theo_price, 92.2830146038422, 'theo price 92.2830146038422';
-    is $c->commission_per_unit, 1.10739617524611, '';
-    cmp_ok $c->ask_price,       '==',             93.39, 'correct ask price';
-    cmp_ok $c->bid_price,       '==',             91.18, 'correct bid price';
+    is $c->multiplier, 9.56022944550669, 'multiplier is 9.56022944550669';
+    is $c->pricing_engine->theo_price, 49.9992383481483, 'theo price 49.9992383481483';
+    is $c->commission_per_unit, 0.599990860177779, '';
+    cmp_ok $c->ask_price,       '==', 50.6, 'correct ask price';
+    cmp_ok $c->bid_price,       '==', 49.4, 'correct bid price';
 };
 
 done_testing();

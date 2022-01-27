@@ -40,6 +40,7 @@ use LandingCompany::Registry;
 use YAML::XS qw(LoadFile);
 use BOM::Config::Quants qw(minimum_payout_limit maximum_payout_limit minimum_stake_limit);
 use BOM::Config;
+use BOM::Config::QuantsConfig;
 
 my $epsilon                   = machine_epsilon();
 my $minimum_multiplier_config = BOM::Config::quants()->{lookback_limits};
@@ -222,6 +223,11 @@ sub _initialize_barrier {
             ($high_barrier, $low_barrier) = @{$params}{'high_barrier', 'low_barrier'};
         } elsif (exists $params->{supplied_high_barrier} and exists $params->{supplied_low_barrier}) {
             ($high_barrier, $low_barrier) = @{$params}{'supplied_high_barrier', 'supplied_low_barrier'};
+        } elsif ($params->{category}->code eq 'callputspread' and $params->{barrier_range}) {
+            # We need to set the barrier_multiplier for 'callputspread' as we calculate barrier differently
+            $self->_get_callputspread_barrier_range();
+
+            return;
         }
 
         # house keeping
@@ -279,6 +285,17 @@ sub _initialize_other_parameters {
             error_args => ['date_start'],
             details    => {field => 'date_start'},
         );
+    }
+
+    # Barrier range validation
+    # We need barrier_range for new pricing callputspread
+    if ($params->{category}->code eq 'callputspread' and $params->{pricing_new} and $params->{proposal}) {
+        if (not $params->{barrier_range}) {
+            BOM::Product::Exception->throw(
+                error_code => 'InvalidBarrierRangeType',
+                details    => {field => 'barrier'},
+            );
+        }
     }
 
     if ($params->{category}->has_user_defined_expiry and defined($params->{date_expiry})) {
@@ -390,10 +407,33 @@ sub _validate_barrier {
     # double barrier contract
     if ($params->{category}->two_barriers) {
         my ($high_barrier, $low_barrier);
+
         if (exists $params->{high_barrier} and exists $params->{low_barrier}) {
             ($high_barrier, $low_barrier) = @{$params}{'high_barrier', 'low_barrier'};
         } elsif (exists $params->{supplied_high_barrier} and exists $params->{supplied_low_barrier}) {
             ($high_barrier, $low_barrier) = @{$params}{'supplied_high_barrier', 'supplied_low_barrier'};
+        } elsif ($params->{category}->code eq 'callputspread') {
+            # Validation for callputspread barrier
+
+            # Validate barrier range
+            if (not exists $params->{barrier_range}) {
+                BOM::Product::Exception->throw(
+                    error_code => 'InvalidBarrierRangeType',
+                    details    => {field => 'barrier'},
+                );
+            }
+
+            # For callputspread we only use tight|middle|wide as the barrier_range
+            if (not $params->{barrier_range} =~ /^(tight|middle|wide)$/) {
+                BOM::Product::Exception->throw(
+                    error_code => 'InvalidBarrier',
+                    details    => {field => 'barrier'},
+                );
+            }
+
+            # We do not need to proceed with high_barrier and low_barrier validation
+            # as we calculate callputspread barrier internally
+            return;
         } else {
             BOM::Product::Exception->throw(
                 error_code => 'InvalidBarrierDouble',
@@ -578,6 +618,53 @@ sub _build__trading_calendar {
     return Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader($for_date), $for_date);
 }
 
+=head2 _get_callputspread_barrier_range
+
+For callputspread we need to set the N value for barrier range.
+
+=cut
+
+sub _get_callputspread_barrier_range {
+    my $self = shift;
+
+    my $qc = BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
+        recorded_date    => Date::Utility->new,
+    );
+
+    my $default_barrier_multipler = BOM::Config::QuantsConfig->default_barrier_multipler_yml;
+    my $params                    = $self->_parameters;
+    my $existing_configs          = $qc->get_config("callputspread_barrier_multiplier");
+    my $market_type               = $params->{underlying}->market->name . "_callputspread_barrier_multiplier";
+
+    if ($params->{barrier_range} eq "middle") {
+        if ($existing_configs->{middle}->{$market_type}) {
+            $params->{barrier_multiplier} = $existing_configs->{middle}->{$market_type};
+        } else {
+            # We can set the default if the backoffice config is not available
+            # We get the value from default_barrier_multiplier.yml
+            $params->{barrier_multiplier} = $default_barrier_multipler->{callputspread}->{middle};
+        }
+    } elsif ($params->{barrier_range} eq "wide") {
+        if ($existing_configs->{wide}->{$market_type}) {
+            $params->{barrier_multiplier} = $existing_configs->{wide}->{$market_type};
+        } else {
+            # We can set the default if the backoffice config is not available
+            # We get the value from default_barrier_multiplier.yml
+            $params->{barrier_multiplier} = $default_barrier_multipler->{callputspread}->{wide};
+        }
+    }
+    # This is for tight range
+    else {
+        # we will give tight barrier_multiplier as 0 as we calculate using pip size
+        $params->{barrier_multiplier} = "0";
+    }
+
+    return;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
+
 1;

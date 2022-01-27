@@ -85,20 +85,18 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {rec
 subtest 'config' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'frxUSDJPY'], [100.10, $now->epoch + 1, 'frxUSDJPY']);
     my $c = produce_contract({
-        bet_type     => 'CALLSPREAD',
-        underlying   => 'frxUSDJPY',
-        duration     => '2h',
-        high_barrier => 'S100P',
-        low_barrier  => 'S-100P',
-        currency     => 'USD',
-        payout       => 100,
-        date_pricing => $now,
-        date_start   => $now
+        bet_type      => 'CALLSPREAD',
+        underlying    => 'frxUSDJPY',
+        duration      => '2h',
+        barrier_range => 'middle',
+        currency      => 'USD',
+        payout        => 100,
+        date_pricing  => $now,
+        date_start    => $now
     });
 
     is $c->longcode->[0], 'Win up to [_7] [_6] if [_1]\'s exit tick is between [_5] and [_4] at [_3] after [_2].';
     is $c->longcode->[2][0], 'contract start time', 'contract start time';
-    is $c->longcode->[3]->{value}, 7200, 'longcode value 7200';
     ok !$c->is_binary, 'non-binary';
     ok $c->two_barriers, 'two barriers';
 
@@ -114,8 +112,8 @@ subtest 'config' => sub {
 
     SKIP: {
         skip 'no forex feed available over weekend/holiday', 1 unless $trading_calendar->is_open($exchange);
-        is $c->ask_price, 65.13,   'correct ask price';
-        is $c->bid_price, '61.00', 'correct bid price';
+        is $c->ask_price, 64.92,   'correct ask price';
+        is $c->bid_price, '60.80', 'correct bid price';
     }
 };
 

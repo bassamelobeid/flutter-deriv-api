@@ -209,18 +209,17 @@ subtest 'barrier too close and too far to spot' => sub {
         my $duration = 180;
         lives_ok {
             my $c = produce_contract({
-                bet_type     => $contract_type,
-                underlying   => $forex,
-                date_start   => $now,
-                date_pricing => $now,
-                duration     => $duration . 's',
-                currency     => 'USD',
-                payout       => $payout,
-                high_barrier => 'S1P',
-                low_barrier  => 'S-1P',
+                bet_type      => $contract_type,
+                underlying    => $forex,
+                date_start    => $now,
+                date_pricing  => $now,
+                duration      => $duration . 's',
+                currency      => 'USD',
+                payout        => $payout,
+                barrier_range => 'wide',
             });
             isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
-            is $c->ask_price, 50.97, 'ask price for high => 1.18752, low => 1.18742';
+            is $c->ask_price, 50.95, 'ask price for high => 1.18752, low => 1.18742';
         }
         'survived';
 
@@ -239,18 +238,17 @@ subtest 'barrier too close and too far to spot' => sub {
         $duration = 7200;
         lives_ok {
             my $c = produce_contract({
-                bet_type     => $contract_type,
-                underlying   => $forex,
-                date_start   => $now,
-                date_pricing => $now,
-                duration     => $duration . 's',
-                currency     => 'USD',
-                payout       => $payout,
-                high_barrier => 'S1P',
-                low_barrier  => 'S-1P',
+                bet_type      => $contract_type,
+                underlying    => $forex,
+                date_start    => $now,
+                date_pricing  => $now,
+                duration      => $duration . 's',
+                currency      => 'USD',
+                payout        => $payout,
+                barrier_range => 'middle'
             });
             isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
-            is $c->ask_price, 53.67, 'ask price for low => 1.18701, high => 1.18833';
+            is $c->ask_price, 53.69, 'ask price for low => 1.18701, high => 1.18833';
         }
         'survived';
 
@@ -265,18 +263,17 @@ subtest 'barrier too close and too far to spot' => sub {
         $duration = 180;
         lives_ok {
             my $c = produce_contract({
-                bet_type     => $contract_type,
-                underlying   => $forex,
-                date_start   => $now,
-                date_pricing => $now,
-                duration     => $duration . 's',
-                currency     => 'USD',
-                payout       => $payout,
-                high_barrier => 'S400P',
-                low_barrier  => 'S-400P',
+                bet_type      => $contract_type,
+                underlying    => $forex,
+                date_start    => $now,
+                date_pricing  => $now,
+                duration      => $duration . 's',
+                currency      => 'USD',
+                payout        => $payout,
+                barrier_range => 'middle'
             });
             isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
-            is $c->ask_price, 50.95, 'ask price for high => 1.18752, low => 1.18742';
+            is $c->ask_price, 50.96, 'ask price for high => 1.18752, low => 1.18742';
         }
         'survived';
 
@@ -291,15 +288,14 @@ subtest 'barrier too close and too far to spot' => sub {
         $duration = 7200;
         lives_ok {
             my $c = produce_contract({
-                bet_type     => $contract_type,
-                underlying   => $forex,
-                date_start   => $now,
-                date_pricing => $now,
-                duration     => $duration . 's',
-                currency     => 'USD',
-                payout       => $payout,
-                high_barrier => 'S400P',
-                low_barrier  => 'S-400P',
+                bet_type      => $contract_type,
+                underlying    => $forex,
+                date_start    => $now,
+                date_pricing  => $now,
+                duration      => $duration . 's',
+                currency      => 'USD',
+                payout        => $payout,
+                barrier_range => 'wide',
             });
             isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
             is $c->ask_price, 53.84, 'ask price for low => 1.18701, high => 1.18833';

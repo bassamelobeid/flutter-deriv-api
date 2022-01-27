@@ -26,12 +26,21 @@ subtest 'single contract' => sub {
 
     }
 
-    foreach my $bet_type (qw(EXPIRYMISS RANGE CALLSPREAD)) {
+    foreach my $bet_type (qw(EXPIRYMISS RANGE)) {
 
         $args->{bet_type} = $bet_type;
         my $error = exception { produce_contract($args) };
         isa_ok $error, 'BOM::Product::Exception';
         is $error->message_to_client->[0], 'Invalid barrier (Double barrier input is expected).', 'no barrier for ' . $bet_type;
+
+    }
+
+    foreach my $bet_type (qw(PUTSPREAD CALLSPREAD)) {
+
+        $args->{bet_type} = $bet_type;
+        my $error = exception { produce_contract($args) };
+        isa_ok $error, 'BOM::Product::Exception';
+        is $error->message_to_client->[0], 'Invalid barrier (Barrier Range input is expected).', 'no barrier for ' . $bet_type;
 
     }
 

@@ -57,14 +57,15 @@ sub decorate {
 
         # This key is being used to decide whether to show additional
         # barrier field on the frontend.
-        if ($contract_category =~ /^(?:staysinout|endsinout|callputspread)$/) {
+        if ($contract_category =~ /^(?:staysinout|endsinout)$/) {
             $o->{barriers} = 2;
         } elsif ($contract_category eq 'lookback'
             or $contract_category eq 'asian'
             or $contract_category eq 'highlowticks'
             or $barrier_category eq 'euro_atm'
             or $contract_type =~ /^DIGIT(?:EVEN|ODD)$/
-            or $contract_category eq 'multiplier')
+            or $contract_category eq 'multiplier'
+            or $contract_category eq 'callputspread')
         {
             $o->{barriers} = 0;
         } else {
@@ -115,6 +116,11 @@ sub decorate {
                     contract_category => $o->{contract_category},
                 });
             }
+        }
+
+        # Here we set the barrier range N value
+        if ($contract_category eq 'callputspread') {
+            $o->{barrier_range} = _get_callputspread_barrier_range();
         }
     }
 
@@ -181,6 +187,22 @@ sub _get_multiplier_config {
     my $config = $qc->get_multiplier_config($lc_short, $symbol) // {};
 
     return $config;
+}
+
+=head2 _get_callputspread_barrier_range
+    _get_callputspread_barrier_range will return the callputspread barrier_range name.
+=cut
+
+sub _get_callputspread_barrier_range {
+    return [{
+            display_name => 'tight',
+        },
+        {
+            display_name => 'middle',
+        },
+        {
+            display_name => 'wide',
+        }];
 }
 
 1;

@@ -151,7 +151,7 @@ $SIG{__WARN__} = sub { my $w = shift; return if $w =~ /^Unhandled type: GLOB/; d
 sub _get_barrier {
     my $type = shift;
 
-    if ($type =~ /(EXPIRYMISS|EXPIRYRANGE|RANGE|UPORDOWN|CALLSPREAD|PUTSPREAD)/) {
+    if ($type =~ /(EXPIRYMISS|EXPIRYRANGE|RANGE|UPORDOWN)/) {
         return {
             daily => [{
                     high_barrier => 120,
@@ -163,6 +163,10 @@ sub _get_barrier {
                     low_barrier  => 'S-10P'
                 }
             ],
+        };
+    } elsif ($type =~ /(CALLSPREAD|PUTSPREAD)/) {
+        return {
+            intraday => [{barrier_range => 'tight'}, {barrier_range => 'middle'}, {barrier_range => 'wide'}],
         };
     } elsif ($type =~ /(ONETOUCH|NOTOUCH)/) {
         return {
