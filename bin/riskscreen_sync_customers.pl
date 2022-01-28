@@ -17,31 +17,34 @@ This scripts fetches new customers and matches from risk screen server and save 
 
 use Syntax::Keyword::Try;
 use Getopt::Long;
-use Data::Dumper;
 use Log::Any qw($log);
-
-use Log::Any::Adapter qw(DERIV),
-    stderr    => 'json',
-    log_level => 'info';
+use Log::Any::Adapter;
+use Data::Dumper;
 
 use BOM::Platform::RiskScreenAPI;
 
 GetOptions(
-    'v|verbose' => \my $verbose,
+    'l|log_level=s' => \my $log_level,
+    'a|update_all'  => \my $update_all,
+    'c|count=i'     => \my $count
+);
+Log::Any::Adapter->import(
+    'DERIV',
+    stderr    => 'text',
+    log_level => $log_level // 'info'
 );
 
-try {
-    my $result = BOM::Platform::RiskScreenAPI::sync_all_customers()->get;
-    if ($verbose) {
-        my $new_customer_count     = scalar $result->{new_customers}->@*;
-        my $updated_customer_count = scalar $result->{updated_customers}->@*;
-        my $last_update_date       = $result->{last_update_date};
+$update_all //= 0;
 
-        print "Number of new clients found: $new_customer_count \n";
-        print "Clients updated with new matches: $updated_customer_count ";
-        print "(Since $last_update_date) \n" if $last_update_date;
-        print "\n";
-    }
+$log->debugf('Starting to sync riskscreen data with UPDATE ALL = %d, LOG LEVEL = %s, count = %d', $update_all, $log_level, $count // '<undef>');
+
+try {
+    my $riskscreen_api = BOM::Platform::RiskScreenAPI->new(
+        update_all => $update_all,
+        count      => $count
+    );
+    $riskscreen_api->sync_all_customers($update_all, $count)->get;
 } catch ($e) {
-    $log->error($e);
+    warn Dumper $e;
 }
+

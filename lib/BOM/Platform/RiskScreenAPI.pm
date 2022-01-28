@@ -1,8 +1,9 @@
 package BOM::Platform::RiskScreenAPI;
 
+use Moo;
+
 use strict;
 use warnings;
-use feature qw(state);
 no indirect;
 
 =head1 NAME
@@ -21,12 +22,43 @@ use Future::Utils qw(fmap_void fmap_concat);
 use WebService::Async::RiskScreen;
 use WebService::Async::RiskScreen::Utility qw(constants);
 use LandingCompany::Registry;
+use Data::Dumper;
 use List::Util qw(first all uniq);
+use Log::Any qw($log);
+use Syntax::Keyword::Try;
+use Algorithm::Backoff;
 
 use BOM::Config;
 use BOM::Database::UserDB;
 use BOM::User::RiskScreen;
 use BOM::User;
+
+use constant API_TIMEOUT            => 180;
+use constant BACKOFF_INITIAL_DELAY  => 0.3;
+use constant BACKOFF_MAX_DELAY      => 10;
+use constant MAX_FAILURES_TOLERATED => 10;
+
+=head2 update_all
+
+A flag to forcefully update  all riskscreen customers on demand.
+
+=cut
+
+has update_all => (
+    is   => 'rw',
+    lazy => 1
+);
+
+=head2 count
+
+Maximum new customers to process; useful for test purposes.
+
+=cut
+
+has count => (
+    is   => 'rw',
+    lazy => 1
+);
 
 =head2 api
 
@@ -34,19 +66,28 @@ Get a Riskscreen API client object.
 
 =cut
 
-sub api {
-    state $api;
-    return $api if $api;
+has api => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_api',
+);
 
+=head2 _build_api
+
+Creates a Riskscreen API client object.
+
+=cut
+
+sub _build_api {
     my $loop   = IO::Async::Loop->new;
     my $config = BOM::Config::third_party()->{risk_screen};
 
     $loop->add(
-        $api = WebService::Async::RiskScreen->new(
+        my $api = WebService::Async::RiskScreen->new(
             host    => $config->{api_url} // 'dummy',
             api_key => $config->{api_key} // 'dummy',
             port    => $config->{port},
-            timeout => 120
+            timeout => API_TIMEOUT
         ));
 
     return $api;
@@ -58,8 +99,45 @@ Get a connection to user database.
 
 =cut
 
-sub dbic {
+has dbic => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_dbic',
+);
+
+=head2 _build_dbic
+
+Creates a connection to user database.
+
+=cut
+
+sub _build_dbic {
     return BOM::Database::UserDB::rose_db()->dbic;
+}
+
+=head2 backoff
+
+Returns an L<Algorithm::Backoff> instance.
+
+=cut
+
+has backoff => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_backoff',
+);
+
+=head2 _build_backoff
+
+Creates an L<Algorithm::Backoff> instance.
+
+=cut
+
+sub _build_backoff {
+    return Algorithm::Backoff->new(
+        min => BACKOFF_INITIAL_DELAY,
+        max => BACKOFF_MAX_DELAY
+    );
 }
 
 =head2 get_user_by_interface_reference
@@ -78,7 +156,7 @@ It retruns a L<BOM::User> object.
 =cut
 
 sub get_user_by_interface_reference {
-    my ($interface_reference) = @_;
+    my ($self, $interface_reference) = @_;
 
     my $broker_codes = join '|', LandingCompany::Registry::all_broker_codes;
     $interface_reference //= '';
@@ -89,7 +167,7 @@ sub get_user_by_interface_reference {
     return BOM::User->new(loginid => $loginid);
 }
 
-=head2 get_new_riskscreen_customers
+=head2 get_udpated_riskscreen_customers
 
 Fetch the list of RiskScreen customers for which RiskScreen details should be updated,
 including: 
@@ -108,30 +186,45 @@ It returns an array of customer interface references.
 
 =cut
 
-async sub get_new_riskscreen_customers {
+async sub get_udpated_riskscreen_customers {
+    my ($self) = @_;
+
     # fetch all customers and group by user id
     my %user_data;
     my $constants = constants();
     for my $broker_code (LandingCompany::Registry::all_broker_codes) {
-        my $customers = await api->client_entity_search(
+        my $customers = await $self->api->client_entity_search(
             search_string => $broker_code,
             search_on     => $constants->{SearchOn}->{InterfaceReference},
             search_type   => $constants->{SearchType}->{Contains},
             search_status => $constants->{SearchStatus}->{Both},
         );
-        for my $customer (@$customers) {
-            my $user = get_user_by_interface_reference($customer->{interface_reference});
-            next unless $user;
 
-            $customer->{user}   = $user;
+        $log->debugf('%d customers found for the broker %s', scalar @$customers, $broker_code);
+
+        for my $customer (@$customers) {
+            my $user = $self->get_user_by_interface_reference($customer->{interface_reference});
+
+            my $user_id;
+
+            if ($user) {
+                $user_id = $user->{id};
+            } else {
+                # non-existing users should be skipped normally; but we can proceed for test.
+                next unless $self->update_all;
+
+                # set user_id to a unique negative value
+                $user_id = -1 * $customer->{client_entity_id};
+            }
+
             $customer->{status} = lc(delete $customer->{status_name});
 
-            push $user_data{$user->id}->@*, $customer;
+            push $user_data{$user_id}->@*, $customer;
         }
     }
 
     my @customer_ids;
-    # There are some users with more than one RiskScreen customers.dd
+    # There are some users with more than one RiskScreen customers.
     # TODO: It's better to remove redundant customers from RiskScreen server.
     for my $user_id (sort keys %user_data) {
         my @customers = $user_data{$user_id}->@*;
@@ -140,15 +233,28 @@ async sub get_new_riskscreen_customers {
         @customers = sort { $b->{date_added} cmp $a->{date_added} } @customers;
         my $selected_customer = (first { $_->{status} eq 'active' } @customers) // $customers[0];
 
-        my $user            = delete $selected_customer->{user};
-        my $old_data        = $user->risk_screen;
-        my $customer_is_new = !$old_data || $old_data->status eq 'requested' || $old_data->client_entity_id != $selected_customer->{client_entity_id};
+        # log skipped customers
+        for my $customer (@customers) {
+            $log->debugf(
+                "Customer %s is skipped in favor of it's sibling %s",
+                $customer->{interface_reference},
+                $selected_customer->{interface_reference}) if $customer->{interface_reference} ne $selected_customer->{interface_reference};
+        }
 
-        $user->set_risk_screen($selected_customer->%*);
-        push @customer_ids, $selected_customer->{interface_reference} if $customer_is_new;
+        my $user     = BOM::User->new(id => $user_id);
+        my $old_data = $user ? $user->risk_screen : undef;
+        my $customer_updated =
+               $self->update_all
+            || !$old_data
+            || $old_data->status =~ qr/(requested|outdated)/
+            || $old_data->client_entity_id != $selected_customer->{client_entity_id};
+
+        $user->set_risk_screen($selected_customer->%*) if $user;
+        push @customer_ids, $selected_customer->{interface_reference} if $customer_updated;
     }
 
     @customer_ids = sort(@customer_ids);
+    @customer_ids = @customer_ids[0 .. $self->count - 1] if $self->count;
     return @customer_ids;
 }
 
@@ -166,36 +272,64 @@ It accepts one argument:
 =cut
 
 async sub update_customer_match_details {
-    my @customer_ids = @_;
+    my ($self, @customer_ids) = @_;
 
-    await fmap_void(
-        async sub {
-            my ($interface_ref) = @_;
+    my $progress = 0;
+    for my $interface_ref (@customer_ids) {
+        my $user = $self->get_user_by_interface_reference($interface_ref);
 
-            my $customer_data = {interface_reference => $interface_ref};
+        my $error;
+        while (!$self->backoff->limit_reached) {
+            try {
+                my $customer_data = {interface_reference => $interface_ref};
 
-            # retrieve matching details
-            my $match_data = await api->client_entity_getdetail(interface_reference => $interface_ref);
+                # retrieve matching details
+                my $match_data = await $self->api->client_entity_getdetail(interface_reference => $interface_ref);
 
-            $customer_data->{$_} = $match_data->{$_} // 0 for qw/match_potential_volume match_discounted_volume match_flagged_volume/;
-            my @flags = uniq map { $_->{match_flag_category_name} // () } $match_data->{match_flagged}->@*;
-            $customer_data->{flags} = [sort @flags];
+                $customer_data->{$_} = $match_data->{$_} // 0 for qw/match_potential_volume match_discounted_volume match_flagged_volume/;
+                my @flags = uniq map { $_->{match_flag_category_name} // () } $match_data->{match_flagged}->@*;
+                $customer_data->{flags} = [sort @flags];
 
-            my @dates;
-            for my $match_type (qw/potential discounted flagged/) {
-                push @dates, map { $_->{matched_date} // $_->{generated_date} } $match_data->{"match_$match_type"}->@*;
+                my @dates;
+                for my $match_type (qw/potential discounted flagged/) {
+                    push @dates, map { $_->{matched_date} // $_->{generated_date} } $match_data->{"match_$match_type"}->@*;
+                }
+
+                @dates = sort { ($b // '') cmp($a // '') } @dates;
+                $customer_data->{date_updated} = $dates[0] if $dates[0];
+
+                # save to database
+                if ($user) {
+                    $user->set_risk_screen(%$customer_data);
+                    $log->debugf('Matches for the customer %s are saved to database', $interface_ref);
+                } else {
+                    $log->debugf(
+                        'Matches for the customer %s were fetched, but were not saved to database; because it does not exist in our database',
+                        $interface_ref);
+                }
+
+                last;
+            } catch ($e) {
+                $error = $e;
+                $log->debugf('Error processing %s: %s retrying ...', $interface_ref, $error);
+                my $loop = IO::Async::Loop->new;
+                await $loop->delay_future(after => $self->backoff->next_value);
             }
+        }
+        if ($self->backoff->limit_reached) {
+            $log->warnf('Failed to update matches for interface ref %s - %s', $interface_ref, Dumper $error);
+            # users with status 'outdated' will be updated next time
+            $user->set_risk_screen(status => 'outdated') if $user;
 
-            @dates = sort { ($b // '') cmp($a // '') } @dates;
-            $customer_data->{date_updated} = $dates[0] if $dates[0];
+            $self->{failed_customers} //= 0;
+            $self->{failed_customers} += 1;
 
-            # save to database
-            my $user = get_user_by_interface_reference($interface_ref);
-            $user->set_risk_screen(%$customer_data);
-        },
-        foreach    => \@customer_ids,
-        concurrent => 4
-    );
+            die 'Stopping the process because of too many failed cases' if $self->{failed_customers} > MAX_FAILURES_TOLERATED;
+        }
+        $self->backoff->reset_value;
+
+        $log->debugf('%d/%d profiles synced so far', $progress, scalar @customer_ids) if (++$progress % 100 == 0);
+    }
 
     return 1;
 }
@@ -214,7 +348,7 @@ It will collect and return an array of client interface references.
 =cut
 
 async sub get_customers_with_new_matches {
-    my $last_update_date = shift;
+    my ($self, $last_update_date) = @_;
 
     # Empty update-date means that all custemers were new.
     # Their match details are already fetched.
@@ -225,28 +359,38 @@ async sub get_customers_with_new_matches {
 
     return () if $today->is_before($start_date);
 
+    my $days_to_process = $today->days_between($start_date);
+    $log->debugf('Started to sync matches since %s', $last_update_date);
+
     my %customers;
-    await fmap_void(
-        async sub {
-            my ($days) = @_;
+    my %skipped;
+    my $total_matches = 0;
+    for my $days (0 .. $days_to_process) {
+        my $date = $start_date->plus_time_interval("${days}d");
+        $log->debugf('Fetching matches for %s', $date->date);
 
-            my $date    = $start_date->plus_time_interval("${days}d");
-            my $matches = await api->report_match_data_by_day(date => $date->date);
+        my $matches = await $self->api->report_match_data_by_day(date => $date->date);
+        $total_matches += scalar @$matches;
 
-            for my $match (@$matches) {
-                my $id = $match->{client_entity_id};
-                next if $customers{$id};
+        for my $match (@$matches) {
+            my $id = $match->{client_entity_id};
+            next if $customers{$id};
 
-                # if customer does not exist in out databse, it will be skipped.
-                my ($riskscreen) = BOM::User::RiskScreen->find(client_entity_id => $id);
-                next unless $riskscreen;
-
-                $customers{$id} = $riskscreen;
+            # if customer does not exist in our database, it will be skipped.
+            my ($riskscreen) = BOM::User::RiskScreen->find(client_entity_id => $id);
+            unless ($riskscreen) {
+                $skipped{client_entity_id} = 1;
+                next;
             }
-        },
-        foreach    => [0 .. $today->days_between($start_date)],
-        concurrent => 1
-    );
+
+            $customers{$id} = $riskscreen;
+        }
+        last if $self->count && scalar(keys %customers) >= $self->count;
+    }
+
+    $log->debugf('Total matches found: %d',                                                                        $total_matches);
+    $log->debugf("Matches for %d customers were skipped, because their entity ids were not found in our database", scalar(keys %skipped))
+        if scalar(keys %skipped);
 
     my @customer_ids = map { $_->{interface_reference} } values %customers;
     return @customer_ids;
@@ -259,22 +403,30 @@ Fetches all new data from RiskScreen and saves them to database. It is the top-m
 =cut
 
 async sub sync_all_customers {
-    my ($last_update_date) = dbic->run(
+    my ($self) = @_;
+
+    my ($last_update_date) = $self->dbic->run(
         fixup => sub {
             return $_->selectrow_array('select * from users.get_risk_screen_max_date_updated()');
         });
+    $last_update_date //= Date::Utility->new->minus_time_interval('1d')->date;
 
-    my @new_customer_ids = await get_new_riskscreen_customers();
-    await update_customer_match_details(@new_customer_ids);
+    #new or updated riskscreen profiles
+    my @new_customer_ids = await $self->get_udpated_riskscreen_customers();
+    $log->debugf('%d riskscreen profiles will be updated', scalar @new_customer_ids);
 
-    my @updated_customer_ids = await get_customers_with_new_matches($last_update_date);
-    await update_customer_match_details(@updated_customer_ids);
+    await $self->update_customer_match_details(@new_customer_ids);
+    $log->debugf('Matches synced for the new and updated profiles');
 
-    return {
-        new_customers     => \@new_customer_ids,
-        updated_customers => \@updated_customer_ids,
-        last_update_date  => $last_update_date,
-    };
+    # profiles with new matches
+    my @updated_customer_ids = await $self->get_customers_with_new_matches($last_update_date);
+    $log->debugf('%d profiles with new matches found', scalar @updated_customer_ids);
+
+    await $self->update_customer_match_details(@updated_customer_ids);
+
+    $log->debugf('FINISHED');
+
+    return 1;
 }
 
 1;

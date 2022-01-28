@@ -25,7 +25,7 @@ try {
 
     my $port = $server->start->get;
     print "RiskScreen mock server is started. Please edit settings in third_party.yml: \n";
-    print "api_url: http//localhost \n port: $port \n ";
+    print "api_url: http://localhost \n port: $port \n ";
 
     $loop->run;
 } catch ($e) {
