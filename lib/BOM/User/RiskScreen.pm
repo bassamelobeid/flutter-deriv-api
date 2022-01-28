@@ -22,7 +22,7 @@ use List::Util qw(any);
 use BOM::User;
 use BOM::Database::UserDB;
 
-use constant STATUS => [qw(active disabled requested)];
+use constant STATUS => [qw(active disabled requested outdated)];
 
 =head2 new
 
