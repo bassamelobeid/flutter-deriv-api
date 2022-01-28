@@ -377,7 +377,8 @@ subtest 'auto b-booking' => sub {
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'financial';
     is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'}, 'financial stp account no high risk flag';
-    #reset
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
 };
 
@@ -407,6 +408,8 @@ subtest 'real & demo split on account creation' => sub {
             leverage     => 100,
         },
     };
+
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(1);
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'gaming';
@@ -414,7 +417,6 @@ subtest 'real & demo split on account creation' => sub {
 
     note("disable real02 trade server's API");
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
-
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{account_type} = 'demo';
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
@@ -458,7 +460,7 @@ subtest 'account creation throttle' => sub {
 };
 
 subtest 'open mt5 account from AFF client' => sub {
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(0);
 
     my $password = 'Abcd33!@';
     my $hash_pwd = BOM::User::Password::hashpw($password);
@@ -532,6 +534,7 @@ subtest 'open mt5 account from AFF client' => sub {
         ->error_message_is(
         "An account already exists with the information you provided. If you've forgotten your username or password, please contact us.");
 
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(1);
 };
 
 done_testing();
