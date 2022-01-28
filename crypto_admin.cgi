@@ -12,13 +12,13 @@ use BOM::Config::Runtime;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::CTC::Currency;
+use BOM::CTC::Database;
 use BOM::CTC::Script::Address;
 use BOM::Backoffice::Request;
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::Config::Redis;
-use BOM::Cryptocurrency::Helper;
 use Math::BigFloat;
 
 use BOM::Backoffice::Sysinit ();
@@ -52,6 +52,7 @@ my $controller_url           = request()->url_for('backoffice/crypto_admin.cgi')
 my $template_currency_mapper = {
     LTC => 'BTC',
 };
+my $crypto_db_helper = BOM::CTC::Database->new();
 
 my $tt = BOM::Backoffice::Request::template;
 
@@ -107,7 +108,7 @@ if (%input && $input{req_type}) {
         my $redis_read  = BOM::Config::Redis::redis_replicated_read();
 
         if ($req_type eq 'gt_get_error_txn') {
-            my $error_withdrawals = BOM::Cryptocurrency::Helper::get_withdrawal_error_txn($input{gt_currency});
+            my $error_withdrawals = $crypto_db_helper->get_withdrawal_error_txn($input{gt_currency});
 
             foreach my $txn_record (keys %$error_withdrawals) {
                 my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_record);
@@ -157,15 +158,17 @@ if (%input && $input{req_type}) {
             if (scalar $txid_approver_mapping->@*) {
                 try {
 
-                    my $reverted = BOM::Cryptocurrency::Helper::revert_txn_status_to_processing($txid_approver_mapping, $input{gt_currency}, $staff);
+                    my $reverted_trxns = $crypto_db_helper->revert_txn_status_to_processing($txid_approver_mapping, $input{gt_currency}, $staff);
 
-                    for ($reverted->@*) {
+                    for ($reverted_trxns->@*) {
                         push @{$messages{"<p class='success'>Following transaction(s) has been successfully reverted.<br />%s</p>"}}, $_->{id};
                         $redis_write->del(REVERT_ERROR_TXN_RECORD . $_->{id});
                     }
 
-                    if (scalar $reverted->@* == 0 || (scalar $reverted->@* && scalar $txid_approver_mapping->@* != scalar $reverted->@*)) {
-                        my %to_delete   = map { $_->{id} => 1 } $reverted->@*;
+                    if (scalar $reverted_trxns->@* == 0
+                        || (scalar $reverted_trxns->@* && scalar $txid_approver_mapping->@* != scalar $reverted_trxns->@*))
+                    {
+                        my %to_delete   = map { $_->{id} => 1 } $reverted_trxns->@*;
                         my @failed_txns = map { $_->{id} } grep { !$to_delete{$_->{id}} } $txid_approver_mapping->@*;
                         push @{
                             $messages{

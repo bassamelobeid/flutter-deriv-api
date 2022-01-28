@@ -21,13 +21,16 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw( request );
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
+use BOM::Cryptocurrency::Helper qw( reprocess_address );
 use BOM::CTC::Currency;
-use BOM::Cryptocurrency::Helper qw( reprocess_address get_crypto_transactions );
+use BOM::CTC::Database;
 
 use constant CRYPTO_DEFAULT_TRANSACTION_COUNT => 50;
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
+
+my $cryptodb_helper = BOM::CTC::Database->new();
 
 my $broker  = request()->broker_code;
 my $loginid = uc(request()->param('loginID') // '');
@@ -157,7 +160,7 @@ my $render_crypto_transactions = sub {
         }
 
         $_
-    } get_crypto_transactions($txn_type, %query_params)->@*;
+    } $cryptodb_helper->get_crypto_transactions($txn_type, %query_params)->@*;
 
     my %client_details;
     if ($loginid) {
@@ -172,11 +175,10 @@ my $render_crypto_transactions = sub {
 
     my $reprocess_info;
     if ($txn_type eq 'deposit' && $action eq 'reprocess_address') {
+        my $currency_wrapper = $get_currency_info->(request()->param('trx_currency_to_reprocess'))->{wrapper};
+
         $reprocess_info->{trx_id} = request()->param('trx_id_to_reprocess');
-        $reprocess_info->{result} = reprocess_address(
-            $get_currency_info->(request()->param('trx_currency_to_reprocess'))->{wrapper},
-            request()->param('address_to_reprocess'),
-        );
+        $reprocess_info->{result} = reprocess_address($currency_wrapper, request()->param('address_to_reprocess'));
     }
 
     my $make_pagination_url = sub {
