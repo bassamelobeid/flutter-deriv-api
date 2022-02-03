@@ -34,7 +34,9 @@ Provides functions for tracking events.
 # loginid, lang and brand are always sent for events, and do not need to be inlcuded here.
 
 my %EVENT_PROPERTIES = (
-    identify => [
+    reset_password_request      => [qw(loginid first_name verification_url social_login email lost_password language code)],
+    reset_password_confirmation => [qw(loginid first_name type)],
+    identify                    => [
         qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country unsubscribed)
     ],
     login  => [qw (browser device ip new_signin_activity location app_name)],
@@ -127,6 +129,8 @@ my %EVENT_PROPERTIES = (
 
 my @SKIP_BRAND_VALIDATION = qw(
     p2p_advertiser_approved
+    reset_password_request
+    reset_password_confirmation
     p2p_order_created
     p2p_order_buyer_has_paid
     p2p_order_seller_has_released
@@ -1372,31 +1376,18 @@ sub _time_to_iso_8601 {
 =head2 crypto_withdrawal_email
 
 It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it to Rudderstack.
-
 =over 4
-
 =item * C<properties> - required. Event properties which contains:
-
 =over 4
-
 =item - C<loginid> - required. Login id of the client.
-
 =item - C<amount> - required. Amount of transaction
-
 =item - C<currency> - required. Currency type
-
 =item - C<transaction_hash> - required. Transaction hash
-
 =item - C<transaction_url> - required. Transaction url
-
 =item - C<live_chat_url> - required. Live-chat url
-
 =item - C<title> - required. Title
-
 =back
-
 =back
-
 =cut
 
 sub crypto_withdrawal_email {
@@ -1409,6 +1400,58 @@ sub crypto_withdrawal_email {
         properties => $args,
     );
 
+}
+
+=head2 reset_password_request
+
+It is triggered for each B<reset_password_request> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+    
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub reset_password_request {
+    my ($args) = @_;
+    my $properties = $args->{properties} // {};
+
+    return track_event(
+        event      => 'reset_password_request',
+        loginid    => $args->{loginid},
+        properties => $properties
+    );
+}
+
+=head2 reset_password_confirmation
+
+It is triggered for each B<reset_password_confirmation> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+    
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub reset_password_confirmation {
+    my ($args) = @_;
+    my $properties = $args->{properties} // {};
+
+    return track_event(
+        event      => 'reset_password_confirmation',
+        loginid    => $args->{loginid},
+        properties => $properties
+    );
 }
 
 1;

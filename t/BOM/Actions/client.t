@@ -369,6 +369,67 @@ subtest 'upload document' => sub {
             }
         };
 
+        subtest 'password reset' => sub {
+            my $req = BOM::Platform::Context::Request->new(
+                brand_name => 'deriv',
+                language   => 'ID',
+                app_id     => $app_id,
+            );
+            request($req);
+            undef @identify_args;
+            undef @track_args;
+
+            my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+            });
+
+            my $args = {
+                loginid    => $test_client->loginid,
+                properties => {
+                    first_name       => 'Potato',
+                    verification_url => 'https://ver.url',
+                    social_login     => 1,
+                    email            => 'potato@binary.com',
+                    lost_password    => 1,
+                    code             => 'CODEE',
+                    language         => 'en',
+                }};
+
+            my $handler = BOM::Event::Process::get_action_mappings()->{reset_password_request};
+            ok $handler->($args);
+            my $result = $handler->($args)->get;
+            ok $result, 'Success result';
+            is scalar @track_args, 7, 'Track event is triggered';
+        };
+
+        subtest 'reset_password_confirmation' => sub {
+            my $req = BOM::Platform::Context::Request->new(
+                brand_name => 'deriv',
+                language   => 'ID',
+                app_id     => $app_id,
+            );
+            request($req);
+            undef @identify_args;
+            undef @track_args;
+
+            my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+            });
+
+            my $args = {
+                loginid    => $test_client->loginid,
+                properties => {
+                    first_name => 'Potato',
+                    type       => 'reset_password',
+                }};
+
+            my $handler = BOM::Event::Process::get_action_mappings()->{reset_password_confirmation};
+            ok $handler->($args);
+            my $result = $handler->($args)->get;
+            ok $result, 'Success result';
+            is scalar @track_args, 7, 'Track event is triggered';
+        };
+
         # Redis key for resubmission flag
         $test_client->status->set('allow_poi_resubmission', 'test', 'test');
         $test_client->copy_status_to_siblings('allow_poi_resubmission', 'test');

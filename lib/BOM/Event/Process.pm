@@ -46,6 +46,8 @@ Based on type of event its associated method is invoked.
 =cut
 
 my $action_mapping = {
+    reset_password_request                           => \&BOM::Event::Actions::Client::reset_password_request,
+    reset_password_confirmation                      => \&BOM::Event::Actions::Client::reset_password_confirmation,
     multiplier_hit_type                              => \&BOM::Event::Actions::Contract::multiplier_hit_type,
     email_statement                                  => \&BOM::Event::Actions::CustomerStatement::email_statement,
     sync_user_to_MT5                                 => \&BOM::Event::Actions::MT5::sync_info,
