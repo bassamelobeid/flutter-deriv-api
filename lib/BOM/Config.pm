@@ -317,4 +317,18 @@ sub redis_cfds_config {
     state $config = YAML::XS::LoadFile('/etc/rmg/redis-cfds.yml');
     return $config;
 }
+
+=head2 services_config
+
+    BOM::Config::services_config()
+
+Loads and caches configuration for internal services
+
+=cut
+
+sub services_config {
+    state $config = YAML::XS::LoadFile('/etc/rmg/services.yml');
+    return $config;
+}
+
 1;

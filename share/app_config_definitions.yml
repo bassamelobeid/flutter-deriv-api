@@ -1129,6 +1129,15 @@ system:
           isa: ArrayRef
           default: []
           global: 1
+    services:
+      description: "Enable integrations with internal services"
+      isa: section
+      contains:
+        fraud_prevention:
+          description: "Enables integration with Fraud Prevention service"
+          isa: Bool
+          default: 0
+          global: 1
     stop:
       description: "Stop one or more of our services"
       isa: section
