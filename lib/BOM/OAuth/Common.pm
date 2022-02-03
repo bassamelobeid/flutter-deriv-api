@@ -167,32 +167,32 @@ sub notify_login {
                 }});
     }
 
-    if ($unknown_location && $brand->send_signin_email_enabled()) {
+    if ($unknown_location) {
+        my $password_reset_url = $brand->password_reset_url({
+            website_name => $brand->website_name,
+            source       => $app->{id},
+            language     => $request->language,
+            app_name     => $app->{name},
+        });
+
         my $email_data = {
-            name        => $client->first_name,
-            title       => localize("New device login"),
-            client_name => $client->first_name
-            ? ' ' . $client->first_name . ' ' . $client->last_name
-            : '',
+            title                     => localize("New device login"),    # Deriv email header: https://fly.customer.io/env/89555/layouts/5
             country                   => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
             device                    => $bd->device                                                             // $bd->os_string,
             browser                   => $bd->browser_string                                                     // $bd->browser,
-            app                       => $app,
+            app_name                  => $app->{name},
             ip                        => $ip,
-            language                  => lc($request->language),
-            start_url                 => 'https://' . lc($brand->website_name),
+            lang                      => lc($request->language),
             is_reset_password_allowed => is_reset_password_allowed($app->{id}),
+            password_reset_url        => lc($password_reset_url),
+            first_name                => $client->first_name,
         };
 
         send_email({
-            to                    => $client->email,
-            subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
-            template_name         => 'unknown_login',
-            template_args         => $email_data,
-            template_loginid      => $client->loginid,
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 1
+            use_event  => 1,
+            event      => 'unknown_login',
+            loginid    => $client->loginid,
+            properties => $email_data,
         });
     }
 }
