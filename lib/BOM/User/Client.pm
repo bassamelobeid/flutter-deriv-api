@@ -6009,6 +6009,9 @@ sub update_status_after_auth_fa {
             # clear withdrawal_locked set by check_name_changes_after_first_deposit event
             $sibling->status->clear_withdrawal_locked
                 if ($sibling->status->reason('withdrawal_locked') // '') eq 'Excessive name changes after first deposit - pending POI';
+
+            # Potential fraud limitations should be lifted after proof identity.
+            $sibling->status->clear_potential_fraud;
         }
     }
 
@@ -6584,6 +6587,8 @@ sub needs_poi_verification {
     unless ($self->status->age_verification or $self->fully_authenticated) {
         # If shared payment method, the POI is required
         return 1 if $self->status->shared_payment_method;
+        # If detected as potential fraud, POI is mandatory
+        return 1 if $self->status->potential_fraud;
         # POI is required for payment agents
         return 1 if $self->get_payment_agent;
         #  Account locked  for  false profile, will be unlocked only by POI
