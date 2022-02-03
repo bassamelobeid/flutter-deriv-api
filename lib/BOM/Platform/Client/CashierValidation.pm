@@ -60,7 +60,8 @@ my %error_to_status_mapping = (
     NoWithdrawalOrTradingStatus => 'no_withdrawal_or_trading_status',
     WithdrawalLockedStatus      => 'withdrawal_locked_status',
     HighRiskNotAuthenticated    => 'ASK_AUTHENTICATE',
-    system_maintenance_crypto   => 'system_maintenance'
+    PotentialFraud              => 'ASK_AUTHENTICATE',
+    system_maintenance_crypto   => 'system_maintenance',
 );
 
 =head2 validate

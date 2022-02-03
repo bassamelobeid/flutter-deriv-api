@@ -95,8 +95,12 @@ sub after_register_client {
 
     unless ($client->is_virtual) {
         $client->user->set_tnc_approval;
-        copy_status_from_siblings($client, $user,
-            ['no_trading', 'withdrawal_locked', 'age_verification', 'transfers_blocked', 'allow_poi_resubmission', 'allow_poa_resubmission']);
+        copy_status_from_siblings(
+            $client, $user,
+            [
+                'no_trading',             'withdrawal_locked',      'age_verification', 'transfers_blocked',
+                'allow_poi_resubmission', 'allow_poa_resubmission', 'potential_fraud'
+            ]);
     }
 
     BOM::Platform::Client::Sanctions->new({
