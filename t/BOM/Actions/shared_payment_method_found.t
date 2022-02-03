@@ -36,7 +36,7 @@ my $shared_user = BOM::User->create(
 );
 $shared_user->add_client($shared_client);
 
-my $action_handler = BOM::Event::Process::get_action_mappings()->{shared_payment_method_found};
+my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{shared_payment_method_found};
 
 subtest 'Shared PM event' => sub {
     # Mocking send_email

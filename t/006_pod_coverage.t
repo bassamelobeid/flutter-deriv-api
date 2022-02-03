@@ -9,7 +9,7 @@ use Test::Pod::CoverageChange;
 # The number of naked (undocumented) subs should never be increased in this hashref.
 
 my $allowed_naked_packages = {
-    'BOM::Event::Listener'                              => 10,
+    'BOM::Event::Listener'                              => 11,
     'BOM::Event::Services'                              => 10,
     'BOM::Event::Actions::P2P'                          => 2,
     'BOM::Event::Actions::CryptoSubscription'           => 2,

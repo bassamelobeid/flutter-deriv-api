@@ -34,9 +34,13 @@ One and only one option must be passed.
 
 The name of the queue in Redis that this will be listening to.
 
-=head2 --stream NAME
+=head2 --streams NAME
 
-The name of the stream in Redis that this will be listening to.
+Comma separated names of Redis streams that this will be listening to.
+
+=head2 --category NAME
+
+The type of worker, this controls the category of jobs that will be processed.
 
 =cut
 
@@ -48,14 +52,16 @@ binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
 
 GetOptions(
-    'q|queue=s'          => \(my $queue  = undef),
-    's|stream=s'         => \(my $stream = undef),
+    'q|queue=s'          => \(my $queue   = undef),
+    's|streams=s'        => \(my $streams = undef),
+    'c|category=s'       => \(my $category),
     'json_log_file=s'    => \(my $json_log_file),
     'maximum_job_time=i' => \(my $maximum_job_time),
+    'l|log_level=s'      => \(my $log_level),
 ) or die;
 
 #One and only one option must be passed
-unless (!$queue != !$stream) {
+unless ($category && (!$queue != !$streams)) {
     pod2usage(1);
     die "Invalid Options Entered";
 }
@@ -63,14 +69,15 @@ unless (!$queue != !$stream) {
 $json_log_file ||= '/var/log/deriv/' . path($0)->basename . '.json.log';
 Log::Any::Adapter->import(
     qw(DERIV),
-    log_level     => $ENV{BOM_LOG_LEVEL} // 'info',
-    json_log_file => $json_log_file
+    log_level     => $log_level // $ENV{BOM_LOG_LEVEL} // 'info',
+    json_log_file => $json_log_file,
 );
 
 my $listener = BOM::Event::Listener->new(
     queue            => $queue,
-    stream           => $stream,
+    streams          => [split ',', $streams],
     maximum_job_time => $maximum_job_time,
+    category         => $category,
 );
 
 $listener->run;

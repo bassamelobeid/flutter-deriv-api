@@ -20,12 +20,6 @@ my $redis = BOM::Config::Redis::redis_events_write();
 my $loop  = IO::Async::Loop->new;
 my $handler;
 my $mock_log_adapter_test = Test::MockModule->new('Log::Any::Adapter::Test');
-# Need to mock because in `Log::Any::Adapter::Test` is_debug always returns 1 that is used in OM::Event::QueueHandler->clean_data_for_logging.
-$mock_log_adapter_test->mock(
-    'is_debug',
-    sub {
-        return 0;
-    });
 
 subtest 'startup and shutdown queue' => async sub {
     lives_ok { $handler = BOM::Event::QueueHandler->new(queue => 'GENERIC_EVENTS_QUEUE') } 'create new queue instance';
@@ -46,7 +40,7 @@ subtest 'undefined functions' => sub {
     $handler = BOM::Event::QueueHandler->new(queue => 'GENERIC_EVENTS_QUEUE');
     $loop->add($handler);
     $handler->process_job('GENERIC_EVENTS_QUEUE', {type => 'unknown_function'})->get;
-    $log->contains_ok(qr/no function mapping found for event/, "undefined functions should return an error");
+    $log->contains_ok(qr/ignoring event unknown_function from stream GENERIC_EVENTS_QUEUE/, 'unhandled messages should be ignored');
 };
 
 SKIP: {
@@ -56,11 +50,10 @@ SKIP: {
         my $module = Test::MockModule->new('BOM::Event::Process');
         $log->clear;
         $module->mock(
-            'get_action_mappings',
+            'actions',
             sub {
                 return {
                     sync_sub => sub { sleep(shift->{wait}); $log->warn('test did not time out'); }
-
                 };
             });
 
@@ -99,7 +92,7 @@ SKIP: {
         $log->clear;
         $module = Test::MockModule->new('BOM::Event::Process');
         $module->mock(
-            'get_action_mappings',
+            'actions',
             sub {
                 return {
                     sync_sub_2 => async sub { sleep(shift->{wait}); $log->warn('test did not time out'); }
@@ -164,7 +157,7 @@ subtest 'async_subs' => sub {
 
     my $module = Test::MockModule->new('BOM::Event::Process');
     $module->mock(
-        'get_action_mappings',
+        'actions',
         sub {
             return {
                 async_sub_1 => async sub {
@@ -214,6 +207,13 @@ subtest 'async_subs' => sub {
     is $f, 'test did not time out', "Async job greater then MAXIMUM_PROCESSING_TIME but less than MAXIMUM_JOB_TIME should not time out.";
     $module->unmock_all();
 };
+
+# Need to mock because in `Log::Any::Adapter::Test` is_debug always returns 1 that is used in OM::Event::QueueHandler->clean_data_for_logging.
+$mock_log_adapter_test->mock(
+    'is_debug',
+    sub {
+        return 0;
+    });
 
 subtest 'clean_data_for_logging' => sub {
     my $event_data_json       = '{"details":{"loginid":"CR10000","properties":{"type":"real"},"email":"abc@def.com"}}';

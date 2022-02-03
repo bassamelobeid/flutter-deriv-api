@@ -87,7 +87,7 @@ $mocked_datadog->redefine('stats_inc', sub { @datadog_args = @_ });
 
 subtest 'Acquired sent events' => sub {
     for my $event (keys %payloads) {
-        my $action_handler = BOM::Event::Process::get_action_mappings()->{dispute_notification};
+        my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{dispute_notification};
         my @emails_sent;
 
         BOM::Test::Email::mailbox_clear();
@@ -102,7 +102,7 @@ subtest 'Acquired sent events' => sub {
 };
 
 subtest 'Unsupported provider' => sub {
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{dispute_notification};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{dispute_notification};
     my @emails_sent;
 
     BOM::Test::Email::mailbox_clear();
@@ -118,7 +118,7 @@ subtest 'Unsupported provider' => sub {
 };
 
 subtest 'Unsupported acquired event' => sub {
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{dispute_notification};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{dispute_notification};
     my @emails_sent;
 
     BOM::Test::Email::mailbox_clear();

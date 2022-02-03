@@ -26,7 +26,7 @@ $user->add_client($client);
 
 my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
 
-my $idv_event_handler = BOM::Event::Process::get_action_mappings()->{identity_verification_requested};
+my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
 my $args = {
     loginid => $client->loginid,

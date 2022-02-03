@@ -29,12 +29,16 @@ capable of being rerun.
 
 =head1 SYNOPSIS
 
-    start_long_running_job_queue.pl  --stream <stream_name> --queue <queue_name> --maximum_process_time=<Process time out> --maximum_job_time=<Max job time> --number_of_workers=<number of processes to spawn> --shutdown_time_out=<Number of seconds allowed for graceful shutdown>
+    start_long_running_job_queue.pl  --streams <stream1,stream2> --queue <queue_name> --maximum_process_time=<Process time out> --maximum_job_time=<Max job time> --number_of_workers=<number of processes to spawn> --shutdown_time_out=<Number of seconds allowed for graceful shutdown>
 
 
 =over 4
 
 =item * --queue  the name of the queue in Redis that this will be listening to.
+
+=item * --streams  comma separated list of Redis streams to listen to.
+
+=item * --type  type of jobs to process
 
 =item * --maximum_process_time : The maximum number of seconds a Synchronous job can run for.
 
@@ -56,24 +60,32 @@ $options{running_parallel}  = 0;
 $options{shutdown_time_out} = 60;    #this defaults to 60 seconds in BOM::Event::Listener so makes sense to default to the same here.
 $options{number_of_workers} = max(1, Sys::Info->new->device("CPU")->count);
 $options{json_log_file}     = '/var/log/deriv/' . path($0)->basename . '.json.log';
+$options{log_level}         = 'info';
 
-GetOptions(\%options, "stream=s", "number_of_workers=i", "queue=s", "maximum_job_time=i", "maximum_process_time=i", "shutdown_time_out=i",
-    "json_log_file=s");
+GetOptions(
+    \%options,            "streams=s",              "number_of_workers=i", "queue=s",
+    "maximum_job_time=i", "maximum_process_time=i", "shutdown_time_out=i", "json_log_file=s",
+    "category=s",         "log_level=s",
+);
+
 Log::Any::Adapter->import(
     qw(DERIV),
-    log_level     => $ENV{BOM_LOG_LEVEL} // 'info',
+    log_level     => $options{log_level} // $ENV{BOM_LOG_LEVEL},
     json_log_file => $options{json_log_file},
 );
 
 # Between queue and stream options one and only one of them should be used,
 # maximum_job_time and maximum_process_time are required options.
-if (   !(!$options{queue} != !$options{stream})
+if (   !(!$options{queue} != !$options{streams})
     || !$options{maximum_job_time}
-    || !$options{maximum_process_time})
+    || !$options{maximum_process_time}
+    || !$options{category})
 {
     pod2usage(1);
     die " Invalid Options Entered ";
 }
+
+$options{streams} = [split ',', $options{streams}];
 
 my @running_forks;
 my @workers = (0) x $options{number_of_workers};

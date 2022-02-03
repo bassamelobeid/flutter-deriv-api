@@ -47,7 +47,7 @@ $mock_sb->mock('view_group_chat' => $mock_channel);
 for my $status (sort keys %tests) {
     undef $frozen;
     BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
-    BOM::Event::Process::process({
+    BOM::Event::Process->new(category => 'generic')->process({
             type    => 'p2p_order_updated',
             details => {
                 client_loginid => $client->loginid,

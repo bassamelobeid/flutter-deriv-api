@@ -135,7 +135,7 @@ subtest 'mt5 track event' => sub {
         undef @identify_args;
         undef @track_args;
 
-        my $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
+        my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
         my $result         = $action_handler->($args)->get;
         ok $result, 'Success mt5 new account result';
 
@@ -200,7 +200,7 @@ subtest 'mt5 track event' => sub {
         undef @identify_args;
         undef @track_args;
 
-        my $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
+        my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
         my $result         = $action_handler->($args)->get;
         ok $result, 'Success mt5 new account result';
 
@@ -256,7 +256,7 @@ subtest 'mt5 track event' => sub {
         };
         undef @track_args;
 
-        my $action_handler = BOM::Event::Process::get_action_mappings()->{mt5_password_changed};
+        my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_password_changed};
 
         like exception { $action_handler->($args)->get; }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
         is scalar @track_args,    0, 'Track is not triggered';
@@ -314,7 +314,7 @@ subtest 'sanctions' => sub {
         'sub_account_type' => 'financial'
     };
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
     is $action_handler->($args)->get, 1, 'Success mt5 new account result';
 
     is scalar @sanct_args, 0, 'sanctions are not included in signup actions';
@@ -369,7 +369,7 @@ subtest 'mt5 inactive notification' => sub {
     undef @identify_args;
     undef @track_args;
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{mt5_inactive_notification};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_inactive_notification};
 
     like exception { $action_handler->($args)->get; }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
     is scalar @track_args,    0, 'Track is not triggered';
@@ -459,7 +459,7 @@ subtest 'mt5 inactive account closed' => sub {
 
     mailbox_clear();
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{mt5_inactive_account_closed};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_inactive_account_closed};
 
     like exception { $action_handler->($args) }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
 
@@ -497,7 +497,7 @@ subtest 'mt5 account closure report' => sub {
 
     mailbox_clear();
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{mt5_inactive_account_closure_report};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_inactive_account_closure_report};
     $action_handler->($args);
 
     my $email = mailbox_search(

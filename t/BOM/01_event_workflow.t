@@ -7,6 +7,7 @@ use Log::Any qw($log);
 use Test::Fatal;
 use Test::MockModule;
 use Test::More;
+use Test::Deep;
 
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Platform::Event::Emitter;
@@ -103,12 +104,14 @@ subtest 'emit' => sub {
 
 };
 
-subtest 'process' => sub {
-    my $action_mappings = BOM::Event::Process::get_action_mappings();
-    is_deeply(
-        [sort keys %$action_mappings],
-        [
-            sort qw/email_statement sync_user_to_MT5 send_email
+subtest 'process - generic jobs' => sub {
+    my $proc            = BOM::Event::Process->new(category => 'generic');
+    my $action_mappings = $proc->actions;
+
+    cmp_deeply(
+        [keys %$action_mappings],
+        bag(
+            qw/email_statement sync_user_to_MT5 send_email
                 store_mt5_transaction new_mt5_signup mt5_password_changed anonymize_client bulk_anonymization
                 document_upload ready_for_authentication account_closure client_verification
                 verify_address social_responsibility_check sync_onfido_details
@@ -121,7 +124,7 @@ subtest 'process' => sub {
                 affiliate_sync_initiated withdrawal_limit_reached
                 api_token_created api_token_deleted
                 app_registered app_updated app_deleted self_exclude set_financial_assessment crypto_withdrawal aml_client_status_update
-                client_promo_codes_upload new_crypto_address onfido_doc_ready_for_upload shared_payment_method_found multiplier_hit_type
+                client_promo_codes_upload new_crypto_address onfido_doc_ready_for_upload shared_payment_method_found
                 dispute_notification account_reactivated verify_false_profile_info check_onfido_rules mt5_inactive_notification mt5_inactive_account_closed
                 identity_verification_requested trading_platform_account_created trading_platform_password_reset_request
                 trading_platform_investor_password_reset_request trading_platform_password_changed trading_platform_password_change_failed
@@ -130,23 +133,22 @@ subtest 'process' => sub {
                 fraud_address affiliate_loginids_sync p2p_advertiser_approval_changed crypto_withdrawal_email
                 reset_password_request reset_password_confirmation
                 p2p_advertiser_cancel_at_fault p2p_advertiser_temp_banned cms_add_affiliate_client df_anonymization_done/
-
-        ],
+        ),
         'Correct number of actions that can be emitted'
     );
 
     is(ref($action_mappings->{$_}), 'CODE', 'event handler is a code reference') for keys %$action_mappings;
 
-    BOM::Event::Process::process({}, QUEUE_NAME);
-    $log->contains_ok(qr/no function mapping found for event <unknown> from stream GENERIC_EVENTS_STREAM/, 'Empty message not processed');
+    $proc->process({}, 'my_stream');
+    $log->contains_ok(qr/ignoring event <unknown> from stream my_stream/, 'Empty message not processed');
 
-    BOM::Event::Process::process({type => 'dummy_action'}, QUEUE_NAME);
-    $log->contains_ok(qr/no function mapping found for event dummy_action from stream GENERIC_EVENTS_STREAM/,
+    $proc->process({type => 'dummy_action'}, QUEUE_NAME);
+    $log->contains_ok(qr/ignoring event dummy_action from stream GENERIC_EVENTS_STREAM/,
         'Process cannot be processed as function action is not available');
 
     my $mock_process = Test::MockModule->new('BOM::Event::Process');
-    $mock_process->mock(
-        'get_action_mappings' => sub {
+    $mock_process->redefine(
+        'actions' => sub {
             return {
                 signup          => sub { return 'Details registered'; },
                 profile_change  => sub { return 'Unsubscribe flag updated'; },
@@ -154,14 +156,15 @@ subtest 'process' => sub {
             };
         });
 
-    is BOM::Event::Process::process({
+    is $proc->process({
             type    => 'signup',
             details => {}
         },
         QUEUE_NAME
         ),
         'Details registered', 'Invoked associated sub for signup event';
-    is BOM::Event::Process::process({
+
+    is $proc->process({
             type    => 'profile_change',
             details => {}
         },
@@ -169,7 +172,7 @@ subtest 'process' => sub {
         ),
         'Unsubscribe flag updated', 'Invoked associated sub for profile_change event';
 
-    is BOM::Event::Process::process({
+    is $proc->process({
             type    => 'email_statement',
             details => {}
         },
@@ -177,10 +180,8 @@ subtest 'process' => sub {
         ),
         'Statement has been sent', 'Invoked associated sub for email_statement event';
 
-    $mock_process->unmock('get_action_mappings');
-
-    $mock_process->mock(
-        'get_action_mappings' => sub {
+    $mock_process->redefine(
+        'actions' => sub {
             return {
                 signup          => sub { die 'Error - connection error'; },
                 profile_change  => sub { die 'Error - connection error'; },
@@ -188,7 +189,7 @@ subtest 'process' => sub {
             };
         });
 
-    is BOM::Event::Process::process({
+    is $proc->process({
             type    => 'signup',
             details => {}
         },
@@ -196,7 +197,7 @@ subtest 'process' => sub {
         ),
         0, 'If internal method die then process should just return false not die';
 
-    is BOM::Event::Process::process({
+    is $proc->process({
             type    => 'profile_change',
             details => {}
         },
@@ -204,28 +205,38 @@ subtest 'process' => sub {
         ),
         0, 'If internal method die then process should just return false not die';
 
-    is BOM::Event::Process::process({
+    is $proc->process({
             type    => 'email_statement',
             details => {}
         },
         QUEUE_NAME
         ),
         0, 'If internal method die then process should just return false not die';
+};
 
-    $mock_process->unmock('get_action_mappings');
+subtest 'process - tracking jobs' => sub {
+    my $proc            = BOM::Event::Process->new(category => 'track');
+    my $action_mappings = $proc->actions;
+
+    cmp_deeply([keys %$action_mappings], bag(qw/multiplier_hit_type/), 'Correct number of actions that can be emitted');
+
+    is(ref($action_mappings->{$_}), 'CODE', 'event handler is a code reference') for keys %$action_mappings;
 };
 
 subtest 'request in process' => sub {
+    my $proc = BOM::Event::Process->new(category => 'generic');
+
     my $mock_process = Test::MockModule->new('BOM::Event::Process');
-    $mock_process->mock(
-        'get_action_mappings' => sub {
+    $mock_process->redefine(
+        'actions' => sub {
             return {
                 get_request => sub {
                     return BOM::Platform::Context::request();
                 }
             };
         });
-    my $request = BOM::Event::Process::process({
+
+    my $request = $proc->process({
             type    => 'get_request',
             details => {}
         },
@@ -234,7 +245,7 @@ subtest 'request in process' => sub {
     is($request->brand_name, 'deriv', 'default brand name is deriv');
     is($request->language,   'EN',    'default language is EN');
 
-    $request = BOM::Event::Process::process({
+    $request = $proc->process({
             type    => 'get_request',
             details => {},
             context => {

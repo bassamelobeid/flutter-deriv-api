@@ -25,6 +25,8 @@ my ($client, $order) = BOM::Test::Helper::P2P::create_order(
     amount    => 100
 );
 
+my $proc = BOM::Event::Process->new(category => 'generic');
+
 my $expected_data = [
     {%{$advertiser->p2p_order_info(id => $order->{id})}, advertiser_loginid => $advertiser->loginid},
     {%{$client->p2p_order_info(id => $order->{id})},     client_loginid     => $client->loginid},
@@ -78,11 +80,12 @@ for my $test_data (@data_for_notification_tests) {
         my @got_notification;
         $p2p_redis->subscribe($test_data->{channel}, sub { push @got_notification, $_[3] });
         $p2p_redis->get_reply;
-        BOM::Event::Process::process({
+        $proc->process({
                 type    => $test_data->{event},
                 details => $test_data->{data},
             },
-            $test_data->{event});
+            'some_stream'
+        );
         eval { $p2p_redis->get_reply for (1 .. $test_data->{expected}->@*) };
         my @notifications = map {
             eval { decode_json_utf8($_) }

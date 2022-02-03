@@ -36,7 +36,7 @@ my $user  = BOM::User->create(
 );
 
 $user->add_client($test_client);
-my $action_handler   = BOM::Event::Process::get_action_mappings()->{onfido_doc_ready_for_upload};
+my $action_handler   = BOM::Event::Process->new(category => 'generic')->actions->{onfido_doc_ready_for_upload};
 my $onfido_mocker    = Test::MockModule->new('WebService::Async::Onfido');
 my $s3_mocker        = Test::MockModule->new('BOM::Platform::S3Client');
 my $event_mocker     = Test::MockModule->new('BOM::Event::Actions::Client');
@@ -155,7 +155,7 @@ subtest 'Onfido lifetime valid' => sub {
 };
 
 subtest 'Check Onfido Rules' => sub {
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{check_onfido_rules};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{check_onfido_rules};
     my $first_name;
     my $last_name;
     my $result;

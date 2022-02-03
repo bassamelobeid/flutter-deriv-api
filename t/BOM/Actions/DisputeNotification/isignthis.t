@@ -160,7 +160,7 @@ $mocked_datadog->redefine('stats_inc', sub { @datadog_args = @_ });
 
 subtest 'iSignThis sent events' => sub {
     for my $event (keys %payloads) {
-        my $action_handler = BOM::Event::Process::get_action_mappings()->{dispute_notification};
+        my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{dispute_notification};
         my @emails_sent;
 
         BOM::Test::Email::mailbox_clear();
@@ -175,7 +175,7 @@ subtest 'iSignThis sent events' => sub {
 };
 
 subtest 'Unsupported iSignThis event' => sub {
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{dispute_notification};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{dispute_notification};
     my @emails_sent;
 
     BOM::Test::Email::mailbox_clear();

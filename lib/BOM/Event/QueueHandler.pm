@@ -30,17 +30,9 @@ use Net::Domain qw( hostname );
 use Algorithm::Backoff;
 use curry;
 use Future::Utils qw(fmap0);
-use List::Util qw( any );
+use List::Util qw( any first );
 
 use constant REQUESTS_PER_CYCLE => 5000;
-
-=head2 CONSUMER_GROUP
-
-Name of the Redis stream Consumer-Group
-
-=cut
-
-use constant CONSUMER_GROUP => 'GENERIC_EVENTS_CONSUMERS';
 
 =head2 DEFAULT_QUEUE_WAIT_TIME
 
@@ -90,8 +82,11 @@ initiated for.  It basically means how long can it spend  in the actual end
 event subroutine. So if the end subroutine is async  this can be shorter
 than the L<MAXIMUM_JOB_TIME>.
 
-=item * C<stream> - Stream name to monitor Redis stream or default monitor queue
+=item * C<streams> - Stream names to monitor
 
+=item * C<category> - Type of jobs to process, default is generic.
+
+=item * C<worker_index> - Index of this worker, default is 0.
 
 =back
 
@@ -99,7 +94,7 @@ than the L<MAXIMUM_JOB_TIME>.
 
 sub configure {
     my ($self, %args) = @_;
-    for (qw(queue queue_wait_time maximum_job_time maximum_processing_time stream worker_index)) {
+    for (qw(queue queue_wait_time maximum_job_time maximum_processing_time streams category worker_index)) {
         $self->{$_} = delete $args{$_} if exists $args{$_};
     }
     return $self->next::method(%args);
@@ -163,13 +158,57 @@ Returns the queue name which contains the events;
 
 sub queue_name { return shift->{queue} }
 
-=head2 stream_name
+=head2 streams
 
-Returns te stream name which contains the events;
+Returns array of streams to listen to.
 
 =cut
 
-sub stream_name { return shift->{stream} }
+sub streams { return shift->{streams}->@* }
+
+=head2 category
+
+Returns the category of jobs we should process, defaults to generic.
+
+=cut
+
+sub category { return shift->{category} // 'generic' }
+
+=head2 consumer_group
+
+Returns the consumer group name, which will be same for all streams.
+
+=cut
+
+sub consumer_group {
+    my $self = shift;
+
+    return uc($self->category) . '_EVENTS_CONSUMERS';
+}
+
+=head2 consumer_name
+
+Returns a unique identifier to be used within a consumer group.
+
+=cut
+
+sub consumer_name {
+    my $self = shift;
+
+    return join '-', ($self->host_name, $self->{worker_index} // 0);
+}
+
+=head2 job_processor
+
+Returns the BOM::Event::Process instance for processing jobs.
+
+=cut
+
+sub job_processor {
+    my $self = shift;
+
+    return $self->{job_processor} //= BOM::Event::Process->new(category => $self->category);
+}
 
 =head2 host_name
 
@@ -184,47 +223,38 @@ sub host_name {
     return $self->{host} //= hostname;
 }
 
-=head2 consumer_name
-
-Returns a consumer to subscribe as;
-
-=cut
-
-sub consumer_name {
-    my $self = shift;
-
-    return join '-', ($self->host_name, $self->{worker_index} // 0);
-}
-
-=head2 init_stream
+=head2 init_streams
 
 Return undef and Creates a Redis stream consumer group if the stream is not created it will be created using the MKSTREAM option.
 
 =cut
 
-async sub init_stream {
+async sub init_streams {
     my ($self) = @_;
     $self->initialize_request_counter;
-    try {
-        await $self->redis->connected;
-
-        # $ means: the ID of the last item in the stream.
-        # MKSTREAM subcommand as the last argument after the ID
-        # to automatically create the stream, if it doesn't exist.
-        await $self->redis->xgroup('CREATE', $self->stream_name, $self->CONSUMER_GROUP, '$', 'MKSTREAM');
-        $log->tracef('Initalizing stream with a consumer group');
-
-    } catch ($err) {
-        if (($err) =~ /Consumer Group name already exists/) {
-            await $self->_resolve_pending_messages;
-            # Consumer group exists error will always occurre after the first init
-            # so since we may use more than 1 worker, we have to ignore it.;
-            return undef;
-        } else {
-            $log->errorf('An error occurred while initializing connection: %s', $err);
-            die "Sorry, an error occurred while processing your request. $err";
+    await $self->redis->connected;
+    for my $stream ($self->streams) {
+        try {
+            # $ means: the ID of the last item in the stream.
+            # MKSTREAM subcommand as the last argument after the ID
+            # to automatically create the stream, if it doesn't exist.
+            await $self->redis->xgroup('CREATE', $stream, $self->consumer_group, '$', 'MKSTREAM');
+            $log->debugf("Created consumer group '%s' on stream %s", $self->consumer_group, $stream);
+        } catch ($err) {
+            if (($err) =~ /Consumer Group name already exists/) {
+                $log->debugf("Consumer group '%s' already exsits on stream %s; all pending messages will be acknowledged.",
+                    $self->consumer_group, $stream);
+                await $self->_resolve_pending_messages($stream);
+                # Consumer group exists error will always occurre after the first init
+                # so since we may use more than 1 worker, we have to ignore it.;
+                next;
+            } else {
+                $log->errorf('Failed to create consumer group on stream %s: %s', $stream, $err);
+                die "Sorry, an error occurred while processing your request. $err";
+            }
         }
     }
+
     return undef;
 }
 
@@ -266,47 +296,48 @@ processing.
 
 =cut
 
-async sub should_shutdown {
+sub should_shutdown {
     my ($self) = @_;
-    return $self->{should_shutdown} //= await $self->loop->new_future->set_label('QueueHandler::shutdown');
+    return $self->{should_shutdown} //= $self->loop->new_future->set_label('QueueHandler::shutdown');
 }
 
-=head2 get_stream_item
+=head2 get_stream_items
 
-Returns an item from a redis stream
+Gets an item from each stream, may return multiple items if there are multiple streams.
 
 =cut
 
-async sub get_stream_item {
+async sub get_stream_items {
     my $self = shift;
     my $message;
+
     try {
         $message = await $self->redis->xreadgroup(
-            GROUP => CONSUMER_GROUP,
-            $self->consumer_name,
-            BLOCK   => $self->queue_wait_time * 1000,    # BLOCK expects milliseconds
-            COUNT   => 1,
-            STREAMS => $self->stream_name,
-            '>'                                          # Redis special ID which retrieve last id of group's messages
+            'GROUP',   $self->consumer_group, $self->consumer_name,
+            'BLOCK',   $self->queue_wait_time * 1000,    # BLOCK expects milliseconds
+            'COUNT',   1,
+            'STREAMS', $self->streams,
+            map { '>' } 1 .. $self->streams,             # Redis special ID which retrieve last id of group's messages
         );
     } catch ($err) {
         if (($err) =~ /^NOGROUP/) {
             # There is no consumer group for reading, suppress error and recreate one.
             # Note: it happens by purging Redis while the worker is working, common in testing.
             $log->errorf('Redis exception: %s', $err);
-            await $self->init_stream;
+            await $self->init_streams;
         } else {
             $log->errorf('An exception occurred while processing events stream request: %s', $err);
         }
     }
-    return undef unless $message;
+    return undef unless $message;    # xreadgroup timed out
 
     $self->{request_counter}++;
-    $log->debugf("Got stream item: %s", $message);
+    $log->debugf("Got stream item(s): %s", $message);
 
-    return {
-        event_id => $message->[0]->[1]->[0]->[0],
-        event    => $message->[0]->[1]->[0]->[1]->[1]};
+    # message will in this format: [ ['GENERIC_EVENTS_STREAM', [ ['1639375311383-0', { event => '{}' ] ] ] ], ['DOCUMENT_AUTHENTICATION_STREAM', [ ['1639375311384-0', { event => '{}' ] ] ] ] ]
+
+    my @items = map { {stream => $_->[0], id => $_->[1]->[0]->[0], event => $_->[1]->[0]->[1]->[1]} } @$message;
+    return \@items;
 }
 
 =head2 stream_process_loop
@@ -320,28 +351,41 @@ appropriate handler.
 
 async sub stream_process_loop {
     my $self = shift;
-    await $self->init_stream;
+
+    await $self->init_streams;
 
     while (!$self->should_shutdown->is_ready() && $self->{request_counter} <= REQUESTS_PER_CYCLE) {
-        my $item = await $self->get_stream_item();
-        # $item will be undef in case of timeout occurred
-        next unless $item;
+        my $items = await $self->get_stream_items();
+        next unless $items;    # $item will be undef in case of timeout occurred
 
-        my $decoded_data;
-        try {
-            $decoded_data = decode_json_utf8($item->{event});
-            stats_inc(lc $self->stream_name . ".read");
-        } catch ($err) {
-            stats_inc(lc $self->stream_name . ".invalid_data");
-            # Invalid data indicates serious problems, we halt
-            # entirely and record the details
-            $log->errorf('Bad data received from stream causing exception %s', $err);
-            exception_logged();
+        my $processed_job;
+
+        ITEMS:
+        for my $item (@$items) {
+            my ($stream, $id, $event) = $item->@{qw/stream id event/};
+
+            if ($processed_job) {
+                # if this returns false, the message has been claimed by another conusmer and should be skipped
+                next ITEMS unless await $self->_reclaim_message($stream, $id);
+            }
+
+            my $decoded_data;
+            try {
+                $decoded_data = decode_json_utf8($event);
+                stats_inc("$stream.read");
+            } catch ($err) {
+                stats_inc("$stream.invalid_data");
+                # Invalid data indicates serious problems, we halt
+                # entirely and record the details
+                $log->errorf('Bad data received from stream %s: %s', $stream, $err);
+                exception_logged();
+            }
+
+            await $self->process_job($stream, $decoded_data) if $decoded_data;
+            # todo: do not xack failed jobs when we have a retry mechanism
+            await $self->_ack_message($stream, $id);
+            $processed_job = 1;
         }
-
-        # redis message will be undef in case of timeout occurred
-        await $self->process_job($self->stream_name, $decoded_data);
-        await $self->_ack_message($item->{event_id});
     }
 }
 
@@ -412,22 +456,22 @@ Returns undef
 =cut
 
 async sub _resolve_pending_messages {
-    my $self = shift;
+    my ($self, $stream) = @_;
     try {
-        my $result = await $self->redis->xpending($self->stream_name, CONSUMER_GROUP, '-', '+', '10000', $self->consumer_name);
+        my $result = await $self->redis->xpending($stream, $self->consumer_group, '-', '+', '10000', $self->consumer_name);
         # Since await is not allowed inside foreach on a non-lexical iterator variable
         await &fmap0(    ## no critic
             $self->$curry::weak(
                 async sub {
                     my ($self, $msg) = @_;
-                    await $self->_ack_message($msg->[0]);
+                    await $self->_ack_message($stream, $msg->[0]);
                 }
             ),
             foreach    => $result,
             concurrent => 4,
         );
     } catch ($err) {
-        $log->errorf('Failed while resolving pending messages in (%s) stream: %s', $self->stream_name, $err);
+        $log->errorf('Failed while resolving pending messages in (%s) stream: %s', $stream, $err);
     }
 
     return undef;
@@ -440,7 +484,7 @@ Takes the following arguments
 
 =over 4
 
-=item - $queue_name : The name of the redis queue the job is from
+=item - $stream : The name of the redis stream (or queue) the job is from
 
 =item - $event_data : The Data that was passed to the event.
 
@@ -451,7 +495,7 @@ Returns a L<FUTURE>
 =cut
 
 sub process_job {
-    my ($self, $queue_name, $event_data) = @_;
+    my ($self, $stream, $event_data) = @_;
     try {
         # A local setting for this is fine here: we are limiting the initial call,
         # not the time spent in any subsequent context switches due to async/await.
@@ -468,7 +512,7 @@ sub process_job {
         # for Future->wrap to work. Note that the actual stack element which Perl complains about
         # is just the class name (the string 'Future') - this would likely need some quality time with gdb
         # to dissect fully.
-        my $res = BOM::Event::Process::process($event_data, $queue_name);
+        my $res = $self->job_processor->process($event_data, $stream);
         my $f   = Future->wrap($res);
         return Future->wait_any($f, $self->loop->timeout_future(after => $self->maximum_job_time))->on_fail(
             sub {
@@ -478,17 +522,17 @@ sub process_job {
                     # This can happen when a job being run is not
                     # asynchronous, it takes longer than MAX_PROCESSING_TIME and the sub has the async label.
                     $log->errorf(
-                        "Processing of request  from queue %s took longer than 'MAXIMUM_PROCESSING_TIME' %s seconds - data was %s",
-                        $queue_name, $self->maximum_processing_time,
+                        "Processing of request from stream %s took longer than 'MAXIMUM_PROCESSING_TIME' %s seconds - data was %s",
+                        $stream, $self->maximum_processing_time,
                         $cleaned_data
                     );
                 } elsif (defined $f->failure) {
-                    $log->errorf("Event from queue %s failed  data was %s error was : %s", $queue_name, $cleaned_data, $f->failure);
+                    $log->errorf("Event from stream %s failed - data was %s, error was %s", $stream, $cleaned_data, $f->failure);
                 } else {
-                    $log->errorf("Event from queue %s did not complete within %s sec - data was %s ",
-                        $queue_name, $self->maximum_job_time, $cleaned_data, $f->failure);
+                    $log->errorf("Event from stream %s did not complete within %s sec - data was %s",
+                        $stream, $self->maximum_job_time, $cleaned_data);
                 }
-                stats_inc(lc "$queue_name.processed.failure");
+                stats_inc(lc "$stream.processed.failure");
             })->else_done();
     } catch ($e) {
         $log->errorf('Failed to process data (%s) - %s', $self->clean_data_for_logging($event_data), $e);
@@ -510,6 +554,8 @@ Mark message as acknowledged by consumer group
 
 =over 4
 
+=item * C<$stream> - The origin stream
+
 =item * C<$id> - The message id
 
 =back
@@ -519,13 +565,64 @@ Returns undef
 =cut
 
 async sub _ack_message {
-    my ($self, $id) = @_;
+    my ($self, $stream, $id) = @_;
     try {
-        await $self->redis->xack($self->stream_name, $self->CONSUMER_GROUP, $id);
+        await $self->redis->xack($stream, $self->consumer_group, $id);
     } catch ($err) {
-        $log->errorf('Failed while marking message_id as acknowledged with Error: %s', $err);
+        $log->errorf('Failed to acknowledge message id %s in stream %s: %s', $id, $stream, $err);
     }
     return undef;
+}
+
+=head2 _reclaim_message
+
+Checks the message has not been claimed by someone else, and resets its idle time.
+
+=over 4
+
+=item * C<$stream> - The origin stream
+
+=item * C<$id> - The message id
+
+=back
+
+Returns 1 if the message is valid to be processed, otherwise 0.
+
+=cut
+
+async sub _reclaim_message {
+    my ($self, $stream, $id) = @_;
+
+    try {
+        # xpending is to get an accurate idle time and delivery count
+        my $pending = await $self->redis->xpending($stream, $self->consumer_group, $id, $id, 1, $self->consumer_name);
+
+        unless ($pending and @$pending) {
+            $log->debugf('message %s from stream %s is no longer pending, skipping it', $id, $stream);
+            return 0;
+        }
+
+        my $claim = await $self->redis->xclaim(
+            $stream,
+            $self->consumer_group,
+            $self->consumer_name,
+            $pending->[0][2],                  # idle time filter, ensures nobody else xclaimed since we called xpending
+            $id,
+            'retrycount', $pending->[0][3],    # keep delivery count the same as it was
+        );
+
+        unless ($claim) {
+            $log->debugf('could not xclaim message %s from stream %s, skipping it', $id, $stream);
+            return 0;
+        }
+
+        $log->debugf('successfully reclaimed message %s from stream %s: %s', $id, $stream, $claim);
+        return 1;
+
+    } catch ($err) {
+        $log->errorf('failed to reclaim message %s in stream %s: %s', $id, $stream, $err);
+        return 0;    # don't process this item, safer than risk double processing
+    }
 }
 
 =head2 clean_data_for_logging

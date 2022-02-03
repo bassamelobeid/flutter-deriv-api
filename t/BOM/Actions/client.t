@@ -395,7 +395,7 @@ subtest 'upload document' => sub {
                     language         => 'en',
                 }};
 
-            my $handler = BOM::Event::Process::get_action_mappings()->{reset_password_request};
+            my $handler = BOM::Event::Process->new(category => 'generic')->actions->{reset_password_request};
             ok $handler->($args);
             my $result = $handler->($args)->get;
             ok $result, 'Success result';
@@ -423,7 +423,7 @@ subtest 'upload document' => sub {
                     type       => 'reset_password',
                 }};
 
-            my $handler = BOM::Event::Process::get_action_mappings()->{reset_password_confirmation};
+            my $handler = BOM::Event::Process->new(category => 'generic')->actions->{reset_password_confirmation};
             ok $handler->($args);
             my $result = $handler->($args)->get;
             ok $result, 'Success result';
@@ -909,7 +909,7 @@ subtest 'signup event' => sub {
                 date_first_contact => '2019-11-28'
             }}};
     $virtual_client2->set_default_account('USD');
-    my $handler = BOM::Event::Process::get_action_mappings()->{signup};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
     my $result  = $handler->($vr_args)->get;
     ok $result, 'Success result';
 
@@ -1099,7 +1099,7 @@ subtest 'wallet signup event' => sub {
                 date_first_contact => '2019-11-28'
             }}};
     $virtual_wallet_client->set_default_account('USD');
-    my $handler = BOM::Event::Process::get_action_mappings()->{signup};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
     my $result  = $handler->($vr_args)->get;
     ok $result, 'Success result';
 
@@ -1175,7 +1175,7 @@ subtest 'account closure' => sub {
         email_consent     => 0
     };
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{account_closure};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{account_closure};
     my $result         = $action_handler->($call_args)->get;
     ok $result, 'Success result';
 
@@ -1263,7 +1263,7 @@ subtest 'transfer between accounts event' => sub {
             time               => '2020-01-09 10:00:00.000'
         }};
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{transfer_between_accounts};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{transfer_between_accounts};
     ok $action_handler->($args), 'transfer_between_accounts triggered successfully';
     my ($customer, %args) = @track_args;
     is scalar(@identify_args), 0, 'identify is not called';
@@ -1363,7 +1363,7 @@ subtest 'api token create' => sub {
         name    => [$loginid],
         scopes  => ['read', 'payment']};
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{api_token_created};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{api_token_created};
     my $result         = $action_handler->($call_args)->get;
     ok $result, 'Success result';
 
@@ -1418,7 +1418,7 @@ subtest 'api token delete' => sub {
         name    => [$loginid],
         scopes  => ['read', 'payment']};
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{api_token_deleted};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{api_token_deleted};
     my $result         = $action_handler->($call_args)->get;
     ok $result, 'Success result';
 
@@ -1542,7 +1542,7 @@ subtest 'set financial assessment segment' => sub {
 
     undef @track_args;
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{set_financial_assessment};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{set_financial_assessment};
     my $loginid        = $test_client->loginid;
     my $args           = {
         'params' => {
@@ -1610,7 +1610,7 @@ subtest 'segment document upload' => sub {
         });
 
     undef @track_args;
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{document_upload};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
     $action_handler->({
             loginid => $test_client->loginid,
             file_id => $upload_info->{file_id}})->get;
@@ -1694,7 +1694,7 @@ subtest 'onfido resubmission' => sub {
             return $mock_redis->original('expire')->(@_);
         });
 
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{ready_for_authentication};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{ready_for_authentication};
 
     # For this test, we expect counter to be 0 due to empty checks
     $redis_write->set(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id, 0)->get;
@@ -1903,7 +1903,7 @@ subtest 'POI flag removal' => sub {
                     $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
                 });
 
-            my $action_handler = BOM::Event::Process::get_action_mappings()->{document_upload};
+            my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
             $action_handler->({
                     loginid => $test_client->loginid,
                     file_id => $upload_info->{file_id}})->get;
@@ -1942,7 +1942,7 @@ subtest 'POA flag removal' => sub {
                     $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
                 });
 
-            my $action_handler = BOM::Event::Process::get_action_mappings()->{document_upload};
+            my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
             $action_handler->({
                     loginid => $test_client->loginid,
                     file_id => $upload_info->{file_id}})->get;
@@ -2013,7 +2013,7 @@ subtest 'account_reactivated' => sub {
         loginid => $test_client->loginid,
         reason  => 'test reason'
     };
-    my $handler = BOM::Event::Process::get_action_mappings()->{account_reactivated};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{account_reactivated};
 
     mailbox_clear();
     undef @track_args;
@@ -2106,7 +2106,7 @@ subtest 'withdrawal_limit_reached' => sub {
         broker_code => 'CR',
     });
 
-    my $handler   = BOM::Event::Process::get_action_mappings()->{withdrawal_limit_reached};
+    my $handler   = BOM::Event::Process->new(category => 'generic')->actions->{withdrawal_limit_reached};
     my $call_args = {
         loginid => $test_client->loginid,
     };
@@ -2295,7 +2295,7 @@ subtest 'verify address' => sub {
             return $address_verification_future // $events_mock->original('_address_verification')->(@_);
         });
 
-    my $handler   = BOM::Event::Process::get_action_mappings()->{verify_address};
+    my $handler   = BOM::Event::Process->new(category => 'generic')->actions->{verify_address};
     my $call_args = {};
 
     like exception { $handler->($call_args)->get }, qr/No client login ID supplied\?/, 'Expected exception for empty args';

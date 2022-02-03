@@ -52,7 +52,7 @@ my ($client, $order) = BOM::Test::Helper::P2P::create_order(
 
 subtest 'p2p order event validation' => sub {
 
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_updated};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_updated};
     undef @identify_args;
     undef @track_args;
 
@@ -73,7 +73,7 @@ subtest 'p2p order created' => sub {
     $client->user->update_preferred_language('ID');
     $advertiser->user->update_preferred_language('RU');
 
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_created};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_created};
     undef @identify_args;
     undef @track_args;
 
@@ -135,7 +135,7 @@ subtest 'p2p order created' => sub {
 };
 
 subtest 'p2p order confirmed by buyer' => sub {
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_updated};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_updated};
     undef @identify_args;
     undef @track_args;
 
@@ -200,7 +200,7 @@ subtest 'p2p order confirmed by buyer' => sub {
 };
 
 subtest 'p2p order confirmed by seller' => sub {
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_updated};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_updated};
     undef @identify_args;
     undef @track_args;
 
@@ -265,7 +265,7 @@ subtest 'p2p order confirmed by seller' => sub {
 };
 
 subtest 'p2p order cancelled' => sub {
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_updated};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_updated};
     undef @identify_args;
     undef @track_args;
 
@@ -332,7 +332,7 @@ subtest 'p2p order cancelled' => sub {
 };
 
 subtest 'pending order expired' => sub {
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_updated};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_updated};
     undef @identify_args;
     undef @track_args;
 
@@ -392,7 +392,7 @@ subtest 'pending order expired' => sub {
 };
 
 subtest 'confirmed order expired' => sub {
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_updated};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_updated};
     undef @identify_args;
     undef @track_args;
 
@@ -456,7 +456,7 @@ subtest 'confirmed order expired' => sub {
 };
 
 subtest 'p2p_advert_created' => sub {
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_advert_created};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_advert_created};
     undef @track_args;
 
     my $event_args;
@@ -476,7 +476,7 @@ subtest 'p2p_advert_created' => sub {
 };
 
 subtest 'p2p_advertiser_cancel_at_fault' => sub {
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_advertiser_cancel_at_fault};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_advertiser_cancel_at_fault};
 
     undef @track_args;
     my %args = (
@@ -496,7 +496,7 @@ subtest 'p2p_advertiser_cancel_at_fault' => sub {
 };
 
 subtest 'p2p_advertiser_temp_banned' => sub {
-    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_advertiser_temp_banned};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_advertiser_temp_banned};
 
     undef @track_args;
     my %args = (

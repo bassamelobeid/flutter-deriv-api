@@ -67,7 +67,7 @@ $mock_brands->mock(
     });
 
 subtest 'login event' => sub {
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{login};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{login};
     my $req            = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
         language   => 'id'
@@ -246,7 +246,7 @@ subtest 'login event' => sub {
 };
 
 subtest 'user profile change event' => sub {
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{profile_change};
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{profile_change};
     my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         email       => 'test3@bin.com',
@@ -541,7 +541,7 @@ subtest 'false profile info' => sub {
     );
     request($req);
 
-    my $event_handler = BOM::Event::Process::get_action_mappings()->{verify_false_profile_info};
+    my $event_handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_false_profile_info};
 
     my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
