@@ -5,7 +5,7 @@ use warnings;
 
 use URL::Encode qw( url_encode );
 use HTML::Entities;
-
+use BOM::Platform::Event::Emitter;
 use BOM::User::Client;
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request localize);
@@ -50,30 +50,19 @@ my $link  = $brand->default_url() . "/redirect?action=reset_password&lang=$lang&
 
 print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
 
-my $result = send_email({
-        from          => $brand->emails('support'),
-        to            => $email,
-        template_name => $has_social_login ? "lost_password_has_social_login" : "lost_password",
-        template_args => {
-            name  => $client->first_name,
-            title => $has_social_login ? localize("Forgot your social password?") : localize("Forgot your password? Let's get you a new one."),
-            title_padding    => $has_social_login ? undef                         : 100,
-            email            => $email,
-            link             => $link,
-            verification_url => $link,
-            client_name      => $client_name =~ /^ *$/ ? 'there' : $client_name,
-            website_name     => ucfirst $brand->name,
-            brand_name       => ucfirst $brand->name,
+my $result = BOM::Platform::Event::Emitter::emit(
+    'reset_password_request',
+    {
+        loginid    => $client->loginid,
+        properties => {
+            verification_url => $link             // '',
+            social_login     => $has_social_login // '',
+            code             => $token,
+            language         => $lang,
         },
-        template_loginid      => $loginID,
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        use_event             => 1,
-        language              => $lang,
     });
 
-print '<p>New password issuance RESULT: ' . ($result) ? 'success' : 'fail' . '</p>';
-
-print '<p>Done.</p>';
+$result = $result ? "success" : "fail";
+print "<p>New password issuance RESULT: $result </p>";
 
 code_exit_BO();
