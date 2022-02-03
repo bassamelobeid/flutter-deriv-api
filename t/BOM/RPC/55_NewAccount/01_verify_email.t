@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-
 use Test::More;
 use Test::Mojo;
 use Test::Fatal qw(lives_ok);
@@ -120,35 +119,27 @@ subtest 'Account opening request with email exists' => sub {
 };
 
 subtest 'Reset password for exists user' => sub {
-    mailbox_clear();
-    $params[1]->{args}->{verify_email} = uc $email;
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { @emitted = @_ };
+
+    $params[1]->{args}->{verify_email} = $email;
     $params[1]->{args}->{type}         = 'reset_password';
-    $params[1]->{server_name}          = 'deriv.com';
-    $params[1]->{link}                 = 'deriv.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    my $msg = mailbox_search(
-        email   => lc($params[1]->{args}->{verify_email}),
-        subject => qr/Get a new .* account password/
+    ok $emitted[1]->{properties}->{code}, 'code generated';
+    my $code = $emitted[1]->{properties}->{code};
+    is(
+        $emitted[1]->{properties}->{verification_url},
+        'https://www.binary.com/en/redirect.html?action=reset_password&lang=EN&code=' . $code,
+        'the verification_url is correct'
     );
-    ok $msg, 'Email sent successfully';
-};
-
-subtest 'Reset password for not exists user' => sub {
-    $params[1]->{args}->{verify_email} = 'not_' . $email;
-    $params[1]->{args}->{type}         = 'reset_password';
-    $params[1]->{server_name}          = 'deriv.com';
-    $params[1]->{link}                 = 'deriv.com/some_url';
-
-    $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 };
 
 subtest 'Payment agent withdraw' => sub {
     mailbox_clear();
-
     $params[1]->{args}->{verify_email} = $client->email;
     $params[1]->{args}->{type}         = 'paymentagent_withdraw';
     $params[1]->{server_name}          = 'binary.com';
@@ -291,6 +282,22 @@ subtest 'withdrawal validation' => sub {
         $rpc_ct->call_ok(@params)
             ->has_no_system_error->has_no_error->result_is_deeply($expected_result, $type . ' does not have withdrawal validation');
     }
+};
+
+subtest 'Reset password for not exists user' => sub {
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { @emitted = @_ };
+
+    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{type}         = 'reset_password';
+    $params[1]->{server_name}          = 'deriv.com';
+    $params[1]->{link}                 = 'deriv.com/some_url';
+
+    $rpc_ct->call_ok(@params)
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+    is($emitted[0],                           'send_email',                       'using send emai rather than event emitter');
+    is($emitted[1]->{template_args}->{title}, 'We couldn\'t reset your password', 'the title is correct since user doesn\'t exist');
 };
 
 done_testing();

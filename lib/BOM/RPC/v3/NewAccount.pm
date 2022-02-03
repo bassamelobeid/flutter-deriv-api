@@ -132,7 +132,20 @@ rpc "verify_email",
     }
 
     if ($existing_user and $type eq 'reset_password') {
-        request_email($email, $verification->{reset_password}->());
+        my $data = $verification->{reset_password}->();
+        BOM::Platform::Event::Emitter::emit(
+            'reset_password_request',
+            {
+                loginid    => $existing_user->get_default_client->loginid,
+                properties => {
+                    verification_url => $data->{template_args}->{verification_url}  // '',
+                    social_login     => $data->{template_args}->{has_social_signup} // '',
+                    first_name       => $existing_user->get_default_client->first_name,
+                    code             => $data->{template_args}->{code} // '',
+                    email            => $email,
+                    language         => $params->{language},
+                },
+            });
     } elsif ($type eq 'account_opening') {
         unless ($existing_user) {
             request_email($email, $verification->{account_opening_new}->());

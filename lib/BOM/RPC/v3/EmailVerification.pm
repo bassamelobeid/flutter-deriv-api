@@ -170,25 +170,8 @@ sub email_verification {
             };
         },
         reset_password => sub {
-            my $subject       = localize('Get a new [_1] account password', ucfirst $brand->name);
-            my $template_name = 'reset_password_request';
-            my $title         = localize("Forgot your password? Let's get you a new one.");
-            my $title_padding = 100;
-            if ($has_social_signup && $brand->name ne 'binary') {
-                $subject       = localize("Forgot your social password?");
-                $template_name = 'lost_password_has_social_login';
-                $title         = localize("Forgot your social password?");
-                $title_padding = undef;
-            }
             return {
-                subject       => $subject,
-                template_name => $template_name,
-                template_args => {
-                    name          => $name,
-                    title         => $title,
-                    title_padding => $title_padding,
-                    brand_name    => ucfirst $brand->name,
-                    (
+                template_args => {(
                         $verification_uri
                         ? (verification_url => _build_verification_url('reset_password', $args))
                         : ()

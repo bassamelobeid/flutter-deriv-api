@@ -1353,11 +1353,7 @@ rpc change_password => sub {
 
     try {
         $client->user->update_user_password($args->{new_password}, 'change_password');
-        my $brand       = request()->brand;
-        my $contact_url = $brand->contact_url({
-                source   => $params->{source},
-                language => $params->{language}});
-        _send_reset_password_confirmation_email($client, 'change_password', $brand, $contact_url);
+        _send_reset_password_confirmation_email($client, 'change_password');
     } catch {
         log_exception();
         return BOM::RPC::v3::Utility::create_error({
@@ -1414,11 +1410,7 @@ rpc "reset_password",
 
     try {
         $client->user->update_user_password($args->{new_password}, 'reset_password');
-        my $brand       = request()->brand;
-        my $contact_url = $brand->contact_url({
-                source   => $params->{source},
-                language => $params->{language}});
-        _send_reset_password_confirmation_email($client, 'reset_password', $brand, $contact_url);
+        _send_reset_password_confirmation_email($client, 'reset_password');
     } catch {
         log_exception();
         return BOM::RPC::v3::Utility::create_error({
@@ -1459,31 +1451,15 @@ Returns undef.
 =cut
 
 sub _send_reset_password_confirmation_email {
-    my ($client, $type, $brand, $contact_url) = @_;
-
-    my $is_reset_password = $type eq 'reset_password';
-    my $subject =
-        $is_reset_password
-        ? localize('Your password has been reset.')
-        : ($brand->name eq 'deriv' ? localize('Your new Deriv account password') : localize('Your password has been changed.'));
-    my $email      = $client->email;
-    my $email_args = {
-        to            => $email,
-        subject       => $subject,
-        template_name => 'reset_password_confirm',
-        template_args => {
-            email       => $email,
-            name        => $client->first_name,
-            title       => localize("You've got a new password"),
-            contact_url => $contact_url
-        },
-        use_email_template => 1,
-        template_loginid   => $client->loginid,
-        use_event          => 1,
-    };
-
-    send_email($email_args);
-
+    my ($client, $type) = @_;
+    BOM::Platform::Event::Emitter::emit(
+        'reset_password_confirmation',
+        {
+            loginid    => $client->loginid,
+            properties => {
+                first_name => $client->first_name,
+                type       => $type,
+            }});
     return undef;
 }
 

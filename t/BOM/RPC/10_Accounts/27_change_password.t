@@ -44,6 +44,10 @@ my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test toke
 
 my $c = Test::BOM::RPC::QueueClient->new();
 
+my @emitted;
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_emitter->mock('emit' => sub { push @emitted, [@_]; });
+
 my $method = 'change_password';
 subtest 'change password' => sub {
     my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
@@ -190,15 +194,13 @@ subtest 'change password' => sub {
         'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
-    mailbox_clear();
-    my $result = $c->tcall($method, $params);
-    is($result->{status}, 1, 'update password correctly');
-    my $subject = 'Your new Deriv account password';
-    my $msg     = mailbox_search(
-        email   => $email,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
+    undef @emitted;
+    is($c->tcall($method, $params)->{status},      1,                             'update password correctly');
+    is($emitted[0][1]->{properties}->{first_name}, 'bRaD',                        'first name is correct');
+    is($emitted[0][1]->{properties}->{type},       'change_password',             'type is correct');
+    is($emitted[0][1]->{loginid},                  'MF90000000',                  'loginid is correct');
+    is($emitted[0][0],                             'reset_password_confirmation', 'event name emitted correctly');
+    ok @emitted, 'reset password event emitted correctly';
     $user = BOM::User->new(id => $user->{id});
     isnt($user->{password}, $hash_pwd, 'user password updated');
     $test_client->load;

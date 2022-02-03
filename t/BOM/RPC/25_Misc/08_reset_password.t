@@ -46,6 +46,10 @@ my $new_password = 'jskjD8292923';
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
+my @emitted;
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_emitter->mock('emit' => sub { push @emitted, [@_]; });
+
 my $expected_result = {
     status => 1,
     stash  => {
@@ -58,7 +62,6 @@ my $expected_result = {
 # reset password vrtc
 my $method = 'reset_password';
 subtest 'reset_password_vrtc' => sub {
-    mailbox_clear;
     $code = BOM::Platform::Token->new({
             email       => $email_vr,
             expires_in  => 3600,
@@ -72,13 +75,11 @@ subtest 'reset_password_vrtc' => sub {
         }};
 
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result);
-
-    my $subject = 'Your password has been reset.';
-    my $msg     = mailbox_search(
-        email   => $email_vr,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
+    is($emitted[0][1]->{properties}->{first_name}, 'bRaD',                        'first name is correct');
+    is($emitted[0][1]->{properties}->{type},       'reset_password',              'type is correct');
+    is($emitted[0][1]->{loginid},                  'VRTC1002',                    'loginid is correct');
+    is($emitted[0][0],                             'reset_password_confirmation', 'event name is correct');
+    ok @emitted, 'reset password event emitted correctly';
 };
 
 # refetch vrtc user
@@ -111,6 +112,7 @@ subtest 'check_login_cr' => sub {
 
 # reset password cr
 subtest $method => sub {
+    undef @emitted;
     my $params = {
         args => {
             new_password      => 'Weakpassword',
@@ -162,15 +164,12 @@ subtest $method => sub {
             created_for => 'reset_password'
         })->token;
     $params->{args}->{verification_code} = $code;
-
-    mailbox_clear();
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result);
-    my $subject = 'Your password has been reset.';
-    my $msg     = mailbox_search(
-        email   => $email_cr,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
+    is($emitted[0][1]->{properties}->{first_name}, 'bRaD',                        'first name is correct');
+    is($emitted[0][1]->{properties}->{type},       'reset_password',              'type is correct');
+    is($emitted[0][1]->{loginid},                  'CR10000',                     'loginid is correct');
+    is($emitted[0][0],                             'reset_password_confirmation', 'event name is correct');
+    ok @emitted, 'reset password event emitted correctly';
 
     # Should reset password if DOB is not provided
     $code = BOM::Platform::Token->new({
@@ -182,9 +181,13 @@ subtest $method => sub {
     $params->{args}->{new_password}      = $new_password;
     delete $params->{args}->{date_of_birth};
 
-    mailbox_clear();
+    undef @emitted;
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result);
-    ok($msg, "email received");
+    is($emitted[0][1]->{properties}->{first_name}, 'bRaD',                        'first name is correct');
+    is($emitted[0][1]->{properties}->{type},       'reset_password',              'type is correct');
+    is($emitted[0][1]->{loginid},                  'CR10000',                     'loginid is correct');
+    is($emitted[0][0],                             'reset_password_confirmation', 'event name is correct');
+    ok @emitted, 'reset password event emitted correctly';
 
     # refetch cr user
     subtest 'check_password' => sub {
