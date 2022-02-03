@@ -1203,7 +1203,7 @@ subtest 'signup event email check for fraud ' => sub {
 
     $fake_response->set_always(content => '{"result": {"status": "clear"}}');
 
-    my $handler = BOM::Event::Process::get_action_mappings()->{signup};
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
     $handler->($cr_args)->get;
 
     delete $client->{status};    #clear status cache
