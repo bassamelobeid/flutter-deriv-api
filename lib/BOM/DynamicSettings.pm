@@ -268,6 +268,7 @@ sub get_settings_by_group {
                 system.dxtrade.suspend.demo
                 system.dxtrade.suspend.real
                 system.dxtrade.suspend.user_exceptions
+                system.services.fraud_prevention
                 )
         ],
         quant => [qw(
