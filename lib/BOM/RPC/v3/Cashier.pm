@@ -1640,6 +1640,7 @@ rpc transfer_between_accounts => sub {
         my $msg = (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '';
         $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
         $msg = $err                   if $err =~ m/Your identity documents have expired/i;
+        $msg = $err                   if $err =~ m/Please authenticate your account/i;
         $msg = $err                   if $err =~ m/Deriv P2P/;
         return $error_audit_sub->("validate_payment failed for $loginid_from [$err]", $msg);
     }
@@ -1660,6 +1661,7 @@ rpc transfer_between_accounts => sub {
             if ($err =~ /Balance would exceed limit/);
         $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
         $msg = $err                   if $err =~ m/Your identity documents have expired/i;
+        $msg = $err                   if $err =~ m/Please authenticate your account/i;
         return $error_audit_sub->("validate_payment failed for $loginid_to [$err]", $msg);
     }
     my $response;
