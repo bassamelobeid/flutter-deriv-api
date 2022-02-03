@@ -5,6 +5,7 @@ use Future;
 use Test::More;
 use Test::Exception;
 use Test::MockModule;
+use Test::MockObject;
 use Test::Fatal;
 use Test::Deep;
 use Guard;
@@ -48,6 +49,10 @@ $mock_emitter->mock('emit', sub { push @emit_args, @_ });
 
 my @enabled_brands = ('deriv', 'binary');
 my $mock_brands    = Test::MockModule->new('Brands');
+
+my $mock_service_config = Test::MockModule->new('BOM::Config::Services');
+$mock_service_config->mock(is_enabled => 0);
+
 $mock_brands->mock(
     'is_track_enabled' => sub {
         my $self = shift;
@@ -1146,6 +1151,76 @@ subtest 'wallet signup event' => sub {
         },
         'properties is properly set for wallet virtual account signup';
     test_segment_customer($customer, $virtual_wallet_client, '', $virtual_wallet_client->date_joined, 'virtual', 'labuan,svg');
+};
+
+subtest 'signup event email check for fraud ' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'fraud.email@gmail.com',
+    });
+
+    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'fraudemail@gmail.com',
+    });
+    my $email = $client->email;
+
+    my $user = BOM::User->create(
+        email    => $client->email,
+        password => 'hello'
+    );
+    my $user1 = BOM::User->create(
+        email    => $client1->email,
+        password => 'hello'
+    );
+    $user->add_client($client);
+    $user1->add_client($client1);
+
+    my $cr_args = {
+        loginid    => $client->loginid,
+        new_user   => 1,
+        properties => {
+            type    => 'trading',
+            subtype => 'real'
+        }};
+
+    # Preparing mocks magic
+    my $mock_config = Test::MockModule->new('BOM::Config::Services');
+    $mock_config->mock(is_enabled => 1);
+    $mock_config->mock(
+        config => {
+            enabled => 1,
+            host    => 'test',
+            port    => 80,
+        });
+
+    my $fake_response    = Test::MockObject->new();
+    my $fake_http_client = Test::MockObject->new();
+    $fake_http_client->set_always(POST => Future->done($fake_response));
+
+    my $mock_event = Test::MockModule->new('BOM::Event::Actions::Client');
+    $mock_event->mock(_http => $fake_http_client);
+
+    $fake_response->set_always(content => '{"result": {"status": "clear"}}');
+
+    my $handler = BOM::Event::Process::get_action_mappings()->{signup};
+    $handler->($cr_args)->get;
+
+    delete $client->{status};    #clear status cache
+    ok !$client->status->potential_fraud, 'No fraud status for clear result';
+
+    $fake_response->set_always(
+        content => '{"result": {"status": "suspected", "details": {"duplicate_emails":["fraud.email@gmail.com", "fraudemail@gmail.com"]}}}');
+
+    $handler->($cr_args)->get;
+
+    delete $client->{status};    #clear status cache
+    ok $client->status->potential_fraud, 'has fraud status for suspected result';
+    like $client->status->potential_fraud->{reason}, qr/fraud\.email\@gmail\.com/, 'Status contains first email in reason';
+    like $client->status->potential_fraud->{reason}, qr/fraudemail\@gmail\.com/,   'Status contains second email in reason';
+
+    delete $client1->{status};    #clear status cache
+    ok $client1->status->potential_fraud, 'Second account also has fraud status for suspected result';
 };
 
 subtest 'account closure' => sub {

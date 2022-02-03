@@ -44,6 +44,7 @@ use BOM::Config;
 use BOM::Config::Onfido;
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
+use BOM::Config::Services;
 use BOM::Database::ClientDB;
 use BOM::Database::CommissionDB;
 use BOM::Database::UserDB;
@@ -2486,7 +2487,7 @@ It can be called with the following parameters:
 
 =cut
 
-sub signup {
+async sub signup {
     my @args = @_;
 
     my ($data) = @args;
@@ -2514,7 +2515,84 @@ sub signup {
         $log->warnf('Failed to emit %s event for loginid %s, while processing the signup event: %s', $emitting, $client->loginid, $error);
     };
 
-    return BOM::Event::Services::Track::signup({%$data, client => $client});
+    # Both of these methods contains sync code, because  of that we cannot run them concurrently
+    await check_email_for_fraud($client);
+    await BOM::Event::Services::Track::signup({%$data, client => $client});
+
+    return 1;
+}
+
+=head2 check_email_for_fraud
+
+Helper for integration with fraud_prevention service.
+Sends a request to the service if it's enabled.
+In case fraud is detected, potential_fraud status will be set on suspicious accounts
+
+=cut
+
+async sub check_email_for_fraud {
+    my ($client) = @_;
+
+    try {
+        return unless BOM::Config::Services->is_enabled('fraud_prevention');
+
+        my $cfg = BOM::Config::Services->config('fraud_prevention');
+
+        my $url    = join q{} => ('http://', $cfg->{host}, ':', $cfg->{port}, '/check_email');
+        my $result = await _http()->POST(
+            $url, encode_json_utf8({email => $client->email}),
+            content_type => 'application/json',
+            timeout      => 5,
+        );
+
+        my $resp = decode_json_utf8($result->content);
+
+        if ($resp->{error}) {
+            die 'Error happend while proccessing fraud check ' . $resp->{error}{code} . ': ' . $resp->{error}{message};
+        }
+
+        die 'Unexpected format of the response: ' . $result->content unless $resp->{result};
+
+        # No fraud detected.
+        return if $resp->{result}{status} eq 'clear';
+
+        die 'Unexpected fraud check status: ' . $resp->{result}{status}
+            unless $resp->{result}{status} eq 'suspected';
+
+        my $duplicates = $resp->{result}{details}{duplicate_emails};
+        die 'Empty list of duplicate emails was returned' unless $duplicates && $duplicates->@*;
+
+        my @real_users = grep { $_->bom_real_loginids() }
+            map {
+            eval { BOM::User->new(email => $_) }
+                || ()
+            } $duplicates->@*;
+
+        # We're intrested only when client created more than 1 real account.
+        return unless @real_users > 1;
+
+        USER:
+        for my $user (@real_users) {
+            try {
+                CLIENT:
+                for my $client ($user->clients) {
+                    next CLIENT if $client->is_virtual;
+                    next USER   if $client->status->age_verification;
+                    next CLIENT if $client->status->potential_fraud;
+
+                    $client->status->setnx('potential_fraud', 'system', 'Duplicate emails: ' . join q{, } => $duplicates->@*);
+                    $client->status->upsert('allow_document_upload', 'system', 'POTENTIAL_FRAUD');
+                }
+            } catch ($err) {
+                $log->errorf('Fail while setting fraud status for user: %s', $err);
+            }
+        }
+    } catch ($err) {
+        warn $err;
+        $log->errorf('Fail to check email for fraud: %s', $err);
+    }
+
+    return;
 }
 
 =head2 transfer_between_accounts
