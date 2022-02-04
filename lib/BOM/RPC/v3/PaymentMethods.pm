@@ -116,7 +116,7 @@ sub get_p2p_as_payment_method {
     return undef unless $country;
 
     my @short_codes = request()->brand->countries_instance->real_company_for_country($country);
-    my ($p2p_lc) = grep { $_->{p2p_available} } map { LandingCompany::Registry::get($_) } @short_codes;
+    my ($p2p_lc) = grep { $_->{p2p_available} } map { LandingCompany::Registry->by_name($_) } @short_codes;
 
     my @restricted_countries = BOM::Config::Runtime->instance->app_config->payments->p2p->restricted_countries->@*;
     return undef if (!$p2p_lc || (any { $_ eq lc($country) } @restricted_countries));
@@ -149,7 +149,7 @@ Takes the following argument:
 
 =over 4
 
-=item * C<landing_companies> - landing company of the client or country in request 
+=item * C<landing_companies> - landing company of the client or country in request
 
 =item * C<supported_currencies> - array ref of the supported currencies for p2p
 
@@ -159,7 +159,7 @@ Takes the following argument:
 
 =back
 
-Returns hashref with C<deposit_limits> and C<withdraw_limits> as string key where each consist of hashrefs that have the following structure. 
+Returns hashref with C<deposit_limits> and C<withdraw_limits> as string key where each consist of hashrefs that have the following structure.
 A string key with the 3-letter currency code, e.g. B<USD>, B<EUR>. The attributes for this hash ref are:
 
 =over 4

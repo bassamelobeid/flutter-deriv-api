@@ -231,7 +231,7 @@ sub invalid_email {
             message_to_client => localize('This email address is invalid.')});
 }
 
-=head2 invalid_params 
+=head2 invalid_params
 
 Validates the url_parameters.
 
@@ -657,7 +657,7 @@ sub get_available_currencies {
     my ($siblings, $landing_company_name) = @_;
 
     # Get all the currencies (as per the landing company) and from client
-    my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
+    my $legal_allowed_currencies = LandingCompany::Registry->by_name($landing_company_name)->legal_allowed_currencies;
 
     my @client_currencies = map { $siblings->{$_}->{currency} } keys %$siblings;
 
@@ -836,7 +836,7 @@ Returns: Sorted arrayref of valid CR currencies.
 
 sub filter_out_suspended_cryptocurrencies {
     my $landing_company_name = shift;
-    my @currencies           = keys %{LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies};
+    my @currencies           = keys %{LandingCompany::Registry->by_name($landing_company_name)->legal_allowed_currencies};
 
     my $suspended_currencies = BOM::Config::CurrencyConfig::get_suspended_crypto_currencies();
 

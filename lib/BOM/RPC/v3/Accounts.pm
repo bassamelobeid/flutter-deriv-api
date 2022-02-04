@@ -280,8 +280,8 @@ rpc "payout_currencies",
     # and it only has USD as the currency.
     my $client_landing_company =
         (defined $params->{landing_company_name})
-        ? LandingCompany::Registry::get($params->{landing_company_name})
-        : LandingCompany::Registry::get('svg');
+        ? LandingCompany::Registry->by_name($params->{landing_company_name})
+        : LandingCompany::Registry->by_name('svg');
     my $lc = $client ? $client->landing_company : $client_landing_company;
 
     # ... but we fall back to `svg` as a useful default, since it has most
@@ -313,11 +313,10 @@ rpc "landing_company",
     delete @landing_company{qw/is_signup_allowed idd_country/};
 
     $landing_company{id} = $country;
-    my $registry = LandingCompany::Registry->new;
 
     foreach my $type ('gaming_company', 'financial_company') {
         if (($landing_company{$type} // '') ne 'none') {
-            $landing_company{$type} = __build_landing_company($registry->get($landing_company{$type}), $country);
+            $landing_company{$type} = __build_landing_company(LandingCompany::Registry->by_name($landing_company{$type}), $country);
         } else {
             delete $landing_company{$type};
         }
@@ -371,7 +370,7 @@ rpc "landing_company",
             next if $company_name eq 'none';
 
             $landing_company{"mt_${mt5_type}_company"}{$mt5_sub_type} =
-                __build_landing_company($registry->get($company_name), $country);
+                __build_landing_company(LandingCompany::Registry->by_name($company_name), $country);
         }
     }
 
@@ -381,7 +380,8 @@ rpc "landing_company",
         foreach my $dx_sub_type (keys $dx_details->{$dx_market_type}->%*) {
             my $dx_lc = $dx_details->{$dx_market_type}{$dx_sub_type};
             next if $dx_lc eq 'none';
-            $landing_company{"dxtrade_${dx_market_type}_company"}{$dx_sub_type} = __build_landing_company($registry->get($dx_lc), $country);
+            $landing_company{"dxtrade_${dx_market_type}_company"}{$dx_sub_type} =
+                __build_landing_company(LandingCompany::Registry->by_name($dx_lc), $country);
         }
     }
 
@@ -419,7 +419,7 @@ rpc "landing_company_details",
     sub {
     my $params = shift;
 
-    my $lc = LandingCompany::Registry::get($params->{args}->{landing_company_details});
+    my $lc = LandingCompany::Registry->by_name($params->{args}->{landing_company_details});
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
             message_to_client => localize('Unknown landing company.')}) unless $lc;

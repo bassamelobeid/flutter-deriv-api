@@ -126,7 +126,7 @@ subtest 'new affiliate account' => sub {
         last_name      => 'asdf',
     };
     $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_no_error()->result;
-    my $lc = LandingCompany::Registry->get_by_broker('AFF');
+    my $lc = LandingCompany::Registry->by_broker('AFF');
 
     ok $result->{client_id} =~ /^AFF[0-9]+$/, 'Got a valid AFF broker code';
     is $result->{landing_company},           $lc->name,  'Got the landing_company';
@@ -178,7 +178,7 @@ subtest 'new affiliate account with currency' => sub {
     $params->{token} = $auth_token;
 
     my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_no_error()->result;
-    my $lc     = LandingCompany::Registry->get_by_broker('AFF');
+    my $lc     = LandingCompany::Registry->by_broker('AFF');
 
     ok $result->{client_id} =~ /^AFF[0-9]+$/, 'Got a valid AFF broker code';
     is $result->{landing_company},           $lc->name,  'Got the landing_company';

@@ -14,7 +14,6 @@ use Test::BOM::RPC::QueueClient;
 use Email::Address::UseXS;
 use Digest::SHA qw(hmac_sha256_hex);
 use BOM::Test::Email qw(:no_event);
-use LandingCompany::Registry;
 use Scalar::Util qw/looks_like_number/;
 use BOM::Platform::Token::API;
 use Guard;
