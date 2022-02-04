@@ -237,7 +237,7 @@ sub get_turnover_limit_parameters {
 
     # Complince team establish turnover limits only for svg landing company
     # Therefore we are using svg for getting limits for all companies
-    my $svg_lc           = LandingCompany::Registry::get_default();
+    my $svg_lc           = LandingCompany::Registry->get_default_company();
     my $offerings_config = BOM::Config::Runtime->instance->get_offerings_config;
 
     return [
@@ -438,7 +438,7 @@ sub get_current_profile_definitions {
     my (@markets, $offerings_obj);
     try {
         my $offerings_config = BOM::Config::Runtime->instance->get_offerings_config;
-        my $lc_obj           = LandingCompany::Registry::get($landing_company);
+        my $lc_obj           = LandingCompany::Registry->by_name($landing_company);
         $offerings_obj =
               $country_code
             ? $lc_obj->basic_offerings_for_country($country_code, $offerings_config)
