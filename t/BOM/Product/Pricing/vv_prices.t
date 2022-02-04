@@ -34,7 +34,7 @@ my @underlying_symbols = ('frxBROUSD', 'OTC_AEX', 'frxXAUUSD', 'WLDEUR', 'frxEUR
 my $payout_currency    = 'USD';
 my $spot               = 100;
 my $offerings_cfg      = BOM::Config::Runtime->instance->get_offerings_config;
-my $offerings_obj      = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
+my $offerings_obj      = LandingCompany::Registry->by_name('svg')->basic_offerings($offerings_cfg);
 
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);

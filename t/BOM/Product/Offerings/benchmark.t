@@ -10,7 +10,7 @@ use BOM::Config::Runtime;
 use Time::HiRes;
 
 subtest 'benchmark offerings' => sub {
-    foreach my $lc (LandingCompany::Registry->new->all) {
+    foreach my $lc (LandingCompany::Registry->get_all) {
         my $before = Time::HiRes::time;
         my $config = BOM::Config::Runtime->instance->get_offerings_config;
 

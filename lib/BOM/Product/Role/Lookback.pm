@@ -8,7 +8,6 @@ use List::Util qw(min max first);
 use Format::Util::Numbers qw(financialrounding);
 use Math::BigFloat;
 use LandingCompany::Commission qw(get_underlying_base_commission);
-use LandingCompany::Registry;
 
 use BOM::Product::Static;
 use BOM::Market::DataDecimate;
