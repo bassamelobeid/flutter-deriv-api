@@ -224,4 +224,17 @@ rule 'client.high_risk_authenticated' => {
     }
 };
 
+rule 'client.potential_fraud_age_verified' => {
+    description => "Fails if client is potential fraud and POI is not done yet.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        $self->fail('PotentialFraud')
+            if $client->status->potential_fraud and not $client->status->age_verification;
+
+        return 1;
+    }
+};
+
 1;

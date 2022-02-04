@@ -497,4 +497,27 @@ subtest $rule_name => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if high risk client is autyenticated';
 };
 
+$rule_name = 'client.potential_fraud_age_verified';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if potential fraud  and not age verified';
+
+    $client->status->setnx('potential_fraud', 'system', 'Test');
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'PotentialFraud',
+        rule       => $rule_name
+        },
+        'Error for potential fraud client';
+
+    $client->status->setnx('age_verification', 'system', 'Test');
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if potential fraud and age verifed';
+
+    $client->status->clear_potential_fraud;
+    $client->status->clear_age_verification;
+};
+
 done_testing();
