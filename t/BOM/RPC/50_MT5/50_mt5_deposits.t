@@ -157,7 +157,7 @@ subtest 'deposit' => sub {
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
@@ -255,7 +255,7 @@ subtest 'virtual topup' => sub {
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_is_account_demo', sub { return 1 });
-    $demo_account_mock->mock('_fetch_mt5_lc',    sub { return LandingCompany::Registry->by_name('iom'); });
+    $demo_account_mock->mock('_fetch_mt5_lc',    sub { return LandingCompany::Registry::get('iom'); });
 
     $method = "mt5_deposit";
     my $deposit_demo_params = {
@@ -319,7 +319,7 @@ subtest 'virtual deposit' => sub {
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_error('Cannot depoosit to demo mt5 from real trading account')
@@ -368,7 +368,7 @@ subtest 'mx_deposit' => sub {
     };
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('maltainvest'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('maltainvest'); });
 
     my $method = "mt5_deposit";
 
@@ -402,7 +402,7 @@ subtest 'mx_withdrawal' => sub {
     my $method = "mt5_withdrawal";
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('maltainvest'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('maltainvest'); });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mx_client->loginid);
 
@@ -428,7 +428,7 @@ subtest 'withdrawal' => sub {
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot withdrawals from real mt5 to virtual trading account')
@@ -483,7 +483,7 @@ subtest 'virtual withdrawal' => sub {
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_error('Cannot withdrawals from demo mt5 to real trading account')
@@ -542,7 +542,7 @@ subtest 'labuan withdrawal' => sub {
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
+    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('labuan'); });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -590,7 +590,7 @@ subtest 'labuan withdrawal' => sub {
         ->error_code_is('FinancialAssessmentRequired', 'error code is FinancialAssessmentRequired')
         ->error_message_like(qr/complete your financial assessment/);
 
-    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
     $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from svg mt5 account when sibling labuan account is withdrawal-locked');
@@ -598,7 +598,7 @@ subtest 'labuan withdrawal' => sub {
 
     $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
     $test_client->save;
-    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
+    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('labuan'); });
     $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('Withdrawal unlocked for labuan mt5 after financial assessment');
@@ -635,7 +635,7 @@ subtest 'mf_withdrawal' => sub {
     my $method = "mt5_withdrawal";
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('maltainvest'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('maltainvest'); });
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pending'});
     $c->call_ok($method, $params_mf)->has_error('Withdrawal request failed.')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_like(qr/authenticate/);
@@ -684,7 +684,7 @@ subtest 'mf_deposit' => sub {
     my $method = "mt5_deposit";
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('maltainvest'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('maltainvest'); });
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pending'});
     $c->call_ok($method, $params_mf)->has_error('Deposit request failed.')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_like(qr/authenticate/);
@@ -732,7 +732,7 @@ subtest 'labuan deposit' => sub {
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
+    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('labuan'); });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     $has_valid_documents = 1;

@@ -6,6 +6,7 @@ use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use Test::BOM::RPC::QueueClient;
+use LandingCompany::Registry;
 use Scalar::Util qw/looks_like_number/;
 use BOM::Platform::Token::API;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

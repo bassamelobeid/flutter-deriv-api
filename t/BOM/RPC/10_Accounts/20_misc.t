@@ -134,7 +134,7 @@ my $method = 'payout_currencies';
 subtest 'payout currencies' => sub {
     # we should not care about order of currencies
     # we just need to send array back
-    cmp_bag($c->tcall($method, {token => '12345'}), [LandingCompany::Registry::all_currencies()], 'invalid token will get all currencies');
+    cmp_bag($c->tcall($method, {token => '12345'}), [LandingCompany::Registry->new()->all_currencies()], 'invalid token will get all currencies');
     cmp_bag(
         $c->tcall(
             $method,
@@ -142,12 +142,12 @@ subtest 'payout currencies' => sub {
                 token => undef,
             }
         ),
-        [LandingCompany::Registry::all_currencies()],
+        [LandingCompany::Registry->new()->all_currencies()],
         'undefined token will get all currencies'
     );
 
-    cmp_bag($c->tcall($method, {token => $token}), ['USD'],                                      "will return client's currency");
-    cmp_bag($c->tcall($method, {}),                [LandingCompany::Registry::all_currencies()], "will return legal currencies if no token");
+    cmp_bag($c->tcall($method, {token => $token}), ['USD'],                                             "will return client's currency");
+    cmp_bag($c->tcall($method, {}),                [LandingCompany::Registry->new()->all_currencies()], "will return legal currencies if no token");
 };
 
 $method = 'landing_company';
@@ -190,7 +190,7 @@ subtest 'landing company details' => sub {
     );
     my $result = $c->tcall($method, {args => {landing_company_details => 'svg'}});
     is($result->{name}, 'Deriv (SVG) LLC', "details result ok");
-    cmp_bag([keys %{$result->{currency_config}->{synthetic_index}}], [LandingCompany::Registry::all_currencies()], "currency config ok");
+    cmp_bag([keys %{$result->{currency_config}->{synthetic_index}}], [LandingCompany::Registry->new()->all_currencies()], "currency config ok");
     ok(!(grep { !looks_like_number($_) } get_values($result->{currency_config})), 'limits for svg are all numeric');
 
     $result = $c->tcall($method, {args => {landing_company_details => 'maltainvest'}});

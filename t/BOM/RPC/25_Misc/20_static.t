@@ -133,7 +133,7 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
             language => 'EN',
             args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
 
-    my @all_currencies          = keys %{LandingCompany::Registry->by_name('svg')->legal_allowed_currencies};
+    my @all_currencies          = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
     my $currency_limits         = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
     my $currency_limits_mt5     = BOM::Config::CurrencyConfig::platform_transfer_limits('MT5');
     my $currency_limits_dxtrade = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade');
@@ -194,7 +194,7 @@ subtest 'crypto_config' => sub {
             language => 'EN',
             args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
 
-    my @all_currencies = keys %{LandingCompany::Registry->by_name('svg')->legal_allowed_currencies};
+    my @all_currencies = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
     my @currency       = map {
         if (LandingCompany::Registry::get_currency_type($_) eq 'crypto') { $_ }
     } @all_currencies;

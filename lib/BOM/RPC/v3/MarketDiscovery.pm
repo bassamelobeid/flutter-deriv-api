@@ -41,7 +41,7 @@ rpc active_symbols => sub {
         $country_code    = $client->residence;
     }
 
-    $landing_company //= LandingCompany::Registry->by_name($landing_company_name);
+    $landing_company //= LandingCompany::Registry::get($landing_company_name);
     $product_type    //= $landing_company->default_product_type;
     my $app_id = $params->{valid_source} // $params->{source};
     # It seems a little weird here where you're passing in $app_id to contruct an object and again passing $app_id

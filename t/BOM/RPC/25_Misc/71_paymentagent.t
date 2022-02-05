@@ -393,7 +393,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $mock_user_client->mock(
             'landing_company',
             sub {
-                return LandingCompany::Registry->by_broker($_[0]->loginid eq $Alice_id ? 'MLT' : 'CR');
+                return LandingCompany::Registry->get_by_broker($_[0]->loginid eq $Alice_id ? 'MLT' : 'CR');
             });
 
         ## Then we need to declare that Malta can have payment agents too

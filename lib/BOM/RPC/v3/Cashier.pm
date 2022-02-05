@@ -399,7 +399,7 @@ rpc get_limits => sub {
                 message_to_client => localize('Sorry, this feature is not available.')});
     }
 
-    my $landing_company = LandingCompany::Registry->by_broker($client->broker)->short;
+    my $landing_company = LandingCompany::Registry->get_by_broker($client->broker)->short;
     my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
 
     my $limit = +{

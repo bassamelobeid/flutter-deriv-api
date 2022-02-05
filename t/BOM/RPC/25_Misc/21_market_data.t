@@ -10,10 +10,13 @@ use Test::MockModule;
 use Test::Warnings;
 use Format::Util::Numbers qw(formatnumber);
 
+use LandingCompany::Registry;
+
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Test::Data::Utility::UnitTestMarketData;
 use Try::Tiny;
 use BOM::Config::Chronicle;
+
 use BOM::Test::RPC::QueueClient;
 use BOM::RPC::v3::MarketData;
 use Email::Stuffer::TestLinks;

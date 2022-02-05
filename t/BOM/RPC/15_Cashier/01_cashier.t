@@ -6,7 +6,7 @@ use Test::Mojo;
 use Test::MockModule;
 use Email::Address::UseXS;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
-use LandingCompany::Registry;
+
 use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);

@@ -49,7 +49,7 @@ sub _get_upgradeable_landing_companies {
         )->has_failure;
 
         # check currency availability
-        for my $currency (keys LandingCompany::Registry->by_name($lc)->legal_allowed_currencies->%*) {
+        for my $currency (keys LandingCompany::Registry->new->get($lc)->legal_allowed_currencies->%*) {
             unless (
                 $rule_engine->apply_rules(
                     [qw/landing_company.currency_is_allowed currency.is_available_for_new_account currency.is_currency_suspended/],

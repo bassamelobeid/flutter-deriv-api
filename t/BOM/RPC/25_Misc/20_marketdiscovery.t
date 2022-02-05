@@ -54,7 +54,7 @@ subtest "$method on binary_smarttrader" => sub {
 my $landing_company_name = 'maltainvest';
 subtest "active_symbols for $landing_company_name" => sub {
     # check the selected landing comapny doesn't have offerings
-    my $landing_company = LandingCompany::Registry->by_name($landing_company_name);
+    my $landing_company = LandingCompany::Registry::get($landing_company_name);
     my $offering        = $landing_company->default_product_type;
     ok $offering, "offerings for maltainvest";
 
@@ -155,7 +155,7 @@ subtest 'active_symbols for whitelisted apps' => sub {
                 normal       => 35,
                 quiet_period => 22
             });
-        my $o = LandingCompany::Registry->by_name('svg')->basic_offerings({
+        my $o = LandingCompany::Registry::get('svg')->basic_offerings({
             loaded_revision => 1,
             action          => 'buy'
         });

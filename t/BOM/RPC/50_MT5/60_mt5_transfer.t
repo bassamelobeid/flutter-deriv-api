@@ -139,7 +139,7 @@ subtest 'multi currency transfers' => sub {
     my $usd_test_amount = 100;
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     my $deposit_params = {
         language => 'EN',
@@ -531,7 +531,7 @@ subtest 'Transfers Limits' => sub {
     };
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
@@ -587,7 +587,7 @@ subtest 'Suspended Transfers Currencies' => sub {
     $user->add_client($client_cr_btc);
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     subtest 'it should stop transfer from suspended currency' => sub {
         my $deposit_params = {
@@ -617,7 +617,7 @@ subtest 'Simple withdraw' => sub {
     my $token = $m->create_token($client->loginid, 'test token');
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     $client->status->set('mt5_withdrawal_locked', 'system', 'testing');
 
@@ -655,7 +655,7 @@ subtest 'offer_to_clients' => sub {
     $user->add_client($client_cr);
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     my $token = $m->create_token($client_cr->loginid, 'test token');
 
