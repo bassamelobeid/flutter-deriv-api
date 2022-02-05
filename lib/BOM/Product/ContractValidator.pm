@@ -551,7 +551,7 @@ sub _validate_trading_times {
 
     if (not($calendar->trades_on($exchange, $effective_start) and $calendar->is_open_at($exchange, $effective_start))) {
         if ($args->{landing_company}) {
-            $lc = LandingCompany::Registry->by_name($args->{landing_company});
+            $lc = LandingCompany::Registry::get($args->{landing_company});
             if ($lc and $args->{country_code}) {
                 @markets = $lc->basic_offerings_for_country($args->{country_code}, BOM::Config::Runtime->instance->get_offerings_config())
                     ->values_for_key('market');

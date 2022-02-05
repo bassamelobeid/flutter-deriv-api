@@ -50,7 +50,7 @@ $mocked2->mock(
         [map { {quote => 100, symbol => 'frxUSDJPY', decimate_epoch => $_} } (0 .. 10)];
     });
 
-my $offerings_obj = LandingCompany::Registry->by_name('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
 my $now           = Date::Utility->new;
 my @contract_types =
     map { ($offerings_obj->query({contract_category => $_}, ['contract_type']))[0] } $offerings_obj->values_for_key('contract_category');

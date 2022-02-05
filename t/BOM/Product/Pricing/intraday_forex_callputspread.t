@@ -8,6 +8,7 @@ use Test::Most tests => 2;
 use Test::Warnings;
 use Volatility::EconomicEvents;
 use YAML::XS qw(LoadFile);
+use LandingCompany::Registry;
 use Date::Utility;
 use Test::MockModule;
 

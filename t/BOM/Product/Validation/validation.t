@@ -1237,7 +1237,7 @@ subtest 'validate tick expiry barrier type' => sub {
 subtest 'sell back validation for volatility indices' => sub {
     my $starting     = Date::Utility->new('2014-10-08 13:00:00');
     my $date_pricing = $starting->plus_time_interval('2m');
-    my $o            = LandingCompany::Registry->by_name('virtual')->basic_offerings({
+    my $o            = LandingCompany::Registry::get('virtual')->basic_offerings({
         loaded_revision => 0,
         action          => 'sell'
     });

@@ -29,7 +29,7 @@ subtest 'non-synthetic callput ATM' => sub {
 };
 
 subtest 'synthetic' => sub {
-    my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings({
+    my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings({
         loaded_revision => 0,
         action          => 'buy'
     });

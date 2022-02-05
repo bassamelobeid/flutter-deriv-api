@@ -67,7 +67,7 @@ sub _get_basic_offerings {
     my ($symbol, $landing_company_short, $country_code, $app_offerings) = @_;
 
     $landing_company_short //= 'virtual';
-    my $landing_company = LandingCompany::Registry->by_name($landing_company_short);
+    my $landing_company = LandingCompany::Registry::get($landing_company_short);
     my $offerings_obj =
         $landing_company->basic_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config, $app_offerings);
 
