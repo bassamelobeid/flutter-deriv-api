@@ -31,6 +31,7 @@ use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 use LandingCompany::Wallet;
 use LandingCompany::Registry;
+use LandingCompany::Wallet;
 
 use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
@@ -228,7 +229,7 @@ sub full_name {
 
 sub landing_company {
     my $self = shift;
-    return LandingCompany::Registry->by_broker($self->broker);
+    return LandingCompany::Registry->get_by_broker($self->broker);
 }
 
 =head2 set_promotion
@@ -1562,7 +1563,7 @@ sub is_region_eu {
         my $countries_instance = request()->brand->countries_instance;
         my $company            = $countries_instance->real_company_for_country($self->residence);
 
-        return LandingCompany::Registry->by_name($company)->is_eu;
+        return LandingCompany::Registry->new->get($company)->is_eu;
     } else {
         return $self->landing_company->is_eu;
     }
@@ -1907,7 +1908,7 @@ sub validate_common_account_details {
             # This is remarkably useful for new account calls.
             my $lc =
                 (defined $args->{broker_code})
-                ? LandingCompany::Registry->by_broker($args->{broker_code})
+                ? LandingCompany::Registry->get_by_broker($args->{broker_code})
                 : $self->landing_company;
 
             if ($lc->short =~ /^(?:iom|malta|maltainvest)$/) {
@@ -2084,7 +2085,7 @@ sub check_duplicate_account {
         # check for duplicates in current and all uprgradeable landing companies
         my @real_companies =
             uniq grep { $_ } ($countries->gaming_company_for_country($self->residence), $countries->financial_company_for_country($self->residence));
-        my @broker_codes = map { LandingCompany::Registry->by_name($_)->broker_codes->@* } @real_companies;
+        my @broker_codes = map { LandingCompany::Registry->new->get($_)->broker_codes->@* } @real_companies;
 
         for my $broker_code (@broker_codes) {
             my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $broker_code})->get_duplicate_client($dup_details);
@@ -4689,7 +4690,7 @@ sub _p2p_order_cancelled {
 
 Returns the remaining cancellations allowed for a client.
 
-=cut
+=cut 
 
 sub _p2p_advertiser_cancellations_remaining {
 
@@ -6026,7 +6027,7 @@ sub update_status_after_auth_fa {
 
 Checks if the client's account is locked for providing false or corporate profile information.
 Such clients have B<cashier_locked> or B<unwelcome> status with predefined reasons.
-Returns 1 if the account was locked for providing false information otherwise undef.
+Returns 1 if the account was locked for providing false information otherwise undef.  
 =cut
 
 sub locked_for_false_profile_info {
@@ -7156,9 +7157,9 @@ The SOP statuses for forged documents are:
 
 =over 4
 
-=item * C<cashier_locked>
+=item * C<cashier_locked> 
 
-=item * C<no_trading>
+=item * C<no_trading> 
 
 =back
 

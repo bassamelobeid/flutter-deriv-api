@@ -49,7 +49,7 @@ sub landing_company {
 
     die 'Broker code ' . $self->broker_code . ' is not a wallet' unless $config;
 
-    return LandingCompany::Registry->by_name($config->{landing_company});
+    return LandingCompany::Registry::get($config->{landing_company});
 }
 
 =head2 is_wallet

@@ -13,16 +13,16 @@ use Syntax::Keyword::Try;
 use BOM::Platform::Context qw(request);
 use Format::Util::Numbers qw(formatnumber);
 
-=head1 NAME
+=head1 NAME 
 
 BOM::User::BalanceRescinder - Set of functions related to the balance rescinder cron script.
 
-=head1 SYNOPSIS
+=head1 SYNOPSIS 
 
     my $broker_code = 'CR';
     BOM::User::Script::BalanceRescinder->new(broker_code => $broker_code)->run;
 
-=head1 DESCRIPTION
+=head1 DESCRIPTION 
 
 This module is used by `balance_rescinder.pl` script. Meant to provide a testable
 collection of subroutines.
@@ -114,7 +114,7 @@ Builds a L<LandingCompany> from our broker code
 sub _build_landing_company {
     my $self = shift;
 
-    return LandingCompany::Registry->by_broker($self->broker_code);
+    return LandingCompany::Registry->get_by_broker($self->broker_code);
 }
 
 =head2 run
@@ -142,14 +142,14 @@ sub run {
     }
 }
 
-=head2 accounts
+=head2 accounts 
 
 This subroutine is a wrapper for `transaction.get_rescindable_loginids` db function.
 
 With this subroutine we can fetch the disabled accounts whose balance can be rescinded given
 our business logic rules. Roughly speaking:
 
-=over 4
+=over 4 
 
 =item * status should be disabled
 
@@ -198,14 +198,14 @@ sub accounts {
     return $result;
 }
 
-=head2 _build_currencies
+=head2 _build_currencies 
 
 Computes the structure needed by the `transaction.get_rescindable_loginids` db function
 in order to fetch the rescindable accounts.
 
 We will grab the currencies of the broker code and fill a hashref given these two simple rules:
 
-=over 4
+=over 4 
 
 =item * if the currency is fiat or a stable coin, the value is 1
 
@@ -259,7 +259,7 @@ It takes the following arguments:
 
 =back
 
-It updates the state of the internal `summary` hashref,
+It updates the state of the internal `summary` hashref, 
 this hashref uses the client loginid as keys whose values are hashref described as:
 
 =over 4

@@ -25,13 +25,15 @@ balance_rescinder.pl
 
 =head1 DESCRIPTION
 
-This is a CRON script that automatically rescinds the balance of disabled accounts.
+This is a CRON script that automatically rescinds the balance of disabled accounts. 
 
 For more details look at L<BOM::User::Script::BalanceRescinder>.
 
 =cut
 
-my @broker_codes = LandingCompany::Registry->all_real_broker_codes();
+my $registry = LandingCompany::Registry->new;
+
+my @broker_codes = $registry->all_real_broker_codes();
 
 for my $broker_code (@broker_codes) {
     my $script = BOM::User::Script::BalanceRescinder->new(broker_code => $broker_code);

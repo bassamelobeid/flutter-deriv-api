@@ -136,4 +136,9 @@ subtest 'get_mt5_loginids' => sub {
     $user_mock->unmock('loginids');
 };
 
+subtest 'broker_code_from_loginid' => sub {
+    is($user->broker_code_from_loginid('CR000002'),   'CR',   'broker short code CR');
+    is($user->broker_code_from_loginid('VRTC010000'), 'VRTC', 'broker short code VRTC');
+};
+
 done_testing();

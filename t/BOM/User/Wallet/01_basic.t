@@ -45,9 +45,8 @@ subtest 'initial methods' => sub {
     my $mock_lc_registry = Test::MockModule->new('LandingCompany::Registry');
 
     $mock_lc_registry->mock(
-        by_name => sub {
-            my $class = shift;
-            is shift, 'test_lc', 'LandingCompany::Registry called with right lc';
+        get => sub {
+            is shift, 'test_lc', 'LandingCompany::Registry::get called with right lc';
             return $dummy_lc_data;
         });
 
