@@ -4,6 +4,7 @@ use warnings;
 
 use Finance::Underlying;
 use Finance::Contract::Category;
+use LandingCompany::Registry;
 use BOM::Config::RedisTransactionLimits;
 use BOM::Config::Runtime;
 
