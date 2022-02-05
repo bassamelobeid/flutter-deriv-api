@@ -93,7 +93,7 @@ subtest 'doughflow_sportsbooks' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks(1);    # disable Deriv sportsbooks
 
     for my $broker (@all_broker_codes) {
-        my $lc = LandingCompany::Registry->by_broker($broker);
+        my $lc = LandingCompany::Registry->get_by_broker($broker);
 
         next if $lc->short =~ /virtual|champion/;
 
@@ -117,7 +117,7 @@ subtest 'doughflow_deriv_sportsbooks' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks(0);    # enable Deriv sportsbooks
 
     for my $broker (@all_broker_codes) {
-        my $lc = LandingCompany::Registry->by_broker($broker);
+        my $lc = LandingCompany::Registry->get_by_broker($broker);
 
         next if $lc->short =~ /virtual|champion/;
 
@@ -135,7 +135,7 @@ subtest 'doughflow deriv sportsbook landing company consistency' => sub {
     my @all_broker_codes = LandingCompany::Registry->all_broker_codes;
 
     for my $broker (@all_broker_codes) {
-        my $lc = LandingCompany::Registry->by_broker($broker);
+        my $lc = LandingCompany::Registry->get_by_broker($broker);
 
         next if $lc->short =~ /virtual|champion|samoa/;
 

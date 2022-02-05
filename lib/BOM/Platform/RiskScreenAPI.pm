@@ -13,7 +13,7 @@ BOM::Platform::RiskScreenAPI - subs for processing RiskScreen API data.
 =head1 DESCRIPTION
 
 This modules contains subs for performing complex tasks using RiskScreen API data,
-like syncing the list of screened clients and getting updates about their matches.
+like syncing the list of screened clients and getting updates about their matches. 
 
 =cut
 
@@ -158,7 +158,7 @@ It retruns a L<BOM::User> object.
 sub get_user_by_interface_reference {
     my ($self, $interface_reference) = @_;
 
-    my $broker_codes = join '|', LandingCompany::Registry->all_broker_codes;
+    my $broker_codes = join '|', LandingCompany::Registry::all_broker_codes;
     $interface_reference //= '';
     $interface_reference =~ qr/(($broker_codes)\d+)/;
     my $loginid = $1;
@@ -170,7 +170,7 @@ sub get_user_by_interface_reference {
 =head2 get_udpated_riskscreen_customers
 
 Fetch the list of RiskScreen customers for which RiskScreen details should be updated,
-including:
+including: 
 
 =over 1
 
@@ -192,7 +192,7 @@ async sub get_udpated_riskscreen_customers {
     # fetch all customers and group by user id
     my %user_data;
     my $constants = constants();
-    for my $broker_code (LandingCompany::Registry->all_broker_codes) {
+    for my $broker_code (LandingCompany::Registry::all_broker_codes) {
         my $customers = await $self->api->client_entity_search(
             search_string => $broker_code,
             search_on     => $constants->{SearchOn}->{InterfaceReference},

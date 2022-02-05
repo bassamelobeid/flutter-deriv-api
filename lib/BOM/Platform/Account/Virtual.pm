@@ -76,7 +76,7 @@ sub create_account {
     # If not defined take it from the LC
     if (not defined $email_consent) {
         my $country_company = $brand_country_instance->real_company_for_country($residence);
-        $email_consent = $country_company ? LandingCompany::Registry->by_name($country_company)->marketing_email_consent->{default} : 0;
+        $email_consent = $country_company ? LandingCompany::Registry::get($country_company)->marketing_email_consent->{default} : 0;
     }
 
     try {
@@ -97,7 +97,7 @@ sub create_account {
         ) unless ($user);
 
         my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $virtual_company_for_brand->short;
-        my $broker_code     = LandingCompany::Registry->by_name($landing_company)->broker_codes->[0];
+        my $broker_code     = LandingCompany::Registry::get($landing_company)->broker_codes->[0];
 
         if ($type eq 'wallet') {
             $landing_company = $virtual_company_for_brand->short;
@@ -160,7 +160,7 @@ sub _virtual_company_for_brand {
     my @lc = grep {
         $_->is_virtual && any { /^$brand_name$/ }
         $_->allowed_for_brands->@*
-    } LandingCompany::Registry->get_all();
+    } LandingCompany::Registry::all();
 
     # virtual landing company for Wallet will be the same as Trading
     # here we filter out the samoa-virtual landing company

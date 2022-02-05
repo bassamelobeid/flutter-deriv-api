@@ -88,7 +88,7 @@ Returns  a string with the Sportsbook name.
 sub get_sportsbook {
     my ($broker, $currency) = @_;
 
-    my $landing_company = LandingCompany::Registry->by_broker($broker);
+    my $landing_company = LandingCompany::Registry->get_by_broker($broker);
 
     return get_sportsbook_by_short_code($landing_company->{short}, $currency);
 }
@@ -97,7 +97,7 @@ sub get_sportsbook {
 
 Maps a given language code to Doughflow/Premier Cashier specific language code.
 
-B<Note> if no mapping is found it defaults to English (en)
+B<Note> if no mapping is found it defaults to English (en) 
 
 =over 4
 
@@ -216,7 +216,7 @@ The elements in the array have the following fields
 
 =item * C<type_display_name> - A string with an user friendly representation of the type of payment method.
 
-=item * C<type> - A string describing the type of payment method. Can be one of B<Ewallet>, B<CreditCard>.
+=item * C<type> - A string describing the type of payment method. Can be one of B<Ewallet>, B<CreditCard>.  
 
 =item * C<withdrawal_limits> - A hash ref with the withdrawal limits for this payment method.
 
@@ -255,7 +255,7 @@ sub get_payment_methods {
     return [] unless scalar @short_codes;
 
     my @landing_companies =
-        map { LandingCompany::Registry->by_name($_) } @short_codes;
+        map { LandingCompany::Registry::get $_ } @short_codes;
 
     my @sportsbook_names = ();
     for my $lc (@landing_companies) {
@@ -363,18 +363,18 @@ Arguments:
 
 =over 4
 
-=item * C<redis> - A ref for the redis payment client.
+=item * C<redis> - A ref for the redis payment client. 
 
 =item * C<country> - A string with the country code. (optional)
 
 =back
 
-It returns an ARRAY of strings with all the payment method keys found for the
+It returns an ARRAY of strings with all the payment method keys found for the 
 given country.
 
 If no country is passed all the payment method keys are returned.
 
-=cut
+=cut 
 
 sub _get_all_payment_keys {
     my $redis   = shift;
@@ -396,14 +396,14 @@ sub _get_all_payment_keys {
 Filter the payment methods following some business rules.
 
 should receive two arguments. The first is an array ref with payment methods (payout
-or deposit options), and the second is an scalar B<country> with the country code,
+or deposit options), and the second is an scalar B<country> with the country code, 
 it can be undefined.
 
 It is expected that every hashref have the following attributes:
 
 =over 4
 
-=item * C<processor_enabled> - A number, acting as boolean 1 for true, 0 for false.  Determines if the processor was enabled.
+=item * C<processor_enabled> - A number, acting as boolean 1 for true, 0 for false.  Determines if the processor was enabled. 
 
 =item * C<blocked> - A number, acting as boolean. Determines if the payment method is blocked.
 
