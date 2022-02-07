@@ -57,7 +57,7 @@ sub _post_import_operations {
 
 sub truncate_tables {
     my $self   = shift;
-    my @tables = qw(tick ohlc_minutely ohlc_hourly ohlc_daily ohlc_status);
+    my @tables = qw(tick ohlc_minutely ohlc_hourly ohlc_daily ohlc_status feed.realtime_ohlc);
 
     my $dbh = $self->db_handler($self->_db_name);
     ## no critic (RequireCheckingReturnValueOfEval)
