@@ -73,13 +73,14 @@ sub report {
 sub _date_joined {
     my ($self, $client_data) = @_;
     my $date_joined = $client_data->{date_joined};
+    my $report_date = $self->{processing_date};
 
     if (!$date_joined) {
         $log->warnf("date_joined is empty?! [%s]:[%s]", $client_data->{'loginid'}, $date_joined);
-        $date_joined = Date::Utility->new->date_yyyymmdd;
+        $date_joined = Date::Utility->new($report_date)->date_yyyymmdd;
     }
     #Update date_joined to current file date.
-    $date_joined = Date::Utility->new->date_yyyymmdd;
+    $date_joined = Date::Utility->new($report_date)->date_yyyymmdd;
     return Date::Utility->new({datetime => $date_joined})->date_yyyymmdd;
 }
 

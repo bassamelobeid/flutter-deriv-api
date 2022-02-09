@@ -22,7 +22,8 @@ binmode STDERR, ':encoding(UTF-8)';
 
 require Log::Any::Adapter;
 GetOptions(
-    'l|log=s' => \my $log_level,
+    'd|past_date=s' => \my $past_date,
+    'l|log=s'       => \my $log_level,
 );
 
 $log_level ||= 'warn';
@@ -32,10 +33,18 @@ Log::Any::Adapter->import(
     log_level => $log_level
 );
 
+if ($past_date) {
+    try {
+        Date::Utility->new($past_date);
+    } catch {
+        die 'Invalid date. Please use yyyy-mm-dd format.';
+    }
+}
+
 run() unless caller;
 
 sub run {
-    my $processing_date = Date::Utility->new(time - 86400);
+    my $processing_date = Date::Utility->new($past_date // (time - 86400));
     my $reporter        = BOM::MyAffiliates::GenerateRegistrationDaily->new(
         processing_date => $processing_date,
         brand           => Brands->new(name => 'binary'));
