@@ -223,6 +223,10 @@ has transaction_details => (
     is => 'rw',
 );
 
+has session_token => (
+    is => 'rw',
+);
+
 sub _build_contract {
     my $self  = shift;
     my $param = $self->contract_parameters;
@@ -727,6 +731,7 @@ sub prepare_bet_data_for_buy {
                 staff_loginid => $self->staff,
                 source        => $self->source,
                 app_markup    => $self->contract->app_markup_dollar_amount,
+                session_token => $self->session_token,
             },
             bet_data             => $bet_params,
             quants_bet_variables => $quants_bet_variables,
@@ -1169,6 +1174,7 @@ sub prepare_bet_data_for_sell {
             transaction_data => {
                 staff_loginid => $self->staff,
                 source        => $self->source,
+                session_token => $self->session_token,
             },
             bet_data             => $bet_params,
             quants_bet_variables => $quants_bet_variables,

@@ -247,7 +247,6 @@ SQL
 
 my $cl;
 my $acc_usd;
-my $acc_aud;
 
 ####################################################################
 # real tests begin here
@@ -261,7 +260,8 @@ lives_ok {
     ok(!BOM::Transaction::Validation->new({clients => [$cl]})->_validate_client_status($cl), "client can trade: _validate_client_status");
     top_up $cl, 'USD', 5000;
 
-    isnt + ($acc_usd = $cl->account), 'USD', 'got USD account';
+    $acc_usd = $cl->account;
+    is $acc_usd->currency_code, 'USD', 'got USD account';
 
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;

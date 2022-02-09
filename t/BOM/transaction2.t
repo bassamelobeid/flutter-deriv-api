@@ -153,7 +153,8 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -277,7 +278,8 @@ subtest 'asian_daily_turnover_limit', sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -401,7 +403,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -579,7 +582,8 @@ subtest 'smartfx_turnover_limit', sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -690,7 +694,8 @@ subtest 'custom client limit' => sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -781,7 +786,8 @@ subtest 'non atm turnover checks' => sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;

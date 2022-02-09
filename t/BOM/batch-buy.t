@@ -196,8 +196,10 @@ subtest 'batch-buy success + multisell', sub {
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 5000;
 
-        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
-        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
 
         my $bal;
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
@@ -456,8 +458,10 @@ subtest 'single contract fails in database', sub {
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 90;
 
-        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
-        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
 
         my $bal;
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
@@ -537,7 +541,8 @@ subtest 'batch-buy with exception', sub {
         $clm->save;
         top_up $cl1, 'USD', 5000;
 
-        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
 
         my $bal;
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
@@ -602,7 +607,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
         top_up $_, 'USD', 5000 for (@cl);
 
         my @acc;
-        isnt + (push @acc, $_->account), 'USD', 'got USD account #' . @acc for (@cl);
+        for (@cl) {
+            push @acc, $_->account;
+            is $acc[-1]->currency_code, 'USD', 'got USD account #' . @acc;
+        }
 
         my $contract = produce_contract({
             underlying   => $underlying,
@@ -778,8 +786,10 @@ subtest 'batch_buy multiplier contract' => sub {
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 5000;
 
-        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
-        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
 
         my $bal;
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
@@ -881,8 +891,10 @@ subtest 'batch buy slippage failure' => sub {
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 5000;
 
-        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
-        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
 
         my $bal;
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
@@ -944,8 +956,10 @@ subtest 'batch buy forex after friday close' => sub {
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 5000;
 
-        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
-        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
+        my $acc1 = $cl1->account;
+        is $acc1->currency_code, 'USD', 'got USD account #1';
+        my $acc2 = $cl2->account;
+        is $acc2->currency_code, 'USD', 'got USD account #2';
 
         my $bal;
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;

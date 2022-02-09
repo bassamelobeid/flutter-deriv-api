@@ -174,7 +174,6 @@ SQL
 
 my $cl;
 my $acc_usd;
-my $acc_aud;
 
 ####################################################################
 # real tests begin here
@@ -189,7 +188,8 @@ lives_ok {
 
     top_up $cl, 'USD', 5000;
 
-    isnt + ($acc_usd = $cl->account), 'USD', 'got USD account';
+    $acc_usd = $cl->account;
+    is $acc_usd->currency_code, 'USD', 'got USD account';
 
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -682,7 +682,8 @@ subtest 'max_open_bets validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -757,7 +758,8 @@ subtest 'max_open_bets validation in presence of expired bets', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -849,7 +851,8 @@ subtest 'max_payout_open_bets validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -933,7 +936,8 @@ subtest 'max_turnover validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1081,7 +1085,8 @@ subtest 'max_7day_turnover validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1178,7 +1183,8 @@ subtest 'max_30day_turnover validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1272,7 +1278,8 @@ subtest 'max_losses validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1404,7 +1411,8 @@ subtest 'max_7day_losses validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1536,7 +1544,8 @@ subtest 'max_30day_losses validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1669,7 +1678,8 @@ subtest 'sell_expired_contracts', sub {
 
         top_up $cl, 'USD', 1000;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+        my $acc_usd = $cl->account;
+        is $acc_usd->currency_code, 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
@@ -1789,7 +1799,8 @@ subtest 'sell_expired_contracts', sub {
 subtest 'transaction slippage' => sub {
     my $cl = create_client;
     top_up $cl, 'USD', 1000;
-    isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+    my $acc_usd = $cl->account;
+    is $acc_usd->currency_code, 'USD', 'got USD account';
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
 
@@ -1948,7 +1959,8 @@ subtest 'buy/sell on suspend_trading' => sub {
 
     top_up $cl, 'USD', 100;
 
-    isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+    my $acc_usd = $cl->account;
+    is $acc_usd->currency_code, 'USD', 'got USD account';
 
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -2059,7 +2071,8 @@ subtest 'suspend_buy & suspend_trades' => sub {
 
     top_up $cl, 'USD', 100;
 
-    isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+    my $acc_usd = $cl->account;
+    is $acc_usd->currency_code, 'USD', 'got USD account';
 
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -2302,7 +2315,8 @@ lives_ok {
 
     top_up $china_account, 'USD', 5000;
 
-    isnt + ($acc_usd = $china_account->account), 'USD', 'got USD account';
+    my $acc_usd = $china_account->account;
+    is $acc_usd->currency_code, 'USD', 'got USD account';
 
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
