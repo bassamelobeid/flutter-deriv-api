@@ -90,7 +90,7 @@ rule 'idv.check_dob_conformity' => {
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my $reported_dob = eval { Date::Utility->new($result->{date_of_birth}) };
-        my $profile_dob  = eval { Date::Utility->new($client->{date_of_birth}) };
+        my $profile_dob  = eval { Date::Utility->new($client->date_of_birth) };
 
         $self->fail('DobMismatch') unless $reported_dob and $profile_dob and $profile_dob->is_same_as($reported_dob);
 
