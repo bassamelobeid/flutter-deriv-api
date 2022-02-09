@@ -122,6 +122,38 @@ rule 'transfers.experimental_currency_email_whitelisted' => {
     },
 };
 
+rule 'transfers.real_to_virtual_not_allowed' => {
+    description => "Transfer between real and virtual accounts is not allowed",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client_to   = $context->client({loginid => $args->{loginid_to}});
+        my $client_from = $context->client({loginid => $args->{loginid_from}});
+        $self->fail('RealToVirtualNotAllowed') unless $client_from->is_virtual == $client_to->is_virtual;
+        return 1;
+    },
+};
+
+rule 'transfers.authorized_client_should_be_real' => {
+    description => "Transfer between real accounts is not allowed if the authorized client is virtual",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client      = $context->client($args);
+        my $client_from = $context->client({loginid => $args->{loginid_from}});
+        $self->fail('AuthorizedClientIsVirtual')
+            if ($client->is_virtual and $args->{token_type} ne 'oauth_token' and not $client_from->is_virtual);
+        return 1;
+    },
+};
+
+rule 'transfers.same_account_not_allowed' => {
+    description => "Transfer to the same account is not allowed",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        $self->fail('SameAccountNotAllowed') if ($args->{loginid_from} eq $args->{loginid_to});
+        return 1;
+    },
+};
+
 rule 'transfers.no_different_fiat_currencies' => {
     description => "Transfer between accounts with different fiat currencies is not permitted (fiat currencies should be the same).",
     code        => sub {
@@ -133,6 +165,18 @@ rule 'transfers.no_different_fiat_currencies' => {
             if $currencies{from}->{type} eq 'fiat'
             && $currencies{to}->{type} eq 'fiat'
             && $currencies{from}->{code} ne $currencies{to}->{code};
+
+        return 1;
+    },
+};
+
+rule 'transfers.wallet_accounts_not_allowed' => {
+    description => "Transfer between wallet accounts is not allowed.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client_to   = $context->client({loginid => $args->{loginid_to}});
+        my $client_from = $context->client({loginid => $args->{loginid_from}});
+        $self->fail('WalletAccountsNotAllowed') if ($client_from->is_wallet and $client_to->is_wallet);
 
         return 1;
     },
@@ -173,6 +217,36 @@ rule 'transfers.clients_are_not_transfer_blocked' => {
             || $context->client({loginid => $args->{loginid_to}})->status->transfers_blocked;
 
         return 1;
+    },
+};
+
+rule 'transfers.client_loginid_client_from_loginid_mismatch' => {
+    description => "Client loginid and client_from loginid are not the same unless token type is oauth or its virtual transfer",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client      = $context->client({loginid => $args->{loginid}});
+        my $client_from = $context->client({loginid => $args->{loginid_from}});
+        $self->fail('IncompatibleClientLoginidClientFrom')
+            if ($args->{loginid} ne $args->{loginid_from})
+            and ($args->{token_type} ne 'oauth_token');
+        return 1;
+    },
+};
+
+rule 'transfers.same_landing_companies' => {
+    description => "Landing companies should be the same",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client_to   = $context->client({loginid => $args->{loginid_to}});
+        my $client_from = $context->client({loginid => $args->{loginid_from}});
+        my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
+        # Transfers within landing company are allowed
+        return 1 if $lc_from->short eq $lc_to->short;
+        # Transfers between wallet and trading app are allowed
+        return 1 if $client_from->is_wallet or $client_to->is_wallet;
+        # Transfers  between malta  and maltainvest are fine
+        return 1 if ($lc_from->short =~ /^(?:malta|maltainvest)$/ and $lc_to->short =~ /^(?:malta|maltainvest)$/);
+        $self->fail('IncompatibleLandingCompanies');
     },
 };
 

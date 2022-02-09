@@ -308,6 +308,326 @@ subtest 'rule transfers.experimental_currency_email_whitelisted' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, %$params) } 'Test passes when currency is experimental and email is whitelisted';
 };
 
+subtest 'rule transfers.real_to_virtual_not_allowed' => sub {
+    my $rule_name = 'transfers.real_to_virtual_not_allowed';
+
+    my $client_to = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+real+virtual@test.deriv',
+        password => 'TRADING PASS',
+    );
+    $user->add_client($client_to);
+    $client_to->account('USD');
+
+    my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $user->add_client($client_from);
+    $client_from->account('USD');
+
+    my $params = {
+        loginid_to   => $client_to->loginid,
+        loginid_from => $client_from->loginid,
+    };
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_to, $client_from]);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        {
+        error_code => 'RealToVirtualNotAllowed',
+        rule       => $rule_name
+        },
+        'invalid transfer from virtual to real';
+
+    my $client_to_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    $user->add_client($client_to_1);
+    $client_to_1->account('USD');
+
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_to, $client_to_1]);
+    $params      = {
+        loginid      => $client_to->loginid,
+        loginid_to   => $client_to->loginid,
+        loginid_from => $client_to_1->loginid,
+    };
+
+    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when both are virtual';
+};
+
+subtest 'rule transfers.authorized_client_should_be_real' => sub {
+    my $rule_name = 'transfers.authorized_client_should_be_real';
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+real+real@test.deriv',
+        password => 'TRADING PASS',
+    );
+    $user->add_client($client);
+    $client->account('USD');
+
+    my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $user->add_client($client_from);
+    $client_from->account('BTC');
+    my $params = {
+        loginid      => $client->loginid,
+        loginid_from => $client_from->loginid,
+        token_type   => 'oauth_token'
+    };
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from]);
+
+    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when both are real';
+
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from]);
+
+    $params = {
+        loginid      => $client->loginid,
+        loginid_from => $client_from->loginid,
+        token_type   => 'not_oauth_token'
+    };
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        {
+        error_code => 'AuthorizedClientIsVirtual',
+        rule       => $rule_name
+        },
+        'token type is not equal to oauth_token';
+
+    $params = {
+        loginid      => $client->loginid,
+        loginid_from => $client_from->loginid,
+        token_type   => 'oauth_token'
+    };
+
+    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when not authorized';
+};
+
+subtest 'rule transfers.same_account_not_allowed' => sub {
+    my $rule_name = 'transfers.same_account_not_allowed';
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'same+account@test.deriv',
+        password => 'TRADING PASS',
+    );
+    $user->add_client($client);
+    $client->account('USD');
+
+    my $params = {
+        loginid_to   => $client->loginid,
+        loginid_from => $client->loginid,
+    };
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client]);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        {
+        error_code => 'SameAccountNotAllowed',
+        rule       => $rule_name
+        },
+        'Transfer to the same account is not allowed';
+
+    my $client_to = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $user->add_client($client_to);
+    $client_to->account('BTC');
+
+    $params = {
+        loginid_to   => $client_to->loginid,
+        loginid_from => $client->loginid,
+    };
+    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when they are different';
+};
+
+subtest 'rule transfers.wallet_accounts_not_allowed' => sub {
+    my $rule_name = 'transfers.wallet_accounts_not_allowed';
+    my $user      = BOM::User->create(
+        email    => 'wallet_not_allowed@test.deriv',
+        password => 'TRADING PASS',
+    );
+    my $wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'DW',
+            email       => 'wallet_not_allowed@test.deriv',
+
+    });
+    $user->add_client($wallet);
+
+    my $params = {
+        loginid_to   => $wallet->loginid,
+        loginid_from => $wallet->loginid,
+    };
+    my $rule_engine = BOM::Rules::Engine->new(client => [$wallet]);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        {
+        error_code => 'WalletAccountsNotAllowed',
+        rule       => $rule_name
+        },
+        'Transfer between wallet accounts is not allowed';
+
+    my $client_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $user->add_client($client_1);
+    $rule_engine = BOM::Rules::Engine->new(client => [$wallet, $client_1]);
+    $params      = {
+        loginid_to   => $client_1->loginid,
+        loginid_from => $wallet->loginid,
+    };
+    ok $rule_engine->apply_rules($rule_name, %$params), 'transfer bewteen account and wallet is allowed';
+};
+
+subtest 'rule transfers.client_loginid_client_from_loginid_mismatch' => sub {
+    my $rule_name = 'transfers.client_loginid_client_from_loginid_mismatch';
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'same+account+from@test.deriv',
+        password => 'TRADING PASS',
+    );
+    $client->account('USD');
+    $user->add_client($client);
+
+    my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client_from->account('BTC');
+
+    $user->add_client($client_from);
+
+    my $params = {
+        loginid      => $client_from->loginid,
+        loginid_from => $client->loginid,
+        token_type   => 'not_oauth_token'
+    };
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from]);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        {
+        error_code => 'IncompatibleClientLoginidClientFrom',
+        rule       => $rule_name
+        },
+        "You can only transfer from the current authorized client's account.";
+
+    $params = {
+        loginid      => $client_from->loginid,
+        loginid_from => $client->loginid,
+        token_type   => 'oauth_token'
+    };
+    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when client is authenticated';
+
+    $params = {
+        loginid      => $client->loginid,
+        loginid_from => $client->loginid,
+        token_type   => 'not_oauth_token'
+    };
+
+    $rule_engine = BOM::Rules::Engine->new(client => [$client]);
+    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when client and client from are equal';
+};
+
+subtest 'rule transfers.same_landing_companies' => sub {
+    my $rule_name = 'transfers.same_landing_companies';
+
+    my $client_to = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'landing+wallet@test.deriv',
+        password => 'TRADING PASS',
+    );
+    $client_to->account('USD');
+    $user->add_client($client_to);
+
+    my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client_from->account('BTC');
+
+    $user->add_client($client_from);
+
+    my $params = {
+        loginid_to   => $client_from->loginid,
+        loginid_from => $client_to->loginid
+    };
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_to, $client_from]);
+
+    ok $rule_engine->apply_rules($rule_name, %$params), 'no error when same landing company';
+
+    my $client_from_MX = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+    });
+
+    $client_from_MX->account('USD');
+    $user->add_client($client_from_MX);
+
+    $params = {
+        loginid_to   => $client_from_MX->loginid,
+        loginid_from => $client_to->loginid
+    };
+
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_to, $client_from_MX]);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        {
+        error_code => 'IncompatibleLandingCompanies',
+        rule       => $rule_name
+        },
+        "Landing companies are not the same.";
+
+    my $client_from_MLT = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+    $client_from_MLT->account('GBP');
+    $user->add_client($client_from_MLT);
+
+    my $client_from_MF = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    $client_from_MF->account('EUR');
+    $user->add_client($client_from_MF);
+
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_from_MF, $client_from_MLT]);
+
+    $params = {
+        loginid_to   => $client_from_MF->loginid,
+        loginid_from => $client_from_MLT->loginid
+    };
+
+    ok $rule_engine->apply_rules($rule_name, %$params), 'Landing companies are malta|maltainvest.';
+
+    my $wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'DW',
+            email       => 'wallet_not_allowed@test.deriv',
+
+    });
+    $user->add_client($wallet);
+    $user->add_client($client_to);
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_to, $wallet]);
+    $params      = {
+        loginid_to   => $client_to->loginid,
+        loginid_from => $wallet->loginid,
+    };
+    ok $rule_engine->apply_rules($rule_name, %$params), 'one account is wallet';
+};
+
 my $rule_name = 'transfers.no_different_fiat_currencies';
 subtest $rule_name => sub {
     my %clients = map {

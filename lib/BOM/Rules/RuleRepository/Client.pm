@@ -106,12 +106,11 @@ rule 'client.forbidden_postcodes' => {
     },
 };
 
-rule 'client.not_desalbed' => {
+rule 'client.not_disabled' => {
     description => 'It dies if client is disabled, passes otherwise.',
     code        => sub {
         my ($self, $context, $args) = @_;
-
-        $self->fail('DisabledAccount') if $context->client($args)->status->disabled;
+        $self->fail('DisabledAccount', params => [$args->{loginid}]) if $context->client($args)->status->disabled;
 
         return 1;
     }
@@ -183,7 +182,7 @@ rule 'client.no_unwelcome_status' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        $self->fail('UnwelcomeStatus') if $context->client($args)->status->unwelcome;
+        $self->fail('UnwelcomeStatus', params => [$args->{loginid}]) if $context->client($args)->status->unwelcome;
 
         return 1;
     }

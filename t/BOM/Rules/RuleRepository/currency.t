@@ -332,4 +332,59 @@ subtest $rule_name => sub {
         'Fails for crypto account';
 };
 
+$rule_name = 'currency.known_currencies_allowed';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_cr_usd, $client_cr_btc]);
+    my %args        = (
+        loginid  => $client_cr_usd->loginid,
+        currency => 'USD'
+    );
+
+    ok $rule_engine->apply_rules($rule_name, %args), 'Rule applies for legal currency';
+
+    $args{currency} = 'US';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'IncompatibleCurrencyType',
+        rule       => $rule_name
+        },
+        'Only known currencies are allowed.';
+};
+
+subtest 'rule currency.account_currency_is_legal' => sub {
+    my $rule_name = 'currency.account_currency_is_legal';
+
+    my $client_MX = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+    });
+
+    my $client_CR = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'not+legal+currency@test.deriv',
+        password => 'TRADING PASS',
+    );
+    $client_MX->account('EUR');
+    $client_CR->account('USD');
+
+    $user->add_client($client_MX);
+    $user->add_client($client_CR);
+
+    my $params      = {loginid => $client_MX->loginid};
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_MX]);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        {
+        error_code => 'CurrencyNotLegalLandingCompany',
+        rule       => $rule_name
+        },
+        'currency not legal';
+
+    $params = {
+        loginid => $client_CR->loginid,
+    };
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_CR]);
+    ok $rule_engine->apply_rules($rule_name, %$params), 'all currencies are legal';
+};
 done_testing();

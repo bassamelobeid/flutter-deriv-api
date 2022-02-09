@@ -27,3 +27,52 @@ cashier_validation:
   ruleset:
   - type: group
     rule_group: cashier_validation
+
+transfer_between_accounts_part2:
+  description: Contains rules to be applied on transfer between accounts (part 2)
+  arguments: 
+    - loginid
+    - loginid_from
+    - loginid_to
+    - account_type_from
+    - account_type_to
+    - amount
+    - currency
+    - token_type
+  ruleset:
+    - transfers.real_to_virtual_not_allowed
+    - transfers.authorized_client_should_be_real
+    - transfers.same_account_not_allowed
+    - transfers.wallet_accounts_not_allowed
+    - transfers.client_loginid_client_from_loginid_mismatch
+    - currency.known_currencies_allowed
+    - transfers.same_landing_companies
+    - currency.account_currency_is_legal
+    - type: group
+      argument_mapping:
+        loginid: loginid_to
+      ruleset:
+        - currency.account_currency_is_legal
+    - type: group
+      argument_mapping:
+        loginid: loginid_from
+      ruleset:
+        - currency.account_currency_is_legal
+    - type: group
+      argument_mapping:
+        loginid: loginid_to
+      ruleset:
+        - client.not_disabled
+        - client.no_unwelcome_status
+    - type: group
+      argument_mapping:
+        loginid: loginid_from
+      ruleset:
+        - client.not_disabled
+        - client.has_currency_set
+cashier_validation:
+  description: A temporary action for deposit and withdrawal validation. It will be removed after the enclosed rule group is integrated into all upper-level actions.
+  ruleset:
+  - type: group
+    rule_group: cashier_validation
+

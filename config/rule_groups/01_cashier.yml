@@ -8,7 +8,7 @@ cashier_validation:
     - client.residence_is_not_empty
     - client.has_currency_set
     - cashier.is_not_locked
-    - client.not_desalbed
+    - client.not_disabled
     - landing_company.currency_is_allowed
     - client.potential_fraud_age_verified
     - type: conditional

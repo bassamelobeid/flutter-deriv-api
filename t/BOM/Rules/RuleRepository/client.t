@@ -220,7 +220,7 @@ subtest 'rule client.forbidden_postcodes' => sub {
     ok $rule_engine->apply_rules($rule_name, %args), 'Test passes with valid postcode';
 };
 
-my $rule_name = 'client.not_desalbed';
+my $rule_name = 'client.not_disabled';
 subtest $rule_name => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
@@ -230,7 +230,8 @@ subtest $rule_name => sub {
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
         error_code => 'DisabledAccount',
-        rule       => $rule_name
+        rule       => $rule_name,
+        params     => [$client->loginid]
         },
         'Error for disabled client';
 
@@ -427,7 +428,8 @@ subtest $rule_name => sub {
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
         error_code => 'UnwelcomeStatus',
-        rule       => $rule_name
+        rule       => $rule_name,
+        params     => [$client->loginid],
         },
         'Error for unwelcome client';
 

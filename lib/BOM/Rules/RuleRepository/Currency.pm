@@ -192,7 +192,7 @@ rule 'currency.is_available_for_new_account' => {
 };
 
 rule 'currency.is_available_for_change' => {
-    description => "Succeeds if the selected currency is notbused by another sibling account.",
+    description => "Succeeds if the selected currency is not used by another sibling account.",
     code        => sub {
         my ($self, $context, $args) = @_;
 
@@ -200,4 +200,26 @@ rule 'currency.is_available_for_change' => {
     },
 };
 
+rule 'currency.known_currencies_allowed' => {
+    description => "Only known currencies are allowed.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        $self->fail('IncompatibleCurrencyType') unless LandingCompany::Registry::get_currency_type($args->{currency});
+        return 1;
+    },
+};
+
+rule 'currency.account_currency_is_legal' => {
+    description => "Checks if all account currencies should be legal in it's landing company",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $client          = $context->client({loginid => $args->{loginid}});
+        my $landing_company = $client->landing_company;
+        my $currency        = $client->currency;
+        $self->fail('CurrencyNotLegalLandingCompany') if (not $landing_company->is_currency_legal($currency));
+
+        return 1;
+    },
+};
 1;
