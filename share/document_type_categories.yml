@@ -303,6 +303,12 @@ Others:
       date: none
       priority: 4
       sides: *two_sided
+    affiliate_reputation_check:
+      preferred: 1
+      description: Affiliate reputation check
+      date: issuance
+      sides: *two_sided
+      priority: 5
 AML Global Check:
   description: AML Global Check
   expiration_strategy: min
