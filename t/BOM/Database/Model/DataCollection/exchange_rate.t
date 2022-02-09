@@ -8,7 +8,7 @@ use Test::Exception;
 use BOM::Database::Model::ExchangeRate;
 use BOM::Database::ClientDB;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 
 my $connection_builder;
 my $exchange_rate;
