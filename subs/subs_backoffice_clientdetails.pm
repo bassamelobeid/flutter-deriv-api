@@ -560,7 +560,9 @@ SQL
                 $idv_record->{dob}       = 'Error';
             }
             if (BOM::Platform::Client::IdentityVerification::is_mute_provider($idv_document_check->{provider})) {
-                $idv_record->{tooltip} = $idv_document_check->{provider} . " provider does not return personal data";
+                $idv_record->{tooltip}   = $idv_document_check->{provider} . " provider does not return personal data";
+                $idv_record->{full_name} = '';
+                $idv_record->{dob}       = '';
             }
         }
     }
