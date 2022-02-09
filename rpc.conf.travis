@@ -17,4 +17,3 @@ app->renderer->default_format('json');
 	log_detailed_exception => 1,
     }
 };
-
