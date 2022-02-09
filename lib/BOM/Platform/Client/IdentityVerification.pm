@@ -92,4 +92,24 @@ sub _transform_smile_identity_response {
     };
 }
 
+=head2 _transform_zaig_response
+
+The Zaig API's response transformator, it would make the
+results consistent for parent handler subroutine.
+
+Keep in mind Zaig does not return personal data, to make it consistent with our rule engine
+verification, we will inject data from the client directly.
+
+=cut
+
+sub _transform_zaig_response {
+    my ($response) = @_;
+
+    return {
+        full_name       => $response->{name},
+        date_of_birth   => $response->{birthdate},
+        expiration_date => undef,                    # All documents are lifetime valid
+    };
+}
+
 1
