@@ -29,6 +29,7 @@ sub _config {
 }
 
 our $currency_switch;
+
 sub _get_currency_object {
     my $currency = shift;
     return $currency_switch->{$currency} //= BOM::CTC::Currency->new(currency_code => $currency);
@@ -80,7 +81,7 @@ if (request()->param('json_data')) {
 # this is to create the link for each fraud address
 foreach my $row ($data->@*) {
 
-    my $currency     = _get_currency_object($row->{currency_code});
+    my $currency      = _get_currency_object($row->{currency_code});
     my $currency_code = $currency->parent_currency // $currency->currency_code;
 
     $row->{link} = sprintf("%s/%s", _config($currency_code)->{report_url}, $row->{address});
