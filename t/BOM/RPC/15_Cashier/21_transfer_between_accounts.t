@@ -1127,7 +1127,7 @@ subtest 'Transfer between virtual accounts' => sub {
         currency     => 'USD',
         amount       => 10
     };
-    $params->{token_type} = 'api_token';
+    $params->{token_type} = 'oauth_token';
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->result;
     is_deeply $result->{error},
         {

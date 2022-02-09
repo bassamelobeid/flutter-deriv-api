@@ -294,7 +294,7 @@ subtest 'validation' => sub {
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for invalid currency for landing company';
-    is $result->{error}->{message_to_client}, 'Currency provided is not valid for your account.',
+    is $result->{error}->{message_to_client}, 'Currency provided is different from account currency.',
         'Correct error message for invalid currency for landing company';
 
     $params->{args}->{currency} = 'USD';

@@ -629,6 +629,18 @@ sub error_map {
         ExchangeRatesUnavailable => localize('Sorry, transfers are currently unavailable. Please try again later.'),
         TransferBlocked          => localize("Transfers are not allowed for these accounts."),
 
+        'RealToVirtualNotAllowed'             => localize('Transfer between real and virtual accounts is not allowed.'),
+        'AuthorizedClientIsVirtual'           => localize('You cannot transfer between real accounts because the authorized client is virtual.'),
+        'SameAccountNotAllowed'               => localize('Account transfers are not available within same account.'),
+        'WalletAccountsNotAllowed'            => localize('Transfer between wallet accounts is not allowed.'),
+        'IncompatibleClientLoginidClientFrom' => localize("You can only transfer from the current authorized client's account."),
+        'IncompatibleCurrencyType'            => localize('Please provide valid currency.'),
+        'IncompatibleLandingCompanies'        => localize('Transfers between accounts are not available for your account.'),
+        'CurrencyNotLegalLandingCompany'      => localize('Currency provided is not valid for your account.'),
+        'DisabledAccount'                     => localize("You cannot perform this action, as your account [_1] is currently disabled."),
+        'UnwelcomeStatus'                     => localize("We are unable to transfer to [_1] because that account has been restricted."),
+        'EmptySourceCurrency'                 => localize('Please deposit to your account.'),
+
     };
 }
 

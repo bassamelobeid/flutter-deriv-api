@@ -1775,66 +1775,44 @@ sub _transfer_between_accounts_error {
 
 sub _validate_transfer_between_accounts {
     my ($current_client, $client_from, $client_to, $args, $token_type) = @_;
+    my ($currency, $amount, $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
+
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
     return _transfer_between_accounts_error() if (not $client_from or not $client_to);
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('Transfer between real and virtual accounts is not allowed.'),
-        }) unless $client_from->is_virtual == $client_to->is_virtual;
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('You cannot transfer between real accounts because the authorized client is virtual.'),
-        }) if ($current_client->is_virtual and $token_type ne 'oauth_token' and not $client_from->is_virtual);
-
-    # error out if from and to loginid are same
-    return _transfer_between_accounts_error(localize('Account transfers are not available within same account.'))
-        unless ($client_from->loginid ne $client_to->loginid);
-
-    return _transfer_between_accounts_error(localize('Transfer between wallet accounts is not allowed.'))
-        if ($client_from->is_wallet and $client_to->is_wallet);
-
-    # error out if current logged in client and loginid from passed are not same
-    # (unless token typpe is oauth or it's a virtual transfer)
-    return _transfer_between_accounts_error(localize("You can only transfer from the current authorized client's account."))
-        unless ($current_client->loginid eq $client_from->loginid)
-        or ($token_type eq 'oauth_token')
-        or $client_from->is_virtual;
-
-    my ($currency, $amount, $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
-
-    my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
-    return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $from_currency_type;
-
-    my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
-
-    # error if landing companies are different with exception
-    # of maltainvest and malta as we allow transfer between them
-    # and from wallet to any other account
-    return _transfer_between_accounts_error()
-        unless (($lc_from->short eq $lc_to->short)
-        or ($client_from->is_wallet or $client_to->is_wallet)
-        or ($lc_from->short =~ /^(?:malta|maltainvest)$/ and $lc_to->short =~ /^(?:malta|maltainvest)$/));
-
-    # error if currency is not legal for landing company
-    return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
-        if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
-
-    for ($client_from, $client_to) {
-        return _transfer_between_accounts_error(localize('You cannot perform this action, as your account [_1] is currently disabled.', $_->loginid))
-            if $_->status->disabled;
+    ## From here we are implementing rule engine
+    my $rule_engine = BOM::Rules::Engine->new(client => [$current_client, $client_from, $client_to]);
+    try {
+        $rule_engine->verify_action(
+            'transfer_between_accounts_part2',
+            loginid      => $current_client->loginid,
+            loginid_from => $client_from->loginid,
+            loginid_to   => $client_to->loginid,
+            amount       => $amount,
+            currency     => $currency,
+            token_type   => $token_type
+        );
+    } catch ($e) {
+        my %error_mapping = (
+            'RealToVirtualNotAllowed'   => 'PermissionDenied',
+            'AuthorizedClientIsVirtual' => 'PermissionDenied',
+        );
+        my $override_code = undef;
+        if (ref $e eq 'HASH') {
+            # TODO Add support for multi-mapping for error codes when error codes are reused
+            if ($e->{error_code} && $e->{error_code} eq 'SetExistingAccountCurrency') {
+                # The rule returning SetExistingAccountCurrency in bom-rules is reused multiple times but in this case,
+                # the error message is different so the error code is changed to EmptySourceCurrency
+                $e->{error_code} = 'EmptySourceCurrency';
+            }
+            $override_code = $error_mapping{$e->{error_code} // ''};
+        }
+        return BOM::RPC::v3::Utility::rule_engine_error($e, $override_code // 'TransferBetweenAccountsError');
     }
 
-    return _transfer_between_accounts_error(
-        localize("We are unable to transfer to [_1] because that account has been restricted.", $client_to->loginid))
-        if $client_to->status->unwelcome;
+    my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
 
-    # error out if from account has no currency set
-    return _transfer_between_accounts_error(localize('Please deposit to your account.')) unless $from_currency;
-
-    my $rule_engine = BOM::Rules::Engine->new(client => [$current_client, $client_from // (), $client_to // ()]);
     try {
         $rule_engine->verify_action(
             'transfer_between_accounts_part3',
