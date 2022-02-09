@@ -137,6 +137,16 @@ my $action_mapping = {
 
 =head1 METHODS
 
+=head2 get_action_mappings
+
+Returns available action mappings
+
+=cut
+
+sub get_action_mappings {
+    return $action_mapping;
+}
+
 =head2 new
 
 Required parameters
