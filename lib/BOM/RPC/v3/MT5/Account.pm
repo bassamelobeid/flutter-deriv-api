@@ -654,14 +654,13 @@ async_rpc "mt5_new_account",
         sub_account_type => $sub_account_type
     );
     my $company_name = _get_mt_landing_company($client, \%mt_args);
-    my $allow_signup = $countries_instance->mt_allow_signup_for_country(%mt_args);
 
     if (defined $user_input_trade_server && ($company_name eq 'malta' || $company_name eq 'maltainvest')) {
         return create_error_future('InvalidServerInput');
     }
     # MT5 is not allowed in client country
     return create_error_future($mt5_account_category eq 'swap_free' ? 'MT5SwapFreeNotAllowed' : 'MT5NotAllowed', {params => $company_type})
-        if $allow_signup eq 'disabled';
+        if $company_name eq 'none';
 
     my $binary_company_name = _get_landing_company($client, $company_type);
 
