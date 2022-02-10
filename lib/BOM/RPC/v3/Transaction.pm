@@ -74,7 +74,13 @@ sub trade_copiers {
         : $action eq 'cancel' ? $trx->cancel_by_shortcode
         :                       die 'unknown action';
 
-    die $err->get_type . " - $err->{-message_to_client}: $err->{-mesg}" if $err;
+    if ($err) {
+        my $full_err_message = $err->get_type . " - $err->{-message_to_client}: $err->{-mesg}";
+        # Have to find which symbol is causing the "Invalid underlying symbol" issue.
+        $full_err_message .= " symbol: " . $params->{contract}->underlying->symbol if $err->{-mesg} =~ /Invalid underlying symbol/;
+
+        die $full_err_message;
+    }
 
     return 1;
 }
