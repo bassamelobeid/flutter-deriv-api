@@ -136,7 +136,7 @@ if (%input && $input{req_type}) {
             for (sort { $a <=> $b } @txn_to_process) {
                 if (!$h_txn_to_process{$_}) {
                     push @{$messages{
-                            "<p class='success'>Following transaction(s) has been successfully approved. Needs one more approver.<br />%s</p>"}}, $_;
+                            "<p class='success'>Following transaction(s) has been successfully approved. Needs one more approval.<br />%s</p>"}}, $_;
                     $redis_write->setex(REVERT_ERROR_TXN_RECORD . $_, 3600, $staff);
                 } elsif ($h_txn_to_process{$_} && $h_txn_to_process{$_} eq $staff) {
                     push @{$messages{"<p class='error'>The following transaction(s) have previously been approved by you.<br />%s</p>"}}, $_;

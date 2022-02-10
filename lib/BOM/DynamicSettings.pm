@@ -429,6 +429,7 @@ sub get_settings_by_group {
                 payments.p2p.archive_ads_days
                 payments.p2p.payment_methods_enabled
                 payment_agents.initial_deposit_per_country
+                payments.payments_limit
                 )]};
 
     my $settings;

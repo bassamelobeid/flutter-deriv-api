@@ -345,7 +345,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 }
 
 # Payment Methods
-if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'Payments'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -358,6 +358,9 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
                     <label>$brokerselection</label>
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
+                <h3>Dynamic Settings</h3>
+                <a href="~
+        . request()->url_for('backoffice/payments_dynamic_settings.cgi') . qq~" class="btn btn--primary">Go to Payments Dynamic Settings</a>
             </div>
         </div>
     </div>~;

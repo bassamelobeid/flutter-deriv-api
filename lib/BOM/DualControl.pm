@@ -95,6 +95,16 @@ sub client_anonymization_control_code {
     return $code;
 }
 
+sub payments_settings_code {
+    my ($self) = @_;
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $self->_environment));
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
+}
+
 sub batch_anonymization_control_code {
     my ($self, $lines) = @_;
 
@@ -221,6 +231,24 @@ sub validate_batch_anonymization_control_code {
     return $error_status if $error_status;
 
     return;
+}
+
+sub validate_payments_settings_control_code {
+    my ($self, $incode) = @_;
+    my $code         = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_element_count($code, 4);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_already_used($incode);
+    return $error_status if $error_status;
+    return undef;
 }
 
 sub _validate_empty_code {
