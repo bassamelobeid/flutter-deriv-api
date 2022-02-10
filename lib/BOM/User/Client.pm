@@ -6469,6 +6469,8 @@ sub get_onfido_status {
 
     return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
 
+    return 'rejected' if $check_result eq 'consider';
+
     return 'none';
 }
 

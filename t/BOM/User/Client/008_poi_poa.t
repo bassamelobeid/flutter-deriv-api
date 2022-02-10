@@ -1829,6 +1829,13 @@ subtest 'Onfido status' => sub {
             onfido_check_result    => 'consider',
             onfido_sub_result      => 'caution',
             status                 => 'rejected'
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'consider',
+            onfido_sub_result      => 'clear',
+            status                 => 'rejected'
         }];
 
     for my $test ($tests->@*) {
