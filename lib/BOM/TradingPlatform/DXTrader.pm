@@ -570,7 +570,7 @@ sub withdraw {
         and $resp->{status} eq '422';
 
     unless ($resp->{success}) {
-        $self->handle_api_error($resp, 'DXWithdrawalFailed');
+        $self->handle_api_error($resp, 'DXWithdrawalFailed', $server, 'account_withdrawal');
     }
 
     my %txn_details = (
@@ -810,7 +810,7 @@ sub call_api {
         die unless $resp->{success} or $quiet;    # we expect some calls to fail, eg. client_get
         return $resp;
     } catch ($e) {
-        $self->handle_api_error($resp);
+        $self->handle_api_error($resp, undef, @args{qw(server method)});
     } finally {
         delete $dxapi_log->context->{request};
     }
@@ -823,9 +823,9 @@ Called when an unexpcted Devexperts API error occurs. Dies with generic error co
 =cut
 
 sub handle_api_error {
-    my ($self, $resp, $error_code) = @_;
+    my ($self, $resp, $error_code, $server, $method) = @_;
 
-    stats_inc('devexperts.rpc_service.api_call_fail', {tags => [map { "$_:" . $dxapi_log->context->{request}{$_} } qw/method server/]});
+    stats_inc('devexperts.rpc_service.api_call_fail', {tags => ["server:$server", "method:$method"]});
     $dxapi_log->info($resp->{content} // sprintf('No content, HTTP code %s, reason %s', $resp->{status} // 'unknown', $resp->{reason} // 'unknown'));
     die +{error_code => $error_code // 'DXGeneral'};
 }
@@ -864,7 +864,7 @@ sub dxclient_get {
     # expected response for not found
     return undef if ($resp->{status} eq '404' and ref $resp->{content} eq 'HASH' and ($resp->{content}{error_code} // '') eq '30002');
 
-    $self->handle_api_error($resp);
+    $self->handle_api_error($resp, undef, $server, 'client_get');
 }
 
 =head2 dxtrade_login
