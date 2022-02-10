@@ -61,20 +61,6 @@ demo\p01_ts01\financial\vanuatu_std_usd:
   sub_account_type: financial
   server: p01_ts01
 
-demo\p01_ts01\synthetic\malta_sf_eur:
-  account_type: demo
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts01
-
-demo\p01_ts01\synthetic\malta_std_eur:
-  account_type: demo
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts01
-
 demo\p01_ts01\synthetic\samoa_std_btc: &demo_samoa_gaming_financial
   account_type: demo
   landing_company_short: samoa
@@ -166,20 +152,6 @@ demo\p01_ts02\financial\vanuatu_std_usd:
   account_type: demo
   landing_company_short: vanuatu
   market_type: financial
-  sub_account_type: financial
-  server: p01_ts02
-
-demo\p01_ts02\synthetic\malta_sf_eur:
-  account_type: demo
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts02
-
-demo\p01_ts02\synthetic\malta_std_eur:
-  account_type: demo
-  landing_company_short: malta
-  market_type: synthetic
   sub_account_type: financial
   server: p01_ts02
 
@@ -588,76 +560,6 @@ real\p02_ts02\financial\vanuatu_std-hr_usd:
   account_type: real
   landing_company_short: vanuatu
   market_type: financial
-  sub_account_type: financial
-  server: p02_ts02
-
-real\p01_ts01\synthetic\malta_sf_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts01
-
-real\p01_ts02\synthetic\malta_sf_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts02
-
-real\p01_ts03\synthetic\malta_sf_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts03
-
-real\p01_ts04\synthetic\malta_sf_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts04
-
-real\p02_ts02\synthetic\malta_sf_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p02_ts02
-
-real\p01_ts01\synthetic\malta_std_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts01
-
-real\p01_ts02\synthetic\malta_std_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts02
-
-real\p01_ts03\synthetic\malta_std_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts03
-
-real\p01_ts04\synthetic\malta_std_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts04
-
-real\p02_ts02\synthetic\malta_std_eur:
-  account_type: real
-  landing_company_short: malta
-  market_type: synthetic
   sub_account_type: financial
   server: p02_ts02
 
