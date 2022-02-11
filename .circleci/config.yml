@@ -34,6 +34,7 @@ jobs:
           source /etc/profile.d/perl5.sh
           make test
         name: Run test
+    shell: /bin/bash -leo pipefail
     working_directory: /home/git/regentmarkets/bom-commission-management-service
 version: 2
 workflows:
