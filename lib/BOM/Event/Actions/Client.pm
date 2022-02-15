@@ -885,9 +885,11 @@ Returns a L<Future> which resolves to C<1> on success.
 =cut
 
 async sub check_onfido_rules {
-    my ($args)   = @_;
-    my $loginid  = $args->{loginid}                              or die 'No loginid supplied';
-    my $client   = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
+    my ($args)  = @_;
+    my $loginid = $args->{loginid}                              or die 'No loginid supplied';
+    my $client  = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
+    die "Virtual account should not meddle with Onfido" if $client->is_virtual;
+
     my $check_id = $args->{check_id};
     my $check    = BOM::User::Onfido::get_latest_check($client)->{user_check} // {};
     $check_id = $check->{id};
@@ -1113,11 +1115,11 @@ async sub sync_onfido_details {
     BOM::Config::Runtime->instance->app_config->check_for_update();
     return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
 
+    my $loginid = $data->{loginid}                              or die 'No loginid supplied';
+    my $client  = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
+    die "Virtual account should not meddle with Onfido" if $client->is_virtual;
+
     try {
-
-        my $loginid = $data->{loginid} or die 'No loginid supplied';
-        my $client  = BOM::User::Client->new({loginid => $loginid});
-
         my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
         my $applicant_id   = $applicant_data->{id};
 

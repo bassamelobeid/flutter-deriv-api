@@ -28,6 +28,11 @@ use WebService::Async::SmartyStreets::Address;
 use Encode qw(encode_utf8);
 use Locale::Codes::Country qw(country_code2code);
 
+my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    email       => 'vrtc+test1@bin.com',
+});
+
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
 my (@identify_args, @track_args);
@@ -861,7 +866,13 @@ subtest 'sync_onfido_details' => sub {
     $applicant = $onfido->applicant_get(applicant_id => $applicant_id)->get;
     is($applicant->{first_name}, 'Firstname', 'now the name is same again');
 
-    ok(1);
+    subtest 'Virtual account should get stopped out' => sub {
+        my $exception = exception {
+            BOM::Event::Actions::Client::sync_onfido_details({loginid => $vrtc_client->loginid})->get;
+        };
+
+        ok $exception =~ /Virtual account should not meddle with Onfido/, 'Expected exception has been thrown for virtual client';
+    };
 
 };
 

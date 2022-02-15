@@ -9,6 +9,7 @@ use Test::MockModule;
 use Test::Warnings qw/warnings/;
 use Future;
 use Future::Exception;
+use Test::Fatal;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Email;
@@ -27,6 +28,10 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => 'test1@bin.com',
 });
+my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    email       => 'vrtc1@bin.com',
+});
 
 my $email = $test_client->email;
 my $user  = BOM::User->create(
@@ -36,6 +41,7 @@ my $user  = BOM::User->create(
 );
 
 $user->add_client($test_client);
+$user->add_client($vrtc_client);
 my $action_handler   = BOM::Event::Process->new(category => 'generic')->actions->{onfido_doc_ready_for_upload};
 my $onfido_mocker    = Test::MockModule->new('WebService::Async::Onfido');
 my $s3_mocker        = Test::MockModule->new('BOM::Platform::S3Client');
@@ -240,6 +246,17 @@ subtest 'Check Onfido Rules' => sub {
             }
         }
     }
+
+    subtest 'Virtual account should get stopped out' => sub {
+        my $exception = exception {
+            $action_handler->({
+                    loginid  => $vrtc_client->loginid,
+                    check_id => 'TEST'
+                })->get;
+        };
+
+        ok $exception =~ /Virtual account should not meddle with Onfido/, 'Expected excetion has been thrown for virtual client';
+    };
 
     $onfido_mock->unmock_all;
 };
