@@ -176,13 +176,18 @@ if ($email ne $new_email) {
     BOM::User::AuditLog::log($msg, $new_email, $clerk);
     #CS: for every email address change request, we will disable the client's
     #    account and once receiving a confirmation from his new email address, we will change it and enable the account.
-    my $default_client_loginid = $user->get_default_client(
+    my $default_client = $user->get_default_client(
         include_disabled   => 1,
         include_duplicated => 1
-    )->loginid;
+    );
+    my $default_client_loginid = $default_client->loginid;
 
-    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',    {loginid => $default_client_loginid});
-    BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid});
+    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $default_client_loginid});
+
+    unless ($default_client->is_virtual) {
+        BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid});
+    }
+
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {

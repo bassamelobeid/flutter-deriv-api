@@ -1118,7 +1118,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     }
 
     # Sync onfido with latest updates
-    BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
+    unless ($client->is_virtual) {
+        BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
+    }
 
     BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $client->loginid})
         if (any { exists $input{$_} } qw(address_1 address_2 city state address_postcode));
