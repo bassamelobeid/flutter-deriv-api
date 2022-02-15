@@ -55,6 +55,7 @@ my $result = BOM::Platform::Event::Emitter::emit(
     {
         loginid    => $client->loginid,
         properties => {
+            email            => $email,
             verification_url => $link             // '',
             social_login     => $has_social_login // '',
             code             => $token,
