@@ -337,7 +337,7 @@ where:
 account_type: demo|real
 server_type: 01|02|...
 market_type: financial|synthetic
-landing_company_short: svg|maltainvest|samoa|...
+landing_company_short: svg|maltainvest|...
 sub_account_type: std[standard]|sf[swap-free]|hf[high-risk]
 currency: usd|gbp|...
 
@@ -354,9 +354,6 @@ sub _mt5_group {
 
     my ($landing_company_short, $account_type, $mt5_account_type, $currency, $account_category, $country, $user_input_trade_server, $restricted_group)
         = @{$args}{qw(landing_company_short account_type mt5_account_type currency sub_account_type country server restricted_group)};
-
-    # account creation for samoa if not allowed until the launch of deriv-crypto
-    return '' if $landing_company_short eq 'samoa';
 
     my ($server_type, $sub_account_type, $group_type);
 
@@ -379,12 +376,9 @@ sub _mt5_group {
         # All svg financial account will be B-book (put in hr[high-risk] upon sign-up. Decisions to A-book will be done
         # on a case by case basis manually
         my $app_config = BOM::Config::Runtime->instance->app_config;
-        # only consider b-booking financial for svg and samoa
-        my $apply_auto_b_book = (
-            $market_type eq 'financial' and ($landing_company_short eq 'svg'
-                or $landing_company_short eq 'samoa')
-                and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial
-        );
+        # only consider b-booking financial for svg
+        my $apply_auto_b_book =
+            ($market_type eq 'financial' and $landing_company_short eq 'svg' and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial);
         # as per requirements of mt5 operation team, australian financial account will not be categorised as high-risk (hr)
         $sub_account_type .= '-hr' if $market_type eq 'financial' and $country ne 'au' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
 
@@ -885,8 +879,7 @@ async_rpc "mt5_new_account",
 
             # A client can only have either one of
             # real\vanuatu_financial or real\svg_financial or real\svg_financial_Bbook
-            # ignore samoa for now, since their groups follow different pattern.
-            if ($mt5_account_type eq 'financial' && $company_name ne 'samoa') {
+            if ($mt5_account_type eq 'financial') {
                 if (my $similar = _is_similar_group($company_name, \%existing_groups)) {
                     return create_error_future(
                         'MT5Duplicate',
