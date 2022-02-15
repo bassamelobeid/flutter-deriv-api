@@ -174,32 +174,34 @@ subtest 'buy - runhigh' => sub {
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
-        # note explain $fmb;
+        SKIP: {
+            skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
 
-        subtest 'fmb row', sub {
-            plan tests => 20;
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'runs',    'bet_class';
-            is $fmb->{bet_type},   'RUNHIGH', 'bet_type';
-            is $fmb->{buy_price} + 0, 50, 'buy_price';
-            is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
-            cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
-            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is !$fmb->{is_expired}, !0, 'is_expired';
-            is !$fmb->{is_sold},    !0, 'is_sold';
-            cmp_ok $fmb->{payout_price} + 0, '==', 100, 'payout_price';
-            cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark},   qr/\btrade\[50\.00000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                    'sell_price';
-            is $fmb->{sell_time},  undef,                    'sell_time';
-            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
-            like $fmb->{short_code}, qr/RUNHIGH/, 'short_code';
-            cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        2,       'tick_count';
-            is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
-        };
-
+            # note explain $fmb;
+            subtest 'fmb row', sub {
+                plan tests => 20;
+                cmp_ok $fmb->{id},     '>', 0, 'id';
+                is $fmb->{account_id}, $acc_usd->id, 'account_id';
+                is $fmb->{bet_class},  'runs',    'bet_class';
+                is $fmb->{bet_type},   'RUNHIGH', 'bet_type';
+                is $fmb->{buy_price} + 0, 50, 'buy_price';
+                is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
+                cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
+                is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
+                is !$fmb->{is_expired}, !0, 'is_expired';
+                is !$fmb->{is_sold},    !0, 'is_sold';
+                cmp_ok $fmb->{payout_price} + 0, '==', 100, 'payout_price';
+                cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
+                like $fmb->{remark},   qr/\btrade\[50\.00000\]/, 'remark';
+                is $fmb->{sell_price}, undef,                    'sell_price';
+                is $fmb->{sell_time},  undef,                    'sell_time';
+                cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
+                like $fmb->{short_code}, qr/RUNHIGH/, 'short_code';
+                cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
+                is $fmb->{tick_count},        2,       'tick_count';
+                is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
+            };
+        }
         # note explain $chld;
 
         subtest 'chld row', sub {
