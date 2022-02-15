@@ -100,7 +100,7 @@ around '_build_bid_price' => sub {
 override shortcode => sub {
     my $self = shift;
     return join '_',
-        ($self->code, $self->underlying->symbol, $self->payout + 0, $self->date_start->epoch, $self->tick_count . 't', $self->selected_tick);
+        ($self->code, $self->underlying->symbol, $self->shortcode_payout, $self->date_start->epoch, $self->tick_count . 't', $self->selected_tick);
 };
 
 has _all_ticks => (
