@@ -30,14 +30,6 @@ demo\p01_ts01\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
 demo\p01_ts01\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 demo\p01_ts01\financial\maltainvest_std_usd: *demo_maltainvest_financial_financial
 
-demo\p01_ts01\financial\samoa_std_btc: &demo_samoa_financial_financial
-  account_type: demo
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: financial
-  server: p01_ts01
-demo\p01_ts01\financial\samoa_std_ust: *demo_samoa_financial_financial
-
 demo\p01_ts01\financial\svg_sf_usd: &demo_svg_financial_swap_free
   account_type: demo
   landing_company_short: svg
@@ -60,14 +52,6 @@ demo\p01_ts01\financial\vanuatu_std_usd:
   market_type: financial
   sub_account_type: financial
   server: p01_ts01
-
-demo\p01_ts01\synthetic\samoa_std_btc: &demo_samoa_gaming_financial
-  account_type: demo
-  landing_company_short: samoa
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts01
-demo\p01_ts01\synthetic\samoa_std_ust: *demo_samoa_gaming_financial
 
 demo\p01_ts01\synthetic\svg_sf_usd:
   account_type: demo
@@ -124,14 +108,6 @@ demo\p01_ts02\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
   server: p01_ts02
 demo\p01_ts02\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 
-demo\p01_ts02\financial\samoa_std_btc: &demo_samoa_financial_financial
-  account_type: demo
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: financial
-  server: p01_ts02
-demo\p01_ts02\financial\samoa_std_ust: *demo_samoa_financial_financial
-
 demo\p01_ts02\financial\svg_sf_usd: &demo_svg_financial_swap_free
   account_type: demo
   landing_company_short: svg
@@ -154,14 +130,6 @@ demo\p01_ts02\financial\vanuatu_std_usd:
   market_type: financial
   sub_account_type: financial
   server: p01_ts02
-
-demo\p01_ts02\synthetic\samoa_std_btc: &demo_samoa_gaming_financial
-  account_type: demo
-  landing_company_short: samoa
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts02
-demo\p01_ts02\synthetic\samoa_std_ust: *demo_samoa_gaming_financial
 
 demo\p01_ts02\synthetic\svg_sf_usd:
   account_type: demo
@@ -346,106 +314,6 @@ real\p02_ts02\financial\maltainvest_std-hr_gbp: &real_p02ts02_maltainvest_financ
 real\p02_ts02\financial\maltainvest_std-hr_eur: *real_p02ts02_maltainvest_financial_financial
 real\p02_ts02\financial\maltainvest_std-hr_usd: *real_p02ts02_maltainvest_financial_financial
 
-real\p01_ts01\financial\samoa_sf-hr_btc: &real_samoa_financial_swap_free
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts01
-real\p01_ts01\financial\samoa_sf-hr_ust: *real_samoa_financial_swap_free
-real\p01_ts01\financial\samoa_sf_btc: *real_samoa_financial_swap_free
-real\p01_ts01\financial\samoa_sf_ust: *real_samoa_financial_swap_free
-
-real\p01_ts02\financial\samoa_sf-hr_btc: &real_p01ts02_samoa_financial_swap_free
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts02
-real\p01_ts02\financial\samoa_sf-hr_ust: *real_p01ts02_samoa_financial_swap_free
-real\p01_ts02\financial\samoa_sf_btc: *real_p01ts02_samoa_financial_swap_free
-real\p01_ts02\financial\samoa_sf_ust: *real_p01ts02_samoa_financial_swap_free
-
-real\p01_ts03\financial\samoa_sf-hr_btc: &real_p01ts03_samoa_financial_swap_free
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts03
-real\p01_ts03\financial\samoa_sf-hr_ust: *real_p01ts03_samoa_financial_swap_free
-real\p01_ts03\financial\samoa_sf_btc: *real_p01ts03_samoa_financial_swap_free
-real\p01_ts03\financial\samoa_sf_ust: *real_p01ts03_samoa_financial_swap_free
-
-real\p01_ts04\financial\samoa_sf-hr_btc: &real_p01ts04_samoa_financial_swap_free
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts04
-real\p01_ts04\financial\samoa_sf-hr_ust: *real_p01ts04_samoa_financial_swap_free
-real\p01_ts04\financial\samoa_sf_btc: *real_p01ts04_samoa_financial_swap_free
-real\p01_ts04\financial\samoa_sf_ust: *real_p01ts04_samoa_financial_swap_free
-
-real\p02_ts02\financial\samoa_sf-hr_btc: &real_p02ts02_samoa_financial_swap_free
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: swap_free
-  server: p02_ts02
-real\p02_ts02\financial\samoa_sf-hr_ust: *real_p02ts02_samoa_financial_swap_free
-real\p02_ts02\financial\samoa_sf_btc: *real_p02ts02_samoa_financial_swap_free
-real\p02_ts02\financial\samoa_sf_ust: *real_p02ts02_samoa_financial_swap_free
-
-real\p01_ts01\financial\samoa_std-hr_btc: &real_samoa_financial_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: financial
-  server: p01_ts01
-real\p01_ts01\financial\samoa_std-hr_ust: *real_samoa_financial_financial
-real\p01_ts01\financial\samoa_std_btc: *real_samoa_financial_financial
-real\p01_ts01\financial\samoa_std_ust: *real_samoa_financial_financial
-
-real\p01_ts02\financial\samoa_std-hr_btc: &real_p01ts02_samoa_financial_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: financial
-  server: p01_ts02
-real\p01_ts02\financial\samoa_std-hr_ust: *real_p01ts02_samoa_financial_financial
-real\p01_ts02\financial\samoa_std_btc: *real_p01ts02_samoa_financial_financial
-real\p01_ts02\financial\samoa_std_ust: *real_p01ts02_samoa_financial_financial
-
-real\p01_ts03\financial\samoa_std-hr_btc: &real_p01ts03_samoa_financial_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: financial
-  server: p01_ts03
-real\p01_ts03\financial\samoa_std-hr_ust: *real_p01ts03_samoa_financial_financial
-real\p01_ts03\financial\samoa_std_btc: *real_p01ts03_samoa_financial_financial
-real\p01_ts03\financial\samoa_std_ust: *real_p01ts03_samoa_financial_financial
-
-real\p01_ts04\financial\samoa_std-hr_btc: &real_p01ts04_samoa_financial_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: financial
-  server: p01_ts04
-real\p01_ts04\financial\samoa_std-hr_ust: *real_p01ts04_samoa_financial_financial
-real\p01_ts04\financial\samoa_std_btc: *real_p01ts04_samoa_financial_financial
-real\p01_ts04\financial\samoa_std_ust: *real_p01ts04_samoa_financial_financial
-
-real\p02_ts02\financial\samoa_std-hr_btc: &real_p02ts02_samoa_financial_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: financial
-  sub_account_type: financial
-  server: p02_ts02
-real\p02_ts02\financial\samoa_std-hr_ust: *real_p02ts02_samoa_financial_financial
-real\p02_ts02\financial\samoa_std_btc: *real_p02ts02_samoa_financial_financial
-real\p02_ts02\financial\samoa_std_ust: *real_p02ts02_samoa_financial_financial
-
 real\p01_ts01\financial\svg_sf-hr_usd: &real_svg_financial_swap_free
   account_type: real
   landing_company_short: svg
@@ -562,46 +430,6 @@ real\p02_ts02\financial\vanuatu_std-hr_usd:
   market_type: financial
   sub_account_type: financial
   server: p02_ts02
-
-real\p01_ts01\synthetic\samoa_std_btc: &real_samoa_gaming_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts01
-real\p01_ts01\synthetic\samoa_std_ust: *real_samoa_gaming_financial
-
-real\p01_ts02\synthetic\samoa_std_btc: &real_p01ts02_samoa_gaming_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts02
-real\p01_ts02\synthetic\samoa_std_ust: *real_p01ts02_samoa_gaming_financial
-
-real\p01_ts03\synthetic\samoa_std_btc: &real_p01ts03_samoa_gaming_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts03
-real\p01_ts03\synthetic\samoa_std_ust: *real_p01ts03_samoa_gaming_financial
-
-real\p01_ts04\synthetic\samoa_std_btc: &real_p01ts04_samoa_gaming_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: synthetic
-  sub_account_type: financial
-  server: p01_ts04
-real\p01_ts04\synthetic\samoa_std_ust: *real_p01ts04_samoa_gaming_financial
-
-real\p02_ts02\synthetic\samoa_std_btc: &real_p02ts02_samoa_gaming_financial
-  account_type: real
-  landing_company_short: samoa
-  market_type: synthetic
-  sub_account_type: financial
-  server: p02_ts02
-real\p02_ts02\synthetic\samoa_std_ust: *real_p02ts02_samoa_gaming_financial
 
 real\p01_ts01\synthetic\svg_sf-hr_usd: &real_svg_gaming_swap_free
   account_type: real
