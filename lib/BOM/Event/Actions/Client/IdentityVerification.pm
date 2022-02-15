@@ -101,11 +101,11 @@ async sub verify_identity {
 
     return undef if $provider eq 'onfido';
 
-    die "Could not perform triggering, the function for provider $provider not found."
-        unless exists TRIGGER_MAP->{$provider};
+    die $log->errorf('Could not trigger IDV, the function for provider %s not found.', $provider) unless exists TRIGGER_MAP->{$provider};
 
     try {
-        $log->debugf('Start triggering identity verification service (%s) for loginID %s', $provider, $loginid);
+        $log->debugf('Start triggering identity verification service (via %s) for document %s associated by loginID %s',
+            $provider, $document->{id}, $loginid);
 
         $idv_model->incr_submissions();
 
@@ -214,10 +214,11 @@ async sub verify_identity {
                     provider      => $provider,
                     response_body => encode_json_utf8 $response_hash // {}});
 
-            $log->errorf('Identity verification by provider %s get failed due to %s', $provider, $message);
+            $log->debugf('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, $message);
         }
     } catch ($e) {
-        $log->errorf('An error occurred while triggering IDV provider due to %s', $e);
+        $log->errorf('An error occurred while triggering IDV for document %s associated by client %s via provider %s due to %s',
+            $document->{id}, $loginid, $provider, $e);
 
         exception_logged();
 
@@ -386,8 +387,8 @@ async sub _trigger_smile_identity {
 
             $status         = RESULT_STATUS->{fail};
             $status_message = sprintf(
-                "SmileIdentity respond an error to our request with code: %s, message: %s - %s",
-                $decoded_response->{code} // 'UNKNOWN',
+                "SmileIdentity responded an error to our request for verify document %s with code: %s, message: %s - %s",
+                $document->{id}, $decoded_response->{code} // 'UNKNOWN',
                 $e->message, $decoded_response->{error} // 'UNKNOWN'
             );
 
@@ -582,7 +583,8 @@ sub _handle_smile_identity_response {
 
     unless ($response_hash) {
         $status         = RESULT_STATUS->{fail};
-        $status_message = $log->errorf("SmileIdentity response is not a valid JSON.");
+        $status_message = $log->errorf("SmileIdentity responded to our request for verify document associated by client %s with an invalid JSON.",
+            $client->loginid);
         return ($status, $status_message);
     } else {
         my $verify_status = $response_hash->{Actions}->{Verify_ID_Number} // 'unavailable';
