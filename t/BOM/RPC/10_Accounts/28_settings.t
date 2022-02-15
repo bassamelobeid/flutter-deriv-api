@@ -945,6 +945,16 @@ subtest 'set settings' => sub {
 };
 
 subtest 'set_settings on virtual account should not change real account settings' => sub {
+    my $emitted;
+    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_events->mock(
+        'emit',
+        sub {
+            my ($type, $data) = @_;
+            $emitted->{$type} = $data;
+        });
+
+    $emitted = {};
     my $get_settings_cr = $c->tcall('get_settings', {token => $token_X_vr});
 
     my $params = {
@@ -961,6 +971,10 @@ subtest 'set_settings on virtual account should not change real account settings
 
     my $expected_result = {$get_settings_cr->%*, email_consent => $params->{args}{email_consent}};
     is_deeply($result, $expected_result, 'CR account settings remain unchanged');
+
+    # Virtual account should not get beef with onfido
+    ok !$emitted->{sync_onfido_details};
+    ok !$emitted->{check_onfido_rules};
 };
 
 subtest 'set_setting with empty phone' => sub {
