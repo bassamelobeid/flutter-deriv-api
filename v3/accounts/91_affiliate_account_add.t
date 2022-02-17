@@ -41,7 +41,7 @@ my %details = (
     affiliate_plan         => 'turnover',
 );
 
-my $lc = LandingCompany::Registry->get_by_broker('AFF');
+my $lc = LandingCompany::Registry->by_broker('AFF');
 
 subtest 'new affiliate account' => sub {
     my $res = $t->await::affiliate_account_add(\%details, {timeout => 10});
