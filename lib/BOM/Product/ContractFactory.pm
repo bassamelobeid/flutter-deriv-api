@@ -134,7 +134,7 @@ sub _validate_input_parameters {
     }
 
     # hard-coded virtual because that's the widest offerings range we have.
-    my $lc        = LandingCompany::Registry::get('virtual');
+    my $lc        = LandingCompany::Registry->by_name('virtual');
     my $offerings = $lc->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config());
 
     my $us = $params->{underlying}->symbol;

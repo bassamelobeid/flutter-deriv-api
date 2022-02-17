@@ -33,7 +33,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         },
     });
 
-my $o = LandingCompany::Registry::get('svg')->basic_offerings({
+my $o = LandingCompany::Registry->by_name('svg')->basic_offerings({
     loaded_revision => 0,
     action          => 'buy',
     suspend_markets => ['cryptocurrency'],    # not going to mess up the test with new market

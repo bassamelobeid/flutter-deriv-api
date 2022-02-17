@@ -115,7 +115,7 @@ my %skip_type = (
     PUTSPREAD   => 1,
 );
 
-my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg)->query({
+my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } LandingCompany::Registry->by_name('svg')->basic_offerings($offerings_cfg)->query({
         underlying_symbol => $underlying->symbol,
         expiry_type       => 'intraday',
         start_type        => 'spot'

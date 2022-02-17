@@ -22,7 +22,7 @@ BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy([
 BOM::Config::Runtime->instance->app_config->quants->markets->suspend_buy(['cryptocurrency']);
 subtest 'trading durations at quiet period' => sub {
     set_absolute_time(Date::Utility->new('2019-04-12 01:00:00')->epoch);
-    my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
 
     my $trading_durations = generate_trading_durations($offerings);
     my $expected          = LoadFile('t/BOM/Product/Offerings/expected_trading_durations_quiet_period.yml');
@@ -31,7 +31,7 @@ subtest 'trading durations at quiet period' => sub {
 
 subtest 'trading durations' => sub {
     set_absolute_time(Date::Utility->new('2019-04-12 08:00:00')->epoch);
-    my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
 
     my $trading_durations = generate_trading_durations($offerings);
     my $expected          = LoadFile('t/BOM/Product/Offerings/expected_trading_durations.yml');

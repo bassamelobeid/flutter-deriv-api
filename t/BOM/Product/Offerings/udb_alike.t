@@ -23,7 +23,7 @@ subtest 'Sets match' => sub {
     );
 
     subtest 'Virtual' => sub {
-        my $offerings_obj = LandingCompany::Registry::get('virtual')->basic_offerings($offerings_cfg);
+        my $offerings_obj = LandingCompany::Registry->by_name('virtual')->basic_offerings($offerings_cfg);
 
         while (my ($po, $udb_method) = each(%po_to_udb_method)) {
             my @result     = $offerings_obj->values_for_key($po);
@@ -45,7 +45,7 @@ subtest 'Sets match' => sub {
     };
 
     subtest 'SVG' => sub {
-        my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
+        my $offerings_obj = LandingCompany::Registry->by_name('svg')->basic_offerings($offerings_cfg);
 
         while (my ($po, $udb_method) = each(%po_to_udb_method)) {
             my @result     = $offerings_obj->values_for_key($po);

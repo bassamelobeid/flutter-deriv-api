@@ -10,7 +10,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use LandingCompany::Registry;
 use Date::Utility;
 
-my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings({
+my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings({
     loaded_revision => 1,
     action          => 'buy'
 });

@@ -42,7 +42,7 @@ my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 
 subtest 'test everything' => sub {
     my $expected = YAML::XS::LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/Engine/selection_config.yml');
-    foreach my $symbol (LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg)->values_for_key('underlying_symbol')) {
+    foreach my $symbol (LandingCompany::Registry->by_name('svg')->basic_offerings($offerings_cfg)->values_for_key('underlying_symbol')) {
         foreach my $ref (@{BOM::Product::ContractFinder->new->basic_contracts_for({symbol => $symbol})->{available}}) {
             my (%barriers, %selected_tick);
             if ($ref->{contract_category} eq 'digits' and $ref->{contract_type} !~ /(?:odd|even)/i) {
