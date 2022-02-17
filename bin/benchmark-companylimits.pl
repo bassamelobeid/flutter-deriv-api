@@ -175,7 +175,7 @@ sub chld {
         bet_class         => "not a lookback option"
     };
     my $x = BOM::Transaction::CompanyLimits->new(
-        landing_company => LandingCompany::Registry::get('virtual'),
+        landing_company => LandingCompany::Registry->by_name('virtual'),
         currency        => "EUR",
         contract_data   => $contract
     );
