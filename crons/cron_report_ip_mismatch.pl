@@ -18,7 +18,6 @@ use BOM::Backoffice::Request;
 use BOM::Platform::Email qw(send_email);
 use JSON::MaybeXS qw{decode_json};
 use Date::Utility;
-use LandingCompany::Registry;
 use BOM::Config;
 use BOM::Config::Redis;
 use BOM::User::Client;

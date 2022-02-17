@@ -406,7 +406,7 @@ sub print_client_details {
 
     my $docs = [];
     unless ($client->is_virtual) {
-        my @siblings = grep { LandingCompany::Registry->check_valid_broker_short_code($user->broker_code_from_loginid($_)) } $user->loginids;
+        my @siblings = grep { LandingCompany::Registry->check_broker_from_loginid($_) } $user->loginids;
         for my $sibling_loginid (@siblings) {
             next if $sibling_loginid =~ /^(MT|DX)[DR]?/;
 
@@ -1328,7 +1328,7 @@ sub client_statement_summary {
 
 =head2 client_inernal_transfer_summary
 
-Returns a summary of client's internal transfers per action types (deposit, withdrawal) 
+Returns a summary of client's internal transfers per action types (deposit, withdrawal)
 and payment types (internal tansfer, free gift, doughflow, ...).
 
 =cut
@@ -1432,7 +1432,7 @@ It takes the following named arguments:
 
 =item * C<to>: end date.
 
-=item * C<api_call>: (optional) the target api call: valid amounts: 
+=item * C<api_call>: (optional) the target api call: valid amounts:
 C<paymentagent_deposit>, C<paymentagent_dwithdraw> and C<total> (both api calls)
 
 =back
@@ -1819,12 +1819,10 @@ sub get_client_details {
 
     my $user = $client->user;
     my @user_clients;
-    my $broker_code;
     push @user_clients, $client;
     foreach my $login_id ($user->bom_loginids) {
         next if ($login_id eq $client->loginid);
-        $broker_code = $user->broker_code_from_loginid($login_id);
-        push @user_clients, BOM::User::Client->new({loginid => $login_id}) if (LandingCompany::Registry->check_valid_broker_short_code($broker_code));
+        push @user_clients, BOM::User::Client->new({loginid => $login_id}) if (LandingCompany::Registry->check_broker_from_loginid($login_id));
     }
 
     my $loginid_details = $user->loginid_details;
@@ -1886,7 +1884,7 @@ sub loginids {
     my @dx_logins;
 
     foreach my $lid (sort $user->bom_loginids()) {
-        unless (LandingCompany::Registry->check_valid_broker_short_code($user->broker_code_from_loginid($lid))) {
+        unless (LandingCompany::Registry->check_broker_from_loginid($lid)) {
             $log->warnf("Invalid login id $lid");
             next;
         }
@@ -2485,7 +2483,7 @@ sub create_dropdown {
 
 =head2 p2p_advertiser_approval_check
 
-Checks if p2p advertiser approval has changed based on hidden form field 
+Checks if p2p advertiser approval has changed based on hidden form field
 "p2p_approved" which contains the previous approval state.
 
 =over 4

@@ -39,7 +39,6 @@ use List::MoreUtils qw(uniq);
 use BOM::Product::ContractFactory qw( produce_contract );
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::MarketData qw(create_underlying);
-use LandingCompany::Registry;
 my $json = JSON::MaybeXS->new;
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Transaction::Utility;

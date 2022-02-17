@@ -31,14 +31,14 @@ BOM::Backoffice::Request::template()->process(
     }) || die BOM::Backoffice::Request::template()->error;
 
 sub _get_payout_currencies {
-    my $legal_allowed_currencies = LandingCompany::Registry::get('svg')->legal_allowed_currencies;
+    my $legal_allowed_currencies = LandingCompany::Registry->by_name('svg')->legal_allowed_currencies;
     my @payout_currencies;
 
     foreach my $currency (keys %{$legal_allowed_currencies}) {
         push @payout_currencies, $currency;
     }
 
-    # @additional_currencies is for adding additional currencies that is not available in LandingCompany::Registry::get('svg')->legal_allowed_currencies
+    # @additional_currencies is for adding additional currencies that is not available in LandingCompany('svg')->legal_allowed_currencies
     my @additional_currencies = qw(JPY CHF);
     push @payout_currencies, @additional_currencies;
 

@@ -13,7 +13,7 @@ use BOM::Config::Runtime;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::CommissionTool;
-use LandingCompany;
+use LandingCompany::Registry;
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -37,7 +37,7 @@ if ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{
 my $brokerselection = 'Broker code : '
     . create_dropdown(
     name          => 'broker',
-    items         => [request()->param('only') || LandingCompany::Registry::all_broker_codes],
+    items         => [request()->param('only') || LandingCompany::Registry->all_broker_codes],
     selected_item => $broker,
     );
 
@@ -188,7 +188,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
             Payment Agents
         </div>
         <div class="card__content">
-            <h3>Dynamic settings</h3>       
+            <h3>Dynamic settings</h3>
             <a href="payment_agents_dynamic_settings.cgi" class="btn btn--primary">Go to Payment Agents dynamic settings</a>
         </div>
     </div>~;

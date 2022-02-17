@@ -21,7 +21,6 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 use BOM::DailySummaryReport;
 
-use LandingCompany;
 use LandingCompany::Registry;
 
 BOM::Backoffice::Sysinit::init();
@@ -46,8 +45,8 @@ my $csv = Text::CSV->new({
 # By default we run all brokers and currencies for today.
 $for_date ||= Date::Utility->new->date_yyyymmdd;
 
-my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : LandingCompany::Registry::all_broker_codes;
-my @currencies  = ($currencies)  ? split(/,/, $currencies)  : LandingCompany::Registry->new()->all_currencies;
+my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : LandingCompany::Registry->all_broker_codes;
+my @currencies  = ($currencies)  ? split(/,/, $currencies)  : LandingCompany::Registry->all_currencies;
 
 # This report will now only be run on the master server
 master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));

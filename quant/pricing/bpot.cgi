@@ -41,9 +41,9 @@ my ($loginid, $broker, $transaction_id) = map { request()->param($_) } qw(logini
 my $landing_company;
 my $lc_registry;
 if ($broker) {
-    $lc_registry = LandingCompany::Registry->get_by_broker($broker);
+    $lc_registry = LandingCompany::Registry->by_broker($broker);
 } elsif ($loginid) {
-    $lc_registry = LandingCompany::Registry->get_by_loginid($loginid);
+    $lc_registry = LandingCompany::Registry->by_loginid($loginid);
 }
 
 $landing_company = $lc_registry->short if $lc_registry;

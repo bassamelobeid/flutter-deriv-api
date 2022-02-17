@@ -25,7 +25,6 @@ use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
-use LandingCompany::Registry;
 use BOM::Config::Runtime;
 
 BOM::Backoffice::Sysinit::init();
@@ -66,13 +65,13 @@ if ($r->param('update_limit')) {
     my $non_binary_contract_limit = $r->param('non_binary_contract_limit');
 
     my @known_keys    = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company risk_profile);
-    my $offerings_obj = LandingCompany::Registry::get_default()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry->get_default_company->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my %known_values  = map { $_ => [$offerings_obj->values_for_key($_)] } @known_keys;
 
     # there's no separate in offerings for intraday and ultra_short duration. So adding it here
     push @{$known_values{expiry_type}}, 'ultra_short';
     # landing company is not part of offerings object.
-    $known_values{landing_company} = [map { $_->short } LandingCompany::Registry::all()];
+    $known_values{landing_company} = [map { $_->short } LandingCompany::Registry->get_all()];
     $known_values{risk_profile}    = [keys %known_profiles];
     my %ref;
 

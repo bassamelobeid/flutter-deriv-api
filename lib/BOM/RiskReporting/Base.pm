@@ -82,7 +82,7 @@ sub _build__usd_rates {
     return {
         map      { $_ => in_usd(1, $_) }
             grep { !(BOM::Config::CurrencyConfig::is_valid_crypto_currency($_) && BOM::Config::CurrencyConfig::is_crypto_currency_suspended($_)) }
-            LandingCompany::Registry->new()->all_currencies
+            LandingCompany::Registry->all_currencies
     };
 }
 
@@ -123,7 +123,7 @@ sub _db_write {
 
 sub _build_all_client_dbs {
     my $clients_dbs       = [];
-    my @all_brokers_codes = LandingCompany::Registry::all_broker_codes();
+    my @all_brokers_codes = LandingCompany::Registry->all_broker_codes;
     my %visited_brokers;
     @visited_brokers{@all_brokers_codes} = ();
 
@@ -131,7 +131,7 @@ sub _build_all_client_dbs {
         # Here we want to get unique clientdbs of all brokers
         # There might be more than one broker on a client db
         next unless exists $visited_brokers{$broker};
-        next if LandingCompany::Registry->get_by_broker($broker)->is_virtual;
+        next if LandingCompany::Registry->by_broker($broker)->is_virtual;
 
         my ($clientdb, $brokers_on_this_db);
         try {

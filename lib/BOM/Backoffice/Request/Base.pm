@@ -107,7 +107,7 @@ sub brand {
 sub _build_available_currencies {
     my $self = shift;
 
-    my $landing_company = LandingCompany::Registry->get_by_broker($self->broker_code);
+    my $landing_company = LandingCompany::Registry->by_broker($self->broker_code);
     unless ($landing_company) {
         my $err = sprintf "Invalid landing company for broker code [%s]", $self->broker_code;
         print $err;

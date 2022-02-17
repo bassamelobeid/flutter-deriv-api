@@ -15,7 +15,6 @@ use List::Util qw(max);
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use Format::Util::Numbers qw(formatnumber);
 use Syntax::Keyword::Try;
-use LandingCompany::Registry;
 
 use BOM::User::Client;
 use BOM::Platform::Locale;

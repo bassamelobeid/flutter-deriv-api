@@ -7,7 +7,6 @@ use warnings;
 
 use Date::Utility;
 use JSON::MaybeXS;
-use LandingCompany::Registry;
 use f_brokerincludeall;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::Request qw(request);

@@ -82,7 +82,7 @@ my $dcc_code;
 if (@$mt_logins_ids == 0 && @$dx_logins_ids == 0) {
     $is_client_only_cr = 1;
     foreach my $login_id ($user->bom_real_loginids) {
-        if ($user->broker_code_from_loginid($login_id) ne 'CR') {
+        if (LandingCompany::Registry->broker_code_from_loginid($login_id) ne 'CR') {
             $is_client_only_cr = 0;
             last;
         }
@@ -150,7 +150,7 @@ if ($email ne $new_email) {
         $user->update_email_fields(email => $new_email);
 
         foreach my $login_id ($user->bom_loginids) {
-            unless (LandingCompany::Registry->check_valid_broker_short_code($user->broker_code_from_loginid($login_id))) {
+            unless (LandingCompany::Registry->check_broker_from_loginid($login_id)) {
                 $log->warnf("Invalid login id $login_id");
                 next;
             }

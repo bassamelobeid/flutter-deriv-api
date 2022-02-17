@@ -7,7 +7,6 @@ use JSON::MaybeUTF8 qw(:v1);
 use Locale::Country;
 use Text::CSV;
 use Syntax::Keyword::Try;
-use LandingCompany::Registry;
 use Getopt::Long;
 use Path::Tiny;
 use Date::Utility;

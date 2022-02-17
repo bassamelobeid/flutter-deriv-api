@@ -24,7 +24,7 @@ sub DailyTurnOverReport {
     my $initial_note = '(BUY-SELL represents the company profit)';
     my @all_currencies =
         grep { !(BOM::Config::CurrencyConfig::is_valid_crypto_currency($_) && BOM::Config::CurrencyConfig::is_crypto_currency_suspended($_)) }
-        LandingCompany::Registry->new()->all_currencies;
+        LandingCompany::Registry->all_currencies;
     my %rates = map { $_ => in_usd(1, $_) } grep { $_ !~ /^(?:ETC)$/ } @all_currencies;
 
     my %template = (

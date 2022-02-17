@@ -398,7 +398,7 @@ sub get_config_input {
         return [map { $lc->{$_}->{short} } grep { $lc->{$_}->{short} !~ /virtual|vanuatu|champion/i } keys %$lc];
     }
 
-    my $lc       = LandingCompany::Registry::get('virtual');                 # to get everything in the offerings list.
+    my $lc       = LandingCompany::Registry->get_default_company;            # to get everything in the offerings list.
     my $o_config = BOM::Config::Runtime->instance->get_offerings_config();
 
     if ($key eq 'contract_group' or $key eq 'market') {

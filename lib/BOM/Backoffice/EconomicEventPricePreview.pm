@@ -8,7 +8,6 @@ use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying);
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw(roundcommon);
-use LandingCompany::Registry;
 use Volatility::EconomicEvents;
 use Quant::Framework;
 use Quant::Framework::EconomicEventCalendar;
@@ -39,7 +38,7 @@ sub generate_news {
 
     my $underlying_symbol_list;
 
-    my $landing_company = LandingCompany::Registry::get('virtual');
+    my $landing_company = LandingCompany::Registry->get_default_company;
 
     $underlying_symbol_list = [
         $landing_company->basic_offerings({
