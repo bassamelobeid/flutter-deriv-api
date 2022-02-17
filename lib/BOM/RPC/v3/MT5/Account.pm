@@ -358,7 +358,7 @@ sub _mt5_group {
     my ($server_type, $sub_account_type, $group_type);
 
     # affiliate LC should map to seychelles
-    my $lc = LandingCompany::Registry::get($landing_company_short);
+    my $lc = LandingCompany::Registry->by_name($landing_company_short);
     return 'real\p02_ts02\synthetic\seychelles_ib_usd' if $lc->is_for_affiliates();
 
     my $market_type = _get_market_type($account_type, $mt5_account_type);
@@ -683,7 +683,7 @@ async_rpc "mt5_new_account",
 
     return create_error_future('AccountTypesMismatch') if ($client->is_virtual() and $account_type ne 'demo');
 
-    my $requirements        = LandingCompany::Registry->new->get($company_name)->requirements;
+    my $requirements        = LandingCompany::Registry->by_name($company_name)->requirements;
     my $signup_requirements = $requirements->{signup};
     my @missing_fields      = grep { !$client->$_ } @$signup_requirements;
 
@@ -708,7 +708,7 @@ async_rpc "mt5_new_account",
     # - MF (residence: germany) client with selected account currency of USD. The mt5 account currency will be EUR.
     # - MF (residence: germany) client with selected account currency of GBP. The mt5 account currency will be GBP.
     # - SVG (residence: australia) client with selected account current of AUD. The mt5 account currency will be USD.
-    my $default_currency       = LandingCompany::Registry::get($company_name)->get_default_currency($residence);
+    my $default_currency       = LandingCompany::Registry->by_name($company_name)->get_default_currency($residence);
     my $available              = $client->landing_company->available_mt5_currency_group();
     my %available_mt5_currency = map { $_ => 1 } @$available;
 
@@ -2327,7 +2327,7 @@ sub _fetch_mt5_lc {
 
     return undef unless $group_params->{landing_company_short};
 
-    my $landing_company = LandingCompany::Registry::get($group_params->{landing_company_short});
+    my $landing_company = LandingCompany::Registry->by_name($group_params->{landing_company_short});
 
     return undef unless $landing_company;
 

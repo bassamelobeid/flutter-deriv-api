@@ -6,7 +6,6 @@ use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use Test::BOM::RPC::QueueClient;
-use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw/looks_like_number/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

@@ -56,7 +56,7 @@ rpc exchange_rates => sub {
     my $params        = shift;
     my $base_currency = $params->{args}->{base_currency};
 
-    my @all_currencies = LandingCompany::Registry->new()->all_currencies;
+    my @all_currencies = LandingCompany::Registry::all_currencies();
 
     my $invalid_currency = BOM::Platform::Client::CashierValidation::invalid_currency_error($base_currency);
     return BOM::RPC::v3::Utility::create_error($invalid_currency) if $invalid_currency;

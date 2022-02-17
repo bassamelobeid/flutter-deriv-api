@@ -839,7 +839,7 @@ subtest 'upgradeable_landing_companies svg' => sub {
     $client_cr2->account('USD');
     $user->add_client($client_cr2);
 
-    foreach my $currency (keys LandingCompany::Registry->new->get('svg')->legal_allowed_currencies->%*) {
+    foreach my $currency (keys LandingCompany::Registry->by_name('svg')->legal_allowed_currencies->%*) {
         # we have already created a USD account; so all fiat currencies are unavailable.
         next if LandingCompany::Registry::get_currency_type($currency) eq 'fiat';
 

@@ -229,7 +229,7 @@ rpc "verify_email",
 
 =head2 _is_impersonating_client
 
-Description: Checks if this is an internal app like backend - if so 
+Description: Checks if this is an internal app like backend - if so
 we are impersonating an account.
 Takes the following arguments as named parameters
 
@@ -298,7 +298,7 @@ rpc new_account_real => sub {
         return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $company;
     }
 
-    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $broker = LandingCompany::Registry->by_name($company)->broker_codes->[0];
 
     # Send error if a maltainvest account  is going to be created here;
     # because they should be creaed using new_account_maltainvest call
@@ -345,7 +345,7 @@ rpc new_account_maltainvest => sub {
     # this call is exclusively for maltainvest
     return BOM::RPC::v3::Utility::permission_error if ($company ne 'maltainvest');
 
-    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $broker = LandingCompany::Registry->by_name($company)->broker_codes->[0];
 
     my $response = create_new_real_account(
         client          => $client,
@@ -1045,7 +1045,7 @@ Will do:
 
 =back
 
-Will return the following data: 
+Will return the following data:
 
 =over 4
 
@@ -1053,7 +1053,7 @@ Will return the following data:
 
 =item - C<landing_company>
 
-=item - C<landing_company_shortcode> 
+=item - C<landing_company_shortcode>
 
 =item - C<oauth_token>
 
@@ -1070,7 +1070,7 @@ rpc "affiliate_account_add", sub {
 
     my $broker   = 'AFF';
     my $currency = 'USD';
-    my $company  = LandingCompany::Registry->get_by_broker($broker);
+    my $company  = LandingCompany::Registry->by_broker($broker);
 
     $args->{currency} = $currency;
 
