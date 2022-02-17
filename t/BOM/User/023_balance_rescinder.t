@@ -64,10 +64,7 @@ $mock->mock(
         return $amount * ($fake_rates->{$currency} // BOM::User::Script::BalanceRescinder::FIAT_BALANCE_LIMIT);
     });
 
-my $registry = LandingCompany::Registry->new;
-# DC throws an exception
-my @broker_codes = grep { $_ ne 'DC' } $registry->all_real_broker_codes();
-
+my @broker_codes = LandingCompany::Registry->all_real_broker_codes();
 for my $broker_code (@broker_codes) {
     subtest "Testing $broker_code" => sub {
         my $rescinder = BOM::User::Script::BalanceRescinder->new(broker_code => $broker_code);

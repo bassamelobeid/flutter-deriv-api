@@ -19,7 +19,7 @@ sub new {
     my $self = shift->SUPER::new(@_) // return;
 
     die 'Broker code ' . $self->broker_code . ' is not an affiliate broker code'
-        unless LandingCompany::Registry->get_by_broker($self->broker_code)->is_for_affiliates;
+        unless LandingCompany::Registry->by_broker($self->broker_code)->is_for_affiliates;
 
     return $self;
 }
@@ -32,7 +32,7 @@ Returns the landing company config.
 
 sub landing_company {
     my $self = shift;
-    my $lc   = LandingCompany::Registry->get_by_broker($self->broker_code);
+    my $lc   = LandingCompany::Registry->by_broker($self->broker_code);
 
     die 'Broker code ' . $self->broker_code . ' is not an affiliate broker code' unless $lc->is_for_affiliates;
 
