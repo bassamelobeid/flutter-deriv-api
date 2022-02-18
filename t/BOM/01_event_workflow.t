@@ -132,7 +132,8 @@ subtest 'process - generic jobs' => sub {
                 check_name_changes_after_first_deposit p2p_adverts_updated
                 fraud_address affiliate_loginids_sync p2p_advertiser_approval_changed crypto_withdrawal_email
                 reset_password_request reset_password_confirmation
-                p2p_advertiser_cancel_at_fault p2p_advertiser_temp_banned cms_add_affiliate_client df_anonymization_done/
+                p2p_advertiser_cancel_at_fault p2p_advertiser_temp_banned cms_add_affiliate_client df_anonymization_done
+                request_change_email verify_change_email confirm_change_email/
         ),
         'Correct number of actions that can be emitted'
     );

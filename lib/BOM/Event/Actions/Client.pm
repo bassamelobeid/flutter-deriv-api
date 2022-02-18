@@ -3214,6 +3214,69 @@ sub check_name_changes_after_first_deposit {
     return 1;
 }
 
+=head2 request_change_email
+
+Triggered before B<change_email> request.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub request_change_email {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::request_change_email($args);
+}
+
+=head2 verify_change_email
+
+Triggered for first stage in B<change_email tag: verify>  request.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub verify_change_email {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::verify_change_email($args);
+}
+
+=head2 confirm_change_email
+
+Triggered after second stage in B<change_email tag: update> request.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub confirm_change_email {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::confirm_change_email($args);
+}
+
 =head2 link_affiliate_client
 
 Add an affiliated client to commission database.

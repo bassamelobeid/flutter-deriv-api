@@ -128,6 +128,9 @@ my $action_mapping = {
         p2p_advertiser_temp_banned                       => \&BOM::Event::Actions::P2P::advertiser_temp_banned,
         cms_add_affiliate_client                         => \&BOM::Event::Actions::Client::link_affiliate_client,
         df_anonymization_done                            => \&BOM::Event::Actions::Anonymization::df_anonymization_done,
+        request_change_email                             => \&BOM::Event::Actions::Client::request_change_email,
+        verify_change_email                              => \&BOM::Event::Actions::Client::verify_change_email,
+        confirm_change_email                             => \&BOM::Event::Actions::Client::confirm_change_email,
     },
     track => {
         # only one event for now, more will be added in future

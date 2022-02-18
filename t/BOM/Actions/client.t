@@ -2624,6 +2624,87 @@ subtest 'Deriv X events' => sub {
 
 };
 
+subtest 'request_change_email' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'Deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name => 'Aname',
+            email      => 'any_email@anywhere.com',
+            language   => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{request_change_email};
+    ok $handler->($args), 'OK args';
+    my $result = $handler->($args)->get;
+    ok $result, 'OK result';
+    is scalar @track_args, 7, 'OK event';
+};
+
+subtest 'verify_change_email' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'Deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name => 'Aname',
+            email      => 'any_email@anywhere.com',
+            language   => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{verify_change_email};
+    ok $handler->($args), 'OK args';
+    my $result = $handler->($args)->get;
+    ok $result, 'OK result';
+    is scalar @track_args, 7, 'OK event';
+};
+
+subtest 'confirm_change_email' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'Deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name => 'Aname',
+            email      => 'any_email@anywhere.com',
+            language   => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{confirm_change_email};
+    ok $handler->($args), 'OK args';
+    my $result = $handler->($args)->get;
+    ok $result, 'OK result';
+    is scalar @track_args, 7, 'OK event';
+};
+
 subtest 'crypto_withdrawal_email event' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',

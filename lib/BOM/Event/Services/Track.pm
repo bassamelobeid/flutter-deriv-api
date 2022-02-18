@@ -121,6 +121,9 @@ my %EVENT_PROPERTIES = (
         [qw(advert_id created_time type account_currency local_currency country amount rate min_order_amount max_order_amount is_visible)],
     p2p_advertiser_cancel_at_fault => [qw(order_id cancels_remaining)],
     p2p_advertiser_temp_banned     => [qw(order_id block_end_time)],
+    request_change_email           => [qw(loginid first_name email code verification_uri)],
+    verify_change_email            => [qw(loginid first_name email code verification_uri)],
+    confirm_change_email           => [qw(loginid first_name email)],
     unknown_login                  => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
 );
 
@@ -1373,6 +1376,84 @@ sub _time_to_iso_8601 {
     )->to_string;
 }
 
+=head2 request_change_email
+
+It is triggered for B<verify_email tag: request_email> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub request_change_email {
+    my ($args) = @_;
+    my $properties = $args->{properties} // {};
+
+    return track_event(
+        event      => 'request_change_email',
+        loginid    => $args->{loginid},
+        properties => $properties
+    );
+}
+
+=head2 verify_change_email
+
+It is triggered for B<change_email tag: verify> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub verify_change_email {
+    my ($args) = @_;
+    my $properties = $args->{properties} // {};
+
+    return track_event(
+        event      => 'verify_change_email',
+        loginid    => $args->{loginid},
+        properties => $properties
+    );
+}
+
+=head2 confirm_change_email
+
+It is triggered for each B<change_email tag: update> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub confirm_change_email {
+    my ($args) = @_;
+    my $properties = $args->{properties} // {};
+
+    return track_event(
+        event      => 'confirm_change_email',
+        loginid    => $args->{loginid},
+        properties => $properties
+    );
+}
+
 =head2 crypto_withdrawal_email
 
 It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it to Rudderstack.
@@ -1399,7 +1480,6 @@ sub crypto_withdrawal_email {
         loginid    => $args->{loginid},
         properties => $args,
     );
-
 }
 
 =head2 reset_password_request
