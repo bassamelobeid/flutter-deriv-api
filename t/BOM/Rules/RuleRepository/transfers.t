@@ -805,4 +805,86 @@ subtest $rule_name => sub {
     }
 };
 
+subtest 'rule transfers.account_types_are_compatible' => sub {
+
+    my $email  = 'test+2@test.deriv';
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    my $user = BOM::User->create(
+        email    => $email,
+        password => 'TRADING PASS',
+    );
+    $user->add_client($client);
+    $client->account('USD');
+
+    my $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    $user->add_client($client_from);
+    $client_from->account('USD');
+
+    my $client_to = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    $user->add_client($client_to);
+    $client_to->account('USD');
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from // (), $client_to // ()]);
+    my %args        = (
+        loginid           => $client->loginid,
+        account_type_from => 'dxtrade',
+        account_type_to   => 'mt5',
+    );
+    my $rule_name = 'transfers.account_types_are_compatible';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'IncompatibleDxtradeToMt5',
+        rule       => $rule_name
+        },
+        'Expected error when client_from is dxtrade and client_to is mt5';
+
+    %args = (
+        loginid           => $client->loginid,
+        account_type_from => 'mt5',
+        account_type_to   => 'dxtrade',
+    );
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'IncompatibleMt5ToDxtrade',
+        rule       => $rule_name
+        },
+        'Expected error when client_from is mt5 and client_to is dxtrade';
+
+    %args = (
+        loginid           => $client->loginid,
+        account_type_from => 'mt5',
+        account_type_to   => 'mt5',
+    );
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'IncompatibleMt5ToMt5',
+        rule       => $rule_name
+        },
+        'Expected error when client_from is mt5 and client_to is mt5';
+
+    %args = (
+        loginid           => $client->loginid,
+        account_type_from => 'dxtrade',
+        account_type_to   => 'dxtrade',
+    );
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'IncompatibleDxtradeToDxtrade',
+        rule       => $rule_name
+        },
+        'Expected error when client_from is dxtrade and client_to is dxtrade';
+};
+
 done_testing();

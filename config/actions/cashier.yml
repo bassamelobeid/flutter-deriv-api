@@ -1,3 +1,41 @@
+transfer_between_accounts_part1:
+  description: Contains rules to be applied on real account opening
+  arguments: 
+    - loginid
+    - loginid_from
+    - loginid_to
+    - account_type_from
+    - account_type_to
+    - amount
+    - currency
+  ruleset:
+    - client.not_disabled
+    - transfers.account_types_are_compatible
+    - type: group
+      argument_mapping:
+        loginid: loginid_from
+        account_type: account_type_from
+        action: "'withdrawal'"
+      ruleset:
+        - type: conditional
+          on: account_type
+          rules_per_value:
+            trading: &trading
+              - cashier.is_not_locked
+              - client.no_withdrawal_locked_status
+              - client.no_withdrawal_or_trading_lock_status
+              - cashier.profile_requirements
+            wallet: *trading
+    - type: group
+      argument_mapping:
+        loginid: loginid_to
+        account_type: account_type_to
+      ruleset:
+        - type: conditional
+          on: account_type
+          rules_per_value:
+            trading: cashier.is_not_locked
+            wallet: cashier.is_not_locked
 transfer_between_accounts_part3:
   description: Contains rules to be applied on transfer between accounts (part 3)
   arguments: 

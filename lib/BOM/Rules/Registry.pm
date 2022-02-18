@@ -350,6 +350,7 @@ sub _load_rule_group {
         required_arguments => $arguments                  // [],
         ruleset            => $ruleset                    // [],
         argument_mapping   => $config->{argument_mapping} // {},
+        tag                => $config->{tag},
     );
 }
 

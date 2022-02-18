@@ -283,4 +283,22 @@ sub _get_currency_info {
     return %currencies;
 }
 
+rule 'transfers.account_types_are_compatible' => {
+    description => "Transfer between dxtrade and mt5 is not allowed",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        $self->fail('IncompatibleDxtradeToMt5') if $args->{account_type_from} eq 'dxtrade' && $args->{account_type_to} eq 'mt5';
+
+        $self->fail('IncompatibleMt5ToDxtrade') if $args->{account_type_from} eq 'mt5' && $args->{account_type_to} eq 'dxtrade';
+
+        $self->fail('IncompatibleMt5ToMt5') if $args->{account_type_from} eq 'mt5' && $args->{account_type_to} eq 'mt5';
+
+        $self->fail('IncompatibleDxtradeToDxtrade') if $args->{account_type_from} eq 'dxtrade' && $args->{account_type_to} eq 'dxtrade';
+
+        return 1;
+    },
+};
+
 1;

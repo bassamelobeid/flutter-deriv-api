@@ -37,9 +37,12 @@ $rule_name = 'cashier.profile_requirements';
 subtest $rule_name => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
-    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Action is required/, 'Action is required for this rule';
 
-    my %args        = (loginid => $client->loginid);
+    my %args = (action => 'deposit');
+    like exception { $rule_engine->apply_rules($rule_name, %args) }, qr/Client loginid is missing/, 'Client is required for this rule';
+
+    $args{loginid} = $client->loginid;
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(
         missing_requirements => sub {
@@ -50,9 +53,6 @@ subtest $rule_name => sub {
             return ($requirements{$action // ''} // [])->@*;
         });
 
-    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule applies without action';
-
-    $args{action} = 'deposit';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
         error_code => 'CashierRequirementsMissing',

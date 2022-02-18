@@ -35,6 +35,7 @@ rule 'cashier.profile_requirements' => {
         my ($self, $context, $args) = @_;
 
         my $action = $args->{action};
+        die 'Action is required for checking cashier requirements' unless $action;
 
         if (my @missing_fields = $context->client($args)->missing_requirements($action)) {
             $self->fail('CashierRequirementsMissing', details => {fields => \@missing_fields});

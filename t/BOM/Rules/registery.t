@@ -233,7 +233,9 @@ subtest 'Actions registery' => sub {
                         name               => 'anonymous',
                         description        => 'Unnamed group in action configuration',
                         required_arguments => [],
-                        argument_mapping   => {}}
+                        argument_mapping   => {},
+                        tag                => undef,
+                    }
                 ],
             }};
 
@@ -249,7 +251,9 @@ subtest 'Actions registery' => sub {
                             arg1 => 'first_name',
                             arg2 => 'last_name',
                         },
-                        ruleset => ['test_rule2']}]
+                        ruleset => ['test_rule2'],
+                        tag     => undef,
+                    }]
             },
         };
 
@@ -271,6 +275,7 @@ subtest 'Actions registery' => sub {
                             arg2 => 'last_name',
                         },
                         ruleset => [$rule2],
+                        tag     => undef
                     }
                 ],
             }
@@ -279,8 +284,7 @@ subtest 'Actions registery' => sub {
 
         # TODO: we cannot ceate a real context object in this test script,
         # because of the circular dependency with bom-user; a mock object is use instead.
-        my $context = Test::MockObject->new();
-        $context->mock(stop_on_failure => sub { return 0 });
+        my $context = BOM::Rules::Context->new(stop_on_failure => 0);
 
         is_deeply $actions->{action1}->verify($context),
             {
@@ -451,7 +455,9 @@ subtest 'Actions registery' => sub {
                         name               => 'anonymous',
                         description        => 'Unnamed group in action configuration',
                         required_arguments => [],
-                        argument_mapping   => {}}
+                        argument_mapping   => {},
+                        tag                => undef,
+                    }
                 ],
             }};
 
@@ -489,6 +495,7 @@ subtest 'Actions registery' => sub {
                             arg2 => 'last_name',
                         },
                         ruleset => [$rule2],
+                        tag     => undef,
                     }
                 ],
             }
@@ -645,6 +652,298 @@ subtest 'Actions registery' => sub {
                 passed_rules => [qw/test_rule test_rule2/],
                 },
                 'Rules are applied as expected';
+        };
+    };
+
+    subtest 'Rule groups' => sub {
+        $mock_action_data = {
+            'action1' => {
+                ruleset => [{
+                        type => 'group',
+                        tag  => undef
+                    }]
+            },
+        };
+
+        my $actions = BOM::Rules::Registry::register_actions();
+        is_deeply $actions,
+            {
+            action1 => {
+                name        => 'action1',
+                description => 'action1',
+                category    => 'test',
+                ruleset     => [{
+                        ruleset            => [],
+                        name               => 'anonymous',
+                        description        => 'Unnamed group in action configuration',
+                        required_arguments => [],
+                        argument_mapping   => {},
+                        tag                => undef,
+                    }
+                ],
+            }};
+
+        $mock_action_data = {
+            'action1' => {
+                ruleset => [
+                    'test_rule',
+                    {
+                        type             => 'group',
+                        name             => 'test rule group',
+                        description      => 'created for testing inline rule groups',
+                        argument_mapping => {
+                            arg1 => 'first_name',
+                            arg2 => 'last_name',
+                        },
+                        ruleset => ['test_rule2'],
+                    }]
+            },
+        };
+
+        $actions = BOM::Rules::Registry::register_actions();
+        is_deeply $actions,
+            {
+            action1 => {
+                name        => 'action1',
+                description => 'action1',
+                category    => 'test',
+                ruleset     => [
+                    $rule1,
+                    {
+                        name               => 'test rule group',
+                        description        => 'created for testing inline rule groups',
+                        required_arguments => [],
+                        argument_mapping   => {
+                            arg1 => 'first_name',
+                            arg2 => 'last_name',
+                        },
+                        ruleset => [$rule2],
+                        tag     => undef
+                    }
+                ],
+            }
+            },
+            'A ruleset consisting of a simple rule and a rule-group';
+
+        # TODO: we cannot ceate a real context object in this test script,
+        # because of the circular dependency with bom-user; a mock object is use instead.
+        my $context = Test::MockObject->new();
+        $context->mock(stop_on_failure => sub { return 0 });
+
+        is_deeply $actions->{action1}->verify($context),
+            {
+            failed_rules => [],
+            errors       => {},
+            has_failure  => 0,
+            passed_rules => ['test_rule', 'test_rule2']
+            },
+            'Both rules are applied';
+
+        subtest 'Argument mapping' => sub {
+            my $failing_rule = rule(
+                'failing_rule3' => {
+                    code        => sub { my ($self, $context, $args) = @_; die $args },
+                    description => "This rule dies with it's args"
+                });
+
+            $mock_action_data = {
+                'action1' => {
+                    ruleset => [{
+                            type             => 'group',
+                            name             => 'test rule group',
+                            description      => 'created for testing inline rule groups',
+                            argument_mapping => {
+                                arg1 => 'first_name',
+                                arg2 => 'last_name',
+                            },
+                            ruleset => ['failing_rule3'],
+                        },
+                        'test_rule',
+                    ]
+                },
+            };
+
+            my $action_args = {
+                first_name => 'Ali',
+                last_name  => 'Smith',
+                a          => 11
+            };
+            $actions = BOM::Rules::Registry::register_actions();
+            is_deeply $actions->{action1}->verify($context, $action_args),
+                {
+                failed_rules => [{
+                        rule       => 'failing_rule3',
+                        arg1       => 'Ali',
+                        arg2       => 'Smith',
+                        first_name => 'Ali',
+                        last_name  => 'Smith',
+                        a          => 11,
+                    },
+                ],
+                errors       => {},
+                has_failure  => 1,
+                passed_rules => ['test_rule']
+                },
+                'Arguments are mapped correctly';
+        };
+
+        subtest 'Named rule group' => sub {
+            $mock_rule_groups = [{
+                    group1 => [],
+                }];
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Invalid config file structure in test.yml/,
+                'Correct error for invalid rule-group file content';
+
+            $mock_rule_groups = {
+                group1 => [],
+            };
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Config of rule-group 'group1' doesn't look like a hash/,
+                'Correct error for invalid rule-group structure';
+
+            $mock_rule_groups = {
+                group1 => {},
+            };
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Rule-group 'group1' doesn't have any 'ruleset'/,
+                'Ruleset is required for a rule-group';
+
+            $mock_rule_groups = {group1 => {ruleset => [qw/invalid_rule/]}};
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Rule 'invalid_rule' used in 'ruleset test.yml -> group1' was not found/,
+                'Rule names are validated';
+
+            $mock_rule_groups = {group1 => {ruleset => [qw/failing_rule test_rule/]}};
+            lives_ok { BOM::Rules::Registry::register_actions() } 'Rule group created with minimum required info';
+
+            $mock_rule_groups = {
+                group1 => {
+                    description        => 'Test rule-group with required args',
+                    required_arguments => [qw/arg1 arg2/],
+                    ruleset            => [qw/failing_rule test_rule/],
+                }};
+            $mock_action_data = {
+                action1 => {
+                    ruleset => [{
+                            type       => 'group',
+                            rule_group => 'invalid_group_name',
+                        },
+                        'test_rule2',
+                    ]
+                },
+            };
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Invalid group name invalid_group_name found in action1/,
+                'Correct exception for a non-exsting rule-group invocation';
+
+            my $rule_group_incovation = $mock_action_data->{action1}->{ruleset}->[0];
+            $rule_group_incovation->{rule_group} = 'group1';
+            $rule_group_incovation->{ruleset}    = [qw/test_rule test_rule2/];
+            like exception { BOM::Rules::Registry::register_actions() },
+                qr/Ruleset incorrectly declared for a known rule-group \(group1\) in action1/,
+                'Correct exception if ruleset is declared for a named rule-group invocation';
+
+            delete $rule_group_incovation->{ruleset};
+            lives_ok { $actions = BOM::Rules::Registry::register_actions() } 'The rule-group is loaded by an action';
+            like exception { $actions->{action1}->verify($context) }, qr/No value found for required argument 'arg1'/,
+                'Required arguments should be mapped or found in action args.';
+
+            $rule_group_incovation->{argument_mapping} = {
+                arg1 => "'literal value'",
+            };
+            $actions = BOM::Rules::Registry::register_actions();
+            like exception { $actions->{action1}->verify($context) }, qr/No value found for required argument 'arg2'/,
+                'Arg1 is set with a literal value; arg2 is remaining.';
+
+            my $action_args = {
+                arg2 => 'taken from action args without mapping',
+                arg3 => 'additional action argument',
+            };
+            my $result;
+            lives_ok {
+                $actions = BOM::Rules::Registry::register_actions();
+                $result  = $actions->{action1}->verify($context, $action_args);
+            }
+            'Arg2 was correctly taken from action args';
+
+            is_deeply $result,
+                {
+                failed_rules => [{
+                        rule => 'failing_rule',
+                        arg1 => 'literal value',
+                        arg2 => 'taken from action args without mapping',
+                        arg3 => 'additional action argument',
+                    }
+                ],
+                errors       => {},
+                has_failure  => 1,
+                passed_rules => [qw/test_rule test_rule2/],
+                },
+                'Rules are applied as expected';
+        };
+
+        subtest 'Rule group tags' => sub {
+            $mock_rule_groups = {
+                group1 => {
+                    description        => 'Test rule-group with required args',
+                    required_arguments => [qw/arg1 arg2/],
+                    ruleset            => [qw/failing_rule test_rule/],
+                }};
+            $mock_action_data = {
+                action1 => {
+                    ruleset => [{
+                            type       => 'group',
+                            rule_group => 'group1',
+                            tag        => 'named group',
+                        },
+                        {
+                            type    => 'group',
+                            ruleset => [qw/failing_rule test_rule/],
+                            tag     => 'anonymous group'
+                        },
+                    ]
+                },
+            };
+
+            my $action_args = {
+                arg1 => 'value1',
+                arg2 => 'value2',
+            };
+            my $context = BOM::Rules::Context->new(stop_on_failure => 0);
+            $actions = BOM::Rules::Registry::register_actions();
+            my $result;
+            lives_ok {
+                $result = $actions->{action1}->verify($context, $action_args);
+            }
+            'Action is verified successfully';
+
+            is_deeply $result,
+                {
+                failed_rules => [{
+                        rule => 'failing_rule',
+                        arg1 => 'value1',
+                        arg2 => 'value2',
+                        tags => ['named group'],
+                    },
+                    {
+                        rule => 'failing_rule',
+                        arg1 => 'value1',
+                        arg2 => 'value2',
+                        tags => ['anonymous group'],
+                    }
+                ],
+                errors       => {},
+                has_failure  => 1,
+                passed_rules => [qw/test_rule test_rule/],
+                },
+                'Tags correctly appear in the failing rules';
+
+            # with stop on failure
+            $context = BOM::Rules::Context->new(stop_on_failure => 1);
+            is_deeply exception { $actions->{action1}->verify($context, $action_args) },
+                {
+                arg1 => 'value1',
+                arg2 => 'value2',
+                tags => ['named group'],
+                },
+                'tags correctly appear in the exception';
+
         };
     };
 

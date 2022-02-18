@@ -41,6 +41,7 @@ use strict;
 use warnings;
 
 use Moo;
+use Syntax::Keyword::Try;
 
 extends 'BOM::Rules::Registry::Rule';
 
@@ -87,6 +88,19 @@ An array of rules groupped together.
 =cut
 
 has ruleset => (
+    is => 'ro',
+);
+
+=head2 tag
+
+Tag assigned to the rule group. It's specially useful when a rule group is imported for more than once in a single action.
+Tags of all enclosing groups are combined in to an array and returned in the `tags` attribute of every rule engine error;
+this enables the client code to identify the source of the error easily and produce the correct error message.
+For an example you can take a look at `payment_agent_transfer` action configuration and it's corresponding RPC code.
+
+=cut
+
+has tag => (
     is => 'ro',
 );
 
@@ -150,7 +164,18 @@ sub apply {
 
     my $final_results = BOM::Rules::Result->new();
     for my $rule ($self->ruleset->@*) {
-        my $rule_result = $rule->apply($context, $group_args);
+        my $rule_result;
+        try {
+            $rule_result = $rule->apply($context, $group_args);
+        } catch ($e) {
+            die $e unless ref $e;
+            push($e->{tags}->@*, $self->tag) if $self->tag;
+            die $e;
+        };
+
+        if ($self->tag && ref($rule_result) eq 'BOM::Rules::Result') {
+            push($_->{tags}->@*, $self->tag) for $rule_result->{failed_rules}->@*;
+        }
 
         $final_results->merge($rule_result);
     }

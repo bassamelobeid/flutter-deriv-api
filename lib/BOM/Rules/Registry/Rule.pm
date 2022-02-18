@@ -98,7 +98,6 @@ It accepts the following arguments:
 
 sub fail {
     my ($self, $code, %args) = @_;
-
     die {
         rule       => $self->name,
         error_code => $code,
