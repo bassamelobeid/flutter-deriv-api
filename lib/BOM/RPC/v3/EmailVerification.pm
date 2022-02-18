@@ -180,6 +180,17 @@ sub email_verification {
                 },
             };
         },
+        request_email => sub {
+            return {
+                template_args => {(
+                        $verification_uri
+                        ? (verification_url => _build_verification_url('request_email', $args))
+                        : ()
+                    ),
+                    %common_args,
+                },
+            };
+        },
         closed_account => sub {
             my ($subject, $title, $title_padding);
             if ($type eq 'account_opening') {

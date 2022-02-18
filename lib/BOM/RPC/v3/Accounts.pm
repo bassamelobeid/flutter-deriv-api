@@ -31,6 +31,8 @@ use BOM::RPC::Registry '-dsl';
 
 use BOM::RPC::v3::Utility qw(longcode log_exception);
 use BOM::RPC::v3::PortfolioManagement;
+use BOM::RPC::v3::EmailVerification qw(email_verification);
+use BOM::RPC::v3::NewAccount qw(get_verification_uri);
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client::CashierValidation;
@@ -1302,6 +1304,137 @@ sub _get_authentication_poa {
     };
 }
 
+rpc change_email => sub {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my ($token_type, $client_ip, $args) = @{$params}{qw/token_type client_ip args/};
+
+    # allow OAuth token
+    unless (($token_type // '') eq 'oauth_token') {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+
+    my $user = $client->user;
+
+    if ($args->{change_email} eq 'verify') {
+        my $err =
+            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'request_email')->{error};
+        if ($err) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => $err->{code},
+                    message_to_client => $err->{message_to_client}});
+        }
+
+        # only allow social based clients
+        unless ($user->{has_social_signup}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => "EmailBased",
+                    message_to_client => localize("We can not seem to find your social account. If you need help with logging in, contact us.")});
+        }
+
+        my $erring_user = BOM::User->new(email => $args->{new_email});
+        if ($erring_user) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => "InvalidEmail",
+                    message_to_client => localize("This email is already in use. Please use a different email.")});
+        }
+
+        # send token to new email
+        my $code = BOM::Platform::Token->new({
+                email       => $args->{new_email},
+                expires_in  => 3600,
+                created_for => 'request_email',
+            })->token;
+        my $uri = BOM::RPC::v3::NewAccount::get_verification_uri($params->{source});
+
+        _send_change_email_verification_email(
+            $client, 'verify_change_email',
+            code  => $code,
+            uri   => $uri,
+            email => $args->{new_email});
+
+    } elsif ($args->{change_email} eq 'update') {
+        my $error =
+            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $args->{new_email}, 'request_email')->{error};
+        if ($error) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => $error->{code},
+                    message_to_client => $error->{message_to_client}});
+        }
+
+        my $password_error = BOM::RPC::v3::Utility::check_password({
+            email        => $client->email,
+            new_password => $args->{new_password} // ''
+        });
+        return $password_error if $password_error;
+
+        try {
+            $client->user->update_email($args->{new_email});
+            $client->user->update_user_password($args->{new_password});
+            my $default_client_loginid = $user->get_default_client(
+                include_disabled   => 1,
+                include_duplicated => 1
+            )->loginid;
+            BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',    {loginid => $default_client_loginid});
+            BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid});
+
+            my $brand       = request()->brand;
+            my $contact_url = $brand->contact_url({
+                    source   => $params->{source},
+                    language => $params->{language}});
+
+            _send_change_email_verification_email($client, 'confirm_change_email', email => $args->{new_email}) if ($user->unlink_social);
+        } catch {
+            log_exception();
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'EmailChangeError',
+                message_to_client =>
+                    localize("We were unable to make the changes due to an error on our server. Please try again in a few minutes."),
+            });
+        }
+    }
+    return {status => 1};
+};
+
+=head2 _send_change_email_verification_email
+
+Sends change email confirm email to the user.
+
+It takes the following params:
+
+=over 4
+
+=item * C<client> A L<BOM::User::Client> instance.
+
+=item * C<event> The event to be emitted.
+
+=item * C<event_args> A hash containg event arguments.
+
+=back
+
+Returns undef.
+
+=cut
+
+sub _send_change_email_verification_email {
+    my ($client, $event, %event_args) = @_;
+
+    die unless defined $event;
+
+    BOM::Platform::Event::Emitter::emit(
+        $event,
+        {
+            loginid    => $client->loginid,
+            properties => {
+                first_name       => $client->first_name,
+                email            => $event_args{email},
+                code             => $event_args{code} // '',
+                verification_uri => $event_args{uri}  // ''
+            }});
+    return undef;
+}
+
 rpc change_password => sub {
     my $params = shift;
 
@@ -1404,12 +1537,7 @@ rpc "reset_password",
 
     # if user have social signup and decided to proceed, update has_social_signup to false
     if ($user->{has_social_signup}) {
-        # remove social signup flag
-        $user->update_has_social_signup(0);
-        #remove all other social accounts
-        my $user_connect = BOM::Database::Model::UserConnect->new;
-        my @providers    = $user_connect->get_connects_by_user_id($user->{id});
-        $user_connect->remove_connect($user->{id}, $_) for @providers;
+        $user->unlink_social;
     }
 
     return {status => 1};

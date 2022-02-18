@@ -138,6 +138,16 @@ subtest 'Reset password for exists user' => sub {
     );
 };
 
+subtest 'Change email for not exists user' => sub {
+    $params[1]->{args}->{verify_email} = 'not_' . $email;
+    $params[1]->{args}->{type}         = 'request_email';
+    $params[1]->{server_name}          = 'deriv.com';
+    $params[1]->{link}                 = 'deriv.com/some_url';
+
+    $rpc_ct->call_ok(@params)
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+};
+
 subtest 'Payment agent withdraw' => sub {
     mailbox_clear();
     $params[1]->{args}->{verify_email} = $client->email;
