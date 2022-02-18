@@ -622,12 +622,21 @@ sub error_map {
         'DXTokenGenerationFailed'   => localize('Token generation failed. Please try later.'),
         'OpenP2POrders'             => localize('You cannot change account currency while you have open P2P orders.'),
 
-        # Transfer between accounts
-        TransferCurrencyMismatch => localize('Currency provided is different from account currency.'),
-        TransferSetCurrency      => localize('Please set the currency for your existing account [_1].'),
-        DifferentFiatCurrencies  => localize('Account transfers are not available for accounts with different currencies.'),
-        ExchangeRatesUnavailable => localize('Sorry, transfers are currently unavailable. Please try again later.'),
-        TransferBlocked          => localize("Transfers are not allowed for these accounts."),
+        #transfer between accounts
+        'InvalidLoginidFrom'           => localize('You are not allowed to transfer from this account.'),
+        'InvalidLoginidTo'             => localize('You are not allowed to transfer to this account.'),
+        'IncompatibleDxtradeToMt5'     => localize('You are not allowed to transfer to this account.'),
+        'IncompatibleMt5ToDxtrade'     => localize('You are not allowed to transfer to this account.'),
+        'IncompatibleMt5ToMt5'         => localize('Transfer between two MT5 accounts is not allowed.'),
+        'IncompatibleDxtradeToDxtrade' => localize('Transfer between two Deriv X accounts is not allowed.'),
+        'CashierLocked'                => localize('Your account cashier is locked. Please contact us for more information.'),
+        'WithdrawalLockedStatus'       => localize('You cannot perform this action, as your account is withdrawal locked.'),
+        'NoWithdrawalOrTradingStatus'  => localize('You cannot perform this action, as your account is withdrawal locked.'),
+        TransferCurrencyMismatch       => localize('Currency provided is different from account currency.'),
+        TransferSetCurrency            => localize('Please set the currency for your existing account [_1].'),
+        DifferentFiatCurrencies        => localize('Account transfers are not available for accounts with different currencies.'),
+        ExchangeRatesUnavailable       => localize('Sorry, transfers are currently unavailable. Please try again later.'),
+        TransferBlocked                => localize("Transfers are not allowed for these accounts."),
 
         'RealToVirtualNotAllowed'             => localize('Transfer between real and virtual accounts is not allowed.'),
         'AuthorizedClientIsVirtual'           => localize('You cannot transfer between real accounts because the authorized client is virtual.'),
@@ -971,7 +980,7 @@ sub create_error_by_code {
     }
 
     return BOM::RPC::v3::Utility::create_error({
-            code              => $options{override_code} ? $options{override_code} : $error_code,
+            code              => $options{override_code} || $error_code,
             message_to_client => $message_to_client,
             $options{message} ? (message => $options{message}) : (),
             $options{details} ? (details => $options{details}) : ()});

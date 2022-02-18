@@ -1245,13 +1245,10 @@ rpc transfer_between_accounts => sub {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
-    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
-        if $status->disabled;
-
-    # retrieve disabled accounts just inn order to retrun relevant error messages for them
-    my $siblings = $client->get_siblings_information(include_disabled => 1);
-
     my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
+
+    # retrieve disabled accounts just in order to return relevant error messages for them
+    my $siblings = $client->get_siblings_information(include_disabled => 1);
 
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
@@ -1312,57 +1309,74 @@ rpc transfer_between_accounts => sub {
     my $is_dxtrade_loginid_from = any { $loginid_from eq $_ } @dxtrade_loginids;
     my $is_dxtrade_loginid_to   = any { $loginid_to eq $_ } @dxtrade_loginids;
 
-# Both $loginid_from and $loginid_to must be either a real or a MT5 account
-# Unfortunately demo MT5 accounts will slip through this check, but they will
-# be caught in one of the BOM::RPC::v3::MT5::Account functions
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize("You are not allowed to transfer from this account.")})
-        unless exists $siblings->{$loginid_from}
-        or $is_mt5_loginid_from
-        or $is_dxtrade_loginid_from;
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize("You are not allowed to transfer to this account.")})
-        unless exists $siblings->{$loginid_to}
-        or $is_mt5_loginid_to
-        or $is_dxtrade_loginid_to;
-
-    # Cannot transfer dxtrade <--> mt5
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize("You are not allowed to transfer to this account.")}
-    ) if ($is_mt5_loginid_to && $is_dxtrade_loginid_from) || ($is_mt5_loginid_from && $is_dxtrade_loginid_to);
-
-    return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
-        if ($is_mt5_loginid_from and $is_mt5_loginid_to);
-
-    return _transfer_between_accounts_error(localize('Transfer between two Deriv X accounts is not allowed.'))
-        if ($is_dxtrade_loginid_from and $is_dxtrade_loginid_to);
-
-# create client from siblings so that we are sure that from and to loginid
-# provided are for same user
+    # create client from siblings so that we are sure that from and to loginid
+    # provided are for same user
     my ($client_from, $client_to, $res);
+
     try {
         $client_from = BOM::User::Client->get_client_instance($siblings->{$loginid_from}->{loginid})
-            unless $is_mt5_loginid_from or $is_dxtrade_loginid_from;
+            if $siblings->{$loginid_from};
         $client_to = BOM::User::Client->get_client_instance($siblings->{$loginid_to}->{loginid})
-            unless $is_mt5_loginid_to or $is_dxtrade_loginid_to;
+            if $siblings->{$loginid_to};
     } catch {
         log_exception();
         $res = _transfer_between_accounts_error();
     }
     return $res if $res;
 
-    return _transfer_between_accounts_error(localize('Your account cashier is locked. Please contact us for more information.'))
-        if (($client_from && $client_from->status->cashier_locked) or ($client_to && $client_to->status->cashier_locked));
-    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
-        if ($client_from && ($client_from->status->withdrawal_locked || $client_from->status->no_withdrawal_or_trading));
-    if ($client_from) {
-        if (my @missed_fields = $client_from->missing_requirements('withdrawal')) {
-            return BOM::RPC::v3::Utility::missing_details_error(details => \@missed_fields);
-        }
+    # Both $loginid_from and $loginid_to must be either a real or a MT5 account
+    # Unfortunately demo MT5 accounts will slip through this check, but they will
+    # be caught in one of the BOM::RPC::v3::MT5::Account functions
+    my $account_type_from;
+    if ($is_mt5_loginid_from) {
+        $account_type_from = 'mt5';
+    } elsif ($is_dxtrade_loginid_from) {
+        $account_type_from = 'dxtrade';
+    } elsif ($client_from) {
+        $account_type_from = $client_from->is_wallet ? 'wallet' : 'trading';
+    } else {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("You are not allowed to transfer from this account.")});
     }
+
+    my $account_type_to;
+    if ($is_mt5_loginid_to) {
+        $account_type_to = 'mt5';
+    } elsif ($is_dxtrade_loginid_to) {
+        $account_type_to = 'dxtrade';
+    } elsif ($client_to) {
+        $account_type_to = $client_to->is_wallet ? 'wallet' : 'trading';
+    } else {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize("You are not allowed to transfer to this account.")});
+    }
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from // (), $client_to // ()]);
+    try {
+        $rule_engine->verify_action(
+            'transfer_between_accounts_part1',
+            loginid           => $client->loginid,
+            loginid_from      => $loginid_from,
+            loginid_to        => $loginid_to,
+            account_type_from => $account_type_from,
+            account_type_to   => $account_type_to,
+            amount            => $amount,
+            currency          => $currency,
+        );
+    } catch ($e) {
+        return BOM::RPC::v3::Utility::missing_details_error(details => $e->{details}->{fields}) if $e->{error_code} eq 'CashierRequirementsMissing';
+        my %error_mapping = (
+            'InvalidLoginidFrom'       => 'PermissionDenied',
+            'InvalidLoginidTo'         => 'PermissionDenied',
+            'IncompatibleDxtradeToMt5' => 'PermissionDenied',
+            'IncompatibleMt5ToDxtrade' => 'PermissionDenied',
+        );
+        my $override_code = ref $e eq 'HASH' ? $error_mapping{$e->{error_code} // ''} : undef;
+        return BOM::RPC::v3::Utility::rule_engine_error($e, $override_code // 'TransferBetweenAccountsError');
+    }
+
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
     return _transfer_between_accounts_error(localize('Please provide valid amount.'))
         if (not looks_like_number($amount) or $amount <= 0);
@@ -1460,7 +1474,6 @@ rpc transfer_between_accounts => sub {
         my $deposit = BOM::RPC::v3::Trading::deposit($params);
         return $deposit if $deposit->{error};
 
-        my $from_client = BOM::User::Client->get_client_instance($loginid_from);
         # This endpoint schema expects synthetic or financial (not gaming)
         my $market_type = $deposit->{market_type};
         $market_type = 'synthetic' if $market_type eq 'gaming';
@@ -1469,9 +1482,9 @@ rpc transfer_between_accounts => sub {
             status   => 1,
             accounts => [{
                     loginid      => $loginid_from,
-                    balance      => $from_client->account->balance,
-                    currency     => $from_client->account->currency_code,
-                    account_type => $from_client->account_type,
+                    balance      => $client_from->account->balance,
+                    currency     => $client_from->account->currency_code,
+                    account_type => $client_from->account_type,
                 },
                 {
                     loginid      => $loginid_to,
@@ -1607,7 +1620,7 @@ rpc transfer_between_accounts => sub {
             if $amount > $client_from->default_account->balance;
     }
 
-    my $rule_engine = BOM::Rules::Engine->new(client => [$client_from, $client_to]);
+    $rule_engine = BOM::Rules::Engine->new(client => [$client_from, $client_to]);
 
     try {
         $client_from->is_virtual

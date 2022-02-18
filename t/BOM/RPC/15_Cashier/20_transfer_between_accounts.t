@@ -219,15 +219,21 @@ subtest 'call params validation' => sub {
         'Correct error for virtual to real transfer';
 
     $params->{token} = $token;
+
     $params->{args}->{account_from} = $client_cr->loginid;
-
     $client_cr->status->set('cashier_locked', 'system', 'testing something');
-
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->error_code_is('TransferBetweenAccountsError', 'Correct error code for cashier locked')
-        ->error_message_like(qr/cashier is locked/, 'Correct error message for cashier locked');
-
+        ->error_message_is("Your account cashier is locked. Please contact us for more information.", 'Correct error message for cashier locked');
     $client_cr->status->clear_cashier_locked;
+
+    $params->{args}->{account_to} = $client_mlt->loginid;
+    $client_mlt->status->set('cashier_locked', 'system', 'testing something');
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->error_code_is('TransferBetweenAccountsError', 'Correct error code for cashier locked')
+        ->error_message_is("Your account cashier is locked. Please contact us for more information.", 'Correct error message for cashier locked');
+    $client_mlt->status->clear_cashier_locked;
+
     $client_cr->status->set('withdrawal_locked', 'system', 'testing something');
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
