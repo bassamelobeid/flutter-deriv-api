@@ -1,25 +1,8 @@
 [% IF success %]<p class="success">[% success %]</p>[% END %]
 [% IF error %]<p class="error">[% error %]</p>[% END %]
 
-[% IF check %]
 <div class="card">
-    <div class="card__label toggle">Past transactions for a processor/method combination</div>
-    <div class="card__content">  
-        <table class="border">
-            <tr><td>Payment Processor</td><td>[% check.payment_processor || '<span style="color: LightGrey">[empty]</span>' | none %]</td></tr>
-            <tr><td>Payment Method</td><td>[% check.payment_method || '<span style="color: LightGrey">[empty]</span>' | none %]</td></tr>
-            <tr><td>Aggregate Amount</td><td>[% check.amount || '0.00' %]</td></tr>
-            <tr><td>Earliest</td><td>[% check.start_date || '-' %]</td></tr>
-            <tr><td>Latest</td><td>[% check.end_date || '-' %]</td></tr>
-            <tr><td>Clients</td><td>[% check.clients %]</td></tr>
-        </table>
-        <p>Note: this only includes transactions since May 2020.<p>
-    </div>
-</div>
-[% END %]
-
-<div class="card">
-    <form action="[% request.url_for('backoffice/doughflow_method_manage.cgi', {broker => broker}) %]" method="post">
+    <form action="[% request.url_for('backoffice/doughflow_method_manage.cgi', {broker => broker, show_all => show_all, offset => offset}) %]" method="post">
         [% IF delete %]
         <div class="card__label toggle">Delete method</div>
         <div class="card__content">            
@@ -67,7 +50,6 @@
                 <button type="submit" class="btn btn--secondary" name="cancel" value="1">Cancel</button>
                 [% ELSE %]
                 <button type="submit" class="btn btn--primary" name="create" value="1">Save</button>
-                <button type="submit" class="btn btn--secondary" name="check" value="1">Check transactions</button>
                 [% END %]
             </div>
         [% END %]
@@ -77,12 +59,23 @@
 <div class="card">
     <div class="card__label toggle">Methods for [% broker %]</div>
     <div class="card__content">
+        <form action="[% request.url_for('backoffice/doughflow_method_manage.cgi') %]" method="get">
+        <input type="checkbox" name="show_all" value="1" [% IF show_all %]checked="checked"[% END %]>Show all. Otherwise only with transactions within reversible period ([% reversible_days %] days) are shown.
+        <input type="hidden" name="broker" value="[% broker %]">
+        <input type="hidden" name="offset" value="[% offset %]">
+        <button type="submit" class="btn btn--primary">Refresh</button>
+        </form>
+
         <p>Processor and method values must exactly match the values sent by Doughflow for the type of event:</p>
             <ol>
                 <li><b>Deposit</b> will always have a processor, but method can be empty.</li>
                 <li><b>Withdrawal</b> will always have empty processor and always have a method. E.g. all Visa withdrawals are method = VISA and processor = [empty].</li>
                 <li><b>Deposit validation</b> will always have empty method. Deposit POI Required check is run on this event, so method should be empty when this attribute is set.</li>
             </ol>
+
+        [% IF prev.defined %]<a href="[% request.url_for('backoffice/doughflow_method_manage.cgi', {broker => broker, offset => prev, show_all => show_all}) %]"><- Previous</a>[% END %]
+        [% IF next.defined %]<a href="[% request.url_for('backoffice/doughflow_method_manage.cgi', {broker => broker, offset => next, show_all => show_all}) %]">Next -></a>[% END %]
+
         <table class="sortable border">
             <thead>
                 <tr>
@@ -90,6 +83,12 @@
                     <th scope="col">Method</th>
                     <th scope="col">Reversible</th>
                     <th scope="col">Deposit POI</th>
+                    <th scope="col">Deposits</th>
+                    <th scope="col">Last deposit</th>                    
+                    <th scope="col">Withdrawls</th>
+                    <th scope="col">Last withdrawal</th>
+                    <th scope="col">Modified by</th>
+                    <th scope="col">Last modified</th>
                     <th></th>
                 </tr>
             </thead>
@@ -99,11 +98,16 @@
                 <tr>
                     <td>[% m.payment_processor || '<span style="color: LightGrey">[empty]</span>' | none %]</td>
                     <td>[% m.payment_method || '<span style="color: LightGrey">[empty]</span>' | none %]</td>
-                    <td>[% IF m.reversible %]Yes[% ELSE %]No[% END %]</td>
-                    <td>[% IF m.deposit_poi_required %]Yes[% ELSE %]No[% END %]</td>
-                    <td><a href="?edit=[% m.id %]&broker=[% broker %]">Edit</a>&nbsp;&nbsp;&nbsp;
-                        <a href="?delete=[% m.id %]&broker=[% broker %]">Delete</a>&nbsp;&nbsp;&nbsp;
-                        <a href="?check=1&payment_processor=[% m.payment_processor %]&payment_method=[% m.payment_method %]&broker=[% broker %]">Check transactions</a>
+                    [% IF m.reversible %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
+                    [% IF m.deposit_poi_required %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
+                    <td>[% m.deposit_count %]</td>
+                    <td>[% m.deposit_latest %]</td>
+                    <td>[% m.withdrawal_count || 0 %]</td>
+                    <td>[% m.withdrawal_latest %]</td>
+                    <td>[% m.last_modified_by %]</td>
+                    <td>[% m.last_modified_at %]</td>
+                    <td><a href="?edit=[% m.id %]&broker=[% broker %]&show_all=[% show_all %]&offset=[% offset %]">Edit</a>&nbsp;&nbsp;&nbsp;
+                        <a href="?delete=[% m.id %]&broker=[% broker %]&show_all=[% show_all %]&offset=[% offset %]">Delete</a>&nbsp;&nbsp;&nbsp;
                     </td>
                 </tr>
             [% END %]
@@ -111,4 +115,3 @@
         </table>
     </div>
 </div>
-    
