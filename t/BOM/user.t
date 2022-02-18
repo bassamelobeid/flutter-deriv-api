@@ -1064,6 +1064,41 @@ subtest 'update user password' => sub {
     is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly';
 };
 
+subtest 'update email' => sub {
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my $user_id = $user->{id};
+    my @app_ids;
+
+    for (0 .. 2) {
+        my $app = $oauth->create_app({
+            name         => "Test App$_",
+            user_id      => $user_id,
+            scopes       => ['read', 'trade', 'admin'],
+            redirect_uri => "https://www.example$_.com/"
+        });
+
+        push @app_ids, $app->{app_id};
+    }
+
+    my $create_new_refresh_token = sub {
+        my ($user_id, $app_id) = @_;
+        $oauth->generate_refresh_token($user_id, $app_id, 29, 60 * 60 * 24);
+    };
+
+    foreach (@app_ids) {
+        $create_new_refresh_token->($user_id, $_);
+    }
+
+    my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
+    is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
+
+    my $new_email = 'an_email@anywhere.com';
+    is $user->update_email($new_email), 1, 'user email changed is OK';
+
+    $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
+    is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly';
+};
+
 subtest 'feature flag' => sub {
     my $user_flags = $user->get_feature_flag();
 
@@ -1079,6 +1114,13 @@ subtest 'feature flag' => sub {
     foreach my $flag (keys %$feature_flag) {
         is $feature_flag->{$flag}, $user_flags->{$flag}, "flag $flag has been set correctly";
     }
+};
+
+subtest 'unlink social' => sub {
+    lives_ok { $user->update_has_social_signup(1) } 'update has_social_signup';
+    is $user->unlink_social, 1, 'user unlinked is OK';
+    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
+    lives_ok { $user->update_has_social_signup(0) } 'reset has_social_signup';
 };
 
 done_testing();

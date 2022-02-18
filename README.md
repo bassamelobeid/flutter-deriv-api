@@ -58,7 +58,7 @@ $c->payment_account_transfer({
 $user->add_loginid({loginid => $c->loginid});
 $user->save;
 
-my @clienst = $user->clients;
+my @clients = $user->clients;
 
 ```
 #### DESCRIPTION

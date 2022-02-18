@@ -16,6 +16,7 @@ use JSON::MaybeXS qw(encode_json decode_json);
 
 use BOM::MT5::User::Async;
 use BOM::Database::UserDB;
+use BOM::Database::Model::UserConnect;
 use BOM::User::Password;
 use BOM::User::AuditLog;
 use BOM::User::Static;
@@ -1254,9 +1255,42 @@ sub update_user_password {
     my $user_id = $self->{id};
     $oauth->revoke_refresh_tokens_by_user_id($user_id);
 
-    $log = $is_reset_password ? 'your password has been reset' : 'your password has been changed';
+    $log = $is_reset_password ? 'Password has been reset' : 'Password has been changed';
     BOM::User::AuditLog::log($log, $self->email);
 
+    return 1;
+}
+
+=head2 update_email
+
+Updates user and client emails for a given user.
+
+=over 4
+
+=item * C<new_email> - new email
+
+=back
+
+Returns 1 on success
+
+=cut
+
+sub update_email {
+    my ($self, $new_email) = @_;
+
+    $self->update_email_fields(email => $new_email);
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my @clients = $self->clients;
+    for my $client (@clients) {
+        $client->email($new_email);
+        $client->save;
+        $oauth->revoke_tokens_by_loginid($client->loginid);
+    }
+
+    # revoke refresh_token
+    my $user_id = $self->{id};
+    $oauth->revoke_refresh_tokens_by_user_id($user_id);
+    BOM::User::AuditLog::log('Email has been changed', $self->email);
     return 1;
 }
 
@@ -1720,6 +1754,26 @@ sub affiliate_coc_approval_required {
     return undef unless defined $self->affiliate->{coc_approval};
 
     return $self->affiliate->{coc_approval} ? 0 : 1;
+}
+
+=head2 unlink_social
+
+Returns 1 if user was unlinked for social providers.
+Returns undef if user as no social providers.
+
+=cut
+
+sub unlink_social {
+    my $user = shift;
+
+    # remove social signup flag
+    $user->update_has_social_signup(0);
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    my @providers    = $user_connect->get_connects_by_user_id($user->{id});
+
+    # remove all other social accounts
+    $user_connect->remove_connect($user->{id}, $_) for @providers;
+    return 1;
 }
 
 1;
