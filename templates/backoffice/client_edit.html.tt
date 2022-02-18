@@ -926,8 +926,8 @@ function residence_change(sel) {
 
     var new_residence = sel.options[sel.selectedIndex].text;
 
-    if (disallow_residence_change.country.includes(original_residence)){
-        alert("Residence for " + original_residence + " cannot be changed");
+    if (disallow_residence_change.country.includes(new_residence)){
+        alert("Change of residence to " + new_residence + " is not allowed");
         sel.selectedIndex = e.index;
     }else if (!confirm("Client's original residence is " + original_residence + "\n\nAre you sure you want to change to " + new_residence + "?")) {
         // Always return to the original residence
