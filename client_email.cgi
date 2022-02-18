@@ -139,15 +139,11 @@ if ($email ne $new_email) {
     try {
         # remove social signup flag also add note to audit log.
         if ($user->{has_social_signup}) {
-            $user->update_has_social_signup(0);
-            #remove all other social accounts
-            my $user_connect = BOM::Database::Model::UserConnect->new;
-            my @providers    = $user_connect->get_connects_by_user_id($user->{id});
-            $user_connect->remove_connect($user->{id}, $_) for @providers;
+            $user->unlink_social;
             $had_social_signup = "(from social signup)";
         }
 
-        $user->update_email_fields(email => $new_email);
+        $user->update_email($new_email);
 
         foreach my $login_id ($user->bom_loginids) {
             unless (LandingCompany::Registry->check_broker_from_loginid($login_id)) {
