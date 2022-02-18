@@ -188,16 +188,31 @@ sub decorate_for_display {
     my $supported = BOM::Database::QuantsConfig::supported_config_type()->{per_landing_company};
 
     # combine same records that have different global_potential_loss & global_realized_loss limit amounts.
-    my $records_set = {};
-    for my $record (@$records) {
-        my $rec = {$record->%*, map { $_ => 0 } keys %$supported, limit_amount => 0};
-        my $key = join '-', %$rec{sort keys %$rec};
 
-        $records_set->{$key} //= {};
-        $records_set->{$key} = {$records_set->{$key}->%*, $record->%*};
-        delete $records_set->{$key}->{limit_amount};
+    my $concat_records = {};
+    for my $record (@$records) {
+        my $temp_record = {$record->%*};
+
+        #copy hash so that realized and potential loss are not deleted from the hash
+        my %copy_temp_record = %$temp_record;
+
+        #delete the limits from the hash for the key
+        for my $supported_limit (keys %$supported) {
+            delete $temp_record->{$supported_limit};
+        }
+        delete $temp_record->{id};
+        delete $temp_record->{limit_amount};
+
+        #create a key out of the columns contents of the limits table
+        my $string_key = join '#', map { $temp_record->{$_} } (sort keys %$temp_record);
+        $concat_records->{$string_key} //= {};
+
+        #combine hashes with the same key
+        $concat_records->{$string_key} = {$concat_records->{$string_key}->%*, %copy_temp_record};
+        delete $concat_records->{$string_key}->{limit_amount};
     }
-    my $combined_records = [@$records_set{sort keys %$records_set}];
+
+    my $combined_records = [@$concat_records{sort keys %$concat_records}];
 
     my @sorted_records = ();
     foreach my $market (@market_order) {
