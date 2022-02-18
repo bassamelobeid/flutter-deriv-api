@@ -214,6 +214,13 @@ sub actions_config {
                 msg_group => 'account',
             }
         ],
+        [
+            'change_email',
+            {
+                stash_params => [qw/ token_type client_ip /],
+                msg_group    => 'account',
+            }
+        ],
 
         # authenticated calls
         [
