@@ -42,6 +42,7 @@
             [ 'crypto_cashier',     'Crypto Cashier' ],
             [ 'test_account',       'Test Account' ],
             [ 'commission_paid',    'Commission Paid' ],
+            [ 'account_transfer',   'Account Transfer' ],
         ];
     %]
 
