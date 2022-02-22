@@ -60,7 +60,7 @@ sub is_valid_to_sell {
     my $tv = [Time::HiRes::gettimeofday];
 
     my $valid = $self->_confirm_sell_validity($args);
-    
+
     my $tv_now = [Time::HiRes::gettimeofday];
     stats_timing("is_valid_to_sell.time", 1000 * Time::HiRes::tv_interval($tv, $tv_now));
 
