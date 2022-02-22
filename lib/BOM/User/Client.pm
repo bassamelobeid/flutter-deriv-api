@@ -7185,4 +7185,30 @@ sub has_forged_documents {
     return 0;
 }
 
+=head2 today_payment_agent_withdrawal_sum_count
+
+Gets the total amount and count of the payment  agent  withdrawal performed by a client in the current day.
+
+Returns an array with two elements:
+
+=over 4
+
+=item * amount
+
+=item * count
+
+=back
+
+=cut
+
+sub today_payment_agent_withdrawal_sum_count {
+    my $self     = shift;
+    my $clientdb = BOM::Database::ClientDB->new({
+        client_loginid => $self->loginid,
+        operation      => 'replica',
+    });
+    my $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$self->loginid]);
+    return ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
+}
+
 1;
