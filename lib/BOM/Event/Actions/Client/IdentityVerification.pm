@@ -375,7 +375,7 @@ async sub _trigger_smile_identity {
     try {
         $response = (await _http()->POST($url, $req_body, (content_type => 'application/json')))->content;
 
-        $decoded_response = eval { decode_json_utf8 $response };
+        $decoded_response = _shrink_smile_identity(eval { decode_json_utf8 $response });
 
         ($status, $status_message) = _handle_smile_identity_response($client, $decoded_response);
     } catch ($e) {
@@ -397,6 +397,19 @@ async sub _trigger_smile_identity {
     }
 
     return ($status, $decoded_response, $status_message);
+}
+
+=head2 _shrink_smile_identity
+
+Slices the hashref response from smile identity, it will wipe out everything but the required fields
+to process the IDV.
+
+=cut
+
+sub _shrink_smile_identity {
+    my ($decoded_response) = @_;
+
+    return +{%$decoded_response{qw/ResultCode Actions ExpirationDate DOB FullName SmileJobID/}};
 }
 
 =head2 _trigger_zaig

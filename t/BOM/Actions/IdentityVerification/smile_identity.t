@@ -3,11 +3,12 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
+use Test::Deep;
 
 use Date::Utility;
 use Future::Exception;
 use HTTP::Response;
-use JSON::MaybeUTF8 qw( encode_json_utf8 );
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 
 use BOM::Config::Redis;
 use BOM::Event::Process;
@@ -430,9 +431,18 @@ subtest 'verify identity by smile_identity is passed and DOB mismatch or underag
                         Verify_ID_Number     => $verification_status,
                         Return_Personal_Info => $personal_info_status,
                     },
+                    trash      => 1,
+                    garbage    => 2,
+                    SmileJobID => '999',
                     $personal_info->%*,
                 },
             )));
+
+    my $doc      = $idv_model->get_last_updated_document();
+    my $chk      = $idv_model->get_document_check_detail($doc->{id});
+    my $response = decode_json_utf8($chk->{response});
+
+    cmp_bag [keys $response->%*], [qw/ResultCode Actions ExpirationDate DOB FullName SmileJobID/], 'Expected keys stored';
 
     ok $idv_event_handler->($args)->get, 'the event processed without error';
     is $updates, 2, 'update document triggered twice correctly';
