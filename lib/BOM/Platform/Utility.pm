@@ -193,6 +193,23 @@ sub error_map {
         WithdrawalLimit => localize(
             "We're unable to process your withdrawal request because it exceeds the limit of [_1] [_2]. Please authenticate your account before proceeding with this withdrawal."
         ),
+
+        # payment agent transfer
+        PermissionDenied          => 'Permission denied.',
+        PaymentAgentsNotAllowed   => 'The payment agent facility is not available for this account.',
+        RequirementsMissing       => 'Your profile appears to be incomplete. Please update your personal details to continue.',
+        DifferentLandingCompanies => 'Payment agent transfers are not allowed for the specified accounts.',
+        PACurrencyMismatch        => localize('You cannot perform this action, as [_1] is not the default account currency for payment agent [_2].'),
+        ClientCurrencyMismatch    => localize('You cannot perform this action, as [_1] is not the default account currency for client [_2].'),
+        ClientCashierLocked       => localize('You cannot transfer to account [_1], as their cashier is locked.'),
+        ClientDisabledAccount     => localize('You cannot transfer to account [_1], as their account is disabled.'),
+        ClientDocumentsExpired    => localize('You cannot transfer to account [_1], as their verification documents have expired.'),
+        ClientRequirementsMissing => localize('You cannot transfer to account [_1], as their profile is incomplete.'),
+        ClientsAreTheSame         => localize('Payment agent transfers are not allowed within the same account.'),
+        NotAuthorized             => localize('Your account needs to be authenticated to perform payment agent transfers.'),
+        PATransferClientFailure   => localize('You cannot transfer to account [_1]'),
+        PaymentAgentNotWithinLimits => localize('Invalid amount. Minimum is [_1], maximum is [_2].'),
+
         P2PDepositsWithdrawal => localize('To withdraw more than [_1] [_3], please use Deriv P2P.'),
         P2PDepositsTransfer   => localize('The maximum you can transfer is [_1] [_3]. You can withdraw the balance ([_2] [_3]) through Deriv P2P.'),
         P2PDepositsWithdrawalZero => localize('Please use Deriv P2P to make a withdrawal.'),
