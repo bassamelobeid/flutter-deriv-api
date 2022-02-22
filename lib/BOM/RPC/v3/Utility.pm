@@ -47,6 +47,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Client::CashierValidation;
+use BOM::Platform::Utility;
 use BOM::User;
 use BOM::Transaction::Validation;
 use BOM::Config;
@@ -620,7 +621,14 @@ sub error_map {
         'DXNoServer'                => localize('Server must be provided for Deriv X service token.'),
         'DXNoAccount'               => localize('You do not have a Deriv X account on the provided server.'),
         'DXTokenGenerationFailed'   => localize('Token generation failed. Please try later.'),
-        'OpenP2POrders'             => localize('You cannot change account currency while you have open P2P orders.'),
+        'DifferentLandingCompanies' => localize('Payment agent transfers are not allowed for the specified accounts.'),
+
+        # Paymentagent transfer
+        'PaymentAgentDailyAmountExceeded' =>
+            localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.'),
+        'PaymentAgentDailyCountExceeded' =>
+            localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.'),
+        'OpenP2POrders' => localize('You cannot change account currency while you have open P2P orders.'),
 
         #transfer between accounts
         'InvalidLoginidFrom'           => localize('You are not allowed to transfer from this account.'),
@@ -649,7 +657,6 @@ sub error_map {
         'DisabledAccount'                     => localize("You cannot perform this action, as your account [_1] is currently disabled."),
         'UnwelcomeStatus'                     => localize("We are unable to transfer to [_1] because that account has been restricted."),
         'EmptySourceCurrency'                 => localize('Please deposit to your account.'),
-
     };
 }
 
@@ -971,7 +978,7 @@ Returns error format of create_error
 sub create_error_by_code {
     my ($error_code, %options) = @_;
 
-    my $message_to_client = $options{message_to_client} // error_map()->{$error_code};
+    my $message_to_client = $options{message_to_client} // error_map()->{$error_code} // BOM::Platform::Utility::error_map()->{$error_code};
     return BOM::RPC::v3::Utility::permission_error() unless $message_to_client;
 
     if ($options{params}) {

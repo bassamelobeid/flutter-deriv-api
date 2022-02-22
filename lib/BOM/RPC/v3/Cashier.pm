@@ -564,7 +564,6 @@ rpc paymentagent_transfer => sub {
 
     my $source    = $params->{source};
     my $client_fm = $params->{client};
-
     return BOM::RPC::v3::Utility::permission_error() if $client_fm->is_virtual;
 
     my $loginid_fm = $client_fm->loginid;
@@ -576,10 +575,12 @@ rpc paymentagent_transfer => sub {
     my $description = trim($args->{description} // '');
 
     my $error_sub = sub {
-        my ($message_to_client) = @_;
+        my ($message_to_client, %error) = @_;
+
         BOM::RPC::v3::Utility::create_error({
             code              => 'PaymentAgentTransferError',
-            message_to_client => $message_to_client
+            message_to_client => $message_to_client,
+            $error{details} ? (details => $error{details}) : (),
         });
     };
     # Simple regex plus precision check via precision.yml
@@ -590,10 +591,6 @@ rpc paymentagent_transfer => sub {
     if ($app_config->system->suspend->payments or $app_config->system->suspend->payment_agents) {
         return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
     }
-
-    # This uses the broker_code field to access landing_companies.yml
-    return $error_sub->(localize('The payment agent facility is not available for this account.'))
-        unless $client_fm->landing_company->allows_payment_agents;
 
     # Reads fiat/crypto from landing_companies.yml, then gets min/max from paymentagent_config.yml
     my ($payment_agent, $paymentagent_error);
@@ -610,31 +607,8 @@ rpc paymentagent_transfer => sub {
         return $error_sub->(localize('You are not authorized for transfers via payment agents.'));
     }
 
-    return $error_sub->(localize('Your account needs to be authenticated to perform payment agent transfers.'))
-        unless $payment_agent->status eq 'authorized';
-
-    my $rpc_error = _validate_paymentagent_limits(
-        error_sub     => $error_sub,
-        payment_agent => $payment_agent,
-        pa_loginid    => $client_fm->loginid,
-        amount        => $amount,
-        currency      => $currency
-    );
-
-    return $rpc_error if $rpc_error;
-
     my $client_to = eval { BOM::User::Client->get_client_instance($loginid_to, 'write') }
         or return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
-
-    return $error_sub->(localize('Payment agent transfers are not allowed within the same account.'))
-        if $loginid_to eq $loginid_fm;
-
-    return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
-        if ($client_fm->landing_company->short ne $client_to->landing_company->short);
-
-    if (my @missing_requirements = $client_fm->missing_requirements('withdrawal')) {
-        return BOM::RPC::v3::Utility::missing_details_error(details => \@missing_requirements);
-    }
 
     #lets make sure that payment is transfering to client of allowed countries.
     my $pa_target_countries = $payment_agent->get_countries;
@@ -658,15 +632,27 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('Notes must not exceed [_1] characters.', MAX_DESCRIPTION_LENGTH))
         if (length($description) > MAX_DESCRIPTION_LENGTH);
 
-    return $error_sub->(
-        localize(
-            'You cannot perform this action, as [_1] is not the default account currency for payment agent [_2].', $currency,
-            $payment_agent->client_loginid
-        )) unless $currency eq $client_fm->currency;
+    unless ($args->{dry_run}) {
+        # NOTE: cashier availability used to be skipped for dry-run before rule engine integration.
+        # But why? Can we lift this check and always check cashier availability?
+        my $cashier_error = BOM::Platform::Client::CashierValidation::check_availability($client_fm, 'withdrawal');
+        return $error_sub->($error_sub->($cashier_error->{message_to_client})) if $cashier_error->{error};
 
-    return $error_sub->(
-        localize('You cannot perform this action, as [_1] is not the default account currency for client [_2].', $currency, $loginid_to))
-        unless $currency eq $client_to->currency;
+    }
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client_fm, $client_to]);
+    try {
+        $rule_engine->verify_action(
+            'paymentagent_transfer',
+            loginid_pa     => $loginid_fm,
+            loginid_client => $loginid_to,
+            amount         => $amount,
+            currency       => $currency,
+            dry_run        => $args->{dry_run} // 0
+        );
+    } catch ($e) {
+        return _process_pa_transfer_error($e, $currency, $loginid_fm, $loginid_to);
+    };
 
     if ($args->{dry_run}) {
         return {
@@ -674,66 +660,6 @@ rpc paymentagent_transfer => sub {
             client_to_full_name => $client_to->full_name,
             client_to_loginid   => $client_to->loginid
         };
-    }
-
-    my $rule_engine   = BOM::Rules::Engine->new(client => [$client_fm, $client_to]);
-    my $validation_fm = BOM::Platform::Client::CashierValidation::validate($loginid_fm, 'withdraw', 1, $rule_engine);
-    my $validation_to = BOM::Platform::Client::CashierValidation::validate($loginid_to, 'deposit',  1, $rule_engine);
-    if (exists $validation_to->{error}) {
-        # to_clinet's data should not be visible for who is transferring so the error message is replaced by a general one unless for sepcific messages
-        my $msg = localize('You cannot transfer to account [_1]', $loginid_to);
-        $msg .= localize(', as their cashier is locked.')   if $validation_to->{error}->{message_to_client} eq 'Your cashier is locked.';
-        $msg .= localize(', as their account is disabled.') if $validation_to->{error}->{message_to_client} eq 'Your account is disabled.';
-        $msg .= localize(', as their verification documents have expired.')
-            if $validation_to->{error}->{message_to_client} =~ /Your identity documents have expired/;
-        $validation_to->{error}->{message_to_client} = $msg;
-    }
-
-    try {
-        $client_fm->validate_payment(
-            currency     => $currency,
-            amount       => -$amount,
-            payment_type => 'payment_agent_transfer',
-            rule_engine  => $rule_engine,
-        );
-    } catch ($e) {
-        chomp $e;
-        return $error_sub->($e);
-    };
-
-    try {
-        $client_to->validate_payment(
-            currency     => $currency,
-            amount       => $amount,
-            payment_type => 'payment_agent_transfer',
-            rule_engine  => $rule_engine,
-        );
-    } catch ($e) {
-        chomp $e;
-        # only disclose certain reasons for the failure
-        my $msg = localize('You cannot transfer to account [_1]', $loginid_to);
-        $msg .= localize(', as their cashier is locked.')                   if $e eq 'Your cashier is locked.';
-        $msg .= localize(', as their account is disabled.')                 if $e eq 'Your account is disabled.';
-        $msg .= localize(', as their verification documents have expired.') if $e =~ /Your identity documents have expired/;
-        return $error_sub->($msg);
-    }
-
-    # normalized all amount to USD for comparing payment agent limits
-    my ($amount_transferred_in_usd, $count) = _get_amount_and_count($loginid_fm);
-    $amount_transferred_in_usd = in_usd($amount_transferred_in_usd, $currency);
-
-    my $amount_in_usd = in_usd($amount, $currency);
-
-    my $pa_transfer_limit = BOM::Config::payment_agent()->{transaction_limits}->{transfer};
-
-    # maximum number of allowable transfer in usd in a day
-    if (($amount_transferred_in_usd + $amount_in_usd) > $pa_transfer_limit->{amount_in_usd_per_day}) {
-        return $error_sub->(
-            localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.'));
-    }
-
-    if ($count >= $pa_transfer_limit->{transactions_per_day}) {
-        return $error_sub->(localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.'));
     }
 
     # execute the transfer
@@ -821,6 +747,85 @@ rpc paymentagent_transfer => sub {
         client_to_loginid   => $loginid_to,
         transaction_id      => $response->{transaction_id}};
 };
+
+=head2 _process_pa_transfer_error
+
+Convers payment agent rule engine error into the proper RPC error.
+
+It gets the following args:
+
+=over 4
+
+=item * rules_error: The rule engine error.
+
+=back
+
+=cut
+
+sub _process_pa_transfer_error {
+    my ($rules_error, $currency, $pa_loginid, $client_loginid) = @_;
+
+    die $rules_error unless ref $rules_error eq 'HASH';
+    my $error_code = $rules_error->{error_code} // $rules_error->{code} // '';
+    $rules_error->{tags} //= [];
+    my $fail_side = (any { $_ eq 'pa' } $rules_error->{tags}->@*) ? 'pa' : 'client';
+
+    # some error messages are different for PA and client
+    my %error_code_mapping = (
+        pa => {
+            CurrencyMismatch => {
+                code   => 'PACurrencyMismatch',
+                params => [$currency, $pa_loginid],
+            },
+            PaymentagentNotAuthenticated => {code => 'NotAuthentorized'}
+        },
+        client => {
+            CurrencyMismatch => {
+                code   => 'ClientCurrencyMismatch',
+                params => [$currency, $client_loginid],
+            },
+            CashierLocked => {
+                code   => 'ClientCashierLocked',
+                params => [$client_loginid],
+            },
+            DisabledAccount => {
+                code   => 'ClientDisabledAccount',
+                params => [$client_loginid],
+            },
+            DocumentsExpired => {
+                code   => 'ClientDocumentsExpired',
+                params => [$client_loginid],
+            },
+            CashierRequirementsMissing => {
+                code   => 'ClientRequirementsMissing',
+                params => [$client_loginid],
+            },
+            UnwelcomeStatus => {
+                code   => 'PATransferClientFailure',
+                params => [$client_loginid],
+            },
+            SelfExclusion => {
+                code   => 'PATransferClientFailure',
+                params => [$client_loginid],
+            },
+            SetExistingAccountCurrency => {
+                code   => 'PATransferClientFailure',
+                params => [$client_loginid],
+            },
+        },
+    );
+    if (my $new_error = $error_code_mapping{$fail_side}->{$error_code}) {
+        $rules_error->{error_code} = $new_error->{code};
+        $rules_error->{params}     = $new_error->{params};
+    }
+
+    my $rpc_error = BOM::RPC::v3::Utility::rule_engine_error($rules_error, 'PaymentAgentTransferError');
+
+    # Special treatment for missing-requiremets error (only for PA side)
+    $rpc_error->{error}->{code} = 'ASK_FIX_DETAILS' if $error_code eq 'CashierRequirementsMissing' && $fail_side eq 'pa';
+
+    return $rpc_error;
+}
 
 sub _get_json_error {
     my $error = shift;
@@ -1041,7 +1046,7 @@ rpc paymentagent_withdraw => sub {
     my $day              = Date::Utility->new->is_a_weekend ? 'weekend' : 'weekday';
     my $withdrawal_limit = BOM::Config::payment_agent()->{transaction_limits}->{withdraw};
 
-    my ($amount_transferred_in_usd, $count) = _get_amount_and_count($client_loginid);
+    my ($amount_transferred_in_usd, $count) = $client->today_payment_agent_withdrawal_sum_count();
     $amount_transferred_in_usd = in_usd($amount_transferred_in_usd, $currency);
 
     my $amount_in_usd = in_usd($amount, $currency);
@@ -1765,16 +1770,6 @@ rpc topup_virtual => sub {
         currency => $curr
     };
 };
-
-sub _get_amount_and_count {
-    my $loginid  = shift;
-    my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $loginid,
-        operation      => 'replica',
-    });
-    my $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$loginid]);
-    return ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
-}
 
 sub _transfer_between_accounts_error {
     my ($message_to_client, $message, $override_code) = @_;

@@ -66,8 +66,11 @@ my $auth_document_args = {
     file_name                  => 'some_test.txt',
 };
 
-## Used for test safety, and to mock_get_amount_and_count:
+## Used for test safety, and to mock some subs:
 my $mock_cashier = Test::MockModule->new('BOM::RPC::v3::Cashier');
+
+## Used to mock today_payment_agent_withdrawal_sum_count
+my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
 
 ## Used to mock default_account, payment_account_transfer, landing_company, currency:
 my $mock_user_client = Test::MockModule->new('BOM::User::Client');
@@ -81,6 +84,8 @@ my $mock_account = Test::MockModule->new('BOM::User::Client::Account');
 
 ## Used to simulate a payment agent not existing:
 my $mock_client_paymentagent = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+
+my $mock_client = Test::MockModule->new('BOM::User::Client');
 
 ## This is needed else we error out from trying to reach Redis for conversion information:
 my $mock_currencyconverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
@@ -221,6 +226,10 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
     $user->add_client($Bob);
 
+    my $client_no_currency = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => $broker,
+    });
+
     diag "Transfer currency is $test_currency. Created Alice as $Alice_id and Bob as $Bob_id";
 
     $dry_run = 1;
@@ -300,25 +309,36 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{error}{message_to_client}, $disabled_message, $test);
         $runtime_system->suspend->payment_agents(0);
 
+        $test = 'Transfer fails if client has no payment agent';
+        $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}{message_to_client}, 'You are not authorized for transfers via payment agents.', $test);
+        $payment_agent_args->{currency_code} = $test_currency;
+        #make him payment agent
+        $Alice->payment_agent($payment_agent_args);
+        $Alice->save;
+
+        $test = "We're unable to process this transfer because the client's resident country is not within your portfolio.";
+        $Alice->get_payment_agent->set_countries(['id', 'in']);
+        my $old_residence = $Bob->residence;
+        $Bob->residence('pk');
+        $Bob->save;
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        like($res->{error}{message_to_client},
+            qr/We're unable to process this transfer because the client's resident country is not within your portfolio./, $test);
+        $Bob->residence($old_residence);
+        $Bob->save;
+
         $test = 'Transfer fails if client landing company does not allow payment agents';
         ## This check relies on a local YAML file (e.g. 'landing_companies.yml')
         ## Only CR allows payment agents currently, so we mock the result here
         $mock_landingcompany->mock('allows_payment_agents', sub { return 0; });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+
         is($res->{error}{message_to_client}, 'The payment agent facility is not available for this account.', $test);
         $mock_landingcompany->unmock('allows_payment_agents');
 
-        $test = 'Transfer fails if client has no payment agent';
-        $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, 'You are not authorized for transfers via payment agents.', $test);
-
         $test = 'Transfer fails is amount is over the landing company maximum';
-        $payment_agent_args->{currency_code} = $test_currency;
-        #make him payment agent
-        $Alice->payment_agent($payment_agent_args);
-        $Alice->save;
         #set countries for payment agent
-        $Alice->get_payment_agent->set_countries(['id', 'in']);
         my $currency_type = LandingCompany::Registry::get_currency_type($test_currency);      ## e.g. "fiat"
         my $lim           = BOM::Config::payment_agent()->{payment_limits}{$currency_type};
         my $max           = formatnumber('amount', $test_currency, $lim->{maximum});
@@ -361,6 +381,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->save;
 
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is $res->{error}{code}, 'ASK_FIX_DETAILS', 'Correct error code for missing required args';
         like($res->{error}{message_to_client}, qr/Your profile appears to be incomplete. Please update your personal details to continue./, $test);
         cmp_ok(@{$res->{error}->{details}->{fields}}, '==', 2, 'Correct number of details fetched (2)');
         is_deeply($res->{error}->{details}->{fields}, ['address_city', 'address_line_1'], 'Correct fields matched (2)');
@@ -402,16 +423,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{error}{message_to_client}, 'Payment agent transfers are not allowed for the specified accounts.', $test);
         $mock_landingcompany->unmock('allows_payment_agents');
         $mock_user_client->unmock('landing_company');
-
-        $test = "We're unable to process this transfer because the client's resident country is not within your portfolio.";
-        my $old_residence = $Bob->residence;
-        $Bob->residence('pk');
-        $Bob->save;
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        like($res->{error}{message_to_client},
-            qr/We're unable to process this transfer because the client's resident country is not within your portfolio./, $test);
-        $Bob->residence($old_residence);
-        $Bob->save;
 
         $test = 'Transfer fails if payment agents are suspended in the target country';
         BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);
@@ -483,11 +494,19 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/exceeds client balance/, $test);
 
+        ##
+        ## At this point in Cashier.pm, we call payment_account_transfer, so we need some funds
+        ##
+
         $test = 'Client account has correct balance after top up';
         ## We need enough to cover all the following tests, which start with $test_amount,
         ## and increaase by $amount_boost after each successful transfer. Thus the '15'
         my $Alice_balance = sprintf('%0.*f', $precision, $test_amount * 15);
-        top_up($Alice, $test_currency, $Alice_balance, 'free_gift');
+        top_up(
+            $Alice,
+            $test_currency => $Alice_balance,
+            'free_gift'
+        );
         ## This is used to keep a running tab of amount transferred:
         my $Alice_transferred = 0;
         is($Alice->default_account->balance, $Alice_balance, "$test ($Alice_balance $test_currency)");
@@ -496,18 +515,17 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         ## From this point on, we cannot have dry run enabled
 
         ## Technically, the mock should return that limit in the test_currency, but this large value covers it
-        $mock_cashier->mock('_get_amount_and_count', sub { return $MAX_DAILY_TRANSFER_AMOUNT_USD * 99, 0; });
+        $mock_client->redefine('today_payment_agent_withdrawal_sum_count', sub { return $MAX_DAILY_TRANSFER_AMOUNT_USD * 99, 0; });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client},
             'Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.', $test);
-        $mock_cashier->unmock('_get_amount_and_count');
 
         $test = "Transfer fails is over the maximum transactions per day (USD $MAX_DAILY_TRANSFER_AMOUNT_USD)";
-        $mock_cashier->mock('_get_amount_and_count', sub { return 0, $MAX_DAILY_TRANSFER_TXNS * 55; });
+        $mock_client->redefine('today_payment_agent_withdrawal_sum_count', sub { return 0, $MAX_DAILY_TRANSFER_TXNS * 55; });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client},
             'Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.', $test);
-        $mock_cashier->unmock('_get_amount_and_count');
+        $mock_client->unmock_all;
 
         $test = 'Transfer fails if agent status = cashier_locked';
         $Alice->status->set('cashier_locked', 'Testy McTestington', 'Just running some tests');
@@ -521,7 +539,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->status->set('disabled', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, 'Your account is disabled.', $test);
+        is($res->{error}{message_to_client}, 'You cannot perform this action, as your account ' . $Alice->loginid . ' is currently disabled.', $test);
         $Alice->status->clear_disabled;
         $Alice->save;
 
@@ -553,12 +571,42 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->status->set('unwelcome', 'Testy McTestington', 'Just running some tests');
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{code}, 'PaymentAgentTransferError', $test);
+        is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id", $test);
         $Bob->status->clear_unwelcome;
         $Bob->save;
 
-        $test = 'Transfer fails if all client authentication documents are expired';
-        $mock_documents->mock(expired => sub { shift->client->loginid eq $Alice_id ? 1 : 0 });    # force to reloaded
+        $test = 'Transfer fails if transfer_to client is self-excluded';
+        $Bob->set_exclusion->exclude_until(Date::Utility->new->plus_time_interval('1d')->date);
+        $Bob->save;
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id", $test);
+        $Bob->set_exclusion->exclude_until(undef);
+        $Bob->save;
+
+        $test                          = 'Transfer fails if transfer_to client has not set currency';
+        $testargs->{args}{transfer_to} = $client_no_currency->loginid;
+        $res                           = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}{message_to_client}, "You cannot transfer to account " . $client_no_currency->loginid, $test);
+        reset_transfer_testargs();
+
+        $mock_user_client->redefine(
+            missing_requirements => sub {
+                my $client = shift;
+                return ('first_name', 'last_name') if ($client->loginid eq $Bob->loginid);
+                return ();
+
+            });
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is_deeply $res->{error},
+            {
+            code              => 'PaymentAgentTransferError',
+            details           => {fields => ['first_name', 'last_name']},
+            message_to_client => "You cannot transfer to account $Bob_id, as their profile is incomplete."
+            };
+        $mock_user_client->unmock('missing_requirements');
+
+        $test = 'Transfer fails if PA authentication documents are expired';
+        $mock_documents->mock(expired => sub { shift->client->loginid eq $Alice_id ? 1 : 0 });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client},
             'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.', $test);
@@ -567,11 +615,10 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $mock_documents->mock(expired => sub { shift->client->loginid eq $Bob_id ? 1 : 0 });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id, as their verification documents have expired.", $test);
-
         $mock_documents->unmock('expired');
 
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}, undef, 'successful transfer');
+        is($res->{error}, undef, 'successful transfer') or warn explain $res->{error};
         $test_amount += $amount_boost;
         reset_transfer_testargs();
 
@@ -852,7 +899,8 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $test = 'Withdraw fails if payment agent facility not available';
         ## Right now only CR offers payment agents according to:
         ## /home/git/regentmarkets/cpan/local/lib/perl5/auto/share/dist/LandingCompany/landing_companies.yml
-        $testargs->{client} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
+        $testargs->{client} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
+        $user->add_client($testargs->{client});
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/agent facilities are not available/, $test);
         reset_withdraw_testargs();
@@ -1084,10 +1132,10 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
 
         ## We will assume this one is for all currencies, despite coming after the above:
         $test = "Withdraw fails if over maximum transactions per day ($MAX_DAILY_WITHDRAW_TXNS_WEEKDAY)";
-        $mock_cashier->mock('_get_amount_and_count', sub { return 0, $MAX_DAILY_WITHDRAW_TXNS_WEEKDAY * 3; });
+        $mock_client->mock('today_payment_agent_withdrawal_sum_count', sub { return 0, $MAX_DAILY_WITHDRAW_TXNS_WEEKDAY * 3; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/allowable transactions for today/, $test);
-        $mock_cashier->unmock('_get_amount_and_count');
+        $mock_client->unmock_all;
 
         # mock to make sure that there is authenticated pa in Alice's country
         $mock_payment_agent->mock('get_authenticated_payment_agents', sub { return {pa1 => 'dummy'}; });
