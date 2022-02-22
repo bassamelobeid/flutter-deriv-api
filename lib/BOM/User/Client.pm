@@ -5262,6 +5262,8 @@ sub smart_payment {
         arbitrary_markup    => 'arbitrary_markup',
         cash_transfer       => 'western_union',      # ! need to fix in db first
         voucher             => 'legacy_payment',
+        account_transfer    => 'legacy_payment',
+        closed_account      => 'legacy_payment',
     );
 
     $payment_gateway_code ||= $gateway_map{$payment_type}
