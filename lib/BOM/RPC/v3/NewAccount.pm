@@ -817,9 +817,9 @@ sub _new_account_pre_process {
         source                        => $args->{source},
     };
 
-    my $affiliate_token;
-    $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
-    $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
+    $details->{myaffiliates_token} = _compute_affiliate_token($client, $args);
+
+    delete $args->{affiliate_token} if (exists $args->{affiliate_token});
 
     my @fields_to_duplicate =
         qw(citizen salutation first_name last_name date_of_birth residence address_line_1 address_line_2 address_city address_state address_postcode phone secret_question secret_answer place_of_birth tax_residence tax_identification_number account_opening_reason);
@@ -1111,6 +1111,52 @@ rpc "affiliate_account_add", sub {
         $args->{currency} ? (currency => $new_client->currency) : (),
     };
 };
+
+=head2 _compute_affiliate_token
+
+=head3 Parameters:
+
+=over 2
+
+=item * C<client> - The client who is requesting for account opening
+
+=item * C<args> - RPC call arguments
+
+=back
+
+=head3 Return:
+
+=over 1
+
+=item * C<affiliate_token> the affliate token
+
+=back
+
+=pod
+
+B<Uses Cases:>
+
+1. User creates first account with affiliate ==> add affiliate 
+
+2. User creates second account with affiliate ==> do not add affliate token ( this user belongs to deriv)
+
+3. User creates second account without affiliate token but other siblings already have token ==> use current token
+
+=cut
+
+sub _compute_affiliate_token {
+
+    my ($client, $args) = @_;
+    my $affiliate_token = $args->{affiliate_token} || '';
+    my $user            = $client->user;
+    my @clients         = $user->clients;
+    if (@clients > 0) {
+        @clients         = sort { $a->date_joined cmp $b->date_joined } @clients;
+        $affiliate_token = $clients[0]->myaffiliates_token || $affiliate_token;
+    }
+
+    return $affiliate_token;
+}
 
 1;
 

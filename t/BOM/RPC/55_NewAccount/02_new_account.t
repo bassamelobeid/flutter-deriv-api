@@ -565,6 +565,9 @@ subtest $method => sub {
         $params->{token} = $rpc_ct->result->{oauth_token};
 
         $params->{args}->{currency} = 'USD';
+
+        $params->{args}->{affiliate_token} = 'first';
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create fiat currency account')
             ->result_value_is(sub { shift->{currency} }, 'USD', 'fiat currency account currency is USD');
 
@@ -583,12 +586,14 @@ subtest $method => sub {
         is $cl_usd->authentication_status, 'scans', 'Client is fully authenticated with scans';
         $cl_usd->save;
 
+        is $cl_usd->myaffiliates_token, 'first', 'client affiliate token set succesfully';
         $params->{args}->{currency} = 'EUR';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create second fiat currency account')
             ->error_code_is('CurrencyTypeNotAllowed', 'error code is CurrencyTypeNotAllowed');
 
         # Delete all params except currency. Info from prior account should be used
         $params->{args} = {'currency' => 'BTC'};
+        $params->{args}->{affiliate_token} = 'second';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create crypto currency account, reusing info')
             ->result_value_is(sub { shift->{currency} }, 'BTC', 'crypto account currency is BTC');
 
@@ -603,6 +608,8 @@ subtest $method => sub {
         is $is_authenticated, 1, 'New client is also authenticated';
 
         my $cl_btc = BOM::User::Client->new({loginid => $loginid});
+
+        is $cl_btc->myaffiliates_token, 'first', 'client affiliate token not changed';
 
         is($cl_btc->financial_assessment(), undef, 'new client has no financial assessment if previous client has none as well');
 
