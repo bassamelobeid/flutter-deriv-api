@@ -135,7 +135,7 @@ Applies any number of B<rules> independently from any action. It takes following
 
 =over 4
 
-=item C<rule_engine_contex> With this special argument you can override rule engine's context attributes, like I<stop_on_failure>.
+=item C<rule_engine_context> With this special argument you can override rule engine's context attributes, like I<stop_on_failure>.
 
 =back
 

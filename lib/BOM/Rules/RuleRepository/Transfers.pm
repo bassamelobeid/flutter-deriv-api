@@ -122,6 +122,18 @@ rule 'transfers.experimental_currency_email_whitelisted' => {
     },
 };
 
+rule 'transfers.landing_companies_are_the_same' => {
+    description => "Landing companies should be the same on both sides of the transfer",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('DifferentLandingCompanies')
+            if $context->landing_company({loginid => $args->{loginid_from}}) ne $context->landing_company({loginid => $args->{loginid_to}});
+
+        return 1;
+    }
+};
+
 rule 'transfers.real_to_virtual_not_allowed' => {
     description => "Transfer between real and virtual accounts is not allowed",
     code        => sub {

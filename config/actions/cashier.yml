@@ -66,6 +66,64 @@ cashier_validation:
   - type: group
     rule_group: cashier_validation
 
+paymentagent_transfer:
+  description: A set of rules to be applied on paymentagent create
+  required_arguments:
+    - loginid_pa
+    - loginid_client
+    - currency
+    - amount
+    - dry_run
+  ruleset:
+    - paymentagent.accounts_are_not_the_same
+    - type: group
+      description: an anonymous group for mapping <loginid_pa> to <loginid> for some rules.
+      tag: pa
+      argument_mapping:
+        loginid: loginid_pa
+        action: "'withdrawal'"
+      ruleset:
+        - paymentagent.is_authorized
+        - client.is_not_virtual
+        - paymentagent.pa_allowed_in_landing_company
+        - cashier.profile_requirements
+    - type: group
+      argument_mapping:
+        loginid_from: loginid_pa
+        loginid_to: loginid_client
+      ruleset: transfers.landing_companies_are_the_same
+    - paymentagent.amount_is_within_pa_limits
+    - type: conditional
+      on: dry_run
+      rules_per_value:
+        1: pass
+        default:
+          - type: group
+            rule_group: validate_payment
+            tag: pa
+            argument_mapping:
+              loginid: loginid_pa
+              action: "'withdrawal'"
+              is_internal: "'0'"
+              is_p2p_restricted: "'1'"
+              amount: amount
+              currency: currency
+          - type: group
+            rule_group: validate_payment
+            tag: client
+            argument_mapping:
+              loginid: loginid_client
+              action: "'deposit'"
+              is_internal: "'0'"
+              is_p2p_restricted: "'1'"
+              amount: amount
+              currency: currency
+          - type: group
+            argument_mapping:
+              loginid: loginid_pa
+              action: "'transfer'"
+            ruleset: paymentagent.daily_transfer_limits
+
 transfer_between_accounts_part2:
   description: Contains rules to be applied on transfer between accounts (part 2)
   arguments: 
@@ -113,4 +171,3 @@ cashier_validation:
   ruleset:
   - type: group
     rule_group: cashier_validation
-

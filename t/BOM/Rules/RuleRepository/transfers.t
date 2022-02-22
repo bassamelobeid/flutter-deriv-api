@@ -308,6 +308,41 @@ subtest 'rule transfers.experimental_currency_email_whitelisted' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, %$params) } 'Test passes when currency is experimental and email is whitelisted';
 };
 
+my $rule_name = 'transfers.landing_companies_are_the_same';
+subtest $rule_name => sub {
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => "$rule_name\@test.deriv",
+        password => 'Test pass',
+    );
+    $user->add_client($client_vr);
+    $user->add_client($client_cr);
+
+    my $rule_engine    = BOM::Rules::Engine->new(client => [$client_cr, $client_vr]);
+    my $expected_error = {
+        error_code => 'DifferentLandingCompanies',
+        rule       => $rule_name
+    };
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid_from => $client_vr->loginid, loginid_to => $client_cr->loginid) },
+        $expected_error,
+        'Correct error when transfering between different  landing companies - VR to CR';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid_from => $client_cr->loginid, loginid_to => $client_vr->loginid) },
+        $expected_error,
+        'Correct error when transfering between different  landing companies - CR to VR';
+
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid_from => $client_cr->loginid, loginid_to => $client_cr->loginid) }
+    'No error for CR to CR';
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid_from => $client_vr->loginid, loginid_to => $client_vr->loginid) }
+    'No error for VR to VR';
+};
+
 subtest 'rule transfers.real_to_virtual_not_allowed' => sub {
     my $rule_name = 'transfers.real_to_virtual_not_allowed';
 
@@ -628,7 +663,7 @@ subtest 'rule transfers.same_landing_companies' => sub {
     ok $rule_engine->apply_rules($rule_name, %$params), 'one account is wallet';
 };
 
-my $rule_name = 'transfers.no_different_fiat_currencies';
+$rule_name = 'transfers.no_different_fiat_currencies';
 subtest $rule_name => sub {
     my %clients = map {
         my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
