@@ -3,14 +3,12 @@ use strict;
 use warnings;
 
 use YAML::XS qw(LoadFile);
-use Finance::Asset;
 use BOM::Database::ClientDB;
 use File::ShareDir;
+use Finance::Underlying;
 
 sub run {
-    my $u_file = Finance::Asset->instance->all_parameters;
-    my $u_subm = LoadFile(File::ShareDir::dist_file('Finance-Asset',      'submarkets.yml'));
-    my $u_mt   = LoadFile(File::ShareDir::dist_file('Finance-Underlying', 'underlyings.yml'));
+    my @underlyings = Finance::Underlying->all_underlyings();
 
     my $dbic = BOM::Database::ClientDB->new({
             broker_code => 'FOG',
@@ -49,12 +47,8 @@ sub run {
 
         print "starting update underlying\n";
 
-        foreach my $symbol (keys %{$u_file}) {
-            my $symbol_file = $u_file->{$symbol};
-            next if ref($symbol_file) ne 'HASH';
-
-            $symbol_file->{market} //= $u_subm->{$symbol_file->{submarket}}->{market};
-            $symbol_file->{market_type} = $u_mt->{$symbol}->{market_type} // 'financial';
+        foreach my $symbol_file (@underlyings) {
+            my $symbol = $symbol_file->symbol;
 
             if (defined $u_db->{$symbol}) {
                 my $symbol_db = $u_db->{$symbol};
@@ -88,7 +82,7 @@ sub run {
     if ($upd) {
         print "updated $upd underlyings -- you probably want to fully reload the cube.\n";
     }
-    return;
+    return 1;
 }
 
 1;
