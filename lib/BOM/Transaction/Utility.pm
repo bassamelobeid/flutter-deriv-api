@@ -71,6 +71,8 @@ sub build_poc_parameters {
         purchase_time         => $purchase_time,
         sell_time             => $sell_time,
         transaction_ids       => $transaction_ids,
+        symbol                => $fmb->{underlying_symbol},
+        contract_type         => $fmb->{bet_type},
     };
 
     # country code is required for china because we have special offerings conditions.
@@ -127,6 +129,8 @@ sub build_poc_pricer_args {
             landing_company  => $poc_parameters->{landing_company},
             contract_id      => $poc_parameters->{contract_id},
             account_id       => $poc_parameters->{account_id},
+            symbol           => $poc_parameters->{underlying_symbol},
+            contract_type    => $poc_parameters->{contract_type},
         ]);
 }
 
