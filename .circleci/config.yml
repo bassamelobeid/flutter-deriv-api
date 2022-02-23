@@ -28,6 +28,7 @@ alias:
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+    LOG_LEVEL: debug
 - &check_services
   run:
     background: true

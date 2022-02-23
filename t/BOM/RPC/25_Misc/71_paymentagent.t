@@ -531,7 +531,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->status->set('cashier_locked', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, 'Your cashier is locked.', $test);
+        is($res->{error}{message_to_client}, 'Your account cashier is locked. Please contact us for more information.', $test);
         $Alice->status->clear_cashier_locked;
         $Alice->save;
 
@@ -547,7 +547,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->status->set('withdrawal_locked', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, 'Your account is locked for withdrawals.', $test);
+        is($res->{error}{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.', $test);
         $Alice->status->clear_withdrawal_locked;
         $Alice->save;
 
