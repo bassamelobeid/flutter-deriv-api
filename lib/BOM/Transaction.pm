@@ -868,8 +868,8 @@ sub buy {
     );
     my $tv_now = [Time::HiRes::gettimeofday];
 
-    my $contract_type = $self->contract->{bet_type}                                // "undefined";
-    my $market        = $self->contract->{risk_profile}->{contract_info}->{market} // "undefined";
+    my $contract_type = $self->contract->bet_type                              // "undefined";
+    my $market        = $self->contract->risk_profile->contract_info->{market} // "undefined";
 
     stats_timing(
         "transaction.buy.init.time",
@@ -1140,7 +1140,6 @@ sub batch_buy {
             $self->expiryq->enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
         } catch ($e) {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $e;    # log it
-
             for my $el (@$list) {
                 @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};
             }
