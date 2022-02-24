@@ -13,7 +13,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use ExpiryQueue;
 use Syntax::Keyword::Try;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_count stats_gauge stats_timing);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 use Log::Any qw($log);
 
 use Brands;
@@ -830,7 +830,6 @@ sub prepare_buy {
 
 sub buy {
     my ($self, %options) = @_;
-    my $tv = [Time::HiRes::gettimeofday];
 
     $self->action_type('buy');
     my $stats_data = $self->stats_start('buy');
@@ -866,15 +865,6 @@ sub buy {
         landing_company => $client->landing_company,
         currency        => $self->contract->currency,
     );
-    my $tv_now = [Time::HiRes::gettimeofday];
-
-    my $contract_type = $self->contract->bet_type                              // "undefined";
-    my $market        = $self->contract->risk_profile->contract_info->{market} // "undefined";
-
-    stats_timing(
-        "transaction.buy.init.time",
-        1000 * Time::HiRes::tv_interval($tv, $tv_now),
-        {tags => ["contract_class:$contract_type", "market:$market"]});
 
     try {
         $company_limits->add_buys($client);
@@ -907,14 +897,8 @@ sub buy {
         # pg-notify and other services that depend on contract parameters
         BOM::Transaction::Utility::set_poc_parameters($poc_parameters, $expiry_epoch);
         ############# <END DELETE>
-        $tv = [Time::HiRes::gettimeofday];
-        ($fmb, $txn) = $fmb_helper->buy_bet;
-        $tv_now = [Time::HiRes::gettimeofday];
 
-        stats_timing(
-            "transaction.buy.buybet.time",
-            1000 * Time::HiRes::tv_interval($tv, $tv_now),
-            {tags => ["contract_class:$contract_type", "market:$market"]});
+        ($fmb, $txn) = $fmb_helper->buy_bet;
 
         # set contract parameters for the new contract
         $poc_parameters = BOM::Transaction::Utility::build_poc_parameters($client, {%$fmb, buy_transaction_id => $txn->{id}});
@@ -1259,7 +1243,6 @@ sub prepare_sell {
 
 sub sell {
     my ($self, %options) = @_;
-    my $tv = [Time::HiRes::gettimeofday];
     $self->action_type('sell');
     my $stats_data = $self->stats_start('sell');
 
@@ -1302,16 +1285,7 @@ sub sell {
                 ));
         }
     }
-    my $tv_now        = [Time::HiRes::gettimeofday];
-    my $contract_type = $self->contract->{bet_type}                                // "undefined";
-    my $market        = $self->contract->{risk_profile}->{contract_info}->{market} // "undefined";
 
-    stats_timing(
-        "transaction.sell.init.time",
-        1000 * Time::HiRes::tv_interval($tv, $tv_now),
-        {tags => ["contract_class:$contract_type", "market:$market"]});
-
-    $tv = [Time::HiRes::gettimeofday];
     my ($fmb, $txn, $buy_txn_id);
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
@@ -1339,12 +1313,6 @@ sub sell {
         # otherwise the function re-throws the exception
         $error_status = $self->_recover($e);
     }
-    $tv_now = [Time::HiRes::gettimeofday];
-
-    stats_timing(
-        "transaction.sell.sellbet.time",
-        1000 * Time::HiRes::tv_interval($tv, $tv_now),
-        {tags => ["contract_class:$contract_type", "market:$market"]});
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
