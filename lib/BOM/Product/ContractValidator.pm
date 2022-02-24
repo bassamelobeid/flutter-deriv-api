@@ -6,8 +6,6 @@ use warnings;
 use Time::HiRes;
 use Date::Utility;
 use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period);
-use DataDog::DogStatsd::Helper qw/stats_timing/;
-use Time::HiRes ();
 use List::Util qw(any first uniq);
 
 use LandingCompany::Registry;
@@ -43,12 +41,7 @@ sub is_valid_to_buy {
     my $self = shift;
     my $args = shift;
 
-    my $tv = [Time::HiRes::gettimeofday];
-
     my $valid = $self->_confirm_validity($args);
-
-    my $tv_now = [Time::HiRes::gettimeofday];
-    stats_timing("is_valid_to_buy.time", 1000 * Time::HiRes::tv_interval($tv, $tv_now));
 
     return $valid;
 }
@@ -57,13 +50,7 @@ sub is_valid_to_sell {
     my $self = shift;
     my $args = shift;
 
-    my $tv = [Time::HiRes::gettimeofday];
-
     my $valid = $self->_confirm_sell_validity($args);
-
-    my $tv_now = [Time::HiRes::gettimeofday];
-    stats_timing("is_valid_to_sell.time", 1000 * Time::HiRes::tv_interval($tv, $tv_now));
-
     # if the contract is sold (early close by client), then is_valid_to_sell is false
     if ($self->is_sold) {
         my $manually_settled = $self->is_after_settlement && !$valid;
