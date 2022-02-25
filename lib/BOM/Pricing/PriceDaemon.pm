@@ -12,6 +12,10 @@ use Log::Any qw( $log );
 use Scalar::Util qw(blessed);
 use Time::HiRes ();
 use Syntax::Keyword::Try;
+use Finance::Underlying;
+use Finance::Contract::Longcode qw(
+    shortcode_to_parameters
+);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context;
@@ -109,7 +113,6 @@ sub process_job {
     BOM::Platform::Context::request($r);
 
     my $response = $commands->{$cmd}->{process}->($self, $params);
-
     $response->{price_daemon_cmd} = $cmd;
     # contract parameters are stored after first call, no need to send them with every stream message
     delete $response->{contract_parameters};
@@ -128,9 +131,25 @@ sub process_job {
             'EX' => DURATION_DONT_PRICE_SAME_SPOT
         );
     }
+
     my $log_price_daemon_cmd = $params->{log_price_daemon_cmd} // $cmd;
     stats_inc("pricer_daemon.$log_price_daemon_cmd.call", {tags => $self->tags});
-    stats_timing("pricer_daemon.$log_price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
+
+    my $symbol        = $params->{symbol};
+    my $market        = $symbol ? Finance::Underlying->by_symbol($symbol)->market : 'Undefined Symbol';
+    my $contract_type = $params->{contract_type};
+
+    my $contract_duration;
+
+    if ($log_price_daemon_cmd eq 'price') {
+        $contract_duration = $params->{duration_unit};
+    } else {
+        $contract_duration = shortcode_to_parameters($params->{short_code})->{duration_type};
+    }
+
+    stats_timing("pricer_daemon.$log_price_daemon_cmd.time",
+        $response->{rpc_time}, {tags => $self->tags("contract_class:$contract_type", "market:$market", "duration:$contract_duration")});
+
     return $response;
 }
 
