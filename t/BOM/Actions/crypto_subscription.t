@@ -608,7 +608,7 @@ subtest "check btc fraud address in TP" => sub {
     my $address   = "bc1_I_AM_COOL_FRAUD_ADDRESS";
     my $f_address = "bc1_I_AM_A_FRAUD_ADDRESS_HEHE";
 
-    my $mock_third_party = Test::MockModule->new('BOM::CTC::TP::API::BTC');
+    my $mock_third_party = Test::MockModule->new('BOM::CTC::ThirdParty::API::BTC');
 
     $mock_third_party->mock(
         'tp_fraud_address' => async sub {
@@ -656,7 +656,7 @@ subtest "check eth fraud addresses in TP" => sub {
     my $eth_address       = "ETH_PERFECT_ADDRESS";
     my $eth_fraud_address = "ETH_FRAUD_ADDRESS";
 
-    my $mock_eth_third_party = Test::MockModule->new('BOM::CTC::TP::API::ETH');
+    my $mock_eth_third_party = Test::MockModule->new('BOM::CTC::ThirdParty::API::ETH');
 
     $mock_eth_third_party->mock(
         'tp_fraud_address' => async sub {

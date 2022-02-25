@@ -17,8 +17,6 @@ use BOM::CTC::Constants qw(:transaction :datadog);
 use BOM::CTC::Helper;
 use BOM::CTC::Utility;
 use BOM::Event::Utility qw(exception_logged);
-use BOM::CTC::TP::API::BTC;
-use BOM::CTC::TP::API::ETH;
 
 =head1 NAME
 
