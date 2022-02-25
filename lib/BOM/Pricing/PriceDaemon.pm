@@ -135,16 +135,16 @@ sub process_job {
     my $log_price_daemon_cmd = $params->{log_price_daemon_cmd} // $cmd;
     stats_inc("pricer_daemon.$log_price_daemon_cmd.call", {tags => $self->tags});
 
-    my $symbol        = $params->{symbol};
-    my $market        = $symbol ? Finance::Underlying->by_symbol($symbol)->market : 'Undefined Symbol';
-    my $contract_type = $params->{contract_type};
+    my $symbol        = $params->{symbol} // 'unknown';
+    my $market        = ($symbol ne 'unknown') ? Finance::Underlying->by_symbol($symbol)->market : 'unknown';
+    my $contract_type = $params->{contract_type} // 'unknown';
 
     my $contract_duration;
 
     if ($log_price_daemon_cmd eq 'price') {
-        $contract_duration = $params->{duration_unit};
+        $contract_duration = $params->{duration_unit} // 'unknown';
     } else {
-        $contract_duration = shortcode_to_parameters($params->{short_code})->{duration_type};
+        $contract_duration = shortcode_to_parameters($params->{short_code})->{duration_type} // 'unknown';
     }
 
     stats_timing("pricer_daemon.$log_price_daemon_cmd.time",
