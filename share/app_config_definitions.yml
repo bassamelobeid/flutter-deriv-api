@@ -304,7 +304,7 @@ payments:
           isa: Int
           description: 'A buyer may cancel an order within this number of minutes without negative consequences'
           default: 10
-          global: 1         
+          global: 1
         cancellation_barring:
           description: 'P2P cancellation barring parameters'
           isa: section
@@ -504,7 +504,7 @@ payments:
         max_fee_percentage:
           isa: json_string
           description: "Maximum fee percentage limit of Sweep"
-          default: '{"BTC":1,"LTC":1,"UST":5}'
+          default: '{"BTC":1,"LTC":1,"UST":5, "ETH":1, "eUSDT":1, "USDC":1}'
           global: 1
     transfer_between_accounts:
       description: 'Transfer between accounts config'
@@ -959,7 +959,7 @@ compliance:
       isa: section
       contains:
         corporate_patterns:
-          description: "Keywords for indentifying corporate names. The symbol % can be used as wildcard (any number of characters)." 
+          description: "Keywords for indentifying corporate names. The symbol % can be used as wildcard (any number of characters)."
           isa: ArrayRef
           global: 1
           default: ['company', 'ltd%', 'co', 'co.', '%club', 'consult%', '%limited', 'holding%', 'invest%', 'market%', 'forex%', 'fx%', '%academy', 'trader']
