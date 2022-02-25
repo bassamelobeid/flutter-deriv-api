@@ -24,7 +24,7 @@ pod_test:
 cover:
 	cover -delete
 	sed -i '1667,1668d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
-	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -MBOM::Test t/BOM/ t/unit/
+	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --ignore-exit --norc -rl -MBOM::Test t/BOM/ t/unit/
 	cover -report coveralls
 	
 unit:
