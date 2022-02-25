@@ -94,7 +94,7 @@ if ($input->{EditAffiliatesToken}) {
     my @clients_to_update;
     my $user         = $client->user;
     my @user_clients = $user->clients(include_disabled => 1);
-    push @clients_to_update, grep { not $_->is_virtual } @user_clients;
+    push @clients_to_update, @user_clients;
 
     # Updates that apply to both active client and its corresponding clients
     foreach my $cli (@clients_to_update) {
