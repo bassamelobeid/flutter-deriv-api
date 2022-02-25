@@ -902,17 +902,13 @@ sub logged_in_before_from_same_location {
     my $attempt_known = undef;
     try {
         $attempt_known = $auth_redis->hget($key, $entry);
-        if (!$attempt_known) {
-            # for backward compatibility with users who never changed their login.
-            my $last_attempt_in_db = $self->get_last_successful_login_history();
-            if (!$last_attempt_in_db) {
-                $attempt_known = 1;
-                return;
-            }
+        return $attempt_known if $attempt_known;
+        # for backward compatibility with users who never changed their login.
+        my $last_attempt_in_db = $self->get_last_successful_login_history();
+        return 1 unless $last_attempt_in_db;
 
-            my $last_attempt_entry = BOM::User::Utility::login_details_identifier($last_attempt_in_db->{environment});
-            $attempt_known = 1 if $last_attempt_entry eq $entry;
-        }
+        my $last_attempt_entry = BOM::User::Utility::login_details_identifier($last_attempt_in_db->{environment});
+        return 1 if $last_attempt_entry eq $entry;
     } catch {
         $log->warnf("Failed to get user login entry from redis, error: %s", shift);
     }
