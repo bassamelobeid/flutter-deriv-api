@@ -13,7 +13,6 @@ use BOM::Test::Helper::P2P;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
-use Guard;
 use JSON::MaybeXS;
 use List::Util qw(first);
 
@@ -27,16 +26,6 @@ my $client_escrow = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $client_escrow->account('USD');
 
-# We need to restore previous values when tests is done
-my %init_config_values = (
-    'system.suspend.p2p'                    => $app_config->system->suspend->p2p,
-    'payments.p2p.enabled'                  => $app_config->payments->p2p->enabled,
-    'payments.p2p.available'                => $app_config->payments->p2p->available,
-    'payments.p2p.escrow'                   => $app_config->payments->p2p->escrow,
-    'payments.p2p.payment_method_countries' => $app_config->payments->p2p->payment_method_countries,
-    'payments.p2p.payment_methods_enabled'  => $app_config->payments->p2p->payment_methods_enabled,
-);
-
 $app_config->set({'system.suspend.p2p'     => 0});
 $app_config->set({'payments.p2p.enabled'   => 1});
 $app_config->set({'payments.p2p.available' => 1});
@@ -46,12 +35,6 @@ $app_config->set({
                 bank_transfer => {mode => 'exclude'},
                 other         => {mode => 'exclude'}})});
 $app_config->set({'payments.p2p.payment_methods_enabled' => 1});
-
-scope_guard {
-    for my $key (keys %init_config_values) {
-        $app_config->set({$key => $init_config_values{$key}});
-    }
-};
 
 my $t = build_wsapi_test();
 
