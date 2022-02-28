@@ -118,7 +118,7 @@ my %EVENT_PROPERTIES = (
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
     crypto_withdrawal_email                          => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
     p2p_advert_created                               =>
-        [qw(advert_id created_time type account_currency local_currency country amount rate min_order_amount max_order_amount is_visible)],
+        [qw(advert_id created_time type account_currency local_currency country amount rate rate_type min_order_amount max_order_amount is_visible)],
     p2p_advertiser_cancel_at_fault => [qw(order_id cancels_remaining)],
     p2p_advertiser_temp_banned     => [qw(order_id block_end_time)],
     request_change_email           => [qw(loginid first_name email code verification_uri)],

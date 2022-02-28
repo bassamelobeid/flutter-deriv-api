@@ -233,7 +233,8 @@ sub dispute_expired {
     my $db = BOM::Database::ClientDB->new({broker_code => $broker_code})->db->dbh;
     # Recover the order, ensure is disputed
     my ($order) =
-        $db->selectall_arrayref('SELECT * FROM p2p.order_list(?, NULL, NULL, ?::p2p.order_status[], 1)', {Slice => {}}, $order_id, '{disputed}')->@*;
+        $db->selectall_arrayref('SELECT * FROM p2p.order_list(?, NULL, NULL, ?::p2p.order_status[], 1, NULL)', {Slice => {}}, $order_id, '{disputed}')
+        ->@*;
 
     if ($order) {
         my $brand              = request()->brand;
