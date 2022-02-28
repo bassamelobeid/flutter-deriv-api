@@ -79,6 +79,7 @@ sub create_advert {
     $param{description}      //= 'Test advert';
     $param{type}             //= 'sell';
     $param{rate}             //= 1;
+    $param{rate_type}        //= 'fixed';
     $param{min_order_amount} //= 0.1;
     $param{max_order_amount} //= 100;
     $param{payment_method}   //= 'bank_transfer';
@@ -163,7 +164,7 @@ sub set_order_status {
         undef, $new_status, $new_status, $order_id
     );
 
-    $client->db->dbic->dbh->do('SELECT * FROM p2p.order_update(?, ?)', undef, $order_id, $new_status);
+    $client->db->dbic->dbh->do('SELECT * FROM p2p.order_update(?, ?, NULL)', undef, $order_id, $new_status);
 }
 
 sub bypass_sendbird {
@@ -218,7 +219,7 @@ sub set_order_disputable {
     # Status needs to be `timed-out`
     $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?)', undef, $order_id, 'timed-out');
+            $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, NULL)', undef, $order_id, 'timed-out');
         });
 }
 

@@ -12,6 +12,8 @@ p2p-setup.pl - prepares environment for P2P testing.
     p2p-setup.pl -r     # resets the list of clients allowed to access P2P
     p2p-setup.pl -o     # creates some orders
     p2p-setup.pl -d     # create some disputed orders
+    p2p-setup.pl -c     # 2 letter country code. default is za (South Africa)
+    p2p-setup.pl -f     # create float rate ads
 
 =head1 DESCRIPTION
 
@@ -54,8 +56,12 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Database::AuthDB;
 use BOM::Rules::Engine;
+use BOM::Config::CurrencyConfig;
+use JSON::MaybeUTF8 qw(:v1);
 
 my $rule_engine = BOM::Rules::Engine->new();
+my $app_config  = BOM::Config::Runtime->instance->app_config;
+$app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
 $SIG{__DIE__} = sub {
     return if $^S;
@@ -69,7 +75,20 @@ GetOptions(
     "s|sendbird"      => \(my $use_sendbird  = 0),
     "d|disputes"      => \(my $disputes      = 0),
     "o|order"         => \(my $create_order  = 0),
+    "c|country=s"     => \(my $country       = 'za'),
+    "f|float_rate"    => \(my $float_rate    = 0),
 );
+
+my $local_currency = BOM::Config::CurrencyConfig::local_currency_for_country($country) or die "No local currency for country $country.\n";
+
+my $advert_config;
+if ($float_rate) {
+    $advert_config = decode_json_utf8($app_config->payments->p2p->country_advert_config);
+    my $quote = ExchangeRates::CurrencyConverter::usd_rate($local_currency);
+    die "Country $country currency $local_currency has no feed so float rates won't work. Try a different country or use fixed rates.\n"
+        unless $quote
+        or $advert_config->{$country}{manual_quote};
+}
 
 unless ($use_sendbird) {
     no strict 'refs';
@@ -117,7 +136,7 @@ sub create_client {
         last_name                => '',
         myaffiliates_token       => '',
         email                    => $email,
-        residence                => 'za',
+        residence                => $country,
         address_line_1           => '1 sesame st',
         address_line_2           => '',
         address_city             => 'cyberjaya',
@@ -229,8 +248,6 @@ $log->infof('Client is %s - Token: %s', $client->loginid, token_for_client($clie
 
 # ===== App Config =====
 section_title('App Config');
-my $app_config = BOM::Config::Runtime->instance->app_config;
-$app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
 my $all_clients = $app_config->payments->p2p->clients;
 my $new_clients = [$advertiser->loginid, $client->loginid];
@@ -243,12 +260,18 @@ $app_config->set({'payments.p2p.clients'                 => $reset_clients ? $ne
 $app_config->set({'payments.p2p.escrow'                  => \@escrow_ids});
 $app_config->set({'payments.p2p.limits.maximum_advert'   => 3000});
 $app_config->set({'payments.p2p.available_for_countries' => []});
+if ($float_rate) {
+    $advert_config->{$country}->@{qw(float_ads fixed_ads)} = qw(enabled disabled);
+} else {
+    $advert_config->{$country}->@{qw(float_ads fixed_ads)} = qw(disabled enabled);
+}
+$app_config->set({'payments.p2p.country_advert_config' => encode_json_utf8($advert_config)});
 
 $log->infof('App config applied');
 $log->infof('P2P devops status originally:  %s', $app_config->system->suspend->p2p   ? 'off' : 'on');
 $log->infof('P2P payment status originally: %s', $app_config->payments->p2p->enabled ? 'on'  : 'off');
-$log->infof('Maximum advert configured is %s',   BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert);
-$log->infof('Maximum order  configured is %s',   BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order);
+$log->infof('Maximum advert configured is %s',   $app_config->payments->p2p->limits->maximum_advert);
+$log->infof('Maximum order  configured is %s',   $app_config->payments->p2p->limits->maximum_order);
 
 # ===== Advertiser Create =====
 section_title('Advertiser Create');
@@ -262,23 +285,30 @@ $log->infof('Advertiser info: %s', $advertiser->p2p_advertiser_info);
 
 $advertiser->p2p_advert_create(
     account_currency => 'USD',
-    local_currency   => 'ZAR',
+    local_currency   => $local_currency,
     amount           => 3000,
-    rate             => 14500,
     type             => 'buy',
     expiry           => 2 * 60 * 60,
     min_order_amount => 10,
     max_order_amount => 100,
     payment_method   => 'bank_transfer',
     description      => 'Please contact via whatsapp 1234',
-    country          => 'za',
+    country          => $country,
+    $float_rate
+    ? (
+        rate      => -0.1,
+        rate_type => 'float'
+        )
+    : (
+        rate      => 13500,
+        rate_type => 'fixed'
+    ),
 );
 
 my $advert_sell = $advertiser->p2p_advert_create(
     account_currency => 'USD',
-    local_currency   => 'ZAR',
+    local_currency   => $local_currency,
     amount           => 3000,
-    rate             => 13500,
     type             => 'sell',
     expiry           => 2 * 60 * 60,
     min_order_amount => 10,
@@ -287,7 +317,16 @@ my $advert_sell = $advertiser->p2p_advert_create(
     payment_info     => 'Transfer to account 000-1111',
     contact_info     => 'Please contact via whatsapp 1234',
     description      => 'Please contact via whatsapp 1234',
-    country          => 'za',
+    country          => $country,
+    $float_rate
+    ? (
+        rate      => +0.1,
+        rate_type => 'float'
+        )
+    : (
+        rate      => 14500,
+        rate_type => 'fixed'
+    ),
 );
 
 # ===== Orders Create =====
