@@ -428,6 +428,9 @@ sub get_settings_by_group {
                 payments.p2p.payment_method_countries
                 payments.p2p.archive_ads_days
                 payments.p2p.payment_methods_enabled
+                payments.p2p.country_advert_config
+                payments.p2p.float_rate_global_max_range
+                payments.p2p.float_rate_order_slippage
                 payment_agents.initial_deposit_per_country
                 payments.payments_limit
                 )]};

@@ -245,9 +245,9 @@
             <tr>
                 <th scope="col">ID</th>
                 <th scope="col">Created</th>
-                <th scope="col">Deleted</th>
-                <th scope="col">Active</th>
                 <th scope="col">Visible</th>
+                <th scope="col">Active</th>
+                <th scope="col">Deleted</th>
                 <th scope="col">Type</th>
                 <th scope="col">Description</th>
                 <th scope="col">Deriv Currency</th>
@@ -263,7 +263,7 @@
                 <th scope="col">Payment methods</th>
                 <th scope="col">Payment info</th>
                 <th scope="col">Contact info</th>
-                <th scope="col">Orders</th>
+                <th scope="col">Open orders</th>
             </tr>
         </thead>
         <tbody>
@@ -271,25 +271,25 @@
             <tr>
                 <td>[% ad.id %]</td>
                 <td>[% ad.created_time %]</td>
-                <td>[% ad.is_deleted %]</td>
-                <td>[% ad.is_active %]</td>
-                <td>[% ad.is_visible %]</td>
+                <td>[% ad.is_visible | none %]</td>
+                <td>[% ad.is_active | none %]</td>
+                <td>[% ad.is_deleted | none %] </td>
                 <td>[% ad.type.ucfirst %]</td>
                 <td>[% ad.description %]</td>
                 <td>[% ad.account_currency %]</td>
                 <td>[% ad.local_currency %]</td>
-                <td>[% ad.amount %]</td>
-                <td>[% ad.rate %]</td>
-                <td>[% ad.remaining %]</td>
-                <td>[% ad.min_order_amount %]</td>
-                <td>[% ad.max_order_amount %]</td>
-                <td>[% ad.min_order_amount_actual %]</td>
-                <td>[% ad.max_order_amount_actual %]</td>
+                <td>[% ad.amount_display %]</td>
+                <td>[% ad.rate_type %] [% IF ad.rate_type=='float' %][% ad.rate_display %]% = [% ad.effective_rate_display %][% ELSE %][% ad.rate_display %][% END %]</td>
+                <td>[% ad.remaining_amount_display %]</td>
+                <td>[% ad.min_order_amount_display %]</td>
+                <td>[% ad.max_order_amount_display %]</td>
+                <td>[% ad.min_order_amount_limit_display %]</td>
+                <td>[% ad.max_order_amount_limit_display %]</td>
                 <td>[% ad.country %]</td>
-                <td>[% ad.payment_method_names || ad.payment_method %]</td>
+                <td>[% IF ad.payment_method_names %][% ad.payment_method_names.join(', ') %][% ELSE %][% ad.payment_method %][% END %]</td>
                 <td>[% ad.payment_info %]</td>
                 <td>[% ad.contact_info %]</td>
-                <td><a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { advert_id => ad.id }) %]">Active: [% ad.active_orders %]</a></td>
+                <td><a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { advert_id => ad.id }) %]">[% ad.active_orders %]</a></td>
             </tr>
             [% END %]
         </tbody>

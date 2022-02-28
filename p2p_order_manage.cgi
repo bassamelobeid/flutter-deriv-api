@@ -15,6 +15,7 @@ use Date::Utility;
 use BOM::Config::Runtime;
 use BOM::Config;
 use Scalar::Util qw(looks_like_number);
+use Format::Util::Numbers qw(financialrounding);
 use BOM::Platform::Event::Emitter;
 
 my $cgi = CGI->new;
@@ -92,7 +93,7 @@ if (my $id = $input{order_id}) {
         die "Invalid id - $id\n" unless looks_like_number($id) and $id > 0;
         $order = $db->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $id);
+                $_->selectrow_hashref('SELECT * FROM p2p.order_list(?,NULL,NULL,NULL,NULL,NULL)', undef, $id);
             });
         die "Order $id not found\n" unless $order;
         if ($order->{type} eq 'buy') {
@@ -117,9 +118,25 @@ if (my $id = $input{order_id}) {
         $order->{client_name} //= '[not an advertiser]';
         $order->{$_} = Date::Utility->new($order->{$_})->datetime_ddmmmyy_hhmmss for qw( created_time expire_time );
         ($order->{$_} = $order->{$_} ? 'Yes' : 'No') for qw( client_confirmed advertiser_confirmed );
-        $order->{$_} = ucfirst($order->{$_}) for qw( type status );
-        $order->{payment_due} = $order->{amount} * $order->{advert_rate};
-        $escrow = get_escrow($broker, $order->{account_currency});
+        $order->{$_}            = ucfirst($order->{$_}) for qw( type status advert_type);
+        $order->{price_display} = financialrounding('amount', $order->{local_currency}, $order->{rate} * $order->{amount});
+        $order->{$_}            = sprintf('%.6f', $order->{$_}) + 0 for qw(rate advert_rate);
+        $escrow                 = get_escrow($broker, $order->{account_currency});
+
+        my $client = BOM::User::Client->new({loginid => $order->{client_loginid}});
+
+        my $methods =
+            lc $order->{type} eq 'buy'
+            ? $client->_p2p_advertiser_payment_methods(
+            advert_id  => $order->{advert_id},
+            is_enabled => 1
+            )
+            : $client->_p2p_advertiser_payment_methods(
+            order_id   => $order->{id},
+            is_enabled => 1
+            );
+
+        $order->{payment_method_details} = $client->_p2p_advertiser_payment_method_details($methods) if %$methods;
 
         $transactions = $db->run(
             fixup => sub {
@@ -137,6 +154,26 @@ if (my $id = $input{order_id}) {
                     {Slice => {}}, $id
                 );
             });
+
+        my $status_history  = $client->p2p_order_status_history($order->{id});
+        my $status_by_stamp = +{map { Date::Utility->new($_->{stamp})->datetime_yyyymmdd_hhmmss => $_->{status} } reverse $status_history->@*};
+        my $status_bag      = +{map { $_->{status} => Date::Utility->new($_->{stamp})->datetime_yyyymmdd_hhmmss } $status_history->@*};
+
+        # We try to pair a transaction with its correspondent status by timestamp
+        foreach ($transactions->@*) {
+            my $stamp = Date::Utility->new($_->{transaction_time})->datetime_yyyymmdd_hhmmss;
+
+            if (defined $status_by_stamp->{$stamp}) {
+                $_->{status} = $status_by_stamp->{$stamp};
+                delete $status_bag->{$_->{status}};
+            }
+        }
+
+        # If a status is not matching a transaction, just push it and generate an empty tx row
+        push @$transactions, (map { +{status => $_, transaction_time => $status_bag->{$_}} } keys %$status_bag);
+        # Finally, sort by timestamp
+        $transactions =
+            [sort { Date::Utility->new($a->{transaction_time})->epoch cmp Date::Utility->new($b->{transaction_time})->epoch } $transactions->@*];
 
         if ($order->{chat_channel_url}) {
             $chat_messages = $db_collector->run(
@@ -156,29 +193,6 @@ if (my $id = $input{order_id}) {
 # Resolve chat_user_id into client loginids and role
 $chat_messages //= [];
 $chat_messages = [map { prep_chat_message($_, $order) } @{$chat_messages}];
-
-if ($order) {
-    my $order_client    = BOM::User::Client->new({loginid => $order->{client_loginid}});
-    my $status_history  = $order_client->p2p_order_status_history($order->{id});
-    my $status_by_stamp = +{map { Date::Utility->new($_->{stamp})->datetime_yyyymmdd_hhmmss => $_->{status} } reverse $status_history->@*};
-    my $status_bag      = +{map { $_->{status} => Date::Utility->new($_->{stamp})->datetime_yyyymmdd_hhmmss } $status_history->@*};
-
-    # We try to pair a transaction with its correspondent status by timestamp
-    foreach ($transactions->@*) {
-        my $stamp = Date::Utility->new($_->{transaction_time})->datetime_yyyymmdd_hhmmss;
-
-        if (defined $status_by_stamp->{$stamp}) {
-            $_->{status} = $status_by_stamp->{$stamp};
-            delete $status_bag->{$_->{status}};
-        }
-    }
-
-    # If a status is not matching a transaction, just push it and generate an empty tx row
-    push @$transactions, (map { +{status => $_, transaction_time => $status_bag->{$_}} } keys %$status_bag);
-    # Finally, sort by timestamp
-    $transactions =
-        [sort { Date::Utility->new($a->{transaction_time})->epoch cmp Date::Utility->new($b->{transaction_time})->epoch } $transactions->@*];
-}
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_order_manage.tt',

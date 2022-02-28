@@ -53,6 +53,8 @@ my @setting_keys = qw(
     payments.p2p.disputed_timeout
     payments.p2p.archive_ads_days
     payments.p2p.payment_methods_enabled
+    payments.p2p.float_rate_global_max_range
+    payments.p2p.float_rate_order_slippage
 );
 
 my $countries_list = request()->brand->countries_instance->countries_list;

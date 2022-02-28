@@ -50,12 +50,12 @@
             </span>
             </div>
             <div class="row" style="padding-left: 235px;">
-                <input name="all_in_one_page" id="all_in_one_page" type="checkbox">
+                <input name="all_in_one_page" id="all_in_one_page" type="radio">
                 <label for="all_in_one_page">Show all transactions</label>
 
                 <input name="depositswithdrawalsonly" id="depositswithdrawalsonly" type="checkbox" value="yes">
                 <label for="depositswithdrawalsonly">Deposits and withdrawals only</label>
-
+                here 
                 <input name="l" type="hidden" value="EN">
                 <input type=submit class="btn btn--primary" value="View">
             </div>

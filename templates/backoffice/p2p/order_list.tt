@@ -53,6 +53,7 @@
         <th>Status</th>
         <th>Amount</th>
         <th>Currency</th>
+        <th>Rate</th>
         <th>Local Amount</th>
         <th>Local Currency</th>
     </tr></thead>
@@ -71,7 +72,8 @@
             <td>[% order.status %]</td>
             <td>[% order.amount %]</td>
             <td>[% order.account_currency %]</td>
-            <td>[% order.advert_rate * order.amount %]</td>
+            <td>[% order.rate %]</td>
+            <td>[% order.price_display %]</td>
             <td>[% order.local_currency %]</td>
         </tr>
     [% END %]

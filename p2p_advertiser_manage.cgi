@@ -18,7 +18,7 @@ use BOM::Config::Redis;
 use Format::Util::Numbers qw(financialrounding);
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
-use List::Util qw(min max);
+use List::Util qw(min max first);
 use Data::Dumper;
 use DateTime::Format::Pg;
 use Date::Utility;
@@ -150,7 +150,10 @@ if ($output{advertiser}) {
     $output{advertiser}->{$_} = financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{$_})
         for (qw/daily_buy daily_sell/);
 
-    $output{advertiser}->{$_} = defined $output{advertiser}->{$_} ? $output{advertiser}->{limit_currency} . ' ' . $output{advertiser}->{$_} : '-'
+    $output{advertiser}->{$_} =
+        defined $output{advertiser}->{$_}
+        ? $output{advertiser}->{limit_currency} . ' ' . financialrounding('amount', $output{advertiser}->{limit_currency}, $output{advertiser}->{$_})
+        : '-'
         for (qw/daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/);
 
     my $loginid = $output{advertiser}->{client_loginid};
@@ -168,21 +171,14 @@ if ($output{advertiser}) {
 
     $output{payment_methods} = $client->p2p_advertiser_payment_methods;
 
-    my $ads = $db->run(
-        fixup => sub {
-            $_->selectall_arrayref(
-                "SELECT *, date_trunc('seconds',created_time) created_time FROM p2p.advert_list(NULL, NULL, ?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE) ORDER BY id DESC",
-                {Slice => {}},
-                $output{advertiser}->{id});
-        });
-
-    map { $_->{is_visible} = ($_->{is_active} and $_->{can_order} and $_->{advertiser_is_approved} and $_->{advertiser_is_listed}) ? 1 : 0 } @$ads;
-
-    my $payment_method_defs = $client->p2p_payment_methods;
+    my $db_ads = $client->_p2p_adverts(
+        advertiser_id => $output{advertiser}->{id},
+        show_deleted  => 1
+    );
+    my $ads = $client->_advert_details($db_ads);
     for my $ad (@$ads) {
-        $ad->{is_visible} = ($ad->{is_active} and $ad->{can_order} and $ad->{advertiser_is_approved} and $ad->{advertiser_is_listed}) ? 1 : 0;
-        $ad->{payment_method_names} = join ', ',
-            map { exists $payment_method_defs->{$_} ? $payment_method_defs->{$_}{display_name} : $_ } ($ad->{payment_method_names} // [])->@*;
+        $ad->{is_deleted} = (first { $ad->{id} == $_->{id} } @$db_ads)->{is_deleted};
+        $ad->{$_} = $ad->{$_} ? '&#9989;' : '&#10060;' for qw(is_deleted is_active is_visible);
     }
 
     # pagination

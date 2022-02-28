@@ -13,6 +13,7 @@ BOM::Backoffice::Sysinit::init();
 use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
+use Format::Util::Numbers qw(financialrounding);
 
 my $cgi = CGI->new;
 
@@ -49,6 +50,11 @@ my $orders = $db->run(
             @input{qw/limit offset/},
         );
     }) // [];
+
+for my $order (@$orders) {
+    $order->{price_display} = financialrounding('amount', $order->{local_currency}, $order->{rate} * $order->{amount});
+    $order->{rate}          = sprintf('%.6f', $order->{rate}) + 0;
+}
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/order_list.tt',

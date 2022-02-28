@@ -112,7 +112,8 @@ if ($r->param('save_multiplier_user_limit')) {
     my $custom_volume_limits = decode_json_utf8($app_config->get('quants.custom_volume_limits'));
     my $client_limits        = $custom_volume_limits->{clients} // {};
     my $offerings =
-        LandingCompany::Registry->by_name('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config('buy', 1));   # 1 - exclude disable
+        LandingCompany::Registry->by_name('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config('buy', 1))
+        ;    # 1 - exclude disable
     my $output;
     try {
         my $loginid = $r->param('loginid') // die 'loginid is undef';

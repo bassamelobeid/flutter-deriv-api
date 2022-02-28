@@ -14,9 +14,13 @@
             <td><b>[% order.status %]</b></td>
         </tr>
         <tr>
-            <td>Type</td>
-            <td><b>[% order.type %]</b> (advert type: [% order.advert_type %] Binary [% order.account_currency %] using local [% order.local_currency %])</td>
+            <td>Order type</td>
+            <td><b>[% order.type %]</b></td>
         </tr>
+        <tr>
+            <td>Advert type</td>
+            <td>[% order.advert_type %] Binary [% order.account_currency %] using local [% order.local_currency %] at [% order.advert_rate_type %] rate</td>
+        </tr>        
         <tr>
             <td>Client&nbsp;&nbsp;<span style="color:var(--color-blue);font-weight:bold;">[% order.client_role %]</span></td>
             <td class="link-group">[% order.client_loginid %]
@@ -65,11 +69,41 @@
         </tr>
         <tr>
             <td>Payment due</td>
-            <td>[% order.local_currency %] [% order.payment_due %] (advert rate: [% order.advert_rate %])</td>
+            <td>[% order.local_currency %] [% order.price_display %]
+            (rate: [% order.rate %])
+            [% IF order.advert_rate_type == 'float' %]
+            <br>Market rate when order was created: [% order.market_rate %]
+            [% END %]
         </tr>
+        [% IF order.payment_method_details %]
+        <tr>
+            <td>Payment methods</td>
+            <td>
+                <table class="small">
+                    [% FOR pm IN order.payment_method_details.values %]
+                    <tr><td style="border:0">
+                        <b>[% pm.display_name %]</b>[% FOR fld IN pm.fields.values %], [% fld.display_name %]: [% fld.value %][% END %]
+                    </td></tr>
+                    [% END %]
+                </table>
+            </td>
+        </tr>
+        [% END %]
+        [% IF order.advert_payment_method %]
         <tr>
             <td>Payment method</td>
             <td>[% order.advert_payment_method %]</td>
+        </tr>
+        [% END %]        
+        [% IF order.payment_info %]
+        <tr>
+            <td>Payment info</td>
+            <td>[% order.payment_info %]</td>
+        </tr>
+        [% END %]
+        <tr>
+            <td>Contact info</td>
+            <td>[% order.contact_info %]</td>
         </tr>
         <tr>
             <td>Creation time</td>
@@ -84,14 +118,6 @@
         <tr>
             <td>Advert ID</td>
             <td>[% order.advert_id %]</td>
-        </tr>
-        <tr>
-            <td>Payment info</td>
-            <td>[% order.payment_info %]</td>
-        </tr>
-        <tr>
-            <td>Contact info</td>
-            <td>[% order.contact_info %]</td>
         </tr>
         <tr>
             <td>Escrow</td>
@@ -314,4 +340,6 @@
             <p>No chat was started about this order</p>
         [% END %]
     [% END %]
+
+    
 [% END %]

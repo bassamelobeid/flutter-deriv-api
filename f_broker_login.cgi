@@ -204,24 +204,33 @@ print qq~
 my $band_mgt     = BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite']);
 my $p2p_settings = BOM::Backoffice::Auth0::has_authorisation(['Quants']) && BOM::Backoffice::Auth0::has_authorisation(['IT']);
 
-if ($band_mgt or $p2p_settings) {
+if ($band_mgt) {
     print qq~
-            <div class="card__content">
-                <h3>Band configuration</h3>
-                <form action="~ . request()->url_for('backoffice/p2p_band_management.cgi') . qq~" method="get">
-                    <label>$brokerselection</label>
-                    <input type="submit" class="btn btn--primary" value="Go">
-                </form>
-            </div>~;
-    if ($p2p_settings) {
-        print qq~
-            <div class="card__content">
-                <h3>Dynamic settings</h3>
-                <form action="~ . request()->url_for('backoffice/p2p_band_management.cgi') . qq~" method="get">
-                    <a href="p2p_dynamic_settings.cgi" class="btn btn--primary">Go to P2P dynamic settings</a>
-                </form>
-            </div>~;
-    }
+        <div class="card__content">
+            <h3>Band configuration</h3>
+            <form action="~ . request()->url_for('backoffice/p2p_band_management.cgi') . qq~" method="get">
+                <label>$brokerselection</label>
+                <input type="submit" class="btn btn--primary" value="Go">
+            </form>
+        </div>~;
+}
+
+if ($p2p_settings) {
+    print qq~
+        <div class="card__content">
+            <h3>Dynamic settings</h3>
+            <a href="~ . request()->url_for('backoffice/p2p_dynamic_settings.cgi') . qq~" class="btn btn--primary">P2P dynamic settings</a>
+        </div>
+        <div class="card__content">
+            <h3>Floating Rate Adverts</h3>
+            <a href="~
+        . request()->url_for('backoffice/p2p_float_rate_ads_manage.cgi') . qq~" class="btn btn--primary">Floating Rate Adverts management</a>
+        </div>
+        <div class="card__content">
+            <h3>Advert Payment Methods</h3>
+            <a href="~
+        . request()->url_for('backoffice/p2p_payment_method_manage.cgi') . qq~" class="btn btn--primary">Payment Methods management</a>            
+        </div>~;
 }
 
 print qq~
@@ -243,12 +252,6 @@ print qq~
                 <h3>Advertiser management</h3>
                 <form action="~ . request()->url_for('backoffice/p2p_advertiser_manage.cgi') . qq~" method="get">
                     <label>$brokerselection</label>
-                    <input type="submit" class="btn btn--primary" value="Go">
-                </form>
-            </div>
-            <div class="card__content">
-                <h3>Payment Method management</h3>
-                <form action="~ . request()->url_for('backoffice/p2p_payment_method_manage.cgi') . qq~" method="get">
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
             </div>
