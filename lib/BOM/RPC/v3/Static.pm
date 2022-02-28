@@ -39,6 +39,7 @@ use BOM::Config::CurrencyConfig;
 use BOM::Config::Onfido;
 use BOM::Platform::Context qw(localize);
 use BOM::TradingPlatform::DXTrader;
+use BOM::Config::P2P;
 
 =head2 residence_list
 
@@ -277,16 +278,23 @@ rpc website_status => sub {
     $app_config->check_for_update;
     my $tnc_config  = $app_config->cgi->terms_conditions_versions;
     my $tnc_version = decode_json($tnc_config)->{request()->brand->name};
-    my $p2p_config  = $app_config->payments->p2p;
 
-    return {
+    my $result = {
         terms_conditions_version => $tnc_version // '',
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
         crypto_config            => _crypto_config(),
-        p2p_config               => {
+        payment_agents           => {
+            initial_deposit_per_country => decode_json($app_config->payment_agents->initial_deposit_per_country),
+        },
+    };
+
+    if (my $p2p_advert_config = BOM::Config::P2P::advert_config()->{$params->{residence} // $params->{country_code} // ''}) {
+        my $p2p_config = $app_config->payments->p2p;
+
+        $result->{p2p_config} = {
             $p2p_config->archive_ads_days ? (adverts_archive_period => $p2p_config->archive_ads_days) : (),
             order_payment_period        => floor($p2p_config->order_timeout / 60),
             cancellation_block_duration => $p2p_config->cancellation_barring->bar_time,
@@ -302,12 +310,14 @@ rpc website_status => sub {
                     or $app_config->system->suspend->p2p
             ) ? 1 : 0,
             payment_methods_enabled => $p2p_config->payment_methods_enabled,
+            fixed_rate_adverts      => $p2p_advert_config->{fixed_ads},
+            float_rate_adverts      => $p2p_advert_config->{float_ads},
+            float_rate_offset_limit => $p2p_advert_config->{max_rate_range} / 2,
+            $p2p_advert_config->{deactivate_fixed} ? (fixed_rate_adverts_end_date => $p2p_advert_config->{deactivate_fixed}) : (),
+        };
+    }
 
-        },
-        payment_agents => {
-            initial_deposit_per_country => decode_json($app_config->payment_agents->initial_deposit_per_country),
-        },
-    };
+    return $result;
 };
 
 1;

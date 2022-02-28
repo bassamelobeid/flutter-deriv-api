@@ -380,8 +380,13 @@ subtest 'p2p_config' => sub {
         order_payment_period        => 10,
         disabled                    => bool(0),
         payment_methods_enabled     => bool(1),
+        fixed_rate_adverts          => 'disabled',
+        float_rate_adverts          => 'list_only',
+        float_rate_offset_limit     => num(4.1),
+        fixed_rate_adverts_end_date => '2012-02-03',
     );
 
+    $p2p_config->available(1);
     $p2p_config->archive_ads_days($vals{adverts_archive_period});
     $p2p_config->limits->maximum_ads_per_type($vals{adverts_active_limit});
     $p2p_config->cancellation_barring->bar_time($vals{cancellation_block_duration});
@@ -395,11 +400,26 @@ subtest 'p2p_config' => sub {
     $p2p_config->enabled(1);
     $config->system->suspend->p2p(0);
     $p2p_config->payment_methods_enabled(1);
+    $p2p_config->float_rate_global_max_range(8.2);
+    $p2p_config->country_advert_config(
+        encode_json({
+                'id' => {
+                    float_ads        => 'list_only',
+                    fixed_ads        => 'disabled',
+                    deactivate_fixed => '2012-02-03'
+                }}));
 
     my %params = (
         website_status => {
-            language => 'EN',
-            args     => {website_status => 1}});
+            language     => 'EN',
+            country_code => 'xxx',
+            args         => {website_status => 1}});
+
+    my $resp = $c->call_ok(%params)->result;
+    is $resp->{clients_country}, 'xxx', 'got country in response';
+    ok !exists $resp->{p2p_config}, 'p2p_config not present for unsupported country';
+
+    $params{website_status}->{country_code} = 'id';
 
     cmp_deeply($c->call_ok(%params)->result->{p2p_config}, \%vals, 'expected results from runtime config');
 
@@ -409,7 +429,6 @@ subtest 'p2p_config' => sub {
     $config->system->suspend->p2p(0);
     $p2p_config->enabled(0);
     is $c->call_ok(%params)->result->{p2p_config}{disabled}, 1, 'p2p disabled';
-
 };
 
 subtest 'payment_agents config' => sub {

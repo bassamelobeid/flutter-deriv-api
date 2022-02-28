@@ -184,6 +184,14 @@ our %ERROR_MAP = do {
         AdvertiserBlocked                 => localize('You cannot place an order on the advert, because you have blocked the advertiser.'),
         InvalidAdvertForOrder             => localize('It is not possible to place an order on this advert. Please choose another advert.'),
         AdvertInfoMissingParam            => localize('An advert ID must be provided when not subscribing.'),
+        AdvertFixedRateNotAllowed         => localize('Fixed rate adverts are not available at this time.'),
+        AdvertFloatRateNotAllowed         => localize('Floating rate adverts are not available at this time.'),
+        FloatRateTooBig                   => localize('The allowed range for floating rate is -[_1]% to +[_1]%.'),
+        FloatRatePrecision                => localize('Floating rate cannot be provided with more than 2 decmial places of precision.'),
+        OrderCreateFailRateSlippage       =>
+            localize("We're unable to create your order because the market rate has moved too much. Please try creating your order again."),
+        OrderCreateFailRateRequired => localize('Please provide a rate for this order.'),
+        OrderCreateFailRateChanged  => localize('The rate of the advert has changed. Please try creating your order again.'),
     );
 };
 

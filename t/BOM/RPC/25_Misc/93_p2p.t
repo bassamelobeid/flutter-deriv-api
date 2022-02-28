@@ -25,14 +25,11 @@ BOM::Test::Helper::P2P::bypass_sendbird();
 my $dummy_method = 'test_p2p_controller';
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
-my ($p2p_suspend, $p2p_enable) = ($app_config->system->suspend->p2p, $app_config->payments->p2p->enabled);
 
 my $P2P_AVAILABLE_CURRENCIES = ['usd'];
 
 $app_config->system->suspend->p2p(0);
 $app_config->payments->p2p->enabled(1);
-$app_config->payments->p2p->available(1);
-$app_config->payments->p2p->available_for_countries([]);
 $app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
 $app_config->payments->p2p->cancellation_barring->count(2);
 $app_config->payments->p2p->cancellation_barring->period(2);
@@ -203,6 +200,7 @@ subtest 'Adverts' => sub {
         account_currency => 'USD',
         expiry           => 30,
         rate             => 1.23,
+        rate_type        => 'fixed',
         min_order_amount => 0.1,
         max_order_amount => 10,
         payment_method   => 'bank_transfer',
@@ -907,9 +905,5 @@ subtest 'cancellation barring' => sub {
     is $res->{error}->{code}, 'TemporaryBar', 'The expected error code is TemporaryBar';
     $app_config->payments->p2p->cancellation_grace_period(10);
 };
-
-# restore app config
-$app_config->system->suspend->p2p($p2p_suspend);
-$app_config->payments->p2p->enabled($p2p_enable);
 
 done_testing();
