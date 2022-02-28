@@ -65,6 +65,7 @@ my %advert_params = (
     payment_info      => 'ad pay info',
     contact_info      => 'ad contact info',
     rate              => 1.23,
+    rate_type         => 'fixed',
     type              => 'sell',
     counterparty_type => 'buy',
 );
@@ -255,6 +256,7 @@ subtest 'Creating advert' => sub {
     my %params         = %advert_params;
     my $maximum_advert = $config->limits->maximum_advert;
     $params{amount} = $maximum_advert + 1;
+
     cmp_deeply(
         exception {
             $advertiser->p2p_advert_create(%params);
@@ -425,8 +427,12 @@ subtest 'Creating advert' => sub {
             total_completion_rate  => undef,
             completed_orders_count => 0,
         },
-        is_visible    => bool(1),
-        active_orders => 0,
+        is_visible             => bool(1),
+        active_orders          => 0,
+        rate_type              => 'fixed',
+        effective_rate         => num($params{rate}),
+        effective_rate_display => num($params{rate}),
+        rate_type              => $params{rate_type},
     };
 
     cmp_deeply(
@@ -446,6 +452,7 @@ subtest 'Creating advert' => sub {
                 created_time     => Date::Utility->new($advert->{created_time})->datetime_yyyymmdd_hhmmss,
                 advert_id        => $advert->{id},
                 type             => $params{type},
+                rate_type        => $params{rate_type},
                 account_currency => $params{account_currency},
                 local_currency   => $params{local_currency},
                 country          => $advertiser->residence,
@@ -866,6 +873,7 @@ subtest 'is_visible flag and subscription event' => sub {
         description      => 'test advert',
         local_currency   => 'myr',
         rate             => 1,
+        rate_type        => 'fixed',
         max_order_amount => 10,
         min_order_amount => 2,
         payment_method   => 'bank_transfer',
@@ -988,6 +996,7 @@ subtest 'is_visible flag and subscription event' => sub {
         min_order_amount => 1,
         max_order_amount => 10,
         rate             => 1,
+        rate_type        => 'fixed',
         payment_method   => 'bank_transfer',
     );
 
@@ -1053,6 +1062,44 @@ subtest 'subscriptions' => sub {
 
     $state = decode_json_utf8($redis->get($key));
     cmp_set [keys $state->{$advert->{id}}{active_orders}->%*], [$client1->loginid, $client2->loginid], 'client specific state saved';
+};
+
+subtest 'rate check' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+
+    my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(
+        rate => 1.001,
+    );
+
+    my $client = BOM::Test::Helper::P2P::create_advertiser;
+
+    cmp_deeply(
+        exception {
+            $client->p2p_order_create(
+                advert_id   => $advert->{id},
+                amount      => 10,
+                rate        => 1.00200,
+                rule_engine => $rule_engine,
+            )
+        },
+        {error_code => 'OrderCreateFailRateChanged'},
+        'error if different rate provided'
+    );
+
+    is(
+        exception {
+            $client->p2p_order_create(
+                advert_id   => $advert->{id},
+                amount      => 10,
+                rate        => 1.00100,
+                rule_engine => $rule_engine,
+            )
+        },
+        undef,
+        'can create order with correct rate'
+    );
+
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 done_testing();

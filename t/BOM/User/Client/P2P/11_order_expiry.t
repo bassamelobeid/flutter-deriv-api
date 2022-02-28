@@ -21,14 +21,6 @@ my $redis  = BOM::Config::Redis->redis_p2p();
 my $expire_key  = 'P2P::ORDER::EXPIRES_AT';
 my $timeout_key = 'P2P::ORDER::TIMEDOUT_AT';
 
-my $original_expiry  = $config->order_timeout;
-my $original_timeout = $config->refund_timeout;
-
-scope_guard {
-    $config->order_timeout($original_expiry);
-    $config->refund_timeout($original_timeout);
-};
-
 $config->order_timeout(7200);    #seconds
 $config->refund_timeout(30);     #days
 

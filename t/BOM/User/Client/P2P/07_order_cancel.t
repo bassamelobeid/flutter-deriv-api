@@ -7,7 +7,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::P2P;
-use BOM::Config::Runtime;
 use Test::Fatal;
 use Test::MockModule;
 use Test::Deep;

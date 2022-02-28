@@ -52,6 +52,7 @@ subtest 'adverts' => sub {
         min_order_amount   => 1,
         max_order_amount   => 10,
         rate               => 1,
+        rate_type          => 'fixed',
         contact_info       => 'call me',
         payment_method_ids => [keys %methods],
     );
@@ -138,6 +139,7 @@ subtest 'adverts' => sub {
                 min_order_amount     => 1,
                 max_order_amount     => 10,
                 rate                 => 1,
+                rate_type            => 'fixed',
                 payment_method_names => ['method2', 'method1', 'method2'],
             )
         },
@@ -183,6 +185,7 @@ subtest 'buy ads / sell orders' => sub {
         min_order_amount => 1,
         max_order_amount => 10,
         rate             => 1,
+        rate_type        => 'fixed',
         local_currency   => 'myr',
     );
 
@@ -336,6 +339,7 @@ subtest 'sell ads / buy orders' => sub {
         min_order_amount => 1,
         max_order_amount => 10,
         rate             => 1,
+        rate_type        => 'fixed',
         local_currency   => 'myr',
     );
 
@@ -541,6 +545,7 @@ subtest 'legacy buy ads' => sub {
         min_order_amount => 1,
         max_order_amount => 10,
         rate             => 1,
+        rate_type        => 'fixed',
         local_currency   => 'myr',
         payment_method   => 'bank_transfer',
     );
@@ -562,6 +567,7 @@ subtest 'legacy sell ads' => sub {
         min_order_amount => 1,
         max_order_amount => 10,
         rate             => 1,
+        rate_type        => 'fixed',
         local_currency   => 'myr',
         payment_method   => 'bank_transfer',
         payment_info     => 'legacy pm',

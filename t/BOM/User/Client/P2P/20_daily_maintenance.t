@@ -17,6 +17,8 @@ use Test::Fatal;
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
 
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+
 my $mock_emit = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my $emissions = {};
 
@@ -31,7 +33,7 @@ $mock_emit->mock(
 subtest 'archive old ads' => sub {
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
 
-    BOM::Config::Runtime->instance->app_config->payments->p2p->archive_ads_days(5);
+    $config->archive_ads_days(5);
     BOM::User::Script::P2PDailyMaintenance->new->run;
     $advert = $advertiser->p2p_advert_info(id => $advert->{id});
     ok $advert->{is_active}, 'new ad is active';
@@ -47,13 +49,13 @@ subtest 'archive old ads' => sub {
 
     $advertiser->db->dbic->dbh->do("UPDATE p2p.p2p_advert SET created_time = NOW() - INTERVAL '5 day' WHERE id = ?", undef, $advert->{id});
 
-    BOM::Config::Runtime->instance->app_config->payments->p2p->archive_ads_days(0);
+    $config->archive_ads_days(0);
     BOM::User::Script::P2PDailyMaintenance->new->run;
     ok $advertiser->p2p_advert_info(id => $advert->{id})->{is_active}, 'ad is not deactivated when config days is 0';
     ok !$emissions->{p2p_archived_ad}, 'Ad not yet archived';
 
     $emissions = {};
-    BOM::Config::Runtime->instance->app_config->payments->p2p->archive_ads_days(5);
+    $config->archive_ads_days(5);
     BOM::User::Script::P2PDailyMaintenance->new->run;
     $advert = $advertiser->p2p_advert_info(id => $advert->{id});
     ok !$advert->{is_active}, 'old ad is deactivated';
@@ -104,7 +106,7 @@ subtest 'archive old ads' => sub {
             local_currency => 'pyg'
         );
 
-        BOM::Config::Runtime->instance->app_config->payments->p2p->archive_ads_days(3);
+        $config->archive_ads_days(3);
         BOM::User::Script::P2PDailyMaintenance->new->run;
 
         ok !$emissions->{p2p_archived_ad}, 'Ads not yet archived';

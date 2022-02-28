@@ -56,6 +56,7 @@ use BOM::Config;
 use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Onfido;
+use BOM::Config::P2P;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::User::IdentityVerification;
@@ -2374,24 +2375,17 @@ sub p2p_advert_create {
     $param{account_currency} = $self->currency;
     ($param{local_currency} //= $self->local_currency) or die +{error_code => 'NoLocalCurrency'};
     $param{advertiser_id} = $advertiser_info->{id};
-    $param{is_active}     = 1;                        # needed for validation
-
-    my $market_rate;
-    try {
-        $market_rate = convert_currency(1, $param{account_currency}, $param{local_currency});
-    } catch {
-        # no rate available
-    }
+    $param{is_active}     = 1;                        # we will validate this as an active ad
 
     $self->_validate_advert(%param);
 
     my ($id) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
-                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 @param{
-                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info payment_method_ids payment_method_names/
+                    qw/advertiser_id type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info payment_method_ids payment_method_names rate_type/
                 });
         });
 
@@ -2401,7 +2395,11 @@ sub p2p_advert_create {
         });
 
     # to get all the fields
-    my $advert = $self->_p2p_adverts(id => $id)->[0];
+    my $market_rate = $self->_p2p_exchange_rate;
+    my $advert      = $self->_p2p_adverts(
+        id          => $id,
+        market_rate => $market_rate
+    )->[0];
 
     $advert->{payment_method_details} =
         $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $id));
@@ -2418,20 +2416,23 @@ sub p2p_advert_create {
             local_currency   => $response->{local_currency},
             country          => $response->{country},
             amount           => $response->{amount_display},
-            rate             => $response->{rate},
+            rate             => $response->{rate_display},
+            rate_type        => $response->{rate_type},
             min_order_amount => $response->{min_order_amount_display},
             max_order_amount => $response->{max_order_amount_display},
             is_visible       => $response->{is_visible},
         });
 
-    if ($market_rate) {
-        # for sell, higher than the market rate = postive score.
-        # for buy, lower than the market rate = positive score.
-        # At or better than market is recorded as zero.
+    # this is an inverted stat - worse rate = higher score
+    my $rate_score;
+    if ($param{rate_type} eq 'float') {
+        my $diff = $param{type} eq 'sell' ? $param{rate} : -$param{rate};
+        $rate_score = $diff / 100;    # api gets float rate as percentage
+    } elsif ($market_rate) {
         my $diff = $param{type} eq 'sell' ? $param{rate} - $market_rate : $market_rate - $param{rate};
-        $diff = List::Util::max($diff, 0) / $market_rate;
-        $self->_p2p_record_stat($self->loginid, 'ADVERT_RATES', $id, $diff);
+        $rate_score = $diff / $market_rate;
     }
+    $self->_p2p_record_stat($self->loginid, 'ADVERT_RATES', $id, $rate_score) if defined $rate_score;
 
     delete $response->{days_until_archive};    # guard against almost impossible race condition
     return $response;
@@ -2510,6 +2511,7 @@ sub p2p_advert_list {
         country                => $self->residence,
         account_currency       => $self->currency,
         hide_blocked           => 1,
+        filter_rate_type       => 1,
     );
 
     return $self->_advert_details($list, $param{amount});
@@ -2552,6 +2554,7 @@ sub p2p_advert_update {
 
     delete $advert->{payment_method_names} if $advert->{type} eq 'sell';    # the db creates this field for sell ads, but we don't want to validate it
 
+    $param{old} = $advert;
     $self->_validate_advert(%$advert, %param) unless $param{delete};
 
     if ($param{is_active} and not $advert->{is_active}) {
@@ -2570,10 +2573,10 @@ sub p2p_advert_update {
             }
 
             $dbh->do(
-                'SELECT FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $id,
                 @param{
-                    qw/is_active delete description payment_method payment_info contact_info payment_method_ids payment_method_names local_currency remaining_amount rate min_order_amount max_order_amount/
+                    qw/is_active delete description payment_method payment_info contact_info payment_method_ids payment_method_names local_currency remaining_amount rate min_order_amount max_order_amount rate_type/
                 });
         });
 
@@ -2632,7 +2635,9 @@ sub p2p_order_create {
         message_params => [$limit_per_day_per_client]}
         if ($day_order_count // 0) >= $limit_per_day_per_client;
 
-    my $advert_info = $self->_p2p_adverts(
+    my $market_rate = $self->_p2p_exchange_rate;
+
+    my $advert = $self->_p2p_adverts(
         id                     => $advert_id,
         is_active              => 1,
         can_order              => 1,
@@ -2641,24 +2646,36 @@ sub p2p_order_create {
         country                => $self->residence,
         account_currency       => $self->currency,
         client_loginid         => $self->loginid,
+        filter_rate_type       => 1,
+        market_rate            => $market_rate,
     )->[0];
 
-    die +{error_code => 'AdvertNotFound'} unless $advert_info;
-    die +{error_code => 'InvalidAdvertOwn'}      if $advert_info->{advertiser_loginid} eq $self->loginid;
-    die +{error_code => 'AdvertiserBlocked'}     if $advert_info->{advertiser_blocked};
-    die +{error_code => 'InvalidAdvertForOrder'} if $advert_info->{client_blocked};
+    die +{error_code => 'AdvertNotFound'} unless $advert and $advert_id;
+    die +{error_code => 'InvalidAdvertOwn'}      if $advert->{advertiser_loginid} eq $self->loginid;
+    die +{error_code => 'AdvertiserBlocked'}     if $advert->{advertiser_blocked};
+    die +{error_code => 'InvalidAdvertForOrder'} if $advert->{client_blocked};
 
-    my $advert_type = $advert_info->{type};
+    my $advert_type = $advert->{type};
 
-    my $advertiser_info = $self->_p2p_advertisers(id => $advert_info->{advertiser_id})->[0];
+    my $advertiser_info = $self->_p2p_advertisers(id => $advert->{advertiser_id})->[0];
 
     $amount = financialrounding('amount', $self->currency, $amount);
 
-    my $limit_remaining = $advertiser_info->{'daily_' . $advert_type . '_limit'} - $advertiser_info->{'daily_' . $advert_type};
+    my $limit_remaining = financialrounding('amount', $self->currency,
+        $advertiser_info->{'daily_' . $advert_type . '_limit'} - $advertiser_info->{'daily_' . $advert_type});
     die +{
         error_code     => 'OrderMaximumTempExceeded',
-        message_params => [formatnumber('amount', $advert_info->{account_currency}, $limit_remaining), $advert_info->{account_currency}]}
-        if $amount > $limit_remaining;
+        message_params => [$limit_remaining, $self->currency]} if $amount > $limit_remaining;
+
+    if ($advert->{rate_type} eq 'float') {
+        die +{error_code => 'OrderCreateFailRateRequired'} unless defined $param{rate};
+
+        my $allowed_slippage = $p2p_config->float_rate_order_slippage / 2;
+        my $diff             = ($param{rate} - $advert->{effective_rate}) / $advert->{effective_rate};
+        die +{error_code => 'OrderCreateFailRateSlippage'} if abs($diff * 100) > $allowed_slippage;
+    } else {
+        die +{error_code => 'OrderCreateFailRateChanged'} if defined $param{rate} and $param{rate} != $advert->{rate};
+    }
 
     my $advertiser = BOM::User::Client->new({loginid => $advertiser_info->{client_loginid}});
     my ($order_type, $amount_advertiser, $amount_client);
@@ -2681,10 +2698,10 @@ sub p2p_order_create {
             my @order_methods = map { $methods->{$_}{method} } grep { $methods->{$_}{is_enabled} } $param{payment_method_ids}->@*;
             die +{error_code => 'ActivePaymentMethodRequired'} unless @order_methods;
 
-            if (defined $advert_info->{payment_method_names}) {
+            if (defined $advert->{payment_method_names}) {
                 my $invalid_method = first {
                     my $m = $_;
-                    none { $m eq $_ } $advert_info->{payment_method_names}->@*
+                    none { $m eq $_ } $advert->{payment_method_names}->@*
                 }
                 @order_methods;
 
@@ -2709,16 +2726,16 @@ sub p2p_order_create {
             or $contact_info
             or ($param{payment_method_ids} && $param{payment_method_ids}->@*);
 
-        ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
+        ($payment_info, $contact_info) = $advert->@{qw/payment_info contact_info/};
 
     } else {
-        die 'Invalid advert type ' . ($advert_type // 'undef') . ' for advert ' . $advert_info->{id};
+        die 'Invalid advert type ' . ($advert_type // 'undef') . ' for advert ' . $advert->{id};
     }
 
     try {
         $self->validate_payment(
             amount       => $amount_client,
-            currency     => $advert_info->{account_currency},
+            currency     => $advert->{account_currency},
             payment_type => 'p2p',
             rule_engine  => $rule_engine,
         );
@@ -2733,7 +2750,7 @@ sub p2p_order_create {
     try {
         $advertiser->validate_payment(
             amount       => $amount_advertiser,
-            currency     => $advert_info->{account_currency},
+            currency     => $advert->{account_currency},
             payment_type => 'p2p',
             rule_engine  => $rule_engine,
         );
@@ -2745,12 +2762,13 @@ sub p2p_order_create {
 
     # For client inverted advert type needs to be checked, for example in a sell advert, client is buyer, so we need to check their daily_buy_limit
     my $client_limit_remaining = $client_info->{'daily_' . $order_type . '_limit'} - $client_info->{'daily_' . $order_type};
+    $client_limit_remaining = financialrounding('amount', $client_info->{account_currency}, $client_limit_remaining);
     die +{
         error_code     => 'OrderMaximumTempExceeded',
-        message_params => [formatnumber('amount', $client_info->{account_currency}, $client_limit_remaining), $client_info->{account_currency}]}
+        message_params => [$client_limit_remaining, $client_info->{account_currency}]}
         if $amount > $client_limit_remaining;
 
-    my $escrow = $self->p2p_escrow($advert_info->{account_currency}) // die +{error_code => 'EscrowNotFound'};
+    my $escrow = $self->p2p_escrow($advert->{account_currency}) // die +{error_code => 'EscrowNotFound'};
 
     my $open_orders = $self->_p2p_orders(
         advert_id => $advert_id,
@@ -2780,28 +2798,29 @@ sub p2p_order_create {
 
             die +{error_code => 'AdvertNotFound'} unless $locked_advert;
 
+            $locked_advert->{max_order_amount_actual} =
+                financialrounding('amount', $locked_advert->{account_currency}, $locked_advert->{max_order_amount_actual});
             die +{
                 error_code     => 'OrderMaximumExceeded',
-                message_params => [
-                    formatnumber('amount', $locked_advert->{account_currency}, $locked_advert->{max_order_amount_actual}),
-                    $locked_advert->{account_currency}]}
+                message_params => [$locked_advert->{max_order_amount_actual}, $locked_advert->{account_currency}]}
                 if $amount > $locked_advert->{max_order_amount_actual};
 
+            $locked_advert->{min_order_amount} = financialrounding('amount', $locked_advert->{account_currency}, $locked_advert->{min_order_amount});
             die +{
                 error_code     => 'OrderMinimumNotMet',
-                message_params => [
-                    formatnumber('amount', $locked_advert->{account_currency}, $locked_advert->{min_order_amount}),
-                    $locked_advert->{account_currency}]}
+                message_params => [$locked_advert->{min_order_amount}, $locked_advert->{account_currency}]}
                 if $amount < ($locked_advert->{min_order_amount} // 0);
 
             return $dbh->selectrow_hashref(
-                'SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?)', undef,
-                $advert_id,                                                                             $self->loginid,
-                $escrow->loginid,                                                                       $amount,
-                $expiry,                                                                                $payment_info,
-                $contact_info,                                                                          $source,
-                $self->loginid,                                                                         $limit_per_day_per_client,
-                $txn_time,                                                                              $param{payment_method_ids});
+                'SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?)', undef,
+                $advert_id,                                                                                   $self->loginid,
+                $escrow->loginid,                                                                             $amount,
+                $expiry,                                                                                      $payment_info,
+                $contact_info,                                                                                $source,
+                $self->loginid,                                                                               $limit_per_day_per_client,
+                $txn_time,                                                                                    $param{payment_method_ids},
+                $param{rate},                                                                                 $market_rate
+            );
         });
 
     my $redis = BOM::Config::Redis->redis_p2p_write();
@@ -3462,6 +3481,15 @@ sub _p2p_adverts {
     $param{reversible_limit}    = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
     $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
     $param{advertiser_name} =~ s/([%_])/\\$1/g if $param{advertiser_name};
+    $param{market_rate} //= $self->_p2p_exchange_rate;
+
+    if ($param{filter_rate_type}) {
+        my $config = BOM::Config::P2P::advert_config()->{$self->residence} or die +{error_code => 'RestrictedCountry'};
+        $param{rate_type} = [];
+        push $param{rate_type}->@*, 'fixed' if $config->{fixed_ads} ne 'disabled';
+        # it's very unlikely that we won't have a market rate, but if it happens, we will hide float rate ads
+        push $param{rate_type}->@*, 'float' if $param{market_rate} and ($config->{float_ads} ne 'disabled');
+    }
 
     for my $field (qw/id advert_id limit offset/) {
         $param{$field} += 0 if defined $param{$field};
@@ -3470,11 +3498,12 @@ sub _p2p_adverts {
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
-                        client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method use_client_limits favourites_only hide_blocked/
+                        client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
+                        use_client_limits favourites_only hide_blocked market_rate rate_type/
                 });
         }) // [];
 }
@@ -3525,8 +3554,8 @@ sub _validate_advert {
     my ($self, %param) = @_;
 
     $self->_validate_advert_amount(%param);
+    $self->_validate_advert_rates(%param);
     $self->_validate_advert_min_max(%param);
-    $self->_validate_advert_rate(%param);
     $self->_validate_advert_payment_contact_info(%param);
     $self->_validate_advert_duplicates(%param);
     $self->_validate_advert_payment_method_type(%param);
@@ -3577,6 +3606,60 @@ sub _validate_advert_amount {
     }
 }
 
+=head2 _validate_advert_rates
+
+Validation of advert rate and rate_type fields.
+
+=cut
+
+sub _validate_advert_rates {
+    my ($self, %param) = @_;
+
+    my $config         = BOM::Config::P2P::advert_config()->{$param{country}} or die +{error_code => 'RestrictedCountry'};
+    my $type_changed   = $param{rate_type} ne ($param{old}->{rate_type} // '');
+    my $active_changed = ($param{is_active} and $param{is_active} != ($param{old}->{is_active} // 0));
+
+    if ($param{rate_type} eq 'float') {
+        die +{error_code => 'AdvertFloatRateNotAllowed'}
+            if ($type_changed and $config->{float_ads} ne 'enabled')
+            or ($active_changed and $config->{float_ads} eq 'disabled');
+
+        # too much precision
+        # extreme values like 0.02999999999999999889 will still pass this check, but we will round it to 0.03 in response
+        if (sprintf('%.02f', $param{rate}) != $param{rate}) {
+            die +{error_code => 'FloatRatePrecision'};
+        }
+
+        # within country specific range
+        my $range = $config->{max_rate_range} / 2;
+        if (abs($param{rate}) > $range) {
+            die +{
+                error_code     => 'FloatRateTooBig',
+                message_params => [sprintf('%.02f', $range)],
+            };
+        }
+    } else {    # fixed rate
+        die +{error_code => 'AdvertFixedRateNotAllowed'}
+            if ($type_changed and $config->{fixed_ads} ne 'enabled')
+            or ($active_changed and $config->{fixed_ads} eq 'disabled');
+
+        # rate min
+        if ($param{rate} < P2P_RATE_LOWER_LIMIT) {
+            die +{
+                error_code     => 'RateTooSmall',
+                message_params => [sprintf('%.' . P2P_RATE_PRECISION . 'f', P2P_RATE_LOWER_LIMIT)]};
+        }
+
+        # rate max
+        if ($param{rate} > P2P_RATE_UPPER_LIMIT) {
+            die +{
+                error_code     => 'RateTooBig',
+                message_params => [sprintf('%.02f', P2P_RATE_UPPER_LIMIT)],
+            };
+        }
+    }
+}
+
 =head2 _validate_advert_min_max
 
 Validation of advert min and max order fields.
@@ -3597,11 +3680,14 @@ sub _validate_advert_min_max {
     }
 
     # actual min order would round to zero
-    my $min_price = $param{rate} * $param{min_order_amount};
-    if (financialrounding('amount', $param{local_currency}, $min_price) == 0) {
-        die +{
-            error_code     => 'MinPriceTooSmall',
-            message_params => [0]};
+    if ($param{rate_type} eq 'fixed') {
+        my $min_price = $param{rate} * $param{min_order_amount};
+
+        if (financialrounding('amount', $param{local_currency}, $min_price) == 0) {
+            die +{
+                error_code     => 'MinPriceTooSmall',
+                message_params => [0]};
+        }
     }
 
     # max_order_amount limit
@@ -3616,31 +3702,6 @@ sub _validate_advert_min_max {
     }
 
     die +{error_code => 'InvalidMinMaxAmount'} if $param{min_order_amount} > $param{max_order_amount};
-}
-
-=head2 _validate_advert_rate
-
-Validation of advert rate field.
-
-=cut
-
-sub _validate_advert_rate {
-    my ($self, %param) = @_;
-
-    # rate min
-    if ($param{rate} < P2P_RATE_LOWER_LIMIT) {
-        die +{
-            error_code     => 'RateTooSmall',
-            message_params => [sprintf('%.' . P2P_RATE_PRECISION . 'f', P2P_RATE_LOWER_LIMIT)]};
-    }
-
-    # rate max
-    if ($param{rate} > P2P_RATE_UPPER_LIMIT) {
-        die +{
-            error_code     => 'RateTooBig',
-            message_params => [sprintf('%.02f', P2P_RATE_UPPER_LIMIT)],
-        };
-    }
 }
 
 =head2 _validate_advert_payment_contact_info
@@ -3698,7 +3759,9 @@ sub _validate_advert_duplicates {
     }
 
     # duplicate rate, type and currency pair
-    die +{error_code => 'DuplicateAdvert'} if any { $_->{rate} == $param{rate} } @active_ads_same_type;
+    if (defined $param{rate}) {
+        die +{error_code => 'DuplicateAdvert'} if any { $_->{rate} == $param{rate} and $_->{rate_type} eq $param{rate_type} } @active_ads_same_type;
+    }
 
     # cannot have an ad with overlapping min/max amounts and same type + currencies
     die +{error_code => 'AdvertSameLimits'} if any {
@@ -3844,6 +3907,27 @@ sub _p2p_advertiser_payment_method_details {
     return $methods;
 }
 
+=head2 _p2p_exchange_rate
+
+Gets P2P rate from the most of recent of feed or backoffice manual quote.
+Assumes the client will only view ads for their own country and local currency.
+
+=cut
+
+sub _p2p_exchange_rate {
+    my ($self) = @_;
+
+    my $config = BOM::Config::P2P::advert_config()->{$self->residence};
+    my $quote  = ExchangeRates::CurrencyConverter::usd_rate($self->local_currency);
+
+    my @quotes;
+    push @quotes, [$config->{manual_quote_epoch}, $config->{manual_quote}] if $config->{manual_quote};
+    push @quotes, [$quote->{epoch},               1 / $quote->{quote}]     if $quote;
+    @quotes = sort { $b->[0] <=> $a->[0] } @quotes;
+
+    return $quotes[0]->[1];
+}
+
 =head2 _p2p_order_payment_method_details
 
 Gets the active payment methods for a given order.
@@ -3947,7 +4031,7 @@ sub _p2p_advertiser_buy_confirm {
     my $result   = $self->db->dbic->txn(
         fixup => sub {
             $_->do('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order->{id}, 1);
-            return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
+            return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?, FALSE, FALSE)',
                 undef, $order->{id}, $escrow->loginid, $source, $self->loginid, $txn_time);
         });
 
@@ -3984,7 +4068,7 @@ sub _p2p_client_sell_confirm {
     my $result = $self->db->dbic->txn(
         fixup => sub {
             $_->do('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order->{id}, 1);
-            return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
+            return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?, FALSE, FALSE)',
                 undef, $order->{id}, $escrow->loginid, $source, $self->loginid, $txn_time);
         });
     $self->_p2p_order_completed($result);
@@ -4130,7 +4214,7 @@ sub _advertiser_details {
         $details->{chat_user_id}       = $advertiser->{chat_user_id};
         $details->{chat_token}         = $advertiser->{chat_token} // '';
         $details->{show_name}          = $advertiser->{show_name};
-        $details->{balance_available}  = financialrounding('amount', $advertiser->{account_currency}, $self->balance_for_cashier('p2p'));
+        $details->{balance_available}  = $self->balance_for_cashier('p2p');
         $details->{basic_verification} = $self->status->age_verification ? 1 : 0;
         $details->{full_verification}  = $self->fully_authenticated      ? 1 : 0;
         $details->{cancels_remaining}  = $self->_p2p_advertiser_cancellations_remaining;
@@ -4176,24 +4260,29 @@ sub _advert_details {
     for my $advert (@$list) {
 
         my $result = {
-            account_currency               => $advert->{account_currency},
-            country                        => $advert->{country},
-            created_time                   => Date::Utility->new($advert->{created_time})->epoch,
-            description                    => $advert->{description} // '',
-            id                             => $advert->{id},
-            is_active                      => $advert->{is_active},
-            local_currency                 => $advert->{local_currency},
-            payment_method                 => $advert->{payment_method},
-            type                           => $advert->{type},
-            counterparty_type              => P2P_COUNTERYPARTY_TYPE_MAPPING->{$advert->{type}},
-            price                          => financialrounding('amount', $advert->{local_currency}, $advert->{rate} * ($amount // 1)),
-            price_display                  => formatnumber('amount', $advert->{local_currency}, $advert->{rate} * ($amount // 1)),
+            account_currency  => $advert->{account_currency},
+            country           => $advert->{country},
+            created_time      => Date::Utility->new($advert->{created_time})->epoch,
+            description       => $advert->{description} // '',
+            id                => $advert->{id},
+            is_active         => $advert->{is_active},
+            local_currency    => $advert->{local_currency},
+            payment_method    => $advert->{payment_method},
+            type              => $advert->{type},
+            counterparty_type => P2P_COUNTERYPARTY_TYPE_MAPPING->{$advert->{type}},
+            price             => $advert->{effective_rate} ? $advert->{effective_rate} * ($amount // 1) : undef,
+            price_display     => $advert->{effective_rate}
+            ? financialrounding('amount', $advert->{local_currency}, $advert->{effective_rate} * ($amount // 1))
+            : undef,
             rate                           => $advert->{rate},
-            rate_display                   => _p2p_rate_format($advert->{rate}),
-            min_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
-            min_order_amount_limit_display => formatnumber('amount', $advert->{account_currency}, $advert->{min_order_amount}),
-            max_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
-            max_order_amount_limit_display => formatnumber('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
+            rate_type                      => $advert->{rate_type},
+            rate_display                   => $advert->{rate_type} eq 'float' ? sprintf('%+.2f', $advert->{rate}) : _p2p_rate_format($advert->{rate}),
+            effective_rate                 => $advert->{effective_rate},
+            effective_rate_display         => _p2p_rate_format($advert->{effective_rate}),
+            min_order_amount_limit         => $advert->{min_order_amount},
+            min_order_amount_limit_display => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
+            max_order_amount_limit         => $advert->{max_order_amount_actual},
+            max_order_amount_limit_display => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
             # to match p2p_advert_list params, plus checking if advertiser blocked
             is_visible => (
                         $advert->{is_active}
@@ -4201,6 +4290,7 @@ sub _advert_details {
                     and $advert->{advertiser_is_approved}
                     and $advert->{advertiser_is_listed}
                     and not $advert->{advertiser_blocked}
+                    and not $advert->{is_deleted}
                 ) ? 1
             : 0,
             advertiser_details => {
@@ -4302,10 +4392,10 @@ sub _order_details {
             id                 => $order->{id},
             is_incoming        => $self->loginid eq $order->{advertiser_loginid} ? 1 : 0,
             local_currency     => $order->{local_currency},
-            amount             => financialrounding('amount', $order->{account_currency}, $order->{amount}),
-            amount_display     => formatnumber('amount', $order->{account_currency}, $order->{amount}),
-            price              => financialrounding('amount', $order->{local_currency}, $order->{advert_rate} * $order->{amount}),
-            price_display      => formatnumber('amount', $order->{local_currency}, $order->{advert_rate} * $order->{amount}),
+            amount             => $order->{amount},
+            amount_display     => financialrounding('amount', $order->{account_currency}, $order->{amount}),
+            price              => $order->{rate} * $order->{amount},
+            price_display      => financialrounding('amount', $order->{local_currency}, $order->{rate} * $order->{amount}),
             rate               => $order->{rate},
             rate_display       => _p2p_rate_format($order->{rate}),
             status             => $order->{status},
@@ -4365,8 +4455,9 @@ sub _is_order_status_final {
 }
 
 sub _p2p_rate_format {
+    my $rate = shift or return undef;
     # We take Precision from constant but cut off tailing zeros
-    return sprintf('%0.0' . P2P_RATE_PRECISION . 'f', shift()) =~ s/(?<=\.\d{2})(\d*?)0*$/$1/r;
+    return sprintf('%0.0' . P2P_RATE_PRECISION . 'f', $rate) =~ s/(?<=\.\d{2})(\d*?)0*$/$1/r;
 }
 
 =head2 _p2p_record_stat
@@ -6650,7 +6741,7 @@ sub balance_for_cashier {
                 undef, $self->loginid, $cashier, $global_limit / 100, $lookback);
         });
 
-    return $result;
+    return financialrounding('amount', $self->currency, $result);
 }
 
 =head2 propagate_status

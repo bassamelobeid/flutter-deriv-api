@@ -44,6 +44,7 @@ my %ad_params = (
     min_order_amount => 1,
     max_order_amount => 10,
     rate             => 1,
+    rate_type        => 'fixed',
     payment_method   => 'bank_transfer',
     payment_info     => 'x',
     contact_info     => 'x'

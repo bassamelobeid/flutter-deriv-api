@@ -5,11 +5,11 @@ use Test::More;
 use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
-use JSON::MaybeXS;
 
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config::Runtime;
+use JSON::MaybeUTF8 qw(:v1);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
@@ -21,7 +21,7 @@ my $mock_client = Test::MockModule->new('BOM::User::Client');
 my %params = (
     is_active        => 1,
     account_currency => 'USD',
-    local_currency   => 'myr',
+    local_currency   => 'MYR',
     amount           => 100,
     description      => 'test advert',
     max_order_amount => 10,
@@ -30,7 +30,9 @@ my %params = (
     payment_info     => 'ad pay info',
     contact_info     => 'ad contact info',
     rate             => 1.0,
+    rate_type        => 'fixed',
     type             => 'sell',
+    country          => 'id',
 );
 
 $config->payment_methods_enabled(1);
@@ -177,34 +179,195 @@ subtest $method => sub {
         {error_code => 'InvalidMinMaxAmount'},
         'Error when min_order_amount is more than max_order_amount'
     );
+
+    cmp_deeply(
+        exception {
+            $advertiser->$method(
+                %params,
+                rate             => 0.0001,
+                min_order_amount => 1
+            );
+        },
+        {
+            error_code     => 'MinPriceTooSmall',
+            message_params => [0]
+        },
+        'Error when min order in local currency rounds to zero'
+    );
 };
 
-$method = '_validate_advert_rate';
+$method = '_validate_advert_rates';
 subtest $method => sub {
 
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'id'});
+    my %params     = %params;
 
-    cmp_deeply(
-        exception {
-            $advertiser->$method(%params, rate => 0.0000001);
-        },
-        {
-            error_code     => 'RateTooSmall',
-            message_params => ['0.000001'],
-        },
-        'Error when rate is too small'
-    );
+    $config->country_advert_config(
+        encode_json_utf8({
+                'id' => {
+                    float_ads => 'enabled',
+                    fixed_ads => 'disabled'
+                }}));
 
-    cmp_deeply(
-        exception {
-            $advertiser->$method(%params, rate => 10**9 + 1);
-        },
-        {
-            error_code     => 'RateTooBig',
-            message_params => ['1000000000.00'],
-        },
-        'Error when rate is too big'
-    );
+    subtest 'fixed rate' => sub {
+        $params{rate_type} = 'fixed';
+
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, rate => 1);
+            },
+            {
+                error_code => 'AdvertFixedRateNotAllowed',
+            },
+            'Error when fixed rate disabled'
+        );
+
+        is(
+            exception {
+                $advertiser->$method(
+                    %params,
+                    rate      => 1.23,
+                    is_active => 0,
+                    old       => {rate_type => 'fixed'});
+            },
+            undef,
+            'No error editing fixed ad when fixed ads disabled'
+        );
+
+        $config->country_advert_config(
+            encode_json_utf8({
+                    'id' => {
+                        float_ads => 'disabled',
+                        fixed_ads => 'enabled'
+                    }}));
+
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, rate => 0.0000001);
+            },
+            {
+                error_code     => 'RateTooSmall',
+                message_params => ['0.000001'],
+            },
+            'Error when rate is too small'
+        );
+
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, rate => 10**9 + 1);
+            },
+            {
+                error_code     => 'RateTooBig',
+                message_params => ['1000000000.00'],
+            },
+            'Error when rate is too big'
+        );
+    };
+
+    subtest 'floating rate' => sub {
+        $params{rate_type} = 'float';
+
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, rate => 1.23);
+            },
+            {
+                error_code => 'AdvertFloatRateNotAllowed',
+            },
+            'Error for new ad when floating ads disabled'
+        );
+
+        is(
+            exception {
+                $advertiser->$method(
+                    %params,
+                    rate      => 1.23,
+                    is_active => 0,
+                    old       => {rate_type => 'float'});
+            },
+            undef,
+            'No error editing floating ad when floating ads disabled'
+        );
+
+        $config->country_advert_config(
+            encode_json_utf8({
+                    'id' => {
+                        float_ads => 'enabled',
+                        fixed_ads => 'disabled'
+                    }}));
+
+        is(
+            exception {
+                $advertiser->$method(%params, rate => 1.23);
+            },
+            undef,
+            'No error creating floating ad when floating ads enabled in country'
+        );
+
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, rate => 1.234);
+            },
+            {
+                error_code => 'FloatRatePrecision',
+            },
+            'Error when too much precision in rate'
+        );
+
+        is(
+            exception {
+                $advertiser->$method(%params, rate => 1.230000);
+            },
+            undef,
+            'Trailing zeros ignored'
+        );
+
+        $config->float_rate_global_max_range(10);
+
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, rate => 5.1);
+            },
+            {
+                error_code     => 'FloatRateTooBig',
+                message_params => ['5.00'],
+            },
+            'Eeror when rate above upper limit'
+        );
+
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, rate => -5.1);
+            },
+            {
+                error_code     => 'FloatRateTooBig',
+                message_params => ['5.00'],
+            },
+            'Eeror when rate above lower limit'
+        );
+
+        $config->country_advert_config(
+            encode_json_utf8({
+                    'id' => {
+                        float_ads      => 'enabled',
+                        fixed_ads      => 'disabled',
+                        max_rate_range => 2
+                    }}));
+
+        cmp_deeply(
+            exception {
+                $advertiser->$method(%params, rate => 1.23);
+            },
+            {
+                error_code     => 'FloatRateTooBig',
+                message_params => ['1.00'],
+            },
+            'Eeror when rate outside country specific limit'
+        );
+
+        $config->country_advert_config('{}');
+    };
+
 };
 
 $method = '_validate_advert_payment_contact_info';

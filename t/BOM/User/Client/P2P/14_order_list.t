@@ -13,7 +13,9 @@ use BOM::Rules::Engine;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
-BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->escrow([]);
+
 BOM::Test::Helper::P2P::bypass_sendbird();
 
 my %ad_params = (

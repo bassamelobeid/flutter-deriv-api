@@ -22,6 +22,9 @@ my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock('emit' => sub { push @emitted_events, [@_] });
 
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->limits->maximum_advert(100);
+
 my @test_cases = (
     #Sell orders client confirmation:
     {
@@ -463,7 +466,6 @@ for my $test_case (@test_cases) {
 }
 
 subtest 'Advertiser confirms pending buy order' => sub {
-    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
     BOM::Test::Helper::P2P::create_escrow();
 
     my $ad_amount = 100;
@@ -491,7 +493,6 @@ subtest 'Advertiser confirms pending buy order' => sub {
 };
 
 subtest 'Client confirms not pending (cancelled) buy order' => sub {
-    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
     BOM::Test::Helper::P2P::create_escrow();
 
     my $ad_amount = 100;
@@ -521,7 +522,6 @@ subtest 'Client confirms not pending (cancelled) buy order' => sub {
 };
 
 subtest 'Client confirms pending sell order' => sub {
-    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
     BOM::Test::Helper::P2P::create_escrow();
 
     my $ad_amount = 100;
@@ -551,7 +551,6 @@ subtest 'Client confirms pending sell order' => sub {
 };
 
 subtest 'Advertiser confirms not pending (cancelled) sell order' => sub {
-    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
     BOM::Test::Helper::P2P::create_escrow();
 
     my $ad_amount = 100;

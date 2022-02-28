@@ -25,12 +25,11 @@ sub tt_days {
 }
 tt_days(0);
 
-my $config = BOM::Config::Runtime->instance->app_config->payments->p2p->fraud_blocking;
-
-$config->buy_count(1);
-$config->buy_period(1);
-$config->sell_count(1);
-$config->sell_period(1);
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->fraud_blocking->buy_count(1);
+$config->fraud_blocking->buy_period(1);
+$config->fraud_blocking->sell_count(1);
+$config->fraud_blocking->sell_period(1);
 
 my $emit_args;
 my $emit_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -73,7 +72,7 @@ my @tests = ({
 
 testit($_->%*) for @tests;
 
-$config->buy_count(2);
+$config->fraud_blocking->buy_count(2);
 
 my ($advertiser, $client) = testit(
     name             => 'within limit',
@@ -146,12 +145,6 @@ sub testit {
     };
     return ($advertiser, $client);
 }
-
-# reset defaults
-$config->buy_count(3);
-$config->buy_period(0);
-$config->sell_count(3);
-$config->sell_period(0);
 
 $emit_mock->unmock_all;
 

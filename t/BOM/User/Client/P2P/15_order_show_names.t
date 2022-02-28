@@ -7,7 +7,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
-
 BOM::Test::Helper::P2P::create_escrow();
 
 my $advertiser_names = {

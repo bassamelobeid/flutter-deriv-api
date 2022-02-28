@@ -20,19 +20,14 @@ my $rule_engine = BOM::Rules::Engine->new();
 
 populate_exchange_rates({EUR => 2});
 BOM::Test::Helper::P2P::bypass_sendbird();
-my $original_admax = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert;
-BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(1000);
-BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order(1000);
 
-my $original_escrow = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow;
-my $escrow_client   = BOM::Test::Helper::Client::create_client();
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->limits->maximum_advert(1000);
+$config->limits->maximum_order(1000);
+
+my $escrow_client = BOM::Test::Helper::Client::create_client();
 $escrow_client->account('EUR');
-BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([$escrow_client->loginid]);
-
-scope_guard {
-    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert($original_admax);
-    BOM::Config::Runtime->instance->app_config->payments->p2p->escrow($original_escrow);
-};
+$config->escrow([$escrow_client->loginid]);
 
 my ($client, $advertiser, $ad);
 
@@ -45,6 +40,7 @@ subtest 'Default band' => sub {
         amount           => 500,
         type             => 'sell',
         rate             => 1,
+        rate_type        => 'fixed',
         min_order_amount => 1,
         max_order_amount => 50,
         local_currency   => 'myr',
@@ -119,6 +115,7 @@ subtest 'Check client band limits' => sub {
         amount           => 500,
         type             => 'sell',
         rate             => 1,
+        rate_type        => 'fixed',
         min_order_amount => 1,
         max_order_amount => 50,
         local_currency   => 'myr',
@@ -135,6 +132,7 @@ subtest 'Check client band limits' => sub {
         amount           => 500,
         type             => 'sell',
         rate             => 1,
+        rate_type        => 'fixed',
         min_order_amount => 1,
         max_order_amount => 50,
         local_currency   => 'myr',
@@ -158,6 +156,7 @@ subtest 'Check client band limits' => sub {
         amount           => 500,
         type             => 'sell',
         rate             => 1,
+        rate_type        => 'fixed',
         min_order_amount => 1,
         max_order_amount => 50,
         local_currency   => 'myr',
@@ -282,6 +281,7 @@ subtest 'ad limits' => sub {
                 type             => 'sell',
                 amount           => 100,
                 rate             => 1,
+                rate_type        => 'fixed',
                 min_order_amount => 1,
                 max_order_amount => 20,
                 payment_method   => 'bank_transfer',
@@ -302,6 +302,7 @@ subtest 'ad limits' => sub {
                 type             => 'sell',
                 amount           => 100,
                 rate             => 1,
+                rate_type        => 'fixed',
                 min_order_amount => 10,
                 max_order_amount => 100,
                 payment_method   => 'bank_transfer',
@@ -328,6 +329,7 @@ subtest 'ad limits' => sub {
                 type             => 'sell',
                 amount           => 100,
                 rate             => 1,
+                rate_type        => 'fixed',
                 min_order_amount => 1,
                 max_order_amount => 100,
                 payment_method   => 'bank_transfer',

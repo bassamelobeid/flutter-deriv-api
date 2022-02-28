@@ -21,7 +21,9 @@ my $rule_engine = BOM::Rules::Engine->new();
 
 populate_exchange_rates();
 
-BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->escrow([]);
+
 BOM::Test::Helper::P2P::bypass_sendbird();
 
 my @emitted_events;

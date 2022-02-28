@@ -37,6 +37,7 @@ subtest 'updating all advert fields' => sub {
         payment_info     => 'ad pay info',
         contact_info     => 'ad contact info',
         rate             => 1.0,
+        rate_type        => 'fixed',
         type             => 'sell',
     );
 
@@ -267,6 +268,12 @@ subtest 'updating all advert fields' => sub {
         id             => $advert->{id},
         local_currency => 'ABC',
     )->{local_currency}, 'ABC', 'update local_currency';
+
+    cmp_deeply(
+        exception { $advertiser->p2p_advert_update(id => $advert->{id}, rate_type => 'float') },
+        {error_code => 'AdvertFloatRateNotAllowed'},
+        'cannot convert ad to floating rate when feature is disabled'
+    );
 };
 
 subtest 'Buy ads' => sub {
@@ -283,6 +290,7 @@ subtest 'Buy ads' => sub {
         payment_info     => 'ad pay info',
         contact_info     => 'ad contact info',
         rate             => 1.0,
+        rate_type        => 'fixed',
         type             => 'buy',
     );
 

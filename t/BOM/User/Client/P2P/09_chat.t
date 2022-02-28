@@ -9,7 +9,8 @@ use Test::MockTime qw(set_fixed_time);
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->limits->maximum_advert(100);
 
 my $mock_sb      = Test::MockModule->new('WebService::SendBird');
 my $mock_sb_user = Test::MockModule->new('WebService::SendBird::User');

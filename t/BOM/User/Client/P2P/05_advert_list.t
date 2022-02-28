@@ -9,11 +9,7 @@ use BOM::User::Client;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Config::Runtime;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
-
-my $app_config = BOM::Config::Runtime->instance->app_config;
-my $max_order  = $app_config->payments->p2p->limits->maximum_order;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
@@ -53,10 +49,10 @@ my ($advertiser2, $advert2) = BOM::Test::Helper::P2P::create_advert(amount => 10
 
 my $client1 = BOM::Test::Helper::Client::create_client();
 $client1->account('USD');
-$client1->residence('ID');
+$client1->residence('id');
 my $client2 = BOM::Test::Helper::Client::create_client();
 $client2->account('USD');
-$client2->residence('MY');
+$client2->residence('ng');
 my $client3 = BOM::Test::Helper::Client::create_client();
 $client3->account('EUR');
 

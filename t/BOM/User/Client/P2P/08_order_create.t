@@ -20,7 +20,9 @@ use BOM::Rules::Engine;
 
 populate_exchange_rates();
 
-BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->escrow([]);
+
 BOM::Test::Helper::P2P::bypass_sendbird();
 
 my @emitted_events;
@@ -434,8 +436,8 @@ subtest 'Creating order outside min-max range' => sub {
 subtest 'Creating order without escrow' => sub {
     my $amount = 100;
 
-    my $original_escrow = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow;
-    BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
+    my $original_escrow = $config->escrow;
+    $config->escrow([]);
 
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
         amount => $amount,
@@ -457,7 +459,7 @@ subtest 'Creating order without escrow' => sub {
 
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
 
-    BOM::Config::Runtime->instance->app_config->payments->p2p->escrow($original_escrow);
+    $config->escrow($original_escrow);
 };
 
 subtest 'Buyer tries to place an order for an advert with a different currency' => sub {
@@ -505,7 +507,7 @@ subtest 'Buyer tries to place an order for an advert of another country' => sub 
 
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
-    $client->residence('MY');
+    $client->residence('ng');
     $client->p2p_advertiser_create(name => 'test nickname1');
     $client->p2p_advertiser_update(is_approved => 1);
     delete $client->{_p2p_advertiser_cached};
@@ -730,7 +732,7 @@ subtest 'Buyer tries to place an order for an inactive ad' => sub {
 };
 
 subtest 'Buyer tries to place a "buy" order with an amount that exceeds the advertiser balance' => sub {
-    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
+    $config->limits->maximum_advert(100);
 
     my $ad_amount = 100;
     my $escrow    = BOM::Test::Helper::P2P::create_escrow();
@@ -789,7 +791,7 @@ subtest 'Seller tries to place an order bigger than the ad amount' => sub {
 };
 
 subtest 'Buyer tries to place an order for an advert of an unapproved advertiser' => sub {
-    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
+    $config->limits->maximum_advert(100);
     BOM::Test::Helper::P2P::create_escrow();
 
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
@@ -814,7 +816,7 @@ subtest 'Buyer tries to place an order for an advert of an unapproved advertiser
 };
 
 subtest 'Daily order limit' => sub {
-    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->count_per_day_per_client(2);
+    $config->limits->count_per_day_per_client(2);
     BOM::Test::Helper::P2P::create_escrow();
 
     my $buyer = BOM::Test::Helper::P2P::create_advertiser();
