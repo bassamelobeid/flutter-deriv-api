@@ -1569,6 +1569,7 @@ sub _send_reset_password_confirmation_email {
             loginid    => $client->loginid,
             properties => {
                 first_name => $client->first_name,
+                email      => $client->email,
                 type       => $type,
             }});
     return undef;
