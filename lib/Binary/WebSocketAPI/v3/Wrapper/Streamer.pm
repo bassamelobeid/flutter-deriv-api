@@ -65,6 +65,7 @@ sub website_status {
                 method      => 'website_status',
                 call_params => {
                     country_code => $c->country_code,
+                    residence    => $c->stash('residence'),
                 },
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
@@ -96,7 +97,7 @@ sub website_status {
                     my $current_state = ws_redis_master()->get("NOTIFY::broadcast::state");
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_}
-                        for
+                        for grep { exists $rpc_response->{$_} }
                         qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config crypto_config p2p_config payment_agents|;
 
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
