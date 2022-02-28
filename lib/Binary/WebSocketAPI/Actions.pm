@@ -39,8 +39,20 @@ sub actions_config {
         ['contracts_for',     {stash_params => [qw/ token /]}],
         ['active_symbols',    {stash_params => [qw/ token /]}],
 
-        ['ticks',          {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
-        ['ticks_history',  {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
+        [
+            'ticks',
+            {
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks,
+                msg_group          => 'tick',
+            }
+        ],
+        [
+            'ticks_history',
+            {
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks_history,
+                msg_group          => 'tick',
+            }
+        ],
         ['proposal',       {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal}],
         ['forget',         {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
         ['forget_all',     {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget_all}],
