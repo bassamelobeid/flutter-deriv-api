@@ -9,7 +9,7 @@ use Date::Utility;
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use JSON::MaybeXS;
-use Finance::Asset;
+use Finance::Underlying;
 
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
@@ -249,8 +249,7 @@ sub _recover_volsurface {
     my $self = shift;
 
     my $offerings    = LandingCompany::Registry::get_default()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
-    my $params       = Finance::Asset->all_parameters;
-    my @quanto       = grep { $params->{$_}->{quanto_only} } keys %$params;
+    my @quanto       = grep { Finance::Underlying->by_symbol($_)->{quanto_only} } Finance::Underlying->symbols;
     my %offered_list = map  { $_ => 1 } ($offerings->values_for_key('underlying_symbol'), @quanto);
     my $name         = 'volatility_surfaces';
     foreach my $symbol (@{$self->_symbols($name)}) {
