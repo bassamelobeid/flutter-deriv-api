@@ -19,7 +19,6 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_group
 use await;
 
 initialize_realtime_ticks_db();
-use Finance::Asset;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new;
 

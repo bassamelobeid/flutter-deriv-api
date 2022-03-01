@@ -7,7 +7,6 @@ use JSON::MaybeXS;
 use File::Basename;
 use Path::Tiny;
 use Data::Dumper;
-use Finance::Asset;
 # we need this import here so the market-data db will be fresh for the test
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
