@@ -89,7 +89,7 @@ It returns a hash ref containing the addresses just created for ERC20 currencies
 
 sub deploy_all_erc20_test_contracts {
     my $result = {};
-    for (LandingCompany::Registry->new()->all_crypto_currencies()) {
+    for (LandingCompany::Registry->all_crypto_currencies) {
         my $contract_address = deploy_erc20_test_contract($_);
         $result->{$_} = $contract_address if $contract_address;
     }
