@@ -3,11 +3,13 @@ use strict;
 use warnings;
 
 use YAML::XS qw(LoadFile);
+
 use BOM::Database::ClientDB;
 use File::ShareDir;
 use Finance::Underlying;
 
 sub run {
+
     my @underlyings = Finance::Underlying->all_underlyings();
 
     my $dbic = BOM::Database::ClientDB->new({
@@ -45,7 +47,7 @@ sub run {
         my $ins = 0;
         my $upd = 0;
 
-        print "starting update underlying\n";
+        print "starting to update underlying\n";
 
         foreach my $symbol_file (@underlyings) {
             my $symbol = $symbol_file->symbol;
@@ -54,23 +56,15 @@ sub run {
                 my $symbol_db = $u_db->{$symbol};
 
                 # check for changes & update row
-                if (grep { ($symbol_file->{$_} //= '') ne ($symbol_db->{$_} //= '') } qw(market submarket quoted_currency market_type)) {
-                    $update_sth->execute(
-                        $symbol_file->{market},
-                        $symbol_file->{submarket},
-                        $symbol_file->{quoted_currency},
-                        $symbol_file->{market_type}, $symbol
-                    );
+                if (grep { $symbol_file->$_ ne ($symbol_db->{$_} //= '') } qw(market submarket quoted_currency market_type)) {
+                    $update_sth->execute($symbol_file->market, $symbol_file->submarket, $symbol_file->quoted_currency,
+                        $symbol_file->market_type, $symbol);
                     $upd++;
                 }
             } else {
                 # insert new underlying
-                $insert_sth->execute(
-                    $symbol,
-                    $symbol_file->{market},
-                    $symbol_file->{submarket},
-                    $symbol_file->{quoted_currency},
-                    $symbol_file->{market_type});
+                $insert_sth->execute($symbol, $symbol_file->market, $symbol_file->submarket, $symbol_file->quoted_currency,
+                    $symbol_file->market_type);
                 $ins++;
             }
         }
