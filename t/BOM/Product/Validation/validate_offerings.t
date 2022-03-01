@@ -44,8 +44,8 @@ my $bet_params = {
     current_tick => $tick,
 };
 
-my $mocked_FA = Test::MockModule->new('Finance::Asset');
-$mocked_FA->mock('cached_underlyings', sub { {} });
+my $mocked_FU = Test::MockModule->new('Finance::Underlying');
+$mocked_FU->mock('cached_underlyings', sub { {} });
 
 note("Validation runs on " . $now->datetime);
 subtest 'custom suspend trading' => sub {

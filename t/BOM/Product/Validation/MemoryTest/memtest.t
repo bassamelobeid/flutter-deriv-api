@@ -17,7 +17,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Product::ContractFactory qw(produce_contract);
 use LandingCompany::Registry;
 use Date::Utility;
-use Finance::Asset;
+use Finance::Underlying;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Market::DataDecimate;
@@ -59,9 +59,8 @@ my @underlyings =
     map { create_underlying($_) } map { ($offerings_obj->query({submarket => $_}, ['underlying_symbol']))[0] } @submarkets;
 
 # just do for everything
-my $all                     = Finance::Asset->all_parameters;
-my @market_data_underlyings = map { create_underlying({symbol => $_, for_date => $now}) } keys %$all;
-my @exchanges               = map { Finance::Asset->get_parameters_for($_->symbol)->{exchange_name} } @market_data_underlyings;
+my @market_data_underlyings = map { create_underlying({symbol => $_, for_date => $now}) } Finance::Underlying->symbols;
+my @exchanges               = map { Finance::Underlying->by_symbol($_->symbol)->exchange_name } @market_data_underlyings;
 my %known_surfaces          = map { $_ => 1 } qw(moneyness delta);
 my %volsurfaces =
     map { $_->symbol => 'volsurface_' . $_->volatility_surface_type } grep { $known_surfaces{$_->volatility_surface_type} } @market_data_underlyings;
