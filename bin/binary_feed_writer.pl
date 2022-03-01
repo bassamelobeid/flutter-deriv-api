@@ -6,7 +6,7 @@ no indirect;
 
 use BOM::RPC::Feed::Writer;
 use BOM::Config;
-use Finance::Asset;
+use Finance::Underlying;
 use IO::Async::Loop;
 use Path::Tiny;
 use Syntax::Keyword::Try;
@@ -50,7 +50,7 @@ Log::Any::Adapter->import(
 );
 
 my $loop    = IO::Async::Loop->new;
-my @symbols = $symbols_list ? split(/,/, $symbols_list) : Finance::Asset->symbols;
+my @symbols = $symbols_list ? split(/,/, $symbols_list) : Finance::Underlying->symbols;
 
 $log->infof("Running as %s at %s", $service_name, time);
 $0 = $service_name;

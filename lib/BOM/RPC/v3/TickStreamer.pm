@@ -3,7 +3,6 @@ package BOM::RPC::v3::TickStreamer;
 use strict;
 use warnings;
 
-use Finance::Asset;
 use Date::Utility;
 
 use BOM::RPC::Registry '-dsl';

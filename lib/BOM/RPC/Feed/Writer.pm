@@ -41,7 +41,6 @@ use Log::Any qw($log);
 use Time::Moment;
 
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_gauge);
-use Finance::Asset;
 
 use POSIX qw(floor);
 use BOM::RPC::Feed::Sendfile;
