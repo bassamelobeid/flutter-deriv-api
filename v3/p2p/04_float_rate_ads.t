@@ -57,6 +57,8 @@ my $client = BOM::Test::Helper::P2P::create_advertiser(
     client_details => {residence => 'id'});
 my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test', ['payments']);
 
+$app_config->check_for_update;
+
 $t->await::authorize({authorize => $advertiser_token});
 
 my $p2p_config = $t->await::website_status({website_status => 1 })->{website_status}{p2p_config};
