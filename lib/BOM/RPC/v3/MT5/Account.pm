@@ -737,14 +737,6 @@ async_rpc "mt5_new_account",
 
     # something is wrong if we're not able to get group config
     return create_error_future('permission') unless $group_config;
-    my $config = request()->brand->countries_instance->countries_list->{$client->residence};
-    if ($config->{mt5_age_verification}
-        and not $client->status->age_verification)
-    {
-        return ($client->is_virtual() and $user->clients == 1)
-            ? create_error_future('RealAccountMissing')
-            : create_error_future('NoAgeVerification');
-    }
 
     my $compliance_requirements = $requirements->{compliance};
 

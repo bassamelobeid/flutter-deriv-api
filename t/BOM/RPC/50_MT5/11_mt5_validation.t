@@ -920,19 +920,19 @@ subtest 'Virtual account types - GB residence' => sub {
     #demo account
     $client->status->clear_age_verification();
     $client->save();
-    create_mt5_account->(
+    my $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
             mt5_account_type => 'financial'
         },
-        'FinancialAccountMissing',
-        'Virtual GB client cannot create a financial MT5 account'
     );
+
+    ok $login =~ qr/^MTD[0-9]*$/, 'gb client can create MT5 demo account without a real account';
     $client->status->set('age_verification', 'test', 'test');
     $client->save();
 
-    my $login = create_mt5_account->(
+    $login = create_mt5_account->(
         $c, $token, $client,
         {
             country      => 'mt',
@@ -942,15 +942,14 @@ subtest 'Virtual account types - GB residence' => sub {
         'Virtual GB client can not create gaming demo account'
     );
 
-    create_mt5_account->(
+    $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
             mt5_account_type => 'financial'
         },
-        'FinancialAccountMissing',
-        'Unable to create MT5 financial account from GB even after age verification'
     );
+    ok $login =~ qr/^MTD[0-9]*$/, 'gb client can create MT5 demo account without a real account';
 
     $login = create_mt5_account->(
         $c, $token, $client,

@@ -68,7 +68,6 @@ my %category_message_mapping = do {
             localize('Your existing account does not allow MT5 trading. To open an MT5 account, please upgrade to a financial account.'),
         GamingAccountMissing =>
             localize('Your existing account does not allow MT5 trading. To open an MT5 account, please upgrade to a gaming account.'),
-        NoAgeVerification           => localize("You haven't verified your age. Please contact us for more information."),
         FinancialAssessmentRequired => localize('Please complete your financial assessment.'),
         TINDetailsMandatory         => localize('We require your tax information for regulatory purposes. Please fill in your tax information.'),
         MT5Duplicate                => localize(
