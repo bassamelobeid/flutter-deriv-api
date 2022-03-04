@@ -149,5 +149,5 @@ sub _save_early_closes_calendar {
     )->save;
 
     BOM::Backoffice::QuantsAuditLog::log($staff, 'save_calendar', "Manually update partial trading calendar");
-    code_exit_BO("<p class='success'>Uploaded successfully.</p>", "Manually update partial trading calendar");
+    return;
 }
