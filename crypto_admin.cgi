@@ -260,8 +260,10 @@ sub _get_function_map {
         get_block_count          => sub { $currency_wrapper->last_block() },
         get_blockchain_info      => sub { $currency_wrapper->get_info() },
         import_address           => $import_address,
-        }
-        if ($currency =~ /^(BTC|LTC)$/);
+        bump_btc_transaction     => sub {
+            return bump_transaction($staff, $currency_wrapper, $txn_hash, undef);
+        },
+    } if ($currency =~ /^(BTC|LTC)$/);
 
     return +{
         list_unspent_utxo        => sub { $currency_wrapper->get_unspent_transactions($address ? [$address] : [], $confirmations) },
@@ -316,26 +318,9 @@ sub _get_function_map {
             $currency_wrapper->get_transaction_receipt($txn_hash);
         },
         bump_eth_transaction => sub {
-            die "ETH:Transaction hash must be specified" unless length $txn_hash;
-            my $old_transaction = $currency_wrapper->get_transaction($txn_hash);
-            die sprintf("Could not find transaction on blockchain with hash: %s", $txn_hash) unless $old_transaction;
-            die sprintf("Confirmed transaction cannot be bumped. hash: %s",       $txn_hash) if $old_transaction->{blockNumber};
-            my $redis_write         = BOM::Config::Redis::redis_replicated_write();
-            my $redis_read          = BOM::Config::Redis::redis_replicated_read();
-            my $approved_previously = $redis_read->get(BUMP_TXN_RECORD . $txn_hash);
-            my $max_fee_per_gas_msg = ($max_fee_per_gas) ? $max_fee_per_gas : 'Not provided';
-            #bump if its second person's approval
-            if ($approved_previously && $approved_previously ne $staff) {
-                $redis_write->del(BUMP_TXN_RECORD . $txn_hash);
-                return $currency_wrapper->bump_fee_transaction($txn_hash, $max_fee_per_gas);
-            }
-            my $approval_message =
-                !$approved_previously
-                ? 'Transaction has been successfully approved for bump.'
-                : 'This transaction is already approved by you for bump.';    # $approved_previously eq $staff
-            $redis_write->setex(BUMP_TXN_RECORD . $txn_hash, 3600, $staff);
-            return sprintf('<p>%s. Needs one more approver.</p><b>Transaction hash:</b> %s, <b>Max fee per gas(Gwei):</b> %s',
-                $approval_message, $txn_hash, $max_fee_per_gas_msg);
+            my $result = bump_transaction($staff, $currency_wrapper, $txn_hash, $max_fee_per_gas);
+            return $result . sprintf(', <b>Max fee per gas(Gwei):</b> %s', $max_fee_per_gas || 'Not provided') if ref($result) ne 'HASH';
+            return $result;
         },
     } if $currency eq 'ETH';
 }
@@ -371,6 +356,27 @@ sub _is_erc20 {
     return 1 if $parent_currency eq 'ETH';
 
     return 0;
+}
+
+sub bump_transaction {
+    my ($staff, $currency_wrapper, $txn_hash, $max_fee_per_gas) = @_;
+    die $currency_wrapper->currency_code . ":Transaction hash must be specified" unless length $txn_hash;
+
+    my $redis_write         = BOM::Config::Redis::redis_replicated_write();
+    my $redis_read          = BOM::Config::Redis::redis_replicated_read();
+    my $approved_previously = $redis_read->get(BUMP_TXN_RECORD . $txn_hash);
+    #bump if its second person's approval
+    if ($approved_previously && $approved_previously ne $staff) {
+        $redis_write->del(BUMP_TXN_RECORD . $txn_hash);
+        return $currency_wrapper->bump_fee_transaction($txn_hash, $max_fee_per_gas);
+    }
+    my $approval_message =
+        !$approved_previously
+        ? 'Transaction has been successfully approved for bump.'
+        : 'This transaction is already approved by you for bump.';    # $approved_previously eq $staff
+    $redis_write->setex(BUMP_TXN_RECORD . $txn_hash, 3600, $staff);
+
+    return sprintf('<p>%s Needs one more approver.</p><b>Transaction hash:</b> %s', $approval_message, $txn_hash);
 }
 
 code_exit_BO();

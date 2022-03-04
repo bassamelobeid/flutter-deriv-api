@@ -74,15 +74,22 @@
         },
         bump_eth_transaction => {
             title    => 'Bump transaction',
-            description => 'Use this when transaction need to be bump. It requires two persons authentication to complete the process.',
+            description => 'Use this when the transaction needs to be bumped. It requires a two-person check to complete the process.',
             elements => [
                 { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 80, value => '' },
                 { label => 'Max fee per gas(Gwei)',  name => 'max_fee_per_gas', size => 4, value => '' },
             ],
         },
+        bump_btc_transaction => {
+            title    => 'Bump transaction',
+            description => 'Use this when the transaction needs to be bumped. It requires a two-person check to complete the process.',
+            elements => [
+                { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 80, value => '' },
+            ],
+        },
     };
     currency_forms = {
-        BTC => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address'],
+        BTC => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'bump_btc_transaction'],
         UST => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'list_transactions'],
         ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas', 'get_transaction_receipt','bump_eth_transaction'],
     };
@@ -160,6 +167,9 @@
         <select id="ddl_with_params" onchange="showForm(this.value)">
             <option disabled selected value>--- select an option ---</option>
             [% FOREACH form_name IN currency_forms.$form_type.sort %]
+                [% IF currency == 'LTC' && form_name == 'bump_btc_transaction' %]
+                    [% NEXT %]
+                [% END %]
                 <option value="[% form_name %]"[% IF previous_req == form_name %] selected="selected"[% END %]>[% all_forms.$form_name.title %]</option>
             [% END %]
         </select>
