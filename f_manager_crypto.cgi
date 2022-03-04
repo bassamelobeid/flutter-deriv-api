@@ -563,10 +563,15 @@ EOF
     my $cmd = request()->param('command') // 'getwallet';
 
     if ($cmd eq 'getwallet') {
-        my $get_balance = $currency_wrapper->get_wallet_balance();
+        # hash slice has been used here to retrieve both values
+        my ($get_balance, $creation_time) = @{$currency_wrapper->get_wallet_balance()}{qw(balances creation_time)};
         print "<b>Total Balance(s) in Wallet: </b>";
         for my $currency_balance (sort keys %$get_balance) {
             print sprintf("<p>%s : <b>%s</b></p>", $currency_balance, $get_balance->{$currency_balance});
+        }
+        if ($creation_time) {
+            my $dt = Date::Utility->new($creation_time)->datetime_yyyymmdd_hhmmss_TZ;
+            print sprintf("<p><b>Last Update:</b> %s</p>", $dt);
         }
     } elsif ($cmd eq 'getavailablepayout') {
         my $main_address_balance = $currency_wrapper->get_main_address_balance();
@@ -751,4 +756,3 @@ sub withdrawal_reject {
 
     return $error;
 }
-

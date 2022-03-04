@@ -252,7 +252,7 @@ sub _get_function_map {
     return +{
         list_unspent_utxo        => sub { $currency_wrapper->get_unspent_transactions($address ? [$address] : [], $confirmations) },
         get_transaction          => sub { $currency_wrapper->get_transaction_details($txn_hash) },
-        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance()->{$currency} },
+        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance()->{balances}->{$currency} },
         get_main_address_balance => sub { $currency_wrapper->get_main_address_balance()->{$currency} },
         get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
         get_estimate_smartfee    => sub { $currency_wrapper->get_estimated_fee() },
@@ -269,7 +269,7 @@ sub _get_function_map {
         list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($confirmations, $address) },
         get_block_count          => sub { $currency_wrapper->last_block() },
         get_blockchain_info      => sub { $currency_wrapper->get_info() },
-        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance() },
+        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance()->{balances} },
         get_main_address_balance => sub { $currency_wrapper->get_main_address_balance() },
         get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
         list_transactions        => sub {
@@ -287,7 +287,7 @@ sub _get_function_map {
     } if $currency eq 'UST';
 
     return +{
-        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance()->{$currency} },
+        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance()->{balances}->{$currency} },
         get_main_address_balance => sub { $currency_wrapper->get_main_address_balance()->{$currency} },
         get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
         get_accounts             => sub { $currency_wrapper->list_addresses() },
