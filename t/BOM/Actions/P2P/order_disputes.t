@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use utf8;
 
 use Test::More;
 use Test::Deep;
@@ -32,164 +33,113 @@ $mock->mock(
 $mock_segment->mock(
     'track',
     sub {
-        push @segment_args, [@_];
+        push @segment_args, {@_[1 .. $#_]};
         return $mock_segment->original('track')->(@_);
     });
 
 BOM::Test::Helper::P2P::create_escrow();
 
-subtest 'Order dispute type buy' => sub {
-    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
-        amount => 100,
-        type   => 'sell'
-    );
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-        advert_id => $advert->{id},
-        amount    => 100
-    );
-
-    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
-    $client->p2p_create_order_dispute(
-        id             => $order->{id},
-        dispute_reason => 'seller_not_released',
-    );
-
-    @track_event_args = ();
-    BOM::Event::Actions::P2P::order_updated({
-        client_loginid => $client->loginid,
-        order_id       => $order->{id},
-        order_event    => 'dispute',
-    });
-
-    # Get fresh order data
-    $order = $client->p2p_order_info(id => $order->{id});
-
-    # Check whether the track_events are called
-    is scalar @track_event_args, 2, 'Two track_event fired';
-    is scalar @segment_args,     2, 'Two segments tracks fired';
-    is $_->[2], 'p2p_order_dispute', 'p2p order dispute sent' foreach @segment_args;
-
-    my @expected_track_event_args = ({
-            event      => 'p2p_order_dispute',
-            client     => isa('BOM::User::Client'),
-            properties => {
-                user_role        => 'buyer',
-                order_type       => 'buy',
-                seller_nickname  => '',
-                order_id         => $order->{id},
-                buyer_user_id    => $client->binary_user_id,
-                seller_user_id   => $advertiser->binary_user_id,
-                currency         => $order->{account_currency},
-                exchange_rate    => $order->{rate_display},
-                local_currency   => $order->{local_currency},
-                buyer_nickname   => $order->{client_details}->{name}     // '',
-                seller_nickname  => $order->{advertiser_details}->{name} // '',
-                amount           => $order->{amount},
-                dispute_reason   => $order->{dispute_details}->{dispute_reason},
-                disputer         => 'buyer',
-                order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
-            }
+subtest 'Order disputes' => sub {
+    my @scenarios = ({
+            disputer     => 'seller',
+            reason       => 'buyer_not_paid',
+            buyer_title  => 'We’re investigating and need more info',
+            seller_title => 'We’re investigating your dispute',
         },
         {
-            event      => 'p2p_order_dispute',
-            client     => isa('BOM::User::Client'),
-            properties => {
-                user_role        => 'seller',
-                order_type       => 'buy',
-                order_id         => $order->{id},
-                buyer_user_id    => $client->binary_user_id,
-                seller_user_id   => $advertiser->binary_user_id,
-                currency         => $order->{account_currency},
-                exchange_rate    => $order->{rate_display},
-                local_currency   => $order->{local_currency},
-                buyer_nickname   => $order->{client_details}->{name}     // '',
-                seller_nickname  => $order->{advertiser_details}->{name} // '',
-                amount           => $order->{amount},
-                dispute_reason   => $order->{dispute_details}->{dispute_reason},
-                disputer         => 'buyer',
-                order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
-            }});
-
-    cmp_deeply $track_event_args[0], superhashof($expected_track_event_args[0]), 'Track event params are looking good for buyer';
-    cmp_deeply $track_event_args[1], superhashof($expected_track_event_args[1]), 'Track event params are looking good for seller';
-};
-
-subtest 'Order dispute type sell' => sub {
-    my $amount = 100;
-    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
-        amount => $amount,
-        type   => 'buy'
-    );
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-        advert_id => $advert->{id},
-        balance   => $amount
-    );
-
-    BOM::Test::Helper::P2P::set_order_disputable($advertiser, $order->{id});
-    my $response = $client->p2p_create_order_dispute(
-        id             => $order->{id},
-        dispute_reason => 'buyer_not_paid',
-    );
-
-    @track_event_args = ();
-    @segment_args     = ();
-    BOM::Event::Actions::P2P::order_updated({
-        client_loginid => $client->loginid,
-        order_id       => $order->{id},
-        order_event    => 'dispute',
-    });
-
-    # Get fresh order data
-    $order = $advertiser->p2p_order_info(id => $order->{id});
-
-    # Check whether the track_events are called
-    is scalar @track_event_args, 2, 'Two track_event fired';
-    is scalar @segment_args,     2, 'Two segments tracks fired';
-    is $_->[2], 'p2p_order_dispute', 'p2p order dispute sent' foreach @segment_args;
-
-    my @expected_track_event_args = ({
-            event      => 'p2p_order_dispute',
-            client     => isa('BOM::User::Client'),
-            properties => {
-                user_role        => 'buyer',
-                order_type       => 'sell',
-                seller_nickname  => '',
-                order_id         => $order->{id},
-                buyer_user_id    => $advertiser->binary_user_id,
-                seller_user_id   => $client->binary_user_id,
-                currency         => $order->{account_currency},
-                exchange_rate    => $order->{rate_display},
-                local_currency   => $order->{local_currency},
-                buyer_nickname   => $order->{advertiser_details}->{name} // '',
-                seller_nickname  => $order->{client_details}->{name}     // '',
-                amount           => $order->{amount},
-                dispute_reason   => $order->{dispute_details}->{dispute_reason},
-                disputer         => 'seller',
-                order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
-            }
+            disputer     => 'buyer',
+            reason       => 'seller_not_released',
+            buyer_title  => 'We’re investigating your dispute',
+            seller_title => 'We’re investigating and need more info',
         },
         {
-            event      => 'p2p_order_dispute',
-            client     => isa('BOM::User::Client'),
-            properties => {
-                user_role        => 'seller',
-                order_type       => 'sell',
-                order_id         => $order->{id},
-                buyer_user_id    => $advertiser->binary_user_id,
-                seller_user_id   => $client->binary_user_id,
-                currency         => $order->{account_currency},
-                exchange_rate    => $order->{rate_display},
-                local_currency   => $order->{local_currency},
-                buyer_nickname   => $order->{advertiser_details}->{name} // '',
-                seller_nickname  => $order->{client_details}->{name}     // '',
-                amount           => $order->{amount},
-                dispute_reason   => $order->{dispute_details}->{dispute_reason},
-                disputer         => 'seller',
-                order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
-            }});
+            disputer     => 'buyer',
+            reason       => 'buyer_overpaid',
+            buyer_title  => 'We’re investigating your dispute',
+            seller_title => 'We’re investigating and need more info',
+        },
+        {
+            disputer     => 'seller',
+            reason       => 'buyer_underpaid',
+            buyer_title  => 'We’re investigating and need more info',
+            seller_title => 'We’re investigating your dispute',
+        },
+        {
+            disputer     => 'seller',
+            reason       => 'buyer_overpaid',
+            buyer_title  => 'You’ve paid more than the order amount',
+            seller_title => 'Please return the excess funds',
+        },
+        {
+            disputer     => 'buyer',
+            reason       => 'buyer_underpaid',
+            buyer_title  => 'Please make the full payment',
+            seller_title => 'The buyer hasn’t made the full payment',
+        },
+    );
 
-    cmp_deeply $track_event_args[0], superhashof($expected_track_event_args[0]), 'Track event params are looking good for buyer';
-    cmp_deeply $track_event_args[1], superhashof($expected_track_event_args[1]), 'Track event params are looking good for seller';
+    for my $scenario (@scenarios) {
+        for my $ad_type ('buy', 'sell') {
+            my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+                amount => 100,
+                type   => $ad_type
+            );
+            my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+                advert_id => $advert->{id},
+                balance   => 100
+            );
+            BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+
+            my %parties;
+            @parties{('buyer', 'seller')} = $ad_type eq 'buy' ? ($advertiser, $client) : ($client, $advertiser);
+
+            $parties{$scenario->{disputer}}->p2p_create_order_dispute(
+                id             => $order->{id},
+                dispute_reason => $scenario->{reason},
+            );
+
+            @segment_args = ();
+            BOM::Event::Actions::P2P::order_updated({
+                    client_loginid => $parties{$scenario->{disputer}}->loginid,
+                    order_id       => $order->{id},
+                    order_event    => 'dispute',
+                })->get;
+
+            my %common_args = (
+                disputer       => $scenario->{disputer},
+                dispute_reason => $scenario->{reason},
+                order_id       => $order->{id},
+                lang           => ignore(),
+                brand          => ignore(),
+            );
+
+            cmp_deeply(
+                \@segment_args,
+                bag({
+                        event      => 'p2p_order_dispute',
+                        properties => {
+                            user_role => 'seller',
+                            loginid   => $parties{seller}->loginid,
+                            title     => $scenario->{seller_title},
+                            %common_args,
+                        },
+                        context => ignore(),
+                    },
+                    {
+                        event      => 'p2p_order_dispute',
+                        properties => {
+                            user_role => 'buyer',
+                            loginid   => $parties{buyer}->loginid,
+                            title     => $scenario->{buyer_title},
+                            %common_args,
+                        },
+                        context => ignore(),
+                    },
+                ),
+                "Expected events fired for $scenario->{reason} dispute by $scenario->{disputer} for $ad_type ad",
+            ) or note explain \@segment_args;
+        }
+    }
 };
 
 subtest 'Dispute resolution' => sub {
@@ -231,7 +181,7 @@ subtest 'Dispute resolution' => sub {
                 # Check whether the track_events are called
                 is scalar @track_event_args, 2, 'Two track_event fired';
                 is scalar @segment_args,     2, 'Two segments tracks fired';
-                is $_->[2], "p2p_order_$event", "P2P $event sent" foreach @segment_args;
+                is $_->{event}, "p2p_order_$event", "P2P $event sent" foreach @segment_args;
 
                 my $user_role       = $type eq 'buy' ? 'buyer'                              : 'seller';
                 my $order_type      = $type eq 'buy' ? 'sell'                               : 'buy';

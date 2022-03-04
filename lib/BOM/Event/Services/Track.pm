@@ -3,6 +3,7 @@ package BOM::Event::Services::Track;
 use strict;
 use warnings;
 use feature 'state';
+use utf8;
 
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
@@ -17,7 +18,7 @@ use Format::Util::Numbers qw(formatnumber);
 use BOM::User;
 use BOM::User::Client;
 use BOM::Event::Services;
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Locale qw(get_state_by_id);
 use BOM::Database::Model::UserConnect;
 
@@ -84,9 +85,7 @@ my %EVENT_PROPERTIES = (
     p2p_order_expired => [
         qw(buyer_has_confirmed user_role order_type  order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
     ],
-    p2p_order_dispute => [
-        qw(dispute_reason disputer user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
-    ],
+    p2p_order_dispute        => [qw(user_role title order_id disputer dispute_reason)],
     p2p_order_timeout_refund => [
         qw(user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
     ],
@@ -734,7 +733,53 @@ Returns, a Future needing both tracking events.
 =cut
 
 sub p2p_order_dispute {
-    return _p2p_dispute_resolution(@_, event => 'p2p_order_dispute');
+    my %args = @_;
+    my ($order, $parties) = @args{qw(order parties)};
+
+    my %properties = (
+        disputer       => 'buyer',
+        order_id       => $order->{id},
+        dispute_reason => $order->{dispute_details}{dispute_reason},
+    );
+
+    # most emails use the same titles
+    my $buyer_title  = localize('We’re investigating your dispute');
+    my $seller_title = localize('We’re investigating and need more info');
+
+    # seller raised a dispute
+    if ($order->{dispute_details}{disputer_loginid} eq $parties->{seller}->loginid) {
+        $properties{disputer} = 'seller';
+        ($seller_title, $buyer_title) = ($buyer_title, $seller_title);
+        if ($properties{dispute_reason} eq 'buyer_overpaid') {
+            $buyer_title  = localize('You’ve paid more than the order amount');
+            $seller_title = localize('Please return the excess funds');
+        }
+
+    } elsif ($properties{dispute_reason} eq 'buyer_underpaid') {    # buyer raised a dispute
+        $buyer_title  = localize('Please make the full payment');
+        $seller_title = localize('The buyer hasn’t made the full payment');
+    }
+
+    return Future->needs_all(
+        track_event(
+            event      => 'p2p_order_dispute',
+            client     => $parties->{buyer},
+            properties => {
+                user_role => 'buyer',
+                title     => $buyer_title,
+                %properties,
+            },
+        ),
+        track_event(
+            event      => 'p2p_order_dispute',
+            client     => $parties->{seller},
+            properties => {
+                user_role => 'seller',
+                title     => $seller_title,
+                %properties,
+            },
+        ),
+    );
 }
 
 =head2 p2p_order_dispute_complete
