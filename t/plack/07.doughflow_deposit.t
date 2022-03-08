@@ -12,6 +12,9 @@ use BOM::Database::ClientDB;
 use BOM::User;
 use BOM::User::Client;
 
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+
 use APIHelper qw/ balance deposit request decode_json /;
 
 # mock datadog
@@ -244,6 +247,58 @@ subtest 'PA withdrawal is disabled on deposit' => sub {
         'PA witdrawal status was removed from client account';
     ok !BOM::User::Client->new({loginid => $cli_sib->loginid})->status->pa_withdrawal_explicitly_allowed,
         'PA witdrawal status was removed from siblings accounts';
+};
+
+subtest 'Deposit currency mismatch' => sub {
+    my $email = 'theclient@deriv.com';
+    my $user  = BOM::User->create(
+        email    => $email,
+        password => 'asdf1234'
+    );
+    my $cli = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        binary_user_id => $user->id,
+        broker_code    => 'CR',
+        email          => $email,
+        residence      => 'ar'
+    });
+
+    $user->add_client($cli);
+    $cli->account('USD');
+    $cli = BOM::User::Client->new({loginid => $cli->loginid});
+
+    ok !$cli->status->deposit_attempt, 'Client initially have no deposit_attempt status';
+
+    $cli->status->set('deposit_attempt', 'SYSTEM', 'Simulate a deposit attempt');
+
+    $cli->status->_build_all;    #reload
+
+    ok $cli->status->deposit_attempt, 'Client has deposit_attempt status';
+
+    my $req = deposit(
+        loginid        => $cli->loginid,
+        trace_id       => 12345,
+        transaction_id => 94575934,
+        currency_code  => 'EUR'            #attempt to deposit with different currency
+    );
+
+    is $req->code, 400, 'Bad request is thrown for deposit currency mismatch';
+    like $req->content, qr/Deposit currency mismatch, client account is in USD, but the deposit is in EUR/, 'Describe the currency mismatch found';
+
+    ok $cli->status->deposit_attempt, 'Client has deposit_attempt status yet, even if deposit failed';
+
+    $req = deposit(
+        loginid        => $cli->loginid,
+        trace_id       => 33456,
+        transaction_id => 94573512,
+        currency_code  => 'USD'            # now using the right currency
+    );
+
+    is $req->code, 201, 'Deposit with correct currency succeed';
+
+    $cli->status->_build_all;              #reload
+
+    ok $cli->status->deposit_attempt, 'The status was removed after successful deposit';
+
 };
 
 done_testing();

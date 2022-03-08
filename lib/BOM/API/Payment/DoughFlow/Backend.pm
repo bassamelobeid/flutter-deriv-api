@@ -92,8 +92,15 @@ sub execute {
     BOM::Platform::Context::request($r);
 
     if ($c->type eq 'deposit') {
+        my $account_currency = $client->currency;
+        my $deposit_currency = $c->request_parameters->{currency_code};
+        if ($account_currency ne $deposit_currency) {
+            return $c->status_bad_request(
+                "Deposit currency mismatch, client account is in $account_currency, but the deposit is in $deposit_currency");
+        }
         # if the client uses DF to deposit, unset flag to dont allow them withdrawal through PA
         $client->clear_status_and_sync_to_siblings('pa_withdrawal_explicitly_allowed');
+        $client->status->clear_deposit_attempt;
     }
 
     if ($c->type eq 'payout_rejected') {
@@ -241,7 +248,7 @@ sub validate_as_payment {
                 $client->status->upsert('allow_document_upload', 'system', "Deposit attempted with method requiring POI ($processor)");
 
                 my $msg = localize(
-                    'To use this method for deposits, we’ll need to verify your identity. Click [_1] here[_2] to start the verification process, or choose another deposit method.',
+                    "To use this method for deposits, we'll need to verify your identity. Click [_1] here[_2] to start the verification process, or choose another deposit method.",
                     '<a href="' . request()->brand->authentication_url({language => request()->language}) . '">',
                     '</a>'
                 );
