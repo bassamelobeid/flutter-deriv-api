@@ -31,6 +31,7 @@ my @status_codes = qw(
     closed  transfers_blocked  shared_payment_method  personal_details_locked
     allow_poi_resubmission  allow_poa_resubmission migrated_universal_password
     poi_name_mismatch crypto_auto_reject_disabled crypto_auto_approve_disabled potential_fraud
+    deposit_attempt
 );
 
 for my $code (@status_codes) {

@@ -617,6 +617,28 @@ subtest 'Forged Documents Status' => sub {
     ok $client->has_forged_documents, 'Client has forged document - insensitive case';
 };
 
+subtest 'Deposit Attempt' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client->status->_build_all;          # reload
+
+    ok !$client->status->deposit_attempt, "Client didn't have a deposit attempt";
+
+    $client->status->upsert('deposit_attempt', 'test', 'Client attempted a deposit');
+
+    $client->status->_build_all;          # reload
+
+    ok $client->status->deposit_attempt, 'deposit_attempt is set';
+
+    $client->status->clear_deposit_attempt;
+
+    $client->status->_build_all;          # reload
+
+    ok !$client->status->deposit_attempt, 'deposit_attempt is removed';
+};
+
 done_testing();
 
 sub reset_client_statuses {
