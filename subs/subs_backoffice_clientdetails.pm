@@ -45,6 +45,8 @@ use BOM::User::Onfido;
 use BOM::User::IdentityVerification;
 use BOM::RPC::v3::Accounts;
 use BOM::Platform::Client::IdentityVerification;
+use BOM::User::RiskScreen;
+
 use 5.010;
 
 =head1 subs_backoffice_clientdetails
@@ -679,6 +681,7 @@ SQL
         login_locked_until                 => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
         too_many_attempts                  => $too_many_attempts,
         risk_screen                        => $risk_screen,
+        screening_reasons                  => [BOM::User::RiskScreen::SCREENING_REASON],
         is_compliance                      => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
         risk_disclaimer_updated_at         => $risk_disclaimer_resubmission_updated_at,
         risk_disclaimer_updated_by         => $risk_disclaimer_resubmission_updated_by,

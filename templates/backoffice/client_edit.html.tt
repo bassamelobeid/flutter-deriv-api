@@ -175,15 +175,27 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             </td>
         </tr>
         <tr><td class="label">Status</td><td>:                [% risk_screen.status %]<td></tr>
-        [% IF risk_screen.match_potential_volume %] <tr><td class="label">Potential Matches</td><td>:   [% risk_screen.match_potential_volume %]<td></tr> [% END %]
-        [% IF risk_screen.match_discounted_volume %] <tr><td class="label">Discounted Matches</td><td>: [% risk_screen.match_discounted_volume %]<td></tr> [% END %]
-        [% IF risk_screen.match_flagged_volume %] <tr><td class="label">Flagged Matches</td><td>:       [% risk_screen.match_flagged_volume %]<td></tr> [% END %]
-        [% IF risk_screen.flags_str %]            <tr><td class="label">Flags</td><td>:                 [% risk_screen.flags_str %]<td></tr> [% END %]
-        <tr><td class="label">Update date</td><td>: [% risk_screen.date_updated %]<td></tr> 
-    [% ELSE %]
+        [% IF risk_screen.match_potential_volume %] <tr><td class="label">Potential Matches</td><td>:   [% risk_screen.match_potential_volume %]</td></tr> [% END %]
+        [% IF risk_screen.match_discounted_volume %] <tr><td class="label">Discounted Matches</td><td>: [% risk_screen.match_discounted_volume %]</td></tr> [% END %]
+        [% IF risk_screen.match_flagged_volume %] <tr><td class="label">Flagged Matches</td><td>:       [% risk_screen.match_flagged_volume %]</td></tr> [% END %]
+        [% IF risk_screen.flags_str %]            <tr><td class="label">Flags</td><td>:                 [% risk_screen.flags_str %]</td></tr> [% END %]
+        <tr><td class="label">Update date</td><td>: [% risk_screen.date_updated %] </td></tr>
+        <tr><td class="label">Date added </td><td>: [% risk_screen.date_added %] </td></tr>
+        <tr><td class="label">Screening Reason (Custom Text)</td><td>: [% risk_screen.custom_text1 %] </td></tr>
+    [% END %]
+    [% IF NOT risk_screen OR risk_screen.status == 'requested' %]
         <tr>
         <td class="label"></td>
         <td>
+            Screening reason (custom text): 
+            <select id='screening_reason_select' name='screening_reason_select'>
+                <option value=""></option>
+                [% FOREACH reason IN screening_reasons%]
+                    <option value="[% reason %]" [% IF reason == risk_screen.custom_text1 %] selected [% END %]> 
+                        [% reason %]
+                    </option>
+                [% END %]
+            </select>
             <button name="request_risk_screen" type="submit" class="btn btn--primary" value="1"
                 [% IF !is_compliance || client.is_virtual %] disabled=1 [% END %]
             > Request Screening </button>
