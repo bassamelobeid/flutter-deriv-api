@@ -592,6 +592,7 @@ sub error_map {
         'DuplicateWallet'        => localize('Sorry, a wallet already exists with those details.'),
         'MT5AccountExisting'     => localize('Change of currency is not allowed due to an existing MT5 real account.'),
         'DXTradeAccountExisting' => localize('Change of currency is not allowed due to an existing Deriv X real account.'),
+        'DepositAttempted'       => localize('Change of currency is not allowed after the first deposit attempt.'),
         'AccountWithDeposit'     => localize('Change of currency is not allowed for an existing account with previous deposits.'),
         'CryptoAccount'          => localize('Account currency is set to cryptocurrency. Any change is not allowed.'),
         'CurrencyNotApplicable'  => localize('The provided currency [_1] is not applicable for this account.'),

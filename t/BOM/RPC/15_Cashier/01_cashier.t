@@ -90,6 +90,33 @@ subtest 'Doughflow' => sub {
 
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_internal_message_like(qr/abcdef/, 'Unknown Doughflow error')
         ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.', 'Correct Unknown Doughflow error message');
+
+    $mocked_call->mock('post', sub { return {_content => 'OK'} });
+    ok !$client_cr->status->deposit_attempt, 'The deposit_attempt status has not been set';
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error->result;
+    $client_cr->status->_build_all;    # reload status
+    ok $client_cr->status->deposit_attempt, 'Attempted a deposit';
+
+    $params->{args} = {set_account_currency => 'GBP'};
+    $rpc_ct->call_ok('set_account_currency', $params)->error_message_is('Change of currency is not allowed after the first deposit attempt.',
+        'Expected error trying to set currency on a flagged account');
+
+    # Now we have a deposit
+    $client_cr->payment_doughflow(
+        currency => 'USD',
+        amount   => '15',
+        remark   => '{"example": "remark"}'
+    );
+    # and simulate bom-paymentapi clearing
+    $client_cr->status->clear_deposit_attempt;
+
+    $client_cr->status->_build_all;
+    ok !$client_cr->status->deposit_attempt, 'The status deposit_attempt was removed';
+
+    # Attempt a new deposit
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error->result;
+    $client_cr->status->_build_all;
+    ok !$client_cr->status->deposit_attempt, 'Once there is a deposit the deposit_attempt is not added anymore';
 };
 
 subtest 'Crypto cashier calls' => sub {

@@ -252,6 +252,9 @@ rpc "cashier", sub {
 
     if ($action eq 'deposit') {
         $action = 'DEPOSIT';
+        if (not $client->is_virtual and not $client->has_deposits) {
+            $client->status->upsert('deposit_attempt', 'system', 'Client attempted deposit');
+        }
     } elsif ($action eq 'withdraw') {
         $action = 'PAYOUT';
     }
