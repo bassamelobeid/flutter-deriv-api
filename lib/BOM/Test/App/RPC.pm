@@ -8,7 +8,7 @@ use BOM::RPC::Transport::Redis;
 use BOM::Test::RPC::QueueClient;
 
 sub build_test_app {
-    my ($self, $args) = @_;
+    my ($self) = @_;
 
     my $redis_cfg = BOM::Config::Redis::redis_config('rpc', 'write');
     my $consumer  = BOM::RPC::Transport::Redis->new(
