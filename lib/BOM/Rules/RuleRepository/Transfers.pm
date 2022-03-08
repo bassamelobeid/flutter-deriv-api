@@ -131,7 +131,7 @@ rule 'transfers.landing_companies_are_the_same' => {
             if $context->landing_company({loginid => $args->{loginid_from}}) ne $context->landing_company({loginid => $args->{loginid_to}});
 
         return 1;
-    }
+    },
 };
 
 rule 'transfers.real_to_virtual_not_allowed' => {
@@ -157,15 +157,6 @@ rule 'transfers.authorized_client_should_be_real' => {
     },
 };
 
-rule 'transfers.same_account_not_allowed' => {
-    description => "Transfer to the same account is not allowed",
-    code        => sub {
-        my ($self, $context, $args) = @_;
-        $self->fail('SameAccountNotAllowed') if ($args->{loginid_from} eq $args->{loginid_to});
-        return 1;
-    },
-};
-
 rule 'transfers.no_different_fiat_currencies' => {
     description => "Transfer between accounts with different fiat currencies is not permitted (fiat currencies should be the same).",
     code        => sub {
@@ -177,6 +168,17 @@ rule 'transfers.no_different_fiat_currencies' => {
             if $currencies{from}->{type} eq 'fiat'
             && $currencies{to}->{type} eq 'fiat'
             && $currencies{from}->{code} ne $currencies{to}->{code};
+
+        return 1;
+    },
+};
+
+rule 'transfers.same_account_not_allowed' => {
+    description => "Transfer to the same account is not allowed",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('SameAccountNotAllowed') if ($args->{loginid_from} eq $args->{loginid_to});
 
         return 1;
     },

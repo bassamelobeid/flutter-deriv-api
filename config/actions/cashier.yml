@@ -66,6 +66,88 @@ cashier_validation:
   - type: group
     rule_group: cashier_validation
 
+paymentagent_withdraw:
+  description: Rules applied on payment agent withdraw
+  arguments:
+    - loginid_client
+    - loginid_to
+    - currency
+    - amount
+    - dry_run
+    - source_bypass_verification
+  ruleset:
+    - type: group
+      argument_mapping:
+        loginid_from: loginid_client
+        loginid_to: loginid_pa
+      ruleset: transfers.same_account_not_allowed
+    - type: group
+      argument_mapping:
+        loginid: loginid_client
+      ruleset:
+        - paymentagent.pa_allowed_in_landing_company
+        - trading_account.should_complete_financial_assessment # better to be renamed - it is not exclusive to trading accounts
+        - cashier.paymentagent_withdrawal_allowed
+    - type: group
+      rule_group: cashier_validation
+      argument_mapping:
+        loginid: loginid_client
+        action: "'withdrawal'"
+        is_internal: "'0'"
+        amount: amount
+        currency: currency
+    - type: group
+      tag: client
+      argument_mapping:
+        loginid: loginid_client
+      ruleset:
+        - payment.currency_matches_account
+    - type: group
+      argument_mapping:
+        loginid: loginid_pa
+      tag: pa
+      ruleset: 
+        - paymentagent.is_authorized
+        - payment.currency_matches_account
+        - client.not_disabled
+        - client.no_unwelcome_status
+        - cashier.is_not_locked
+        - client.documents_not_expired
+    - type: group
+      argument_mapping:
+        loginid_from: loginid_client
+        loginid_to: loginid_pa
+      ruleset: 
+        - transfers.landing_companies_are_the_same
+    - type: conditional
+      on: dry_run
+      rules_per_value:
+        0:
+          - type: group
+            rule_group: validate_payment
+            argument_mapping:
+              loginid: loginid_client
+              action: "'withdrawal'"
+              is_internal: "'0'"
+              is_p2p_restricted: "'1'"
+              amount: amount
+              currency: currency
+          - type: group
+            rule_group: validate_payment
+            argument_mapping:
+              loginid: loginid_pa
+              action: "'deposit'"
+              is_internal: "'0'"
+              is_p2p_restricted: "'1'"
+              amount: amount
+              currency: currency
+    - paymentagent.amount_is_within_pa_limits
+    - type: group
+      argument_mapping:
+        loginid: loginid_client
+        action: "'withdraw'"
+      ruleset: paymentagent.daily_transfer_limits
+
 paymentagent_transfer:
   description: A set of rules to be applied on paymentagent create
   required_arguments:
@@ -96,7 +178,13 @@ paymentagent_transfer:
     - type: conditional
       on: dry_run
       rules_per_value:
-        1: pass
+        1:
+          - type: group
+            description: The contained rule is included in validate_payment rule goup bellow; but it's duplicated here to let it be checked in dry run.
+            tag: client
+            argument_mapping:
+              loginid: loginid_client
+            ruleset: payment.currency_matches_account
         default:
           - type: group
             rule_group: validate_payment

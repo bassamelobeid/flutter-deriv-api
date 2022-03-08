@@ -289,7 +289,12 @@ subtest $rule_name => sub {
     is exception { $engine->apply_rules($rule_name, %args) }, undef, 'Rule applies if client currency is not set yet';
 
     $client->set_default_account('USD');
-    is_deeply exception { $engine->apply_rules($rule_name, %args) }, {code => 'DXTradeAccountExisting'}, 'Fails after setting account entry';
+    is_deeply exception { $engine->apply_rules($rule_name, %args) },
+        {
+        rule       => $rule_name,
+        error_code => 'DXTradeAccountExisting',
+        },
+        'Fails after setting account entry';
 
     $mock_user->redefine(loginids => sub { ($client->loginid, 'DXD1000', 'MTR1000', 'MT1001', 'MTD1002') });
 

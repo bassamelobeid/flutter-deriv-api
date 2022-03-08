@@ -173,7 +173,7 @@ sub apply {
             die $e;
         };
 
-        if ($self->tag && ref($rule_result) eq 'BOM::Rules::Result') {
+        if ($self->tag && $rule_result->isa('BOM::Rules::Result')) {
             push($_->{tags}->@*, $self->tag) for $rule_result->{failed_rules}->@*;
         }
 

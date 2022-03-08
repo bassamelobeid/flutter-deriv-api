@@ -89,7 +89,7 @@ rule 'currency.no_real_dxtrade_accounts' => {
 
         return 1 unless exists $args->{currency};
 
-        die {code => 'DXTradeAccountExisting'}
+        $self->fail('DXTradeAccountExisting')
             if $client->account() && $client->user->dxtrade_loginids('real');
 
         return 1;

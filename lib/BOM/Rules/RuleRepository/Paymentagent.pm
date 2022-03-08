@@ -13,12 +13,14 @@ This modules declares rules and regulations applied on paymentagents and clients
 use strict;
 use warnings;
 
-use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
+use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 use Format::Util::Numbers qw(financialrounding);
+use Date::Utility;
 
 use BOM::Rules::Registry qw(rule);
-use BOM::Config;
+use BOM::Config::PaymentAgent;
 use BOM::Database::ClientDB;
+use BOM::Config;
 
 rule 'paymentagent.pa_allowed_in_landing_company' => {
     description => "Checks the landing company and dies with PaymentAgentNotAvailable error code.",
