@@ -31,6 +31,9 @@ subtest 'create riskscreen' => sub {
     like exception { BOM::User::RiskScreen->new(%args) }, qr/Status 'xyz' is invalid/, 'Invalid status error';
     $args{status} = 'active';
     like exception { BOM::User::RiskScreen->new(%args) }, qr/Invalid user id/, 'Invalid user id error';
+    $args{binary_user_id} = $user->id;
+    $args{custom_text1}   = 'abcd';
+    like exception { BOM::User::RiskScreen->new(%args) }, qr/Invalid screening reason .* abcd/, 'Invalid user id error';
 };
 
 subtest 'Save and retrieval' => sub {
@@ -66,6 +69,8 @@ subtest 'Save and retrieval' => sub {
         'match_discounted_volume' => undef,
         'match_flagged_volume'    => undef,
         'flags'                   => undef,
+        'custom_text1'            => undef,
+        'date_added'              => undef
         },
         'Database content is correct';
 
@@ -79,6 +84,8 @@ subtest 'Save and retrieval' => sub {
         'match_discounted_volume' => 2,
         'match_flagged_volume'    => 3,
         'flags'                   => ['flag1', 'flag2'],
+        'custom_text1'            => 'Affiliate',
+        'date_added'              => '2019-09-09'
     );
     $risk_screen = BOM::User::RiskScreen->new(%args);
     $risk_screen->save(), $risk_screen, 'Risk screen object is saved and retrieved correctly';
@@ -110,6 +117,8 @@ subtest 'Find and update' => sub {
         'match_discounted_volume' => 2,
         'match_flagged_volume'    => 3,
         'flags'                   => ['flag1', 'flag2'],
+        'custom_text1'            => 'Affiliate',
+        'date_added'              => '2019-09-09'
         };
     is_deeply [BOM::User::RiskScreen->find(%args)], [$user_2->risk_screen], 'Search by the new status';
 
@@ -122,6 +131,8 @@ subtest 'Find and update' => sub {
         'match_discounted_volume' => 20,
         'match_flagged_volume'    => 30,
         'flags'                   => undef,
+        'custom_text1'            => undef,
+        'date_added'              => undef
     );
     $user_2->set_risk_screen(%args);
     is_deeply $user_2->risk_screen, {%args, binary_user_id => $user_2->id}, 'risk screen is updated and retrived correctly';

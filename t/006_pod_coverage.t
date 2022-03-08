@@ -25,8 +25,6 @@ my $allowed_naked_packages = {
     'BOM::MT5::User::Async'                            => 11,
     'BOM::User::Client::PaymentTransaction::Doughflow' => 2,
     'BOM::TradingPlatform'                             => 7,
-    'BOM::User::RiskScreen'                            => 1,
-
 };
 
 =head2 reasons
