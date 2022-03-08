@@ -57,6 +57,7 @@ set_settings:
 set_account_currency:
   description: Contains rules to be applied on setting account currency.
   ruleset:
+    - currency.has_deposit_attempt
     - currency.no_deposit
     - landing_company.currency_is_allowed
     - currency.is_available_for_change

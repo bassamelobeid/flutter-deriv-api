@@ -96,6 +96,19 @@ rule 'currency.no_real_dxtrade_accounts' => {
     },
 };
 
+rule 'currency.has_deposit_attempt' => {
+    description => "Fails if client attempted a deposit; checked on existing currency.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+
+        $self->fail('DepositAttempted')
+            if $client->status->deposit_attempt;
+
+        return 1;
+    },
+};
+
 rule 'currency.no_deposit' => {
     description => "Fails if client's account has some deposit; checked on exiting currency.",
     code        => sub {

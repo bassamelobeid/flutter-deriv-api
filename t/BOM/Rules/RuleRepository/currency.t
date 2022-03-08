@@ -298,6 +298,24 @@ subtest $rule_name => sub {
     $mock_user->unmock_all;
 };
 
+$rule_name = 'currency.has_deposit_attempt';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr_usd);
+    my %args        = (loginid => $client_cr_usd->loginid);
+    ok !$client_cr_usd->status->deposit_attempt, 'Client have not attempted to deposit';
+    ok $rule_engine->apply_rules($rule_name, %args), 'Rule applies with empty args - has_deposit_attempt';
+
+    my $mock_status = Test::MockModule->new('BOM::User::Client::Status');
+    $mock_status->redefine(deposit_attempt => sub { return {status => 'something_here'} });
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'DepositAttempted',
+        rule       => $rule_name
+        },
+        'Fails if client have no_currency_chnage';
+    $mock_status->unmock_all;
+};
+
 $rule_name = 'currency.no_deposit';
 subtest $rule_name => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr_usd);
