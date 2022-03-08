@@ -156,7 +156,8 @@ subtest today_payment_agent_withdrawal_sum_count => sub {
         remark       => 'test',
         staff        => 'test'
     );
-    is_deeply [$client->today_payment_agent_withdrawal_sum_count], [0, 0], 'free_gift is not counted as a transfer';
+
+    cmp_deeply [$client->today_payment_agent_withdrawal_sum_count], [0, 0], 'free_gift is not counted as a transfer';
 
     $client->payment_account_transfer(
         toClient     => $pa_client,
@@ -166,8 +167,8 @@ subtest today_payment_agent_withdrawal_sum_count => sub {
         gateway_code => 'payment_agent_transfer',
     );
 
-    is_deeply [$client->today_payment_agent_withdrawal_sum_count],    [10, 1], 'Account transfer count and amount is changed after PA transfer';
-    is_deeply [$pa_client->today_payment_agent_withdrawal_sum_count], [0,  0], 'It is only for clients not payment agents';
+    cmp_deeply [$client->today_payment_agent_withdrawal_sum_count], [num(10), 1], 'Account transfer count and amount is changed after PA transfer';
+    cmp_deeply [$pa_client->today_payment_agent_withdrawal_sum_count], [0, 0], 'It is only for clients not payment agents';
 
     $client->payment_account_transfer(
         toClient     => $pa_client,
@@ -177,10 +178,9 @@ subtest today_payment_agent_withdrawal_sum_count => sub {
         gateway_code => 'account_transfer',
     );
 
-    is_deeply [$client->today_payment_agent_withdrawal_sum_count], [10, 1],
+    cmp_deeply [$client->today_payment_agent_withdrawal_sum_count], [num(10), 1],
         'Account transfer count and amount is not changed after trasnsfer between accounts';
-    is_deeply [$pa_client->today_payment_agent_withdrawal_sum_count], [0, 0], 'No change for the payment agent either';
-
+    cmp_deeply [$pa_client->today_payment_agent_withdrawal_sum_count], [0, 0], 'No change for the payment agent either';
 };
 
 sub _get_payment_from_transaction {

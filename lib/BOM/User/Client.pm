@@ -7293,13 +7293,13 @@ Returns an array with two elements:
 =cut
 
 sub today_payment_agent_withdrawal_sum_count {
-    my $self     = shift;
-    my $clientdb = BOM::Database::ClientDB->new({
-        client_loginid => $self->loginid,
-        operation      => 'replica',
-    });
-    my $amount_data = $clientdb->getall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$self->loginid]);
-    return ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
+    my $self = shift;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array("select result->>'amount', result->>'count'  from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)",
+                undef, $self->loginid);
+        });
 }
 
 1;
