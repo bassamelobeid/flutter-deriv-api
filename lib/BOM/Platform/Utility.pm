@@ -194,6 +194,26 @@ sub error_map {
             "We're unable to process your withdrawal request because it exceeds the limit of [_1] [_2]. Please authenticate your account before proceeding with this withdrawal."
         ),
 
+        # payment agent withdraw
+        PaymentagentWithdrawalNotAllowed => localize('You are not authorized for withdrawals via payment agents.'),
+        PASameAccountWithdrawal          => localize('You cannot withdraw funds to the same account.'),
+        PaymentagentNotAuthenticated     =>
+            localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is not authorized."),
+        PAWithdrawalDifferentBrokers   => localize('Payment agent withdrawals are not allowed for specified accounts.'),
+        ClientInsufficientBalance      => localize('Sorry, you cannot withdraw. Your account balance is [_3] [_2].'),
+        ClientCurrencyMismatchWithdraw => localize('You cannot perform this action, as [_1] is not default currency for your account [_2].'),
+        PACurrencyMismatchWithdraw     => localize('You cannot perform this action, as [_1] is not default currency for payment agent account [_2].'),
+        PADisabledAccountWithdraw      => localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is disabled."),
+        PAUnwelcomeStatusWithdraw      => localize("We cannot transfer to account [_1]. Please select another payment agent."),
+        PACashierLockedWithdraw        => localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked."),
+        PADocumentsExpiredWithdraw     =>
+            localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired."),
+        PaymentAgentNotWithinLimits     => localize('Invalid amount. Minimum is [_1], maximum is [_2].'),
+        PaymentAgentDailyAmountExceeded =>
+            localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount [_1] [_2] for today.'),
+        PaymentAgentDailyCountExceeded =>
+            localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.'),
+
         # payment agent transfer
         PermissionDenied          => 'Permission denied.',
         PaymentAgentsNotAllowed   => 'The payment agent facility is not available for this account.',
