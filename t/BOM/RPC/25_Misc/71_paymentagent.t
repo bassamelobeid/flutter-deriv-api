@@ -184,6 +184,7 @@ $mock_cashier->mock(
 
 my $loop = 0;
 for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
+
     $loop++;
     $test_currency = $transfer_currency;
 
@@ -517,8 +518,8 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         ## Technically, the mock should return that limit in the test_currency, but this large value covers it
         $mock_client->redefine('today_payment_agent_withdrawal_sum_count', sub { return $MAX_DAILY_TRANSFER_AMOUNT_USD * 99, 0; });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client},
-            'Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.', $test);
+        like($res->{error}{message_to_client},
+            qr/Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount .* for today./, $test);
 
         $test = "Transfer fails is over the maximum transactions per day (USD $MAX_DAILY_TRANSFER_AMOUNT_USD)";
         $mock_client->redefine('today_payment_agent_withdrawal_sum_count', sub { return 0, $MAX_DAILY_TRANSFER_TXNS * 55; });
@@ -902,20 +903,20 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $testargs->{client} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
         $user->add_client($testargs->{client});
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/agent facilities are not available/, $test);
+        like($res->{error}{message_to_client}, qr/agent facility is not available/, $test);
         reset_withdraw_testargs();
 
         $test = 'withdrawal fails if no_withdrawal_or_trading status is set';
         $Alice->status->set('no_withdrawal_or_trading', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/Your account is restricted to deposits only/, $test);
+        is($res->{error}{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.', $test);
         $Alice->status->clear_no_withdrawal_or_trading;
         $Alice->save;
 
-        $test                                   = 'Withdraw fails if both sides are the same account';
-        $testargs->{args}{paymentagent_loginid} = $Alice_id;
-        $res                                    = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        $test               = 'Withdraw fails if both sides are the same account';
+        $testargs->{client} = $Bob;
+        $res                = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         is($res->{error}{message_to_client}, 'You cannot withdraw funds to the same account.', $test);
         reset_withdraw_testargs();
 
@@ -942,7 +943,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->status->set('disabled', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/Your account is disabled/, $test);
+        is($res->{error}{message_to_client}, 'You cannot perform this action, as your account ' . $Alice->loginid . ' is currently disabled.', $test);
         $Alice->status->clear_disabled;
         $Alice->save;
 
@@ -956,26 +957,26 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
 
         $test = 'Withdraw fails if client and payment agent have different brokers';
         ## Problem: Only CR currently allows payment agents, so we have to use a little trickery
-        $Alice->broker('MLT');
+        $mock_user_client->redefine(broker => sub { shift->loginid eq $Bob_id ? 'MLT' : 'CR' });
         $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/withdrawals are not allowed for specified accounts/, $test);
         $mock_landingcompany->unmock('allows_payment_agents');
-        $Alice->broker('CR');
+        $mock_user_client->unmock('broker');
 
         $test = 'Withdraw fails if client default account has wrong currency';
         my $alt_currency = first { $_ ne $test_currency } shuffle @fiat_currencies, @crypto_currencies;
         ## We have to mock because if set direct it is caught early by User::Client
-        $mock_user_client->mock('currency', sub { return $alt_currency; });
+        $mock_account->redefine('currency_code', sub { return $_[0]->client_loginid eq $Alice_id ? $alt_currency : $test_currency; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/as $test_currency is not default currency for your account $Alice_id/, $test);
-        $mock_user_client->unmock('currency');
+        $mock_account->unmock('currency_code');
 
         $test = 'Withdraw fails if payment agent default account has wrong currency';
-        $mock_user_client->mock('currency', sub { return $_[0]->loginid eq $Bob_id ? $alt_currency : $test_currency; });
+        $mock_account->redefine('currency_code', sub { return $_[0]->client_loginid eq $Bob_id ? $alt_currency : $test_currency; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/as $test_currency is not default currency for payment agent account $Bob_id/, $test);
-        $mock_user_client->unmock('currency');
+        $mock_account->unmock('currency_code');
 
         $test                     = 'Transfer fails if amount is under the payment agent minimum';
         $testargs->{args}{amount} = (grep { $test_currency eq $_ } @crypto_currencies) ? 0.001 : 1.0;
@@ -1007,7 +1008,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->status->set('withdrawal_locked', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/Your account is locked for withdrawals/, $test);
+        is($res->{error}{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.', $test);
         $Alice->status->clear_withdrawal_locked;
         $Alice->save;
 
@@ -1024,7 +1025,10 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $auth_document_args->{expiration_date} = '1999-12-31';
         my ($doc) = $Alice->add_client_authentication_document($auth_document_args);
         $Alice->save;
-        $Alice->{documents} = undef;
+
+        # force to reload documents
+        undef $Alice->{documents};
+
         $mock_user_client->mock('is_document_expiry_check_required', sub { 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/Your identity documents have expired/, $test);
@@ -1116,14 +1120,14 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
             $mock_date_utility->mock('is_a_weekend', sub { return 0; });
             $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
             my $show_amount = formatnumber('amount', 'USD', $MAX_DAILY_WITHDRAW_AMOUNT_WEEKDAY);
-            like($res->{error}{message_to_client}, qr/transfer amount USD$show_amount for today/, $test);
+            like($res->{error}{message_to_client}, qr/transfer amount USD $show_amount for today/, $test);
 
             $test = 'Withdraw fails if amount requested is over withdrawal to date limit (weekend)';
             $testargs->{args}{amount} = $MAX_DAILY_WITHDRAW_AMOUNT_WEEKEND + 1;
             $mock_date_utility->mock('is_a_weekend', sub { return 1; });
             $res         = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
             $show_amount = formatnumber('amount', 'USD', $MAX_DAILY_WITHDRAW_AMOUNT_WEEKEND);
-            like($res->{error}{message_to_client}, qr/transfer amount USD$show_amount for today/, $test);
+            like($res->{error}{message_to_client}, qr/transfer amount USD $show_amount for today/, $test);
             $agent_info->{payment_limits}{$currency_type}{maximum} = $old_max;
             $mock_date_utility->unmock('is_a_weekend');
             reset_withdraw_testargs();
@@ -1132,13 +1136,13 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
 
         ## We will assume this one is for all currencies, despite coming after the above:
         $test = "Withdraw fails if over maximum transactions per day ($MAX_DAILY_WITHDRAW_TXNS_WEEKDAY)";
-        $mock_client->mock('today_payment_agent_withdrawal_sum_count', sub { return 0, $MAX_DAILY_WITHDRAW_TXNS_WEEKDAY * 3; });
+        $mock_user_client->redefine('today_payment_agent_withdrawal_sum_count', sub { return 0, $MAX_DAILY_WITHDRAW_TXNS_WEEKDAY * 3; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/allowable transactions for today/, $test);
-        $mock_client->unmock_all;
+        $mock_user_client->unmock('today_payment_agent_withdrawal_sum_count');
 
         # mock to make sure that there is authenticated pa in Alice's country
-        $mock_payment_agent->mock('get_authenticated_payment_agents', sub { return {pa1 => 'dummy'}; });
+        $mock_payment_agent->redefine('get_authenticated_payment_agents', sub { return {pa1 => 'dummy'}; });
         # push payment agent's email into exclusion list
         push @$payment_agent_exclusion_list, $Alice->email;
         $test          = q{payment agent is in exclusion list, withdraw is allowed even if country of residence is different.};
@@ -1187,7 +1191,6 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         ## Cleanup:
         $mock_utility->unmock('is_verification_token_valid');
         $mock_landingcompany->unmock('is_currency_legal');
-
     };
 
 } ## end of each test_currency type
@@ -1256,3 +1259,4 @@ sub modify_bom_config {
 
     return;
 }
+

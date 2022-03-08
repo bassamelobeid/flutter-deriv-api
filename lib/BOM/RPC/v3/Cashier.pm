@@ -930,13 +930,16 @@ rpc paymentagent_withdraw => sub {
         });
     };
 
-    my $withdrawal_validation_error = BOM::RPC::v3::Utility::cashier_validation($client, 'paymentagent_withdraw', $source_bypass_verification);
-    return $withdrawal_validation_error if $withdrawal_validation_error;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'))
+        if ($app_config->system->suspend->payment_agents);
+
+    # check that the additional information does not exceeded the allowed limits
+    return $error_sub->(localize('Further instructions must not exceed [_1] characters.', MAX_DESCRIPTION_LENGTH))
+        if (length($further_instruction) > MAX_DESCRIPTION_LENGTH);
 
     my $amount_validation_error = validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;
-
-    return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
 
     my ($paymentagent, $paymentagent_error);
     try {
@@ -951,51 +954,34 @@ rpc paymentagent_withdraw => sub {
     if ($paymentagent_error or not $paymentagent) {
         return $error_sub->(localize('Please enter a valid payment agent ID.'));
     }
-
     my $pa_client = $paymentagent->client;
-    return $error_sub->(
-        localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is not authorized.", $pa_client->loginid))
-        unless $paymentagent->status eq 'authorized';
+    if (is_payment_agents_suspended_in_country($client->residence)) {
+        my $available_payment_agents_for_client =
+            _get_available_payment_agents($client->residence, $client->broker_code, $currency, $client->loginid);
+        return $error_sub->(localize("Payment agent transfers are temporarily unavailable in the client's country of residence."))
+            unless $available_payment_agents_for_client->{$pa_client->loginid};
+    }
 
-    return $error_sub->(localize('Payment agent withdrawals are not allowed for specified accounts.'))
-        if ($client->broker ne $paymentagent->broker);
+    my $cashier_error = BOM::Platform::Client::CashierValidation::check_availability($client, 'withdraw');
+    return $error_sub->($cashier_error->{error}->{message_to_client}) if $cashier_error->{error};
 
-    return $error_sub->(
-        localize('You cannot perform this action, as [_1] is not default currency for your account [_2].', $currency, $client->loginid))
-        if ($client->currency ne $currency or not $client->default_account);
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $pa_client]);
+    try {
+        $rule_engine->verify_action(
+            'paymentagent_withdraw',
+            loginid_client => $client_loginid,
+            loginid_pa     => $paymentagent_loginid,
+            amount         => $amount,
+            currency       => $currency,
+            dry_run        => $args->{dry_run} // 0,
 
-    return $error_sub->(
-        localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency, $pa_client->loginid))
-        if ($pa_client->currency ne $currency or not $pa_client->default_account);
+            source_bypass_verification => $source_bypass_verification,
+        );
+    } catch ($e) {
+        return _process_pa_withdraw_error($e, $currency, $client_loginid, $paymentagent_loginid);
+    }
 
-    my $rpc_error = _validate_paymentagent_limits(
-        error_sub     => $error_sub,
-        payment_agent => $paymentagent,
-        pa_loginid    => $pa_client->loginid,
-        amount        => $amount,
-        currency      => $currency
-    );
-    return $rpc_error if $rpc_error;
-
-    # check that the additional information does not exceeded the allowed limits
-    return $error_sub->(localize('Further instructions must not exceed [_1] characters.', MAX_DESCRIPTION_LENGTH))
-        if (length($further_instruction) > MAX_DESCRIPTION_LENGTH);
-
-    return $error_sub->(
-        localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is disabled.", $pa_client->loginid))
-        if $pa_client->status->disabled;
-
-    return $error_sub->(localize("We cannot transfer to account [_1]. Please select another payment agent.", $pa_client->loginid))
-        if $pa_client->status->unwelcome;
-
-    return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
-        if $pa_client->status->cashier_locked;
-
-    return $error_sub->(
-        localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired.", $pa_client->loginid))
-        if $pa_client->documents->expired;
-
-    #lets make sure that client is withdrawing to payment agent having allowed countries.
+    # lets make sure that client is withdrawing to payment agent having allowed countries.
     my $pa_target_countries = $paymentagent->get_countries;
     my $is_country_allowed  = any { $client->residence eq $_ } @$pa_target_countries;
     my $email_marketing     = request()->brand->emails('marketing');
@@ -1004,13 +990,6 @@ rpc paymentagent_withdraw => sub {
             "We're unable to process this withdrawal because your country of residence is not within the payment agent's portfolio. Please contact [_1] for more info.",
             $email_marketing
         )) if (not $is_country_allowed and not _is_pa_residence_exclusion($pa_client));
-
-    if (is_payment_agents_suspended_in_country($client->residence)) {
-        my $available_payment_agents_for_client =
-            _get_available_payment_agents($client->residence, $client->broker_code, $currency, $client->loginid);
-        return $error_sub->(localize("Payment agent transfers are temporarily unavailable in the client's country of residence."))
-            unless $available_payment_agents_for_client->{$pa_client->loginid};
-    }
 
     if ($args->{dry_run}) {
         return {
@@ -1022,50 +1001,6 @@ rpc paymentagent_withdraw => sub {
     my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $client_loginid,
     });
-
-    my $withdraw_error;
-    try {
-        # what about the opposite side???
-        $client->validate_payment(
-            currency     => $currency,
-            amount       => -$amount,                                     #withdraw action use negative amount
-            payment_type => 'payment_agent_transfer',
-            rule_engine  => BOM::Rules::Engine->new(client => $client),
-        );
-    } catch ($e) {
-        log_exception();
-        $withdraw_error = $e;
-    }
-
-    if ($withdraw_error) {
-        return $error_sub->(
-            __client_withdrawal_notes({
-                    client => $client,
-                    amount => $amount,
-                    error  => $withdraw_error
-                }));
-    }
-
-    my $day              = Date::Utility->new->is_a_weekend ? 'weekend' : 'weekday';
-    my $withdrawal_limit = BOM::Config::payment_agent()->{transaction_limits}->{withdraw};
-
-    my ($amount_transferred_in_usd, $count) = $client->today_payment_agent_withdrawal_sum_count();
-    $amount_transferred_in_usd = in_usd($amount_transferred_in_usd, $currency);
-
-    my $amount_in_usd = in_usd($amount, $currency);
-
-    my $daily_limit = $withdrawal_limit->{$day}->{amount_in_usd_per_day};
-
-    if (($amount_transferred_in_usd + $amount_in_usd) > $daily_limit) {
-        return $error_sub->(
-            localize(
-                'Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.',
-                $currency . formatnumber('price', $currency, convert_currency($daily_limit, 'USD', $currency))));
-    }
-
-    if ($count >= $withdrawal_limit->{$day}->{transactions_per_day}) {
-        return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
-    }
 
     my $comment =
           'Transfer from '
@@ -1148,46 +1083,51 @@ rpc paymentagent_withdraw => sub {
         transaction_id    => $response->{transaction_id}};
 };
 
-sub __client_withdrawal_notes {
-    my $arg_ref  = shift;
-    my $client   = $arg_ref->{'client'};
-    my $currency = $client->currency;
-    my $amount   = formatnumber('amount', $currency, $arg_ref->{'amount'});
-    my $error    = $arg_ref->{'error'};
-    my $balance  = $client->default_account ? formatnumber('amount', $currency, $client->default_account->balance) : 0;
+sub _process_pa_withdraw_error {
+    my ($rules_error, $currency, $client_loginid, $pa_loginid) = @_;
 
-    if ($error =~ /exceeds client balance/) {
-        return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $balance, $currency));
-    } elsif ($error =~ /exceeds withdrawal limit \[(.+)\]/) {
-        # if limit <= 0, we show: Your withdrawal amount 100.00 USD exceeds withdrawal limit.
-        # if limit > 0, we show: Your withdrawal amount 100.00 USD exceeds withdrawal limit USD 20.00.
-        my $limit = " $1";
-        if ($limit =~ /0\.00\s+$/ or $limit =~ /\d+\.\d+-\s+$/) {
-            $limit = '';
-        }
+    die $rules_error unless ref $rules_error eq 'HASH';
+    my $error_code = $rules_error->{error_code} // $rules_error->{code} // '';
+    $rules_error->{tags} //= [];
+    my $fail_side = (any { $_ eq 'pa' } $rules_error->{tags}->@*) ? 'pa' : 'client';
 
-        return localize('Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2].', "$amount $currency", $limit);
-    } elsif (my (@limits) = $error =~ /reached the  maximum withdrawal limit of \[(\d+(\.\d+)?) ([A-Z]+)\]/) {
-        return localize("You've reached the maximum withdrawal limit of [_1] [_2]. Please authenticate your account to make unlimited withdrawals.",
-            $limits[0], $limits[1]);
+    my %error_mapping = (
+        SameAccountNotAllowed     => 'PASameAccountWithdrawal',
+        DifferentLandingCompanies => 'PAWithdrawalDifferentBrokers',
+        AmountExceedsBalance      => 'ClientInsufficientBalance',
+        client                    => {
+            CurrencyMismatch => {
+                code   => 'ClientCurrencyMismatchWithdraw',
+                params => [$currency, $client_loginid]}
+        },
+        pa => {
+            CurrencyMismatch => {
+                code   => 'PACurrencyMismatchWithdraw',
+                params => [$currency, $pa_loginid]
+            },
+            DisabledAccount => {
+                code   => 'PADisabledAccountWithdraw',
+                params => [$pa_loginid]
+            },
+            UnwelcomeStatus => {
+                code   => 'PAUnwelcomeStatusWithdraw',
+                params => [$pa_loginid]
+            },
+            CashierLocked => {
+                code   => 'PACashierLockedWithdraw',
+                params => [$pa_loginid]
+            },
+            DocumentsExpired => {
+                code   => 'PADocumentsExpiredWithdraw',
+                params => [$pa_loginid]}});
+
+    if (my $new_error = $error_mapping{$fail_side}->{$error_code}) {
+        $error_code = $new_error->{code};
+        $rules_error->{params} = $new_error->{params};
     }
+    $rules_error->{error_code} = $error_mapping{$error_code} // $error_code;
 
-    my $withdrawal_limits = $client->get_withdrawal_limits();
-
-    # At this point, the Client is not allowed to withdraw. Return error message.
-    my $error_message = $error;
-
-    if ($withdrawal_limits->{'frozen_free_gift'} > 0) {
-        # Insert turnover limit as a parameter depends on the promocode type
-        $error_message .= ' '
-            . localize(
-            'Note: You will be able to withdraw your bonus of [_2] [_1] only once your aggregate volume of trades exceeds [_3] [_1]. This restriction applies only to the bonus and profits derived therefrom.  All other deposits and profits derived therefrom can be withdrawn at any time.',
-            $currency,
-            $withdrawal_limits->{'frozen_free_gift'},
-            $withdrawal_limits->{'free_gift_turnover_limit'});
-    }
-
-    return ($error_message);
+    return BOM::RPC::v3::Utility::rule_engine_error($rules_error, 'PaymentAgentWithdrawError');
 }
 
 =head2 get_transfer_fee_remark

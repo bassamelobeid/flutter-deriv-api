@@ -629,8 +629,6 @@ sub error_map {
         'DifferentLandingCompanies' => localize('Payment agent transfers are not allowed for the specified accounts.'),
 
         # Paymentagent transfer
-        'PaymentAgentDailyAmountExceeded' =>
-            localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.'),
         'PaymentAgentDailyCountExceeded' =>
             localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.'),
         'OpenP2POrders' => localize('You cannot change account currency while you have open P2P orders.'),
@@ -944,9 +942,10 @@ sub rule_engine_error {
     my ($error, $orverride_code, %options) = @_;
 
     # For scalar errors (without error code, etc) let it be caught and logged by default RPC error handling.
-    die $error unless (ref $error and ($error->{code} // $error->{error_code}));    # refactor this later to accept error_code only.
+    # TODO: we've got to ultimately create a rule engine error class and check here if the error is it's instance.
+    die $error unless (ref $error and ($error->{code} // $error->{error_code}));
 
-    my $error_code = $error->{code} // $error->{error_code};
+    my $error_code = $error->{error_code} // $error->{code};
 
     my $message;
     $message = $ImmutableFieldError{$error->{details}->{field}} // ''
@@ -1210,8 +1209,6 @@ Takes the following arguments as named parameters
 
 =item * C<type>: cashier action (deposit or withdraw) or verify_email type (payment_withdraw or paymentagent_withdraw)
 
-=item * C<source_bypass_verification>: boolean, whether to skip the doughflow deposits check for payment agent withdraw
-
 =back
 
 Returns an RPC error structure, or undef if no error.
@@ -1219,7 +1216,7 @@ Returns an RPC error structure, or undef if no error.
 =cut
 
 sub cashier_validation {
-    my ($client, $type, $source_bypass_verification) = @_;
+    my ($client, $type) = @_;
 
     my $error_code = $type eq 'paymentagent_withdraw' ? 'PaymentAgentWithdrawError' : 'CashierForwardError';
 
@@ -1237,20 +1234,6 @@ sub cashier_validation {
     if ($type =~ /^(deposit|withdraw|payment_withdraw)$/) {
         my $validation_error = BOM::RPC::v3::Utility::validation_checks($client, ['compliance_checks']);
         return $validation_error if $validation_error;
-    }
-
-    if ($type eq 'paymentagent_withdraw') {
-        my $app_config = BOM::Config::Runtime->instance->app_config;
-
-        return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'))
-            if ($app_config->system->suspend->payment_agents);
-
-        return $error_sub->(localize('Payment agent facilities are not available for this account.'))
-            unless $client->landing_company->allows_payment_agents;
-
-        return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
-            unless ($source_bypass_verification
-            or BOM::Transaction::Validation->new({clients => [{client => $client}]})->allow_paymentagent_withdrawal($client));
     }
 
     my $rule_engine     = BOM::Rules::Engine->new(client => $client);
