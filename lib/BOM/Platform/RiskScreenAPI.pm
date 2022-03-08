@@ -231,7 +231,7 @@ async sub get_udpated_riskscreen_customers {
 
         # Tyy to pick the earliest active customer
         @customers = sort { $b->{date_added} cmp $a->{date_added} } @customers;
-        my $selected_customer = (first { $_->{status} eq 'active' } @customers) // $customers[0];
+        my $selected_customer = (first { lc($_->{status}) eq 'active' } @customers) // $customers[0];
 
         # log skipped customers
         for my $customer (@customers) {
@@ -247,7 +247,12 @@ async sub get_udpated_riskscreen_customers {
                $self->update_all
             || !$old_data
             || $old_data->status =~ qr/(requested|outdated)/
-            || $old_data->client_entity_id != $selected_customer->{client_entity_id};
+            || $old_data->client_entity_id != $selected_customer->{client_entity_id}
+            || lc($old_data->status) ne lc($selected_customer->{status});
+
+        # if custom text is not valid it will be ignored (not saved)
+        delete $selected_customer->{custom_text1}
+            if defined $selected_customer->{custom_text1} && !BOM::User::RiskScreen->validate_custom_text1($selected_customer->{custom_text1});
 
         $user->set_risk_screen($selected_customer->%*) if $user;
         push @customer_ids, $selected_customer->{interface_reference} if $customer_updated;
@@ -285,7 +290,6 @@ async sub update_customer_match_details {
 
                 # retrieve matching details
                 my $match_data = await $self->api->client_entity_getdetail(interface_reference => $interface_ref);
-
                 $customer_data->{$_} = $match_data->{$_} // 0 for qw/match_potential_volume match_discounted_volume match_flagged_volume/;
                 my @flags = uniq map { $_->{match_flag_category_name} // () } $match_data->{match_flagged}->@*;
                 $customer_data->{flags} = [sort @flags];

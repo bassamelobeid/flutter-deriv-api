@@ -184,12 +184,14 @@ subtest 'update_customer_match_details' => sub {
                 ClientEntityID     => 201,
                 StatusID           => 1,
                 DateAdded          => '2010-01-01',
+                CustomText1        => 'custom 1'
             },
             {
                 InterfaceReference => $client_mf->loginid,
                 ClientEntityID     => 202,
                 StatusID           => 0,
                 DateAdded          => '2019-09-09',
+                CustomText1        => 'Payment Agent'
             }
         ],
 
@@ -241,9 +243,12 @@ subtest 'update_customer_match_details' => sub {
         'match_discounted_volume' => undef,
         'match_flagged_volume'    => undef,
         'match_potential_volume'  => undef,
-        'status'                  => 'active'
+        'status'                  => 'active',
+        'custom_text1'            => undef,
+        'date_added'              => '2010-01-01',
         },
-        'Riskscreen is empty for the CR user';
+        'Riskscreen matches are empty for the CR user';
+
     is_deeply $user_mf->risk_screen,
         {
         'binary_user_id'          => $user_mf->id,
@@ -254,9 +259,11 @@ subtest 'update_customer_match_details' => sub {
         'match_discounted_volume' => undef,
         'match_flagged_volume'    => undef,
         'match_potential_volume'  => undef,
-        'status'                  => 'disabled'
+        'status'                  => 'disabled',
+        'custom_text1'            => 'Payment Agent',
+        'date_added'              => '2019-09-09',
         },
-        'Riskscreen is empty for the MF user';
+        'Riskscreen matches are empty for the MF user';
 
     lives_ok { $riskscreen_api->update_customer_match_details(@customers)->get } 'No error for two customers without matches';
     is_deeply(
@@ -270,7 +277,9 @@ subtest 'update_customer_match_details' => sub {
             'match_discounted_volume' => 2,
             'match_flagged_volume'    => 0,
             'match_potential_volume'  => 1,
-            'status'                  => 'active'
+            'status'                  => 'active',
+            'custom_text1'            => undef,
+            'date_added'              => '2010-01-01',
         },
         'CR risksreen is saved correctly'
     );
@@ -285,7 +294,9 @@ subtest 'update_customer_match_details' => sub {
             'match_discounted_volume' => 0,
             'match_flagged_volume'    => 3,
             'match_potential_volume'  => 0,
-            'status'                  => 'disabled'
+            'status'                  => 'disabled',
+            'custom_text1'            => 'Payment Agent',
+            'date_added'              => '2019-09-09',
         },
         'MF risksreen is saved correctly'
     );
@@ -366,6 +377,8 @@ subtest 'sync_all_customers' => sub {
         'match_discounted_volume' => 0,
         'match_flagged_volume'    => 0,
         'flags'                   => [],
+        'custom_text1'            => undef,
+        'date_added'              => '2018-01-01',
     );
     $riskscreen_api->sync_all_customers()->get;
     $expected_data{match_discounted_volume} = 1;
@@ -422,25 +435,34 @@ subtest 'sync_all_customers' => sub {
             Date               => '2019-01-13'
         }];
     $riskscreen_api->sync_all_customers()->get;
-    $expected_data{status} = 'disabled';
-    is_deeply $user->risk_screen, \%expected_data, 'Status is updated, but matching data was not changed (match was too old)';
+    $expected_data{status}                  = 'disabled';
+    $expected_data{match_potential_volume}  = 1;
+    $expected_data{match_flagged_volume}    = 0;
+    $expected_data{match_discounted_volume} = 0;
+    $expected_data{date_updated}            = '2019-01-13';
+    $expected_data{flags}                   = [];
+    is_deeply $user->risk_screen, \%expected_data, 'Matches are refreshed, because status was changed';
 
     # new customer entity id
     my $new_entity_id = $mock_data{Customers}->[0]->{ClientEntityID} += 1;
     $mock_data{Customers}->[0]->{ClientEntityID} = $new_entity_id;
+    push $mock_data{Matches}->@*,,
+        {
+        InterfaceReference => $client->loginid,
+        Type               => 'Discounted',
+        Date               => '2019-01-14'
+        };
     $riskscreen_api->sync_all_customers()->get;
 
     $expected_data{client_entity_id}        = $new_entity_id;
     $expected_data{match_potential_volume}  = 1;
-    $expected_data{match_discounted_volume} = 0;
-    $expected_data{match_flagged_volume}    = 0;
-    $expected_data{flags}                   = [];
-    $expected_data{date_updated}            = '2019-01-13';
+    $expected_data{match_discounted_volume} = 1;
+    $expected_data{date_updated}            = '2019-01-14';
     is_deeply $user->risk_screen, \%expected_data, 'Everything is refreshed because client entity id was changed';
 
     subtest 'script arguments' => sub {
         my $riskscreen_api        = BOM::Platform::RiskScreenAPI->new();
-        my $risk_screen1          = $user->risk_screen;
+        my $risk_screen1          = {$user->risk_screen->%*};
         my $expected_risk_screen1 = $risk_screen1;
 
         %mock_data = (
@@ -448,7 +470,7 @@ subtest 'sync_all_customers' => sub {
                     InterfaceReference => $client->loginid,
                     ClientEntityID     => $risk_screen1->{client_entity_id},
                     StatusID           => 0,
-                    DateAdded          => '2000-01-01',
+                    DateAdded          => $risk_screen1->{date_added},
                 },
                 {
                     InterfaceReference => $client2->loginid,
@@ -488,6 +510,8 @@ subtest 'sync_all_customers' => sub {
             'match_discounted_volume' => 0,
             'match_flagged_volume'    => 0,
             'flags'                   => [],
+            'custom_text1'            => undef,
+            'date_added'              => '2000-11-11'
         };
         is_deeply $user2->risk_screen, $expected_risk_screen2, 'Matches of the second user2 are processed, because it is a new profile';
 

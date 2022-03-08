@@ -3,18 +3,22 @@ Customers:
     StatusID: 1
     ClientEntityID: 100
     DateAdded: 2020-01-01
+    CustomText1: Payment Agent
   - InterfaceReference: MLT90000000
     StatusID: 1
     ClientEntityID: 101
     DateAdded: 2020-01-01
+    CustomText1: Affiliate
   - InterfaceReference: MF90000000
     StatusID: 1
     ClientEntityID: 102
     DateAdded: 2019-01-01
+    CustomText1: Lost too much
   - InterfaceReference: MX90000000
     StatusID: 0
     ClientEntityID: 103
     DateAdded: 2020-01-01
+    CustomText1: Won too much
 Matches:
   - InterfaceReference: CR90000000
     Type: Potential
