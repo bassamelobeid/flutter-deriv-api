@@ -51,7 +51,8 @@ test_sendrecv_params 'api_token/test_send.json', 'api_token/test_receive_read.js
 test_sendrecv_params 'set_settings/test_send.json', 'set_settings/test_receive.json';
 
 # COPIER VIRTUAL ACCOUNT OPENING FOR (CR)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'copier@binary.com', 'account_opening';
+test_sendrecv 'logout/test_send.json',                     'logout/test_receive.json';
+test_sendrecv_params 'verify_email/test_send.json',        'verify_email/test_receive.json', 'copier@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     $suite->get_token('copier@binary.com'), 'copier@binary.com', 'id';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',

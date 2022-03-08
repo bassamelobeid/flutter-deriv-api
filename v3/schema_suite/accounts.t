@@ -146,6 +146,13 @@ fail_test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/
 # same token cannot be used twice
 fail_test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', $suite->get_token('test1@binary.com'), 'Abcd123!';
 
+# VIRTUAL ACCOUNT OPENING (VRTC)
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test2@binary.com', 'account_opening';
+test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+    $suite->get_token('test2@binary.com'), 'test2@binary.com', 'au';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test2@binary.com', 'reset_password';
+test_sendrecv_params 'reset_password/test_send_vrt.json', 'reset_password/test_receive.json', $suite->get_token('test2@binary.com'), 'Abcd123!';
+
 # TESTS TO RETURN ERROR (LOGGED OUT)
 test_sendrecv 'logout/test_send.json',           'logout/test_receive.json';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_error.json',
@@ -178,13 +185,6 @@ test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_a
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/cfd_score'),
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/trading_score'),
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/financial_information_score');
-
-# VIRTUAL ACCOUNT OPENING (VRTC)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test2@binary.com', 'account_opening';
-test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-    $suite->get_token('test2@binary.com'), 'test2@binary.com', 'au';
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test2@binary.com', 'reset_password';
-test_sendrecv_params 'reset_password/test_send_vrt.json', 'reset_password/test_receive.json', $suite->get_token('test2@binary.com'), 'Abcd123!';
 
 # TWO Factor Authentication (Admin Scope)
 test_sendrecv_params 'account_security/test_send_status.json', 'account_security/test_receive_status.json';
