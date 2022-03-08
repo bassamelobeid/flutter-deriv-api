@@ -439,44 +439,61 @@ subtest 'mt5 inactive notification' => sub {
 };
 
 subtest 'mt5 inactive account closed' => sub {
+
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
+        app_id     => $app_id,
+        language   => 'ES',
     );
     request($req);
+
     my $args = {
         email        => '',
         transferred  => 'CR12345',
         mt5_accounts => [{
                 login => 'MT900000',
-                type  => 'demo financial'
+                type  => 'demo financial',
+                name  => 'Bob Doe',
             },
             {
                 login => 'MT900002',
-                type  => 'real financial'
+                type  => 'real financial',
+                name  => 'Bob Doe',
             }
         ],
     };
-
-    mailbox_clear();
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_inactive_account_closed};
 
     like exception { $action_handler->($args) }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
 
+    undef @identify_args;
+    undef @track_args;
+
     $args->{email} = $test_client->{email};
-    my $result = $action_handler->($args);
+    my $result = $action_handler->($args)->get;
     ok $result, 'Success event result';
 
-    my $email = mailbox_search(
-        email   => $test_client->email,
-        subject => qr/Your MT5 account\(s\) have been closed/
-    );
-    ok $email, 'Account close email is sent';
-    like $email->{body}, qr/MT5 demo financial .* MT900000/, 'Archived account 1 is included in the emial body.';
-    like $email->{body}, qr/MT5 real financial .* MT900002/, 'Archived account 2 is included in the emial body.';
-    like $email->{body},
-        qr/Any available balance in your real account\(s\) has been transferred to your Deriv\/Binary.com trading account.\s*\(CR12345\)/,
-        'Transferred account appears in the email body';
+    my (undef, %tracked) = $track_args[0]->@*;
+
+    is_deeply \%tracked,
+        {
+        event   => 'mt5_inactive_account_closed',
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'ES',
+        },
+        properties => {
+            name          => 'Bob Doe',
+            mt5_accounts  => $args->{mt5_accounts},
+            brand         => 'deriv',
+            lang          => 'ES',
+            loginid       => $test_client->loginid,
+            live_chat_url => request->brand->live_chat_url({language => 'ES'}),
+        },
+        },
+        'track event properties correct';
 };
 
 subtest 'mt5 account closure report' => sub {

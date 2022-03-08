@@ -60,10 +60,11 @@ my %EVENT_PROPERTIES = (
     mt5_signup => [
         qw(account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id brand mt5_server mt5_server_location mt5_server_region mt5_server_environment mt5_dashboard_url live_chat_url)
     ],
-    mt5_password_changed      => [qw(mt5_loginid)],
-    mt5_inactive_notification => [qw(email name closure_date accounts)],
-    document_upload           => [qw(document_type expiration_date file_name id upload_date uploaded_manually_by_staff)],
-    set_financial_assessment  => [
+    mt5_password_changed        => [qw(mt5_loginid)],
+    mt5_inactive_notification   => [qw(email name closure_date accounts)],
+    mt5_inactive_account_closed => [qw(name title mt5_accounts live_chat_url)],
+    document_upload             => [qw(document_type expiration_date file_name id upload_date uploaded_manually_by_staff)],
+    set_financial_assessment    => [
         qw(education_level employment_industry estimated_worth income_source net_income occupation account_turnover binary_options_trading_experience
             binary_options_trading_frequency cfd_trading_experience cfd_trading_frequency employment_status forex_trading_experience forex_trading_frequency other_instruments_trading_experience
             other_instruments_trading_frequency source_of_wealth)
@@ -149,6 +150,7 @@ my @SKIP_BRAND_VALIDATION = qw(
     payment_withdrawal
     payment_withdrawal_reversal
     mt5_inactive_notification
+    mt5_inactive_account_closed
     p2p_archived_ad
     p2p_advertiser_cancel_at_fault
     p2p_advertiser_temp_banned
@@ -613,6 +615,23 @@ sub mt5_inactive_notification {
     my $loginid = delete $args->{loginid};
     return track_event(
         event      => 'mt5_inactive_notification',
+        loginid    => $loginid,
+        properties => $args,
+    );
+}
+
+=head2 mt5_inactive_account_closed
+
+Triggered for each B<mt5_inactive_account_closed> event emitted, delivering it to Segment.
+
+=cut
+
+sub mt5_inactive_account_closed {
+    my ($args) = @_;
+
+    my $loginid = delete $args->{loginid};
+    return track_event(
+        event      => 'mt5_inactive_account_closed',
         loginid    => $loginid,
         properties => $args,
     );

@@ -347,8 +347,6 @@ Takes the following named parameters
 
 =item * C<mt5_accounts> - a list of the archived mt5 accounts with the same email address (binary user).
 
-=item * C<transferred> - the loginid of the driv account to which the archived funds are transferred to.
-
 =back
 
 =cut
@@ -356,23 +354,15 @@ Takes the following named parameters
 sub mt5_inactive_account_closed {
     my $args = shift;
 
-    my $user = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
+    my $user    = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
+    my $loginid = eval { [$user->bom_loginids()]->[0] }            or die "User $args->{email} doesn't have any accounts";
 
-    BOM::Platform::Email::send_email({
-            to            => $args->{email},
-            from          => request->brand->emails('no-reply'),
-            subject       => localize('Your MT5 account(s) have been closed'),
-            template_name => 'inactive_mt5_account_closed',
-            template_args => {
-                title         => localize('Your MT5 account(s) have been closed'),
-                name          => $args->{mt5_accounts}->[0]->{name},
-                mt5_accounts  => $args->{mt5_accounts},
-                transferred   => $args->{transferred},
-                live_chat_url => request->brand->live_chat_url({language => request->language}),
-            },
-            use_email_template    => 1,
-            email_content_is_html => 1,
-        });
+    return BOM::Event::Services::Track::mt5_inactive_account_closed({
+            loginid       => $loginid,
+            name          => $args->{mt5_accounts}->[0]->{name},
+            mt5_accounts  => $args->{mt5_accounts},
+            live_chat_url => request->brand->live_chat_url({language => request->language})});
+
 }
 
 =head2 mt5_inactive_account_closure_report
