@@ -375,6 +375,10 @@ sub is_verification_token_valid {
 
     if ($verification_token->email and $verification_token->email eq $email) {
         $response = {status => 1};
+    } else {
+        $response = create_error({
+                code              => "BadSession",
+                message_to_client => localize('The token you used is invalid in this session. Please get a new token and try again.')});
     }
     $verification_token->delete_token unless $is_dry_run;
 

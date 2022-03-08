@@ -299,7 +299,7 @@ subtest 'dxtrade password reset' => sub {
         });
 
     my $user = BOM::User->create(
-        email    => 'test2@test.com',
+        email    => $client->email,
         password => 'test'
     )->add_client($client);
     $client->account('USD');
@@ -339,6 +339,7 @@ subtest 'dxtrade password reset' => sub {
 
     $params = {
         language => 'EN',
+        token    => BOM::Platform::Token::API->new->create_token($client->loginid, 'test token'),
         args     => {
             platform          => 'dxtrade',
             new_password      => 'C0rrect0',
@@ -361,6 +362,7 @@ subtest 'dxtrade password reset' => sub {
 
     $params = {
         language => 'EN',
+        token    => BOM::Platform::Token::API->new->create_token($client->loginid, 'test token'),
         args     => {
             platform          => 'dxtrade',
             new_password      => 'C0rrect1',

@@ -283,7 +283,7 @@ my %CREATED_FOR = (
     dxtrade => 'trading_platform_dxtrade_password_reset',
 );
 
-async_rpc trading_platform_password_reset => auth => [],
+async_rpc trading_platform_password_reset => auth => ['trading', 'wallet'],
     sub {
     my $params = shift;
 
@@ -292,7 +292,7 @@ async_rpc trading_platform_password_reset => auth => [],
         my $platform     = $params->{args}{platform};
 
         my $token = delete $params->{args}{verification_code};
-        my $email = lc(BOM::Platform::Token->new({token => $token})->email // '');
+        my $email = $params->{client}->{email};
 
         my $error = BOM::RPC::v3::Utility::is_verification_token_valid($token, $email, $CREATED_FOR{$platform})->{error};
         die $error if $error;
@@ -355,7 +355,7 @@ Returns a L<Future> which resolves to C<1> on success.
 
 =cut
 
-async_rpc trading_platform_investor_password_reset => auth => [],
+async_rpc trading_platform_investor_password_reset => auth => ['trading', 'wallet'],
     => sub {
     my $params = shift;
 
@@ -365,7 +365,7 @@ async_rpc trading_platform_investor_password_reset => auth => [],
         die +{error_code => 'PasswordRequired'} unless $password;
 
         my $verification_code = delete $params->{args}{verification_code};
-        my $email             = lc(BOM::Platform::Token->new({token => $verification_code})->email // '');
+        my $email             = $params->{client}->{email};
 
         my $error =
             BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $email, 'trading_platform_investor_password_reset')->{error};

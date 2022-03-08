@@ -428,13 +428,18 @@ rpc "new_account_virtual",
                 message_to_client => localize("The token is invalid, requires 'admin' scope.")}) unless (any { $_ eq 'admin' } @$scopes);
     }
 
+    my ($client, $account);
     try {
-        my ($client, $account);
-
         $args->{ip}          = $params->{client_ip} // '';
         $args->{country}     = uc($params->{country_code} // '');
         $args->{environment} = request()->login_env($params);
         $args->{source}      = $params->{source};
+
+        # Pre-set email if client is authorized
+        if ($args->{token_details}) {
+            my $user = BOM::User->new(loginid => $args->{token_details}->{loginid});
+            $args->{email} = $user->{email};
+        }
 
         $client  = create_virtual_account($args);
         $account = $client->default_account;
@@ -550,7 +555,7 @@ sub create_virtual_account {
         }
 
         my $verification_code = $args->{verification_code};
-        $args->{email} = BOM::Platform::Token->new({token => $verification_code})->email;
+        $args->{email} = BOM::Platform::Token->new({token => $verification_code})->email unless $args->{email};
 
         $error = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $args->{email}, 'account_opening')->{error};
         die $error if $error;

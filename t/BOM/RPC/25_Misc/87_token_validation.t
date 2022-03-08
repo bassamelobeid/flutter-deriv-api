@@ -81,8 +81,10 @@ $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->logi
 
 $params->{args}->{verification_code} = $code_cr_2;
 $c->call_ok('cashier', $params)
-    ->has_no_system_error->has_error->error_code_is('InvalidToken', 'Error code is correct when one client used other client withdrawal token.')
-    ->error_message_is('Your token has expired or is invalid.',
-    'Correct error message for token invalid when one client used other client withdrawal token.');
+    ->has_no_system_error->has_error->error_code_is('BadSession', 'Error code is correct when one client used other client withdrawal token.')
+    ->error_message_is(
+    'The token you used is invalid in this session. Please get a new token and try again.',
+    'Correct error message for token invalid when one client used other client withdrawal token.'
+    );
 
 done_testing();

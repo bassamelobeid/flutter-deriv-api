@@ -319,6 +319,7 @@ subtest 'password change with mt5 accounts' => sub {
 
 $method = 'trading_platform_password_reset';
 subtest 'password reset with mt5 accounts' => sub {
+    my $token            = BOM::Platform::Token::API->new->create_token($client->loginid, 'token');
     my $trading_password = 'Abcd1234@!';
     my $verification_code;
 
@@ -389,7 +390,8 @@ subtest 'password reset with mt5 accounts' => sub {
     undef $last_event;
 
     $params = {
-        args => {
+        token => $token,
+        args  => {
             new_password      => $trading_password,
             verification_code => $verification_code,
             platform          => 'mt5'
@@ -416,7 +418,6 @@ subtest 'password reset with mt5 accounts' => sub {
 
     ok BOM::User::Password::checkpw($trading_password, $client->user->trading_password), 'trading password reset ok';
 
-    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'token');
     $params = {
         language => 'EN',
         token    => $token,
@@ -442,7 +443,9 @@ subtest 'password reset with mt5 accounts' => sub {
         })->token;
 
     $params = {
-        args => {
+        language => 'EN',
+        token    => $token,
+        args     => {
             new_password      => $trading_password,
             verification_code => $code,
             platform          => 'mt5'
@@ -463,6 +466,7 @@ subtest 'password reset with mt5 accounts' => sub {
 
 $method = 'trading_platform_investor_password_reset';
 subtest 'investor password reset' => sub {
+    my $token             = BOM::Platform::Token::API->new->create_token($client->loginid, 'token');
     my $investor_password = 'Abcd1234@!';
     my $verification_code;
 
@@ -518,7 +522,8 @@ subtest 'investor password reset' => sub {
     );
 
     $params = {
-        args => {
+        token => $token,
+        args  => {
             account_id        => $mt5_loginid,
             platform          => 'mt5',
             new_password      => $investor_password,
@@ -562,7 +567,8 @@ subtest 'investor password reset' => sub {
     );
 
     $params = {
-        args => {
+        token => $token,
+        args  => {
             account_id        => $mt5_loginid,
             platform          => 'mt5',
             new_password      => $investor_password,
