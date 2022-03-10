@@ -22,6 +22,7 @@ use JSON::MaybeUTF8 qw(decode_json_utf8);
 use IO::Async::Loop;
 use BOM::Event::Services;
 use LandingCompany::Registry;
+use BOM::Platform::Doughflow;
 
 my $redis      = BOM::Event::Actions::Anonymization::_redis_payment_write();
 my $redis_mock = Test::MockModule->new('Net::Async::Redis');
@@ -47,8 +48,9 @@ $redis_mock->mock(
 
         subtest $cli->loginid . ' DF queue' => sub {
             ok !$cli->is_virtual, 'Client added to DF queue is not virtual';
-            is LandingCompany::Registry::get_currency_type($payload[1]), 'fiat', 'Currency added to DF queue is not crypto';
-            is $cli->landing_company->name, $payload[2], 'Landing company name enqueued';
+            is LandingCompany::Registry::get_currency_type($cli->currency), 'fiat', 'Currency added to DF queue is not crypto';
+            is BOM::Platform::Doughflow::get_sportsbook_by_short_code($cli->landing_company->short, $cli->currency), $payload[1],
+                'Expected sbook enqueued';
             push $df_partial->@*, $cli->loginid;
         };
 
