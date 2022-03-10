@@ -36,10 +36,10 @@
         <p class="error">NOTE: may fail for clients with a huge number of transactions, so use this feature only when required.</p>
     </div>
     <div>
-        <form action="[% self_post %]" method="get">
+        <form  name="trx_form" onsubmit="return validateTrxForm()" action="[% self_post %]" method="get">
             <div class="row">
             <label>Quick jump to see another statement:</label>
-            <input name="loginID" type="text" size=15 value="[% loginid %]" data-lpignore="true" />
+            <input name="loginID" type="text" size=15 value="[% loginid %]" data-lpignore="true" required/>
             <input name="startdate" type="text" size=15 value="[% startdate %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" />
             <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" />
             <input name="broker" type=hidden value="[% broker %]">
@@ -50,14 +50,19 @@
             </span>
             </div>
             <div class="row" style="padding-left: 235px;">
-                <input name="all_in_one_page" id="all_in_one_page" type="radio">
+             [% IF trx_filter == 'deposit_withdrawal_only' %]
+                <input name="trx_filter" id="all_in_one_page" type="radio" value="all_in_one_page">
                 <label for="all_in_one_page">Show all transactions</label>
-
-                <input name="depositswithdrawalsonly" id="depositswithdrawalsonly" type="checkbox" value="yes">
+                <input name="trx_filter" id="depositswithdrawalsonly" type="radio" value="deposit_withdrawal_only" checked>
                 <label for="depositswithdrawalsonly">Deposits and withdrawals only</label>
-                here 
+            [% ELSE %]
+                <input name="trx_filter" id="all_in_one_page" type="radio" value="all_in_one_page" checked>
+                <label for="all_in_one_page">Show all transactions</label>
+                <input name="trx_filter" id="depositswithdrawalsonly" type="radio" value="deposit_withdrawal_only">
+                <label for="depositswithdrawalsonly">Deposits and withdrawals only</label>
+            [% END %]
                 <input name="l" type="hidden" value="EN">
-                <input type=submit class="btn btn--primary" value="View">
+                <input type=submit class="btn btn--primary" id="viewTransactions" value="View">
             </div>
         </form>
     </div>
@@ -216,3 +221,15 @@
         visibility: visible;
     }
 </style>
+
+<script>
+function validateTrxForm(){
+    let startDate = document.forms["trx_form"]["startdate"].value;
+    let endDate   = document.forms["trx_form"]["enddate"].value;
+    let trx_ref   = document.forms["trx_form"]["transactionID"].value;
+    if ((startDate && endDate) || trx_ref) {
+        document.forms["trx_form"]["all_in_one_page"].checked=false;
+        document.forms["trx_form"]["depositswithdrawalsonly"].checked=false;
+    }
+}
+</script>
