@@ -133,7 +133,7 @@ subtest 'binary' => sub {
         diag $reporter->headers_data();
         is(
             $csv[0],
-            '2011-03-08,' . $client->loginid . ',1165.00,9098.00,0.00,0.00,0.00,2011-03-08,987.00,9098.00',
+            '2011-03-08,' . $client->loginid . ',1165.00,9098.00,0.00,0.00,0.00,2011-03-08,987.00,9098.00,1.00',
             'Check if values are correct in report'
         );
     };
@@ -336,7 +336,7 @@ subtest 'deriv' => sub {
         diag $reporter->headers_data();
         is(
             $csv[0],
-            '2011-03-08,deriv_' . $client->loginid . ',0.00,9098.00,0.00,0.00,0.00,2011-03-08,987.00,9098.00',
+            '2011-03-08,deriv_' . $client->loginid . ',0.00,9098.00,0.00,0.00,0.00,2011-03-08,987.00,9098.00,1.00',
             'Check if values are correct in report'
         );
     };
