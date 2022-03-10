@@ -18,6 +18,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Utility qw(is_valid_time);
 use BOM::DynamicSettings;
 use BOM::Config;
 use BOM::Platform::RiskProfile;
@@ -100,12 +101,12 @@ if ($r->param('update_limit')) {
 
     my $start_time = $r->param('start_time');
     if ($start_time) {
-        code_exit_BO("invalid start_time, $start_time") unless _is_valid_time($start_time);
+        code_exit_BO("invalid start_time, $start_time") unless is_valid_time($start_time);
         $ref{start_time} = $start_time;
     }
     my $end_time = $r->param('end_time');
     if ($end_time) {
-        code_exit_BO("invalid end_time, $end_time") unless _is_valid_time($end_time);
+        code_exit_BO("invalid end_time, $end_time") unless is_valid_time($end_time);
         code_exit_BO("end_time is in the past, $end_time")
             unless Date::Utility->new($end_time)->is_after(Date::Utility->new);
         $ref{end_time} = $end_time;
@@ -323,17 +324,6 @@ sub send_notification_email {
     });
     return;
 
-}
-
-sub _is_valid_time {
-    my $time = shift;
-    try {
-        my $tim_obj = Date::Utility->new($time);
-        return 1;
-    } catch {
-        return 0;
-    }
-    return 0;
 }
 
 sub _filter_past_limits {

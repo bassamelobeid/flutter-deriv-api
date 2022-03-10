@@ -12,6 +12,7 @@ use BOM::Backoffice::Auth0;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsConfigHelper;
+use BOM::Backoffice::Utility qw(is_valid_time);
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 use Brands;
@@ -31,7 +32,7 @@ if (request()->param('save_limit')) {
     for my $field (qw{start_time end_time}) {
         my $date = $args{$field};
         next unless $date;
-        unless (_is_valid_time($date)) {
+        unless (is_valid_time($date)) {
             print $json->encode({error => "Please match the correct format for `$field` field."});
             return;
         }
@@ -266,13 +267,3 @@ sub _send_compliance_email {
     return;
 }
 
-sub _is_valid_time {
-    my $time = shift;
-    try {
-        my $tim_obj = Date::Utility->new($time);
-        return 1;
-    } catch {
-        return 0;
-    }
-    return 0;
-}
