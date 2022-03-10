@@ -24,6 +24,15 @@ $partialemail =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
 $phone        =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
 $broker       =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
 $date_of_birth = '' unless ($date_of_birth =~ /^\d{4,4}\-\d{1,2}\-\d{1,2}$/);
+
+if ($date_of_birth) {
+    my $dob = eval { Date::Utility->new($date_of_birth) };
+    unless ($dob) {
+        print '<p class="error">Please provide valid date of birth in YYYY-MM-DD format.</p>';
+        $date_of_birth = '';
+    }
+}
+
 my %fields = (
     first_name    => $partialfname,
     last_name     => $partiallname,
