@@ -155,7 +155,6 @@ paymentagent_transfer:
     - loginid_client
     - currency
     - amount
-    - dry_run
   ruleset:
     - paymentagent.accounts_are_not_the_same
     - type: group
@@ -175,42 +174,31 @@ paymentagent_transfer:
         loginid_to: loginid_client
       ruleset: transfers.landing_companies_are_the_same
     - paymentagent.amount_is_within_pa_limits
-    - type: conditional
-      on: dry_run
-      rules_per_value:
-        1:
-          - type: group
-            description: The contained rule is included in validate_payment rule goup bellow; but it's duplicated here to let it be checked in dry run.
-            tag: client
-            argument_mapping:
-              loginid: loginid_client
-            ruleset: payment.currency_matches_account
-        default:
-          - type: group
-            rule_group: validate_payment
-            tag: pa
-            argument_mapping:
-              loginid: loginid_pa
-              action: "'withdrawal'"
-              is_internal: "'0'"
-              is_p2p_restricted: "'1'"
-              amount: amount
-              currency: currency
-          - type: group
-            rule_group: validate_payment
-            tag: client
-            argument_mapping:
-              loginid: loginid_client
-              action: "'deposit'"
-              is_internal: "'0'"
-              is_p2p_restricted: "'1'"
-              amount: amount
-              currency: currency
-          - type: group
-            argument_mapping:
-              loginid: loginid_pa
-              action: "'transfer'"
-            ruleset: paymentagent.daily_transfer_limits
+    - type: group
+      rule_group: validate_payment
+      tag: pa
+      argument_mapping:
+        loginid: loginid_pa
+        action: "'withdrawal'"
+        is_internal: "'0'"
+        is_p2p_restricted: "'1'"
+        amount: amount
+        currency: currency
+    - type: group
+      rule_group: validate_payment
+      tag: client
+      argument_mapping:
+        loginid: loginid_client
+        action: "'deposit'"
+        is_internal: "'0'"
+        is_p2p_restricted: "'1'"
+        amount: amount
+        currency: currency
+    - type: group
+      argument_mapping:
+        loginid: loginid_pa
+        action: "'transfer'"
+      ruleset: paymentagent.daily_transfer_limits
 
 transfer_between_accounts_part2:
   description: Contains rules to be applied on transfer between accounts (part 2)
