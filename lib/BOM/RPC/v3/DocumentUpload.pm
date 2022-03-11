@@ -79,6 +79,17 @@ sub start_document_upload {
         });
 
         return create_upload_error('duplicate_document') unless ($upload_info);
+
+        # We can fulfill the proof of ownership with the file id
+        if ($document_type eq 'proof_of_ownership') {
+            my ($id, $details) = @{$args->{proof_of_ownership}}{qw/id details/};
+
+            $client->proof_of_ownership->fulfill({
+                id                                => $id,
+                payment_method_details            => $details,
+                client_authentication_document_id => $upload_info->{file_id},
+            });
+        }
     } catch ($error) {
         log_exception();
         $log->warnf('Document upload db query failed for %s:%s', $client->loginid, $error);
@@ -157,10 +168,65 @@ sub validate_input {
     return $args->{reason} if $status    and $status eq 'failure';
     return 'virtual'       if $client->is_virtual;
 
-    my $invalid_date = validate_expiration_date($args->{expiration_date});
-    return $invalid_date if $invalid_date;
+    my $error =
+        validate_expiration_date($args->{expiration_date}) // validate_id_and_exp_date({$args->%*, client => $client})
+        // validate_proof_of_ownership({%$args{qw/proof_of_ownership document_type/}, %$params{qw/client/}});
 
-    return validate_id_and_exp_date({$args->%*, client => $client});
+    return $error;
+}
+
+=head2 validate_proof_of_ownership
+
+Only applies to proof_of_ownership document types, it will take special consideration
+on the proof_of_ownership hashref given in the arguments.
+
+It takes the following params as hashref:
+
+=over 4
+
+=item * - C<client> - the L<BOM::User::Client> instance
+
+=item * - C<proof_of_ownership> - a hashref containing the I<id> of the POO being uploaded along with its I<details> 
+
+=item * - C<document_type> - a I<string> representing the document type being uploaded
+
+=back
+
+Rules checked:
+
+=over 4
+
+=item * - The checks are ignored for every document type but I<proof_of_ownership>
+
+=item * - The I<id> should exist and belong to the current client.
+
+=item * - The I<details> hashref should exist.
+
+=back
+
+Returns a C<string> representing an error or I<undef> if there was no error found.
+
+=cut
+
+sub validate_proof_of_ownership {
+    my ($args) = @_;
+    my ($client, $proof_of_ownership, $document_type) = @{$args}{qw/client proof_of_ownership document_type/};
+
+    return undef unless $document_type && $document_type eq 'proof_of_ownership';
+
+    my ($id, $details) = @{$proof_of_ownership}{qw/id details/};
+
+    return 'missing_proof_of_ownership_id' unless $id;
+
+    my $list = $client->proof_of_ownership->list({
+        id => $id,
+    });
+
+    return 'invalid_proof_of_ownership_id' unless $list && scalar @$list;
+
+    return 'missing_proof_of_ownership_details' unless defined $details;
+
+    return undef;
 }
 
 sub validate_id_and_exp_date {
@@ -214,6 +280,9 @@ sub create_upload_error {
             message    => localize('Checksum verification failed.'),
             error_code => 'ChecksumMismatch'
         },
+        missing_proof_of_ownership_id      => {message => localize('You must specify the proof of ownership id')},
+        invalid_proof_of_ownership_id      => {message => localize('The proof of ownership id provided is not valid')},
+        missing_proof_of_ownership_details => {message => localize('You must specify the proof of ownership details')},
     };
 
     my ($error_code, $message);
