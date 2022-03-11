@@ -36,7 +36,6 @@ use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Event::Emitter;
 use BOM::Platform::Utility;
 use BOM::User::Client::PaymentAgent;
 use BOM::User::Client::Status;
@@ -5083,7 +5082,6 @@ sub _p2p_advertiser_payment_method_update {
     my ($self, $method_defs, $existing, $updates) = @_;
 
     my (@disabled_ids, @updated_ids);
-
     for my $id (keys %$updates) {
 
         die +{error_code => 'PaymentMethodNotFound'}
@@ -5093,10 +5091,18 @@ sub _p2p_advertiser_payment_method_update {
         my $method_def = $method_defs->{$method} or return;    # skip the update if method is disabled for country
 
         for my $item_field (grep { $_ !~ /^(method|is_enabled)$/ } keys $updates->{$id}->%*) {
+
+            my $field_def = $method_def->{fields}{$item_field};
+
             die +{
                 error_code     => 'InvalidPaymentMethodField',
                 message_params => [$item_field, $method_def->{display_name}]}
-                unless exists $method_def->{fields}{$item_field};
+                unless $field_def;
+
+            die +{
+                error_code     => 'MissingPaymentMethodField',
+                message_params => [$field_def->{display_name}, $method_defs->{$method}{display_name}]}
+                if $field_def->{required} and not(trim($updates->{$id}{$item_field}));
 
             $existing->{$id}{fields}{$item_field} = $updates->{$id}{$item_field};
         }
@@ -5170,7 +5176,7 @@ sub _p2p_advertiser_payment_method_create {
             die +{
                 error_code     => 'MissingPaymentMethodField',
                 message_params => [$method_defs->{$method}{fields}{$required_field}{display_name}, $method_defs->{$method}{display_name}]}
-                unless $item->{$required_field};
+                unless trim($item->{$required_field});
         }
 
         for my $existing_pm (values %$existing) {

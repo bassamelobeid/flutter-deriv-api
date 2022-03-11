@@ -222,6 +222,22 @@ subtest 'update' => sub {
     );
 
     cmp_deeply(
+        exception {
+            $client->p2p_advertiser_payment_methods(
+                update => {
+                    $id => {
+                        field1 => ' ',
+                        field2 => 'f2 val'
+                    }})
+        },
+        {
+            error_code     => 'MissingPaymentMethodField',
+            message_params => ['Field 1', 'Method 1']
+        },
+        'required field should not be empty'
+    );
+
+    cmp_deeply(
         $client->p2p_advertiser_payment_methods(
             update => {
                 $id => {
