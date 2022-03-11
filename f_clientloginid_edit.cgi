@@ -300,6 +300,33 @@ if ($broker eq 'MF') {
     }
 }
 
+if ($input{request_poo}) {
+    my $poo_payment_method            = trim($input{poo_payment_method})            // '';
+    my $poo_payment_method_identifier = trim($input{poo_payment_method_identifier}) // '';
+
+    unless ($poo_payment_method) {
+        print qq[<p class="notify notify--warning">You should specify a payment method.</p>];
+        code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+    }
+
+    unless ($poo_payment_method_identifier) {
+        print qq[<p class="notify notify--warning">You should specify the payment method identifier.</p>];
+        code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+    }
+
+    try {
+        $client->set_db('write') unless $client->get_db() eq 'write';
+        $client->proof_of_ownership->create({
+            payment_method            => $poo_payment_method,
+            payment_method_identifier => $poo_payment_method_identifier,
+        });
+    } catch ($e) {
+        $e = 'Cannot create duplicates' if $e =~ /duplicate key value violates unique constraint/;
+        print qq[<p class="notify notify--warning">Could not request POO: $e.</p>];
+        code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+    }
+}
+
 # sync authentication status to Doughflow
 if ($input{whattodo} eq 'sync_to_DF') {
     my $error = sync_to_doughflow($client, $clerk);
