@@ -436,9 +436,9 @@ sub _filter_payment_methods {
 
     my @ret = ();
     for my $payment_method (@payment_methods) {
-        next if (any { $_ eq $payment_method->{payment_type} } @ignored_payment_types);
-        next if (any { $_ eq $payment_method->{processor_type} } @ignored_processor_types);
-        next if (any { $_ eq $payment_method->{payment_method} } @ignored_payment_methods);
+        next if (any { $_ eq ($payment_method->{payment_type}   // '') } @ignored_payment_types);
+        next if (any { $_ eq ($payment_method->{processor_type} // '') } @ignored_processor_types);
+        next if (any { $_ eq ($payment_method->{payment_method} // '') } @ignored_payment_methods);
         push @ret, $payment_method;
     }
 
