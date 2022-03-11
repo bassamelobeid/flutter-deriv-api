@@ -635,13 +635,8 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('Notes must not exceed [_1] characters.', MAX_DESCRIPTION_LENGTH))
         if (length($description) > MAX_DESCRIPTION_LENGTH);
 
-    unless ($args->{dry_run}) {
-        # NOTE: cashier availability used to be skipped for dry-run before rule engine integration.
-        # But why? Can we lift this check and always check cashier availability?
-        my $cashier_error = BOM::Platform::Client::CashierValidation::check_availability($client_fm, 'withdrawal');
-        return $error_sub->($error_sub->($cashier_error->{message_to_client})) if $cashier_error->{error};
-
-    }
+    my $cashier_error = BOM::Platform::Client::CashierValidation::check_availability($client_fm, 'withdrawal');
+    return $error_sub->($error_sub->($cashier_error->{message_to_client})) if $cashier_error->{error};
 
     my $rule_engine = BOM::Rules::Engine->new(client => [$client_fm, $client_to]);
     try {
@@ -650,8 +645,7 @@ rpc paymentagent_transfer => sub {
             loginid_pa     => $loginid_fm,
             loginid_client => $loginid_to,
             amount         => $amount,
-            currency       => $currency,
-            dry_run        => $args->{dry_run} // 0
+            currency       => $currency
         );
     } catch ($e) {
         return _process_pa_transfer_error($e, $currency, $loginid_fm, $loginid_to);

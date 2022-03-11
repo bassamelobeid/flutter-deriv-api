@@ -431,7 +431,12 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{error}{message_to_client}, "Payment agent transfers are temporarily unavailable in the client's country of residence.", $test);
         BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
 
-        $test = 'Transfer returns a status of 2 when dry_run is set';
+        $test = 'Transfer returns insufficient balance error even when dry_run is set';
+        $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        like $res->{error}{message_to_client}, qr/exceeds client balance/, $test;
+
+        $mock_account->redefine(balance => $testargs->{args}->{amount});
+        $test = 'Transfer returns a status of 2 when dry_run is set (with mocked sufficient balance)';
         $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{status}, 2, $test) or diag Dumper $res;
 
@@ -440,12 +445,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{client_to_full_name}, $Bob->full_name, $test) or diag Dumper $res;
         $test = 'Transfer works and returns correct transfer_to client loginid when dry_run is set';
         is($res->{client_to_loginid}, $Bob_id, $test);
-
-        $test = 'After transfer with dry_run, client account has an unchanged balance';
-        is($Alice->default_account->balance, 0, $test);
-
-        $test = 'After transfer with dry_run, transfer_to client account has an unchanged balance';
-        is($Bob->default_account->balance, 0, $test);
 
         $test          = 'You can transfer to client of different residence';
         $old_residence = $Alice->residence;
@@ -456,6 +455,14 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->residence($old_residence);
         $Alice->save;
         reset_transfer_testargs();
+
+        $mock_account->unmock_all;
+
+        $test = 'After transfer with dry_run, client account has an unchanged balance';
+        is($Alice->default_account->balance, 0, $test);
+
+        $test = 'After transfer with dry_run, transfer_to client account has an unchanged balance';
+        is($Bob->default_account->balance, 0, $test);
 
         $test = 'Transfer fails if argument not passed to payment_account_transfer';
         for my $arg (qw/ toClient currency amount Alice Bob /) {
@@ -675,12 +682,22 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
             email    => $dummy_client->{email},
             password => $hash_pwd,
         );
+
         $dummy_client->set_default_account($alt_currency);
         $testargs->{args}{transfer_to} = $dummy_client->loginid;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         my $dummy_id = $dummy_client->loginid;
         is($res->{error}{message_to_client},
             "You cannot perform this action, as $test_currency is not the default account currency for client $dummy_id.", $test);
+
+        $testargs->{args}{dry_run} = 1;
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is(
+            $res->{error}{message_to_client},
+            "You cannot perform this action, as $test_currency is not the default account currency for client $dummy_id.",
+            "$test - dry run"
+        );
+
         reset_transfer_testargs();
 
         $test = 'Transfer fails when amount is over available funds due to frozen free gift limit';
