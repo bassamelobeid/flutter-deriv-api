@@ -486,6 +486,7 @@ subtest 'open mt5 account from AFF client' => sub {
             affiliate_plan => 'turnover',
             first_name     => 'test',
             last_name      => 'asdf',
+            currency       => 'USD',
         },
         token => $auth_token,
     };
