@@ -98,6 +98,101 @@ subtest 'POI Attempts' => sub {
 
 };
 
+subtest 'Proof of ownership' => sub {
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'poo@binary.com',
+        client_password => 'abc123',
+        residence       => 'br',
+    });
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    $user->add_client($client);
+
+    my $res = $t->await::get_account_status({get_account_status => 1});
+    test_schema('get_account_status', $res);
+    cmp_deeply $res->{get_account_status}->{authentication}->{ownership},
+        {
+        requests => [],
+        status   => 'none',
+        },
+        'expected poo result for brand new client';
+    cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [], 'expected needs verification for brand new client';
+
+    my $poo = $client->proof_of_ownership->create({
+        payment_method            => 'VISA',
+        payment_method_identifier => '1234**9999',
+    });
+
+    $t->await::authorize({authorize => $token});
+    $client->proof_of_ownership->_clear_full_list();
+
+    $res = $t->await::get_account_status({get_account_status => 1});
+    test_schema('get_account_status', $res);
+    cmp_deeply $res->{get_account_status}->{authentication}->{ownership},
+        {
+        requests => [{
+                id                        => re('\d+'),
+                creation_time             => re('.+'),
+                payment_method            => 'VISA',
+                payment_method_identifier => '1234**9999',
+            }
+        ],
+        status => 'pending',
+        },
+        'expected result for pending poo';
+    cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, ['ownership'], 'expected needs verification for pending poo';
+
+    # start uploading
+    $t->await::authorize({authorize => $token});
+    $client->proof_of_ownership->_clear_full_list();
+
+    $res = $t->await::document_upload({
+            document_upload    => 1,
+            document_id        => '9999',
+            document_type      => 'proof_of_ownership',
+            document_format    => 'png',
+            expected_checksum  => '3252352323',
+            file_size          => 0,
+            document_format    => 'JPG',
+            expected_checksum  => '12345678901234567890123456789012',
+            proof_of_ownership => {
+                id      => $res->{get_account_status}->{authentication}->{ownership}->{requests}->[0]->{id},
+                details => {
+                    some => 'thing',
+                }}});
+
+    test_schema('document_upload', $res);
+
+    # finish upload
+    $t->await::authorize({authorize => $token});
+    $client->proof_of_ownership->_clear_full_list();
+
+    $t->await::document_upload({
+            document_upload => {
+                file_id => $res->{document_upload}->{file_id},
+                status  => 'success'
+            }});
+
+    $t->await::authorize({authorize => $token});
+    $client->proof_of_ownership->_clear_full_list();
+    $res = $t->await::get_account_status({get_account_status => 1});
+    test_schema('get_account_status', $res);
+    cmp_deeply $res->{get_account_status}->{authentication}->{ownership},
+        {
+        requests => [],
+        status   => 'none',
+        },
+        'expected poo result for already uploaded poo';
+    cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [], 'expected needs verification for uploaded poo';
+
+};
+
 sub create_vr_account {
     my $args = shift;
     my $acc  = BOM::Platform::Account::Virtual::create_account({
