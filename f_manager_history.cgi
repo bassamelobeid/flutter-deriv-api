@@ -34,7 +34,7 @@ $loginID =~ s/\s//g;
 
 my $encoded_loginID = encode_entities($loginID);
 
-my $trx_filter              = request()->param('trx_filter');
+my $trx_filter              = request()->param('trx_filter') // '';
 my $deposit_withdrawal_only = $trx_filter eq 'deposit_withdrawal_only' ? 1 : 0;
 my $all_in_one_page         = $trx_filter eq 'all_in_one_page' ? 1 : 0;
 
