@@ -65,21 +65,16 @@ sub validate_login {
     my $user;
 
     if ($refresh_token) {
-
         $user = BOM::User->new(id => $refresh_token_user_id);
         return $err_var->("INVALID_USER") unless $user;
 
         $password = '**REFRESH-TOKEN-LOGIN**';
-
     } elsif ($oneall_user_id) {
-
         $user = BOM::User->new(id => $oneall_user_id);
         return $err_var->("INVALID_USER") unless $user;
 
         $password = '**SOCIAL-LOGIN-ONEALL**';
-
     } else {
-
         return $err_var->("INVALID_EMAIL")    unless ($email and Email::Valid->address($email));
         return $err_var->("INVALID_PASSWORD") unless $password;
 
@@ -93,8 +88,7 @@ sub validate_login {
         return $err_var->("INVALID_CREDENTIALS") if $user->{has_social_signup};
     }
 
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {
-
+    if (is_login_suspended()) {
         BOM::User::AuditLog::log('system suspend all login', $user->{email});
         return $err_var->("TEMP_DISABLED");
     }
@@ -123,7 +117,7 @@ sub validate_login {
     my @clients = $user->clients(include_self_closed => $result->{self_closed});
     my $client  = $clients[0];
 
-    return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
+    return $err_var->("TEMP_DISABLED") if is_login_suspended($client->loginid);
 
     my $client_is_disabled = $client->status->disabled && !($result->{self_closed} && $client->status->closed);
     return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client_is_disabled);
@@ -200,7 +194,7 @@ sub notify_login {
 sub is_reset_password_allowed {
     my $app_id = shift;
 
-    die "Invalid application id." unless $app_id;
+    return 0 unless $app_id;
 
     return BOM::Database::Model::OAuth->new->is_primary_website($app_id);
 }
@@ -536,6 +530,32 @@ sub activate_accounts {
     # perform postponed logging and notification
     $selected_account->user->after_login(undef, $environment, $app->{id}, @$closed_clients);
     $c->c($selected_account, $unknown_location, $app);
+}
+
+=head2 is_login_suspended
+
+Returns true if login is suspended
+
+Arguments:
+
+=over 4
+
+=item C<loginid>
+
+Loginid of the client
+
+=back
+
+=cut
+
+sub is_login_suspended {
+    my $loginid = shift;
+
+    return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->all_logins;
+
+    return 1 if ($loginid and grep { $loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins});
+
+    return 0;
 }
 
 1;
