@@ -245,6 +245,10 @@ rpc "buy",
                 contract_id     => $trx->contract_id,
                 account_id      => $transaction_details->{account_id}})];
 
+    # This is to combate delayed response in proposal open contract when client subscribes for all proposal open contracts before executing buy requests.
+    # We push keys here directly to the pricer jobs.
+    BOM::Config::Redis::redis_pricer()->lpush('pricer_jobs', $pricer_args_keys->[0]);
+
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
     BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval) if $ENV{RECORD_PRICE_METRICS};
