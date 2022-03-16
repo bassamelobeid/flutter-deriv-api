@@ -828,7 +828,15 @@ subtest 'get account status' => sub {
 
             $test_client_cr->status->clear_withdrawal_locked;
 
-            # unwelcome + false name
+            my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+            $mocked_client->mock(locked_for_false_profile_info => sub { return 1 });
+            cmp_deeply(
+                $c->tcall($method, {token => $token_cr})->{status},
+                superbagof(qw(allow_document_upload)),
+                'allow_document_upload found due to locked account for false profile info'
+            );
+            $mocked_client->unmock('locked_for_false_profile_info');
+
             $test_client_cr->status->set('unwelcome', 'system', 'For test purposes');
             cmp_deeply(
                 $c->tcall($method, {token => $token_cr})->{status},
@@ -836,16 +844,28 @@ subtest 'get account status' => sub {
                 'allow_document_upload is not added along with unwelcome'
             );
 
-            my $mocked_client = Test::MockModule->new(ref($test_client_cr));
-            $mocked_client->mock(locked_for_false_profile_info => sub { return 1 });
+            $test_client_cr->status->upsert('unwelcome', 'system', 'potential corporate account');
             cmp_deeply(
                 $c->tcall($method, {token => $token_cr})->{status},
                 superbagof(qw(unwelcome allow_document_upload)),
-                'allow_document_upload is automatically added along with unwelcome if account is locked for false name'
+                'allow_document_upload is automatically added along with unwelcome if account is locked for false info'
+            );
+            $test_client_cr->status->clear_unwelcome;
+
+            $test_client_cr->status->set('cashier_locked', 'system', 'fake profile info');
+            cmp_deeply(
+                $c->tcall($method, {token => $token_cr})->{status},
+                superbagof(qw(cashier_locked allow_document_upload)),
+                'allow_document_upload is automatically added along with cashier_locked if account is locked for false info'
             );
 
-            $test_client_cr->status->clear_unwelcome;
-            $mocked_client->unmock('locked_for_false_profile_info');
+            $test_client_cr->status->upsert('cashier_locked', 'system', 'For test purposes');
+            cmp_deeply(
+                $c->tcall($method, {token => $token_cr})->{status},
+                superbagof(qw(cashier_locked)),
+                'allow_document_upload is not added along with cashier_locked'
+            );
+            $test_client_cr->status->clear_cashier_locked;
 
             $test_client_cr->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
             $test_client_cr->save;
