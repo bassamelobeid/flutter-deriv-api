@@ -4,21 +4,17 @@ use warnings;
 use Test::More;
 use Test::MockModule;
 use Test::Deep;
-use Test::BOM::RPC::QueueClient;
 
 use Date::Utility;
 
 use BOM::RPC::v3::Accounts;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User;
-use BOM::Platform::Token;
 
-my $c = Test::BOM::RPC::QueueClient->new();
-my $m = BOM::Platform::Token::API->new;
+my %rejected_reasons = %BOM::RPC::v3::Accounts::RejectedIdentityVerificationReasons;
 
 subtest 'idv details' => sub {
-    my %rejected_reasons = %BOM::RPC::v3::Accounts::RejectedIdentityVerificationReasons;
-    my $client           = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
 
@@ -252,95 +248,5 @@ subtest 'idv details' => sub {
 
     $doc_mock->unmock_all;
 };
-
-subtest 'Proof of Ownership' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my $user = BOM::User->create(
-        email    => 'test+poo@binary.com',
-        password => 'Abcd1234'
-    );
-    $user->add_client($client);
-
-    my $token  = $m->create_token($client->loginid, 'test token');
-    my $result = $c->tcall('get_account_status', {token => $token});
-
-    cmp_deeply $result->{authentication}->{ownership},
-        {
-        status   => 'none',
-        requests => [],
-        },
-        'Expected POO from auth';
-
-    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate';
-
-    my $poo = $client->proof_of_ownership->create({
-        payment_method            => 'VISA',
-        payment_method_identifier => '99999'
-    });
-
-    $client->proof_of_ownership->_clear_full_list();
-    $result = $c->tcall('get_account_status', {token => $token});
-
-    cmp_deeply $result->{authentication}->{ownership},
-        {
-        status   => 'pending',
-        requests => [{
-                payment_method            => 'VISA',
-                payment_method_identifier => '99999',
-                id                        => re('\d+'),
-                creation_time             => re('.+'),
-            }
-        ],
-        },
-        'Expected POO result when pending POO';
-
-    cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'POO needed';
-
-    my $file_id = upload(
-        $client,
-        {
-            document_id => 111,
-            checksum    => 'checkitup'
-        });
-
-    ok $file_id, 'There is a document uploaded';
-
-    $poo = $client->proof_of_ownership->fulfill({
-            id                     => $poo->{id},
-            payment_method_details => {
-                name    => 'EL CARPINCHO',
-                expdate => '12/28'
-            },
-            client_authentication_document_id => $file_id,
-        });
-
-    $client->proof_of_ownership->_clear_full_list();
-    $result = $c->tcall('get_account_status', {token => $token});
-
-    cmp_deeply $result->{authentication}->{ownership},
-        {
-        status   => 'none',
-        requests => [],
-        },
-        'Expected POO after fulfilling';
-
-    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate';
-};
-
-sub upload {
-    my ($client, $doc) = @_;
-
-    my $file = $client->start_document_upload({
-        document_type   => 'proof_of_ownership',
-        document_format => 'png',
-        checksum        => 'checkthis',
-        document_id     => 555,
-        $doc ? $doc->%* : (),
-    });
-
-    return $client->finish_document_upload($file->{file_id});
-}
 
 done_testing();

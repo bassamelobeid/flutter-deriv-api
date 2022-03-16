@@ -1146,10 +1146,6 @@ sub _get_authentication {
         document => {
             status => "none",
         },
-        ownership => {
-            status   => "none",
-            requests => [],
-        },
         attempts => {
             count   => 0,
             history => [],
@@ -1161,66 +1157,26 @@ sub _get_authentication {
     # Each key from the authentication object will be filled up independently by an assembler method.
     # The `needs_verification` array can be filled with `identity` and/or `document`, there is a method for each one.
     my $documents = $client->documents->uploaded();
-    my $poo_list  = $client->proof_of_ownership->list({status => 'pending'});
     my $args      = {
         client    => $client,
         documents => $documents,
-        poo_list  => $poo_list,
     };
     # Resolve the POA
     $authentication_object->{document} = _get_authentication_poa($args);
     # Resolve the POI
     $authentication_object->{identity} = _get_authentication_poi($args);
-    # Resolve the POO
-    $authentication_object->{ownership} = _get_authentication_poo($args);
     # Current statuses
     my $poa_status = $authentication_object->{document}->{status};
     my $poi_status = $authentication_object->{identity}->{status};
     # The `needs_verification` array is built from the following hash keys
     my %needs_verification_hash;
-    $needs_verification_hash{identity}  = 1 if $client->needs_poi_verification($documents, $poi_status, $args{is_verification_required});
-    $needs_verification_hash{document}  = 1 if $client->needs_poa_verification($documents, $poa_status, $args{is_verification_required});
-    $needs_verification_hash{ownership} = 1 if $client->proof_of_ownership->needs_verification();
+    $needs_verification_hash{identity} = 1 if $client->needs_poi_verification($documents, $poi_status, $args{is_verification_required});
+    $needs_verification_hash{document} = 1 if $client->needs_poa_verification($documents, $poa_status, $args{is_verification_required});
     # Craft the `needs_verification` array
     $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
     # Craft the `attempts` object
     $authentication_object->{attempts} = $client->poi_attempts;
     return $authentication_object;
-}
-
-=head2 _get_authentication_poo
-
-Resolves the C<proof_of_ownership> structure of the authentication object.
-
-It takes the following named params:
-
-=over 4
-
-=item * C<client> - a L<BOM::User::Client> the client itself
-
-=item * C<poo_list> - the POO list that belongs to the client itself
-
-=back
-
-Returns,
-    hashref containing the structure needed for C<proof_of_ownership> at the authentication object.
-
-=cut
-
-sub _get_authentication_poo {
-    my $params = shift;
-    my ($client, $poo_list) = @{$params}{qw/client poo_list/};
-    my $poo_status = $client->proof_of_ownership->status($poo_list);
-
-    # Return the proof_of_ownership structure
-    return {
-        status   => $poo_status,
-        requests => [
-            map {
-                { %$_{qw/id payment_method payment_method_identifier creation_time/} }
-            } $poo_list->@*
-        ],
-    };
 }
 
 =head2 _get_authentication_poi
