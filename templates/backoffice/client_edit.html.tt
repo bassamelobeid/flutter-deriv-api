@@ -593,81 +593,6 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td>:<input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
     </tr>
     <tr>
-        <td class="bg-lightgrey" colspan="2">#Proof of Ownership</td>
-    </tr>
-    <tr>
-        <td class="label">Payment Method</td>
-        <td>:
-            <select name="poo_payment_method">
-                <option value=''>Select a Payment Method</option>
-                [% FOR pm IN payment_methods %]
-                    <option value="[% pm.display_name %]">[% pm.display_name %]</option>
-                [% END %]
-            </select>
-        </td>
-    <tr>
-    <tr>
-        <td class="label">Payment Method Identifier</td>
-        <td>:
-            <input type="text" size="20" name="poo_payment_method_identifier" />
-        </td>
-    <tr>
-    <tr>
-        <td class="label">&nbsp;</td>
-        <td>
-            <button name="request_poo" type="submit" class="btn btn--primary" value="1">Request POO</button>
-        </td>
-    <tr>
-    <tr>
-        <td class="label" colspan="2">
-            <table width="100%" class="collapsed hover alternate">
-                <tr>
-                    <th>Payment Method</th>
-                    <th>Identifier</th>
-                    <th>Status</th>
-                    <th>Requested At</th>
-                    <th>Uploaded At</th>
-                    <th>Documents</th>
-                    <th>Details</th>
-                </tr>
-                [% FOR poo IN proof_of_ownership_list %]
-                    <tr>
-                        <td>[% poo.payment_method %]</td>
-                        <td>[% poo.payment_method_identifier %]</td>
-                        <td>[% poo.status %]</td>
-                        <td>[% poo.creation_time %]</td>
-                        <td>[% poo.uploaded_time || '<i>upload pending</i>' | none %]</td>
-                        <td style="text-align:left;">
-                            [% IF poo.documents.empty %]
-                                <i>No documents uploaded</i>
-                            [% ELSE %]
-                                <ul style="list-style-type:none;padding-inline-start:8px;">
-                                    [% FOR doc IN poo.documents %]
-                                        <li> ► <a target="_blank" class="link" href="#" data-poo-doc-id="[% doc %]">[% doc %]</a></li>
-                                    [% END %]
-                                <ul>
-                            [% END %]
-                        </td>
-                        <td style="text-align:left;">
-                            [% IF poo.payment_method_details.keys.empty %]
-                                <i>No details</i>
-                            [% ELSE %]
-                                <ul style="list-style-type:none;padding-inline-start:8px;">
-                                [% FOR key IN poo.payment_method_details.keys %]
-                                    <li> ► <b>[% key %]:</b> [% poo.payment_method_details.$key %]</li>
-                                [% END %]
-                                </ul>
-                            [% END %]
-                        </td>
-                    </tr>
-                [% END %]
-            </table>
-        </td>
-    <tr>
-    <tr>
-        <td class="label" colspan="2"><hr/></td>
-    <tr>
-    <tr>
         <td class="bg-lightgrey" colspan="2">#Documents</td>
     </tr>
     <tr>
@@ -1062,17 +987,4 @@ function kyc_reason_changed() {
     [% END %]
   });
 
-</script>
-
-<script>
-    // snatch the url and display text from the documents link section
-    const poolinks = document.querySelectorAll('[data-poo-doc-id]');
-
-    poolinks.forEach(link => {
-        const id = link.getAttribute('data-poo-doc-id');
-        const doclink = document.querySelector('[data-document-id="' + id + '"]');
-
-        link.innerHTML = doclink.innerHTML;
-        link.href = doclink.getAttribute('href');
-    }); 
 </script>
