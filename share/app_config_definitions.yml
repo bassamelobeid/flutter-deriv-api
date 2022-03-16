@@ -153,7 +153,7 @@ payments:
             - no_withdrawal_or_trading
             - only_pa_withdrawals_allowed
         disabled_sportsbooks:
-          description: 'Sportsbooks that are not enabled for autoapprovals, denoted by frontend name.'
+          description: 'Sportsbooks that are not enabled for autoapprovals, denoted by frontend name. (this config is shared across al autoapproval scripts)'
           isa: ArrayRef
           global: 1
           default: []
@@ -217,6 +217,89 @@ payments:
           isa: Num
           global: 1
           default: 5000
+        cft:
+          description: 'Payment autoapproval rules parameters for CFT'
+          isa: section
+          contains:
+            payment_methods:
+              description: 'Payments method list allowed for CFT auto approval'
+              isa: ArrayRef
+              global: 1
+              default:
+                - CCPayout
+                - CFT
+                - CreditCard
+            max_pending_total_enabled:
+              description: 'Enable CFT Rule 3, to check the total amount of payouts'
+              isa: Bool
+              global: 1
+              default: 1
+            max_pending_total:
+              description: 'Value of x in: CFT Rule 3: Total amount of payouts must be < x'
+              isa: Num
+              global: 1
+              default: 1000
+            restricted_client_statuses:
+              description: 'Restricted client statuses (used in CFT Rule 2).'
+              isa: ArrayRef
+              global: 1
+              default:
+                - disabled
+                - unwelcome
+                - cashier_locked
+                - withdrawal_locked
+                - no_withdrawal_or_trading
+                - only_pa_withdrawals_allowed
+            max_profit_day_enabled:
+              description: 'Enable CFT Rule 5, to check total profit in the last 24 hours'
+              isa: Bool
+              global: 1
+              default: 1
+            max_profit_day:
+              description: 'Value of x in: CFT Rule 5: Total profit in the last 24 hours must be < x.'
+              isa: Num
+              global: 1
+              default: 2000
+            max_profit_month_enabled:
+              description: 'Enable CFT Rule 5, to check total profit in the last 30 days'
+              isa: Bool
+              global: 1
+              default: 1
+            max_profit_month:
+              description: 'Value of x in: CFT Rule 5: Total profit in the last 30 days must be < x.'
+              isa: Num
+              global: 1
+              default: 5000
+            min_last_doughflow_deposit_percent_vs_mt5_transfers_enabled:
+              description: 'Enable Rule 5.0 (mt5): the sum of transfers to MT5 should be at least some percentage of the doughflow deposit amount'
+              isa: Bool
+              global: 1
+              default: 1
+            min_last_doughflow_deposit_percent_vs_mt5_transfers:
+              description: 'Minium ratio between the doughflow deposit and the mt5 transfers. (note 25% should be specifed as 0.25, therefore any x in x%, should be computed as x/100)'
+              isa: Num
+              global: 1
+              default: 0.25
+            min_last_doughflow_deposit_percent_vs_contracts_bought_enabled:
+              description: 'Enable Rule 5.0 (contracts bought): the sum of contracts bought should be at least some percentage of the last doughflow deposit amount'
+              isa: Bool
+              global: 1
+              default: 1
+            min_last_doughflow_deposit_percent_vs_contracts_bought:
+              description: 'Minimum ratio between the last doughflow deposit and the contracts bought. (note 25% should be specifed as 0.25, therefore any x in x%, should be computed as x/100)'
+              isa: Num
+              global: 1
+              default: 0.25
+            max_mt5_net_transfer_enabled:
+              description: 'Enable Rule 4, to check MT5 net transfers'
+              isa: Bool
+              global: 1
+              default: 1
+            max_mt5_net_transfer:
+              description: 'Value of x in: Rule 4: MT5 net transfer must be < x.'
+              isa: Num
+              global: 1
+              default: 5000
     p2p:
       description: 'Peer-to-peer payment system'
       isa: section
