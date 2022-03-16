@@ -14,7 +14,6 @@ use Test::MockModule;
 use Path::Tiny;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Utility qw(random_email_address);
 use BOM::User;

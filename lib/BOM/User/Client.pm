@@ -40,7 +40,6 @@ use BOM::Platform::Utility;
 use BOM::User::Client::PaymentAgent;
 use BOM::User::Client::Status;
 use BOM::User::Client::AuthenticationDocuments;
-use BOM::User::Client::ProofOfOwnership;
 use BOM::User::Client::Account;
 use BOM::User::FinancialAssessment;
 use BOM::User::Utility;
@@ -1489,12 +1488,6 @@ sub documents {
             client => $self,
         });
     };
-}
-
-sub proof_of_ownership {
-    my $self = shift;
-
-    return $self->{proof_of_ownership} //= BOM::User::Client::ProofOfOwnership->new({client => $self});
 }
 
 sub is_pa_and_authenticated {
