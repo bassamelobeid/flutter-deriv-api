@@ -340,6 +340,20 @@ sub get_settings_by_group {
                 payments.autoapproval.max_mt5_net_transfer_enabled
                 payments.autoapproval.max_mt5_net_transfer
                 payments.autoapproval.disabled_sportsbooks
+                payments.autoapproval.cft.payment_methods
+                payments.autoapproval.cft.max_pending_total_enabled
+                payments.autoapproval.cft.max_pending_total
+                payments.autoapproval.cft.restricted_client_statuses
+                payments.autoapproval.cft.max_profit_day_enabled
+                payments.autoapproval.cft.max_profit_day
+                payments.autoapproval.cft.max_profit_month_enabled
+                payments.autoapproval.cft.max_profit_month
+                payments.autoapproval.cft.min_last_doughflow_deposit_percent_vs_mt5_transfers_enabled
+                payments.autoapproval.cft.min_last_doughflow_deposit_percent_vs_mt5_transfers
+                payments.autoapproval.cft.min_last_doughflow_deposit_percent_vs_contracts_bought_enabled
+                payments.autoapproval.cft.min_last_doughflow_deposit_percent_vs_contracts_bought
+                payments.autoapproval.cft.max_mt5_net_transfer_enabled
+                payments.autoapproval.cft.max_mt5_net_transfer
                 payments.p2p_withdrawal_limit
                 payments.p2p_deposits_lookback
                 )
