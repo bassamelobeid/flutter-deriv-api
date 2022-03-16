@@ -105,7 +105,7 @@ subtest 'mt5 new account - no trading password' => sub {
         delete $params->{args}->{dry_run};
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(1);
 
-        $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError');
+        $c->call_ok($method, $params)->has_error->error_code_is('TradingPasswordRequired');
         is $test_client->user->trading_password, undef, 'trading password is not saved';
 
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);

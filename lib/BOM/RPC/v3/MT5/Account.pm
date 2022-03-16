@@ -786,10 +786,6 @@ async_rpc "mt5_new_account",
             stats_inc('bom_rpc.v_3.new_mt5_account.called_with_wrong_TIN_format.count') unless (any { $client_tin =~ m/$_/ } @$tin_format);
         }
     }
-    # Check if client is throttled before sending MT5 request
-    if (_throttle($client->loginid)) {
-        return create_error_future('MT5AccountCreationThrottle', {override_code => $error_code});
-    }
 
     if ($args->{dry_run}) {
         return Future->done({
@@ -798,6 +794,11 @@ async_rpc "mt5_new_account",
                 currency        => 'USD',
                 display_balance => '0.00',
                 ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
+    }
+
+    # Check if client is throttled before sending MT5 request
+    if (_throttle($client->loginid)) {
+        return create_error_future('MT5AccountCreationThrottle', {override_code => $error_code});
     }
 
     # don't allow new mt5 account creation without trading password
