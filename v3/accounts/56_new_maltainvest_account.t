@@ -762,6 +762,37 @@ subtest 'Address validation' => sub {
     is $cli->address_line_2, $details{address_line_2}, 'Expected address line 2';
 };
 
+
+
+subtest 'Can specify currency' => sub {
+    # create VR acc, authorize
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'withcurr+de@binary.com',
+        client_password => 'abc123',
+        residence       => 'de',
+    });
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    my %details = (%client_details, %$mf_details);
+    delete $details{new_account_real};
+    $details{first_name}                = "Mister";
+    $details{last_name}                 = "Goblin";
+    $details{address_line_1}            = "123° Real Street";
+    $details{address_line_2}            = "123º Ransacked Terrace";
+    $details{residence}                 = 'de';
+    $details{phone}                     = '+442072343454';
+    $details{currency}                     = 'EUR';
+    $details{tax_identification_number} = '11122233345';
+
+    my $res = $t->await::new_account_maltainvest(\%details);
+    test_schema('new_account_maltainvest', $res);
+
+    my $cli = BOM::User::Client->new({loginid => $res->{new_account_maltainvest}->{client_id}});
+
+    is $cli->currency, 'EUR', 'Expected currency has been bound to the client';
+};
+
 sub create_vr_account {
     my $args   = shift;
     my $params = {
