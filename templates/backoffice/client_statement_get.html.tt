@@ -10,8 +10,8 @@
         <input type="hidden" name="loginID" value="[% encoded_loginid %]">
         <input type="submit" class="btn btn--primary" value="View [% encoded_loginid %] statement" style="margin-right: 4px;">
         <div class="form-checkbox">
-            <input type="checkbox" name="depositswithdrawalsonly" id="depositswithdrawalsonly" value="yes" [% checked %]>
-            <label for="depositswithdrawalsonly" style="margin-right: 8px;">Deposits and withdrawals only</label>
+            <input type="checkbox" name="trx_filter" id="deposit_withdrawal_only" value="deposit_withdrawal_only" [% checked %]>
+            <label for="deposit_withdrawal_only" style="margin-right: 8px;">Deposits and withdrawals only</label>
         </div>
     </form>
 

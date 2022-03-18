@@ -36,7 +36,7 @@ my $encoded_loginID = encode_entities($loginID);
 
 my $trx_filter              = request()->param('trx_filter') // '';
 my $deposit_withdrawal_only = $trx_filter eq 'deposit_withdrawal_only' ? 1 : 0;
-my $all_in_one_page         = $trx_filter eq 'all_in_one_page' ? 1 : 0;
+my $all_in_one_page         = $trx_filter eq 'all_in_one_page'         ? 1 : 0;
 
 my $from_date = trim(request()->param('startdate'));
 my $to_date   = trim(request()->param('enddate'));
@@ -187,18 +187,18 @@ BOM::Backoffice::Request::template()->process(
             from => $overview_from_date->date_yyyymmdd(),
             to   => $overview_to_date->date_yyyymmdd()
         },
-        transactions            => $transactions,
-        transaction_id          => $transaction_id,
-        apps                    => $apps,
-        balance                 => $balance,
-        now                     => Date::Utility->today,
-        currency                => $currency,
-        loginid                 => $client->loginid,
-        broker                  => $broker,
-        trx_filter              => $trx_filter,
-        contract_details        => \&BOM::ContractInfo::get_info,
-        self_post               => request()->url_for('backoffice/f_manager_history.cgi'),
-        clientedit_url          => request()->url_for(
+        transactions     => $transactions,
+        transaction_id   => $transaction_id,
+        apps             => $apps,
+        balance          => $balance,
+        now              => Date::Utility->today,
+        currency         => $currency,
+        loginid          => $client->loginid,
+        broker           => $broker,
+        trx_filter       => $trx_filter,
+        contract_details => \&BOM::ContractInfo::get_info,
+        self_post        => request()->url_for('backoffice/f_manager_history.cgi'),
+        clientedit_url   => request()->url_for(
             'backoffice/f_clientloginid_edit.cgi',
             {
                 loginID => $client->loginid,

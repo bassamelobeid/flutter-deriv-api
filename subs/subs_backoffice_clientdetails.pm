@@ -716,8 +716,7 @@ sub build_client_statement_form {
         . get_currency_options()
         . '</SELECT>'
         . '</div><input type="hidden" name="l" value="EN">'
-        . '<input type="radio" value="all_in_one_page" name="trx_filter" id="allInOnePageStatement" checked/><label for="allInOnePageStatement">Show All Transactions</label> '
-        . '<input type="radio" value="deposit_withdrawal_only" name="trx_filter"  id="depositsWithdrawalsOnly" /><label for="depositsWithdrawalsOnly">Deposits and Withdrawals only</label> '
+        . '<input type="checkbox" value="deposit_withdrawal_only" name="trx_filter"  id="deposit_withdrawal_only"><label for="deposit_withdrawal_only">Deposits and Withdrawals only</label> '
         . '<input type="submit" class="btn btn--primary" value="Client statement">'
         . '</FORM>'
         # ------- CRYPTO -------
