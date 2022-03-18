@@ -85,6 +85,19 @@ has channel_unsubscribing => (
     is      => 'ro',
     default => sub { return +{} });
 
+=head2 channel_subscribing
+
+We want to check if the redis subscription is established before adding a handler for that subscription. 
+Subscribing period in this context is the time between the redis subscription started and adding the client subscription to L<channel_subscriptions>.
+
+Please refer to L<subscribe> and L<on_message>
+
+=cut
+
+has channel_subscribing => (
+    is      => 'ro',
+    default => sub { return +{} });
+
 =head2 redis
 
 return redis instance
@@ -120,7 +133,9 @@ sub subscribe {
 
     stats_inc("$stats_name.clients");
     $log->tracef('Subscribing %s channel %s in pid %i', $class, $channel, $$);
-    my $f = (
+    my $channel_subscribing = $self->channel_subscribing;
+    my $f                   = (
+
         $self->channels->{$channel} //= do {
             my $f        = Future::Mojo->new->set_label('RedisSubscription[' . $channel . ']');
             my $callback = sub {
@@ -134,6 +149,12 @@ sub subscribe {
                     $f->fail($err, redis => $channel);
                     return;
                 }
+                if (!exists($self->channel_subscriptions->{$channel})) {
+                    $channel_subscribing->{$channel} = 1;
+                    # Checking for a race conditon during subscription
+                    $log->errorf('Channel [%s] subscribed to redis before adding the subscription to channel subscriptions list', $channel);
+                }
+
                 stats_inc("$stats_name.instances.success");
                 $f->done($channel);
                 return;
@@ -149,6 +170,7 @@ sub subscribe {
         }
     );
     weaken($self->channel_subscriptions->{$channel}{refaddr($subscription)} = $subscription);
+    delete $channel_subscribing->{$channel};
 
     return $f;
 }
@@ -259,6 +281,8 @@ sub on_message {
         # https://trello.com/c/Qm0MSFBD/#comment-5be403a7dceb540885f49d2a
         my @client_subscriptions = values %$entry;
         $_ && $_->process($message) for @client_subscriptions;
+    } elsif (exists($self->channel_subscribing->{$channel})) {
+        $log->errorf('Received a message for channel [%s] during subscription and no handler to proccess the message', $channel);
     } elsif (!exists($self->channel_unsubscribing->{$channel})) {
         $log->errorf('Had a message for channel [%s] but that channel is not subscribed', $channel);
         stats_inc("SubscriptionManager.UnsubscribedMsg");
