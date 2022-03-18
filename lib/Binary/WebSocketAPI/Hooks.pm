@@ -226,6 +226,7 @@ my %rate_limit_map = (
     reality_check_real          => 'websocket_call_expensive',
     account_statistics_real     => 'websocket_call_expensive',
     account_security_real       => 'websocket_call_expensive',
+    reset_password_real         => 'websocket_call_password',
 
     # Virtual Actions
     ping_virtual                   => '',
@@ -241,6 +242,7 @@ my %rate_limit_map = (
     sell_virtual                   => 'virtual_sell_transaction',
     account_statistics_virtual     => 'websocket_call_expensive',
     account_security_virtual       => 'websocket_call_expensive',
+    reset_password_virtual         => 'websocket_call_password',
 );
 
 sub reached_limit_check {
