@@ -1312,9 +1312,9 @@ subtest 'account closure' => sub {
     );
     request($req);
     $result = $action_handler->($call_args)->get;
-    is $result, undef, 'Empty result';
-    is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
-    is scalar @track_args,    0, 'No track event is triggered when brand is binary';
+    isnt $result, undef, 'Empty result';
+    isnt scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
+    isnt scalar @track_args,    0, 'No track event is triggered when brand is binary';
 
     $mock_client->unmock_all;
 };
@@ -1479,11 +1479,12 @@ subtest 'api token create' => sub {
         brand_name => 'binary',
         language   => 'ID'
     );
+
     request($req);
     $result = $action_handler->($call_args)->get;
-    is $result, undef, 'Empty result (not emitted)';
+    isnt $result, undef, 'Empty result (not emitted)';
     is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
-    is scalar @track_args,    0, 'No track event is triggered when brand is binary';
+    isnt scalar @track_args,  0, 'No track event is triggered when brand is binary';
 };
 
 subtest 'api token delete' => sub {
@@ -1536,9 +1537,9 @@ subtest 'api token delete' => sub {
     );
     request($req);
     $result = $action_handler->($call_args)->get;
-    is $result, undef, 'Empty result (not emitted)';
+    isnt $result, undef, 'Empty result (not emitted)';
     is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
-    is scalar @track_args,    0, 'No track event is triggered when brand is binary';
+    isnt scalar @track_args,  0, 'No track event is triggered when brand is binary';
 };
 
 sub test_segment_customer {

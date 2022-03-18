@@ -127,36 +127,30 @@ my %EVENT_PROPERTIES = (
     unknown_login                  => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
 );
 
-# Put the events that shouldn't care about brand or app_id source to get fired.
-# P2P events are a good start
+# Put the common events that should have simillar data struture to delivering it to Segment.
 
-my @SKIP_BRAND_VALIDATION = qw(
-    p2p_advertiser_approved
-    reset_password_request
-    reset_password_confirmation
-    p2p_order_created
-    p2p_order_buyer_has_paid
-    p2p_order_seller_has_released
-    p2p_order_cancelled
-    p2p_order_expired
-    p2p_order_dispute
-    p2p_order_timeout_refund
-    p2p_order_dispute_complete
-    p2p_order_dispute_refund
-    p2p_order_dispute_fraud_complete
-    p2p_order_dispute_fraud_refund
-    multiplier_hit_type
+my @COMMON_EVENT_METHODS = qw(
+    api_token_created
+    api_token_deleted
+    account_reactivated
+    mt5_password_changed
+    app_registered
+    app_updated
+    app_deleted
+    p2p_archived_ad
+    p2p_advert_created
+    p2p_advertiser_cancel_at_fault
+    p2p_advertiser_temp_banned
+    crypto_withdrawal_email
     payment_deposit
     payment_withdrawal
     payment_withdrawal_reversal
-    mt5_inactive_notification
-    mt5_inactive_account_closed
-    p2p_archived_ad
-    p2p_advertiser_cancel_at_fault
-    p2p_advertiser_temp_banned
-    identity_verification_rejected
-    risk_disclaimer_resubmission
-    crypto_withdrawal_email
+    p2p_advertiser_approved
+    reset_password_request
+    confirm_change_email
+    verify_change_email
+    request_change_email
+    reset_password_confirmation
 );
 
 my $loop = IO::Async::Loop->new;
@@ -278,38 +272,6 @@ sub signup {
 
 }
 
-=head2 api_token_created
-
-It is triggered for each B<signup> event emitted, delivering it to Segment.
-
-=cut
-
-sub api_token_created {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'api_token_created',
-        loginid    => $args->{loginid},
-        properties => $args
-    );
-}
-
-=head2 api_token_deleted
-
-It is triggered for each B<api_token_delete> event emitted, delivering it to Segment.
-
-=cut
-
-sub api_token_deleted {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'api_token_deleted',
-        loginid    => $args->{loginid},
-        properties => $args
-    );
-}
-
 =head2 account_closure
 
 It is triggered for each B<account_closure> event emitted, delivering the data to Segment.
@@ -324,22 +286,6 @@ sub account_closure {
         client               => $args->{client},
         properties           => $args,
         is_identify_required => 1,
-    );
-}
-
-=head2 account_reactivated
-
-It is triggered for each B<account_reactivated> event emitted, delivering the data to Segment.
-
-=cut
-
-sub account_reactivated {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'account_reactivated',
-        client     => $args->{client},
-        properties => $args,
     );
 }
 
@@ -364,31 +310,6 @@ sub new_mt5_signup {
     return track_event(
         event      => 'mt5_signup',
         client     => $args->{client},
-        properties => $args,
-    );
-}
-
-=head2 mt5_password_changed
-
-It is triggered for each B<mt5_password_changed> event emitted, delivering it to Segment.
-It can be called with the following parameters:
-
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub mt5_password_changed {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'mt5_password_changed',
-        loginid    => $args->{loginid},
         properties => $args,
     );
 }
@@ -502,54 +423,6 @@ sub document_upload {
     );
 }
 
-=head2 app_registered
-
-It is triggered for each B<app_registered> event emitted, delivering it to Segment.
-
-=cut
-
-sub app_registered {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'app_registered',
-        loginid    => $args->{loginid},
-        properties => $args
-    );
-}
-
-=head2 app_updated
-
-It is triggered for each B<app_updated> event emitted, delivering it to Segment.
-
-=cut
-
-sub app_updated {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'app_updated',
-        loginid    => $args->{loginid},
-        properties => $args
-    );
-}
-
-=head2 app_deleted
-
-It is triggered for each B<app_deleted> event emitted, delivering it to Segment.
-
-=cut
-
-sub app_deleted {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'app_deleted',
-        loginid    => $args->{loginid},
-        properties => $args
-    );
-}
-
 =head2 self_exclude
 
 It is triggered for each B<self_exclude> event emitted, delivering it to Segment.
@@ -634,65 +507,6 @@ sub mt5_inactive_account_closed {
         event      => 'mt5_inactive_account_closed',
         loginid    => $loginid,
         properties => $args,
-    );
-}
-
-=head2 payment_deposit
-
-It is triggered for each B<payment_deposit> event emitted, delivering it to Segment.
-
-=cut
-
-sub payment_deposit {
-    my ($args) = @_;
-    return _payment_track($args, 'payment_deposit');
-}
-
-=head2 payment_withdrawal
-
-It is triggered for each B<payment_withdrawal> event emitted, delivering it to Segment.
-
-=cut
-
-sub payment_withdrawal {
-    my ($args) = @_;
-    return _payment_track($args, 'payment_withdrawal');
-}
-
-=head2 payment_withdrawal_reversal
-
-It is triggered for each B<payment_withdrawal_reversal> event emitted, delivering it to Segment.
-
-=cut
-
-sub payment_withdrawal_reversal {
-    my ($args) = @_;
-    return _payment_track($args, 'payment_withdrawal_reversal');
-}
-
-=head2 p2p_advertiser_approved
-
-Sends to rudderstack a tracking event when an advertiser becomes age verified.
-
-It takes the following arguments:
-
-=over 4
-
-=item * C<advert> - a B<p2p.p2p_advert> record from database.
-
-=back
-
-Returns a Future representing the track event request.
-
-=cut
-
-sub p2p_advertiser_approved {
-    my $params = shift;
-
-    return track_event(
-        event      => 'p2p_advertiser_approved',
-        loginid    => $params->{loginid},
-        properties => $params
     );
 }
 
@@ -912,82 +726,6 @@ sub p2p_order_timeout_refund {
     return _p2p_order_track($order, $parties, 'p2p_order_timeout_refund');
 }
 
-=head2 p2p_archived_ad
-
-Sends to rudderstack a tracking event when an ad is archived.
-
-It takes the following arguments:
-
-=over 4
-
-=item * C<client> - client instance.
-
-=item * C<adverts> - a B<p2p.p2p_advert> record from database.
-
-=back
-
-Returns a Future representing the track event request.
-
-=cut
-
-sub p2p_archived_ad {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'p2p_archived_ad',
-        client     => $args->{client},
-        properties => $args,
-    );
-}
-
-=head2 p2p_advert_created
-
-It is triggered for each B<p2p_advert_created> event emitted, delivering it to Segment.
-
-=cut
-
-sub p2p_advert_created {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'p2p_advert_created',
-        loginid    => $args->{loginid},
-        properties => $args
-    );
-}
-
-=head2 p2p_advertiser_cancel_at_fault
-
-It is triggered for each B<p2p_advertiser_cancel_at_fault> event emitted, delivering it to Segment.
-
-=cut
-
-sub p2p_advertiser_cancel_at_fault {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'p2p_advertiser_cancel_at_fault',
-        loginid    => $args->{loginid},
-        properties => $args
-    );
-}
-
-=head2 p2p_advertiser_temp_banned
-
-It is triggered for each B<p2p_advertiser_temp_banned> event emitted, delivering it to Segment.
-
-=cut
-
-sub p2p_advertiser_temp_banned {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'p2p_advertiser_temp_banned',
-        loginid    => $args->{loginid},
-        properties => $args
-    );
-}
-
 =head2 _p2p_dispute_resolution
 
 Since the p2p_order_dispute family of subs are identical, we will refactor them
@@ -1103,33 +841,6 @@ sub _p2p_properties {
     };
 }
 
-=head2 _payment_track
-
-Doughflow & Cryptocashier payments track event sub
-
-It takes the following arguments:
-
-=over 4
-
-=item * C<args> The track event properties
-
-=item * C<event> The event name
-
-=back
-
-=cut
-
-sub _payment_track {
-    my ($args, $event) = @_;
-
-    return track_event(
-        event      => $event,
-        loginid    => $args->{loginid},
-        client     => $args->{client},
-        properties => $args,
-    );
-}
-
 =head2 track_event
 
 A public method that performs event validation and tracking by Segment B<track> and (if requested) B<identify> API calls.
@@ -1167,7 +878,7 @@ sub track_event {
     die $args{event} . ' tracking triggered with an invalid or no loginid and no client. Please inform backend team if it continues to occur.'
         unless $client;
 
-    return Future->done unless _validate_event($args{event}, $args{brand}, $args{app_id});
+    return Future->done unless _validate_event($args{event}, $args{brand});
 
     my %customer_args = (user_id => $client->binary_user_id);
     $customer_args{traits} = $args{traits} // _create_traits($client) if $args{is_identify_required};
@@ -1377,8 +1088,6 @@ Arguments:
 
 =item * C<brand> - optional. brand object.
 
-=item * C<app_id> - optional. app id.
-
 =back
 
 Returns 1 if allowed.
@@ -1386,24 +1095,16 @@ Returns 1 if allowed.
 =cut
 
 sub _validate_event {
-    my ($event, $brand, $app_id) = @_;
-    $brand  //= request->brand;
-    $app_id //= request->app_id;
+    my ($event, $brand) = @_;
+    $brand //= request->brand;
 
     unless (_api->write_key) {
         $log->debugf('Write key was not set.');
         return undef;
     }
 
-    return 1 if any { $_ eq $event } @SKIP_BRAND_VALIDATION;
-
     unless ($brand->is_track_enabled) {
         $log->debugf('Event tracking is not enabled for brand %s', $brand->name);
-        return 0;
-    }
-
-    unless ($brand->is_app_whitelisted($app_id)) {
-        $log->debugf('Event tracking is not enabled for unofficial app id: %d', $app_id);
         return 0;
     }
 
@@ -1440,144 +1141,101 @@ sub _time_to_iso_8601 {
     )->to_string;
 }
 
-=head2 request_change_email
+=head2 api_token_created
 
-It is triggered for B<verify_email tag: request_email> event emitted, delivering it to Segment.
-It can be called with the following parameters:
+It is triggered for each B<signup> event emitted, delivering it to Segment.
 
-=over
+=head2 api_token_deleted
 
-=item * C<loginid> - required. Login Id of the user.
+It is triggered for each B<api_token_delete> event emitted, delivering it to Segment.
 
-=item * C<properties> - Free-form dictionary of event properties.
+=head2 account_reactivated
 
-=back
+It is triggered for each B<account_reactivated> event emitted, delivering the data to Segment.
 
-=cut
+=head2 mt5_password_changed
 
-sub request_change_email {
-    my ($args) = @_;
-    my $properties = $args->{properties} // {};
+It is triggered for each B<mt5_password_changed> event emitted, delivering it to Segment.
 
-    return track_event(
-        event      => 'request_change_email',
-        loginid    => $args->{loginid},
-        properties => $properties
-    );
-}
+=head2 app_registered
 
-=head2 verify_change_email
+It is triggered for each B<app_registered> event emitted, delivering it to Segment.
 
-It is triggered for B<change_email tag: verify> event emitted, delivering it to Segment.
-It can be called with the following parameters:
+=head2 app_updated
 
-=over
+It is triggered for each B<app_updated> event emitted, delivering it to Segment.
 
-=item * C<loginid> - required. Login Id of the user.
+=head2 app_deleted
 
-=item * C<properties> - Free-form dictionary of event properties.
+It is triggered for each B<app_deleted> event emitted, delivering it to Segment.
 
-=back
+=head2 p2p_archived_ad
 
-=cut
+Sends to rudderstack a tracking event when an ad is archived.
 
-sub verify_change_email {
-    my ($args) = @_;
-    my $properties = $args->{properties} // {};
-
-    return track_event(
-        event      => 'verify_change_email',
-        loginid    => $args->{loginid},
-        properties => $properties
-    );
-}
-
-=head2 confirm_change_email
-
-It is triggered for each B<change_email tag: update> event emitted, delivering it to Segment.
-It can be called with the following parameters:
+It takes the following arguments:
 
 =over
 
-=item * C<loginid> - required. Login Id of the user.
+=item * C<client> - client instance.
 
-=item * C<properties> - Free-form dictionary of event properties.
+=item * C<adverts> - a B<p2p.p2p_advert> record from database.
 
 =back
 
-=cut
+=head2 p2p_advert_created
 
-sub confirm_change_email {
-    my ($args) = @_;
-    my $properties = $args->{properties} // {};
+It is triggered for each B<p2p_advert_created> event emitted, delivering it to Segment.
 
-    return track_event(
-        event      => 'confirm_change_email',
-        loginid    => $args->{loginid},
-        properties => $properties
-    );
-}
+=head2 p2p_advertiser_cancel_at_fault
 
-=head2 crypto_withdrawal_email
+It is triggered for each B<p2p_advertiser_cancel_at_fault> event emitted, delivering it to Segment.
 
-It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it to Rudderstack.
-=over 4
-=item * C<properties> - required. Event properties which contains:
-=over 4
-=item - C<loginid> - required. Login id of the client.
-=item - C<amount> - required. Amount of transaction
-=item - C<currency> - required. Currency type
-=item - C<transaction_hash> - required. Transaction hash
-=item - C<transaction_url> - required. Transaction url
-=item - C<live_chat_url> - required. Live-chat url
-=item - C<title> - required. Title
-=back
-=back
-=cut
+=head2 p2p_advertiser_temp_banned
 
-sub crypto_withdrawal_email {
+It is triggered for each B<p2p_advertiser_temp_banned> event emitted, delivering it to Segment.
 
-    my ($args) = @_;
+=head2 p2p_advertiser_approved
 
-    return track_event(
-        event      => 'crypto_withdrawal_email',
-        loginid    => $args->{loginid},
-        properties => $args,
-    );
-}
+Sends to rudderstack a tracking event when an advertiser becomes age verified.
+
+=head2 payment_deposit
+
+It is triggered for each B<payment_deposit> event emitted, delivering it to Segment.
+
+=head2 payment_withdrawal
+
+It is triggered for each B<payment_withdrawal> event emitted, delivering it to Segment.
+
+=head2 payment_withdrawal_reversal
+
+It is triggered for each B<payment_withdrawal_reversal> event emitted, delivering it to Segment.
 
 =head2 reset_password_request
 
 It is triggered for each B<reset_password_request> event emitted, delivering it to Segment.
-It can be called with the following parameters:
-    
-=over
 
-=item * C<loginid> - required. Login Id of the user.
+=head2 confirm_change_email
 
-=item * C<properties> - Free-form dictionary of event properties.
+It is triggered for each B<change_email tag: update> event emitted, delivering it to Segment.
 
-=back
+=head2 verify_change_email
 
-=cut
+It is triggered for B<change_email tag: verify> event emitted, delivering it to Segment.
 
-sub reset_password_request {
-    my ($args) = @_;
-    my $properties = $args->{properties} // {};
+=head2 request_change_email
 
-    return track_event(
-        event      => 'reset_password_request',
-        loginid    => $args->{loginid},
-        properties => $properties
-    );
-}
+It is triggered for B<verify_email tag: request_email> event emitted, delivering it to Segment.
 
 =head2 reset_password_confirmation
 
 It is triggered for each B<reset_password_confirmation> event emitted, delivering it to Segment.
-It can be called with the following parameters:
-    
+
 =over
+
+=item * C<event> - The event name
+
+=item * C<client> - required. When Client instance
 
 =item * C<loginid> - required. Login Id of the user.
 
@@ -1585,18 +1243,49 @@ It can be called with the following parameters:
 
 =back
 
+=head2 crypto_withdrawal_email
+
+It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it to Rudderstack.
+
+=over 4
+
+=item * C<properties> - required. Event properties which contains:
+
+=over 5
+
+=item - C<loginid> - required. Login id of the client.
+
+=item - C<amount> - required. Amount of transaction
+
+=item - C<currency> - required. Currency type
+
+=item - C<transaction_hash> - required. Transaction hash
+
+=item - C<transaction_url> - required. Transaction url
+
+=item - C<live_chat_url> - required. Live-chat url
+
+=item - C<title> - required. Title
+
+=back
+
+=back
+
 =cut
 
-sub reset_password_confirmation {
-    my ($args) = @_;
-    my $properties = $args->{properties} // {};
-
-    return track_event(
-        event      => 'reset_password_confirmation',
-        loginid    => $args->{loginid},
-        email      => $args->{email},
-        properties => $properties
-    );
+# generate attribute accessor
+for my $event_name (@COMMON_EVENT_METHODS) {
+    no strict 'refs';    # allow symbol table manipulation
+    *{__PACKAGE__ . '::' . $event_name} = sub {
+        my ($args) = @_;
+        return track_event(
+            event      => $event_name,
+            client     => $args->{client},
+            loginid    => $args->{loginid},
+            properties => $args->{properties} || $args,
+        );
+        }
+        unless __PACKAGE__->can($event_name);
 }
 
 1;

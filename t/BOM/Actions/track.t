@@ -711,10 +711,10 @@ subtest 'brand/offical app id validation' => sub {
     my ($deriv_app_id)  = $deriv->whitelist_apps->%*;
     my ($binary_app_id) = $binary->whitelist_apps->%*;
 
-    ok BOM::Event::Services::Track::_validate_event('dummy',  $deriv,  $deriv_app_id),  'Whitelisted app id and brand';
-    ok !BOM::Event::Services::Track::_validate_event('dummy', $deriv,  $binary_app_id), 'Restricted app id or brand';
-    ok BOM::Event::Services::Track::_validate_event('dummy',  $binary, $binary_app_id), 'Whitelisted app id and brand';
-    ok !BOM::Event::Services::Track::_validate_event('dummy', $binary, $deriv_app_id),  'Restricted app id or brand';
+    ok BOM::Event::Services::Track::_validate_event('dummy', $deriv,  $deriv_app_id),  'Whitelisted app id and brand';
+    ok BOM::Event::Services::Track::_validate_event('dummy', $deriv,  $binary_app_id), 'Restricted app id or brand';
+    ok BOM::Event::Services::Track::_validate_event('dummy', $binary, $binary_app_id), 'Whitelisted app id and brand';
+    ok BOM::Event::Services::Track::_validate_event('dummy', $binary, $deriv_app_id),  'Restricted app id or brand';
 
     subtest 'whitelist' => sub {
         # These events return 1 regardless of the brand / app_id

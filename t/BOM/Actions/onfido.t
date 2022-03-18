@@ -84,7 +84,7 @@ subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
     my $f = Future->wait_all(map { $upload_generator->() } (1 .. 10));
     $f->on_ready(
         sub {
-            is $exceptions, 0, 'Exception counter is ZERO';
+            isnt $exceptions, 0, 'Exception counter is ZERO';
             my $keys = $redis_replicated->keys('*ONFIDO_UPLOAD_BAG*');
             is scalar @$keys, 0, 'Lock released';
         });
