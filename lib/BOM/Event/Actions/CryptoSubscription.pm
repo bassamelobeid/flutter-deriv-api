@@ -9,14 +9,16 @@ use List::Util qw(any all first);
 use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw/stats_inc/;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
+use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Platform::Event::Emitter;
 use BOM::CTC::Currency;
 use BOM::CTC::Database;
-use BOM::CTC::Constants qw(:transaction :datadog);
+use BOM::CTC::Constants qw(:transaction :datadog :crypto_config);
 use BOM::CTC::Helper;
 use BOM::CTC::Utility;
 use BOM::Event::Utility qw(exception_logged);
+use BOM::Config::Redis;
 
 =head1 NAME
 
@@ -554,6 +556,43 @@ sub transaction_updated {
                 crypto         => [$txn_info],
                 client_loginid => $loginid,
             }));
+
+    return 1;
+}
+
+=head2 update_crypto_config
+
+update the crypto_config in redis for sent currency_code
+
+When a block is mined, we emit this event. And on execution of this event, 
+we get the latest min_withdrawal limit for that cryptocurrency and save in redis.
+As of now, only min_withdrawal is what we store in config for respective cryptocurrencies.
+
+=over 4
+
+=item * C<$currency_code>
+
+=back
+
+Returns 1 if crypto_config is updated in redis, else return 0
+
+=cut
+
+sub update_crypto_config {
+    my $currency_code = shift;
+
+    return 0 unless $currency_code;
+    return 0 unless LandingCompany::Registry::get_currency_type($currency_code) eq 'crypto';
+    return 0 if BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency_code);
+
+    try {
+        my $redis          = BOM::Config::Redis::redis_replicated_write();
+        my @crypto_configs = get_currency($currency_code)->get_crypto_configs->@*;
+        $redis->setex(CRYPTO_CONFIG_REDIS_KEY . $_->{currency_code}, $_->{ttl}, $_->{minimum_withdrawal}) for @crypto_configs;
+    } catch ($e) {
+        $log->errorf('%s: Error while fetching minimum_withdrawal. Error: %s', $currency_code, $e);
+        return 0;
+    }
 
     return 1;
 }

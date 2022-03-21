@@ -15,7 +15,7 @@ use BOM::Test::Helper::Client qw( create_client );
 use BOM::Test;
 use BOM::CTC::Helper;
 use BOM::CTC::Database;
-use BOM::CTC::Constants qw(:transaction);
+use BOM::CTC::Constants qw(:transaction :crypto_config);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Platform::Event::Emitter;
 use IO::Async::Loop;
@@ -25,6 +25,7 @@ use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Test::Helper::CTC;
 use Future::AsyncAwait;
+use Format::Util::Numbers qw/financialrounding/;
 
 initialize_events_redis();
 populate_exchange_rates();
@@ -819,6 +820,45 @@ subtest "ERC20 deposit swept on subscription" => sub {
     }
 
     $mock_eth->unmock_all();
+};
+
+subtest "update_crypto_config: event emitted from subscription" => sub {
+    my $redis_write = BOM::Config::Redis::redis_replicated_write();
+    my $redis_read  = BOM::Config::Redis::redis_replicated_read();
+
+    $redis_write->del("cryptocurrency::crypto_config::BTC");
+
+    #event should not proceed and response should be zero when event is called without any currency passed in param
+    my $event_response = BOM::Event::Actions::CryptoSubscription::update_crypto_config();
+
+    is $event_response, 0, "correct event response when no currency passed";
+
+    #event should not proceed and response should be zero when event is called with non crypto currency
+    $event_response = BOM::Event::Actions::CryptoSubscription::update_crypto_config('USD');
+
+    is $event_response, 0, "correct event response when non crypto currency is passed";
+
+    my $mock_btc_currency = Test::MockModule->new('BOM::CTC::Currency::BTC');
+
+    $mock_btc_currency->mock(
+        get_minimum_withdrawal => sub {
+            return 0.123;
+        });
+
+    my $btc_min_withdrawal = $redis_read->get(CRYPTO_CONFIG_REDIS_KEY . "BTC");
+
+    #before event btc min withdrawal shouldn't be found on redis
+    is $btc_min_withdrawal, undef, "btc min withdrawal should be undef";
+
+    # this event should set btc config in redis
+    BOM::Event::Actions::CryptoSubscription::update_crypto_config("BTC");
+
+    $btc_min_withdrawal = $redis_read->get(CRYPTO_CONFIG_REDIS_KEY . "BTC");
+
+    is $btc_min_withdrawal, (0 + financialrounding('amount', "BTC", 0.123)), "correct btc min withdrawal";
+    $redis_write->del("cryptocurrency::crypto_config::BTC");
+
+    $mock_btc_currency->unmock_all();
 };
 
 done_testing;

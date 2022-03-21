@@ -74,6 +74,7 @@ my $action_mapping = {
         crypto_subscription                              => \&BOM::Event::Actions::CryptoSubscription::subscription,
         crypto_transaction_updated                       => \&BOM::Event::Actions::CryptoSubscription::transaction_updated,
         new_crypto_address                               => \&BOM::Event::Actions::CryptoSubscription::new_crypto_address,
+        update_crypto_config                             => \&BOM::Event::Actions::CryptoSubscription::update_crypto_config,
         sync_onfido_details                              => \&BOM::Event::Actions::Client::sync_onfido_details,
         authenticated_with_scans                         => \&BOM::Event::Actions::Client::email_client_account_verification,
         qualifying_payment_check                         => \&BOM::Event::Actions::Client::qualifying_payment_check,
