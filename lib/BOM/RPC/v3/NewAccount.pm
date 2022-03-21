@@ -1088,7 +1088,7 @@ rpc "affiliate_account_add", sub {
     my ($client, $args) = @{$params}{qw/client args/};
 
     my $broker  = 'AFF';
-    my $company = LandingCompany::Registry->get_by_broker($broker);
+    my $company = LandingCompany::Registry->by_broker($broker);
 
     my $response = create_new_real_account(
         client          => $client,
