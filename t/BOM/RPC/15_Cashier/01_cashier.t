@@ -361,8 +361,15 @@ subtest 'api crypto_config' => sub {
     ) for @crypto_currency;
 
     #testing response from redis
-    my $redis_write            = BOM::Config::Redis::redis_replicated_write();
-    my $expected_result        = {currencies_config => {map { $_ => {minimum_withdrawal => 3} } @crypto_currency}};
+    my $redis_write = BOM::Config::Redis::redis_replicated_write();
+    my $expected_result;
+
+    for my $currency_code (@crypto_currency) {
+        my $random_number = rand();
+        $expected_result->{currencies_config}{$currency_code}{minimum_withdrawal} = $random_number;
+        $redis_write->set("cryptocurrency::crypto_config::$currency_code", $random_number);
+    }
+
     my $common_expected_result = {
         stash => {
             valid_source               => 1,
@@ -371,7 +378,6 @@ subtest 'api crypto_config' => sub {
         },
     };
     $expected_result = {$common_expected_result->%*, $expected_result->%*};
-    $redis_write->set("REDIS_CRYPTO_CURRENCIES_CONFIG", encode_json($expected_result));
 
     #this call should response from redis as above we have set already redis key/val.
     $rpc_ct->call_ok(
@@ -381,7 +387,7 @@ subtest 'api crypto_config' => sub {
             args     => {crypto_config => 1}}
     )->has_no_system_error->has_no_error->result_is_deeply($expected_result, "Correct response from redis for crypto api");
 
-    $redis_write->del('REDIS_CRYPTO_CURRENCIES_CONFIG');
+    $redis_write->del("cryptocurrency::crypto_config::$_") for @crypto_currency;
 
 };
 

@@ -62,7 +62,7 @@ use Log::Any qw($log);
 use constant {
     MAX_DESCRIPTION_LENGTH        => 250,
     HANDOFF_TOKEN_TTL             => 5 * 60,
-    CRYPTO_CONFIG_KEY             => "REDIS_CRYPTO_CURRENCIES_CONFIG",
+    CRYPTO_CONFIG_REDIS_KEY       => "cryptocurrency::crypto_config::",
     TRANSFER_OVERRIDE_ERROR_CODES => [qw(FinancialAssessmentRequired)],
 };
 
@@ -1995,26 +1995,29 @@ rpc 'cashier_payments', sub {
 
 =head2 _crypto_config
 
-Returns crypto config from bom config
+Returns crypto config from bom config for passed currency_code
+
+=over 4
+
+=item * C<currency_code> - (required)
+
+=back
 
 =cut
 
 sub _crypto_config {
+    my $currency_code = shift;
 
-    my @all_crypto_currencies = LandingCompany::Registry::all_crypto_currencies();
-    my %crypto_config;
-    for my $currency (@all_crypto_currencies) {
-        next if BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency);
-        my $converted = eval {
-            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($currency),
-                'USD', $currency);
-        };
-        $crypto_config{$currency}->{minimum_withdrawal} = 0 + financialrounding('amount', $currency, $converted) if $converted;
-    }
+    return undef unless $currency_code;
+    return undef if BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency_code);
 
-    return {
-        currencies_config => \%crypto_config,
+    my $converted = eval {
+        ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($currency_code),
+            'USD', $currency_code);
     };
+
+    return 0 + financialrounding('amount', $currency_code, $converted) if $converted;
+    return undef;
 }
 
 rpc 'crypto_config',
@@ -2031,15 +2034,21 @@ rpc 'crypto_config',
         });
     }
 
-    # Retrieve from redis
-    my $redis_read = BOM::Config::Redis::redis_replicated_read();
-    my $result     = $redis_read->get(CRYPTO_CONFIG_KEY);
+    my $result            = {currencies_config => {}};
+    my @crypto_currencies = $currency_code || LandingCompany::Registry::all_crypto_currencies();
+    @crypto_currencies = grep { !BOM::Config::CurrencyConfig::is_crypto_currency_suspended($_) } @crypto_currencies;
 
-    if ($result) {
-        $result = decode_json($result);
-    } else {
-        #get the config from bom config if not available via redis
-        $result = _crypto_config();
+    return $result unless @crypto_currencies;
+
+    # Retrieve from redis
+    my $redis_read     = BOM::Config::Redis::redis_replicated_read();
+    my $crypto_configs = $redis_read->mget(map { CRYPTO_CONFIG_REDIS_KEY . $_ } @crypto_currencies);
+
+    #it might be possible that for some currencies crypto config stored in redis is expired, below is handling of that
+    #$crypto_configs have values in same order of @crypto_currencies array
+    for (my $index = 0; $index < @{$crypto_configs}; $index++) {
+        my $min_withdrawal = $crypto_configs->[$index] // _crypto_config($crypto_currencies[$index]);
+        $result->{currencies_config}{$crypto_currencies[$index]}{minimum_withdrawal} = $min_withdrawal if $min_withdrawal;
     }
 
     # Return all
