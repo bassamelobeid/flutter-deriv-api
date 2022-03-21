@@ -138,7 +138,7 @@ sub landing_company_object {
     my ($self, $args) = @_;
     my $short_code = $self->landing_company($args);
 
-    $self->_cache->{"company_$short_code"} //= LandingCompany::Registry->new->get($short_code);
+    $self->_cache->{"company_$short_code"} //= LandingCompany::Registry->by_name($short_code);
 
     my $landing_company = $self->_cache->{"company_$short_code"};
     die "Invalid landing company name $short_code" unless $landing_company;

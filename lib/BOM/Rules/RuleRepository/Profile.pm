@@ -13,7 +13,6 @@ Contains rules pertaining client's profile info.
 use strict;
 use warnings;
 
-use LandingCompany::Registry;
 use Locale::Country;
 use Text::Trim qw(trim);
 

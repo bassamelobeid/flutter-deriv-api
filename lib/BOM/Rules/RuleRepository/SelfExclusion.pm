@@ -13,8 +13,6 @@ Contains rules governing self-exclusions.
 use strict;
 use warnings;
 
-use LandingCompany::Registry;
-
 use BOM::Rules::Registry qw(rule);
 
 rule 'self_exclusion.not_self_excluded' => {

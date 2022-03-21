@@ -13,8 +13,6 @@ Contains rules pertaining the context client.
 use strict;
 use warnings;
 
-use LandingCompany::Registry;
-
 use BOM::Rules::Registry qw(rule);
 use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;

@@ -13,8 +13,6 @@ Contains rules pertaining client's cashier.
 use strict;
 use warnings;
 
-use LandingCompany::Registry;
-
 use BOM::Rules::Registry qw(rule);
 use BOM::Config::Runtime;
 

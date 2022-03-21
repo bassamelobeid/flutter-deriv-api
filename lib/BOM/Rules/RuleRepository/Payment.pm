@@ -6,14 +6,13 @@ BOM::Rules::RuleRepositry::Payment
 
 =head1 DESCRIPTION
 
-Contains rules pertaining client's payments.    
+Contains rules pertaining client's payments.
 
 =cut
 
 use strict;
 use warnings;
 
-use LandingCompany::Registry;
 use Format::Util::Numbers qw(roundcommon financialrounding formatnumber);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 

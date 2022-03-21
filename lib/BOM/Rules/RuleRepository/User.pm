@@ -13,7 +13,6 @@ Contains rules pertaining the context user.
 use strict;
 use warnings;
 
-use LandingCompany::Registry;
 use List::Util qw(any);
 
 use BOM::Platform::Context qw(localize);

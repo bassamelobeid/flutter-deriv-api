@@ -15,6 +15,7 @@ use warnings;
 
 use List::MoreUtils qw(uniq);
 
+use LandingCompany::Registry;
 use BOM::Rules::Registry qw(rule);
 
 rule 'landing_company.accounts_limit_not_reached' => {
@@ -91,7 +92,7 @@ rule 'landing_company.currency_is_allowed' => {
             my $company            = $countries_instance->gaming_company_for_country($client->residence)
                 // $countries_instance->gaming_company_for_country($client->residence) // '';
 
-            $landing_company_object = LandingCompany::Registry->new->get($company);
+            $landing_company_object = LandingCompany::Registry->by_name($company);
         }
 
         $self->fail('CurrencyNotApplicable', params => $args->{currency})

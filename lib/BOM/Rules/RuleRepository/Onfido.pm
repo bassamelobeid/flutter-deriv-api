@@ -15,7 +15,6 @@ use warnings;
 use utf8;
 
 use JSON::MaybeUTF8 qw(:v1);
-use LandingCompany::Registry;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Rules::Comparator::Text;

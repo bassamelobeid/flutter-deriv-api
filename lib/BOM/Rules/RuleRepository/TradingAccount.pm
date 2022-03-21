@@ -13,6 +13,7 @@ This modules declares rules and regulations pertaining the trading accounts.
 use strict;
 use warnings;
 
+use LandingCompany::Registry;
 use BOM::Rules::Registry qw(rule);
 use BOM::Platform::Context qw(request);
 use List::Util qw(none);
@@ -99,7 +100,7 @@ rule 'trading_account.should_provide_tax_details' => {
         my $sub_account_type        = $args->{sub_account_type} // '';
         my $residence               = $client->residence;
         my $company_name            = $client->landing_company->short;
-        my $requirements            = LandingCompany::Registry->new->get($company_name)->requirements;
+        my $requirements            = LandingCompany::Registry->by_name($company_name)->requirements;
         my $compliance_requirements = $requirements->{compliance} // {};
 
         die_with_params($self, 'TINDetailsMandatory', $args)
@@ -151,7 +152,7 @@ It takes the following params:
 
 =item * C<$code> the error code.
 
-=item * C<$args> the arguments given to the rule. 
+=item * C<$args> the arguments given to the rule.
 
 =back
 
