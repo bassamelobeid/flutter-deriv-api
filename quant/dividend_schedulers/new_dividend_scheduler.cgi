@@ -22,4 +22,3 @@ BOM::Backoffice::Request::template()->process(
         mt5_webapi_configs                => BOM::Config->mt5_webapi_config->{real},
         mt5_symbols                       => BOM::Config::QuantsConfig->get_dividend_scheduler_yml->{symbols}->{mt5_underlyings},
         payout_currencies                 => get_payout_currencies()}) || die BOM::Backoffice::Request::template()->error;
-

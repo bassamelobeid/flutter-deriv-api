@@ -34,7 +34,7 @@ my $offerings_config = {
     loaded_revision => 1,
 };
 
-my $offerings          = LandingCompany::Registry::get('virtual')->basic_offerings($offerings_config);
+my $offerings          = LandingCompany::Registry->by_name('virtual')->basic_offerings($offerings_config);
 my @underlying_symbols = sort $offerings->values_for_key('underlying_symbol');
 my $lc_yml             = LandingCompany::Registry::get_loaded_landing_companies;
 my @landing_companies_short;
@@ -195,7 +195,7 @@ sub _get_existing_market_and_symbol_volume_limits {
         push @symbol_limits, {%{$symbols->{$symbol}}, symbol => $symbol};
     }
 
-    my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
 
     my @market_limits_default;
     foreach my $market ($offerings->query({contract_category => 'multiplier'}, ['market'])) {
