@@ -583,7 +583,7 @@ sub _get_ee_interval {
     if ($underlying) {
         @symbols = ($underlying->symbol);
     } else {
-        my $offerings_obj = LandingCompany::Registry::get_default()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+        my $offerings_obj = LandingCompany::Registry->get_default_company()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
         @symbols = $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol']);
     }
 

@@ -21,7 +21,7 @@ subtest 'everything' => sub {
         );
         throws_ok { $flat->get_volatility } qr/volatility not defined/, 'throws an error when volatility is undefined for symbol';
 
-        my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings({
+        my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings({
             loaded_revision => 1,
             action          => 'buy'
         });
