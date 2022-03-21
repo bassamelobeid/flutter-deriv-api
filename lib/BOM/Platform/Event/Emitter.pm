@@ -50,6 +50,7 @@ my %event_stream_mapping = (
     crypto_transaction_updated      => 'CRYPTO_EVENTS_STREAM',
     fraud_address                   => 'CRYPTO_EVENTS_STREAM',
     new_crypto_address              => 'CRYPTO_EVENTS_STREAM',
+    update_crypto_config            => 'CRYPTO_EVENTS_STREAM',
     client_promo_codes_upload       => 'PROMO_CODE_IMPORT_LONG_RUNNING_STREAM',
     anonymize_client                => 'ANONYMIZATION_STREAM',
     bulk_anonymization              => 'ANONYMIZATION_STREAM',
