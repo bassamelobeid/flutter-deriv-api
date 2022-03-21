@@ -557,7 +557,7 @@ sub contracts_for {
         $country_code    = $client->residence;
     }
 
-    $product_type //= LandingCompany::Registry::get($landing_company)->default_product_type;
+    $product_type //= LandingCompany::Registry->by_name($landing_company)->default_product_type;
 
     #Preparing error handler;
     my $get_invalid_symbol_error = sub {
@@ -659,7 +659,7 @@ sub _validate_offerings {
     }
 
     try {
-        my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'virtual');
+        my $landing_company = LandingCompany::Registry->by_name($args_copy->{landing_company} // 'virtual');
 
         my $offerings_obj = $landing_company->basic_offerings_for_country(delete $args_copy->{country_code} // '',
             BOM::Config::Runtime->instance->get_offerings_config($args_copy->{action}));

@@ -288,7 +288,7 @@ Returns a hashref containing the following:
 sub generate_trading_times {
     my $date = shift;
 
-    my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my $tree      = BOM::Product::Offerings::DisplayHelper->new(
         date      => $date,
         offerings => $offerings
@@ -574,7 +574,7 @@ sub _get_offerings {
     my ($country_code, $landing_company_name, $app_offerings) = @_;
 
     my $config          = BOM::Config::Runtime->instance->get_offerings_config;
-    my $landing_company = LandingCompany::Registry::get($landing_company_name);
+    my $landing_company = LandingCompany::Registry->by_name($landing_company_name);
 
     return $landing_company->basic_offerings_for_country($country_code, $config, $app_offerings);
 }
