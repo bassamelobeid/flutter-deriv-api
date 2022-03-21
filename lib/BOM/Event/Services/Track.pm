@@ -117,6 +117,7 @@ my %EVENT_PROPERTIES = (
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(website_name title salutation)],
     crypto_withdrawal_email                          => [qw(loginid transaction_hash transaction_url amount currency live_chat_url title)],
+    crypto_withdrawal_rejected_email                 => [qw(loginid reject_reason amount currency_code title live_chat_url meta_data fiat_account)],
     p2p_advert_created                               =>
         [qw(advert_id created_time type account_currency local_currency country amount rate rate_type min_order_amount max_order_amount is_visible)],
     p2p_advertiser_cancel_at_fault => [qw(order_id cancels_remaining)],
@@ -142,6 +143,7 @@ my @COMMON_EVENT_METHODS = qw(
     p2p_advertiser_cancel_at_fault
     p2p_advertiser_temp_banned
     crypto_withdrawal_email
+    crypto_withdrawal_rejected_email
     payment_deposit
     payment_withdrawal
     payment_withdrawal_reversal
@@ -1286,6 +1288,44 @@ for my $event_name (@COMMON_EVENT_METHODS) {
         );
         }
         unless __PACKAGE__->can($event_name);
+}
+
+=head2 crypto_withdrawal_rejected_email
+
+Send rudderstack event when a crypto payout is rejected
+
+=over 4
+
+=item - C<properties> - Event properties which contains:
+
+=over 4
+
+=item * C<loginid> - Client login id
+
+=item * C<title> - title
+
+=item * C<reject_reason>   - Reject reason
+
+=item * C<amount>   - withdrawal amount
+
+=item * C<currency_code>   - withdrawal currency
+
+=item * C<meta_data> - extra meta datas
+
+=back
+
+=back
+
+=cut
+
+sub crypto_withdrawal_rejected_email {
+    my ($properties) = @_;
+
+    return track_event(
+        event      => 'crypto_withdrawal_rejected_email',
+        loginid    => $properties->{loginid},
+        properties => $properties,
+    );
 }
 
 1;

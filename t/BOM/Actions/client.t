@@ -2757,4 +2757,59 @@ subtest 'crypto_withdrawal_email event' => sub {
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
+subtest 'crypto_withdrawal_rejected_email' => sub {
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client->email('nobody@deriv.com');
+    $client->first_name('Alice');
+    $client->last_name('Bob');
+    $client->salutation('MR');
+    $client->save;
+
+    my $user = BOM::User->create(
+        email          => $client->email,
+        password       => "1234",
+        email_verified => 1,
+    )->add_client($client);
+
+    undef @track_args;
+
+    BOM::Event::Actions::Client::crypto_withdrawal_rejected_email({
+            client_loginid => $client->loginid,
+            reject_reason  => 'highest_deposit_method_is_not_crypto',
+            amount         => '0.09',
+            currency_code  => 'BTC',
+            live_chat_url  => 'https://deriv.com/en/?is_livechat_open=true',
+            meta_data      => 'Perfect Money',
+            fiat_account   => 'USD'
+        })->get;
+
+    my ($customer, %args) = @track_args;
+    ok 1, 'is ok';
+
+    is $args{event}, 'crypto_withdrawal_rejected_email', "got correct event name";
+
+    cmp_deeply(
+        $args{properties},
+        {
+            "lang"          => "EN",
+            "brand"         => "deriv",
+            "title"         => "We were unable to process your withdrawal",
+            "amount"        => 0.09,
+            "loginid"       => $client->loginid,
+            "meta_data"     => "Perfect Money",
+            "currency_code" => "BTC",
+            "live_chat_url" => "https://deriv.com/en/?is_livechat_open=true",
+            "reject_reason" => "highest_deposit_method_is_not_crypto",
+            "fiat_account"  => "USD"
+        },
+        'event properties are ok'
+    );
+
+    is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
 done_testing();

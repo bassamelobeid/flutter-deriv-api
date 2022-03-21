@@ -2740,6 +2740,42 @@ sub crypto_withdrawal_email {
     });
 }
 
+=head2 crypto_withdrawal_rejected_email
+
+Handles sending event to trigger email from customer io and send required event data
+
+=over 4
+
+=item * C<loginid> - Login id of the client.
+
+=item * C<reject_reason> - Reason for rejecting
+
+=item * C<amount> - Amount requested
+
+=item * C<currency_code> - Currency_code
+
+=item * C<title> - Title for email header
+
+=item * C<meta_data> - Additional details to be included in email
+
+=back
+
+=cut
+
+sub crypto_withdrawal_rejected_email {
+
+    my ($params) = @_;
+    return BOM::Event::Services::Track::crypto_withdrawal_rejected_email({
+            loginid       => $params->{client_loginid},
+            reject_reason => $params->{reject_reason},
+            amount        => $params->{amount},
+            currency_code => $params->{currency_code},
+            title         => localize('We were unable to process your withdrawal'),
+            live_chat_url => request->brand->live_chat_url,
+            meta_data     => $params->{meta_data},
+            fiat_account  => $params->{fiat_account}});
+}
+
 =head2 aml_client_status_update
 
 Send email to compliance-alerts@binary.com if some clients that are set withdrawal_locked
