@@ -9,7 +9,7 @@ use Path::Tiny;
 use FileHandle;
 use Date::Utility;
 
-use LandingCompany;
+use LandingCompany::Registry;
 
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::CollectorReporting;
@@ -87,7 +87,7 @@ sub _date_joined {
 sub register_tokens {
     my $self = shift;
 
-    foreach my $broker (LandingCompany::Registry::all_broker_codes) {
+    foreach my $broker (LandingCompany::Registry->all_broker_codes) {
         next if ($broker eq 'FOG');
 
         my @matched_tokens = grep { $_->{'loginid'} =~ /^$broker/ } @{$self->new_clients};

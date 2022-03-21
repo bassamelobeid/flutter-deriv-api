@@ -94,7 +94,7 @@ sub _split_txn_by_landing_company {
         # that we can't process, so that I can report them as erroneous later. The naming
         # doesn't quite fit the underlying concept, but works.
         my $company = 'LOGIN_EXTRACTION_ERRORS';
-        $company = LandingCompany::Registry->get_by_loginid($loginid)->short if $loginid;
+        $company = LandingCompany::Registry->by_loginid($loginid)->short if $loginid;
 
         if (not ref $txn_for->{$company}) {
             $txn_for->{$company} = [];

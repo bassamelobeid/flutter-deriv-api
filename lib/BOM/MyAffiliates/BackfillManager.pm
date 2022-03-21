@@ -26,13 +26,13 @@ use BOM::User::Client;
 use BOM::MyAffiliates;
 use Syntax::Keyword::Try;
 use BOM::Database::DataMapper::CollectorReporting;
-use LandingCompany;
+use LandingCompany::Registry;
 
 has '_available_broker_codes' => (
     is      => 'ro',
     isa     => 'ArrayRef',
     default => sub {
-        my @codes = LandingCompany::Registry::all_real_broker_codes;
+        my @codes = LandingCompany::Registry->all_real_broker_codes;
         return \@codes;
     },
 );
