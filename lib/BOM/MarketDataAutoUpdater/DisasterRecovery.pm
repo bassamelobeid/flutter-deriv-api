@@ -248,7 +248,7 @@ sub _recover_interest_rate {
 sub _recover_volsurface {
     my $self = shift;
 
-    my $offerings    = LandingCompany::Registry::get_default()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings    = LandingCompany::Registry->get_default_company()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my @quanto       = grep { Finance::Underlying->by_symbol($_)->{quanto_only} } Finance::Underlying->symbols;
     my %offered_list = map  { $_ => 1 } ($offerings->values_for_key('underlying_symbol'), @quanto);
     my $name         = 'volatility_surfaces';
