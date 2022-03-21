@@ -104,7 +104,7 @@ Returns 1 if currency is valid, otherwise 0.
 
 sub is_valid_currency {
     my ($currency) = @_;
-    return (any { $_ eq $currency } LandingCompany::Registry->new()->all_currencies);
+    return (any { $_ eq $currency } LandingCompany::Registry->all_currencies);
 }
 
 =head2 is_valid_crypto_currency
@@ -123,7 +123,7 @@ Returns 1 if currency is valid, otherwise 0.
 
 sub is_valid_crypto_currency {
     my ($currency) = @_;
-    return (any { $_ eq $currency } LandingCompany::Registry->new()->all_crypto_currencies);
+    return (any { $_ eq $currency } LandingCompany::Registry->all_crypto_currencies);
 }
 
 =head2 transfer_between_accounts_limits
