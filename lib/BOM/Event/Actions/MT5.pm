@@ -30,7 +30,7 @@ use DataDog::DogStatsd::Helper;
 use Syntax::Keyword::Try;
 use Future::Utils qw(fmap_void);
 use Time::Moment;
-
+use LandingCompany::Registry;
 use Future;
 use IO::Async::Loop;
 use Net::Async::Redis;
@@ -213,7 +213,7 @@ sub new_mt5_signup {
     }
 
     my $group_details   = parse_mt5_group($data->{mt5_group});
-    my $company_actions = LandingCompany::Registry->new->get($group_details->{landing_company_short})->actions // {};
+    my $company_actions = LandingCompany::Registry->by_name($group_details->{landing_company_short})->actions // {};
     if ($group_details->{account_type} ne 'demo' && any { $_ eq 'sanctions' } ($company_actions->{signup} // [])->@*) {
         BOM::Platform::Client::Sanctions->new(
             client                        => $client,
