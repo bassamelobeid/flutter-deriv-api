@@ -46,8 +46,6 @@ use List::Util qw(uniq all);
 use Finance::Underlying;
 use Syntax::Keyword::Try;
 
-use LandingCompany::Registry;
-
 use BOM::Database::ClientDB;
 
 =head2 supported_config_type

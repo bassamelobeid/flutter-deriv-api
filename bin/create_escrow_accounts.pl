@@ -63,11 +63,9 @@ $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
 $log->infof('Escrow accounts current config is :  %s', $app_config->payments->p2p->escrow);
 
-my $landing_company_registry = LandingCompany::Registry->new();
-
 my @escrow_accounts = ();
 foreach my $landing_company_short_name (keys %config) {
-    my $landing_company = $landing_company_registry->get($landing_company_short_name)
+    my $landing_company = LandingCompany::Registry->by_name($landing_company_short_name)
         or die "Cannot create landing company from $landing_company_short_name";
 
     foreach my $currency (keys %{$landing_company->legal_allowed_currencies()}) {
