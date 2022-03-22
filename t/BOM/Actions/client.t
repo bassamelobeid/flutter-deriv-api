@@ -12,6 +12,7 @@ use Guard;
 use Log::Any::Test;
 use Log::Any qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 
 use BOM::Test::Email;
 use BOM::Database::UserDB;
@@ -27,6 +28,7 @@ use BOM::Event::Process;
 use WebService::Async::SmartyStreets::Address;
 use Encode qw(encode_utf8);
 use Locale::Codes::Country qw(country_code2code);
+use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 
 my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -2755,6 +2757,337 @@ subtest 'crypto_withdrawal_email event' => sub {
 
     is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
+subtest 'Underage detection' => sub {
+    my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => 'vrtc+test1@bin.com',
+    });
+
+    $test_client->user->add_client($vrtc_client);
+
+    my $trading_platform_loginids = {};
+    my $underage_result;
+    my $reported_dob;
+    my $report_result;
+    my $reported_first_name;
+    my $reported_last_name;
+
+    my $mocked_user = Test::MockModule->new('BOM::User');
+    $mocked_user->mock(
+        'get_trading_platform_loginids',
+        sub {
+            my (undef, $platform, $account_type) = @_;
+            my $loginids = $trading_platform_loginids->{$platform}->{$account_type} // [];
+            return $loginids->@*;
+        });
+
+    my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+    $mocked_onfido->mock(
+        'get_all_onfido_reports',
+        sub {
+            my $reports = +{
+                test => {
+                    api_name   => 'document',
+                    properties => encode_json_utf8({
+                            date_of_birth => $reported_dob,
+                            first_name    => $reported_first_name,
+                            last_name     => $reported_last_name,
+                        }
+                    ),
+                },
+            };
+
+            return $reports;
+        });
+
+    my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+    $mocked_report->mock(
+        'new' => sub {
+            my $self = shift, my %data = @_;
+            $data{result}                                                                     = $report_result;
+            $data{properties}->{date_of_birth}                                                = $reported_dob;
+            $data{properties}->{first_name}                                                   = $reported_first_name;
+            $data{properties}->{last_name}                                                    = $reported_last_name;
+            $data{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result} = $underage_result;
+            $mocked_report->original('new')->($self, %data);
+        });
+
+    subtest 'underage result is consider' => sub {
+        $trading_platform_loginids = {};
+        $underage_result           = 'consider';
+        $reported_dob              = undef;
+        $report_result             = 'consider';
+
+        $vrtc_client->status->clear_disabled();
+        $vrtc_client->status->_build_all();
+        $test_client->status->clear_disabled();
+        $test_client->status->clear_age_verification();
+        $test_client->status->clear_poi_name_mismatch();
+        $test_client->status->_build_all();
+        mailbox_clear();
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check->{href},
+                })->get;
+        }
+        'the event made it alive!';
+
+        cmp_deeply $test_client->status->disabled,
+            +{
+            last_modified_date => re('\w'),
+            status_code        => 'disabled',
+            staff_name         => 'system',
+            reason             => 'Onfido - client is underage',
+            },
+            'Expected disabled status';
+
+        cmp_deeply $vrtc_client->status->disabled,
+            +{
+            last_modified_date => re('\w'),
+            status_code        => 'disabled',
+            staff_name         => 'system',
+            reason             => 'Onfido - client is underage',
+            },
+            'Expected disabled status';
+
+        ok !$test_client->status->age_verification, 'Not age verified';
+
+        my $msg = mailbox_search(subject => qr/Underage client detection/);
+
+        ok $msg, 'underage email sent to compliance';
+
+        subtest 'it has a mt5 real account' => sub {
+            $trading_platform_loginids = {
+                mt5 => {
+                    real => [qw/MTR9009/],
+                },
+            };
+
+            $underage_result = 'consider';
+            $reported_dob    = undef;
+            $report_result   = 'consider';
+
+            $vrtc_client->status->clear_disabled();
+            $vrtc_client->status->_build_all();
+            $test_client->status->clear_disabled();
+            $test_client->status->clear_age_verification();
+            $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->_build_all();
+            mailbox_clear();
+
+            lives_ok {
+                BOM::Event::Actions::Client::client_verification({
+                        check_url => $check->{href},
+                    })->get;
+            }
+            'the event made it alive!';
+
+            ok !$vrtc_client->status->disabled, 'Disabled status not set (mt5 real)';
+
+            ok !$test_client->status->disabled, 'Disabled status not set (mt5 real)';
+
+            ok !$test_client->status->age_verification, 'Not age verified';
+
+            my $msg = mailbox_search(subject => qr/Underage client detection/);
+
+            ok $msg, 'underage email sent to compliance';
+        };
+
+        subtest 'it has a mt5 demo account' => sub {
+            $trading_platform_loginids = {
+                mt5 => {
+                    demo => [qw/MTD9009/],
+                },
+            };
+
+            $underage_result = 'consider';
+            $reported_dob    = undef;
+            $report_result   = 'consider';
+
+            $vrtc_client->status->clear_disabled();
+            $vrtc_client->status->_build_all();
+            $test_client->status->clear_disabled();
+            $test_client->status->clear_age_verification();
+            $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->_build_all();
+            mailbox_clear();
+
+            lives_ok {
+                BOM::Event::Actions::Client::client_verification({
+                        check_url => $check->{href},
+                    })->get;
+            }
+            'the event made it alive!';
+
+            ok $vrtc_client->status->disabled, 'Disabled status set (mt5 demo)';
+
+            ok $test_client->status->disabled, 'Disabled status set (mt5 demo)';
+
+            ok !$test_client->status->age_verification, 'Not age verified';
+
+            my $msg = mailbox_search(subject => qr/Underage client detection/);
+
+            ok $msg, 'underage email sent to compliance';
+        };
+    };
+
+    subtest 'underage result is rejected' => sub {
+        $trading_platform_loginids = {};
+        $underage_result           = 'rejected';
+        $reported_dob              = undef;
+        $report_result             = 'rejected';
+
+        $vrtc_client->status->clear_disabled();
+        $vrtc_client->status->_build_all();
+        $test_client->status->clear_disabled();
+        $test_client->status->clear_poi_name_mismatch();
+        $test_client->status->clear_age_verification();
+        $test_client->status->_build_all();
+        mailbox_clear();
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check->{href},
+                })->get;
+        }
+        'the event made it alive!';
+
+        cmp_deeply $vrtc_client->status->disabled,
+            +{
+            last_modified_date => re('\w'),
+            status_code        => 'disabled',
+            staff_name         => 'system',
+            reason             => 'Onfido - client is underage',
+            },
+            'Expected disabled status';
+
+        cmp_deeply $test_client->status->disabled,
+            +{
+            last_modified_date => re('\w'),
+            status_code        => 'disabled',
+            staff_name         => 'system',
+            reason             => 'Onfido - client is underage',
+            },
+            'Expected disabled status';
+
+        ok !$test_client->status->age_verification, 'Not age verified';
+
+        my $msg = mailbox_search(subject => qr/Underage client detection/);
+
+        ok $msg, 'underage email sent to compliance';
+
+        subtest 'it has a dxtrader real account' => sub {
+            $trading_platform_loginids = {
+                mt5 => {
+                    real => [qw/DXR9009/],
+                },
+            };
+
+            $underage_result = 'rejected';
+            $reported_dob    = undef;
+            $report_result   = 'rejected';
+
+            $vrtc_client->status->clear_disabled();
+            $vrtc_client->status->_build_all();
+            $test_client->status->clear_disabled();
+            $test_client->status->clear_age_verification();
+            $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->_build_all();
+            mailbox_clear();
+
+            lives_ok {
+                BOM::Event::Actions::Client::client_verification({
+                        check_url => $check->{href},
+                    })->get;
+            }
+            'the event made it alive!';
+
+            ok !$vrtc_client->status->disabled, 'Disabled status not set (dxtrader real)';
+
+            ok !$test_client->status->disabled, 'Disabled status not set (dxtrader real)';
+
+            ok !$test_client->status->age_verification, 'Not age verified';
+
+            my $msg = mailbox_search(subject => qr/Underage client detection/);
+
+            ok $msg, 'underage email sent to compliance';
+        };
+
+        subtest 'it has a dxtrader demo account' => sub {
+            $trading_platform_loginids = {
+                dxtrader => {
+                    demo => [qw/DXD9009/],
+                },
+            };
+
+            $underage_result = 'rejected';
+            $reported_dob    = undef;
+            $report_result   = 'rejected';
+
+            $vrtc_client->status->clear_disabled();
+            $vrtc_client->status->_build_all();
+            $test_client->status->clear_disabled();
+            $test_client->status->clear_age_verification();
+            $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->_build_all();
+            mailbox_clear();
+
+            lives_ok {
+                BOM::Event::Actions::Client::client_verification({
+                        check_url => $check->{href},
+                    })->get;
+            }
+            'the event made it alive!';
+
+            ok $vrtc_client->status->disabled, 'Disabled status set (dxtrader demo)';
+
+            ok $test_client->status->disabled, 'Disabled status set (dxtrader demo)';
+
+            ok !$test_client->status->age_verification, 'Not age verified';
+
+            my $msg = mailbox_search(subject => qr/Underage client detection/);
+
+            ok $msg, 'underage email sent to compliance';
+        };
+    };
+
+    subtest 'underage result is clear' => sub {
+        $trading_platform_loginids = {};
+        $underage_result           = 'clear';
+        $reported_dob              = '1989-10-10';
+        $report_result             = 'clear';
+        $reported_first_name       = $test_client->first_name;
+        $reported_last_name        = $test_client->last_name;
+
+        $vrtc_client->status->clear_disabled();
+        $vrtc_client->status->_build_all();
+        $test_client->status->clear_disabled();
+        $test_client->status->clear_age_verification();
+        $test_client->status->clear_poi_name_mismatch();
+        $test_client->status->_build_all();
+        mailbox_clear();
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check->{href},
+                })->get;
+        }
+        'the event made it alive!';
+
+        ok !$vrtc_client->status->disabled, 'Not disabled';
+        ok !$test_client->status->disabled, 'Not disabled';
+        ok $test_client->status->age_verification, 'Age verified';
+
+        my $msg = mailbox_search(subject => qr/Underage client detection/);
+
+        ok !$msg, 'underage email not sent to compliance';
+    };
+
+    $mocked_report->unmock_all();
+    $mocked_onfido->unmock_all();
 };
 
 subtest 'crypto_withdrawal_rejected_email' => sub {

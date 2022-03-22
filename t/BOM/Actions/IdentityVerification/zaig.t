@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::User::IdentityVerification;
 use BOM::User;
 use BOM::Event::Process;
+use BOM::Test::Email;
 
 use Future;
 use Future::Exception;
@@ -756,6 +757,14 @@ subtest 'verify' => sub {
 
                 if (grep { $_ eq 'NAME_MISMATCH' } $msgs->@*) {
                     ok $client->status->poi_name_mismatch, 'POI name mismatch is set';
+                }
+
+                my $msg = mailbox_search(subject => qr/Underage client detection/);
+
+                if (grep { $_ eq 'UNDERAGE' } $msgs->@*) {
+                    ok $msg, 'underage email sent to compliance';
+                } else {
+                    ok !$msg, 'underage email not sent to compliance';
                 }
 
                 if ($status eq 'verified') {

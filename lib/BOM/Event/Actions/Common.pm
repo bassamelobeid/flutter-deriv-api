@@ -125,34 +125,36 @@ sub _send_CS_email_POA_pending {
 }
 
 sub handle_under_age_client {
-    my ($client, $provider, $reported_dob) = @_;
+    my ($client, $provider) = @_;
 
-    my $siblings = $client->real_account_siblings_information(include_disabled => 0);
+    # send livechat ticket to compliance
+    send_email({
+        from    => '<no-reply@deriv.com>',
+        to      => 'compliance@deriv.com',
+        subject => 'Underage client detection',
+        message => [sprintf('An underage client has been detected by our system: %s', $client->loginid)],
+    });
 
     # check if there is balance
+    my $siblings = $client->real_account_siblings_information(include_disabled => 0);
+
     my $have_balance = (any { $siblings->{$_}->{balance} > 0 } keys %{$siblings}) ? 1 : 0;
 
-    my $email_details = {
-        client         => $client,
-        short_reason   => 'under_18',
-        failure_reason => "because $provider reported the date of birth as $reported_dob which is below age 18.",
-        redis_key      => ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
-        is_disabled    => 0,
-        account_info   => $siblings,
-    };
+    return undef if $have_balance;
+    return undef if $client->user->get_trading_platform_loginids('mt5',      'real');
+    return undef if $client->user->get_trading_platform_loginids('dxtrader', 'real');
 
-    unless ($have_balance) {
-        # if all of the account doesn't have any balance, disable them
-        for my $each_siblings (keys %{$siblings}) {
-            my $current_client = BOM::User::Client->new({loginid => $each_siblings});
-            $current_client->status->setnx('disabled', 'system', "$provider - client is underage");
-        }
+    # push the virtual
+    $siblings->{$client->user->bom_virtual_loginid} = undef if $client->user->bom_virtual_loginid;
 
-        # need to send email to client
-        _send_email_underage_disable_account($client);
-
-        $email_details->{is_disabled} = 1;
+    # if all of the account doesn't have any balance, disable them
+    for my $each_siblings (keys %{$siblings}) {
+        my $current_client = BOM::User::Client->new({loginid => $each_siblings});
+        $current_client->status->setnx('disabled', 'system', "$provider - client is underage");
     }
+
+    # need to send email to client
+    _send_email_underage_disable_account($client);
 }
 
 =head2 _email_client_age_verified

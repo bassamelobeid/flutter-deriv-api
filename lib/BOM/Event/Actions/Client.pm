@@ -664,10 +664,23 @@ async sub client_verification {
             try {
                 my @reports = await $check->reports->filter(name => 'document')->as_list;
 
+                # Process the minimum_accepted_age result from Onfido
+                # we will consider the client as underage only if this result is defined and not equal to `clear`.
+                # We will only peek on the last report generated as previous could've been invalid ones
+                my ($last_report) = @reports;
+                $last_report //= {};
+
+                my $minimum_accepted_age = $last_report->{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result};
+                my $underage_detected    = defined $minimum_accepted_age && $minimum_accepted_age ne 'clear';
+
+                if ($underage_detected) {
+                    BOM::Event::Actions::Common::handle_under_age_client($client, 'Onfido');
+                }
                 # Extract all clear documents to check consistency between DOBs
-                if (my @valid_doc = grep { (defined $_->{properties}->{date_of_birth} and $_->result eq 'clear') } @reports) {
+                elsif (my @valid_doc = grep { (defined $_->{properties}->{date_of_birth} and $_->result eq 'clear') } @reports) {
                     my %dob = map { ($_->{properties}{date_of_birth} // '') => 1 } @valid_doc;
                     my ($first_dob) = keys %dob;
+
                     # All documents should have the same date of birth
                     # Override date_of_birth if there is mismatch between Onfido report and client submited data
                     if (not defined $client->date_of_birth or $client->date_of_birth ne $first_dob) {
@@ -700,7 +713,7 @@ async sub client_verification {
 
                         BOM::Event::Actions::Common::set_age_verification($client, 'Onfido');
                     } else {
-                        BOM::Event::Actions::Common::handle_under_age_client($client, 'Onfido', $first_dob);
+                        BOM::Event::Actions::Common::handle_under_age_client($client, 'Onfido');
                     }
                 }
 

@@ -14,6 +14,7 @@ use BOM::Config::Redis;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User::IdentityVerification;
+use BOM::Test::Email;
 
 # Initiate test client
 my $email = 'testw@binary.com';
@@ -541,8 +542,13 @@ subtest 'verify identity by smile_identity is passed and DOB mismatch or underag
                 },
             )));
 
+    mailbox_clear();
     ok $idv_event_handler->($args)->get, 'the event processed without error';
     is $updates, 2, 'update document triggered twice correctly';
+
+    my $msg = mailbox_search(subject => qr/Underage client detection/);
+
+    ok $msg, 'underage email sent to compliance';
 
     is $idv_model->submissions_left, 0, 'submissions reset to 0 correctly';
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is not set correctly';
