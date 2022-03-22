@@ -3,9 +3,10 @@ use warnings;
 
 use Log::Any qw($log);
 use Getopt::Long 'GetOptions';
-
 use Digest::MD5 qw/md5_hex/;
 use Mojo::UserAgent;
+use XML::Simple qw(:strict);
+use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::User::Client;
 use Data::Dump 'pp';
@@ -44,6 +45,8 @@ Usage: $0
     -l, --log                  debug, info or error
     --brand,                   brand, binary or deriv, default: deriv
     --lang,                    2 letter language code, default: en
+    --json                     Optional, if present, Content-Type: application/json will be used when applicable.
+    --xml                      Optonal, if present, Content-Type: application/xml will be used, this overrides --json.
 ";
 
 require Log::Any::Adapter;
@@ -65,6 +68,8 @@ GetOptions(
     'brand=s'                 => \my $brand,
     'lang=s'                  => \my $lang,
     'tx=i'                    => \my $transaction_id,
+    'json+'                   => \my $use_json,
+    'xml+'                    => \my $use_xml,
 );
 die $usage unless ($action && $endpoint_url && $secret_key && $client_loginid);
 
@@ -96,6 +101,11 @@ my $params = {
     trace_id           => $trace_id,
     payment_type       => $payment_type,
     account_identifier => $account_identifier,
+    bonus              => 0,
+    fee                => 0,
+    udef3              => "",
+    udef4              => "",
+    udef5              => "",
     defined $fee            ? (fee            => $fee)            : (),
     defined $lang           ? (udef1          => $lang)           : (),
     defined $brand          ? (udef2          => $brand)          : (),
@@ -146,11 +156,26 @@ my $timestamp = time - 1;
 my $calc_hash = Digest::MD5::md5_hex($timestamp . $key);
 $calc_hash = substr($calc_hash, length($calc_hash) - 10, 10);
 
-my $ua = Mojo::UserAgent->new;
-my $tx =
-    ($actions->{$action} eq 'get')
-    ? $ua->get($url => {'X-BOM-DoughFlow-Authorization' => "$timestamp:$calc_hash"} => form => $params)
-    : $ua->post($url => {'X-BOM-DoughFlow-Authorization' => "$timestamp:$calc_hash"} => form => $params);
+my $ua      = Mojo::UserAgent->new;
+my $method  = $actions->{$action};
+my $headers = {'X-BOM-DoughFlow-Authorization' => "$timestamp:$calc_hash"};
+
+my @body = (form => $params);    # deafults to query params
+
+if ($method eq 'post') {
+    if ($use_xml) {
+        @body = XML::Simple->new(
+            ForceArray => 0,
+            KeyAttr    => [])->XMLout($params);
+        $headers->{'Content-Type'} = 'text/xml';
+    } elsif ($use_json) {
+        @body = encode_json_utf8($params);
+        $headers->{'Content-Type'} = 'application/json';
+    }
+}
+$log->debugf("Request %s %s", scalar @body eq 1 ? 'body' : 'params', @body);
+$method = 'post' unless $method;
+my $tx = $ua->$method($url, $headers, @body);
 
 my $result      = $tx->result;
 my $result_code = $result->code;                # 200 or 201 means success
@@ -165,3 +190,4 @@ if ($result_code =~ /^2/) {
 }
 
 1;
+

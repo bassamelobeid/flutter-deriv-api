@@ -7,6 +7,7 @@ use Plack::Request;
 use Scalar::Util qw( looks_like_number );
 use XML::Simple;
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use JSON::MaybeUTF8 qw(:v1);
 
 has 'env' => (
     is       => 'ro',
@@ -39,10 +40,12 @@ sub _build_request_parameters {
 
     if (keys %{$params}) {
         return $params;
-    } elsif ($content_type and $content_type =~ 'xml') {
-        my $xs = XML::Simple->new(ForceArray => 0);
-        if ($c->req->content) {
+    } elsif ($content_type && $c->req->content) {
+        if ($content_type =~ m{xml}) {
+            my $xs = XML::Simple->new(ForceArray => 0);
             return $xs->XMLin($c->req->content);
+        } elsif ($content_type =~ m{application/json}) {
+            return decode_json_utf8($c->req->content);
         }
     }
 

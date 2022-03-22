@@ -5,15 +5,14 @@ use warnings;
 
 use Exporter 'import';
 our @EXPORT_OK =
-    qw(request auth_request decode_json deposit_validate deposit withdrawal_validate create_payout update_payout balance new_client record_failed_withdrawal request_xml);
+    qw(request auth_request decode_json deposit_validate deposit withdrawal_validate create_payout update_payout balance new_client record_failed_withdrawal request_xml request_json request_with_content_type);
 
-use Encode;
 use FindBin qw/$Bin/;
 use Test::More;
 use Plack::Test;
 use Plack::Util;
 use URI;
-use JSON::MaybeXS ();
+use JSON::MaybeUTF8 qw(:v1);
 use HTTP::Headers;
 use HTTP::Request;
 use Digest::MD5 qw/md5_hex/;
@@ -46,16 +45,73 @@ unless ($ENV{PLACK_TEST_IMPL} eq 'ExternalServer') {
 
 my $clear_password = '123456';    # this is the unencrypted pwd of CR011 in the test database.
 
-sub request_xml {
-    my ($method, $url, $content, $headers) = @_;
-    my $uri = URI->new($url);
+=pod
+
+=head2
+
+Make request with the specified content type.
+
+It expects a hashref with the the following attributes.
+
+=over 4 
+
+=item * C<method> - A string with the HTTP method.
+
+=item * C<url> - A string with the URL to make request.
+
+=item * C<content> - A string with the content to be sent.
+
+=item * C<headers> - A hashref with the the additional headers. 
+
+=item * C<content_type> - A string with the content type to be used. It will overwrite the one in $headers.
+
+=back
+
+It returns undef.
+
+=cut 
+
+sub request_with_content_type {
+    my $args         = shift;
+    my $method       = $args->{method};
+    my $url          = $args->{url};
+    my $content      = $args->{content};
+    my $headers      = $args->{headers};
+    my $content_type = $args->{content_type};
+    my $uri          = URI->new($url);
+
+    die 'Content Type was expected' unless $content_type;
 
     $headers ||= {};
     $headers->{'X-BOM-DoughFlow-Authorization'} ||= __df_auth_header();
-    $headers->{'Content-Type'} = 'text/xml';
+    $headers->{'Content-Type'} = $content_type;
 
     my $req = HTTP::Request->new($method, $uri, HTTP::Headers->new(%$headers), $content);
     __request($req);
+}
+
+sub request_xml {
+    my ($method, $url, $content, $headers) = @_;
+    my $args = {
+        method       => $method,
+        url          => $url,
+        content      => $content,
+        headers      => $headers,
+        content_type => 'text/xml'
+    };
+    request_with_content_type($args);
+}
+
+sub request_json {
+    my ($method, $url, $content, $headers) = @_;
+    my $args = {
+        method       => $method,
+        url          => $url,
+        content      => $content,
+        headers      => $headers,
+        content_type => 'application/json'
+    };
+    request_with_content_type($args);
 }
 
 sub request {
@@ -102,7 +158,7 @@ sub __request {
 }
 
 sub decode_json {
-    eval { JSON::MaybeXS->new->decode(Encode::decode_utf8($_[0])) };
+    eval { decode_json_utf8($_[0]) };
 }
 
 =head2 deposit_validate

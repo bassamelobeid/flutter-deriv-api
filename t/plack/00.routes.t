@@ -50,7 +50,7 @@ foreach my $u (@GETs) {
     '/transaction/payment/doughflow/withdrawal_validate'
 );
 foreach my $u (@POSTs) {
-    $r = request('POST', "$u?client_loginid=$loginid&currency_code=USD");
+    $r = request('POST', "$u?client_loginid=$loginid&currency_code=USD", undef, {'Content-Type' => 'application/json'});
     ok(($r->code == 405 and $r->code != 500), "FAILED on $u") or diag 'response code was ' . $r->code;    # not allowed
 }
 

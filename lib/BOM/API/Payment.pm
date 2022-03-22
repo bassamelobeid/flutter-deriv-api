@@ -8,13 +8,13 @@ use Router::Resource;
 use parent qw(Plack::Component);
 use Plack::Request;
 use Plack::Response;
-use Encode;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 use Scalar::Util qw/blessed/;
 use Syntax::Keyword::Try;
 use Log::Dispatch::File;
 use Log::Dispatch::Screen;
 use Data::Dumper;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 # BOM
 use BOM::User::Client;
@@ -191,28 +191,53 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
             ## set user for DoughFlow
             if ($env->{'X-DoughFlow-Authorization-Passed'}) {
                 $client_loginid = scalar($req->param('client_loginid'));
-                if (not $client_loginid and $content_type and $content_type =~ 'xml') {
-                    $xs = XML::Simple->new(ForceArray => 0);
-                    if ($req->content) {
-                        my $data = {};
-                        try {
-                            $data = $xs->XMLin($req->content);
-                        } catch ($error) {
-                            return [422, [], ['Unprocessable entity']];
+                if (not $client_loginid and $content_type) {
+                    if ($content_type =~ m{xml}) {
+                        $xs = XML::Simple->new(ForceArray => 0);
+                        if ($req->content) {
+                            my $data = {};
+                            try {
+                                $data = $xs->XMLin($req->content);
+                            } catch ($error) {
+                                stats_inc('bom_paymentapi.error.unprocessable_entity', {tags => [$content_type]});
+                                $log->error(sprintf "Error trying to parse XML message. Error was %s", $error);
+                                return [422, [], ['Unprocessable entity']];
+                            }
+                            $client_loginid = $data->{client_loginid};
                         }
-                        $client_loginid = $data->{client_loginid};
+                    } elsif ($content_type =~ m{application/json}) {
+                        if ($req->content) {
+                            my $data = {};
+                            try {
+                                $data = decode_json_utf8($req->content);
+                            } catch ($error) {
+                                stats_inc('bom_paymentapi.error.unprocessable_entity', {tags => [$content_type]});
+                                $log->error(sprintf "Error trying to parse JSON message. Error was %s", $error);
+                                return [422, [], ['Unprocessable entity']];
+                            }
+                            $client_loginid = $data->{client_loginid};
+                        }
                     }
                 }
-                unless ($client_loginid) {
+
+                if ($req->method eq 'POST') {
+                    if ($content_type and not $content_type =~ m{application/json|xml|x-www-form-urlencoded}) {
+                        stats_inc('bom_paymentapi.error.unsupported_media_type', {tags => [$content_type]});
+                        $log->error(sprintf "Content Type %s is not supported.", $content_type);
+                        return [415, [], ['Unsupported Media Type']];
+                    }
+                }
+                unless ($client_loginid && $client_loginid =~ /^[A-Z]{2,6}\d{3,}$/) {
+                    stats_inc('bom_paymentapi.error.authorization_required', {tags => [$content_type]});
                     return [401, [], ['Authorization required']];
                 }
-                unless ($client_loginid =~ /^[A-Z]{2,6}\d{3,}$/) {
-                    return [401, [], ['Authorization required']];
-                }
+
                 my $client = BOM::User::Client->new({
                         loginid => $client_loginid,
                     })
                     || do {
+                    stats_inc('bom_paymentapi.error.authorization_required', {tags => [$content_type]});
+                    $log->error(sprintf "Client %s does not exist.", $client_loginid);
                     return [401, [], ['Authorization required']];
                     };
                 $env->{BOM_USER} = $client;
@@ -221,7 +246,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
             my $r = $router->dispatch($env);
             return $r if ref($r) eq 'ARRAY';    # from Router::Resource 405 or 404
 
-            if ($content_type and $content_type =~ 'xml') {
+            if ($content_type and $content_type =~ m{xml}) {
                 $xs = XML::Simple->new(ForceArray => 0) unless $xs;
 
                 if (blessed($r)) {              # Plack::Response
@@ -238,7 +263,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
 
             # JSON by default
             my $code = delete $r->{status_code} || 200;
-            my $body = Encode::encode_utf8(JSON::MaybeXS->new->encode($r));
+            my $body = encode_json_utf8($r);
             return [$code, ['Content-Type' => 'application/json; charset=utf-8'], [$body]];
         };
     };
