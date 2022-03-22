@@ -33,6 +33,23 @@ $user->add_client($client);
 my ($resp, $verification_status, $personal_info_status, $personal_info, $args) = undef;
 my $updates = 0;
 
+my $mock_services = Test::MockModule->new('BOM::Event::Services');
+my $http_idv      = 0;
+my $http          = 0;
+
+$mock_services->mock(
+    'http_idv',
+    sub {
+        $http_idv++;
+        return $mock_services->original('http_idv')->(@_);
+    });
+$mock_services->mock(
+    'http',
+    sub {
+        $http++;
+        return $mock_services->original('http')->(@_);
+    });
+
 my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
 my $mock_idv_status;
 $mock_idv_model->redefine(
@@ -90,6 +107,8 @@ $mock_segment->redefine(
 subtest 'verify identity by smile_identity is passed and data are valid' => sub {
     undef @identify_args;
     undef @track_args;
+    $http_idv = 0;
+    $http     = 0;
 
     $args = {
         loginid => $client->loginid,
@@ -140,11 +159,16 @@ subtest 'verify identity by smile_identity is passed and data are valid' => sub 
     is $mock_idv_status, 'verified', 'verify_identity returns `verified` status';
     is @identify_args, 0, 'Segment identify is not called on `verified` status';
     is @track_args,    0, 'Segment track is not called `verified` status';
+
+    is $http_idv, 1, 'Http idv called once';
+    is $http,     0, 'Standalone http not used';
 };
 
 subtest 'verify identity by smile_identity is passed but document is expired' => sub {
     undef @identify_args;
     undef @track_args;
+    $http_idv = 0;
+    $http     = 0;
 
     $client->status->clear_poi_name_mismatch;
     $client->status->clear_age_verification;
@@ -191,8 +215,13 @@ subtest 'verify identity by smile_identity is passed but document is expired' =>
     is @identify_args, 0, 'Segment identify is not called on `refuted` status';
     ok @track_args, 'Segment track is called on `refuted` status';
 
+    is $http_idv, 1, 'Http idv called once';
+    is $http,     0, 'Standalone http not used';
+
     undef @identify_args;
     undef @track_args;
+    $http_idv = 0;
+    $http     = 0;
 
     $idv_model->add_document({
         issuing_country => 'ke',
@@ -229,11 +258,16 @@ subtest 'verify identity by smile_identity is passed but document is expired' =>
     is $mock_idv_status, 'refuted', 'verify_identity returns `refuted` status';
     is @identify_args, 0, 'Segment identify is not called on `refuted` status';
     ok @track_args, 'Segment track is called on `refuted` status';
+
+    is $http_idv, 1, 'Http idv called once';
+    is $http,     0, 'Standalone http not used';
 };
 
 subtest 'verify identity by smile_identity is passed but document expiration date is unknown but document is lifetime valid' => sub {
     undef @identify_args;
     undef @track_args;
+    $http_idv = 0;
+    $http     = 0;
 
     $client->status->clear_poi_name_mismatch;
     $client->status->clear_age_verification;
@@ -289,11 +323,16 @@ subtest 'verify identity by smile_identity is passed but document expiration dat
     is $mock_idv_status, 'verified', 'verify_identity returns `verified` status';
     is @identify_args, 0, 'Segment identify is not called on `verified` status';
     is @track_args,    0, 'Segment track is not called `verified` status';
+
+    is $http_idv, 1, 'Http idv called once';
+    is $http,     0, 'Standalone http not used';
 };
 
 subtest 'verify identity by smile_identity is passed and name mismatched' => sub {
     undef @identify_args;
     undef @track_args;
+    $http_idv = 0;
+    $http     = 0;
 
     $args = {
         loginid => $client->loginid,
@@ -347,8 +386,13 @@ subtest 'verify identity by smile_identity is passed and name mismatched' => sub
     is @identify_args, 0, 'Segment identify is not called on `refuted` status';
     ok @track_args, 'Segment track is called on `refuted` status';
 
+    is $http_idv, 1, 'Http idv called once';
+    is $http,     0, 'Standalone http not used';
+
     undef @identify_args;
     undef @track_args;
+    $http_idv = 0;
+    $http     = 0;
 
     $idv_model->add_document({
         issuing_country => 'ke',
@@ -389,11 +433,16 @@ subtest 'verify identity by smile_identity is passed and name mismatched' => sub
     is $mock_idv_status, 'refuted', 'verify_identity returns `refuted` status';
     is @identify_args, 0, 'Segment identify is not called on `refuted` status';
     ok @track_args, 'Segment track is called on `refuted` status';
+
+    is $http_idv, 1, 'Http idv called once';
+    is $http,     0, 'Standalone http not used';
 };
 
 subtest 'verify identity by smile_identity is passed and DOB mismatch or underage' => sub {
     undef @identify_args;
     undef @track_args;
+    $http_idv = 0;
+    $http     = 0;
 
     $args = {
         loginid => $client->loginid,
@@ -455,8 +504,13 @@ subtest 'verify identity by smile_identity is passed and DOB mismatch or underag
     is @identify_args, 0, 'Segment identify is not called on `refuted` status';
     ok @track_args, 'Segment track is called on `refuted` status';
 
+    is $http_idv, 1, 'Http idv called once';
+    is $http,     0, 'Standalone http not used';
+
     undef @identify_args;
     undef @track_args;
+    $http_idv = 0;
+    $http     = 0;
 
     $idv_model->add_document({
         issuing_country => 'ke',
@@ -526,6 +580,9 @@ subtest 'verify identity by smile_identity is passed and DOB mismatch or underag
                 },
             )));
 
+    $http_idv = 0;
+    $http     = 0;
+
     ok $idv_event_handler->($args)->get, 'the event processed without error';
     is $updates, 2, 'update document triggered twice correctly';
 
@@ -536,6 +593,9 @@ subtest 'verify identity by smile_identity is passed and DOB mismatch or underag
     is $mock_idv_status, 'refuted', 'verify_identity returns `refuted` status';
     is @identify_args, 0, 'Segment identify is not called on `refuted` status';
     ok @track_args, 'Segment track is called on `refuted` status';
+
+    is $http_idv, 1, 'Http idv called once';
+    is $http,     0, 'Standalone http not used';
 };
 
 subtest 'verification by smile_identity get failed with foul codes' => sub {
@@ -549,6 +609,8 @@ subtest 'verification by smile_identity get failed with foul codes' => sub {
     for my $code (qw/ 1022 1013 /) {
         undef @identify_args;
         undef @track_args;
+        $http_idv = 0;
+        $http     = 0;
 
         _reset_submissions($client->binary_user_id);
 
@@ -579,10 +641,14 @@ subtest 'verification by smile_identity get failed with foul codes' => sub {
         is $mock_idv_status, 'failed', 'verify_identity returns `failed` status';
         is @identify_args, 0, 'Segment identify is not called on `unavailable` status';
         is @track_args,    0, 'Segment track is not called `unavailable` status';
+
+        is $http_idv, 1, 'Http idv called once';
+        is $http,     0, 'Standalone http not used';
     }
 };
 
 $mock_segment->unmock_all;
+$mock_services->unmock_all;
 
 sub _reset_submissions {
     my $user_id = shift;

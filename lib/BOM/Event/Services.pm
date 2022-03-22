@@ -197,5 +197,21 @@ sub redis_payment_write {
     }
 }
 
+sub http_idv {
+    my ($self) = @_;
+
+    return $self->{http_idv} //= do {
+        $self->add_child(
+            my $service = Net::Async::HTTP->new(
+                fail_on_error  => 1,
+                pipeline       => 0,
+                decode_content => 1,
+                stall_timeout  => 70,
+                user_agent     => 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:66.0)',
+            ));
+        $service;
+    }
+}
+
 1;
 

@@ -58,7 +58,7 @@ $loop->add(my $services = BOM::Event::Services->new);
 {
 
     sub _http {
-        return $services->http();
+        return $services->http_idv();
     }
 
     sub _redis_replicated_write {

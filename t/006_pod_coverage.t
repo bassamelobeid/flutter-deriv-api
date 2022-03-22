@@ -10,7 +10,7 @@ use Test::Pod::CoverageChange;
 
 my $allowed_naked_packages = {
     'BOM::Event::Listener'                              => 11,
-    'BOM::Event::Services'                              => 10,
+    'BOM::Event::Services'                              => 11,
     'BOM::Event::Actions::P2P'                          => 2,
     'BOM::Event::Actions::CryptoSubscription'           => 2,
     'BOM::Event::Actions::MyAffiliate'                  => 3,
