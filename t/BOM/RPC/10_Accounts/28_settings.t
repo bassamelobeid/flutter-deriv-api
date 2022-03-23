@@ -94,9 +94,7 @@ $test_client_Y_cr_2->save;
 my $payment_agent_args = {
     payment_agent_name    => $test_client_Y_cr_2->first_name,
     currency_code         => 'USD',
-    url                   => 'http://www.example.com/',
     email                 => $test_client_Y_cr_2->email,
-    phone                 => $test_client_Y_cr_2->phone,
     information           => 'Test Info',
     summary               => 'Test Summary',
     commission_deposit    => 0,

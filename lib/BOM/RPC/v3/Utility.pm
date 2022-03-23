@@ -577,6 +577,7 @@ sub error_map {
         'TooManyDecimalPlaces'       => localize('Only [_1] decimal places are allowed.'),
         'InvalidNumericValue'        => localize('The numeric value is invalid.'),
         'InvalidStringValue'         => localize('This field must contain at least one alphabetic character.'),
+        'InvalidArrayValue'          => localize('Valid array was expected.'),
 
         'DuplicateCurrency'        => localize("Please note that you are limited to only one [_1] account."),
         'CannotChangeWallet'       => localize("Sorry, your trading account is already linked to a wallet."),

@@ -1012,9 +1012,7 @@ subtest 'transfer with fees' => sub {
 
     $client_cr_pa_btc->payment_agent({
         payment_agent_name    => 'Joe',
-        url                   => 'http://www.example.com/',
         email                 => 'joe@example.com',
-        phone                 => '+12345678',
         information           => 'Test Info',
         summary               => 'Test Summary',
         commission_deposit    => 0,
@@ -1355,9 +1353,7 @@ subtest 'transfer with no fee' => sub {
 
     my $pa_args = {
         payment_agent_name    => 'Joe',
-        url                   => 'http://www.example.com/',
         email                 => 'joe@example.com',
-        phone                 => '+12345678',
         information           => 'Test Info',
         summary               => 'Test Summary',
         commission_deposit    => 0,

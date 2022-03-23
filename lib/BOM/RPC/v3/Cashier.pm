@@ -522,7 +522,7 @@ rpc "paymentagent_list",
     }
     my $available_payment_agents = _get_available_payment_agents($target_country, $broker_code, $currency, $loginid, 1);
 
-    my $payment_agent_table_row = [];
+    my $payment_agent_list = [];
     foreach my $loginid (keys %{$available_payment_agents}) {
         my $payment_agent = $available_payment_agents->{$loginid};
         my $currency      = $payment_agent->{currency_code};
@@ -536,29 +536,37 @@ rpc "paymentagent_list",
             next;
         }
 
-        push @{$payment_agent_table_row},
-            {
-            'paymentagent_loginid'  => $loginid,
-            'name'                  => $payment_agent->{payment_agent_name},
-            'summary'               => $payment_agent->{summary},
-            'url'                   => $payment_agent->{url},
-            'email'                 => $payment_agent->{email},
-            'telephone'             => $payment_agent->{phone},
-            'currencies'            => $currency,
-            'deposit_commission'    => $payment_agent->{commission_deposit},
-            'withdrawal_commission' => $payment_agent->{commission_withdrawal},
-            'further_information'   => $payment_agent->{information},
-            'supported_banks'       => $payment_agent->{supported_banks},
-            'max_withdrawal'        => $payment_agent->{max_withdrawal} || $min_max->{maximum},
-            'min_withdrawal'        => $payment_agent->{min_withdrawal} || $min_max->{minimum},
-            };
-    }
+        # extract the deprecated fields for backward compatibiity
+        my $detail_field   = $payment_agent->details_main_field();
+        my @url            = map { $_->{$detail_field->{urls}} } $payment_agent->urls->@*;
+        my @telephone      = map { $_->{$detail_field->{phone_numbers}} } $payment_agent->phone_numbers->@*;
+        my @supprted_banks = map { $_->{$detail_field->{supported_payment_methods}} } $payment_agent->supported_payment_methods->@*;
 
-    @$payment_agent_table_row = sort { lc($a->{name}) cmp lc($b->{name}) } @$payment_agent_table_row;
+        push @{$payment_agent_list}, {
+            'paymentagent_loginid'      => $loginid,
+            'name'                      => $payment_agent->payment_agent_name,
+            'summary'                   => $payment_agent->summary,
+            'urls'                      => $payment_agent->urls,
+            'email'                     => $payment_agent->email,
+            'phone_numbers'             => $payment_agent->phone_numbers,
+            'currencies'                => $currency,
+            'deposit_commission'        => $payment_agent->commission_deposit,
+            'withdrawal_commission'     => $payment_agent->commission_withdrawal,
+            'further_information'       => $payment_agent->information,
+            'supported_payment_methods' => $payment_agent->supported_payment_methods,
+            'max_withdrawal'            => $payment_agent->max_withdrawal || $min_max->{maximum},
+            'min_withdrawal'            => $payment_agent->min_withdrawal || $min_max->{minimum},
+            # deprecated fields (for backward compatibility)
+            'url'             => join(',', @url),
+            'telephone'       => join(',', @telephone),
+            'supported_banks' => join(',', @supprted_banks),
+        };
+    }
+    @$payment_agent_list = sort { lc($a->{name}) cmp lc($b->{name}) } @$payment_agent_list;
 
     return {
         available_countries => \@available_countries,
-        list                => $payment_agent_table_row
+        list                => $payment_agent_list
     };
     };
 

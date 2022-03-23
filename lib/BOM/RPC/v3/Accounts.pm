@@ -2977,10 +2977,6 @@ rpc paymentagent_create => sub {
         return BOM::RPC::v3::Utility::rule_engine_error($error);
     }
 
-    # convert the array supported_payment_methods (api field) into the string supported_banks (db field)
-    my $payment_methods = (delete $args->{supported_payment_methods}) // [];
-    $args->{supported_banks} = join ',', @$payment_methods;
-
     my $pa = $client->set_payment_agent;
     try {
         $args = $pa->validate_payment_agent_details(%$args);
@@ -2995,10 +2991,6 @@ rpc paymentagent_create => sub {
             return BOM::RPC::v3::Utility::create_error_by_code($error, ($msg_params->{$error} // [])->@*);
         }
 
-        if ($error->{details}->{fields}) {
-            $error->{details}->{fields} = [map { $_ =~ s/supported_banks/supported_payment_methods/r } $error->{details}->{fields}->@*];
-        }
-
         return BOM::RPC::v3::Utility::create_error_by_code($error->{code}, %$error, override_code => 'InputValidationFailed');
     }
 
@@ -3009,12 +3001,19 @@ rpc paymentagent_create => sub {
     my $loginid = $client->loginid;
     my $brand   = request->brand;
     my $message = "Client $loginid has submitted the payment agent application form with following content:\n\n";
-    $message .= join("\n", map { "$_:" . ($args->{$_} // '') } sort keys %$args);
+    for my $arg (sort keys %$args) {
+        my @values = ($args->{$arg} // '');
+        my $field  = $pa->details_main_field->{$arg};
+        @values = map { $_->{$field} } $args->{$arg}->@* if defined($args->{$arg}) && ref($args->{$arg}) eq 'ARRAY';
+        $message .= "\n $arg: " . join(',', @values);
+
+    }
+
     send_email({
         from    => $brand->emails('system'),
         to      => $brand->emails('pa_livechat'),
         subject => "Payment agent application submitted by $loginid",
-        message => [$message],
+        message => ["$message\n"],
     });
 
     return {status => 1};
@@ -3032,8 +3031,8 @@ rpc paymentagent_details => sub {
             message_to_client => localize('You have not applied for being payment agent yet.')}) unless $payment_agent;
 
     my %result = map { $_ => $payment_agent->$_ }
-        qw(payment_agent_name url email phone  information currency_code target_country max_withdrawal min_withdrawal commission_deposit commission_withdrawal status is_listed code_of_conduct_approval affiliate_id);
-    $result{supported_payment_methods} = $payment_agent->{supported_banks} ? [split(',', $payment_agent->{supported_banks})] : [];
+        qw(payment_agent_name email phone_numbers urls supported_payment_methods information currency_code target_country max_withdrawal min_withdrawal commission_deposit commission_withdrawal status is_listed code_of_conduct_approval affiliate_id);
+
     # affiliate IDs are null for old payment agents.
     $result{affiliate_id} //= '';
 

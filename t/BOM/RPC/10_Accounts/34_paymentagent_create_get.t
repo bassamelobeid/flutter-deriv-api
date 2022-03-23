@@ -46,7 +46,7 @@ subtest 'paymentagent set and get' => sub {
             message_to_client => 'This field is required.',
             details           => {
                 fields => bag(
-                    'supported_payment_methods', 'information',        'payment_agent_name', 'url',
+                    'supported_payment_methods', 'information',        'payment_agent_name', 'urls',
                     'code_of_conduct_approval',  'commission_deposit', 'commission_withdrawal'
                 )}
             },
@@ -55,10 +55,10 @@ subtest 'paymentagent set and get' => sub {
         $set_params->{args} = {
             'payment_agent_name'        => '+_',
             'information'               => '   ',
-            'url'                       => ' &^% ',
+            'urls'                      => [{url => ' &^% '}],
             'commission_withdrawal'     => 'abcd',
             'commission_deposit'        => 'abcd',
-            'supported_payment_methods' => ['   ', 'bank_transfer'],
+            'supported_payment_methods' => [{payment_method => '   '}, {payment_method => 'bank_transfer'}],
             'code_of_conduct_approval'  => 0,
         };
 
@@ -76,12 +76,13 @@ subtest 'paymentagent set and get' => sub {
             {
             code              => 'InputValidationFailed',
             message_to_client => 'This field must contain at least one alphabetic character.',
-            details           => {fields => bag('payment_agent_name', 'information', 'supported_payment_methods')}
+            details           => {fields => bag('payment_agent_name', 'information', 'supported_payment_methods', 'urls')}
             },
             'String values must contain at least one alphabetic character';
 
-        $set_params->{args}->{$_} = 'Valid String' for (qw/payment_agent_name information/);
-        $set_params->{args}->{supported_payment_methods} = ['Valid method'];
+        $set_params->{args}->{$_}                        = 'Valid String' for (qw/payment_agent_name information/);
+        $set_params->{args}->{urls}                      = [{url            => 'https://www.pa.com'}];
+        $set_params->{args}->{supported_payment_methods} = [{payment_method => 'Valid method'}];
 
         cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
             {
@@ -117,10 +118,10 @@ subtest 'paymentagent set and get' => sub {
     $set_params->{args} = {
         'payment_agent_name'        => 'Nobody',
         'information'               => 'Request for pa application',
-        'url'                       => 'http://abcd.com',
+        'urls'                      => [{url => 'http://abcd.com'}],
         'commission_withdrawal'     => 4,
         'commission_deposit'        => 5,
-        'supported_payment_methods' => ['Visa', 'bank_transfer'],
+        'supported_payment_methods' => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
         'code_of_conduct_approval'  => 1,
     };
 
@@ -133,9 +134,9 @@ subtest 'paymentagent set and get' => sub {
     my $min_max         = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
     my $expected_values = {
         'payment_agent_name'        => 'Nobody',
-        'url'                       => 'http://abcd.com',
+        'urls'                      => [{url => 'http://abcd.com'}],
         'email'                     => $client->email,
-        'phone'                     => $client->phone,
+        'phone_numbers'             => [{phone_number => $client->phone}],
         'information'               => 'Request for pa application',
         'currency_code'             => 'USD',
         'target_country'            => $client->residence,
@@ -146,20 +147,18 @@ subtest 'paymentagent set and get' => sub {
         'is_listed'                 => 0,
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => '',
-        'supported_payment_methods' => ['Visa', 'bank_transfer'],
+        'supported_payment_methods' => [map { +{payment_method => $_} } qw/bank_transfer Visa/],
         'status'                    => undef,
     };
     my $result = $c->call_ok('paymentagent_details', $get_params)->has_no_system_error->has_no_error->result;
     delete $result->{stash};
-    is_deeply $result, $expected_values, 'PA get result is correct';
+    is_deeply $result, $expected_values, 'PA details is correct';
 
     delete $client->{payment_agent};
     ok $pa = $client->get_payment_agent, 'Client has a payment agent now';
-    delete $expected_values->{supported_payment_methods};
-    $expected_values->{supported_banks} = 'Visa,bank_transfer';
     is_deeply {
         map { $_ => $pa->$_ } (keys %$expected_values)
-    }, $expected_values, 'PA details are correct';
+    }, \%$expected_values, 'PA details are correct';
 
 };
 
@@ -184,9 +183,9 @@ subtest 'call with non-empty args' => sub {
     };
     $set_params->{args} = {
         'payment_agent_name'        => 'Smith',
-        'url'                       => 'http://test.deriv.com',
+        'urls'                      => [map { +{url => $_} } ('http://test.deriv.com', 'http://youtube.com')],
         'email'                     => 'abc@test.com',
-        'phone'                     => '233445',
+        'phone_numbers'             => [map { +{phone_number => $_} } (qw/233445 5432/)],
         'information'               => 'just for test',
         'currency_code'             => 'EUR',
         'target_country'            => 'de',
@@ -196,7 +195,7 @@ subtest 'call with non-empty args' => sub {
         'commission_deposit'        => 5,
         'is_listed'                 => 1,
         'affiliate_id'              => 'test token',
-        'supported_payment_methods' => ['Visa'],
+        'supported_payment_methods' => [map { +{payment_method => $_} } (qw/Bank Visa/)],
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => 'abcd1234',
         'status'                    => undef,
@@ -205,29 +204,12 @@ subtest 'call with non-empty args' => sub {
     $c->call_ok('paymentagent_create', $set_params)->has_no_error;
 
     my $expected_values = {
-        'payment_agent_name'        => 'Smith',
-        'url'                       => 'http://test.deriv.com',
-        'email'                     => 'abc@test.com',
-        'phone'                     => '233445',
-        'information'               => 'just for test',
-        'currency_code'             => 'EUR',
-        'target_country'            => 'de',
-        'max_withdrawal'            => 3,
-        'min_withdrawal'            => 2,
-        'commission_withdrawal'     => 4,
-        'commission_deposit'        => 5,
-        'is_listed'                 => 0,
-        'supported_payment_methods' => ['Visa'],
-        'code_of_conduct_approval'  => 1,
-        'affiliate_id'              => 'abcd1234',
-        'status'                    => undef,
+        $set_params->{args}->%*,
+        is_listed => 0,
     };
     my $result = $c->call_ok('paymentagent_details', $get_params)->has_no_system_error->has_no_error->result;
     delete $result->{stash};
     is_deeply $result, $expected_values, 'PA get result is correct';
-
-    delete $expected_values->{supported_payment_methods};
-    $expected_values->{supported_banks} = 'Visa';
 
     delete $client->{payment_agent};
     ok my $pa = $client->get_payment_agent, 'Client has a payment agent now';
@@ -242,10 +224,17 @@ subtest 'call with non-empty args' => sub {
     is $email_args->{from},    $brand->emails('system'),      'email source is correct';
     is $email_args->{to},      $brand->emails('pa_livechat'), 'email receiver is correct';
     is $email_args->{subject}, "Payment agent application submitted by " . $client->loginid, 'Email subject is correct';
-    like $email_args->{message}->[0], qr/$_:$expected_values->{$_}/, "The field $_ is included in the email body" for keys %$expected_values;
+
+    for my $key (keys %$expected_values) {
+        if (ref($expected_values->{$key}) eq 'ARRAY') {
+            my $field = $pa->details_main_field->{$key};
+            $expected_values->{$key} = join(',', map { $_->{$field} } $expected_values->{$key}->@*);
+        }
+    }
+    like $email_args->{message}->[0], qr/$_: $expected_values->{$_}/, "The field $_ is included in the email body" for keys %$expected_values;
 };
 
-subtest 'paymentagent create erors' => sub {
+subtest 'paymentagent create errors' => sub {
 
     my $mock_landingcompany = Test::MockModule->new('LandingCompany');
     $mock_landingcompany->mock('allows_payment_agents', sub { return 0; });
@@ -262,9 +251,8 @@ subtest 'paymentagent create erors' => sub {
     };
     $set_params->{args} = {
         'payment_agent_name'        => 'John',
-        'url'                       => 'http://john.deriv.com',
+        'urls'                      => [{url => 'http://john.deriv.com'}],
         'email'                     => 'john@test.com',
-        'phone'                     => '23344577',
         'information'               => 'just for test',
         'currency_code'             => 'USD',
         'target_country'            => 'de',
@@ -273,7 +261,7 @@ subtest 'paymentagent create erors' => sub {
         'commission_withdrawal'     => 4,
         'commission_deposit'        => 5,
         'is_listed'                 => 1,
-        'supported_payment_methods' => ['Visa'],
+        'supported_payment_methods' => [{payment_method => 'Visa'}],
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => 'abcd12347',
         'status'                    => undef,

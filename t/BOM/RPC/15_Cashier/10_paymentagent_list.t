@@ -38,9 +38,7 @@ $pa_client->set_default_account('USD');
 # make him a payment agent
 $pa_client->payment_agent({
     payment_agent_name    => "Joe",
-    url                   => 'http://www.example.com/',
     email                 => 'joe@example.com',
-    phone                 => '+12345678',
     information           => 'Test Info',
     summary               => 'Test Summary',
     commission_deposit    => 0,
@@ -49,7 +47,12 @@ $pa_client->payment_agent({
     status                => 'authorized',
 });
 $pa_client->save;
-$pa_client->get_payment_agent->set_countries(['id']);
+my $payment_agent = $pa_client->get_payment_agent;
+$payment_agent->set_countries(['id']);
+$payment_agent->urls([{url => 'http://www.example.com/'}, {url => 'http://www.deriv.test/'}]);
+$payment_agent->phone_numbers([{phone_number => '+12345678'}, {phone_number => '+76543'}]);
+$payment_agent->supported_payment_methods([{payment_method => 'Bank 1'}, {payment_method => 'Bank 2'}]);
+$payment_agent->save;
 
 my $first_pa_loginid = $pa_client->loginid;
 
@@ -61,9 +64,7 @@ $pa_client->set_default_account('BTC');
 # make him a payment agent
 $pa_client->payment_agent({
     payment_agent_name    => 'Hoe',
-    url                   => 'http://www.sample.com/',
     email                 => 'hoe@sample.com',
-    phone                 => '+12345678',
     information           => 'Test Information',
     summary               => 'Test Summary Another',
     commission_deposit    => 0,
@@ -72,7 +73,12 @@ $pa_client->payment_agent({
     status                => 'authorized',
 });
 $pa_client->save;
-$pa_client->get_payment_agent->set_countries(['id']);
+$payment_agent = $pa_client->get_payment_agent;
+$payment_agent->set_countries(['id']);
+$payment_agent->urls([{url => 'http://www.sample.com/'}]);
+$payment_agent->phone_numbers([{phone_number => '+12345678'}]);
+$payment_agent->save;
+
 my $second_pa_loginid = $pa_client->loginid;
 
 $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -83,9 +89,7 @@ $pa_client->set_default_account('ETH');
 # make him a payment agent
 $pa_client->payment_agent({
     payment_agent_name    => "Test Перевод encoding<>!@#$%^&*'`\"",
-    url                   => 'http://www.sample2.com/',
     email                 => 'test@sample.com',
-    phone                 => '+12345678',
     information           => 'Test Information2',
     summary               => "Test ~!@#$%^&*()_+,.<>/?;:'\"[]{}",
     commission_deposit    => 0,
@@ -94,7 +98,12 @@ $pa_client->payment_agent({
     status                => 'authorized',
 });
 $pa_client->save;
-$pa_client->get_payment_agent->set_countries(['id']);
+$payment_agent = $pa_client->get_payment_agent;
+$payment_agent->set_countries(['id']);
+$payment_agent->urls([{url => 'http://www.sample2.com/'}]);
+$payment_agent->phone_numbers([{phone_number => '+12345678'}]);
+$payment_agent->save;
+
 my $third_pa_loginid = $pa_client->loginid;
 
 my $c = BOM::Test::RPC::QueueClient->new();
@@ -121,49 +130,58 @@ subtest 'paymentagent_list RPC call' => sub {
         },
         'available_countries' => [['id', 'Indonesia',]],
         'list'                => [{
-                'telephone'             => '+12345678',
-                'supported_banks'       => undef,
-                'name'                  => 'Hoe',
-                'further_information'   => 'Test Information',
-                'deposit_commission'    => '0',
-                'withdrawal_commission' => '0',
-                'currencies'            => 'BTC',
-                'email'                 => 'hoe@sample.com',
-                'summary'               => 'Test Summary Another',
-                'url'                   => 'http://www.sample.com/',
-                'paymentagent_loginid'  => $second_pa_loginid,
-                'max_withdrawal'        => 5,
-                'min_withdrawal'        => 0.002,
+                'phone_numbers'             => [{phone_number => '+12345678'}],
+                'supported_payment_methods' => [],
+                'name'                      => 'Hoe',
+                'further_information'       => 'Test Information',
+                'deposit_commission'        => '0',
+                'withdrawal_commission'     => '0',
+                'currencies'                => 'BTC',
+                'email'                     => 'hoe@sample.com',
+                'summary'                   => 'Test Summary Another',
+                'urls'                      => [{url => 'http://www.sample.com/'}],
+                'paymentagent_loginid'      => $second_pa_loginid,
+                'max_withdrawal'            => 5,
+                'min_withdrawal'            => 0.002,
+                'url'                       => 'http://www.sample.com/',
+                'telephone'                 => '+12345678',
+                'supported_banks'           => '',
             },
             {
-                'telephone'             => '+12345678',
-                'supported_banks'       => undef,
-                'name'                  => "Joe",
-                'further_information'   => 'Test Info',
-                'deposit_commission'    => '0',
-                'withdrawal_commission' => '0',
-                'currencies'            => 'USD',
-                'email'                 => 'joe@example.com',
-                'summary'               => 'Test Summary',
-                'url'                   => 'http://www.example.com/',
-                'paymentagent_loginid'  => $first_pa_loginid,
-                'max_withdrawal'        => 2000,
-                'min_withdrawal'        => 10,
+                'phone_numbers'             => [{phone_number => '+12345678'}, {phone_number => '+76543'}],
+                'supported_payment_methods' => [{payment_method => 'Bank 1'}, {payment_method => 'Bank 2'}],
+                'name'                      => "Joe",
+                'further_information'       => 'Test Info',
+                'deposit_commission'        => '0',
+                'withdrawal_commission'     => '0',
+                'currencies'                => 'USD',
+                'email'                     => 'joe@example.com',
+                'summary'                   => 'Test Summary',
+                'urls'                      => [{url => 'http://www.deriv.test/'}, {url => 'http://www.example.com/'}],
+                'paymentagent_loginid'      => $first_pa_loginid,
+                'max_withdrawal'            => 2000,
+                'min_withdrawal'            => 10,
+                'url'                       => 'http://www.deriv.test/,http://www.example.com/',
+                'telephone'                 => '+12345678,+76543',
+                'supported_banks'           => 'Bank 1,Bank 2',
             },
             {
-                'telephone'             => '+12345678',
-                'supported_banks'       => undef,
-                'name'                  => "Test Перевод encoding<>!@#$%^&*'`\"",
-                'further_information'   => 'Test Information2',
-                'deposit_commission'    => '0',
-                'withdrawal_commission' => '0',
-                'currencies'            => 'ETH',
-                'email'                 => 'test@sample.com',
-                'summary'               => "Test ~!@#$%^&*()_+,.<>/?;:'\"[]{}",
-                'url'                   => 'http://www.sample2.com/',
-                'paymentagent_loginid'  => $third_pa_loginid,
-                'max_withdrawal'        => 5,
-                'min_withdrawal'        => 0.002,
+                'phone_numbers'             => [{phone_number => '+12345678'}],
+                'supported_payment_methods' => [],
+                'name'                      => "Test Перевод encoding<>!@#$%^&*'`\"",
+                'further_information'       => 'Test Information2',
+                'deposit_commission'        => '0',
+                'withdrawal_commission'     => '0',
+                'currencies'                => 'ETH',
+                'email'                     => 'test@sample.com',
+                'summary'                   => "Test ~!@#$%^&*()_+,.<>/?;:'\"[]{}",
+                'urls'                      => [{url => 'http://www.sample2.com/'}],
+                'paymentagent_loginid'      => $third_pa_loginid,
+                'max_withdrawal'            => 5,
+                'min_withdrawal'            => 0.002,
+                'url'                       => 'http://www.sample2.com/',
+                'telephone'                 => '+12345678',
+                'supported_banks'           => '',
             }]};
     $c->call_ok('paymentagent_list', $params)
         ->has_no_error->result_is_deeply($expected_result, 'If token is invalid, then the paymentagents are from broker "CR"');
@@ -179,19 +197,22 @@ subtest 'paymentagent_list RPC call' => sub {
         },
         'available_countries' => [['id', 'Indonesia',]],
         'list'                => [{
-                'telephone'             => '+12345678',
-                'supported_banks'       => undef,
-                'name'                  => 'Hoe',
-                'further_information'   => 'Test Information',
-                'deposit_commission'    => '0',
-                'withdrawal_commission' => '0',
-                'currencies'            => 'BTC',
-                'email'                 => 'hoe@sample.com',
-                'summary'               => 'Test Summary Another',
-                'url'                   => 'http://www.sample.com/',
-                'paymentagent_loginid'  => $second_pa_loginid,
-                'max_withdrawal'        => 5,
-                'min_withdrawal'        => 0.002,
+                'phone_numbers'             => [{phone_number => '+12345678'}],
+                'supported_payment_methods' => [],
+                'name'                      => 'Hoe',
+                'further_information'       => 'Test Information',
+                'deposit_commission'        => '0',
+                'withdrawal_commission'     => '0',
+                'currencies'                => 'BTC',
+                'email'                     => 'hoe@sample.com',
+                'summary'                   => 'Test Summary Another',
+                'urls'                      => [{url => 'http://www.sample.com/'}],
+                'paymentagent_loginid'      => $second_pa_loginid,
+                'max_withdrawal'            => 5,
+                'min_withdrawal'            => 0.002,
+                'url'                       => 'http://www.sample.com/',
+                'telephone'                 => '+12345678',
+                'supported_banks'           => '',
             }]};
 
     $params->{args} = {
@@ -207,9 +228,7 @@ subtest 'suspend countries' => sub {
 
     my $pa_info = {
         payment_agent_name    => 'Xoe',
-        url                   => 'http://www.sample.com/',
         email                 => 'xoe@sample.com',
-        phone                 => '+12345678',
         information           => 'Test Information',
         summary               => 'Test Summary Another',
         commission_deposit    => 0,
@@ -236,7 +255,11 @@ subtest 'suspend countries' => sub {
     $af_agent->set_default_account('USD');
     $af_agent->payment_agent($pa_info);
     $af_agent->save;
-    $af_agent->get_payment_agent->set_countries(['af']);
+    $payment_agent = $af_agent->get_payment_agent;
+    $payment_agent->set_countries(['af']);
+    $payment_agent->urls([{url => 'http://www.sample.com/'}]);
+    $payment_agent->phone_numbers([{phone_number => '+12345678'}]);
+    $payment_agent->save;
 
     my $token_agent = BOM::Database::Model::OAuth->new->store_access_token_only(1, $af_agent->loginid);
 
@@ -272,19 +295,22 @@ subtest 'suspend countries' => sub {
         },
         'available_countries' => [['af', 'Afghanistan',], ['id', 'Indonesia',]],
         'list'                => [{
-                'telephone'             => '+12345678',
-                'supported_banks'       => undef,
-                'name'                  => 'Xoe',
-                'further_information'   => 'Test Information',
-                'deposit_commission'    => '0',
-                'withdrawal_commission' => '0',
-                'currencies'            => 'USD',
-                'email'                 => 'xoe@sample.com',
-                'summary'               => 'Test Summary Another',
-                'url'                   => 'http://www.sample.com/',
-                'paymentagent_loginid'  => $af_agent->loginid,
-                'max_withdrawal'        => 2000,
-                'min_withdrawal'        => 10,
+                'phone_numbers'             => [{phone_number => '+12345678'}],
+                'supported_payment_methods' => [],
+                'name'                      => 'Xoe',
+                'further_information'       => 'Test Information',
+                'deposit_commission'        => '0',
+                'withdrawal_commission'     => '0',
+                'currencies'                => 'USD',
+                'email'                     => 'xoe@sample.com',
+                'summary'                   => 'Test Summary Another',
+                'urls'                      => [{url => 'http://www.sample.com/'}],
+                'paymentagent_loginid'      => $af_agent->loginid,
+                'max_withdrawal'            => 2000,
+                'min_withdrawal'            => 10,
+                'url'                       => 'http://www.sample.com/',
+                'telephone'                 => '+12345678',
+                'supported_banks'           => '',
             }
         ],
     };
@@ -297,19 +323,22 @@ subtest 'suspend countries' => sub {
         },
         'available_countries' => [['id', 'Indonesia',]],
         'list'                => [{
-                'telephone'             => '+12345678',
-                'supported_banks'       => undef,
-                'name'                  => 'Xoe',
-                'further_information'   => 'Test Information',
-                'deposit_commission'    => '0',
-                'withdrawal_commission' => '0',
-                'currencies'            => 'USD',
-                'email'                 => 'xoe@sample.com',
-                'summary'               => 'Test Summary Another',
-                'url'                   => 'http://www.sample.com/',
-                'paymentagent_loginid'  => $af_agent->loginid,
-                'max_withdrawal'        => 2000,
-                'min_withdrawal'        => 10,
+                'phone_numbers'             => [{phone_number => '+12345678'}],
+                'supported_payment_methods' => [],
+                'name'                      => 'Xoe',
+                'further_information'       => 'Test Information',
+                'deposit_commission'        => '0',
+                'withdrawal_commission'     => '0',
+                'currencies'                => 'USD',
+                'email'                     => 'xoe@sample.com',
+                'summary'                   => 'Test Summary Another',
+                'urls'                      => [{url => 'http://www.sample.com/'}],
+                'paymentagent_loginid'      => $af_agent->loginid,
+                'max_withdrawal'            => 2000,
+                'min_withdrawal'            => 10,
+                'url'                       => 'http://www.sample.com/',
+                'telephone'                 => '+12345678',
+                'supported_banks'           => '',
             }
         ],
     };
@@ -370,9 +399,7 @@ subtest 'PAs without currency' => sub {
 
     $client->payment_agent({
         payment_agent_name    => "PA without currency",
-        url                   => 'http://www.sample2.com/',
         email                 => 'test@sample.com',
-        phone                 => '+12345678',
         information           => 'Invalid PA',
         summary               => "Summary",
         commission_deposit    => 2,
