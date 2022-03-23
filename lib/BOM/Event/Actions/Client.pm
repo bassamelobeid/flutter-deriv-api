@@ -3234,23 +3234,16 @@ sub check_name_changes_after_first_deposit {
 
     if ($total > $change_threshold) {
         my $brand = request->brand();
-        send_email({
-                from          => $brand->emails('no-reply'),
-                to            => $client->email,
-                subject       => localize('Account verification'),
-                template_name => 'authentication_required',
-                template_args => {
-                    l                  => \&localize,
-                    name               => $client->first_name,
-                    title              => localize('Account verification'),
+
+        BOM::Platform::Event::Emitter::emit(
+            account_with_false_info_locked => {
+                loginid    => $loginid,
+                properties => {
+                    email              => $client->email,
                     authentication_url => $brand->authentication_url,
                     profile_url        => $brand->profile_url,
                     is_name_change     => 1,
-                },
-                use_email_template    => 1,
-                email_content_is_html => 1,
-                use_event             => 0
-            });
+                }});
 
         # assumes that allow_document_upload is added in RPC get_account_status when withdrawal_locked is present
         _set_all_sibling_status({

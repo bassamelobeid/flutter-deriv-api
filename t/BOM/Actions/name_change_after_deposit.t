@@ -6,12 +6,15 @@ use Test::Fatal;
 use Test::MockModule;
 use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Email;
 use BOM::User::Client;
 use BOM::Event::Actions::Client;
 
 my $client;
 my $offset = 0;
+
+my $emitted;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(emit => sub { $emitted->{$_[0]} = $_[1] });
 
 subtest 'name checks' => sub {
 
@@ -35,44 +38,39 @@ subtest 'name checks' => sub {
     change_name('bob', 'smith');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked before first deposit';
-    BOM::Test::Email::mailbox_check_empty('no email sent');
+    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
 
     df_deposit(100);
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after first deposit';
-    BOM::Test::Email::mailbox_check_empty('no email sent');
+    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
 
     change_name('smith', 'bob');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after name flip';
-    BOM::Test::Email::mailbox_check_empty('no email sent');
+    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
 
     change_name('bob', 'smyth');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after minor change';
-    BOM::Test::Email::mailbox_check_empty('no email sent');
+    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
 
     $client->status->setnx('age_verification', 'test');
     change_name('maria', 'juana');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked on age verified client';
-    BOM::Test::Email::mailbox_check_empty('no email sent');
+    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
 
     $client->status->clear_age_verification;
     change_name('mary', 'jane');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok my $status = BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'withdrawal locked after big change';
     is $status->{reason}, 'Excessive name changes after first deposit - pending POI', 'correct reason';
+    ok defined($emitted->{account_with_false_info_locked}), 'email sent';
 
-    my $msg = BOM::Test::Email::mailbox_search(
-        subject => qr/Account verification/,
-        email   => $client->email
-    );
-    ok $msg, 'email sent';
-
-    BOM::Test::Email::mailbox_clear();
+    undef $emitted;
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
-    BOM::Test::Email::mailbox_check_empty('email not sent if already withdrawal_locked');
+    ok !defined($emitted->{account_with_false_info_locked}), 'email not sent if already withdrawal_locked';
 
     # legacy client with no name set
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -91,16 +89,14 @@ subtest 'name checks' => sub {
 
     df_deposit(100);
     change_name('new', 'name');
-    BOM::Test::Email::mailbox_clear();
+    undef $emitted;
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after set name from empty';
-    BOM::Test::Email::mailbox_check_empty('no email sent');
+    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
 };
 
 subtest 'deposit event' => sub {
-    my $emitted;
-    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-    $mock_events->mock(emit => sub { $emitted->{$_[0]} = $_[1] });
+    undef $emitted;
 
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',

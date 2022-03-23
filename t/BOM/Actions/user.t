@@ -560,9 +560,9 @@ subtest 'false profile info' => sub {
     $test_user->add_client($client_cr);
     $test_user->add_client($client_mlt);
 
-    my @mail_box;
-    my $mock_email = Test::MockModule->new('BOM::Event::Actions::User');
-    $mock_email->mock('send_email' => sub { push @mail_box, shift; });
+    my $emitted;
+    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_events->mock(emit => sub { $emitted->{$_[0]} = $_[1] });
 
     my $args = {
         loginid => $client_cr->loginid,
@@ -646,12 +646,12 @@ subtest 'false profile info' => sub {
             loginid             => $client_cr->loginid,
             $test_case->{field} => $test_case->{value}};
         $event_handler->($args);
-        test_fake_name($test_case, $client_cr,  \@mail_box, $brand);
-        test_fake_name($test_case, $client_mlt, \@mail_box, $brand);
+        test_fake_name($test_case, $client_cr,  $emitted, $brand);
+        test_fake_name($test_case, $client_mlt, $emitted, $brand);
 
         $_->status->clear_cashier_locked for $test_user->clients;
         $_->status->clear_unwelcome      for $test_user->clients;
-        undef @mail_box;
+        undef $emitted;
     }
 
     subtest 'app settings' => sub {
@@ -668,9 +668,9 @@ subtest 'false profile info' => sub {
             loginid             => $client_cr->loginid,
             $test_case->{field} => $test_case->{value}};
         $event_handler->($args);
-        test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+        test_fake_name($test_case, $client_cr, $emitted, $brand);
         $_->status->clear_unwelcome for $test_user->clients;
-        undef @mail_box;
+        undef $emitted;
         BOM::Config::Runtime->instance->app_config->compliance->fake_names->accepted_consonant_names($original_values);
 
         $original_values = BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns;
@@ -686,7 +686,7 @@ subtest 'false profile info' => sub {
             loginid             => $client_cr->loginid,
             $test_case->{field} => $test_case->{value}};
         $event_handler->($args);
-        test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+        test_fake_name($test_case, $client_cr, $emitted, $brand);
 
         BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns(['ALI%']);
         for my $name (qw/ali alibaba/) {
@@ -701,9 +701,9 @@ subtest 'false profile info' => sub {
                 loginid             => $client_cr->loginid,
                 $test_case->{field} => $test_case->{value}};
             $event_handler->($args);
-            test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+            test_fake_name($test_case, $client_cr, $emitted, $brand);
             $_->status->clear_unwelcome for $test_user->clients;
-            undef @mail_box;
+            undef $emitted;
         }
 
         BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns(['%rä%dïò%']);
@@ -718,9 +718,9 @@ subtest 'false profile info' => sub {
             loginid             => $client_cr->loginid,
             $test_case->{field} => $test_case->{value}};
         $event_handler->($args);
-        test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+        test_fake_name($test_case, $client_cr, $emitted, $brand);
         $_->status->clear_unwelcome for $test_user->clients;
-        undef @mail_box;
+        undef $emitted;
 
         for my $name (qw/Rä%dïò _Rä%dïò Rä%dïò_ __Rä%dïò__/) {
             $test_case = {
@@ -734,13 +734,13 @@ subtest 'false profile info' => sub {
                 loginid             => $client_cr->loginid,
                 $test_case->{field} => $test_case->{value}};
             $event_handler->($args);
-            test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+            test_fake_name($test_case, $client_cr, $emitted, $brand);
             $_->status->clear_unwelcome for $test_user->clients;
-            undef @mail_box;
+            undef $emitted;
         }
 
         $_->status->clear_unwelcome for $test_user->clients;
-        undef @mail_box;
+        undef $emitted;
 
         BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns($original_values);
     };
@@ -763,8 +763,7 @@ subtest 'false profile info' => sub {
                 email_sent => 0
             },
             $client_cr,
-            \@mail_box,
-            $brand
+            $emitted, $brand
         );
         $mock_client->unmock('get_poi_status');
 
@@ -780,11 +779,10 @@ subtest 'false profile info' => sub {
                 email_sent => 1
             },
             $client_cr,
-            \@mail_box,
-            $brand
+            $emitted, $brand
         );
         $_->status->clear_cashier_locked for $test_user->clients;
-        undef @mail_box;
+        undef $emitted;
         $mock_client->unmock('has_deposits');
 
         # Sibling is locked with a dummy reason -> email will be sent
@@ -801,11 +799,10 @@ subtest 'false profile info' => sub {
                 email_sent => 1
             },
             $client_mlt,
-            \@mail_box,
-            $brand
+            $emitted, $brand
         );
         $_->status->clear_unwelcome for $test_user->clients;
-        undef @mail_box;
+        undef $emitted;
 
         # Sibling is locked with false-name reason -> no email is sent
         $client_cr->status->upsert('unwelcome', 'system', 'fake profile info - pending POI');
@@ -819,16 +816,15 @@ subtest 'false profile info' => sub {
                 email_sent => 0
             },
             $client_mlt,
-            \@mail_box,
-            $brand
+            $emitted, $brand
         );
         $_->status->clear_unwelcome for $test_user->clients;
-        undef @mail_box;
+        undef $emitted;
 
         $mock_client->unmock_all;
     };
 
-    $mock_email->unmock_all;
+    $mock_events->unmock_all;
 };
 
 sub test_fake_name {
@@ -853,27 +849,16 @@ sub test_fake_name {
     }
 
     if ($test_case->{email_sent}) {
-        is scalar @$emails, 1, 'Just one email is sent - system does not sent duplicate emails';
-        is_deeply $emails->[0],
+        is exists($emails->{account_with_false_info_locked}), 1, 'correct event emmited for email';
+        is_deeply $emails->{account_with_false_info_locked}->{properties},
             {
-            from          => $brand->emails('no-reply'),
-            to            => $client->email,
-            subject       => "Account verification",
-            template_name => 'authentication_required',
-            template_args => {
-                l                  => \&BOM::Platform::Context::localize,
-                name               => $client->first_name,
-                title              => "Account verification",
-                authentication_url => $brand->authentication_url,
-                profile_url        => $brand->profile_url,
+            email              => $client->email,
+            authentication_url => $brand->authentication_url,
+            profile_url        => $brand->profile_url,
             },
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 0
-            },
-            'email args are correct';
+            'event args are correct';
     } else {
-        ok !@$emails, "no email is sent - $test_case->{label} - $loginid";
+        ok !$emails, "no email is sent - $test_case->{label} - $loginid";
     }
 }
 

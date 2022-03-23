@@ -126,7 +126,7 @@ my %EVENT_PROPERTIES = (
     verify_change_email            => [qw(loginid first_name email code verification_uri)],
     confirm_change_email           => [qw(loginid first_name email)],
     unknown_login                  => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
-);
+    account_with_false_info_locked => [qw(email authentication_url profile_url is_name_change)]);
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
 
@@ -1324,6 +1324,32 @@ sub crypto_withdrawal_rejected_email {
     return track_event(
         event      => 'crypto_withdrawal_rejected_email',
         loginid    => $properties->{loginid},
+        properties => $properties,
+    );
+}
+
+=head2 account_with_false_info_locked
+
+It is triggered for each B<account_with_false_info_locked> event emitted, delivering it to Rudderstack.
+It can be called with the following parameters:
+    
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub account_with_false_info_locked {
+    my ($args) = @_;
+    my $properties = $args->{properties};
+
+    return track_event(
+        event      => 'account_with_false_info_locked',
+        loginid    => $args->{loginid},
         properties => $properties,
     );
 }

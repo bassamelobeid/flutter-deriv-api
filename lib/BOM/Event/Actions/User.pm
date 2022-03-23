@@ -13,7 +13,7 @@ use BOM::Event::Services::Track;
 use BOM::Platform::Client::Sanctions;
 use BOM::User::Client;
 use BOM::Platform::Context qw(request localize);
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Event::Emitter;
 use BOM::Event::Utility qw(exception_logged);
 use BOM::Config::Runtime;
 
@@ -192,22 +192,14 @@ sub verify_false_profile_info {
         $just_locked = 1;
     }
 
-    send_email({
-            from          => $brand->emails('no-reply'),
-            to            => $client->email,
-            subject       => localize("Account verification"),
-            template_name => 'authentication_required',
-            template_args => {
-                l                  => \&localize,
-                name               => $client->first_name,
-                title              => localize("Account verification"),
+    BOM::Platform::Event::Emitter::emit(
+        account_with_false_info_locked => {
+            loginid    => $loginid,
+            properties => {
+                email              => $client->email,
                 authentication_url => $brand->authentication_url,
                 profile_url        => $brand->profile_url,
-            },
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 0
-        }) if $just_locked && !$sibling_locked_for_false_info;
+            }}) if $just_locked && !$sibling_locked_for_false_info;
 
     return undef;
 }
