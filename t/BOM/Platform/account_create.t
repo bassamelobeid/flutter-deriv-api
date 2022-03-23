@@ -59,7 +59,7 @@ my $vr_details = {
         email_consent      => 0,
         lc_email_consent   => 1,
     },
-    MLT => {
+    MF => {
         email              => 'foo+nl@binary.com',
         client_password    => 'foobar',
         residence          => 'nl',                  # Netherlands
@@ -67,17 +67,7 @@ my $vr_details = {
         salutation         => 'Mr',
         myaffiliates_token => 'this is token',
         email_consent      => 1,
-        lc_email_consent   => 0,
-    },
-    MX => {
-        email              => 'foo+gb@binary.com',
-        client_password    => 'foobar',
-        residence          => 'gb',                  # UK
-        address_state      => 'BIR',
-        salutation         => 'Mrs',
-        myaffiliates_token => 'this is token',
-        email_consent      => 1,
-        lc_email_consent   => 0,
+        lc_email_consent   => 1,
     },
 };
 
@@ -142,16 +132,9 @@ subtest 'create account' => sub {
         is($real_client->user->email_consent,    $vr_details->{$broker}->{email_consent},      'email consent ok');
 
         # MF acc
-        if ($broker eq 'MLT' or $broker eq 'MX') {
-            my $status_mock        = Test::MockModule->new('BOM::User::Client::Status');
-            my $real_mock          = Test::MockModule->new('BOM::Platform::Account::Real::default');
-            my $experian_validated = $broker eq 'MX';
-            # mock some experian
-            $status_mock->mock(
-                'is_experian_validated',
-                sub {
-                    return $experian_validated;
-                });
+        if ($broker eq 'MF') {
+            my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+            my $real_mock   = Test::MockModule->new('BOM::Platform::Account::Real::default');
             # tricky stuff, is seems we only deploy one testing DB, so the trigger propagates the
             # age verified regardless of broker code, making the test useless unless we do the following:
             my $mf_fresh;
@@ -179,8 +162,6 @@ subtest 'create account' => sub {
             my $cl   = BOM::User::Client->new({loginid => $real_acc->{client}->loginid});
             my $data = decode_fa($cl->financial_assessment());
             is $data->{forex_trading_experience}, '0-1 year', "got the forex trading experience";
-            ok $cl->status->age_verification, 'MF got age verified' unless $experian_validated;
-            ok !$cl->status->age_verification, 'Experian age verification is not propagated' if $experian_validated;
         }
 
         # Prepare for the email_consent-less test
@@ -383,16 +364,6 @@ subtest 'create account' => sub {
                 });
             }
             "create $broker_code account OK, after verify email";
-        } elsif ($broker_code eq 'MX') {
-            lives_ok {
-                $real_acc = BOM::Platform::Account::Real::default::create_account({
-                    from_client => $vr_client,
-                    user        => $social_login_user,
-                    details     => \%details,
-                    country     => $vr_client->residence,
-                });
-            }
-            "create $broker_code account OK, after verify email";
         } else {
             # Social login user may create default account
             lives_ok {
@@ -446,7 +417,7 @@ subtest 'create account' => sub {
             "create $broker_code account OK";
 
             my $mf_acc;
-            if ($broker_code eq 'MX' || $broker_code eq 'MLT') {
+            if ($broker_code eq 'MF') {
                 lives_ok {
                     my $params = \%financial_data;
                     $details{broker_code}  = 'MF';
