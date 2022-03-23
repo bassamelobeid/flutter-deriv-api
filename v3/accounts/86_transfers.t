@@ -60,9 +60,7 @@ $agent_usd->set_default_account('USD');
 $agent_usd->payment_agent({
     payment_agent_name    => $agent_name,
     currency_code         => 'USD',
-    url                   => 'http://www.example.com/',
     email                 => $email,
-    phone                 => '+123456789',
     information           => 'Test Info',
     summary               => 'Test Summary',
     commission_deposit    => 0,
@@ -71,6 +69,10 @@ $agent_usd->payment_agent({
     status                => 'authorized',
 });
 $agent_usd->save;
+my $agent = $agent_usd->get_payment_agent;
+$agent->urls([{url => 'http://www.example.com/'}]);
+$agent->phone_numbers([{phone_number => '+123456789'}]);
+$agent->save;
 
 my $user_agent = BOM::User->create(
     email          => $email,

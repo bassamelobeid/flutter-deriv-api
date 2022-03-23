@@ -78,23 +78,44 @@
                     "type": "string",
                     "pattern" : "^Joe Joy$"
                 },
-                "phone": {
-                    "type": "string",
-                    "enum" : ["+923-22-23-13"]
+                "phone_numbers": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties" : {
+                            "phone_number": {
+                                "type": "string",
+                                "pattern": "^\\+923-22-23-13$"
+                            }
+                        }
+                    }
                 },
                 "supported_payment_methods": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "object",
+                        "properties" : {
+                            "payment_method": {
+                                "type": "string"
+                            }
+                        }
                     }
                 },
                 "target_country": {
                     "type": "string",
                     "pattern": "id"
                 },
-                "url": {
-                    "type": "string",
-                    "pattern": "https://abc.com"
+                "urls": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties" : {
+                            "url": {
+                                "type": "string",
+                                "pattern": "^https://abc.com$"
+                            }
+                        }
+                    }
                 }
             }
         },
