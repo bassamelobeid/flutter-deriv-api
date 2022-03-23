@@ -18,9 +18,7 @@ use BOM::Rules::Engine;
 my $payment_agent_args = {
     payment_agent_name    => 'Test Agent',
     currency_code         => 'USD',
-    url                   => 'http://www.example.com/',
     email                 => 'joe@example.com',
-    phone                 => '+12345678',
     information           => 'Test Info',
     summary               => 'Test Summary',
     commission_deposit    => 0,
