@@ -276,10 +276,17 @@ sub mt5_accounts_lookup {
         )->catch(
             sub {
                 my ($resp) = @_;
-                if (   ref $resp eq 'HASH'
+                $log->errorf("mt5_accounts_lookup Exception: %s", $resp);
+
+                if (
+                       ref $resp eq 'HASH'
                     && defined $resp->{error}
                     && ref $resp->{error} eq 'HASH'
-                    && ($resp->{error}{code} eq 'NotFound' || $resp->{error}{code} eq 'MT5AccountInactive'))
+                    && (   $resp->{error}{code} eq 'NotFound'
+                        || $resp->{error}{code} eq 'MT5AccountInactive'
+                        || $resp->{error}{code} eq 'NetworkError'
+                        || $resp->{error}{message_to_client} eq 'ERR_NOSERVICE'
+                        || $resp->{error}{message_to_client} eq 'Service is not available.'))
                 {
                     return Future->done(undef);
                 }
