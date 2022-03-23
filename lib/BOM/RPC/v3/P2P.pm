@@ -212,7 +212,6 @@ our %DB_ERRORS = (
     BI237 => 'InvalidOrderCurrency',
     BI238 => 'ClientDailyOrderLimitExceeded',
     BI239 => 'OpenOrdersDeleteAdvert',
-    BI240 => 'OrderCreateFailAmount',
     BI242 => 'OrderRefundInvalid',
     BI243 => 'OrderCreateFailBalance',
     BI244 => 'ActivePaymentMethodRequired',
