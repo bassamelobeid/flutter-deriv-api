@@ -1247,17 +1247,22 @@ my $payment_agent = $client->get_payment_agent;
 if ($payment_agent) {
     print '<div class="row"><table class="border small">';
 
-    foreach my $column (
-        qw/payment_agent_name risk_level url email phone information supported_banks commission_deposit
-        commission_withdrawal min_withdrawal max_withdrawal affiliate_id code_of_conduct_approval
+    foreach my $field (
+        qw/payment_agent_name risk_level urls email phone_numbers information supported_payment_methods
+        commission_deposit commission_withdrawal
+        min_withdrawal max_withdrawal affiliate_id code_of_conduct_approval
         code_of_conduct_approval_date status is_listed currency_code/
         )
     {
 
-        my $value = $payment_agent->$column // '';
-        my $label = BOM::Backoffice::Utility::payment_agent_column_labels()->{$column};
+        my $value     = $payment_agent->$field // '';
+        my $main_attr = $payment_agent->details_main_field->{$field};
+        $value = join ', ', (map { $_->{$main_attr} } @$value) if ref $value;
+
+        my $label = BOM::Backoffice::Utility::payment_agent_column_labels()->{$field};
         print "<tr><td>$label</td><td>" . encode_entities($value) . "</td></tr>";
     }
+
     my $pa_countries = $client->get_payment_agent->get_countries;
     print "<tr><td>Target countries</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";
 

@@ -82,15 +82,14 @@ Return a hashref, mapping payment agent table columns to their display labels
 sub payment_agent_column_labels {
     return +{
         payment_agent_name            => 'Payment agent name',
-        url                           => 'Website URL',
+        urls                          => 'Website URL',
         email                         => 'Email address',
-        phone                         => 'Phone number',
+        phone_numbers                 => 'Phone number',
         information                   => 'Information',
         commission_deposit            => 'Deposit commission',
         commission_withdrawal         => 'Withdrawal commission',
-        is_authenticated              => 'Is authorized',
         currency_code                 => 'Currency',
-        supported_banks               => 'Supported payment methods',
+        supported_payment_methods     => 'Supported payment methods',
         min_withdrawal                => 'Minimum withdrawal limit',
         max_withdrawal                => 'Maximum withdrawal limit',
         is_listed                     => 'Listed payment agent',

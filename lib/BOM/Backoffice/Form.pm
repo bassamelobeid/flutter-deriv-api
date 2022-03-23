@@ -765,47 +765,44 @@ sub get_payment_agent_registration_form {
             'for'  => 'pa_tel',
         },
         'input' => {
-            'id'        => 'pa_tel',
-            'name'      => 'pa_tel',
-            'type'      => 'text',
-            'maxlength' => 35,
+            'id'   => 'pa_tel',
+            'name' => 'pa_tel',
+            'type' => 'textarea',
+            'rows' => 5,
+            'cols' => 30,
         },
         'error' => {
             'id'    => 'errorpa_tel',
             'class' => 'error',
         },
-        'validation' => [
-            # min length = 6
-            {
+        'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(|.{6}.*)$',
-                'err_msg' => 'Invalid telephone number (too short).',
-            },
-            # max length = 35
-            {
-                'type'    => 'regexp',
-                'regexp'  => '^.{0,35}$',
-                'err_msg' => 'Invalid telephone number (too long).',
-            },
-            {
-                'type'    => 'regexp',
-                'regexp'  => '^(|\+?[0-9\s\-]+)$',
+                'regexp'  => '^(|\+?[0-9\s\-]+\n*)*(|\+?[0-9\s\-]+)$',
                 'err_msg' => 'Invalid telephone number.',
             },
+            # max length = 20
+            {
+                'type'    => 'regexp',
+                'regexp'  => '^(\+[\-\ 0-9]{8,20}(\n|$))+$',
+                'err_msg' => 'Invalid telephone number (it should consist of 8 to 20 characters).',
+            }
         ],
-    };
+        comment => {
+            'text' => '** One phone number per line.',
+        }};
 
     # input field for pa_url
     my $input_field_pa_url = {
         'label' => {
-            'text' => 'Your website URL',
+            'text' => 'Your website URL(s)',
             'for'  => 'pa_url'
         },
         'input' => {
-            'id'        => 'pa_url',
-            'name'      => 'pa_url',
-            'type'      => 'text',
-            'maxlength' => 100,
+            'id'   => 'pa_url',
+            'name' => 'pa_url',
+            'type' => 'textarea',
+            'rows' => 5,
+            'cols' => 30,
         },
         'error' => {
             'id'    => 'errorpa_url',
@@ -813,11 +810,13 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^https?:\/\/[^\s]+$',
+                'regexp'  => '^(https?:\/\/[^\s\n]+\n)*https?:\/\/[^\s\n]+$',
                 'err_msg' => 'This URL is invalid.',
             },
         ],
-    };
+        comment => {
+            'text' => '** One URL per line.',
+        }};
 
     # input field for pa_comm_depo
     my $input_field_pa_comm_depo = {
@@ -933,7 +932,7 @@ sub get_payment_agent_registration_form {
             'id'      => 'pa_info',
             'name'    => 'pa_info',
             'type'    => 'textarea',
-            'row'     => 10,
+            'rows'    => 5,
             'cols'    => 60,
             'maxsize' => '500',
         },
@@ -951,29 +950,32 @@ sub get_payment_agent_registration_form {
         ],
     };
 
-    # Input field for pa_supported_payment_methods
-    my $input_field_pa_supported_payment_methods = {
+    # Input field for pa_supported_payment_method
+    my $input_field_pa_supported_payment_method = {
         'label' => {
             'text' => 'Supported Payment Methods',
-            'for'  => 'pa_supported_payment_methods'
+            'for'  => 'pa_supported_payment_method'
         },
         'input' => {
-            'id'        => 'pa_supported_payment_methods',
-            'name'      => 'pa_supported_payment_methods',
-            'type'      => 'text',
-            'maxlength' => 500,
+            'id'   => 'pa_supported_payment_method',
+            'name' => 'pa_supported_payment_method',
+            'type' => 'textarea',
+            'rows' => 5,
+            'cols' => 30,
         },
         'error' => {
-            'id'    => 'errorpa_suported_payment_methods',
+            'id'    => 'errorpa_suported_payment_method',
             'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^[\w \-,]{2,500}$',
+                'regexp'  => '^[\w \-\n]{2,500}$',
                 'err_msg' => 'Supported payment methods must be between 2 and 500 characters (only latin alphabets, space and comma).',
             },
         ],
-    };
+        comment => {
+            'text' => '** One payment method per line.',
+        }};
 
     # Input field for pa_auth
     my $input_field_pa_status = {
@@ -1142,8 +1144,8 @@ sub get_payment_agent_registration_form {
     $fieldset->add_field($input_field_pa_email);
     $fieldset->add_field($input_field_pa_tel);
     $fieldset->add_field($textarea_pa_info);
-    if ($input_field_pa_supported_payment_methods) {
-        $fieldset->add_field($input_field_pa_supported_payment_methods);
+    if ($input_field_pa_supported_payment_method) {
+        $fieldset->add_field($input_field_pa_supported_payment_method);
     }
     $fieldset->add_field($input_field_pa_comm_depo);
     $fieldset->add_field($input_field_pa_comm_with);

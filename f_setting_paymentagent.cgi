@@ -21,23 +21,23 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 use constant MAP_FIELDS => {
-    pa_name                      => 'payment_agent_name',
-    pa_risk_level                => 'risk_level',
-    pa_coc_approval              => 'code_of_conduct_approval',
-    pa_email                     => 'email',
-    pa_tel                       => 'phone',
-    pa_url                       => 'url',
-    pa_comm_depo                 => 'commission_deposit',
-    pa_comm_with                 => 'commission_withdrawal',
-    pa_max_withdrawal            => 'max_withdrawal',
-    pa_min_withdrawal            => 'min_withdrawal',
-    pa_info                      => 'information',
-    pa_status                    => 'status',
-    pa_listed                    => 'is_listed',
-    pa_supported_payment_methods => 'supported_banks',
-    pa_countries                 => 'target_country',
-    pa_affiliate_id              => 'affiliate_id',
-    pa_status_comment            => 'status_comment',
+    pa_name                     => 'payment_agent_name',
+    pa_risk_level               => 'risk_level',
+    pa_coc_approval             => 'code_of_conduct_approval',
+    pa_email                    => 'email',
+    pa_tel                      => 'phone_numbers',
+    pa_url                      => 'urls',
+    pa_comm_depo                => 'commission_deposit',
+    pa_comm_with                => 'commission_withdrawal',
+    pa_max_withdrawal           => 'max_withdrawal',
+    pa_min_withdrawal           => 'min_withdrawal',
+    pa_info                     => 'information',
+    pa_status                   => 'status',
+    pa_listed                   => 'is_listed',
+    pa_supported_payment_method => 'supported_payment_methods',
+    pa_countries                => 'target_country',
+    pa_affiliate_id             => 'affiliate_id',
+    pa_status_comment           => 'status_comment',
 };
 
 sub _prepare_display_values {
@@ -50,6 +50,11 @@ sub _prepare_display_values {
 
     my $pa_countries = $pa->get_countries;
     $input_fields{pa_countries} = join(',', @$pa_countries);
+
+    for my $field (qw/pa_url pa_tel pa_supported_payment_method/) {
+        my $main_attr = $pa->details_main_field->{MAP_FIELDS->{$field}};
+        $input_fields{$field} = join "\n", (map { $_->{$main_attr} } $input_fields{$field}->@*);
+    }
 
     return \%input_fields;
 }
@@ -108,7 +113,6 @@ if ($whattodo eq 'create') {
 
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
     $payment_agent_registration_form->set_input_fields($values);
-
     print $payment_agent_registration_form->build();
 
     code_exit_BO();
@@ -165,6 +169,15 @@ if ($whattodo eq 'show') {
     code_exit_BO("Invalid withdrawal commission amount: it should be between 0 and 9") unless $pa_comm_with >= 0 and $pa_comm_with <= 9;
 
     my %args = map { MAP_FIELDS->{$_} => request()->param($_) } keys MAP_FIELDS->%*;
+    for my $arg (qw/urls phone_numbers supported_payment_methods/) {
+        my $main_attr = $pa->details_main_field->{$arg};
+        $args{$arg} =~ s/^[\s\n]+|[\s\n]+$//g;
+        $args{$arg} = [
+            map {
+                { $main_attr => $_ }
+            } split '\n',
+            $args{$arg}];
+    }
     $args{$_} = ($args{$_} eq 'yes') for (qw/is_listed code_of_conduct_approval/);
     $args{currency_code} = $currency;
 
