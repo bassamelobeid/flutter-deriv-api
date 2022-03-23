@@ -408,4 +408,67 @@ sub mt5_inactive_account_closure_report {
     }
 }
 
+=head2 mt5_archived_account_reset_trading_password
+
+Reset trading_password on Deriv account once MT 5 account is archived on the condition that the client does not have any active MT5 accounts after archiving. 
+
+=over 4
+
+=item * C<email> - user's  email address
+
+=back
+
+=head2 Comment
+
+There is a possibility race condition where by if the user creates an MT5 account after the check has completed
+but before the password reset has been executed, would the password reset in that situation be valid or acceptable?
+
+Couple of things to note about the MT5 archival script
+
+    1. The script runs once a day and it archives the user's MT5 accounts with inactivity duration of 30 days (at the time of this writing, the default is 30).
+    2. The trading password reset function will only be triggered if the user currently does not have any active MT5 accounts when the archival script is being executed.
+
+The probability of users creating a new MT5 account after the archival process is executed is quite low.
+
+=cut
+
+sub mt5_archived_account_reset_trading_password {
+    my $args = shift;
+
+    my $user = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
+
+    $log->debugf("mt5_archived_account_reset_trading_password [%s]: Attemtpting reset trading password for user [%s]",
+        Time::Moment->now, $args->{email});
+
+    my @mt5_loginids = $user->get_mt5_loginids;    # Includes archived accounts
+
+    my (@active_mt5_accounts);
+
+    my @mt5_users_get = map { BOM::MT5::User::Async::get_user($_)->set_label($_) } @mt5_loginids;
+    Future->wait_all(@mt5_users_get)->then(
+        sub {
+            for my $result (@_) { push @active_mt5_accounts, $result->label if !$result->is_failed; }    # Filter out archived accounts
+        })->get;
+
+    try {
+        if (scalar(@active_mt5_accounts) == 0) {
+
+            my $user_db = BOM::Database::UserDB::rose_db();
+            $user_db->dbic->run(
+                fixup => sub {
+                    $_->do('SELECT users.reset_trading_password(?)', undef, $user->{id});
+                });
+
+            $log->debugf("mt5_archived_account_reset_trading_password [%s]: Auto reset trading password for user [%s]",
+                Time::Moment->now, $args->{email});
+        } else {
+            $log->debugf(
+                "mt5_archived_account_reset_trading_password [%s]: User [%s] currently has %s account(s) that is active. No reset trading password action taken.",
+                Time::Moment->now, $args->{email}, scalar(@active_mt5_accounts));
+        }
+    } catch ($e) {
+        $log->errorf("mt5_archived_account_reset_trading_password [%s]: Unable to reset password due to error: %s", Time::Moment->now, $e);
+    }
+}
+
 1;

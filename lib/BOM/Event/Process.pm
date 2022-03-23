@@ -133,6 +133,7 @@ my $action_mapping = {
         request_change_email                             => \&BOM::Event::Actions::Client::request_change_email,
         verify_change_email                              => \&BOM::Event::Actions::Client::verify_change_email,
         confirm_change_email                             => \&BOM::Event::Actions::Client::confirm_change_email,
+        mt5_archived_account_reset_trading_password      => \&BOM::Event::Actions::MT5::mt5_archived_account_reset_trading_password,
     },
     track => {
         # only one event for now, more will be added in future
