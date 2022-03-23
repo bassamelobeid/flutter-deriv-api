@@ -136,9 +136,7 @@ subtest today_payment_agent_withdrawal_sum_count => sub {
     $pa_client->payment_agent({
         payment_agent_name    => 'Test Agent',
         currency_code         => 'USD',
-        url                   => 'http://www.example.com/',
         email                 => 'joe@example.com',
-        phone                 => '+12345678',
         information           => 'Test Info',
         summary               => 'Test Summary',
         commission_deposit    => 0,
