@@ -660,8 +660,8 @@ COPY client_status (id, client_loginid, status_code, staff_name, reason, last_mo
 -- Data for Name: payment_agent; Type: TABLE DATA; Schema: betonmarkets; Owner: postgres
 --
 
-COPY payment_agent (client_loginid, payment_agent_name, url, email, phone, information, summary, commission_deposit, commission_withdrawal, is_authenticated, api_ip, currency_code, target_country, supported_banks) FROM stdin;
-CR0020	Paypal	http://yahoo.com	jys@my.regentmarkets.com	987987987	paypal egold neteller and a lot more	iuhiuh	0.100000001	0.5	t	\N	USD		GTBank
+COPY payment_agent (client_loginid, payment_agent_name, email, information, summary, commission_deposit, commission_withdrawal, is_authenticated, api_ip, currency_code) FROM stdin;
+CR0020	Paypal	jys@my.regentmarkets.com	paypal egold neteller and a lot more	iuhiuh	0.100000001	0.5	t	\N	USD
 \.
 
 
