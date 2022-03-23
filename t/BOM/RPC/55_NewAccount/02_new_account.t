@@ -344,7 +344,7 @@ subtest $method => sub {
         $user = BOM::User->new(
             email => $vr_email,
         );
-        is $user->{email_consent}, 0, 'email consent not given';
+        is $user->{email_consent}, 1, 'email concent is accepted by default';
     };
 
     subtest 'invalid utm data' => sub {
