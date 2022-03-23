@@ -61,8 +61,12 @@ BOM::Backoffice::Request::template()->process(
 
 Bar("Crypto Fraudulent Addresses");
 
-BOM::Backoffice::Request::template()
-    ->process('backoffice/crypto_fraudulent_addresses.html.tt', {data_url => request()->url_for('backoffice/crypto_fraudulent_addresses.cgi')})
-    || die BOM::Backoffice::Request::template()->error(), "\n";
+BOM::Backoffice::Request::template()->process(
+    'backoffice/crypto_fraudulent_addresses.html.tt',
+    {
+        data_url  => request()->url_for('backoffice/crypto_fraudulent_addresses.cgi'),
+        page      => 1,
+        max_pages => 1,
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();

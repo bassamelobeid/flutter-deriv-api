@@ -2,61 +2,66 @@
 
 <h3>Crypto Fradulent Addresses</h3>
 
-<form action="[% data_url %]" method="POST">
-<div class="row"><label>Crypto Address:</label>
-<input type="text" name="s_address" required/>
-<input type=submit class="btn btn--primary" value='Search for address'>
-<input type="hidden" name="type" value="search">
-</div>
+<form id='form_search' action="[% data_url %]" method="post">
+    <table>
+        <tr>
+            <td>
+                <label for="fraud_address">Crypto address:</label>
+            </td>
+            <td>
+                <input type="text" name="fraud_address" placeholder="e.g. bc1.. or 0x..." value="[% address %]" />
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="fraud_loginid">Login ID:</label>
+            </td>
+            <td>
+                <input type="text" name="fraud_loginid" placeholder="e.g. CR90000001" value="[% loginid %]" />
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="fraud_start_date">Start date:</label>
+            </td>
+            <td>
+                <input name="fraud_from_date" type="text" size=15 value="[% from_date %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="fraud_end_date">End date:</label>
+            </td>
+            <td>
+                <input name="fraud_to_date" type="text" size=15 value="[% to_date %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true"/>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <input type="hidden" name="type" id="type" value="search">
+                <input type="hidden" name="page" id="page" value="[% page %]">
+                <input type="hidden" name="max_pages" id="max_pages" value="[% max_pages %]">
+
+                <input type="button" class="btn btn--primary" onclick='search()' value="Search" >
+            </td>
+        </tr>
+    </table>
 </form>
 
 <hr>
-
-<form action="[% data_url %]" method="post">
-<div class="row">
-<label>Login ID:</label><input type=text size=50 maxlength=50 name="loginid" placeholder="CR12345" required/>
-<input type="submit" class="btn btn--primary" value="Search for client">
-<input type="hidden" name="type" value="search">
-</div>
-</form>
-
-<hr>
-
-<form action="[% data_url %]" method="post">
-<div class="row">
-<input name="from_date" type="text" size=15 value="[% from_date %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" required />
-<input name="to_date" type="text" size=15 value="[% to_date %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" required/>
-<input type="submit" class="btn btn--primary" value="Search for date">
-<input type="hidden" name="type" value="search_for_date">
-</div>
-</form>
-
-<hr>
-
-<form action="[% data_url %]" method="post">
-<div class="row">
-<label>Return all fraudulent addresses from the database</label>
-<input type="submit" class="btn btn--primary" value="Return all addresses">
-<input type="hidden" name="type" value="search_all">
-</div>
-</form>
 
 [% IF search %]
-<hr>
+[% INCLUDE pagination %]
+
 <form action="[% data_url %]" method="POST">
     <div class="scrollable">
-        <div class="row">
-        <a class="btn btn--primary" download="FraudulentAddresses.xls" href="#" onclick="return ExcellentExport.excel(this, 'fraud_data', 'FraudulentAddresses.xls');">Export to Excel</a>
-        <a class="btn btn--primary" download="FraudulentAddresses.csv" href="#" onclick="return ExcellentExport.csv(this, 'fraud_data');">Export to CSV</a>
-         </div>
         <table class="border hover alternate" id="fraud_data">
             <tr>
                 <th>Fraudulent address</th>
                 <th>Currency</th>
-                <th>Transaction type</th>
-                <th>Other login IDs that used this address</th>
+                <th>Login ID</th>
                 <th>Report Count</th>
-                <th>Website link</th>
                 <th>Investigation remarks</th>
                 <th>Blocked/Unblocked address</th>
                 <th>Insert Date</th>
@@ -65,30 +70,86 @@
             </tr>
             [% FOREACH row IN data %]
                 <tr>
-                    <td id="address">[% row.address %]</td>
+                    <td id="address"><a target="_blank" href="[% row.link %]">[% row.address %]</a></td>
                     <td id="currency_code">[% row.currency_code %]</td>
-                    <td>[% row.transaction_type %]</td>
-                    <td>[% row.clients %]</td>
+                    <td>[% row.client_loginid %]</td>
                     <td>[% row.address_report_count %]</td>
-                    <td><a target="_blank" href="[% row.link %]">[% row.link %]</a></td>
                     <td><input type="text" id="remark" name="investigations_remarks" value="[% row.investigation_remarks %]" onkeydown="this.className='changed'" /> <div style="display : none">[% row.investigation_remarks %] </div> </td>
                     <td align="middle">
                         <input type="checkbox" id="blocked" name="blocked" value="[% row.blocked %]" onclick="this.className='changed' " [% IF row.blocked %] checked="checked" [% END %]> <div style="display : none">[% row.blocked %] </div></td>
                     <td>[% row.insert_date %]</td>
                     <td>[% row.last_status_date %]</td>
-                    <td>[% row.last_status_update_by %]
+                    <td>[% row.last_status_update_by %]</td>
                 </tr>
             [% END %]
         </table>
     </div>
     <br>
-        <input type="button"  onclick="post_data()" class="btn btn--primary" name="save" value="Save Changes"/>
 </form>
+
+[% INCLUDE pagination %]
 [% END %]
+
+[% BLOCK pagination %]
+<table>
+    <tr>
+        <td>
+            <input type='button' class='btn btn--primary' onclick='previousPage()' value='Previous'/></td>
+        <td>
+            <input type='text' size="3" name='page_view' value="[% page %]/[% max_pages %]" /></td>
+        <td>
+            <input type='button' class='btn btn--primary' onclick='nextPage()' value='Next'/>
+        </td>
+        <td>
+            <input type="button"  onclick="export_csv()" class="btn btn--primary" name="export" value="Export"/>
+        </td>
+        <td>
+            <input type="button"  onclick="post_data()" class="btn btn--primary" name="save" value="Save"/>
+        </td>
+    </tr>
+</table>
+[% END %]
+
+
 <script>
+
+function nextPage(){
+    let page = document.getElementById('page');
+    if(parseInt(page.value) + 1 > [% max_pages %]){
+        return undefined;
+    }
+    page.value  = parseInt(page.value)+1;
+
+    document.getElementById('type').value = 'search';
+    document.getElementById('form_search').submit();
+}
+
+function previousPage(){
+    let page = document.getElementById('page');
+    if(parseInt(page.value) - 1 == 0){
+        return undefined;
+    }
+    page.value = parseInt(page.value)-1;
+
+    document.getElementById('type').value = 'search';
+    document.getElementById('form_search').submit();
+}
+
+function search() {
+    document.getElementById('page').value = 1;
+    document.getElementById('type').value = 'search';
+    document.getElementById('form_search').submit();
+}
+
+function export_csv(){
+    document.getElementById('type').value = 'export';
+    document.getElementById('form_search').submit();
+}
+
 
 function post_data() {
     var json_arr = [];
+    document.getElementById('type').value = 'search';
 
     \$("#fraud_data tbody tr").each(function(id, value) {
         if(\$(this).find(".changed").length > 0 && \$("#address", this).text() != ''){
