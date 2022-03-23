@@ -2128,6 +2128,19 @@ use constant {
         active => [qw(pending buyer-confirmed timed-out disputed)],
         final  => [qw(completed cancelled refunded dispute-refunded dispute-completed)],
     },
+
+    P2P_DB_ERR_MAP => {
+        PP001 => "AdvertNotFound",
+        PP002 => "OrderMaximumExceeded",
+        PP003 => "OrderMinimumNotMet",
+        PP004 => "ClientDailyOrderLimitExceeded",
+        PP005 => "OrderCreateFailAmount",
+        PP006 => "OrderCreateFailAmount",
+        PP007 => "OrderCreateFailAmount",
+        PP008 => "OrderCreateFailAmount",
+        PP009 => "InvalidAdvertOwn",
+        PP010 => "OrderCreateFailBalance",
+    },
 };
 
 =head2 p2p_advertiser_create
@@ -2777,50 +2790,27 @@ sub p2p_order_create {
 
     die +{error_code => 'OrderAlreadyExists'} if @{$open_orders};
 
-    my $txn_time = Date::Utility->new->datetime;
-    my $order    = $self->db->dbic->txn(
+    my $txn_time            = Date::Utility->new->datetime;
+    my $reversible_limit    = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
+    my $reversible_lookback = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
+
+    my $order = $self->db->dbic->run(
         fixup => sub {
             my $dbh = shift;
-
-            # lock advert row while checking advert limits
-            $dbh->do('SELECT 1 FROM p2p.p2p_advert WHERE id = ? FOR UPDATE', undef, $advert_id);
-
-            my $locked_advert = $self->_p2p_adverts(
-                id                     => $advert_id,
-                is_active              => 1,
-                can_order              => 1,
-                advertiser_is_approved => 1,
-                advertiser_is_listed   => 1,
-                country                => $self->residence,
-                account_currency       => $self->currency
-            )->[0];
-
-            die +{error_code => 'AdvertNotFound'} unless $locked_advert;
-
-            $locked_advert->{max_order_amount_actual} =
-                financialrounding('amount', $locked_advert->{account_currency}, $locked_advert->{max_order_amount_actual});
-            die +{
-                error_code     => 'OrderMaximumExceeded',
-                message_params => [$locked_advert->{max_order_amount_actual}, $locked_advert->{account_currency}]}
-                if $amount > $locked_advert->{max_order_amount_actual};
-
-            $locked_advert->{min_order_amount} = financialrounding('amount', $locked_advert->{account_currency}, $locked_advert->{min_order_amount});
-            die +{
-                error_code     => 'OrderMinimumNotMet',
-                message_params => [$locked_advert->{min_order_amount}, $locked_advert->{account_currency}]}
-                if $amount < ($locked_advert->{min_order_amount} // 0);
-
             return $dbh->selectrow_hashref(
-                'SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?)', undef,
-                $advert_id,                                                                                   $self->loginid,
-                $escrow->loginid,                                                                             $amount,
-                $expiry,                                                                                      $payment_info,
-                $contact_info,                                                                                $source,
-                $self->loginid,                                                                               $limit_per_day_per_client,
-                $txn_time,                                                                                    $param{payment_method_ids},
-                $param{rate},                                                                                 $market_rate
+                'SELECT * FROM p2p.order_create_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)', undef,
+                $advert_id,                                                                                $self->loginid,
+                $escrow->loginid,                                                                          $amount,
+                $expiry,                                                                                   $payment_info,
+                $contact_info,                                                                             $source,
+                $self->loginid,                                                                            $limit_per_day_per_client,
+                $txn_time,                                                                                 $reversible_limit,
+                $reversible_lookback,                                                                      $param{payment_method_ids},
+                $param{rate},                                                                              $market_rate
             );
         });
+
+    $self->_p2p_db_error_handler($order);
 
     my $redis = BOM::Config::Redis->redis_p2p_write();
 
@@ -5240,6 +5230,33 @@ sub _p2p_check_payment_methods_in_use {
         unless grep { $_->{advert_ids} } @$in_use;
 
     die +{error_code => 'PaymentMethodInUse'};
+}
+
+=head2 _p2p_db_error_handler
+
+Maping db p2p error code to rpc error code 
+
+=over 4
+
+=item * $err_code: error code which comes from db
+
+=item * $err_params: parameters which use in error message  
+
+=back
+
+Dies or returns undef.
+
+=cut
+
+sub _p2p_db_error_handler {
+    my ($self, $order) = @_;
+
+    return unless $order->{error_code};
+
+    die +{
+        error_code => P2P_DB_ERR_MAP->{$order->{error_code}},
+        $order->{error_params} ? (message_params => $order->{error_params}) : (),
+    };
 }
 
 =head1 METHODS - Payments
