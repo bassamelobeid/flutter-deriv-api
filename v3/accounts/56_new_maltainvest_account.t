@@ -674,13 +674,13 @@ subtest 'validate phone field' => sub {
     my %details = (%client_details, %$mf_details);
     delete $details{new_account_real};
     $details{date_of_birth} = '1999-01-01';
-    $details{residence}     = 'gb';
+    $details{residence}     = 'de';
 
     subtest 'phone can be empty' => sub {
         my ($vr_client, $user) = create_vr_account({
             email           => 'emptyness+222@binary.com',
             client_password => 'abC123',
-            residence       => 'gb',
+            residence       => 'de',
         });
 
         $details{first_name}    = 'i miss';
@@ -700,7 +700,7 @@ subtest 'validate phone field' => sub {
         my ($vr_client, $user) = create_vr_account({
             email           => 'dummy-phone-number@binary.com',
             client_password => 'abC123',
-            residence       => 'gb',
+            residence       => 'de',
         });
 
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
@@ -719,7 +719,7 @@ subtest 'validate phone field' => sub {
         my ($vr_client, $user) = create_vr_account({
             email           => 'alpha-phone-number@binary.com',
             client_password => 'abC123',
-            residence       => 'gb',
+            residence       => 'de',
         });
 
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
@@ -762,8 +762,6 @@ subtest 'Address validation' => sub {
     is $cli->address_line_2, $details{address_line_2}, 'Expected address line 2';
 };
 
-
-
 subtest 'Can specify currency' => sub {
     # create VR acc, authorize
     my ($vr_client, $user) = create_vr_account({
@@ -782,7 +780,7 @@ subtest 'Can specify currency' => sub {
     $details{address_line_2}            = "123º Ransacked Terrace";
     $details{residence}                 = 'de';
     $details{phone}                     = '+442072343454';
-    $details{currency}                     = 'EUR';
+    $details{currency}                  = 'EUR';
     $details{tax_identification_number} = '11122233345';
 
     my $res = $t->await::new_account_maltainvest(\%details);
@@ -791,6 +789,43 @@ subtest 'Can specify currency' => sub {
     my $cli = BOM::User::Client->new({loginid => $res->{new_account_maltainvest}->{client_id}});
 
     is $cli->currency, 'EUR', 'Expected currency has been bound to the client';
+};
+
+subtest 'gb account' => sub {
+    # create VR acc, authorize
+    # note we need to instantiate platonic objects for user/virtual
+    my $user = BOM::User->create(
+        email          => 'gb+account+90909090@test.com',
+        password       => "pwd",
+        email_verified => 1,
+    );
+
+    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'VRTC',
+        email          => 'gb+account+90909090@test.com',
+        binary_user_id => $user->id,
+        residence      => 'gb'
+    });
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    my %details = (%client_details, %$mf_details);
+    delete $details{new_account_real};
+    $details{first_name}                = "Theone";
+    $details{last_name}                 = "Someone";
+    $details{address_line_1}            = "456 Fake Street";
+    $details{address_line_2}            = "123 Evergreen Terrace";
+    $details{residence}                 = 'gb';
+    $details{phone}                     = '+442072343457';
+    $details{tax_identification_number} = '11122233344';
+
+    my $res = $t->await::new_account_maltainvest(\%details);
+    test_schema('new_account_maltainvest', $res);
+
+    is($res->{msg_type},         'new_account_maltainvest');
+    is($res->{error}->{code},    'InvalidAccount',                         "The uk has been disabled");
+    is($res->{error}->{message}, 'Sorry, account opening is unavailable.', "Expected error msg found");
 };
 
 sub create_vr_account {

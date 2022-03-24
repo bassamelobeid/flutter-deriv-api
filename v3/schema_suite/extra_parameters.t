@@ -22,7 +22,7 @@ subtest 'Check specfic calls' => sub {
     # Create virtual account
     test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'account_opening';
     test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-        $suite->get_token('test@binary.com'), 'test@binary.com', 'gb';
+        $suite->get_token('test@binary.com'), 'test@binary.com', 'de';
     test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
         $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
 
