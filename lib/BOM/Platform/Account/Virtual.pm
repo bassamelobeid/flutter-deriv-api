@@ -36,7 +36,8 @@ sub create_account {
         return {error => {code => 'duplicate email'}} if $type eq 'trading' && $user->bom_virtual_loginid;   # a virtual trading client already exists
     }
 
-    if ($residence && $brand_country_instance->restricted_country($residence)) {
+    # we will also check for `is_signup_allowed`
+    if ($residence && ($brand_country_instance->restricted_country($residence) || !$brand_country_instance->is_signup_allowed($residence))) {
         return {error => {code => 'invalid residence'}};
     }
 
