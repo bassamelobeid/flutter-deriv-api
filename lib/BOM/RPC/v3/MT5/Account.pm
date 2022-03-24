@@ -276,7 +276,6 @@ sub mt5_accounts_lookup {
         )->catch(
             sub {
                 my ($resp) = @_;
-                $log->errorf("mt5_accounts_lookup Exception: %s", $resp);
 
                 if (
                        ref $resp eq 'HASH'
@@ -289,6 +288,8 @@ sub mt5_accounts_lookup {
                         || $resp->{error}{message_to_client} eq 'Service is not available.'))
                 {
                     return Future->done(undef);
+                } else {
+                    $log->errorf("mt5_accounts_lookup Exception: %s", $resp);
                 }
 
                 return Future->fail($resp);
