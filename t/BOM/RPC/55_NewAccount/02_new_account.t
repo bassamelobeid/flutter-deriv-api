@@ -246,16 +246,7 @@ subtest $method => sub {
         )->token;
 
         $params->{args}->{residence} = 'gb';
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
-
-        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
-
-        $user = BOM::User->new(
-            email => $vr_email,
-        );
-        is $user->{email_consent}, 1, 'email consent for new account is 1 for european clients - gb';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid residence', 'gb is not allowed to sign up');
     };
 
     subtest 'non-pep self declaration' => sub {
@@ -265,6 +256,7 @@ subtest $method => sub {
             email       => 'new_email' . rand(999) . 'vr_non_pep@binary.com',
             created_for => 'account_opening'
         )->token;
+        $params->{args}->{residence} = 'de';
 
         delete $params->{args}->{non_pep_declaration};
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('virtual account created without checking non-pep declaration');
@@ -290,7 +282,7 @@ subtest $method => sub {
             created_for => 'account_opening'
         )->token;
 
-        $params->{args}->{residence}     = 'gb';
+        $params->{args}->{residence}     = 'de';
         $params->{args}->{email_consent} = 1;
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
@@ -311,7 +303,7 @@ subtest $method => sub {
             created_for => 'account_opening'
         )->token;
 
-        $params->{args}->{residence}     = 'gb';
+        $params->{args}->{residence}     = 'de';
         $params->{args}->{email_consent} = 0;
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
@@ -332,7 +324,7 @@ subtest $method => sub {
             created_for => 'account_opening'
         )->token;
 
-        $params->{args}->{residence} = 'gb';
+        $params->{args}->{residence} = 'de';
         delete $params->{args}->{email_consent};
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
@@ -817,16 +809,11 @@ subtest $method => sub {
             );
         delete $params->{args}->{phone};
 
-        $params->{args}->{citizen}   = 'gb';
-        $params->{args}->{residence} = 'gb';
-        $client->residence('gb');
+        $params->{args}->{citizen}   = 'de';
+        $params->{args}->{residence} = 'de';
+        $client->residence('de');
         $client->address_postcode('');
         $params->{args}->{address_postcode} = '';
-        $client->save();
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PostcodeRequired', 'needs address post code');
-
-        $params->{args}->{address_postcode} = '313131';
-        $client->address_postcode('313131');
         $client->save();
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
@@ -923,7 +910,7 @@ subtest $method => sub {
     subtest 'Create new account maltainvest from MLT' => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
-        $params->{args}->{residence}   = 'gb';
+        $params->{args}->{residence}   = 'de';
         $params->{args}->{citizen}     = 'at';
         delete $params->{args}->{non_pep_delclaration};
         %datadog_args = ();
@@ -981,12 +968,12 @@ subtest $method => sub {
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
                 email       => $email,
-                residence   => 'gb',
+                residence   => 'de',
             });
             $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                     broker_code   => 'MX',
                     email         => $email,
-                    residence     => 'gb',
+                    residence     => 'de',
                     secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
             $auth_token = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
 
@@ -1005,7 +992,7 @@ subtest $method => sub {
     subtest 'Create new account maltainvest from MX' => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
-        $params->{args}->{residence}   = 'gb';
+        $params->{args}->{residence}   = 'de';
         delete $params->{args}->{non_pep_delclaration};
         %datadog_args = ();
 
@@ -1036,13 +1023,13 @@ subtest $method => sub {
         isnt(keys %$result, 0, 'MF client has financial assessment set');
 
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
-        ok $cl->status->age_verification, 'age verification synced between mx(gb) and mf.';
+        ok $cl->status->age_verification, 'age verification synced between mx and mf.';
         ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
         cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
     };
 
     subtest 'Create a new account maltainvest from a virtual account' => sub {
-        #create a virtual gb client
+        #create a virtual de client
         my $password = 'Abcd33!@';
         my $hash_pwd = BOM::User::Password::hashpw($password);
         $email = 'virtual_email' . rand(999) . '@binary.com';
@@ -1054,14 +1041,14 @@ subtest $method => sub {
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRTC',
             email       => $email,
-            residence   => 'gb',
+            residence   => 'de',
         });
         $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
         $user->add_client($client);
 
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
-        $params->{args}->{residence}   = 'gb';
+        $params->{args}->{residence}   = 'de';
 
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
@@ -1384,7 +1371,6 @@ subtest 'Forbidden postcodes' => sub {
     });
 
     my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
-
     $params->{country} = 'gb';
     $params->{args}    = {
         residence                              => 'gb',
@@ -1421,12 +1407,13 @@ subtest 'Forbidden postcodes' => sub {
 
     $params->{args}->{address_postcode} = 'JE2';
     $rpc_ct->call_ok('new_account_maltainvest', $params)
-        ->has_no_system_error->has_error->error_code_is('ForbiddenPostcode', 'Invalid Jersey postcode');
+        ->has_no_system_error->has_error->error_code_is('InvalidAccount', 'InvalidAccount (used to be Invalid Jersey postcode)');
 
     $params->{args}->{address_postcode} = 'EA1 C1A1';
-    my $result =
-        $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('gb mf account created successfully')->result;
-    ok $result->{client_id}, 'got a client id';
+
+    $rpc_ct->call_ok('new_account_maltainvest', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidAccount', 'InvalidAccount (used to be a valid request)');
+
 };
 
 subtest 'Italian TIN test' => sub {

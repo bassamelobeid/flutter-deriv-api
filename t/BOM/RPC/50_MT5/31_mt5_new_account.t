@@ -114,69 +114,9 @@ subtest 'create mt5 client with different currency' => sub {
                 leverage         => 100,
             },
         };
-        my $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
-        is $result->{account_type}, 'financial';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_eur'};
 
-        $client    = create_client('MF', undef, {residence => 'gb'});
-        $new_email = 'mf+usd@binary.com';
-        $client->set_default_account('USD');
-        $client->aml_risk_classification('low');
-        $client->account_opening_reason('speculative');
-        $client->tax_residence('gb');
-        $client->tax_identification_number('111-222-333');
-        $client->email($new_email);
-        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
-        $client->save();
-
-        $user = BOM::User->create(
-            email    => $new_email,
-            password => 'Abcd33@!',
-        );
-        $user->update_trading_password($DETAILS{password}{main});
-        $user->add_client($client);
-        $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-        $params->{token} = $token;
-
-        $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
-        is $result->{account_type}, 'financial';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_usd'};
-
-        $client    = create_client('MF', undef, {residence => 'gb'});
-        $new_email = 'mf+gbp@binary.com';
-        $client->set_default_account('GBP');
-        $client->aml_risk_classification('low');
-        $client->account_opening_reason('speculative');
-        $client->tax_residence('gb');
-        $client->tax_identification_number('111-222-333');
-        $client->email($new_email);
-        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
-        $client->save();
-
-        $user = BOM::User->create(
-            email    => $new_email,
-            password => 'Abcd33@!',
-        );
-        $user->update_trading_password($DETAILS{password}{main});
-        $user->add_client($client);
-        $token                      = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-        $params->{token}            = $token;
-        $params->{args}->{currency} = 'EUR';
-        BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
-        $c->call_ok($method, $params)->has_error->error_code_is('PermissionDenied')->error_message_is('Permission denied.');
-
-        my $new_client_vr = create_client('VRTC', undef, {residence => 'gb'});
-        $new_client_vr->set_default_account('USD');
-        $token = $m->create_token($new_client_vr->loginid, 'test token 2');
-        $user->add_client($new_client_vr);
-
-        BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
-        $params->{token} = $token;
-        $params->{args}->{account_type} = 'demo';
-        delete $params->{args}->{currency};
-        $result = $c->call_ok($method, $params)->has_no_error->result;
-        is $result->{account_type}, 'demo';
-        is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\maltainvest_std_gbp'};
+        $c->call_ok($method, $params)->has_error->error_code_is('InvalidAccountRegion')
+            ->error_message_is('Sorry, account opening is unavailable in your region.');
     };
 
     subtest 'mf - country=de' => sub {

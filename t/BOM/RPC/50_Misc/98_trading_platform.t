@@ -473,6 +473,13 @@ subtest 'new account rules failure scenarios' => sub {
     # Move to the U.K.
     $real->residence('gb');
     $real->save;
+    # The U.K. is disabled
+    $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('InvalidAccount', 'the uk has been disabled')
+        ->error_message_is('Sorry, account opening is unavailable.', 'Expected error message');
+
+    # Move to Germany
+    $real->residence('de');
+    $real->save;
     # Only svg countries
     $c->call_ok('trading_platform_new_account', $params)
         ->has_no_system_error->has_error->error_code_is('TradingAccountNotAllowed', 'only svg countries')

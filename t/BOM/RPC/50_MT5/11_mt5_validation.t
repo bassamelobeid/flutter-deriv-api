@@ -926,9 +926,10 @@ subtest 'Virtual account types - GB residence' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial'
         },
+        'InvalidAccountRegion',
+        'Sorry, account opening is unavailable in your region.'
     );
 
-    ok $login =~ qr/^MTD[0-9]*$/, 'gb client can create MT5 demo account without a real account';
     $client->status->set('age_verification', 'test', 'test');
     $client->save();
 
@@ -938,8 +939,8 @@ subtest 'Virtual account types - GB residence' => sub {
             country      => 'mt',
             account_type => 'demo',
         },
-        'MT5NotAllowed',
-        'Virtual GB client can not create gaming demo account'
+        'InvalidAccountRegion',
+        'Sorry, account opening is unavailable in your region.'
     );
 
     $login = create_mt5_account->(
@@ -948,8 +949,9 @@ subtest 'Virtual account types - GB residence' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial'
         },
+        'InvalidAccountRegion',
+        'Sorry, account opening is unavailable in your region.'
     );
-    ok $login =~ qr/^MTD[0-9]*$/, 'gb client can create MT5 demo account without a real account';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -957,8 +959,8 @@ subtest 'Virtual account types - GB residence' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial_stp'
         },
-        'MT5NotAllowed',
-        'Financial STP demo MT5 account is not available in this country'
+        'InvalidAccountRegion',
+        'Sorry, account opening is unavailable in your region.'
     );
 
     #real accounts
@@ -966,14 +968,14 @@ subtest 'Virtual account types - GB residence' => sub {
     $client->save();
     create_mt5_account->(
         $c, $token, $client, {account_type => 'gaming'},
-        'MT5NotAllowed', 'Real gaming MT5 account creation is not allowed from a virtual account for GB residence'
+        'InvalidAccountRegion', 'Sorry, account opening is unavailable in your region.'
     );
 
     $client->status->set('age_verification', 'test', 'test');
     $client->save();
     create_mt5_account->(
         $c, $token, $client, {account_type => 'gaming'},
-        'MT5NotAllowed', 'Real gaming MT5 account creation is not allowed from a virtual account for GB residence ( even if age verified)'
+        'InvalidAccountRegion', 'Sorry, account opening is unavailable in your region.'
     );
 
     create_mt5_account->(
@@ -982,8 +984,8 @@ subtest 'Virtual account types - GB residence' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         },
-        'RealAccountMissing',
-        'Real financial MT5 account creation is not allowed from a virtual account'
+        'InvalidAccountRegion',
+        'Sorry, account opening is unavailable in your region.'
     );
 
     create_mt5_account->(
@@ -992,8 +994,8 @@ subtest 'Virtual account types - GB residence' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial_stp'
         },
-        'MT5NotAllowed',
-        'Financial STP MT5 account is not available in this country'
+        'InvalidAccountRegion',
+        'Sorry, account opening is unavailable in your region.'
     );
 
 };
