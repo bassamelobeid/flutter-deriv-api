@@ -61,11 +61,11 @@
                 <th>Fraudulent address</th>
                 <th>Currency</th>
                 <th>Login ID</th>
-                <th>Report Count</th>
+                <th>Report count</th>
                 <th>Investigation remarks</th>
-                <th>Blocked/Unblocked address</th>
-                <th>Insert Date</th>
-                <th>Last Update Date</th>
+                <th>Blocked</th>
+                <th>Creation date</th>
+                <th>Last update date</th>
                 <th>Staff</th>
             </tr>
             [% FOREACH row IN data %]

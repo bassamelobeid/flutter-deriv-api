@@ -91,9 +91,15 @@ if ($type && $type eq "search") {
         or die "Cannot use CSV: " . Text::CSV->error_diag();
 
     my @header = (
-        "address",               "currency_code", "address_report_count", "client_loginid",
-        "investigation_remarks", "blocked",       "last_status_date",     "last_status_update_by",
-        "timestamp"
+        "Fraudulent address",
+        "Currency",
+        "Report count",
+        "Login ID",
+        "Investigation remarks",
+        "Blocked",
+        "Last update date",
+        "Staff",
+        "Creation date"
     );
     $csv->combine(@header);
     print $csv->string;
@@ -102,7 +108,7 @@ if ($type && $type eq "search") {
         my @row_array = (
             $row->{address},          $row->{currency_code},         $row->{address_report_count},
             $row->{client_loginid},   $row->{investigation_remarks}, $row->{blocked},
-            $row->{last_status_date}, $row->{last_status_update_by}, $row->{tmstmp});
+            $row->{last_status_date}, $row->{last_status_update_by}, $row->{insert_date});
         $csv->combine(@row_array);
         print $csv->string;
     }
