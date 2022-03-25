@@ -130,6 +130,7 @@ my $action_mapping = {
         p2p_advertiser_temp_banned                       => \&BOM::Event::Actions::P2P::advertiser_temp_banned,
         cms_add_affiliate_client                         => \&BOM::Event::Actions::Client::link_affiliate_client,
         df_anonymization_done                            => \&BOM::Event::Actions::Anonymization::df_anonymization_done,
+        underage_account_closed                          => \&BOM::Event::Services::Track::underage_account_closed,
         request_change_email                             => \&BOM::Event::Actions::Client::request_change_email,
         verify_change_email                              => \&BOM::Event::Actions::Client::verify_change_email,
         confirm_change_email                             => \&BOM::Event::Actions::Client::confirm_change_email,
@@ -137,7 +138,6 @@ my $action_mapping = {
         mt5_archived_account_reset_trading_password      => \&BOM::Event::Actions::MT5::mt5_archived_account_reset_trading_password,
     },
     track => {
-        # only one event for now, more will be added in future
         multiplier_hit_type => \&BOM::Event::Services::Track::multiplier_hit_type,
     },
 };

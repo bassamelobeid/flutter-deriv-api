@@ -2759,6 +2759,26 @@ subtest 'crypto_withdrawal_email event' => sub {
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
+subtest 'underage_account_closed' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    undef @track_args;
+
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{underage_account_closed};
+
+    $action_handler->({
+            loginid    => $client->loginid,
+            properties => {
+                tnc_approval => 'https://deriv.com/en/terms-and-conditions',
+            }})->get;
+    my ($customer, %returned_args) = @track_args;
+
+    is $returned_args{event}, 'underage_account_closed', 'track event name is set correctly';
+    is $returned_args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+};
+
 subtest 'Underage detection' => sub {
     my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',

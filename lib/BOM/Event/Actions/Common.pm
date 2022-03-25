@@ -154,7 +154,17 @@ sub handle_under_age_client {
     }
 
     # need to send email to client
-    _send_email_underage_disable_account($client);
+    my $brand  = request->brand;
+    my $params = {
+        language => uc($client->user->preferred_language // request->language // 'en'),
+    };
+
+    BOM::Platform::Event::Emitter::emit(
+        underage_account_closed => {
+            loginid    => $client->loginid,
+            properties => {
+                tnc_approval => $brand->tnc_approval_url($params),
+            }});
 }
 
 =head2 _email_client_age_verified
@@ -216,35 +226,6 @@ sub _email_client_age_verified {
         $log->warn($e);
         exception_logged();
     }
-
-    return undef;
-}
-
-sub _send_email_underage_disable_account {
-    my ($client) = @_;
-
-    my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
-    my $email_subject = localize("Your account has been closed");
-    my $brand         = request->brand;
-
-    my $params = {
-        language => request->language,
-    };
-
-    send_email({
-            to            => $client->email,
-            subject       => $email_subject,
-            template_name => 'close_account_underage',
-            template_args => {
-                website_name => $website_name,
-                tnc_approval => $brand->tnc_approval_url($params),
-                name         => $client->first_name,
-                title        => localize("We've closed your account"),
-            },
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 1,
-        });
 
     return undef;
 }

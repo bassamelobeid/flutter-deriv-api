@@ -177,10 +177,9 @@ async sub verify_identity {
 
                 push @messages,
                     _apply_side_effects({
-                        client           => $client,
-                        errors           => +{$rules_result->errors->%*, _messages_to_hashref(@messages)->%*,},
-                        provider         => $provider,
-                        transformed_resp => $transformed_resp,
+                        client   => $client,
+                        errors   => +{$rules_result->errors->%*, _messages_to_hashref(@messages)->%*,},
+                        provider => $provider,
                     });
 
                 # There could've been message overlapping, better to ensure uniqueness.
@@ -259,8 +258,6 @@ It takes the following arguments as hashref:
 
 =item C<provider> - the name of the IDV provider.
 
-=item C<transformed_resp> - the response from the IDV provider.
-
 =back
 
 Returns a list of possible error messages.
@@ -269,7 +266,7 @@ Returns a list of possible error messages.
 
 sub _apply_side_effects {
     my $args = shift;
-    my ($client, $errors, $provider, $transformed_resp) = @{$args}{qw/client errors provider transformed_resp/};
+    my ($client, $errors, $provider) = @{$args}{qw/client errors provider/};
 
     my @messages;
 
@@ -283,7 +280,7 @@ sub _apply_side_effects {
         if (exists $errors->{UnderAge}) {
             push @messages, 'UNDERAGE';
 
-            BOM::Event::Actions::Common::handle_under_age_client($client, $provider, $transformed_resp->{date_of_birth});
+            BOM::Event::Actions::Common::handle_under_age_client($client, $provider);
             $client->status->clear_age_verification;
         }
 

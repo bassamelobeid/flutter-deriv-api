@@ -126,6 +126,7 @@ my %EVENT_PROPERTIES = (
     verify_change_email            => [qw(loginid first_name email code verification_uri)],
     confirm_change_email           => [qw(loginid first_name email)],
     unknown_login                  => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
+    underage_account_closed        => [qw(tnc_approval)],
     account_with_false_info_locked => [qw(email authentication_url profile_url is_name_change)]);
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -1351,6 +1352,29 @@ sub account_with_false_info_locked {
         event      => 'account_with_false_info_locked',
         loginid    => $args->{loginid},
         properties => $properties,
+    );
+}
+
+=head2 underage_account_closed
+
+It is triggered for each B<underage_account_closed> event emitted, delivering it to Rudderstack.
+It can be called with the following parameters:
+    
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=back
+
+=cut
+
+sub underage_account_closed {
+    my ($args) = @_;
+
+    return track_event(
+        event      => 'underage_account_closed',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
     );
 }
 
