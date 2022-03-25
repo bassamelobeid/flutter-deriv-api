@@ -121,11 +121,12 @@ sub transaction {
 
     my $id;
     my $args       = $req_storage->{args};
+    my $msg_group  = $req_storage->{msg_group} || '';
     my $account_id = $c->stash('account_id');
     if ($account_id) {
         if (    exists $args->{subscribe}
             and $args->{subscribe} eq '1'
-            and (not $id = transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
+            and (not $id = transaction_channel($c, 'subscribe', $account_id, 'transaction', $args, $msg_group)))
         {
             return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'transaction'));
         }
@@ -139,7 +140,7 @@ sub transaction {
 }
 
 sub transaction_channel {
-    my ($c, $action, $account_id, $type, $args, $contract_id) = @_;
+    my ($c, $action, $account_id, $type, $args, $msg_group, $contract_id) = @_;
 
     $contract_id //= $args->{contract_id};
 
@@ -149,6 +150,7 @@ sub transaction_channel {
         type        => $type,
         contract_id => $contract_id,
         args        => $args,
+        msg_group   => $msg_group
     );
 
     my $already_registered_worker = $worker->already_registered;

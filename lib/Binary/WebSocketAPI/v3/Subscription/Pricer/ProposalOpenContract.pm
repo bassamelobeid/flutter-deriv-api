@@ -4,7 +4,6 @@ use warnings;
 no indirect;
 
 use Format::Util::Numbers qw/formatnumber roundcommon/;
-use Binary::WebSocketAPI::v3::Subscription::Transaction;
 use Moo;
 with 'Binary::WebSocketAPI::v3::Subscription::Pricer';
 use namespace::clean;

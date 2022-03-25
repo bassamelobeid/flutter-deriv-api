@@ -38,6 +38,7 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription>
         type        => $type,
         contract_id => $contract_id,
         args        => $args,
+        msg_group   => $msg_group
     );
 
     $worker->unsubscribe;
@@ -60,6 +61,18 @@ has type => (
         state $allowed_types = {map { $_ => 1 } qw(buy balance balance_all transaction sell)};
         die "type can only be buy, balance, transaction, sell" unless $allowed_types->{$_[0]};
     });
+
+=head2 msg_group
+
+The msg_group set in Binary::WebSocketAPI::Actions;
+
+=cut
+
+has msg_group => (
+    is       => 'ro',
+    required => 0,
+
+);
 
 =head2 contract_id
 
@@ -218,12 +231,12 @@ sub _update_transaction {
     }
 
     $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{sell_time} || $payload->{purchase_time})->epoch;
-
     # TODO remove the RPC call if you can
     $c->call_rpc({
             args        => $args,
             msg_type    => 'transaction',
             method      => 'get_contract_details',
+            msg_group   => $self->msg_group // 'general',
             call_params => {
                 token           => $c->stash('token'),
                 short_code      => $payload->{short_code},

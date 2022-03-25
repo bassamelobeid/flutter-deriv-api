@@ -20,7 +20,6 @@ use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
 use Scalar::Util qw(weaken);
 use Log::Any qw($log);
-
 use Future::Mojo          ();
 use Future::Utils         ();
 use Variable::Disposition ();
@@ -55,6 +54,7 @@ sub proposal {
             args              => $args,
             method            => 'send_ask',
             msg_type          => 'proposal',
+            msg_group         => $req_storage->{msg_group},
             call_params       => {
                 token                 => $c->stash('token'),
                 language              => $c->stash('language'),

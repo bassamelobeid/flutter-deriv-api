@@ -53,7 +53,13 @@ sub actions_config {
                 msg_group          => 'tick',
             }
         ],
-        ['proposal',       {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal}],
+        [
+            'proposal',
+            {
+                instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal,
+                msg_group          => 'pricing'
+            }
+        ],
         ['forget',         {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
         ['forget_all',     {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget_all}],
         ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
@@ -281,13 +287,16 @@ sub actions_config {
             'transaction',
             {
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction,
-            }
+                msg_group      => 'pricing',
+            },
+
         ],
         ['portfolio'],
         [
             'proposal_open_contract',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
+                msg_group       => 'pricing'
             }
         ],
 
