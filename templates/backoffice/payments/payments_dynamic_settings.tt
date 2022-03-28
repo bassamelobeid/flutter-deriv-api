@@ -70,6 +70,56 @@
     </div>
 </div>
 
+<div class="card">
+    <div class="card__label toggle"><a name="_payment_methods"></a>
+        PAYMENT METHODS
+    </div>
+    <div class="card__content">
+        <h3>High Risk Payment Methods</h3>
+        <p>You can specify parameters for high risk payment methods and its optional grouped members. Some payment methods may have slight variations, to specify them we introduced the grouped memebers field. Use comma separated values to specify grouped members.</p>
+
+        <form action="[% request.url_for('backoffice/payments_dynamic_settings.cgi?section=high_risk') %]" method="post">
+            <table class="small alternate">
+                <thead>
+                    <tr>
+                        <th>&nbsp;</th>
+                        <th>Payment Method</th>
+                        <th>Grouped Members</th>
+                        <th>Limit per Account</th>
+                        <th>Days to Check</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    [% FOREACH pm IN high_risk_payment_methods.keys.sort %]
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td><input type="text" name="high_risk[[% pm %]][pm]" value="[% pm %]" /></td>
+                            <td><input type="text" name="high_risk[[% pm %]][siblings]" value="[% high_risk_payment_methods.$pm.siblings.join(',') %]" /></td>
+                            <td><input type="number" step="1" name="high_risk[[% pm %]][limit]" value="[% high_risk_payment_methods.$pm.limit %]" /></td>
+                            <td><input type="number" step="1" name="high_risk[[% pm %]][days]" value="[% high_risk_payment_methods.$pm.days %]" /></td>
+                            <td><button value="[% pm %]" onclick="return confirm('Do you really want to delete [% pm %] from the high risk payment method settings?')" class="btn btn--secondary" name="high_risk_to_delete">Delete</button>
+                        </tr>     
+                    [% END %]
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>Add a Payment Method</td>
+                        <td><input type="text" name="new" value="[% input_new.pm %]" /></td>
+                        <td><input type="text" name="siblings[new]" value="[% input_new.siblings %]" /></td>
+                        <td><input type="number" step="1" name="limit[new]" value="[% input_new.limit %]" /></td>
+                        <td><input type="number" step="1" name="days[new]" value="[% input_new.days %]" /></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><br/><button class="btn btn--primary" value="1" name="save">Save High Risk Payment Methods Settings</button></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <input type="hidden" name="revision" value="[% revision %]"/>
+        </form>
+    </div>
+</div>
+
 <script>
     function request_dcc() {
         const dcc = prompt('Please introduce the DCC to perform this operation');

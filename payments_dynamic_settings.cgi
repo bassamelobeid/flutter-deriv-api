@@ -93,14 +93,92 @@ if (request()->http_method eq 'POST' and ($input{section} // '') eq 'limits') {
     }
 }
 
+my $new_pm;
+
+if (request()->http_method eq 'POST' and ($input{section} // '') eq 'high_risk') {
+    try {
+        my $high_risk_pm = [map { m/high_risk\[(.*)\]\[pm\]/g } keys %input];
+
+        if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}})) {
+            die(master_live_server_error() . "\n");
+        } else {
+            my $json = {};
+
+            if ($new_pm = $input{new}) {
+                die("$new_pm is already configured\n") if any { $_ eq $new_pm } $high_risk_pm->@*;
+
+                push $high_risk_pm->@*, $new_pm;
+
+                %input = (
+                    "high_risk[$new_pm][pm]"       => delete $input{'new'},
+                    "high_risk[$new_pm][siblings]" => delete $input{'siblings[new]'},
+                    "high_risk[$new_pm][days]"     => delete $input{'days[new]'},
+                    "high_risk[$new_pm][limit]"    => delete $input{'limit[new]'},
+                    %input,
+                );
+            }
+
+            for my $pm ($high_risk_pm->@*) {
+                next unless $pm;
+
+                my $updated_pm = $input{"high_risk[$pm][pm]"};
+
+                next unless $updated_pm;
+
+                next if defined $input{high_risk_to_delete} && $input{high_risk_to_delete} eq $pm;
+
+                my ($siblings, $limit, $days) = @input{"high_risk[$pm][siblings]", "high_risk[$pm][limit]", "high_risk[$pm][days]"};
+
+                unless (looks_like_number($limit) and $limit > 0) {
+                    die("`limit` setting for $pm must be larger than 0\n");
+                }
+
+                unless (looks_like_number($days) and $days > 0) {
+                    die("`days` setting for $pm must be larger than 0\n");
+                }
+
+                $json->{$updated_pm} = {
+                    siblings => [map { trim($_) } split(/,/, $siblings)],
+                    limit    => $limit + 0,
+                    days     => $days + 0,
+                };
+            }
+
+            my $settings = +{
+                'payments.payment_methods.high_risk' => JSON::MaybeXS->new->encode($json),
+                'revision'                           => $input{revision},
+            };
+
+            BOM::DynamicSettings::save_settings({
+                'settings'          => $settings,
+                'settings_in_group' => ['payments.payment_methods.high_risk'],
+                'save'              => 'global',
+            });
+
+            $message = 'Payment Method High Risk Dynamic settings saved';
+        }
+    } catch ($e) {
+        $error = $e;
+    }
+}
+
+my $high_risk_payment_methods = JSON::MaybeXS->new->decode(BOM::Config::Runtime->instance->app_config->payments->payment_methods->high_risk);
+
 my $revision = $app_config->global_revision();
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/payments/payments_dynamic_settings.tt',
     {
+        high_risk_payment_methods => $high_risk_payment_methods,
         payment_limits => $payment_limits,
         revision       => $revision,
         error          => $error,
         message        => $message,
         staff          => $clerk,
+        input_new                 => {
+            pm       => $input{'new'}           // '',
+            siblings => $input{'siblings[new]'} // '',
+            days     => $input{'days[new]'}     // '',
+            new      => $input{'limit[new]'}    // '',
+        },
     });
