@@ -59,7 +59,8 @@ if ($r->param('save_multiplier_config')) {
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeMultiplierConfig", $multiplier_config);
         $output = {success => 1};
     } catch ($e) {
-        $output = {error => "$e"};
+        my ($message) = $e =~ /(.*)\sat\s\//;
+        $output = {error => "$message"};
     }
 
     print encode_json_utf8($output);
