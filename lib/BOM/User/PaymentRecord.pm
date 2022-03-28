@@ -24,6 +24,8 @@ Takes the following arguments as named parameters
 
 =item * C<user_id> - binary/deriv user id
 
+=item * C<payment_type> - the payment type being processed
+
 =back
 
 Returns a bless reference object
@@ -33,10 +35,12 @@ Returns a bless reference object
 sub new {
     my ($class, %args) = @_;
 
-    die 'user_id is mandatory' unless $args{user_id};
+    die 'user_id is mandatory'      unless $args{user_id};
+    die 'payment_type is mandatory' unless $args{payment_type};
 
     return bless {
-        user_id => $args{user_id},
+        user_id      => $args{user_id},
+        payment_type => $args{payment_type},
     }, $class;
 }
 
@@ -49,9 +53,11 @@ Returns the key used to identify this payment in the underlying storage engine i
 =cut
 
 sub storage_key : method {
-    my $self = shift;
+    my ($self) = @_;
 
-    return _build_storage_key(user_id => $self->{user_id});
+    return _build_storage_key(
+        payment_type => $self->{payment_type},
+        user_id      => $self->{user_id});
 }
 
 =head2 add_payment
@@ -64,8 +70,6 @@ Takes the following arguments as named parameters
 
 =over 4
 
-=item * C<payment_type> - type of payment, for example CreditCard
-
 =item * C<account_identifier> - account identifier user, for example account number, card number
 
 =back
@@ -74,14 +78,9 @@ Takes the following arguments as named parameters
 
 sub add_payment : method {
     my ($self, %args) = @_;
-    my $payment_type       = $args{payment_type};
     my $account_identifier = $args{account_identifier};
 
     return 0 unless $account_identifier;
-    return 0 unless $payment_type;
-
-    # we are recording only credit card payments
-    return 0 unless $payment_type eq 'CreditCard';
 
     my $storage_key = $self->storage_key();
     return 0 unless $storage_key;
@@ -128,8 +127,9 @@ sub get_distinct_payment_accounts_for_time_period : method {
     return _get_redis()->pfcount(
         @{
             _get_keys_for_time_period(
-                user_id => $self->{user_id},
-                period  => $args{period},
+                payment_type => $self->{payment_type},
+                user_id      => $self->{user_id},
+                period       => $args{period},
             )});
 }
 
@@ -260,7 +260,7 @@ sub _get_keys_for_time_period {
 
     my $time_period = max($args{period} // 1, 1);
 
-    my @keys = map { _build_storage_key(user_id => $args{user_id}, days_behind => $_) } (0 .. $time_period - 1);
+    my @keys = map { _build_storage_key(payment_type => $args{payment_type}, user_id => $args{user_id}, days_behind => $_) } (0 .. $time_period - 1);
 
     return \@keys;
 }
@@ -273,16 +273,26 @@ Returns the storage key given an user_id for the day of C<days_behind> of the cu
 
 sub _build_storage_key {
     my (%args) = @_;
-    return 0 unless my $user_id = $args{user_id};
+    return 0 unless my $user_id      = $args{user_id};
+    return 0 unless my $payment_type = $args{payment_type};
     my $days_behind = $args{days_behind} // 0;
 
-    return join(
-        PAYMENT_KEY_SEPARATOR,         #
-        PAYMENT_KEY_PREFIX,            #
-        PAYMENT_KEY_USER_ID_PREFIX,    #
-        $user_id,                      #
+    my @key_parts = (
+        PAYMENT_KEY_PREFIX, PAYMENT_KEY_USER_ID_PREFIX, $user_id, $payment_type,
         Date::Utility->new->minus_time_interval($days_behind . 'd')->date_yyyymmdd
     );
+
+    # this package was designed only for CreditCard, the business logic has changed
+    # to generalize the payment type, we need to map the $payment_type accordingly
+    # in order to make it backcompat
+
+    if ($payment_type eq 'CreditCard') {
+        my $date = pop @key_parts;
+        pop @key_parts;
+        push @key_parts, $date;
+    }
+
+    return join(PAYMENT_KEY_SEPARATOR, @key_parts);
 }
 
 1;
