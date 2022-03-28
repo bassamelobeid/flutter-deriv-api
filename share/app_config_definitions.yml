@@ -60,6 +60,14 @@ payments:
   description: "Control parameters for cashier and other payment systems"
   isa: section
   contains:
+    payment_methods:
+      isa: section
+      contains:
+        high_risk:
+          isa: json_string
+          default: '{"CreditCard": {"limit":5,"days":90,"siblings":[]}}'
+          description: High risk payment method settings
+          global: 1
     payment_agent_residence_check_exclusion:
       description: 'Email(s) of payment agents who are allowed to perform inter-country transfers and withdrawals.'
       default: []
