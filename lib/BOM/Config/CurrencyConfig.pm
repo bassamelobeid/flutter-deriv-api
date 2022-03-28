@@ -19,7 +19,7 @@ use JSON::MaybeUTF8;
 use Log::Any qw($log);
 use Format::Util::Numbers qw(get_min_unit financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
-use List::Util qw(any max min);
+use List::Util qw(any max min uniq);
 use LandingCompany::Registry;
 
 use BOM::Config::Runtime;
@@ -86,6 +86,16 @@ our %LOCAL_CURRENCY_FOR_COUNTRY = do {
 sub local_currency_for_country {
     my ($country_code) = @_;
     return $LOCAL_CURRENCY_FOR_COUNTRY{lc($country_code)};
+}
+
+=head2 local_currency_list
+
+List of unique local currency in the world.
+
+=cut
+
+sub local_currency_list {
+    return uniq grep { $_ } values %LOCAL_CURRENCY_FOR_COUNTRY;
 }
 
 =head2 is_valid_currency
