@@ -10,6 +10,10 @@ use BOM::Config;
 use BOM::Event::Actions::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Email;
+use BOM::Config::Runtime;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
+
+my $app_config = BOM::Config::Runtime->instance->app_config;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -25,13 +29,18 @@ my $user = BOM::User->create(
 $user->add_client($test_client);
 
 sub redis_clear {
-    my $user_id = shift;
+    my $user_id      = shift;
+    my $payment_type = shift;
 
     BOM::User::PaymentRecord::_get_redis->del(    #
-        BOM::User::PaymentRecord->new(user_id => $user_id)->storage_key,
+        BOM::User::PaymentRecord->new(
+            user_id      => $user_id,
+            payment_type => $payment_type
+        )->storage_key,
         BOM::User::PaymentRecord::_build_flag_key(
-            user_id => $user_id,
-            name    => 'reported'
+            user_id      => $user_id,
+            payment_type => $payment_type,
+            name         => 'reported'
         ));
 }
 
@@ -48,12 +57,20 @@ subtest 'record_user_payment_accounts' => sub {
                 account_identifier => 'XXXX',
                 loginid            => $test_client->{loginid}})->get;
 
-        is(mailbox_search(subject => qr/Allowed credit cards limit reached/), undef, 'no extra action is performed');
+        is(mailbox_search(subject => qr/Allowed limit reached on CrediCard/), undef, 'no extra action is performed');
 
-        redis_clear($test_client->binary_user_id);
+        redis_clear($test_client->binary_user_id, 'CreditCard');
     };
 
     subtest 'when the client has reached the payment accounts limit' => sub {
+        $app_config->payments->payment_methods->high_risk(
+            encode_json_utf8({
+                    CreditCard => {
+                        limit    => 1,
+                        days     => 90,
+                        siblings => [],
+                    }}));
+
         BOM::Config::client_limits()->{max_payment_accounts_per_user} = 1;
         mailbox_clear();
 
@@ -63,15 +80,15 @@ subtest 'record_user_payment_accounts' => sub {
                 account_identifier => 'XXXX',
                 loginid            => $test_client->{loginid}})->get;
 
-        my $email = mailbox_search(subject => qr/Allowed credit cards limit reached/);
+        my $email = mailbox_search(subject => qr/Allowed limit on CreditCard/);
 
         cmp_deeply $email->{to}, ['x-fraud@deriv.com'], 'an email is sent to x-fraud@deriv.com';
 
         my $loginid = $test_client->loginid;
-        is $email->{body}, "The maximum allowed credit cards limit per user of 1 has been reached by $loginid.", "email's content is ok";
+        is $email->{body}, "The maximum allowed limit on CreditCard per user of 1 has been reached by $loginid.", "email's content is ok";
 
         # cleaning
-        redis_clear($test_client->binary_user_id);
+        redis_clear($test_client->binary_user_id, 'CreditCard');
     };
 
     subtest 'when the client has reached the payment accounts limit for second time in the same day' => sub {
@@ -92,9 +109,9 @@ subtest 'record_user_payment_accounts' => sub {
                 account_identifier => 'XXXY',
                 loginid            => $test_client->{loginid}})->get;
 
-        is(mailbox_search(subject => qr/Maximum credit cards limit reached/), undef, 'does not send any email anymore');
+        is(mailbox_search(subject => qr/Maximum limit on CreditCard reached/), undef, 'does not send any email anymore');
 
-        redis_clear($test_client->binary_user_id);
+        redis_clear($test_client->binary_user_id, 'CreditCard');
     };
 
     subtest 'crypto payments should not be counted' => sub {
@@ -106,7 +123,7 @@ subtest 'record_user_payment_accounts' => sub {
                 account_identifier => 'XXXX',
                 loginid            => $test_client->{loginid}})->get;
 
-        is(mailbox_search(subject => qr/Maximum credit cards limit reached/), undef, 'no email has been sent');
+        is(mailbox_search(subject => qr/Allowed limit on CreditCard/), undef, 'no email has been sent');
 
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'X',
@@ -114,11 +131,11 @@ subtest 'record_user_payment_accounts' => sub {
                 account_identifier => 'XXXY',
                 loginid            => $test_client->{loginid}})->get;
 
-        my $email = mailbox_search(subject => qr/Allowed credit cards limit reached/);
+        my $email = mailbox_search(subject => qr/Allowed limit on CreditCard/);
 
         cmp_deeply $email->{to}, ['x-fraud@deriv.com'], 'an email is sent to x-fraud@deriv.com';
 
-        redis_clear($test_client->binary_user_id);
+        redis_clear($test_client->binary_user_id, 'CreditCard');
     };
 };
 
