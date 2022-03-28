@@ -19,6 +19,7 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw(
     redis_pricer_subscription
     redis_transaction
     redis_p2p
+    redis_exchange_rates
 );
 
 use namespace::clean;
@@ -96,7 +97,8 @@ my $config = {
     redis_pricer_manager              => sub { return redis_pricer() },
     redis_pricer_subscription_manager => sub { return redis_pricer_subscription() },
     redis_transaction_manager         => sub { return redis_transaction() },
-    redis_p2p_manager                 => sub { return redis_p2p() }
+    redis_p2p_manager                 => sub { return redis_p2p() },
+    redis_exchange_rates_manager      => sub { return redis_exchange_rates() },
 };
 
 sub redis {

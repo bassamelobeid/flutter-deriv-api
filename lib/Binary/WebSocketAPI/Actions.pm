@@ -39,6 +39,7 @@ sub actions_config {
         ['contracts_for',     {stash_params => [qw/ token /]}],
         ['active_symbols',    {stash_params => [qw/ token /]}],
 
+        ['exchange_rates', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::exchange_rates}],
         [
             'ticks',
             {
@@ -490,7 +491,6 @@ sub actions_config {
                 stash_params => [qw/ referrer source_type /],
             }
         ],
-        ['exchange_rates', {stash_params => [qw/ exchange_rates base_currency /]}],
         # P2P cashier
         [
             'p2p_advert_create',

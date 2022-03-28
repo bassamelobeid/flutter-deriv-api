@@ -23,6 +23,40 @@ use Scalar::Util qw(looks_like_number);
 use List::Util qw(any);
 use Log::Any qw($log);
 
+=head2 redis_feed_master
+
+redis for feed data
+
+=head2 redis_transanction
+
+redis for transaction update (E.g. account balance)
+
+=head2 redis_pricer
+
+redis that contain pricing request data
+
+=head2 redis_pricer_subscription
+
+redis solely for handling contract pricing pub/sub
+
+=head2 ws_redis_master
+
+redis for websocket operations
+
+=head2 redis_rpc
+
+redis for websocket-rpc communication
+
+=head2 redis_p2p
+
+redis for p2p operations
+
+=head2 redis_exchange_rates
+
+redis for exchange rates pub/sub
+
+=cut
+
 # Add entries here if a new Redis instance is available, this will then be accessible
 # via a function of the same name.
 my $servers = {
@@ -53,7 +87,12 @@ my $servers = {
     redis_p2p => {
         config => '/etc/rmg/redis-p2p.yml',
         user   => 'read',
-    }};
+    },
+    redis_exchange_rates => {
+        config => '/etc/rmg/redis-exchangerates.yml',
+        user   => 'read',
+    },
+};
 
 # We export (on demand) all Redis names and a helper function.
 our @EXPORT_OK = ('check_connections', sort keys %$servers);

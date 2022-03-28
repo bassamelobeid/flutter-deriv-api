@@ -18,6 +18,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 use Binary::WebSocketAPI::v3::Subscription::Feed;
+use Binary::WebSocketAPI::v3::Subscription::ExchangeRates;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 my $json = JSON::MaybeXS->new;
@@ -407,4 +408,64 @@ sub _feed_channel_subscribe {
     return $uuid;
 }
 
+=head2 exchange_rates
+
+Exchange rates wrapper to handle subscription
+
+=cut
+
+sub exchange_rates {
+    my ($c, $req_storage) = @_;
+
+    my $type = 'exchange_rates';
+    $c->call_rpc({
+            args        => $req_storage->{args},
+            method      => $type,
+            msg_type    => $type,
+            call_params => {
+                token           => $c->stash('token'),
+                base_currency   => $req_storage->{args}{base_currency},
+                target_currency => $req_storage->{args}{target_currency},
+            },
+            success => sub {
+                my ($c, $api_response, $req_storage) = @_;
+                # the input parameter is a base currency which means the exchange rates provided by this API
+                # will the quoted currency (E.g. the amount required to exchange for 1 base currency)
+                if ($req_storage->{args}{subscribe}) {
+                    my ($local, $base) = @{$req_storage->{args}}{'target_currency', 'base_currency'};
+                    my $subscription_symbol = $local ? join('_', ($base, $local)) : $base . "_*";
+
+                    my $worker = Binary::WebSocketAPI::v3::Subscription::ExchangeRates->new(
+                        c      => $c,
+                        type   => $type,
+                        args   => $req_storage->{args},
+                        symbol => $subscription_symbol,
+                    );
+
+                    unless ($worker->already_registered) {
+                        $worker->register;
+                        $req_storage->{id} = $worker->uuid();
+                        $worker->subscribe();
+                    }
+                }
+            },
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
+                return $api_response if $rpc_response->{error};
+
+                if ($req_storage->{args}{subcribe}) {
+                    if ($req_storage->{id}) {
+                        $api_response->{subscription}->{id} = $req_storage->{id};
+                    } else {
+                        $api_response =
+                            $c->new_error($type, 'AlreadySubscribed',
+                            $c->l('You are already subscribed to [_1]', $req_storage->{args}{base_currency}));
+                    }
+                }
+
+                return $api_response;
+            }
+        });
+    return;
+}
 1;
