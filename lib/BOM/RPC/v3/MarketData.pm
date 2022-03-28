@@ -15,15 +15,18 @@ use warnings;
 
 use Format::Util::Numbers qw(formatnumber);
 use Scalar::Util qw(looks_like_number);
+use List::Util qw(uniq);
 use List::Util qw(any);
 use Date::Utility;
 use BOM::Config::Chronicle;
 
 use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
+use BOM::User::Client;
+use BOM::Config::CurrencyConfig;
 
 use BOM::RPC::Registry '-dsl';
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
 
 use constant {
@@ -53,19 +56,34 @@ The return value is an anonymous hash contains the following items:
 =cut
 
 rpc exchange_rates => sub {
-    my $params        = shift;
-    my $base_currency = $params->{args}->{base_currency};
+    my $params = shift;
 
-    my @all_currencies = LandingCompany::Registry::all_currencies();
+    my $base_currency   = $params->{args}->{base_currency};
+    my $target_currency = $params->{args}->{target_currency};
+    my $country_code    = request()->country_code;
 
+    if ($params->{token_details} and $params->{token_details}->{loginid}) {
+        my $client = BOM::User::Client->new({loginid => $params->{token_details}->{loginid}});
+        # country code should be over-written by client's residence if available
+        $country_code = $client->residence if $client and $client->residence;
+    }
+
+    # base currency is always the deriv's account currency, so we validate it against landing company's
+    # available payout currency
     my $invalid_currency = BOM::Platform::Client::CashierValidation::invalid_currency_error($base_currency);
     return BOM::RPC::v3::Utility::create_error($invalid_currency) if $invalid_currency;
 
+    # if both base and local currencies are available, user wants a specific exchange rate
     my %rates_hash;
-    foreach my $target (@all_currencies) {
-        next if $target eq $base_currency;
+    if ($base_currency and $target_currency) {
         ## no critic (RequireCheckingReturnValueOfEval)
-        eval { $rates_hash{$target} = formatnumber('amount', $target, convert_currency(1, $base_currency, $target)); };
+        eval { $rates_hash{$target_currency} = formatnumber('amount', $target_currency, convert_currency(1, $base_currency, $target_currency)); };
+    } else {
+        foreach my $currency (uniq(BOM::Config::CurrencyConfig::local_currency_list(), LandingCompany::Registry::all_currencies())) {
+            next if $currency eq $base_currency;
+            ## no critic (RequireCheckingReturnValueOfEval)
+            eval { $rates_hash{$currency} = formatnumber('amount', $currency, convert_currency(1, $base_currency, $currency)); };
+        }
     }
 
     return BOM::RPC::v3::Utility::create_error({
