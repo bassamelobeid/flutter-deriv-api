@@ -67,7 +67,7 @@ sub save_config {
     } elsif ($config_type =~ /commission/) {
         $config = $self->_process_commission_config($args);
     } elsif ($config_type =~ /multiplier_config/) {
-        $config = $self->_process_multiplier_config($args);
+        $config = $self->_process_multiplier_config($config_type, $args);
     } elsif ($config_type =~ /callputspread_barrier_multiplier/) {
         $config = $args;
     } elsif ($config_type =~ /deal_cancellation/) {
@@ -133,10 +133,15 @@ sub _process_commission_config {
 }
 
 sub _process_multiplier_config {
-    my ($self, $args) = @_;
+    my ($self, $config_type, $args) = @_;
 
     my $multiplier_range = $args->{multiplier_range};
     my $stop_out_level   = $args->{stop_out_level};
+
+    # special regulatory requirement for malta invest to have a maximum commission of 0.1%
+    if ($config_type =~ /maltainvest/ and $args->{commission} > 0.001) {
+        die 'Commission for Malta Invest cannot be more than 0.1%';
+    }
 
     die 'multiplier range and stop out level definition does not match'
         unless (scalar(@$multiplier_range) == scalar(keys %$stop_out_level) && all { defined $stop_out_level->{$_} } @$multiplier_range);
