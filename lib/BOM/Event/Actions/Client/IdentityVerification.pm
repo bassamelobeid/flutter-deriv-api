@@ -30,6 +30,9 @@ use Syntax::Keyword::Try;
 use Text::Trim;
 use URL::Encode qw(url_encode);
 
+use BOM::Config;
+use BOM::Config::Runtime;
+use BOM::Config::Services;
 use BOM::Event::Services;
 use BOM::Event::Services::Track;
 use BOM::Event::Utility qw( exception_logged );
@@ -40,13 +43,17 @@ use BOM::User::Client;
 use BOM::Platform::Client::IdentityVerification;
 use Brands::Countries;
 
+use constant SELFISH_PROVIDERS => ['zaig'];    # List of providers who don't give us user personal data and just evaluate documents on their own.
+
 use constant TRIGGER_MAP => {
     smile_identity => \&_trigger_smile_identity,
     zaig           => \&_trigger_zaig,
+    microservice   => \&_trigger_through_microservice,
 };
 
 use constant RESULT_STATUS => {
-    pass   => 'verified',
+    pass   => 'pass',
+    verify => 'verified',
     fail   => 'failed',
     reject => 'refuted',
     n_a    => 'unavailable',
@@ -109,7 +116,7 @@ async sub verify_identity {
 
         $idv_model->incr_submissions();
 
-        my @result = await TRIGGER_MAP->{$provider}(
+        my @result = await TRIGGER_MAP->{_is_microservice_available($provider) ? 'microservice' : $provider}(
             $client,
             $document,
             sub {
@@ -126,23 +133,62 @@ async sub verify_identity {
 
         my ($status, $response_hash, $message) = @result;
 
-        my $transformed_resp = BOM::Platform::Client::IdentityVerification::transform_response($provider, $response_hash) // $response_hash;
+        my $provider_request_body  = $response_hash->{request_body}  // {};
+        my $provider_response_body = $response_hash->{response_body} // {};
 
-        my @messages = ();
+        my $transformed_resp = BOM::Platform::Client::IdentityVerification::transform_response($provider, $provider_response_body) // $response_hash;
 
-        # Some providers like Zaig may perform the verification on their side and so
-        # we'd need to extract the status from their response. In such cases the provider
-        # implementation is expected to return arrayref to store the possible error messages.
+        # Some of providers like Zaig and IDV microservice might return an array of messages.
+        my @messages = ref $message eq 'ARRAY' ? $message->@* : ($message);
 
-        if (ref $message eq ref []) {
-            @messages = $message->@*;
-        }
+        my $refuted_document_handler = sub {
+            my ($errors) = @_;
 
-        # This may be confusing, however if there are error messages, we would like to return
-        # status refuted instead of failed, that's why we let the execution pass through this.
-        # Plus it would be nice to execute our rule engine to maximize our validation efforts.
+            push @messages,
+                _apply_side_effects({
+                    client   => $client,
+                    errors   => $errors,
+                    provider => $provider,
+                });
+            @messages = uniq @messages;
 
-        if ($status eq RESULT_STATUS->{pass} || scalar @messages) {
+            $idv_model->update_document_check({
+                document_id     => $document->{id},
+                status          => 'refuted',
+                expiration_date => $transformed_resp->{expiration_date},
+                messages        => \@messages,
+                provider        => $provider,
+                request_body    => encode_json_utf8($provider_request_body),
+                response_body   => encode_json_utf8($provider_response_body),
+            });
+
+            BOM::Event::Services::Track::track_event(
+                event      => 'identity_verification_rejected',
+                loginid    => $client->loginid,
+                properties => {
+                    authentication_url => request->brand->authentication_url,
+                    live_chat_url      => request->brand->live_chat_url,
+                    title              => localize('We were unable to verify your document details'),
+                },
+            );
+        };
+
+        my $verified_document_handler = sub {
+            $client->status->clear_poi_name_mismatch;
+
+            BOM::Event::Actions::Common::set_age_verification($client, $provider);
+
+            $idv_model->update_document_check({
+                document_id     => $document->{id},
+                status          => 'verified',
+                provider        => $provider,
+                expiration_date => $transformed_resp->{expiration_date},
+                request_body    => encode_json_utf8($provider_request_body),
+                response_body   => encode_json_utf8($provider_response_body),
+            });
+        };
+
+        my $rule_engine_handler = sub {
             my $rule_engine = BOM::Rules::Engine->new(
                 client          => $client,
                 residence       => $client->residence,
@@ -156,64 +202,34 @@ async sub verify_identity {
                 document => $document,
             );
 
-            # If there are error messages or engine rule failures, it shouldn't pass.
-
-            unless ($rules_result->has_failure || scalar @messages) {
-                $client->status->clear_poi_name_mismatch;
-
-                BOM::Event::Actions::Common::set_age_verification($client, $provider);
-
-                $idv_model->update_document_check({
-                    document_id     => $document->{id},
-                    status          => $status,
-                    provider        => $provider,
-                    expiration_date => $transformed_resp->{expiration_date},
-                    response_body   => encode_json_utf8 $response_hash
-                });
+            unless ($rules_result->has_failure) {
+                $verified_document_handler->();
             } else {
-
-                # Apply side effects from rule engine failures + the specific error messages
-                # the provider might have passed.
-
-                push @messages,
-                    _apply_side_effects({
-                        client   => $client,
-                        errors   => +{$rules_result->errors->%*, _messages_to_hashref(@messages)->%*,},
-                        provider => $provider,
-                    });
-
-                # There could've been message overlapping, better to ensure uniqueness.
-
-                @messages = uniq @messages;
-
-                $idv_model->update_document_check({
-                    document_id     => $document->{id},
-                    status          => 'refuted',
-                    expiration_date => $transformed_resp->{expiration_date},
-                    messages        => \@messages,
-                    provider        => $provider,
-                    response_body   => encode_json_utf8 $response_hash // {},
-                });
-
-                BOM::Event::Services::Track::track_event(
-                    event      => 'identity_verification_rejected',
-                    loginid    => $client->loginid,
-                    properties => {
-                        authentication_url => request->brand->authentication_url,
-                        live_chat_url      => request->brand->live_chat_url,
-                        title              => localize('We were unable to verify your document details'),
-                    },
-                );
+                $refuted_document_handler->($rules_result->errors);
             }
+        };
+
+        if ($status eq RESULT_STATUS->{pass}) {
+            $rule_engine_handler->();
+        } elsif ($status eq RESULT_STATUS->{verify}) {
+            if (any { $provider eq $_ } SELFISH_PROVIDERS->@*) {
+                $verified_document_handler->();
+            } else {
+                $rule_engine_handler->();
+            }
+        } elsif ($status eq RESULT_STATUS->{reject}) {
+            $refuted_document_handler->(_messages_to_hashref(@messages));
         } else {
             $idv_model->update_document_check({
-                    document_id   => $document->{id},
-                    status        => 'failed',
-                    messages      => ref $message eq ref [] ? $message : [$message],
-                    provider      => $provider,
-                    response_body => encode_json_utf8 $response_hash // {}});
+                document_id   => $document->{id},
+                status        => 'failed',
+                messages      => \@messages,
+                provider      => $provider,
+                request_body  => encode_json_utf8($provider_request_body),
+                response_body => encode_json_utf8($provider_response_body),
+            });
 
-            $log->debugf('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, $message);
+            $log->debugf('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, \@messages);
         }
     } catch ($e) {
         $log->errorf('An error occurred while triggering IDV for document %s associated by client %s via provider %s due to %s',
@@ -270,7 +286,7 @@ sub _apply_side_effects {
 
     my @messages;
 
-    if (not exists $errors->{Expired}) {
+    unless (exists $errors->{Expired}) {
         if (exists $errors->{NameMismatch}) {
             push @messages, "NAME_MISMATCH";
 
@@ -298,6 +314,88 @@ sub _apply_side_effects {
     }
 
     return @messages;
+}
+
+=head2 _trigger_through_microservice
+
+Triggers given provider through IDV microservice.
+
+=over 4
+
+=item * C<client> - the client instance
+
+=item * C<docuemnt> - the standby document
+
+=item * C<before_request_hook> - a annonymous subroutine that going to be called right before sending requests and accept the request body.
+
+=item * C<provider> - The provider name
+
+=back
+
+Returns an array includes (status, request + response, status message).
+
+=cut
+
+async sub _trigger_through_microservice {
+    my ($client, $document, $before_request_hook) = @_;
+
+    my $config = BOM::Config::Services->config('identity_verification');
+
+    my $api_base_url = sprintf('http://%s:%s', $config->{host}, $config->{port});
+
+    my $req_body = encode_json_utf8 {
+        document => {
+            issuing_country => $document->{issuing_country},
+            type            => $document->{document_type},
+            number          => $document->{document_number},
+        },
+        profile => {
+            login_id   => $client->loginid,
+            first_name => $client->first_name,
+            last_name  => $client->last_name,
+            birthdate  => $client->date_of_birth,
+        }};
+
+    my $response         = undef;
+    my $decoded_response = undef;
+
+    my $status         = undef;
+    my $status_message = [];
+
+    $before_request_hook->($req_body);
+
+    my $url = "$api_base_url/v1/idv";
+
+    try {
+        $response = (await _http()->POST($url, $req_body, (content_type => 'application/json')))->content;
+
+        $decoded_response = eval { decode_json_utf8 $response } // {};
+
+        $status         = $decoded_response->{status};
+        $status_message = $decoded_response->{messages};
+    } catch ($e) {
+        if (blessed($e) and $e->isa('Future::Exception')) {
+            my ($payload) = $e->details;
+            $response = $payload->content;
+
+            $decoded_response = eval { decode_json_utf8 $response } // {};
+
+            $status = RESULT_STATUS->{fail};
+
+            $status_message = $log->errorf(
+                "Identity Verification Microservice responded an error to our request for verify document %s with code: %s, message: %s - %s",
+                $document->{id}, $decoded_response->{code} // 'UNKNOWN',
+                $e->message, $decoded_response->{error} // 'UNKNOWN'
+            );
+        }
+    }
+
+    unless ($status) {
+        $status         = RESULT_STATUS->{fail};
+        $status_message = 'UNAVAILABLE_MICROSERVICE';
+    }
+
+    return ($status, $decoded_response, $status_message);
 }
 
 =head2 _trigger_smile_identity
@@ -337,26 +435,25 @@ async sub _trigger_smile_identity {
     my $job_type = 5;                               # based on Smile Identity documentation
     my $job_id   = Data::UUID->new->create_str();
 
-    my $dob = eval { Date::Utility->new(_extract_data($client, 'date_of_birth'))->date_yyyymmdd };
+    my $dob = eval { Date::Utility->new($client->date_of_birth)->date_yyyymmdd };
 
-    my $req_body = encode_json_utf8 {
+    my $req_body_object = {
         partner_id     => "$partner_id",
         sec_key        => _generate_smile_identity_secret_key($api_key, $partner_id, $ts),
         timestamp      => $ts,
         country        => $country,
         id_type        => $id_type,
         id_number      => $id_number,
-        first_name     => _extract_data($client, 'first_name'),
-        last_name      => _extract_data($client, 'last_name'),
-        dob            => Date::Utility->new(_extract_data($client, 'date_of_birth'))->date_yyyymmdd,
+        first_name     => $client->first_name,
+        last_name      => $client->last_name,
+        dob            => $dob,
         partner_params => {
             job_type => $job_type,
             job_id   => $job_id,
             user_id  => trim(encode_base64($client->loginid)),
         },
-
-        $dob ? (dob => $dob) : undef,
     };
+    my $req_body = encode_json_utf8 $req_body_object;
 
     my $response         = undef;
     my $decoded_response = undef;
@@ -393,7 +490,12 @@ async sub _trigger_smile_identity {
         }
     }
 
-    return ($status, $decoded_response, $status_message);
+    my $request_summary = {
+        request_body  => $req_body_object,
+        response_body => $decoded_response,
+    };
+
+    return ($status, $request_summary, $status_message);
 }
 
 =head2 _shrink_smile_identity
@@ -447,7 +549,7 @@ async sub _trigger_zaig {
     my $status_message = undef;
     my $prefixed_id    = $prefix . $encoded_document_id;
 
-    my $submit_req_body = encode_json_utf8 {
+    my $submit_req_body_object = {
         id                => $prefixed_id,
         registration_id   => trim(encode_base64($client->loginid)),
         document_number   => $document_number,
@@ -455,6 +557,8 @@ async sub _trigger_zaig {
         name              => join(' ', $client->first_name, $client->last_name),
         birthdate         => Date::Utility->new($client->date_of_birth)->date_yyyymmdd,
     };
+    my $submit_req_body = encode_json_utf8 $submit_req_body_object;
+
     $before_request_hook->($submit_req_body);
 
     my $submit_url              = "$api_base_url/natural_person?analyze=true";
@@ -541,7 +645,12 @@ async sub _trigger_zaig {
         }
     }
 
-    return ($status, $decoded_response, $status_message);
+    my $request_summary = {
+        request_body  => $submit_req_body_object,
+        response_body => $decoded_response,
+    };
+
+    return ($status, $request_summary, $status_message);
 }
 
 =head2 _shrink_zaig_response
@@ -583,7 +692,7 @@ sub _handle_smile_identity_response {
     }
 
     my %verification_status_map = (
-        'Verified'           => 'pass',
+        'Verified'           => 'verify',
         'Not Verified'       => 'fail',
         'Issuer Unavailable' => 'unavailable',
         'N/A'                => 'unavailable',
@@ -612,9 +721,9 @@ sub _handle_smile_identity_response {
         }
 
         my $personal_info_returned = $response_hash->{Actions}->{Return_Personal_Info} eq 'Returned';
-        if ($verification_status_map{$verify_status} eq 'pass') {
+        if ($verification_status_map{$verify_status} eq 'verify') {
             if ($personal_info_returned) {
-                $status = RESULT_STATUS->{pass};
+                $status = RESULT_STATUS->{verify};
             } else {
                 $status         = RESULT_STATUS->{n_a};
                 $status_message = 'INFORMATION_LACK';
@@ -644,10 +753,10 @@ sub _handle_zaig_response {
     my ($client, $response_hash) = @_;
 
     my %verification_status_map = (
-        automatically_approved => 'pass',
+        automatically_approved => 'verify',
         automatically_reproved => 'reject',
         in_manual_analysis     => 'n_a',
-        manually_approved      => 'pass',
+        manually_approved      => 'verify',
         manually_reproved      => 'reject',
         pending                => 'n_a',
         not_analysed           => 'n_a',
@@ -658,7 +767,6 @@ sub _handle_zaig_response {
     unless ($response_hash) {
         $status         = RESULT_STATUS->{fail};
         $status_message = $log->errorf("Zaig response is not a valid JSON.");
-        return ($status, $status_message);
     } else {
         my $verify_status = $response_hash->{analysis_status} // 'not_analysed';
 
@@ -669,41 +777,40 @@ sub _handle_zaig_response {
         }
 
         my $result_key = $verification_status_map{$verify_status};
-        my $status     = RESULT_STATUS->{$result_key};
-        my $status_message;
+        $status         = RESULT_STATUS->{$result_key};
+        $status_message = 'EMPTY_STATUS';
 
-        if ($result_key eq 'n_a') {
-            $status         = RESULT_STATUS->{n_a};
-            $status_message = 'EMPTY_STATUS';
-            return ($status, $status_message);
+        if ($result_key eq 'verify') {
+            return (RESULT_STATUS->{verify}, undef);
+        } elsif ($result_key eq 'reject') {
+            # Zaig should've performed the verification itself so we just need to grab the results
+            # and push the statuses.
+
+            # The IDV framework would expect an arrayref when dealing with errors instead of single
+            # string message.
+
+            my $statuses               = [];
+            my $analysis_status_events = $response_hash->{analysis_status_events} // [];
+            my $last_event             = shift $analysis_status_events->@*;
+            my $results                = $last_event->{analysis_output}->{basic_data} // {};
+            my $reason                 = $last_event->{analysis_output}->{reason}     // '';
+
+            my $name_result      = $results->{name}->{description}      // '';
+            my $birthdate_result = $results->{birthdate}->{description} // '';
+
+            push $statuses->@*, 'NAME_MISMATCH'     if $name_result eq 'name_mismatch';
+            push $statuses->@*, 'DOB_MISMATCH'      if $birthdate_result eq 'birthdate_mismatch';
+            push $statuses->@*, 'DOCUMENT_REJECTED' if $reason eq 'document_not_found';
+            push $statuses->@*, 'UNDERAGE'          if $reason =~ /underage/;
+            push $statuses->@*, 'DECEASED'          if $reason eq 'deceased_person';
+
+            if (scalar $statuses->@*) {
+                BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id);
+                return (RESULT_STATUS->{reject}, $statuses);
+            }
         }
-
-        # Zaig should've performed the verification itself so we just need to grab the results
-        # and push the statuses.
-
-        # The IDV framework would expect an arrayref when dealing with errors instead of single
-        # string message.
-
-        my $statuses               = [];
-        my $analysis_status_events = $response_hash->{analysis_status_events} // [];
-        my $last_event             = shift $analysis_status_events->@*;
-        my $results                = $last_event->{analysis_output}->{basic_data} // {};
-        my $reason                 = $last_event->{analysis_output}->{reason}     // '';
-
-        my $name_result      = $results->{name}->{description}      // '';
-        my $birthdate_result = $results->{birthdate}->{description} // '';
-
-        push $statuses->@*, 'NAME_MISMATCH'     if $name_result eq 'name_mismatch';
-        push $statuses->@*, 'DOB_MISMATCH'      if $birthdate_result eq 'birthdate_mismatch';
-        push $statuses->@*, 'DOCUMENT_REJECTED' if $reason eq 'document_not_found';
-        push $statuses->@*, 'UNDERAGE'          if $reason =~ /underage/;
-        push $statuses->@*, 'DECEASED'          if $reason eq 'deceased_person';
-
-        BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id)
-            if scalar $statuses->@*;
-
-        return ($status, $statuses);
     }
+    return ($status, $status_message);
 }
 
 =head2 _get_provider
@@ -770,44 +877,31 @@ sub _generate_smile_identity_secret_key {
     return join '|', $base64, $hash;
 }
 
-=head2 _extract_data
+=head2 _is_microservice_available
 
-Extracter subroutine, manages client's properties extraction
+Checks several parameters whether the microservice is up and eligible to process the request or not
+
+=over 4
+
+=item * C<provider> - The provider name that microservice should handle
+
+=back
+
+Returns bool
 
 =cut
 
-sub _extract_data {
-    my ($client, $property) = @_;
+sub _is_microservice_available {
+    my ($provider) = @_;
 
-    my $func = "_extract_$property";
+    my $enabled = BOM::Config::Services->is_enabled('identity_verification');
 
-    try {
-        return __PACKAGE__->can($func)->($client) if __PACKAGE__->can($func);
-        return $client->{$property} // $client->$property() // '';
-    } catch ($e) {
-        $log->errorf('An error occurred while extracting %s from client %s data.', $property, $client->loginid);
-    }
+    my $app_cfg = BOM::Config::Runtime->instance->app_config;
+    $app_cfg->check_for_update;
 
-    return '';
-}
+    my $provider_supported = any { $_ eq $provider } $app_cfg->system->suspend->idv_legacy_providers->@*;
 
-sub _extract_first_name {
-    my $client = shift;
-
-    return $client->{first_name} if $client->{first_name};
-
-    my @names = split(/\s+/, $client->{name} // '');
-    return $names[0];
-}
-
-sub _extract_last_name {
-    my $client = shift;
-
-    return $client->{last_name} if $client->{last_name};
-
-    my @names = split(/\s+/, $client->{name} // '');
-
-    return $names[-1] unless scalar @names < 2;
+    return $enabled && $provider_supported;
 }
 
 1

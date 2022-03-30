@@ -19,6 +19,10 @@ use HTTP::Response;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use URL::Encode qw(url_decode);
 
+# Don't use microservice
+my $mock_idv_event_action = Test::MockModule->new('BOM::Event::Actions::Client::IdentityVerification');
+$mock_idv_event_action->mock('_is_microservice_available', 0);
+
 my $track_mock = Test::MockModule->new('BOM::Event::Services::Track');
 $track_mock->mock(
     'track_event',
@@ -317,39 +321,6 @@ subtest 'verify' => sub {
             submissions_left => 1,
         },
         {
-            title    => 'Sandbox-like request first digit: 0 (with mismatch data)',
-            document => {
-                issuing_country => 'br',
-                number          => '039.471.658-20',
-                type            => 'cpf',
-            },
-            email => 'user4-2@idv.com',
-            http  => {
-                like_sandbox => 1,
-                get          => {
-                    exception => undef,
-                },
-                content => {
-                    analysis_output => {
-                        basic_data => {
-                            name => {
-                                result      => 'positive',
-                                description => 'name_match',
-                            },
-                            birthdate => {
-                                result      => 'positive',
-                                description => 'birthdate_mismatch'
-                            }}}}
-            },
-            result => {
-                status    => 'refuted',
-                messages  => ['DOB_MISMATCH'],
-                exception => undef,
-            },
-            submissions_left    => 1,
-            submissions_to_zero => 1,
-        },
-        {
             title    => 'Sandbox-like request first digit: 1',
             document => {
                 issuing_country => 'br',
@@ -404,10 +375,11 @@ subtest 'verify' => sub {
                 },
             },
             result => {
-                status   => 'failed',
-                messages => [],
+                status   => 'refuted',
+                messages => ['EMPTY_STATUS'],
             },
-            submissions_left => 1,
+            submissions_left    => 2,
+            submissions_to_zero => 1,
         },
         {
             title    => 'Sandbox-like request first digit: 4',
@@ -562,41 +534,6 @@ subtest 'verify' => sub {
             result => {
                 status   => 'refuted',
                 messages => ['DOB_MISMATCH'],
-            },
-            submissions_left    => 1,
-            submissions_to_zero => 1,
-        },
-        {
-            title    => 'Underage',
-            document => {
-                issuing_country => 'br',
-                number          => '419.574.338-92',
-                type            => 'cpf',
-            },
-            email => 'user12@idv.com',
-            http  => {
-                like_sandbox => 0,
-                content      => {
-                    analysis_status => 'automatically_approved',
-                    analysis_output => {
-                        basic_data => {
-                            name => {
-                                result      => 'positive',
-                                description => 'name_match',
-                            },
-                            birthdate => {
-                                result      => 'positive',
-                                description => 'birthdate_match'
-                            }}}
-                },
-                get => {
-                    exception => undef,
-                },
-            },
-            date_of_birth => Date::Utility->new()->_minus_years(5)->date_yyyymmdd,
-            result        => {
-                status   => 'refuted',
-                messages => ['UNDERAGE'],
             },
             submissions_left    => 1,
             submissions_to_zero => 1,

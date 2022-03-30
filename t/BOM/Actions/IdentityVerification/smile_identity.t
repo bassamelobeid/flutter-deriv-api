@@ -34,6 +34,10 @@ $user->add_client($client);
 my ($resp, $verification_status, $personal_info_status, $personal_info, $args) = undef;
 my $updates = 0;
 
+# Don't use microservice
+my $mock_idv_event_action = Test::MockModule->new('BOM::Event::Actions::Client::IdentityVerification');
+$mock_idv_event_action->mock('_is_microservice_available', 0);
+
 my $mock_services = Test::MockModule->new('BOM::Event::Services');
 my $http_idv      = 0;
 my $http          = 0;
@@ -488,8 +492,9 @@ subtest 'verify identity by smile_identity is passed and DOB mismatch or underag
                 },
             )));
 
-    my $doc      = $idv_model->get_last_updated_document();
-    my $chk      = $idv_model->get_document_check_detail($doc->{id});
+    my $doc = $idv_model->get_last_updated_document();
+    my $chk = $idv_model->get_document_check_detail($doc->{id});
+
     my $response = decode_json_utf8($chk->{response});
 
     cmp_bag [keys $response->%*], [qw/ResultCode Actions ExpirationDate DOB FullName SmileJobID/], 'Expected keys stored';
