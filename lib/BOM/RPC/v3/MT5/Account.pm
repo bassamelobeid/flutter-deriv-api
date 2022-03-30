@@ -284,6 +284,8 @@ sub mt5_accounts_lookup {
                     && (   $resp->{error}{code} eq 'NotFound'
                         || $resp->{error}{code} eq 'MT5AccountInactive'
                         || $resp->{error}{code} eq 'NetworkError'
+                        || $resp->{error}{code} eq 'NoConnection'
+                        || $resp->{error}{code} eq 'ConnectionTimeout'
                         || $resp->{error}{message_to_client} eq 'ERR_NOSERVICE'
                         || $resp->{error}{message_to_client} eq 'Service is not available.'))
                 {
