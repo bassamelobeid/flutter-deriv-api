@@ -231,6 +231,7 @@ sub get_settings_by_group {
                 system.suspend.idv
                 system.suspend.idv_countries
                 system.suspend.idv_providers
+                system.suspend.idv_legacy_providers
                 system.mt5.load_balance.demo.all.p01_ts01
                 system.mt5.load_balance.demo.all.p01_ts02
                 system.mt5.load_balance.real.all.p01_ts01
