@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use BOM::RPC::Registry '-dsl';
+use BOM::RPC::v3::Utility;
 
 use BOM::Pricing::v3::Contract;
 use BOM::Pricing::v3::MarketData;
@@ -47,9 +48,12 @@ rpc send_ask => sub {
     my $subchannel           = _serialize_contract_parameters($response->{contract_parameters});
     my $subscription_channel = $channel . '::' . $subchannel;
 
+    my $market = BOM::RPC::v3::Utility::get_market_by_symbol($args->{args}->{symbol});
+
     $response->{channel}              = $channel;
     $response->{subchannel}           = $subchannel;
     $response->{subscription_channel} = $subscription_channel;
+    $response->{stash}{market}        = $market;
 
     return $response;
 };

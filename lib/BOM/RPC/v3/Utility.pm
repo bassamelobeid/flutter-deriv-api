@@ -17,7 +17,7 @@ no indirect;
 use Syntax::Keyword::Try;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
-use List::Util qw( any  uniqstr  shuffle  minstr  none );
+use List::Util qw( any  uniqstr  shuffle  minstr  none  first);
 use List::UtilsBy qw(bundle_by);
 use JSON::MaybeXS qw{encode_json};
 use URI;
@@ -31,6 +31,7 @@ use JSON::MaybeUTF8 qw/encode_json_utf8 decode_json_utf8/;
 use Quant::Framework;
 use LandingCompany::Registry;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
+use Finance::Underlying;
 
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
@@ -1365,6 +1366,22 @@ sub trading_platform_display_name {
     );
 
     return $display_name{$platform};
+}
+
+=head2 get_market_by_symbol
+
+get market by symbol
+
+=cut
+
+sub get_market_by_symbol {
+    my $symbol = shift;
+
+    if (first { $_ eq $symbol } Finance::Underlying->symbols) {
+        return Finance::Underlying->by_symbol($symbol)->market;
+    } else {
+        return $symbol . " does not exist";
+    }
 }
 
 1;

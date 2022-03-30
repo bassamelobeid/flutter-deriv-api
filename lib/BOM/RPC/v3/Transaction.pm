@@ -588,12 +588,15 @@ rpc "sell",
 
     my $trx_rec = $trx->transaction_record;
 
+    my $market = BOM::RPC::v3::Utility::get_market_by_symbol($fmb->{underlying_symbol});
+
     return {
         transaction_id => $trx->transaction_id,
         reference_id   => $trx->reference_id,     ### buy transaction ID
         contract_id    => $id,
         balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
         sold_for       => formatnumber('price',  $client->currency, $trx_rec->amount),
+        stash          => {market => $market},
     };
     };
 

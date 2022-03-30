@@ -180,6 +180,9 @@ rpc proposal_open_contract => sub {
             BOM::Transaction::Utility::set_poc_parameters($poc_parameters);
             my $pricer_args = BOM::Transaction::Utility::build_poc_pricer_args($poc_parameters);
 
+            my $market = BOM::RPC::v3::Utility::get_market_by_symbol($poc_parameters->{symbol});
+
+            $response->{stash}{market} = $market;
             # pass the pricer_args key to be set by websocket
             push @{$response->{pricer_args_keys}}, $pricer_args;
         }
