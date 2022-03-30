@@ -1226,23 +1226,34 @@ system:
           default: 0
           global: 1
         idv_countries:
-          description: "Suspend all IDV identity verification in the selected countries eg: gh"
+          description: "Suspend all IDV identity verification in the selected countries e.g. gh"
           isa: ArrayRef
           default: []
           global: 1
         idv_providers:
-          description: "Suspend all IDV identity verification by the selected providers eg: smile_identity"
+          description: "Suspend all IDV identity verification by the selected providers e.g. smile_identity"
           isa: ArrayRef
           default: []
           global: 1
+        idv_legacy_providers:
+          description: "Redirect all IDV identity verification requests to the new microservice handlers for the selected providers e.g. smile_identity"
+          isa: ArrayRef
+          default: ['smile_identity']
+          global: 1
     services:
-      description: "Enable integrations with internal services"
+      description: "Enable integrations with internal microservices"
       isa: section
       contains:
         fraud_prevention:
           description: "Enables integration with Fraud Prevention service"
+          description: "Enables integration with Fraud Prevention microservice"
           isa: Bool
           default: 0
+          global: 1
+        identity_verification:
+          description: "Enables integration with IDV microservice"
+          isa: Bool
+          default: 1
           global: 1
     stop:
       description: "Stop one or more of our services"
