@@ -98,7 +98,8 @@ subtest 'multiplier - send_ask' => sub {
         'stash'         => {
             'source_bypass_verification' => 0,
             'valid_source'               => 1,
-            'app_markup_percentage'      => '0'
+            'app_markup_percentage'      => '0',
+            'market'                     => 'synthetic_index'
         },
         'commission'  => '0.50',
         'spot_time'   => ignore(),
@@ -150,7 +151,8 @@ subtest 'multiplier - send_ask' => sub {
         'stash'         => {
             'source_bypass_verification' => 0,
             'valid_source'               => 1,
-            'app_markup_percentage'      => '0'
+            'app_markup_percentage'      => '0',
+            'market'                     => 'synthetic_index'
         },
         'commission'  => '0.50',
         'spot_time'   => ignore(),
@@ -209,7 +211,8 @@ subtest 'multiplier - send_ask' => sub {
         'stash'         => {
             'source_bypass_verification' => 0,
             'valid_source'               => 1,
-            'app_markup_percentage'      => '0'
+            'app_markup_percentage'      => '0',
+            'market'                     => 'synthetic_index'
         },
         'commission'  => '0.0504',
         'spot_time'   => ignore(),
