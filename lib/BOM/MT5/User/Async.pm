@@ -461,12 +461,15 @@ sub _invoke_using_proxy {
     my $dd_tags       = ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
     my $f             = $loop->new_future;
     my $request_start = [Time::HiRes::gettimeofday];
-    my $http          = Net::Async::HTTP->new(
-        decode_content => 1,
-        fail_on_error  => 1,
-        timeout        => 10,
-    );
-    $loop->add($http);
+    state $http;
+    unless ($http) {
+        $http = Net::Async::HTTP->new(
+            decode_content => 1,
+            fail_on_error  => 1,
+            timeout        => 10,
+        );
+        $loop->add($http);
+    }
 
     if ($cmd eq "UserAdd") {
         $param->{pass_main}     = delete $param->{mainPassword};
@@ -481,7 +484,9 @@ sub _invoke_using_proxy {
 
     my $result;
     my $url = $mt5_proxy_url . '/' . $srv_type . '_' . $srv_key . '/' . $cmd;
-    $result = $http->POST($url, $in, content_type => 'application/json')->then(
+
+    $result = $loop->later->then(sub { $http->POST($url, $in, content_type => 'application/json') })->then(
+
         sub {
             my ($result) = @_;
             stats_inc('mt5.call.proxy.successful', {tags => $dd_tags});
@@ -558,7 +563,8 @@ sub _invoke_using_proxy {
             }
 
             return $f->fail($error, mt5 => $cmd);
-        })->retain;
+        });
+
 }
 
 =head2 _invoke_using_php
