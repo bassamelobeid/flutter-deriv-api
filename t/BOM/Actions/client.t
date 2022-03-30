@@ -2759,6 +2759,49 @@ subtest 'crypto_withdrawal_email event' => sub {
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
+subtest 'new account opening' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $param = {
+        event            => 'account_opening_new',
+        type             => 'event',
+        verification_url => 'https://verification_url.com/',
+        live_chat_url    => 'https://www.binary.com/en/contact.html?is_livechat_open=true',
+        code             => 'CODE',
+        language         => 'EN',
+        email            => $test_client->email,
+    };
+
+    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{account_opening_new};
+    ok $handler->($param);
+    my $result = $handler->($param)->get;
+    ok $result, 'Success result';
+    my ($customer, %args) = @track_args;
+    is $args{event}, 'account_opening_new', "got account_opening_new";
+    cmp_deeply $args{properties},
+        {
+        brand            => 'deriv',
+        lang             => 'EN',
+        verification_url => 'https://verification_url.com/',
+        live_chat_url    => 'https://www.binary.com/en/contact.html?is_livechat_open=true',
+        code             => 'CODE',
+        email            => $test_client->email,
+        },
+        'event properties are ok';
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
 subtest 'underage_account_closed' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -3111,6 +3154,12 @@ subtest 'Underage detection' => sub {
 };
 
 subtest 'crypto_withdrawal_rejected_email' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',

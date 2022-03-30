@@ -3416,7 +3416,7 @@ sub link_affiliate_client {
 
 It is triggered for each B<reset_password_request> event emitted, delivering it to Segment.
 It can be called with the following parameters:
-    
+
 =over
 
 =item * C<loginid> - required. Login Id of the user.
@@ -3437,7 +3437,7 @@ sub reset_password_request {
 
 It is triggered for each B<reset_password_confirmation> event emitted, delivering it to Segment.
 It can be called with the following parameters:
-    
+
 =over
 
 =item * C<loginid> - required. Login Id of the user.
@@ -3452,6 +3452,29 @@ sub reset_password_confirmation {
     my ($args) = @_;
 
     return BOM::Event::Services::Track::reset_password_confirmation($args);
+}
+
+=head2 account_opening_new
+
+It is triggered for each B<account_opening_new> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<args> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub account_opening_new {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        anonymous  => 1,
+        event      => 'account_opening_new',
+        properties => $args,
+    );
 }
 
 1;

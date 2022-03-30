@@ -22,6 +22,9 @@ use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Locale qw(get_state_by_id);
 use BOM::Database::Model::UserConnect;
 
+# Constant user_id for anonymous events.
+use constant BINARY_CUSTOMER => 1;
+
 =head1 NAME
 
 BOM::Event::Services::Track
@@ -126,8 +129,9 @@ my %EVENT_PROPERTIES = (
     verify_change_email            => [qw(loginid first_name email code verification_uri)],
     confirm_change_email           => [qw(loginid first_name email)],
     unknown_login                  => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
+    account_with_false_info_locked => [qw(email authentication_url profile_url is_name_change)],
     underage_account_closed        => [qw(tnc_approval)],
-    account_with_false_info_locked => [qw(email authentication_url profile_url is_name_change)]);
+    account_opening_new            => [qw(first_name verification_url code email live_chat_url)]);
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
 
@@ -878,26 +882,27 @@ sub track_event {
     my %args = @_;
 
     my $client = $args{client} // ($args{loginid} ? BOM::User::Client->get_client_instance($args{loginid}) : undef);
-    die $args{event} . ' tracking triggered with an invalid or no loginid and no client. Please inform backend team if it continues to occur.'
-        unless $client;
+    die($args{event} . ' tracking triggered with an invalid or no loginid and no client. Please inform backend team if it continues to occur.')
+        unless $client
+        or $args{anonymous};
 
     return Future->done unless _validate_event($args{event}, $args{brand});
 
-    my %customer_args = (user_id => $client->binary_user_id);
+    my %customer_args = (user_id => $client ? $client->binary_user_id : BINARY_CUSTOMER);
     $customer_args{traits} = $args{traits} // _create_traits($client) if $args{is_identify_required};
     my $customer = _api->new_customer(%customer_args);
 
     my $context = _create_context($args{brand});
 
-    $log->debugf('Tracked %s for client %s', $args{event}, $args{loginid});
+    $log->debugf('Tracked %s for user %s', $args{event}, $customer_args{user_id});
 
     return Future->needs_all(
         _send_track_request(
             $customer,
             {
-                loginid => $client->loginid,
-                lang    => uc($client->user->preferred_language // request->language // ''),
-                brand   => $args{brand}->{name} // request->brand->name,
+                ($client ? (loginid => $client->loginid) : ()),
+                lang  => uc(($client ? $client->user->preferred_language : undef) // request->language // ''),
+                brand => $args{brand}->{name} // request->brand->name,
                 ($args{properties} // {})->%*,
             },
             $args{event},
