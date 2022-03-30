@@ -1,8 +1,6 @@
 BTC:
     withdrawal:
         timeout: "3d"
-    subscription:
-        rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
     dust_relay_tx_fee: 0.00003 # in BTC/kB
@@ -27,8 +25,6 @@ BTC:
 LTC:
     withdrawal:
         timeout: "3d"
-    subscription:
-        rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
     dust_relay_tx_fee: 0.0003 # in LTC/kB
@@ -53,8 +49,6 @@ LTC:
 ETH:
     withdrawal:
         timeout: "5d"
-    subscription:
-        rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
     safe_gas_price: 20000000000 # Wei
@@ -100,8 +94,6 @@ TUSD:
 USB:
     withdrawal:
         timeout: "3d"
-    subscription:
-        rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
 USDC:
@@ -119,8 +111,6 @@ USDK:
 UST:
     withdrawal:
         timeout: "3d"
-    subscription:
-        rpc_timeout: 100
     protocol_cost: 0.00000546
     decimal_places: 8
     sweep:
