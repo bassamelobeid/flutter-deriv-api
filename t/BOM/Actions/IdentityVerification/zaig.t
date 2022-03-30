@@ -238,7 +238,7 @@ subtest 'verify' => sub {
             },
             email => 'user344@idv.com',
             http  => {
-                code      => 429,
+                code      => 409,
                 exception => 1,
                 content   => {title => 'Duplicated external_id'},
             },

@@ -590,10 +590,10 @@ async sub _trigger_zaig {
                 return ($status, $decoded_response, $status_message);
             }
 
-            # Conflict 429 status code means the document id was requested before,
+            # Conflict 409 status code means the document id was requested before,
             # we can proceed with the check regardless.
 
-            unless ($payload->code == 429) {
+            unless ($payload->code == 409) {
                 $response = $payload->content;
 
                 $decoded_response = eval { decode_json_utf8 $response } // {};
