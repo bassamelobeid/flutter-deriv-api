@@ -1,0 +1,17 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use IO::Async::Loop;
+use BOM::Test::Rudderstack::Webserver;
+
+my $loop = IO::Async::Loop->new;
+
+$loop->add(
+    my $mocker = BOM::Test::Rudderstack::Webserver->new(
+        server => 'localhost',
+        port => 8340,
+    )
+);
+
+$mocker->run->get;
