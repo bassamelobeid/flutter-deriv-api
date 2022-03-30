@@ -143,7 +143,6 @@ rpc "verify_email",
                     first_name       => $existing_user->get_default_client->first_name,
                     code             => $data->{template_args}->{code} // '',
                     email            => $email,
-                    language         => $params->{language},
                 },
             });
     } elsif ($existing_user and $type eq 'request_email') {
@@ -162,7 +161,15 @@ rpc "verify_email",
             });
     } elsif ($type eq 'account_opening') {
         unless ($existing_user) {
-            request_email($email, $verification->{account_opening_new}->());
+            my $data = $verification->{account_opening_new}->();
+            BOM::Platform::Event::Emitter::emit(
+                'account_opening_new',
+                {
+                    verification_url => $data->{template_args}->{verification_url} // '',
+                    code             => $data->{template_args}->{code}             // '',
+                    email            => $email,
+                    live_chat_url    => $data->{template_args}->{live_chat_url} // '',
+                });
         } else {
             request_email($email, $verification->{account_opening_existing}->());
         }

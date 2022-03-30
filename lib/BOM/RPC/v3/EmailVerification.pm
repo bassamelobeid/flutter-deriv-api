@@ -108,18 +108,12 @@ sub email_verification {
         password_reset_url => $password_reset_url,
         user_name          => $user_name,
         support_email      => $brand->emails('support'),
+        live_chat_url      => $brand->live_chat_url,
     );
 
     return {
         account_opening_new => sub {
-            my $subject =
-                $brand->name eq 'deriv'
-                ? localize("One more step to create your account")
-                : localize('Verify your email address - [_1]', $website_name);
-
             return {
-                subject       => $subject,
-                template_name => 'account_opening_new',
                 template_args => {
                     name  => $name,
                     title => localize("You're nearly there!"),

@@ -85,7 +85,9 @@ subtest 'Account opening request with an invalid email address' => sub {
 };
 
 subtest 'Account opening request with email does not exist' => sub {
-    mailbox_clear();
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { push @emitted, @_ };
     $params[1]->{args}->{verify_email} = 'test' . rand(999) . '@binary.com';
     $params[1]->{args}->{type}         = 'account_opening';
     $params[1]->{server_name}          = 'binary.com';
@@ -93,12 +95,11 @@ subtest 'Account opening request with email does not exist' => sub {
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
-
-    my $msg = mailbox_search(
-        email   => $params[1]->{args}->{verify_email},
-        subject => qr/Verify your email address|Verify your account for Deriv/
-    );
-    ok $msg, 'Email sent successfully';
+    is($emitted[0], 'account_opening_new', 'type=account_opening_new');
+    is $emitted[1]->{email}, $params[1]->{args}->{verify_email}, 'email is set';
+    is $emitted[1]->{verification_url}, 'https://www.binary.com/en/redirect.html?action=signup&lang=EN&code=' . $emitted[1]->{code},
+        'verification_url is set';
+    is $emitted[1]->{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
 };
 
 subtest 'Account opening request with email exists' => sub {
