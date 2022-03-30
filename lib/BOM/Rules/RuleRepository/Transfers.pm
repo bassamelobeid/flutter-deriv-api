@@ -19,6 +19,7 @@ use BOM::Platform::Context qw(request);
 use BOM::Config::CurrencyConfig;
 
 use Format::Util::Numbers qw(formatnumber financialrounding);
+use Scalar::Util qw( looks_like_number );
 use Syntax::Keyword::Try;
 use List::Util qw/any/;
 use LandingCompany::Registry;
@@ -310,6 +311,17 @@ rule 'transfers.account_types_are_compatible' => {
         $self->fail('IncompatibleMt5ToMt5') if $args->{account_type_from} eq 'mt5' && $args->{account_type_to} eq 'mt5';
 
         $self->fail('IncompatibleDxtradeToDxtrade') if $args->{account_type_from} eq 'dxtrade' && $args->{account_type_to} eq 'dxtrade';
+
+        return 1;
+    },
+};
+
+rule 'transfers.amount_is_valid' => {
+    description => "checking if amount is positive and has numeric value",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('TransferInvalidAmount') unless (looks_like_number($args->{amount}) and $args->{amount} > 0);
 
         return 1;
     },
