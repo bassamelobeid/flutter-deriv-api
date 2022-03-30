@@ -105,6 +105,7 @@ sub proposal_open_contract {
 
     my $channel          = delete $response->{channel};
     my $pricer_args_keys = delete $response->{pricer_args_keys};
+    delete $response->{stash} if $response->{stash};
     my $uuid;
     if (defined $channel) {
         # $channel could be in either

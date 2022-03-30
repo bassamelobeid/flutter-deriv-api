@@ -118,8 +118,12 @@ sub log_call_timing {
 
     $tags{app_id} = $c->stash('source') if $req_storage->{method} =~ APP_ID_LOGGED_METHODS;
 
-    # extra tagging for buy for better visualization
-    $tags{market} = $c->stash('market') if $req_storage->{method} eq 'buy' and $c->stash('market');
+    # extra tagging for buy, proposal_open_contract, send_ask and sell for better visualization
+    my $methods = qr/^(buy|sell|send_ask|proposal_open_contract)/;
+
+    if (($req_storage->{method} =~ $methods) and $c->stash('market')) {
+        $tags{market} = $c->stash('market');
+    }
 
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing',
