@@ -649,6 +649,7 @@ sub error_map {
         DifferentFiatCurrencies        => localize('Account transfers are not available for accounts with different currencies.'),
         ExchangeRatesUnavailable       => localize('Sorry, transfers are currently unavailable. Please try again later.'),
         TransferBlocked                => localize("Transfers are not allowed for these accounts."),
+        TransferInvalidAmount          => localize("Please provide valid amount."),
 
         'RealToVirtualNotAllowed'             => localize('Transfer between real and virtual accounts is not allowed.'),
         'AuthorizedClientIsVirtual'           => localize('You cannot transfer between real accounts because the authorized client is virtual.'),

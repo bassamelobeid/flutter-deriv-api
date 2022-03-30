@@ -1182,23 +1182,23 @@ sub get_transfer_fee_remark {
 
 rpc transfer_between_accounts => sub {
     my $params = shift;
-
     my ($client, $source, $token) = @{$params}{qw/client source token/};
     my $token_type = $params->{token_type} // '';
     my $lc_short   = $client->landing_company->short;
 
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
-    my $status = $client->status;
-
-    if (BOM::Config::CurrencyConfig::is_payment_suspended()) {
-        return _transfer_between_accounts_error(localize('Payments are suspended.'));
-    }
+    my $status                = $client->status;
+    my $transfers_blocked_err = localize("Transfers are not allowed for these accounts.");
 
     my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
 
     # retrieve disabled accounts just in order to return relevant error messages for them
     my $siblings = $client->get_siblings_information(include_disabled => 1);
+
+    if (BOM::Config::CurrencyConfig::is_payment_suspended()) {
+        return _transfer_between_accounts_error(localize('Payments are suspended.'));
+    }
 
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
@@ -1229,8 +1229,8 @@ rpc transfer_between_accounts => sub {
             platform => 'dxtrade',
             client   => $client,
         );
-
         my @dxtrade_accounts = $dxtrade->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
+
         for my $dxtrade_account (@dxtrade_accounts) {
             push @available_siblings_for_transfer,
                 {
@@ -1303,44 +1303,41 @@ rpc transfer_between_accounts => sub {
                 message_to_client => localize("You are not allowed to transfer to this account.")});
     }
 
-    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from // (), $client_to // ()]);
+    my $is_internal_transfer = !($is_mt5_loginid_from || $is_mt5_loginid_to || $is_dxtrade_loginid_to || $is_dxtrade_loginid_from);
+    my $rule_engine          = BOM::Rules::Engine->new(client => [$client, $client_from // (), $client_to // ()]);
     try {
         $rule_engine->verify_action(
-            'transfer_between_accounts_part1',
-            loginid           => $client->loginid,
-            loginid_from      => $loginid_from,
-            loginid_to        => $loginid_to,
-            account_type_from => $account_type_from,
-            account_type_to   => $account_type_to,
-            amount            => $amount,
-            currency          => $currency,
+            'transfer_between_accounts',
+            loginid              => $client->loginid,
+            loginid_from         => $loginid_from,
+            loginid_to           => $loginid_to,
+            account_type_from    => $account_type_from,
+            account_type_to      => $account_type_to,
+            amount               => $amount,
+            currency             => $currency,
+            token_type           => $token_type,
+            is_internal_transfer => $is_internal_transfer
         );
     } catch ($e) {
+        if (ref $e eq 'HASH' && $e->{error_code} eq 'ExchangeRatesUnavailable') {
+            stats_event(
+                'Exchange Rates Issue - No offering to clients',
+                'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
+                {
+                    alert_type => 'warning',
+                    tags       => ['currency:' . $e->{params} . '_USD']});
+        }
         return BOM::RPC::v3::Utility::missing_details_error(details => $e->{details}->{fields}) if $e->{error_code} eq 'CashierRequirementsMissing';
-        my %error_mapping = (
-            'InvalidLoginidFrom'       => 'PermissionDenied',
-            'InvalidLoginidTo'         => 'PermissionDenied',
-            'IncompatibleDxtradeToMt5' => 'PermissionDenied',
-            'IncompatibleMt5ToDxtrade' => 'PermissionDenied',
-        );
-        my $override_code = ref $e eq 'HASH' ? $error_mapping{$e->{error_code} // ''} : undef;
-        return BOM::RPC::v3::Utility::rule_engine_error($e, $override_code // 'TransferBetweenAccountsError');
+        return BOM::RPC::v3::Utility::rule_engine_error($e);
     }
 
-    return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
-    return _transfer_between_accounts_error(localize('Please provide valid amount.'))
-        if (not looks_like_number($amount) or $amount <= 0);
-
-    my $transfers_blocked_err = localize("Transfers are not allowed for these accounts.");
-
-# this transfer involves an MT5 account
+    # this transfer involves an MT5 account
     if ($is_mt5_loginid_from or $is_mt5_loginid_to) {
         delete @{$params->{args}}{qw/account_from account_to/};
 
         my ($method, $binary_login, $mt5_login);
 
         if ($is_mt5_loginid_to) {
-
             return _transfer_between_accounts_error(localize("You can only transfer from the current authorized client's account."))
                 unless ($client->loginid eq $loginid_from)
                 or $token_type eq 'oauth_token'
@@ -1478,6 +1475,7 @@ rpc transfer_between_accounts => sub {
 
     my ($from_currency, $to_currency) =
         ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
+
     $res = _validate_transfer_between_accounts(
         $client,
         $client_from,
@@ -1727,79 +1725,15 @@ sub _transfer_between_accounts_error {
 }
 
 sub _validate_transfer_between_accounts {
-    my ($current_client, $client_from, $client_to, $args, $token_type) = @_;
-    my ($currency, $amount, $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
+    my ($current_client, $client_from, $client_to,     $args)        = @_;
+    my ($currency,       $amount,      $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
 
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
     return _transfer_between_accounts_error() if (not $client_from or not $client_to);
 
-    ## From here we are implementing rule engine
-    my $rule_engine = BOM::Rules::Engine->new(client => [$current_client, $client_from, $client_to]);
-    try {
-        $rule_engine->verify_action(
-            'transfer_between_accounts_part2',
-            loginid      => $current_client->loginid,
-            loginid_from => $client_from->loginid,
-            loginid_to   => $client_to->loginid,
-            amount       => $amount,
-            currency     => $currency,
-            token_type   => $token_type
-        );
-    } catch ($e) {
-        my %error_mapping = (
-            'RealToVirtualNotAllowed'   => 'PermissionDenied',
-            'AuthorizedClientIsVirtual' => 'PermissionDenied',
-        );
-        my $override_code = undef;
-        if (ref $e eq 'HASH') {
-            # TODO Add support for multi-mapping for error codes when error codes are reused
-            if ($e->{error_code} && $e->{error_code} eq 'SetExistingAccountCurrency') {
-                # The rule returning SetExistingAccountCurrency in bom-rules is reused multiple times but in this case,
-                # the error message is different so the error code is changed to EmptySourceCurrency
-                $e->{error_code} = 'EmptySourceCurrency';
-            }
-            $override_code = $error_mapping{$e->{error_code} // ''};
-        }
-        return BOM::RPC::v3::Utility::rule_engine_error($e, $override_code // 'TransferBetweenAccountsError');
-    }
-
     my $from_currency_type = LandingCompany::Registry::get_currency_type($currency);
-
-    try {
-        $rule_engine->verify_action(
-            'transfer_between_accounts_part3',
-            loginid           => $current_client->loginid,
-            loginid_from      => $client_from->loginid,
-            loginid_to        => $client_to->loginid,
-            account_type_from => $client_from->account_type,
-            account_type_to   => $client_to->account_type,
-            amount            => $args->{amount},
-            currency          => $args->{currency},
-        );
-    } catch ($e) {
-        # We change some error codes to get the desired error messages for specific errors.
-        my %map_error_code = (
-            CurrencyMismatch           => 'TransferCurrencyMismatch',
-            SetExistingAccountCurrency => 'TransferSetCurrency'
-        );
-        if (ref $e eq 'HASH' && $e->{error_code}) {
-            $e->{error_code} = $map_error_code{$e->{error_code}} // $e->{error_code};
-
-            if ($e->{error_code} eq 'ExchangeRatesUnavailable') {
-                stats_event(
-                    'Exchange Rates Issue - No offering to clients',
-                    'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
-                    {
-                        alert_type => 'warning',
-                        tags       => ['currency:' . $e->{params} . '_USD']});
-            }
-        }
-
-        return BOM::RPC::v3::Utility::rule_engine_error($e, 'TransferBetweenAccountsError');
-    }
-
-    my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
+    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
     # These rule are checking app settings; so they should be excluded from the rule engine
     # we don't allow transfer between these two currencies
     if ($from_currency ne $to_currency) {

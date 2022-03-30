@@ -103,7 +103,7 @@ subtest 'Basic transfers' => sub {
     $client_cr2->status->set('disabled', 'system', 'test');
     ok $client_cr2->status->disabled, "account is disabled";
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_to is disabled';
+    is $result->{error}->{code}, 'DisabledAccount', 'Correct error code if account_to is disabled';
     is $result->{error}->{message_to_client}, "You cannot perform this action, as your account $params->{args}->{account_to} is currently disabled.",
         'Correct error message if account_to is disabled';
     $client_cr2->status->clear_disabled;
@@ -761,7 +761,7 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
     $client_cr2->status->set('disabled', 'system', 'test');
     ok $client_cr2->status->disabled, "account_from is disabled";
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is disabled';
+    is $result->{error}->{code}, 'DisabledAccount', 'Correct error code if account_from is disabled';
     is $result->{error}->{message_to_client},
         "You cannot perform this action, as your account $params->{args}->{account_from} is currently disabled.",
         'Correct error message if account_from is disabled';
@@ -771,7 +771,7 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
     $client_cr3->status->set('disabled', 'system', 'test');
     ok $client_cr3->status->disabled, "account_to is disabled";
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_to is disabled';
+    is $result->{error}->{code}, 'DisabledAccount', 'Correct error code if account_to is disabled';
     is $result->{error}->{message_to_client}, "You cannot perform this action, as your account $params->{args}->{account_to} is currently disabled.",
         'Correct error message if account_to is disabled';
     $client_cr3->status->clear_disabled;
@@ -780,7 +780,7 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
     $client_cr2->status->set('withdrawal_locked', 'system', 'test');
     ok $client_cr2->status->withdrawal_locked, "account_from is withdrawal_locked";
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is withdrawal_locked';
+    is $result->{error}->{code}, 'WithdrawalLockedStatus', 'Correct error code if account_from is withdrawal_locked';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message if account_from is withdrawal_locked';
     $client_cr2->status->clear_withdrawal_locked;
@@ -869,7 +869,7 @@ subtest 'Current account is no_withdrawal_or_trading but its siblings can transf
     $client_cr2->status->set('no_withdrawal_or_trading', 'system', 'test');
     ok $client_cr2->status->no_withdrawal_or_trading, "account_from is no_withdrawal_or_trading";
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is no_withdrawal_or_trading';
+    is $result->{error}->{code}, 'NoWithdrawalOrTradingStatus', 'Correct error code if account_from is no_withdrawal_or_trading';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message if account_from is no_withdrawal_or_trading';
     $client_cr2->status->clear_no_withdrawal_or_trading;
@@ -942,7 +942,7 @@ subtest 'Current account is cashier_locked but its siblings can transfer between
     $client_cr2->status->set('cashier_locked', 'system', 'test');
     ok $client_cr2->status->cashier_locked, "account_from is cashier_locked";
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is cashier_locked';
+    is $result->{error}->{code}, 'CashierLocked', 'Correct error code if account_from is cashier_locked';
     is $result->{error}->{message_to_client}, 'Your account cashier is locked. Please contact us for more information.',
         'Correct error message if account_from is cashier_locked';
     $client_cr2->status->clear_cashier_locked;
@@ -950,7 +950,7 @@ subtest 'Current account is cashier_locked but its siblings can transfer between
     $client_cr3->status->set('cashier_locked', 'system', 'test');
     ok $client_cr3->status->cashier_locked, "account_to is cashier_locked";
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_to is cashier_locked';
+    is $result->{error}->{code}, 'CashierLocked', 'Correct error code if account_to is cashier_locked';
     is $result->{error}->{message_to_client}, 'Your account cashier is locked. Please contact us for more information.',
         'Correct error message if account_to is cashier_locked';
     $client_cr3->status->clear_cashier_locked;
@@ -995,7 +995,7 @@ subtest 'Transfer to Sibling account when current account is withdrawal_locked o
         amount       => 100
     };
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is cashier_locked';
+    is $result->{error}->{code}, 'CashierLocked', 'Correct error code if account_from is cashier_locked';
     is $result->{error}->{message_to_client}, 'Your account cashier is locked. Please contact us for more information.',
         'Correct error message if account_to is cashier_locked';
     $client_cr1->status->clear_cashier_locked;
@@ -1003,7 +1003,7 @@ subtest 'Transfer to Sibling account when current account is withdrawal_locked o
     $client_cr1->status->set('withdrawal_locked', 'system', 'test');
     ok $client_cr1->status->withdrawal_locked, "account is withdrawal_locked";
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is cashier_locked';
+    is $result->{error}->{code}, 'WithdrawalLockedStatus', 'Correct error code if account_from is cashier_locked';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message if account_from is withdrawal_locked';
     $client_cr1->status->clear_withdrawal_locked;
@@ -1011,7 +1011,7 @@ subtest 'Transfer to Sibling account when current account is withdrawal_locked o
     $client_cr1->status->set('no_withdrawal_or_trading', 'system', 'test');
     ok $client_cr1->status->no_withdrawal_or_trading, "account is no_withdrawal_or_trading";
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is cashier_locked';
+    is $result->{error}->{code}, 'NoWithdrawalOrTradingStatus', 'Correct error code if account_from is cashier_locked';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message if account_from is no_withdrawal_or_trading';
     $client_cr1->status->clear_no_withdrawal_or_trading;
@@ -1070,7 +1070,7 @@ subtest 'Transfer from Sibling account when current account is withdrawal_locked
         amount       => 0.00018182
     };
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_to is cashier_locked';
+    is $result->{error}->{code}, 'CashierLocked', 'Correct error code if account_to is cashier_locked';
     is $result->{error}->{message_to_client}, 'Your account cashier is locked. Please contact us for more information.',
         'Correct error message if account_to is cashier_locked';
     $client_cr1->status->clear_cashier_locked;
@@ -1156,7 +1156,7 @@ subtest 'Transfer between virtual accounts' => sub {
     is_deeply $result->{error},
         {
         'message_to_client' => 'Transfer between wallet accounts is not allowed.',
-        'code'              => 'TransferBetweenAccountsError'
+        'code'              => 'WalletAccountsNotAllowed'
         },
         'Transfer between wallet accounts will fail';
 
@@ -1165,13 +1165,13 @@ subtest 'Transfer between virtual accounts' => sub {
         for my $account_to ($client_vr->loginid, $client_vdw->loginid) {
             $params->{args}->{account_to} = $account_to;
             $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-            is $result->{error}->{code}, 'PermissionDenied', 'Transfer from real to virtual account is not allowed';
+            is $result->{error}->{code}, 'RealToVirtualNotAllowed', 'Transfer from real to virtual account is not allowed';
         }
         $params->{args}->{account_to} = $client_cr->loginid;
         for my $account_from ($client_vr->loginid, $client_vdw->loginid) {
             $params->{args}->{account_from} = $account_from;
             $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-            is $result->{error}->{code}, 'PermissionDenied', 'Transfer from virtual to real account is npt allowed';
+            is $result->{error}->{code}, 'RealToVirtualNotAllowed', 'Transfer from virtual to real account is not allowed';
         }
     };
 };

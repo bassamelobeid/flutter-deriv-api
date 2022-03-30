@@ -718,7 +718,7 @@ subtest 'Transfers in between MT5 and Deriv X' => sub {
     };
 
     $c->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Cannot transfer from DX to MT5');
+        ->has_no_system_error->has_error->error_code_is('IncompatibleDxtradeToMt5', 'Cannot transfer from DX to MT5');
 
     $params->{args} = {
         account_to   => $dx->{account_id},
@@ -728,7 +728,7 @@ subtest 'Transfers in between MT5 and Deriv X' => sub {
     };
 
     $c->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Cannot transfer from MT5 to DX');
+        ->has_no_system_error->has_error->error_code_is('IncompatibleMt5ToDxtrade', 'Cannot transfer from MT5 to DX');
 };
 
 done_testing();
