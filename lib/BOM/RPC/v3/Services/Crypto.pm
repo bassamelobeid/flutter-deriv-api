@@ -13,7 +13,10 @@ This module contains the helpers for calling our crypto services.
 use strict;
 use warnings;
 
+use DataDog::DogStatsd::Helper;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
+use Log::Any qw($log);
+use LWP::UserAgent;
 use Syntax::Keyword::Try;
 use URI;
 use URI::QueryParam;
@@ -22,7 +25,10 @@ use BOM::Config;
 use BOM::Platform::Context qw(localize);
 use BOM::RPC::v3::Utility;
 
-use constant API_PATH      => '/api/v1/';
+use constant {
+    API_PATH               => '/api/v1/',
+    DD_API_CALL_RESULT_KEY => 'bom_cryptocurrency.api.v_1.call.result'
+};
 use constant API_ENDPOINTS => {
     DEPOSIT         => 'deposit',
     TRANSACTIONS    => 'transactions',
@@ -329,8 +335,13 @@ sub _request {
 
     $method = lc $method;
     my $result = $self->ua->$method($uri, $content // ());
+    my $status = $result->is_success ? "success" : "fail";
+
+    DataDog::DogStatsd::Helper::stats_inc(DD_API_CALL_RESULT_KEY, {tags => ["status:$status"]});
 
     unless ($result->is_success) {
+        $log->warn("Crypto API call faced network issue while requesting $method $uri");
+
         return BOM::RPC::v3::Utility::create_error({
             code              => 'CryptoConnectionError',
             message_to_client => localize('An error occurred while processing your request. Please try again later.'),
