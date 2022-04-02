@@ -405,47 +405,51 @@ subtest 'registering' => sub {
         },
         'register result ok'
     );
-    is_refcount($worker, 2, 'register will create a new ref on worker');
-    my $worker2 = new_ok(
-        Example1 => [
-            c    => $c,
-            args => {},
-        ]);
 
-    is($worker2->already_registered, $worker, 'has already a registered worker');
-    is($worker2->register,           $worker, 'register will return the previous registered worker');
-    is_deeply([sort Example1->get_by_class($c)], [sort ($worker)], 'There is no worker2 because it is registered by previous worker');
-    ok(!Example1->get_by_uuid($c, $worker2->uuid), 'Cannot find this subscription because it is not registered');
-    my $worker3 = new_ok(
-        Example1 => [
-            c    => $c,
-            args => {subchannel => 2},
-        ]);
-    ok(!$worker3->already_registered, 'has not  register such work with subchannel 2');
-    $worker3->register;
-    is(scalar $worker3->get_by_class($c),         2,        'has 2 subscription in this class');
-    is(Example1->get_by_uuid($c, $worker3->uuid), $worker3, 'get_by_uuid worker');
-    is_deeply([sort Example1->get_by_class($c)], [sort ($worker, $worker3)], 'there are only 2 registered workers');
+    SKIP: {
+        skip "skip running memory tests for code coverage", 1 if $ENV{DEVEL_COVER_OPTIONS};
+        is_refcount($worker, 2, 'register will create a new ref on worker');
+        my $worker2 = new_ok(
+            Example1 => [
+                c    => $c,
+                args => {},
+            ]);
 
-    lives_ok { Example1->unregister_by_uuid($c, $worker3->uuid) } 'unregister by uuid worker';
-    ok(!Example1->get_by_uuid($c, $worker3->uuid), 'get_by_uuid cannot find this worker now ');
-    is_deeply([sort Example1->get_by_class($c)], [sort ($worker)], 'there are only 1 registered worker now');
-    lives_ok { $worker->unregister } 'unregsiter work';
-    is_oneref($worker, 'unregister will reduce one ref');
-    is_deeply(
-        $c->stash,
-        {
-            channels     => {},
-            uuid_channel => {}
-        },
-        'unregsiter result ok'
-    );
-    ok(!Example1->get_by_class($c), 'there is no registered worker now');
+        is($worker2->already_registered, $worker, 'has already a registered worker');
+        is($worker2->register,           $worker, 'register will return the previous registered worker');
+        is_deeply([sort Example1->get_by_class($c)], [sort ($worker)], 'There is no worker2 because it is registered by previous worker');
+        ok(!Example1->get_by_uuid($c, $worker2->uuid), 'Cannot find this subscription because it is not registered');
+        my $worker3 = new_ok(
+            Example1 => [
+                c    => $c,
+                args => {subchannel => 2},
+            ]);
+        ok(!$worker3->already_registered, 'has not  register such work with subchannel 2');
+        $worker3->register;
+        is(scalar $worker3->get_by_class($c),         2,        'has 2 subscription in this class');
+        is(Example1->get_by_uuid($c, $worker3->uuid), $worker3, 'get_by_uuid worker');
+        is_deeply([sort Example1->get_by_class($c)], [sort ($worker, $worker3)], 'there are only 2 registered workers');
 
-    # set uuid_channel by hand to check that the item will be deleted when subscription object destroyed
-    weaken($c->stash->{uuid_channel}{$worker->uuid} = $worker);
-    undef $worker;
-    ok(!$c->stash->{uuid_channel}->%*, 'the item we set by hand was deleted by subscription DEMOLISH');
+        lives_ok { Example1->unregister_by_uuid($c, $worker3->uuid) } 'unregister by uuid worker';
+        ok(!Example1->get_by_uuid($c, $worker3->uuid), 'get_by_uuid cannot find this worker now ');
+        is_deeply([sort Example1->get_by_class($c)], [sort ($worker)], 'there are only 1 registered worker now');
+        lives_ok { $worker->unregister } 'unregsiter work';
+        is_oneref($worker, 'unregister will reduce one ref');
+        is_deeply(
+            $c->stash,
+            {
+                channels     => {},
+                uuid_channel => {}
+            },
+            'unregsiter result ok'
+        );
+        ok(!Example1->get_by_class($c), 'there is no registered worker now');
+
+        # set uuid_channel by hand to check that the item will be deleted when subscription object destroyed
+        weaken($c->stash->{uuid_channel}{$worker->uuid} = $worker);
+        undef $worker;
+        ok(!$c->stash->{uuid_channel}->%*, 'the item we set by hand was deleted by subscription DEMOLISH');
+    }
 };
 
 {
