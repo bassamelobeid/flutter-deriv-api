@@ -164,6 +164,9 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make structure
         name: Code structure and syntax
+    - run:
+        command: make unit
+        name: unit tests
     - store_test_results:
         path: /var/tmp/test-output
   subscriptions:
@@ -278,8 +281,6 @@ workflows:
     - subscriptions:
         context: perl
     - backends:
-        context: perl
-    - unit:
         context: perl
     - update_docs:
         context: perl
