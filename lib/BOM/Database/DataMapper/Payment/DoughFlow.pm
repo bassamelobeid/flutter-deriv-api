@@ -119,6 +119,21 @@ sub get_doughflow_methods {
         });
 }
 
+=head2 get_poo_required_methods
+
+Returns a list of doughflow payment methods that requires POO
+
+=cut
+
+sub get_poo_required_methods {
+    my $self = shift;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectcol_arrayref('SELECT * FROM payment.doughflow_poo_method_list()', {Slice => {}});
+        });
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 

@@ -3,9 +3,10 @@
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 13;
 use Test::Exception;
 use Test::Warnings;
+use Test::Deep;
 
 use Date::Utility;
 use BOM::Database::Model::Account;
@@ -273,3 +274,68 @@ subtest 'check account has duplicate payment' => sub {
     );
 };
 
+subtest 'doughflow methods that may require POO' => sub {
+    my $doughflow_datamapper;
+    lives_ok {
+        $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
+            client_loginid => 'CR9999',
+            currency_code  => 'USD'
+        });
+    }
+    'Expect to initialize the object';
+
+    my $poo_methods = $doughflow_datamapper->get_poo_required_methods();
+
+    cmp_deeply $poo_methods, [], 'Expeted POO df methods';
+
+    create_pm(
+        $doughflow_datamapper->db->dbic,
+        payment_processor    => 'a1',
+        payment_method       => 'a2',
+        reversible           => 1,
+        deposit_poi_required => 1,
+        poo_required         => 1,
+    );
+
+    $poo_methods = $doughflow_datamapper->get_poo_required_methods();
+
+    cmp_deeply $poo_methods, [qw/a2/], 'Expeted POO df methods';
+
+    create_pm(
+        $doughflow_datamapper->db->dbic,
+        payment_processor    => 'b1',
+        payment_method       => 'a2',
+        reversible           => 1,
+        deposit_poi_required => 1,
+        poo_required         => 1,
+    );
+
+    $poo_methods = $doughflow_datamapper->get_poo_required_methods();
+
+    cmp_deeply $poo_methods, [qw/a2/], 'Expeted POO df methods';
+
+    create_pm(
+        $doughflow_datamapper->db->dbic,
+        payment_processor    => 'b1',
+        payment_method       => 'a1',
+        reversible           => 1,
+        deposit_poi_required => 1,
+        poo_required         => 1,
+    );
+
+    $poo_methods = $doughflow_datamapper->get_poo_required_methods();
+
+    cmp_deeply $poo_methods, [qw/a1 a2/], 'Expeted POO df methods';
+};
+
+sub create_pm {
+    my ($db, %args) = @_;
+
+    my $result = $db->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_create(?, ?, ?, ?, ?)',
+                undef, @args{qw/payment_processor payment_method reversible deposit_poi_required poo_required/});
+        });
+
+    return $result;
+}
