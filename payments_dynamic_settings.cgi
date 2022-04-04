@@ -170,11 +170,11 @@ BOM::Backoffice::Request::template()->process(
     'backoffice/payments/payments_dynamic_settings.tt',
     {
         high_risk_payment_methods => $high_risk_payment_methods,
-        payment_limits => $payment_limits,
-        revision       => $revision,
-        error          => $error,
-        message        => $message,
-        staff          => $clerk,
+        payment_limits            => $payment_limits,
+        revision                  => $revision,
+        error                     => $error,
+        message                   => $message,
+        staff                     => $clerk,
         input_new                 => {
             pm       => $input{'new'}           // '',
             siblings => $input{'siblings[new]'} // '',

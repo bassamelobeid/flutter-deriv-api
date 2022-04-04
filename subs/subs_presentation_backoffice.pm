@@ -267,6 +267,10 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
         {
             link => 'dividend_scheduler_tool',
             text => 'Dividend Scheduler Tool'
+        },
+        {
+            link => 'compliance_dashboard',
+            text => 'Compliance Dashboard'
         }];
 
     # check access of each memory tab before adding to list
@@ -277,6 +281,7 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
             list => $main_sections_list
         },
     );
+
     # main_sections_list will always be populated
     # misc_tools_list may be empty
     if (scalar @$misc_tools_list != 0) {

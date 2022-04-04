@@ -1,0 +1,16 @@
+<form action="[% url %]" method=post>
+    <table>
+    [% FOR level IN risk_levels %]
+        <tr>
+            <td>[% level %]</td>
+            <td><input type='text' name="jurisdiction_risk.[% level %]" value="[% data.$level.join(' ') %]"> </td>
+        </tr>
+    [% END %]
+    </table>
+
+[% IF staff %]<p> Last saved at [% timestamp %] - by [% staff %] </p> [% END %]
+
+<input type="hidden" name="whattodo" value="save_jurisdiction_risk_rating" />
+<input type="hidden" name="jurisdiction_risk_revision" value="[% revision %]" />
+<input type="submit" class="btn btn--primary" value="Submit" />
+</form>
