@@ -27,6 +27,7 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
+use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::User::Utility;
 use BOM::User::IdentityVerification;
 use BOM::Platform::Locale;
@@ -44,6 +45,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::User::Onfido;
 use BOM::User::IdentityVerification;
 use BOM::RPC::v3::Accounts;
+use BOM::Platform::Doughflow;
 use BOM::Platform::Client::IdentityVerification;
 use BOM::User::RiskScreen;
 
@@ -612,6 +614,10 @@ SQL
     }
     my @countries_disallow_residence_change = LoadFile("/home/git/regentmarkets/bom-backoffice/config/countries_disallow_residence_change.yml");
 
+    my $doughflow_mapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
+        client_loginid => $client->loginid,
+    });
+
     my $template_param = {
         balance              => $balance,
         client               => $client,
@@ -685,6 +691,8 @@ SQL
         is_compliance                      => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
         risk_disclaimer_updated_at         => $risk_disclaimer_resubmission_updated_at,
         risk_disclaimer_updated_by         => $risk_disclaimer_resubmission_updated_by,
+        payment_methods                    => $doughflow_mapper->get_poo_required_methods(),
+        proof_of_ownership_list            => $client->proof_of_ownership->list(),
         disallow_residence_change          => @countries_disallow_residence_change
     };
 
@@ -1251,7 +1259,7 @@ sub show_client_id_docs {
             : "";
 
         $links .=
-            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td style="width:400px;overflow:hidden;"><a class="link" href="$url" target="_blank">$file_name</a></td>$age_display$input};
+            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td style="width:400px;overflow:hidden;"><a class="link" href="$url" data-document-id="$id" target="_blank">$file_name</a></td>$age_display$input};
 
         $links .= qq{<td><input type="checkbox" class='files_checkbox' name="document_list" value="$id-$loginid-$file_name"><td>};
 

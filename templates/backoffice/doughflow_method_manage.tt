@@ -43,7 +43,16 @@
                                 <option value="0" [% !item.deposit_poi_required && 'selected' %]>NO</option>
                             </select>
                         </td>
-                    </tr>                    
+                    </tr>     
+                    <tr>
+                        <td class="label">POO required</td>
+                        <td>
+                            <select name="poo_required">
+                                <option value="1" [% item.poo_required && 'selected' %]>YES</option>
+                                <option value="0" [% !item.poo_required && 'selected' %]>NO</option>
+                            </select>
+                        </td>
+                    </tr>                     
                 </table>
                 [% IF item %]
                 <button type="submit" class="btn btn--primary" name="update_confirm" value="[% item.id %]">Save</button>
@@ -83,6 +92,7 @@
                     <th scope="col">Method</th>
                     <th scope="col">Reversible</th>
                     <th scope="col">Deposit POI</th>
+                    <th scope="col">Poo required</th>
                     <th scope="col">Deposits</th>
                     <th scope="col">Last deposit</th>                    
                     <th scope="col">Withdrawls</th>
@@ -100,6 +110,7 @@
                     <td>[% m.payment_method || '<span style="color: LightGrey">[empty]</span>' | none %]</td>
                     [% IF m.reversible %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
                     [% IF m.deposit_poi_required %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
+                    [% IF m.poo_required %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
                     <td>[% m.deposit_count %]</td>
                     <td>[% m.deposit_latest %]</td>
                     <td>[% m.withdrawal_count || 0 %]</td>
