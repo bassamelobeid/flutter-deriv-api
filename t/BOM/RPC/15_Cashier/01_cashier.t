@@ -312,7 +312,7 @@ subtest 'Crypto URL params' => sub {
         l      => 'language',
     );
 
-    my $crypto_service = BOM::RPC::v3::Services::Crypto->new($params);
+    my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
     my $url            = $crypto_service->create_url('DEPOSIT');
 
     for my $key (keys $params->%*) {

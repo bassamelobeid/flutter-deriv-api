@@ -42,7 +42,8 @@ use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::RPC::v3::MT5::Account;
-use BOM::RPC::v3::Services::Crypto;
+use BOM::Platform::CryptoCashier::API;
+use BOM::Platform::CryptoCashier::Config;
 use BOM::RPC::v3::Trading;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Database::Model::HandoffToken;
@@ -62,7 +63,6 @@ use Log::Any qw($log);
 use constant {
     MAX_DESCRIPTION_LENGTH        => 250,
     HANDOFF_TOKEN_TTL             => 5 * 60,
-    CRYPTO_CONFIG_REDIS_KEY       => "cryptocurrency::crypto_config::",
     TRANSFER_OVERRIDE_ERROR_CODES => [qw(FinancialAssessmentRequired)],
 };
 
@@ -135,7 +135,7 @@ rpc "cashier", sub {
             });
         }
 
-        my $crypto_service = BOM::RPC::v3::Services::Crypto->new($params);
+        my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
         if ($action eq 'deposit') {
             return $crypto_service->deposit($client->loginid);
         } elsif ($action eq 'withdraw') {
@@ -1907,7 +1907,7 @@ rpc 'cashier_withdrawal_cancel', sub {
         });
     }
 
-    my $crypto_service = BOM::RPC::v3::Services::Crypto->new($params);
+    my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
     return $crypto_service->withdrawal_cancel($client->loginid, $args->{id});
 };
 
@@ -1931,36 +1931,9 @@ rpc 'cashier_payments', sub {
         });
     }
 
-    my $crypto_service = BOM::RPC::v3::Services::Crypto->new($params);
+    my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
     return $crypto_service->transactions($client->loginid, $args->{transaction_type});
 };
-
-=head2 _crypto_config
-
-Returns crypto config from bom config for passed currency_code
-
-=over 4
-
-=item * C<currency_code> - (required)
-
-=back
-
-=cut
-
-sub _crypto_config {
-    my $currency_code = shift;
-
-    return undef unless $currency_code;
-    return undef if BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency_code);
-
-    my $converted = eval {
-        ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($currency_code),
-            'USD', $currency_code);
-    };
-
-    return 0 + financialrounding('amount', $currency_code, $converted) if $converted;
-    return undef;
-}
 
 rpc 'crypto_config',
     auth => [],    # unauthenticated
@@ -1976,32 +1949,7 @@ rpc 'crypto_config',
         });
     }
 
-    my $result            = {currencies_config => {}};
-    my @crypto_currencies = $currency_code || LandingCompany::Registry::all_crypto_currencies();
-    @crypto_currencies = grep { !BOM::Config::CurrencyConfig::is_crypto_currency_suspended($_) } @crypto_currencies;
-
-    return $result unless @crypto_currencies;
-
-    # Retrieve from redis
-    my $redis_read     = BOM::Config::Redis::redis_replicated_read();
-    my $crypto_configs = $redis_read->mget(map { CRYPTO_CONFIG_REDIS_KEY . $_ } @crypto_currencies);
-
-    #it might be possible that for some currencies crypto config stored in redis is expired, below is handling of that
-    #$crypto_configs have values in same order of @crypto_currencies array
-    for (my $index = 0; $index < @{$crypto_configs}; $index++) {
-        my $min_withdrawal = $crypto_configs->[$index] // _crypto_config($crypto_currencies[$index]);
-        $result->{currencies_config}{$crypto_currencies[$index]}{minimum_withdrawal} = $min_withdrawal if $min_withdrawal;
-    }
-
-    # Return all
-    return $result unless $currency_code;
-
-    # Return the requested currency only
-    return {
-        currencies_config => {
-            $currency_code => $result->{currencies_config}{$currency_code} // {},
-        },
-    };
+    return BOM::Platform::CryptoCashier::Config::crypto_config($currency_code);
     };
 
 1;

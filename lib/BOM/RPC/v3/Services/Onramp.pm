@@ -17,7 +17,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use Digest::SHA qw(hmac_sha256_hex);
 use Net::Async::HTTP;
 use BOM::Platform::Context qw(localize);
-use BOM::RPC::v3::Services::Crypto;
+use BOM::Platform::CryptoCashier::API;
 use BOM::RPC::v3::Utility;
 use BOM::Config;
 use LandingCompany::Registry;
@@ -244,7 +244,7 @@ Returns the deposit address or an empty string if there was an error.
 sub _get_crypto_deposit_address {
     my ($loginid) = @_;
 
-    my $crypto_service = BOM::RPC::v3::Services::Crypto->new();
+    my $crypto_service = BOM::Platform::CryptoCashier::API->new();
     my $deposit_result = $crypto_service->deposit($loginid);
     return $deposit_result->{deposit}{address} // '';
 }
