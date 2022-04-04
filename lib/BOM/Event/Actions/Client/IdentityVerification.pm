@@ -18,6 +18,7 @@ use Brands::Countries;
 use Crypt::OpenSSL::RSA;
 use Data::UUID;
 use Date::Utility;
+use DataDog::DogStatsd::Helper qw( stats_inc );
 use Digest::SHA qw( sha256_hex );
 use Future::AsyncAwait;
 use IO::Async::Loop;
@@ -130,6 +131,12 @@ async sub verify_identity {
                     request_body => $request_body
                 });
             }) // undef;
+
+        DataDog::DogStatsd::Helper::stats_inc(
+            'event.identity_verification.request',
+            {
+                tags => [sprintf('handler:%s', _is_microservice_available($provider) ? 'microservice' : 'legacy'), sprintf('provider:%s', $provider)],
+            });
 
         my ($status, $response_hash, $message) = @result;
 
