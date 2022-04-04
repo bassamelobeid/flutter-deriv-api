@@ -26,6 +26,7 @@ Rose is both the poison and the antidote I guess.
 has client => (
     is       => 'ro',
     required => 1,
+    weak_ref => 1,
 );
 
 =head2 categories
