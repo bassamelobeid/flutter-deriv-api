@@ -1097,6 +1097,11 @@ compliance:
           isa: Str
           global: 1
           default: ""
+    jurisdiction_risk_rating:
+      description: "Defines the jurisdiction risk ratings for certain countries"
+      isa: json_string
+      global: 1
+      default: '{"standard":[], "high":[]}'
 system:
   description: "Various parameters determining core application functionality"
   isa: section
