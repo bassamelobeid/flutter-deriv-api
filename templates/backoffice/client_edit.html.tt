@@ -440,7 +440,11 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             [% IF idv_records.size > 0 %]
                 [% FOREACH record IN idv_records %]
                     <tr>
-                        <td>[% record.document_number %]</td>
+                        <td>
+                            [% IF record.portal_uri %]<a class='link' target='_blank' href='[% record.portal_uri %]'> [% END %]
+                            [% record.document_number %]
+                            [% IF record.portal_uri %]</a> [% END %]
+                        </td>
                         <td>[% record.document_type %]</td>
                         <td>[% record.issuing_country %]</td>
                         <td>[% record.document_expiration_date %]</td>

@@ -557,8 +557,9 @@ SQL
             try {
                 $response = decode_json_utf8 $idv_document_check->{response} if $idv_document_check->{response};
                 $response = BOM::Platform::Client::IdentityVerification::transform_response($idv_document_check->{provider}, $response) // $response;
-                $idv_record->{full_name} = $response->{full_name};
-                $idv_record->{dob}       = $response->{date_of_birth};
+                $idv_record->{full_name}  = $response->{full_name};
+                $idv_record->{dob}        = $response->{date_of_birth};
+                $idv_record->{portal_uri} = $response->{portal_uri};
             } catch ($error) {
                 $idv_record->{full_name} = 'Error';
                 $idv_record->{dob}       = 'Error';
