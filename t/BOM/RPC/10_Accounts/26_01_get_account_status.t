@@ -373,6 +373,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -428,6 +432,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => ["document", "identity"],
                         attempts           => {
@@ -485,6 +493,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -537,6 +549,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => ['identity'],
                         attempts           => {
@@ -607,6 +623,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => [],
                         attempts           => {
@@ -704,6 +724,10 @@ subtest 'get account status' => sub {
                                         status => 'none',
                                     }}
                             },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
+                            },
                             needs_verification => superbagof(qw(identity)),
                             attempts           => {
                                 latest  => undef,
@@ -762,6 +786,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -813,6 +841,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => [],
                         attempts           => {
@@ -908,6 +940,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => ["document", "identity"],
                         attempts           => {
                             latest  => undef,
@@ -959,6 +995,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => ["document"],
                         attempts           => {
@@ -1043,6 +1083,10 @@ subtest 'get account status' => sub {
                                     manual => {
                                         status => 'none',
                                     }}
+                            },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
                             },
                             needs_verification => ['identity'],
                             attempts           => {
@@ -1143,6 +1187,10 @@ subtest 'get account status' => sub {
                                         status => 'none',
                                     }}
                             },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
+                            },
                             needs_verification => ['identity'],
                             attempts           => {
                                 latest  => undef,
@@ -1204,6 +1252,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => ["document", "identity"],
                         attempts           => {
                             latest  => undef,
@@ -1262,6 +1314,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -1314,6 +1370,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => [],
                         attempts           => {
@@ -1371,6 +1431,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => [],
                         attempts           => {
@@ -1431,6 +1495,10 @@ subtest 'get account status' => sub {
                                         status => 'none',
                                     }}
                             },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
+                            },
                             needs_verification => superbagof(qw(identity)),
                             attempts           => {
                                 latest  => undef,
@@ -1485,6 +1553,10 @@ subtest 'get account status' => sub {
                                     manual => {
                                         status => 'none',
                                     }}
+                            },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
                             },
                             needs_verification => superbagof(qw(document)),
                             attempts           => {
@@ -1545,6 +1617,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => ["document", "identity"],
                         attempts           => {
                             latest  => undef,
@@ -1599,6 +1675,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -1651,6 +1731,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => ["document", "identity"],
                         attempts           => {
@@ -1737,6 +1821,10 @@ subtest 'get account status' => sub {
                                         status => 'none',
                                     }}
                             },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
+                            },
                             needs_verification => superbagof(qw(identity)),
                             attempts           => {
                                 latest  => undef,
@@ -1808,6 +1896,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => ["document", "identity"],
                         attempts           => {
                             latest  => undef,
@@ -1878,6 +1970,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => ["document"],
                         attempts           => {
                             latest  => undef,
@@ -1940,6 +2036,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => [],
                         attempts           => {
@@ -2036,6 +2136,10 @@ subtest 'get account status' => sub {
                                         status => 'none',
                                     }}
                             },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
+                            },
                             needs_verification => superbagof(qw(identity)),
                             attempts           => {
                                 latest  => undef,
@@ -2107,6 +2211,10 @@ subtest 'get account status' => sub {
                                     manual => {
                                         status => 'none',
                                     }}
+                            },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
                             },
                             needs_verification => [],
                             attempts           => {
@@ -2193,6 +2301,10 @@ subtest 'get account status' => sub {
                                         status => 'none',
                                     }}
                             },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
+                            },
                             needs_verification => ["identity"],
                             attempts           => {
                                 latest  => undef,
@@ -2269,6 +2381,10 @@ subtest 'get account status' => sub {
                             }
                         },
                     },
+                    ownership => {
+                        status   => 'none',
+                        requests => [],
+                    },
                     needs_verification => ['identity'],
                     attempts           => {
                         latest  => undef,
@@ -2333,6 +2449,10 @@ subtest 'get account status' => sub {
                                     manual => {
                                         status => 'none',
                                     }}
+                            },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
                             },
                             needs_verification => ["document"],
                             attempts           => {
@@ -2405,6 +2525,10 @@ subtest 'get account status' => sub {
                             document => {
                                 status => "none",
                             },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
+                            },
                             needs_verification => ["document", "identity"],
                             attempts           => {
                                 latest  => undef,
@@ -2466,6 +2590,10 @@ subtest 'get account status' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => ["document", "identity"],
                         attempts           => {
@@ -2626,6 +2754,10 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => ["identity"],
                         attempts           => {
                             latest  => undef,
@@ -2715,6 +2847,10 @@ subtest "Test onfido is_country_supported" => sub {
                             status => 'none',
                         }}
                 },
+                ownership => {
+                    status   => 'none',
+                    requests => [],
+                },
                 needs_verification => [],
                 attempts           => {
                     latest  => undef,
@@ -2764,6 +2900,10 @@ subtest "Test onfido is_country_supported" => sub {
                         manual => {
                             status => 'none',
                         }}
+                },
+                ownership => {
+                    status   => 'none',
+                    requests => [],
                 },
                 needs_verification => [],
                 attempts           => {
@@ -2852,6 +2992,10 @@ subtest 'Experian validated account' => sub {
                                 status => 'none',
                             }}
                     },
+                    ownership => {
+                        status   => 'none',
+                        requests => [],
+                    },
                     needs_verification => [],
                     attempts           => {
                         latest  => undef,
@@ -2918,6 +3062,10 @@ subtest 'Experian validated account' => sub {
                             manual => {
                                 status => 'none',
                             }}
+                    },
+                    ownership => {
+                        status   => 'none',
+                        requests => [],
                     },
                     needs_verification => supersetof('identity', 'document'),
                     attempts           => {
@@ -2987,6 +3135,10 @@ subtest 'Experian validated account' => sub {
                                 manual => {
                                     status => 'none',
                                 }}
+                        },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
                         },
                         needs_verification => ['identity'],
                         attempts           => {
@@ -3060,6 +3212,10 @@ subtest 'Experian validated account' => sub {
                                     manual => {
                                         status => 'none',
                                     }}
+                            },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
                             },
                             needs_verification => [],
                             attempts           => {
@@ -3147,6 +3303,10 @@ subtest 'Experian validated account' => sub {
                                     status => 'none',
                                 }}
                         },
+                        ownership => {
+                            status   => 'none',
+                            requests => [],
+                        },
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -3228,6 +3388,10 @@ subtest 'Experian validated account' => sub {
                                     manual => {
                                         status => 'none',
                                     }}
+                            },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
                             },
                             needs_verification => [],
                             attempts           => {
@@ -3326,6 +3490,10 @@ subtest 'Experian validated account' => sub {
                                     manual => {
                                         status => 'none',
                                     }}
+                            },
+                            ownership => {
+                                status   => 'none',
+                                requests => [],
                             },
                             needs_verification => ['identity'],
                             attempts           => {
@@ -3690,6 +3858,10 @@ subtest 'Social identity provider' => sub {
                         }
                     },
                     status => 'none'
+                },
+                ownership => {
+                    status   => 'none',
+                    requests => [],
                 },
                 needs_verification => [],
                 attempts           => {
