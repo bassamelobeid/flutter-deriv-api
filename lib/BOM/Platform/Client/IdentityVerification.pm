@@ -85,10 +85,13 @@ sub _transform_smile_identity_response {
     my $expiration_date = undef;
     $expiration_date = eval { Date::Utility->new($response->{ExpirationDate}) } if $response->{ExpirationDate};
 
+    my $portal_uri = sprintf('https://portal.smileidentity.com/partner/job_results/%s', $response->{SmileJobID} // '');
+
     return {
         full_name       => $response->{FullName},
         date_of_birth   => $response->{DOB},
         expiration_date => $expiration_date,
+        portal_uri      => $response->{SmileJobID} ? $portal_uri : undef,
     };
 }
 
@@ -105,10 +108,13 @@ verification, we will inject data from the client directly.
 sub _transform_zaig_response {
     my ($response) = @_;
 
+    my $portal_uri = sprintf('https://dash.zaig.com.br/natural-person/%s', $response->{natural_person_key} // '');
+
     return {
         full_name       => $response->{name},
         date_of_birth   => $response->{birthdate},
-        expiration_date => undef,                    # All documents are lifetime valid
+        expiration_date => undef,                                                   # All documents are lifetime valid
+        portal_uri      => $response->{natural_person_key} ? $portal_uri : undef,
     };
 }
 
