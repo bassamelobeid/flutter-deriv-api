@@ -6,23 +6,16 @@ use warnings;
 
 use Text::Trim qw(trim);
 use f_brokerincludeall;
-use BOM::CTC::Database;
 use Syntax::Keyword::Try;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel );
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
+use BOM::Cryptocurrency::BatchAPI;
 BOM::Backoffice::Sysinit::init();
 use POSIX;
 
 use constant ROWS_LIMIT => 30;
-
-our $currency_switch;
-
-sub _get_currency_object {
-    my $currency = shift;
-    return $currency_switch->{$currency} //= BOM::CTC::Currency->new(currency_code => $currency);
-}
 
 =head2 get_trimmed_param
 
@@ -45,16 +38,15 @@ sub get_trimmed_param {
     return $param;
 }
 
-my $type       = request()->param('type');
-my $today_date = Date::Utility->new()->datetime_yyyymmdd_hhmmss;
+my @batch_requests;
+
+my $type = request()->param('type');
 my $post_data;
 
-my $db = BOM::CTC::Database->new();
-my $data;
+my $blocked_list;
 my $search    = 0;
 my $page      = 1;
 my $max_pages = 1;
-my %args;
 
 my $fraud_address   = get_trimmed_param(request()->param('fraud_address'));
 my $fraud_loginid   = get_trimmed_param(request()->param('fraud_loginid'));
@@ -68,19 +60,38 @@ if ($type && $type eq "search") {
     $search = 1;
     my $offset = ($page - 1) * ROWS_LIMIT;
 
-    $data = $db->list_blacklist_associated_addresses($fraud_address, $fraud_loginid, $fraud_from_date, $dh_to, ROWS_LIMIT, $offset);
-
-    # check and set the pagination limit
-    if (scalar $data->@* > 0) {
-        my $total_rows = ($data->@*)[0]->{total_count};
-        $max_pages = POSIX::ceil($total_rows / ROWS_LIMIT);
-    }
+    push @batch_requests,
+        {
+        id     => 'list',
+        action => 'address/get_blocked_list',
+        body   => {
+            address    => $fraud_address,
+            date_start => $fraud_from_date,
+            date_end   => $dh_to,
+            loginid    => $fraud_loginid,
+            limit      => ROWS_LIMIT,
+            offset     => $offset,
+        },
+        };
 } elsif ($type && $type eq "export") {
     PrintContentType_excel('fraud_addresses.csv');
 
     my $max_pages_csv = request->param('max_pages');
     my $limit_csv     = $max_pages_csv * ROWS_LIMIT;
-    my $csv_data      = $db->list_blacklist_associated_addresses($fraud_address, $fraud_loginid, $fraud_from_date, $dh_to, $limit_csv, 0);
+    my $batch         = BOM::Cryptocurrency::BatchAPI->new();
+    $batch->add_request(
+        id     => 'export',
+        action => 'address/get_blocked_list',
+        body   => {
+            address    => $fraud_address,
+            date_start => $fraud_from_date,
+            date_end   => $dh_to,
+            loginid    => $fraud_loginid,
+            limit      => $limit_csv,
+            offset     => 0,
+        },
+    );
+    my $csv_data = $batch->process()->[0]{body}{address_list};
 
     my $csv = Text::CSV->new({
             binary       => 1,
@@ -107,7 +118,7 @@ if ($type && $type eq "search") {
     for my $row ($csv_data->@*) {
         my @row_array = (
             $row->{address},          $row->{currency_code},         $row->{address_report_count},
-            $row->{client_loginid},   $row->{investigation_remarks}, $row->{blocked},
+            $row->{client_loginid},   $row->{investigation_remarks}, $row->{is_blocked},
             $row->{last_status_date}, $row->{last_status_update_by}, $row->{insert_date});
         $csv->combine(@row_array);
         print $csv->string;
@@ -119,30 +130,49 @@ if ($type && $type eq "search") {
 PrintContentType();
 BrokerPresentation("Crypto Fraudulent Addresses Extended Information");
 
-if (request()->param('json_data')) {
-    $post_data = decode_json_utf8(request()->param('json_data'));
+if (my $updated_addresses = request()->param('updated_addresses')) {
+    $updated_addresses = decode_json_utf8($updated_addresses);
 
-    foreach my $post_args (@{$post_data}) {
-        %args = (
-            remark     => $post_args->{remark},
-            blocked    => $post_args->{blocked},
-            address    => $post_args->{address},
-            today_date => $today_date,
-            staff_name => BOM::Backoffice::Auth0::get_staffname(),
-        );
-
-        $db->update_blacklist_addresses_bo(%args);
+    my @address_list;
+    foreach my $address_info ($updated_addresses->@*) {
+        push @address_list,
+            {
+            address    => $address_info->{address},
+            is_blocked => $address_info->{is_blocked},
+            remark     => $address_info->{remark},
+            };
     }
+
+    unshift @batch_requests, {    # To be processed first
+        id     => 'update',
+        action => 'address/set_blocked_bulk',
+        body   => {
+            address_list => [@address_list],
+            staff_name   => BOM::Backoffice::Auth0::get_staffname(),
+        },
+    };
 }
 
-# this is to create the link for each fraud address
-foreach my $row ($data->@*) {
-    my @currencies = split(',', $row->{currency_code});
-    # we don't really care about the currency order here, any of them
-    # will bring an effective provider so we can use the first one as parameter
-    my $currency = _get_currency_object($currencies[0]);
+if (@batch_requests) {
+    my $batch = BOM::Cryptocurrency::BatchAPI->new();
+    $batch->add_request($_->%*) for @batch_requests;
+    $batch->process();
 
-    $row->{link} = sprintf("%s/%s", $currency->get_AML_config->{report_url}, $row->{address});
+    $blocked_list = $batch->get_response('list')->[0]{body}{address_list};
+
+    # Set successful update for displaying
+    if (my $update_response = $batch->get_response('update')->[0]) {
+        my %updated_successfully = map { $_->{address} => $_->{is_success} } $update_response->{body}{address_list}->@*;
+        for my $address_info ($blocked_list->@*) {
+            $address_info->{has_updated} = 1 if $updated_successfully{$address_info->{address}};
+        }
+    }
+
+    # Check and set the pagination limit
+    if (scalar $blocked_list->@* > 0) {
+        my $total_rows = ($blocked_list->@*)[0]->{total_count};
+        $max_pages = POSIX::ceil($total_rows / ROWS_LIMIT);
+    }
 }
 
 Bar('CRYPTO FRAUDULENT ADDRESSES');
@@ -151,7 +181,7 @@ BOM::Backoffice::Request::template()->process(
     'backoffice/crypto_fraudulent_addresses.html.tt',
     {
         data_url  => request()->url_for('backoffice/crypto_fraudulent_addresses.cgi'),
-        data      => $data,
+        data      => $blocked_list,
         search    => $search,
         page      => $page,
         max_pages => $max_pages,
