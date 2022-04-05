@@ -580,7 +580,7 @@ subtest 'copy payment agent details and related' => sub {
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '1111aaaa',
         'code_of_conduct_approval_time' => '2020-01-01T00:00:00',
-        'risk_level'                    => 'low',
+        'risk_level'                    => 'low'
     };
     my $pa1 = $client1->set_payment_agent();
     $pa1->$_($args1->{$_}) for keys %$args1;
@@ -610,7 +610,7 @@ subtest 'copy payment agent details and related' => sub {
         'code_of_conduct_approval'      => 0,
         'affiliate_id'                  => '2222bbbbb',
         'code_of_conduct_approval_time' => '2021-02-02',
-        'risk_level'                    => 'low',
+        'risk_level'                    => 'low'
     };
     my $pa2 = $client2->set_payment_agent();
     $pa2->$_($args2->{$_}) for keys %$args2;

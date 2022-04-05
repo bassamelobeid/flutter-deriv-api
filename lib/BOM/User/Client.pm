@@ -43,6 +43,7 @@ use BOM::User::Client::AuthenticationDocuments;
 use BOM::User::Client::ProofOfOwnership;
 use BOM::User::Client::Account;
 use BOM::User::FinancialAssessment;
+use BOM::User::SocialResponsibility;
 use BOM::User::Utility;
 use BOM::User::Wallet;
 use BOM::Database::UserDB;
@@ -568,18 +569,15 @@ sub _notify_cs_about_authenticated_mf {
 
 }
 
-=head2 risk_level
+=head2 risk_level_aml
 
 Get the risk level of clients, based on:
-
-- SR (Social Responsibility): Always high for clients that have breached thresholds
-and have no financial assessment
 
 - AML (Anti-Money Laundering): Applies for clients under all landing companies
 
 =cut
 
-sub risk_level {
+sub risk_level_aml {
     my $self = shift;
 
     my $risk = $self->aml_risk_classification // '';
@@ -587,9 +585,42 @@ sub risk_level {
     # use `low`, `standard`, `high` as prepending `manual override` string is for internal purpose
     $risk =~ s/manual override - //;
 
-    if ($self->landing_company->social_responsibility_check_required && !$self->financial_assessment) {
-        $risk = 'high'
-            if BOM::Config::Redis::redis_events()->get($self->loginid . ':sr_risk_status');
+    return $risk;
+}
+
+=head2 risk_level_sr
+
+Get the risk level of clients, based on:
+
+- SR (Social Responsibility): Always high for clients that have breached thresholds
+and have no financial assessment
+
+=over
+
+=item * C<risk_level_sr_raw> - request raw SR risk level
+
+=back
+
+=cut
+
+sub risk_level_sr {
+    my $self = shift;
+
+    my $risk = 'low';
+
+    if ($self->landing_company->social_responsibility_check) {
+
+        if (!$self->financial_assessment && $self->landing_company->social_responsibility_check eq 'required') {
+            $risk = 'high'
+                if BOM::Config::Redis::redis_events()->get($self->loginid . ':sr_risk_status');
+        }
+
+        if ($self->landing_company->social_responsibility_check eq 'manual') {
+            $risk = BOM::User::SocialResponsibility->get_sr_risk_status($self->binary_user_id) // 'low';
+            # 'low', 'high', 'manual override high', 'problem gambler'
+            $risk =~ s/manual override high|problem gambler/high/;
+        }
+
     }
 
     return $risk;
@@ -615,7 +646,7 @@ sub is_financial_assessment_complete {
     my $is_fa_required = $self->status->financial_assessment_required;
 
     if ($sc ne 'maltainvest') {
-        return 0 if (($self->risk_level() eq 'high' || $is_fa_required) && !$is_FI);
+        return 0 if (($self->risk_level_aml() eq 'high' || $self->risk_level_sr() eq 'high' || $is_fa_required) && !$is_FI);
         return 1;
     }
 
@@ -1689,8 +1720,8 @@ sub is_verification_required {
     }
 
     # applicable for all landing companies
-    return 1 if ($self->aml_risk_classification // '') eq 'high';
-
+    return 1 if ($args{risk_sr}  // '') eq 'high';
+    return 1 if ($args{risk_aml} // '') eq 'high';
     return 1
         if ($self->landing_company->short =~ /^(?:malta|iom)$/
         and not $country_config->{skip_deposit_verification}
@@ -1723,6 +1754,8 @@ sub is_document_expiry_check_required {
     return 1 if ($self->aml_risk_classification // '') eq 'high';
 
     return 1 if $self->get_payment_agent;
+
+    return 1 if $self->risk_level_sr() eq 'high';
 
     return 0;
 }
@@ -6647,7 +6680,7 @@ Returns,
 =cut
 
 sub needs_poa_verification {
-    my ($self, $documents, $status, $is_required_auth) = @_;
+    my ($self, $documents, $status, $is_required_auth, $risk_aml, $risk_sr) = @_;
     # Note optional arguments will be resolved if not provided
     $documents //= $self->documents->uploaded();
     $status    //= $self->get_poa_status($documents);
@@ -6665,7 +6698,11 @@ sub needs_poa_verification {
     # Not fully authenticated rules
     unless ($self->fully_authenticated) {
         my $poa_documents = $documents->{proof_of_address}->{documents};
-        $is_required_auth //= $self->is_verification_required(check_authentication_status => 1);
+        $is_required_auth //= $self->is_verification_required(
+            check_authentication_status => 1,
+            risk_aml                    => $risk_aml,
+            risk_sr                     => $risk_sr
+        );
         return 1 if $is_required_auth and not $poa_documents;
     }
 
@@ -6694,7 +6731,7 @@ Returns,
 =cut
 
 sub needs_poi_verification {
-    my ($self, $documents, $status, $is_required_auth) = @_;
+    my ($self, $documents, $status, $is_required_auth, $risk_aml, $risk_sr) = @_;
     # Note optional arguments will be resolved if not provided
     $documents //= $self->documents->uploaded();
     $status    //= $self->get_poi_status($documents);
@@ -6720,7 +6757,11 @@ sub needs_poi_verification {
 
         $is_required_auth //=
             # requires both poi and poa needed
-            $self->is_verification_required(check_authentication_status => 1);
+            $self->is_verification_required(
+            check_authentication_status => 1,
+            risk_aml                    => $risk_aml,
+            risk_sr                     => $risk_sr
+            );
 
         return 1 if $is_required_auth && $status eq 'none';
 
