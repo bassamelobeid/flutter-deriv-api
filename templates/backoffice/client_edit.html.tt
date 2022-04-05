@@ -397,6 +397,10 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 [% FOREACH social_responsibility = social_responsibility_options %]
                     <option value="[% social_responsibility.value %]" [% IF social_responsibility.value == social_responsibility_risk_status %] selected="selected" [% END %]> [% social_responsibility.details %]</option>
                 [% END %]
+            </select>
+            [% IF social_responsibility_risk_status == 'high' && social_responsibility_risk_status_start_date && social_responsibility_risk_status_end_date %] 
+            <b class="error">From: [% social_responsibility_risk_status_start_date %] To: [% social_responsibility_risk_status_end_date %]</b> 
+            [% END %]
         </td>
     </tr>
     [% END %]

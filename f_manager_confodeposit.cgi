@@ -47,11 +47,11 @@ sub _incr_misc_checks {
     my $transaction = $args->{transfer_type} eq 'CREDIT' ? 'deposit' : 'withdrawal';
 
     $client->increment_social_responsibility_values({net_deposits => $amount})
-        if ($client->landing_company->social_responsibility_check_required
+        if ($client->landing_company->social_responsibility_check eq 'required'
         && $transaction eq 'deposit');
 
     $client->increment_social_responsibility_values({net_deposits => $amount})
-        if ($client->landing_company->social_responsibility_check_required
+        if ($client->landing_company->social_responsibility_check eq 'required'
         && $transaction eq 'withdrawal');
 
     $client->increment_qualifying_payments({

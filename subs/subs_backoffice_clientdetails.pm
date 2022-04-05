@@ -43,6 +43,7 @@ use BOM::Config::Redis;
 use BOM::User::Client;
 use BOM::Backoffice::Request qw(request);
 use BOM::User::Onfido;
+use BOM::User::SocialResponsibility;
 use BOM::User::IdentityVerification;
 use BOM::RPC::v3::Accounts;
 use BOM::Platform::Doughflow;
@@ -60,7 +61,7 @@ A spot to place subroutines that might be useful for various client related oper
 use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX  => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
 use constant RISK_DISCLAIMER_RESUBMISSION_KEY_PREFIX => 'RISK_DISCLAIMER_RESUBMISSION::ID::';
 use constant ACCOUNT_OPENING_REASONS                 => ['Speculative', 'Income Earning', 'Hedging', 'Peer-to-peer exchange'];
-
+use constant SR_30_DAYS_EXP                          => 86400 * 30;
 my $POI_REASONS = {
     cropped => {
         reason => 'cropped',
@@ -614,6 +615,28 @@ SQL
         $risk_disclaimer_resubmission_updated_by = $redis->hget($key . 'meta', 'staff_name');
     }
     my @countries_disallow_residence_change = LoadFile("/home/git/regentmarkets/bom-backoffice/config/countries_disallow_residence_change.yml");
+    my $sr_status_key;
+    my $social_responsibility_risk_status_start_date;
+    my $social_responsibility_risk_status_end_date;
+    my $social_responsibility_risk_status = 'low';
+    my $show_social_responsibility_client = $client->landing_company->social_responsibility_check;
+
+    if ($client->landing_company->social_responsibility_check eq 'required') {
+        $sr_status_key = $client->loginid . ':sr_risk_status';
+        my $redis_events = BOM::Config::Redis::redis_events();
+        $social_responsibility_risk_status = $redis_events->get($sr_status_key) // 'low';
+        if ($show_social_responsibility_client && $social_responsibility_risk_status eq 'high') {
+            my $social_responsibility_risk_status_ttl = $redis_events->ttl($sr_status_key);
+            if ($social_responsibility_risk_status_ttl > 0) {
+                $social_responsibility_risk_status_end_date =
+                    Date::Utility->today()->plus_time_interval($social_responsibility_risk_status_ttl)->date_ddmmmyyyy;
+                $social_responsibility_risk_status_start_date =
+                    Date::Utility->new($social_responsibility_risk_status_end_date)->minus_time_interval(SR_30_DAYS_EXP)->date_ddmmmyyyy;
+            }
+        }
+    } elsif ($client->landing_company->social_responsibility_check eq 'manual') {
+        $social_responsibility_risk_status = BOM::User::SocialResponsibility->get_sr_risk_status($user->id) // 'low';
+    }
 
     my $doughflow_mapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
         client_loginid => $client->loginid,
@@ -628,73 +651,75 @@ SQL
         crs_tin_information  => $crs_tin_status
         ? $crs_tin_status->{last_modified_date}
         : '',
-        dob_day_options                    => $dob_day_options,
-        dob_month_options                  => $dob_month_options,
-        dob_year_options                   => $dob_year_options,
-        financial_risk_status              => $client->status->financial_risk_approval,
-        has_social_signup                  => $user->{has_social_signup},
-        lang                               => request()->language,
-        language_options                   => \@language_options,
-        mifir_config                       => $Finance::MIFIR::CONCAT::config,
-        promo_code_access                  => $promo_code_access,
-        currency_type                      => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
-        proveID                            => $proveID,
-        client_for_prove                   => $client_for_prove,
-        salutation_options                 => \@salutation_options,
-        secret_answer                      => $secret_answer,
-        can_decode_secret_answer           => $can_decode_secret_answer,
-        self_exclusion_enabled             => $self_exclusion_enabled,
-        show_allow_professional_client     => $client->landing_company->support_professional_client,
-        show_social_responsibility_client  => $client->landing_company->social_responsibility_check_required,
-        social_responsibility_risk_status  => BOM::Config::Redis::redis_events_write()->get($client->loginid . ':sr_risk_status') // 'low',
-        professional_status                => get_professional_status($client),
-        show_funds_message                 => ($config->{ukgc_funds_protection} and not $client->is_virtual),
-        show_risk_approval                 => ($client->landing_company->short eq 'maltainvest'),
-        show_tnc_status                    => !$client->is_virtual,
-        show_non_pep_declaration_time      => !$client->is_virtual,
-        non_pep_declaration_time           => $client->non_pep_declaration_time,
-        show_uploaded_documents            => $show_uploaded_documents,
-        state_options                      => set_selected_item($client->state, $stateoptions),
-        client_state                       => $state_name,
-        tnc_status                         => $tnc_status,
-        tnc_versions                       => $tnc_versions,
-        is_valid_tin                       => $is_valid_tin,
-        tin_format_info                    => $tin_format_description,
-        tin_validation_required            => $tin_validation_required,
-        ukgc_funds_status                  => $client->status->ukgc_funds_protection,
-        tax_residence                      => \@tax_residences,
-        tax_residences_countries_name      => $tax_residences_countries_name,
-        tax_identification_number          => $tax_identification_number,
-        cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed,
-        address_verification_status        => $client->status->address_verified,
-        onfido_check_result                => $onfido_check->{result},
-        onfido_check_url                   => $onfido_check->{results_uri} // '',
-        onfido_resubmission                => $onfido_allow_resubmission_flag,
-        poa_resubmission_allowed           => $poa_resubmission_allowed,
-        text_validation_info               => client_text_field_validation_info($client, secret_answer => $secret_answer),
-        aml_risk_levels                    => [get_aml_risk_classicications()],
-        is_staff_compliance                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
-        onfido_resubmission_counter        => $onfido_resubmission_counter // 0,
-        account_opening_reasons            => ACCOUNT_OPENING_REASONS,
-        poi_reasons                        => \@poi_reasons_tpl,
-        poa_reasons                        => \@poa_reasons_tpl,
-        onfido_submissions_left            => BOM::User::Onfido::submissions_left($client),
-        onfido_submissions_reset           => BOM::User::Onfido::submissions_reset_at($client),
-        onfido_reported_properties         => BOM::User::Onfido::reported_properties($client),
-        poi_name_mismatch                  => $client->status->poi_name_mismatch,
-        idv_submissions_left               => $idv_model->submissions_left(),
-        idv_records                        => $idv_records,
-        expired_poi_docs                   => $client->documents->expired(1),
-        login_locked_until                 => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
-        too_many_attempts                  => $too_many_attempts,
-        risk_screen                        => $risk_screen,
-        screening_reasons                  => [BOM::User::RiskScreen::SCREENING_REASON],
-        is_compliance                      => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
-        risk_disclaimer_updated_at         => $risk_disclaimer_resubmission_updated_at,
-        risk_disclaimer_updated_by         => $risk_disclaimer_resubmission_updated_by,
-        payment_methods                    => $doughflow_mapper->get_poo_required_methods(),
-        proof_of_ownership_list            => $client->proof_of_ownership->list(),
-        disallow_residence_change          => @countries_disallow_residence_change
+        dob_day_options                              => $dob_day_options,
+        dob_month_options                            => $dob_month_options,
+        dob_year_options                             => $dob_year_options,
+        financial_risk_status                        => $client->status->financial_risk_approval,
+        has_social_signup                            => $user->{has_social_signup},
+        lang                                         => request()->language,
+        language_options                             => \@language_options,
+        mifir_config                                 => $Finance::MIFIR::CONCAT::config,
+        promo_code_access                            => $promo_code_access,
+        currency_type                                => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
+        proveID                                      => $proveID,
+        client_for_prove                             => $client_for_prove,
+        salutation_options                           => \@salutation_options,
+        secret_answer                                => $secret_answer,
+        can_decode_secret_answer                     => $can_decode_secret_answer,
+        self_exclusion_enabled                       => $self_exclusion_enabled,
+        show_allow_professional_client               => $client->landing_company->support_professional_client,
+        show_social_responsibility_client            => $show_social_responsibility_client,
+        social_responsibility_risk_status            => $social_responsibility_risk_status,
+        social_responsibility_risk_status_start_date => $social_responsibility_risk_status_start_date,
+        social_responsibility_risk_status_end_date   => $social_responsibility_risk_status_end_date,
+        professional_status                          => get_professional_status($client),
+        show_funds_message                           => ($config->{ukgc_funds_protection} and not $client->is_virtual),
+        show_risk_approval                           => ($client->landing_company->short eq 'maltainvest'),
+        show_tnc_status                              => !$client->is_virtual,
+        show_non_pep_declaration_time                => !$client->is_virtual,
+        non_pep_declaration_time                     => $client->non_pep_declaration_time,
+        show_uploaded_documents                      => $show_uploaded_documents,
+        state_options                                => set_selected_item($client->state, $stateoptions),
+        client_state                                 => $state_name,
+        tnc_status                                   => $tnc_status,
+        tnc_versions                                 => $tnc_versions,
+        is_valid_tin                                 => $is_valid_tin,
+        tin_format_info                              => $tin_format_description,
+        tin_validation_required                      => $tin_validation_required,
+        ukgc_funds_status                            => $client->status->ukgc_funds_protection,
+        tax_residence                                => \@tax_residences,
+        tax_residences_countries_name                => $tax_residences_countries_name,
+        tax_identification_number                    => $tax_identification_number,
+        cashier_allow_payment_agent_status           => $client->status->pa_withdrawal_explicitly_allowed,
+        address_verification_status                  => $client->status->address_verified,
+        onfido_check_result                          => $onfido_check->{result},
+        onfido_check_url                             => $onfido_check->{results_uri} // '',
+        onfido_resubmission                          => $onfido_allow_resubmission_flag,
+        poa_resubmission_allowed                     => $poa_resubmission_allowed,
+        text_validation_info                         => client_text_field_validation_info($client, secret_answer => $secret_answer),
+        aml_risk_levels                              => [get_aml_risk_classicications()],
+        is_staff_compliance                          => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
+        onfido_resubmission_counter                  => $onfido_resubmission_counter // 0,
+        account_opening_reasons                      => ACCOUNT_OPENING_REASONS,
+        poi_reasons                                  => \@poi_reasons_tpl,
+        poa_reasons                                  => \@poa_reasons_tpl,
+        onfido_submissions_left                      => BOM::User::Onfido::submissions_left($client),
+        onfido_submissions_reset                     => BOM::User::Onfido::submissions_reset_at($client),
+        onfido_reported_properties                   => BOM::User::Onfido::reported_properties($client),
+        poi_name_mismatch                            => $client->status->poi_name_mismatch,
+        idv_submissions_left                         => $idv_model->submissions_left(),
+        idv_records                                  => $idv_records,
+        expired_poi_docs                             => $client->documents->expired(1),
+        login_locked_until                           => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
+        too_many_attempts                            => $too_many_attempts,
+        risk_screen                                  => $risk_screen,
+        screening_reasons                            => [BOM::User::RiskScreen::SCREENING_REASON],
+        is_compliance                                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
+        risk_disclaimer_updated_at                   => $risk_disclaimer_resubmission_updated_at,
+        risk_disclaimer_updated_by                   => $risk_disclaimer_resubmission_updated_by,
+        payment_methods                              => $doughflow_mapper->get_poo_required_methods(),
+        proof_of_ownership_list                      => $client->proof_of_ownership->list(),
+        disallow_residence_change                    => @countries_disallow_residence_change
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

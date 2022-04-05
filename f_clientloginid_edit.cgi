@@ -45,6 +45,7 @@ use BOM::Backoffice::Config;
 use BOM::Database::DataMapper::Copier;
 use BOM::Platform::S3Client;
 use BOM::User::Onfido;
+use BOM::User::SocialResponsibility;
 use BOM::User::Phone;
 use Log::Any qw($log);
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
@@ -804,22 +805,26 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     }
 
     # TODO: Remove this once the transition is done from redis to client object
-    if ((my $sr_risk_val = $input{client_social_responsibility_check})
-        && $client->landing_company->social_responsibility_check_required)
-    {
+    if (my $sr_risk_val = $input{client_social_responsibility_check}) {
+        if ($client->landing_company->social_responsibility_check eq 'required') {
 
-        my $key_name = $loginid . ':sr_risk_status';
-        my $redis    = BOM::Config::Redis::redis_events_write();
+            my $key_name = $loginid . ':sr_risk_status';
+            my $redis    = BOM::Config::Redis::redis_events_write();
 
-        # There is no need to store clients with low risk in redis, as it is default
-        # and also: if the status is changed from high, we don't need the expiry time
-        # also when client is risk_status "low", we need to resend the emails for breached thresholds
-        if ($sr_risk_val eq 'low') {
-            $redis->del($key_name);
-            $redis->del($loginid . ':sr_check:losses:email');
-            $redis->del($loginid . ':sr_check:net_deposits:email');
-        } else {
-            $redis->set($key_name, $sr_risk_val);
+            # There is no need to store clients with low risk in redis, as it is default
+            # and also: if the status is changed from high, we don't need the expiry time
+            # also when client is risk_status "low", we need to resend the emails for breached thresholds
+            if ($sr_risk_val eq 'low') {
+                $redis->del($key_name);
+                $redis->del($loginid . ':sr_check:losses:email');
+                $redis->del($loginid . ':sr_check:net_deposits:email');
+            } else {
+                $redis->set($key_name, $sr_risk_val);
+            }
+        }
+
+        if ($client->landing_company->social_responsibility_check eq 'manual') {
+            BOM::User::SocialResponsibility->update_sr_risk_status($user->id, $sr_risk_val);
         }
     }
 
