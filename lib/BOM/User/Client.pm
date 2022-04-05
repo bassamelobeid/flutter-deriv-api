@@ -2990,8 +2990,8 @@ sub p2p_order_cancel {
 
     my $update = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?, ? ,?)',
-                undef, $id, $escrow->loginid, $param{source}, $self->loginid, $is_refunded, $txn_time, $is_manual, $buyer_fault);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?, ? ,?, ?)',
+                undef, $id, $escrow->loginid, $param{source}, $self->loginid, $is_refunded, $txn_time, $is_manual, $buyer_fault, $order->{advert_id});
         });
 
     $self->_p2p_order_cancelled($update);
@@ -3272,8 +3272,8 @@ sub p2p_resolve_order_dispute {
         my $buyer_fault = 1;    # this will negatively affect the buyer's completion rate
         $self->db->dbic->run(
             fixup => sub {
-                $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?, ?, ?)',
-                    undef, $id, $escrow->loginid, 4, $staff, 't', $txn_time, $is_manual, $buyer_fault);
+                $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    undef, $id, $escrow->loginid, 4, $staff, 't', $txn_time, $is_manual, $buyer_fault, $order->{advert_id});
             });
 
         if ($fraud) {
@@ -3368,7 +3368,9 @@ sub p2p_expire_order {
 
     my $order_id = $param{id} // die 'No id provided to p2p_expire_order';
     my $order    = $self->_p2p_orders(id => $order_id)->[0];
+
     die 'Invalid order provided to p2p_expire_order' unless $order;
+
     my $escrow   = $self->p2p_escrow($order->{account_currency}) // die 'No escrow account for ' . $order->{account_currency};
     my $txn_time = Date::Utility->new->datetime;
 
@@ -3378,8 +3380,8 @@ sub p2p_expire_order {
 
     my ($old_status, $new_status, $expiry) = $self->db->dbic->txn(
         fixup => sub {
-            $_->selectrow_array('SELECT * FROM p2p.order_expire(?, ?, ?, ?, ?, ?)',
-                undef, $order_id, $escrow->loginid, $param{source}, $param{staff}, $txn_time, $days_for_release);
+            $_->selectrow_array('SELECT * FROM p2p.order_expire(?, ?, ?, ?, ?, ?, ?)',
+                undef, $order_id, $escrow->loginid, $param{source}, $param{staff}, $txn_time, $days_for_release, $order->{advert_id});
         });
 
     $new_status //= '';
