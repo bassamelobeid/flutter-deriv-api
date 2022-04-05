@@ -510,8 +510,10 @@ sub activate_accounts {
     # - social responsibility check is reqired (MLT and MX)
     # - real account with fiat currency
     # - real account with crypto currency
-    my $selected_account = (first { $_->landing_company->social_responsibility_check_required } @$closed_clients)
-        // (first { !$_->is_virtual && LandingCompany::Registry::get_currency_type($_->currency) eq 'fiat' } @$closed_clients)
+    my $selected_account = (
+        first { $_->landing_company->social_responsibility_check && $_->landing_company->social_responsibility_check eq 'required' }
+        @$closed_clients
+    ) // (first { !$_->is_virtual && LandingCompany::Registry::get_currency_type($_->currency) eq 'fiat' } @$closed_clients)
         // (first { !$_->is_virtual } @$closed_clients) // $closed_clients->[0];
 
     my $reason = $selected_account->status->closed->{reason} // '';
