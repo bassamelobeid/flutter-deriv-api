@@ -1503,7 +1503,7 @@ sub account_reactivated {
             use_email_template    => 1,
             email_content_is_html => 1,
             use_event             => 0
-        }) if $client->landing_company->social_responsibility_check_required;
+        }) if $client->landing_company->social_responsibility_check && $client->landing_company->social_responsibility_check eq 'required';
 
     return BOM::Event::Services::Track::account_reactivated({%$args, client => $client});
 }
@@ -1734,7 +1734,7 @@ been breached.
 This SR check is required as per the following document: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf
 (Read pages 2,4,6)
 
-NOTE: This is for MX-MLT clients only (Last updated: 1st May, 2019)
+NOTE: This is for MX-MLT-CR clients only (Last updated: Dec 22, 2021)
 
 =cut
 
@@ -1823,7 +1823,13 @@ sub social_responsibility_check {
             $sr_status_key => 'high',
             EX             => SR_30_DAYS_EXP
         );
-
+        my $today = Date::Utility->today();
+        $log->infof(
+            "Social Responsibility Status for $loginid is set to high, $attribute has a value $client_attribute_val which %s threshold : $threshold_val.",
+            $client_attribute_val == $threshold_val ? "is equal to" : "exceeds"
+        );
+        $log->infof("Social Responsibility high risk status for $loginid starts in %s and expires in %s",
+            $today->date_yyyymmdd, $today->plus_time_interval(SR_30_DAYS_EXP)->date_yyyymmdd);
         try {
             $tt->process(BOM::Event::Actions::Common::TEMPLATE_PREFIX_PATH . 'social_responsibiliy.html.tt', $data, \my $html);
             die "Template error: @{[$tt->error]}" if $tt->error;

@@ -2096,7 +2096,7 @@ subtest 'account_reactivated' => sub {
 
     my $social_responsibility = 0;
     my $mock_landing_company  = Test::MockModule->new('LandingCompany');
-    $mock_landing_company->redefine('social_responsibility_check_required', sub { return $social_responsibility; });
+    $mock_landing_company->redefine('social_responsibility_check', sub { return $social_responsibility; });
 
     my $call_args = {
         loginid => $test_client->loginid,
@@ -2157,7 +2157,7 @@ subtest 'account_reactivated' => sub {
     );
     ok !$msg, 'No SR email is sent';
 
-    $social_responsibility = 1;
+    $social_responsibility = 'required';
     mailbox_clear();
     is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
     $msg = mailbox_search(subject => qr/has been reactivated/);
