@@ -391,7 +391,7 @@ sub write_transaction_line {
 
             # Social responsibility checks for MLT/MX clients
             $client->increment_social_responsibility_values({net_deposits => $amount})
-                if ($client->landing_company->social_responsibility_check_required);
+                if ($client->landing_company->social_responsibility_check && $client->landing_company->social_responsibility_check eq 'required');
 
             _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
         } elsif ($c->type =~ /^(payout_created|payout_inprogress)$/) {
@@ -411,7 +411,7 @@ sub write_transaction_line {
             # Social responsibility checks for MLT/MX clients
             $client->increment_social_responsibility_values({
                     net_deposits => -$amount,
-                }) if ($client->landing_company->social_responsibility_check_required);
+                }) if ($client->landing_company->social_responsibility_check && $client->landing_company->social_responsibility_check eq 'required');
 
             # Payout request with freezing funds need to be counted
             if ($client->is_payout_freezing_funds_enabled) {
