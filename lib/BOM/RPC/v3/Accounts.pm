@@ -945,8 +945,9 @@ rpc balance => sub {
 rpc get_account_status => sub {
     my $params = shift;
 
-    my $client = $params->{client};
-
+    my $client                     = $params->{client};
+    my $risk_aml                   = $client->risk_level_aml;
+    my $risk_sr                    = $client->risk_level_sr;
     my $status                     = $client->status->visible;
     my $id_auth_status             = $client->authentication_status;
     my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
@@ -961,7 +962,8 @@ rpc get_account_status => sub {
         # so they can view upload more documents if needed
         push @$status, 'allow_document_upload';
     } elsif ($client->landing_company->is_authentication_mandatory
-        or ($client->aml_risk_classification // '') eq 'high'
+        or $risk_aml eq 'high'
+        or $risk_sr eq 'high'
         or ($client->status->withdrawal_locked and not $is_withdrawal_locked_for_fa)
         or $client->status->allow_document_upload
         or $client->locked_for_false_profile_info)
@@ -1022,12 +1024,16 @@ rpc get_account_status => sub {
     my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5(has_mt5_regulated_account => $has_mt5_regulated_account);
     my $is_verification_required          = $client->is_verification_required(
         check_authentication_status => 1,
-        has_mt5_regulated_account   => $has_mt5_regulated_account
+        has_mt5_regulated_account   => $has_mt5_regulated_account,
+        risk_aml                    => $risk_aml,
+        risk_sr                     => $risk_sr
     );
     my $authentication = _get_authentication(
         client                            => $client,
         is_document_expiry_check_required => $is_document_expiry_check_required,
         is_verification_required          => $is_verification_required,
+        risk_aml                          => $risk_aml,
+        risk_sr                           => $risk_sr
     );
 
     if ($is_document_expiry_check_required) {
@@ -1048,7 +1054,7 @@ rpc get_account_status => sub {
 
     return {
         status                        => [sort(uniq(@$status))],
-        risk_classification           => $client->risk_level(),
+        risk_classification           => $risk_sr eq 'high' ? $risk_sr : $risk_aml // '',
         prompt_client_to_authenticate => $is_verification_required,
         authentication                => $authentication,
         currency_config               => \%currency_config,
