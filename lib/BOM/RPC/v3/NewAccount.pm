@@ -1065,9 +1065,9 @@ Will do:
 
 =item - The Affiliate account (new broker code)
 
-=item - Create a MT5 real gaming account
+=item - Create an MT5 real gaming account
 
-=item - Sync to MyAffiliates (TODO)
+=item - Add a new account in Affiliate System
 
 =back
 
@@ -1081,9 +1081,7 @@ Will return the following data:
 
 =item - C<landing_company_shortcode>
 
-=item - C<oauth_token>
-
-=item - C<currency>
+=item - C<Affiliate User ID>
 
 =back
 
@@ -1094,31 +1092,16 @@ rpc "affiliate_account_add", sub {
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    my $broker  = 'AFF';
-    my $company = LandingCompany::Registry->by_broker($broker);
+    $log->tracef("Invoked affiliate_account_add for:\n%s \n%s", $client, $args);
 
-    my $response = create_new_real_account(
-        client          => $client,
-        args            => $args,
-        account_type    => 'affiliate',
-        broker_code     => $broker,
-        market_type     => 'affiliate',
-        environment     => request()->login_env($params),
-        ip              => $params->{client_ip} // '',
-        source          => $params->{source},
-        landing_company => $company->short,
-    );
-    return $response if exists $response->{error};
+    my $broker       = 'AFF';
+    my $company      = LandingCompany::Registry->by_broker($broker);
+    my $company_name = $company->name;
 
-    my $new_client = $response->{client};
-
-    return {
-        client_id                 => $new_client->loginid,
-        landing_company           => $new_client->landing_company->name,
-        landing_company_shortcode => $new_client->landing_company->short,
-        oauth_token               => $response->{oauth_token},
-        $args->{currency} ? (currency => $new_client->currency) : (),
-    };
+    return BOM::RPC::v3::Utility::create_error({
+        code              => 'PermissionDenied',
+        message_to_client => "This API is a work in progress. $broker account will be created for landing company: $company_name."
+    });
 };
 
 =head2 _compute_affiliate_token

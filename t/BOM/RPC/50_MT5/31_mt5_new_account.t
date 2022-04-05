@@ -399,83 +399,86 @@ subtest 'account creation throttle' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 };
 
-subtest 'open mt5 account from AFF client' => sub {
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(0);
+SKIP: {
+    skip "Technical account creation for Affiliates is not ready yet.";
+    subtest 'open mt5 account from AFF client' => sub {
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(0);
 
-    my $password = 'Abcd33!@';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'new_aff' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => $email,
-        residence   => 'br',
-    });
-
-    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
-    my $params     = {
-        args => {
-            date_of_birth  => '1989-10-10',
-            affiliate_plan => 'turnover',
-            residence      => 'br',
-            address_line_1 => 'nowhere',
-            affiliate_plan => 'turnover',
-            first_name     => 'test',
-            last_name      => 'asdf',
-            currency       => 'USD',
-        },
-        token => $auth_token,
-    };
-
-    my $result = $c->call_ok('affiliate_account_add', $params)->has_no_system_error->has_no_error()->result;
-
-    my $mt5_args;
-    my $mt5_mock = Test::MockModule->new('BOM::MT5::User::Async');
-    $mt5_mock->mock(
-        'create_user',
-        sub {
-            ($mt5_args) = @_;
-            return $mt5_mock->original('create_user')->(@_);
+        my $password = 'Abcd33!@';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        my $email    = 'new_aff' . rand(999) . '@binary.com';
+        my $user     = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            residence   => 'br',
         });
 
-    my $aff_loginid = $result->{client_id};
-    my $aff_token   = BOM::Platform::Token::API->new->create_token($aff_loginid, 'aff token');
+        my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+        my $params     = {
+            args => {
+                date_of_birth  => '1989-10-10',
+                affiliate_plan => 'turnover',
+                residence      => 'br',
+                address_line_1 => 'nowhere',
+                affiliate_plan => 'turnover',
+                first_name     => 'test',
+                last_name      => 'asdf',
+                currency       => 'USD',
+            },
+            token => $auth_token,
+        };
 
-    $params = {
-        token => $aff_token,
-        args  => {
-            new_password => 'Efgh4567',
-            platform     => 'mt5'
-        },
+        my $result = $c->call_ok('affiliate_account_add', $params)->has_no_system_error->has_no_error()->result;
+
+        my $mt5_args;
+        my $mt5_mock = Test::MockModule->new('BOM::MT5::User::Async');
+        $mt5_mock->mock(
+            'create_user',
+            sub {
+                ($mt5_args) = @_;
+                return $mt5_mock->original('create_user')->(@_);
+            });
+
+        my $aff_loginid = $result->{client_id};
+        my $aff_token   = BOM::Platform::Token::API->new->create_token($aff_loginid, 'aff token');
+
+        $params = {
+            token => $aff_token,
+            args  => {
+                new_password => 'Efgh4567',
+                platform     => 'mt5'
+            },
+        };
+
+        # First we need to set up a trading password for MT5
+        $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_no_error();
+
+        $params->{args} = {
+            mainPassword => 'Efgh4567',
+            account_type => 'gaming',
+        };
+        # Now we can create the account
+        $result = $c->call_ok('mt5_new_account', $params)->has_no_system_error->has_no_error()->result;
+
+        is $result->{currency},     'USD',    'USD currency';
+        is $result->{account_type}, 'gaming', 'Gaming account type';
+        ok $result->{login} =~ /^MTR.*$/, 'MTR login';
+        is $mt5_args->{group},  'real\p02_ts02\synthetic\seychelles_ib_usd', 'Expected group for dsl';
+        is $mt5_args->{rights}, '0x0000000000000004',                        'Expected user rights';
+        $mt5_mock->unmock_all;
+        BOM::RPC::v3::MT5::Account::reset_throttler($aff_loginid);
+
+        $c->call_ok('mt5_new_account', $params)->has_error->error_code_is('MT5CreateUserError')
+            ->error_message_is(
+            "An account already exists with the information you provided. If you've forgotten your username or password, please contact us.");
+
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(1);
     };
-
-    # First we need to set up a trading password for MT5
-    $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_no_error();
-
-    $params->{args} = {
-        mainPassword => 'Efgh4567',
-        account_type => 'gaming',
-    };
-    # Now we can create the account
-    $result = $c->call_ok('mt5_new_account', $params)->has_no_system_error->has_no_error()->result;
-
-    is $result->{currency},     'USD',    'USD currency';
-    is $result->{account_type}, 'gaming', 'Gaming account type';
-    ok $result->{login} =~ /^MTR.*$/, 'MTR login';
-    is $mt5_args->{group},  'real\p02_ts02\synthetic\seychelles_ib_usd', 'Expected group for dsl';
-    is $mt5_args->{rights}, '0x0000000000000004',                        'Expected user rights';
-    $mt5_mock->unmock_all;
-    BOM::RPC::v3::MT5::Account::reset_throttler($aff_loginid);
-
-    $c->call_ok('mt5_new_account', $params)->has_error->error_code_is('MT5CreateUserError')
-        ->error_message_is(
-        "An account already exists with the information you provided. If you've forgotten your username or password, please contact us.");
-
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(1);
-};
+}
 
 done_testing();

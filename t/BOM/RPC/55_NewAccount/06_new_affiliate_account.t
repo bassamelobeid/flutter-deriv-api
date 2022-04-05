@@ -87,120 +87,49 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
-foreach my $currency (qw/USD GBP AUD EUR/) {
-    subtest 'new affiliate account ' . $currency => sub {
-        my $password = 'Abcd33!@';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        my $email    = 'new_aff' . rand(999) . '@binary.com' . $currency;
-        my $user     = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'br',
-        });
+subtest 'new affiliate account' => sub {
+    my $password = 'Abcd33!@';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'new_aff' . rand(999) . '@binary.com' . 'USD';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'br',
+    });
 
-        my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
 
-        $params->{args} = {
-            date_of_birth  => '1989-10-10',
-            affiliate_plan => undef,
-            residence      => 'br',
-        };
-
-        $params->{token} = $auth_token;
-        my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_error()->result;
-
-        is $result->{error}->{code}, 'InsufficientAccountDetails', 'affiliate plan is mandatory';
-        is $result->{error}->{details}->{missing}[0], 'affiliate_plan', 'affiliate plan is mandatory';
-
-        $params->{args} = {
-            date_of_birth  => '1989-10-10',
-            affiliate_plan => 'turnover',
-            residence      => 'br',
-            address_line_1 => 'nowhere',
-            affiliate_plan => 'turnover',
-            first_name     => 'test',
-            last_name      => 'asdf',
-            currency       => $currency,
-        };
-        $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_no_error()->result;
-        my $lc = LandingCompany::Registry->by_broker('AFF');
-
-        ok $result->{client_id} =~ /^AFF[0-9]+$/, 'Got a valid AFF broker code';
-        is $result->{landing_company},           $lc->name,  'Got the landing_company';
-        is $result->{landing_company_shortcode}, $lc->short, 'Got the landing_company_shortcode';
-        ok $result->{oauth_token} =~ /^a1-.+$/, 'Got a valid oauth_token';
-        is $result->{currency}, $currency, 'AFF accounts will have always fiat currency';
-
-        subtest 'affiliate info set' => sub {
-            $aff_cli = BOM::User::Client->rnew(loginid => $result->{client_id});
-            lives_ok { $aff_cli = $aff_cli->get_client_instance($aff_cli->loginid) } 'Can retrieve an Affiliate instance';
-            isa_ok $aff_cli, 'BOM::User::Affiliate', 'Expected affiliate instance';
-
-            cmp_deeply $aff_cli->get_affiliate_info(),
-                {
-                affiliate_loginid => $aff_cli->loginid,
-                affiliate_plan    => 'turnover'
-                },
-                'Expected data set';
-        };
+    $params->{args} = {
+        affiliate_account_add => 1,
+        address_city          => "Timbuktu",
+        address_line_1        => "Askia Mohammed Bvd,",
+        address_postcode      => "QXCQJW",
+        address_state         => "Tombouctou",
+        country               => "ml",
+        first_name            => "John",
+        last_name             => "Doe",
+        non_pep_declaration   => 1,
+        password              => "S3creTp4ssw0rd",
+        phone                 => "+72443598863",
+        tnc_accepted          => 1,
+        username              => "johndoe"
     };
 
-}
+    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_error()->result;
 
-foreach my $currency (qw/USD GBP AUD EUR/) {
-    subtest 'new affiliate account with currency' . $currency => sub {
-        my $password = 'Abcd33!@';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        my $email    = 'new_aff_usd' . rand(999) . '@binary.com' . $currency;
-        my $user     = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'br',
-        });
+    is $result->{error}->{code}, 'InvalidToken', 'Authorization is needed';
 
-        my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+    $params->{token} = $auth_token;
+    $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_error()->result;
 
-        $params->{args} = {
-            date_of_birth  => '1989-10-10',
-            currency       => $currency,
-            residence      => 'br',
-            first_name     => 'Someguy',
-            last_name      => 'The Affiliate',
-            address_line_1 => 'nowhere',
-            affiliate_plan => 'turnover',
-        };
-
-        $params->{token} = $auth_token;
-
-        my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_no_error()->result;
-        my $lc     = LandingCompany::Registry->by_broker('AFF');
-
-        ok $result->{client_id} =~ /^AFF[0-9]+$/, 'Got a valid AFF broker code';
-        is $result->{landing_company},           $lc->name,  'Got the landing_company';
-        is $result->{landing_company_shortcode}, $lc->short, 'Got the landing_company_shortcode';
-        ok $result->{oauth_token} =~ /^a1-.+$/, 'Got a valid oauth_token';
-        is $result->{currency}, $currency, 'Currency set';
-
-        my $cli = BOM::User::Client->rnew(loginid => $result->{client_id});
-        lives_ok { $cli = $cli->get_client_instance($cli->loginid) } 'Can retrieve an Affiliate instance';
-        isa_ok $cli, 'BOM::User::Affiliate', 'Expected affiliate instance';
-        is $cli->account->currency_code, $currency, 'account with fiat currency created';
-
-        subtest 'account limit reached' => sub {
-            $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_error()->result;
-            is $result->{error}->{code}, 'NewAccountLimitReached', 'Cannot open two accounts';
-        };
-    };
-}
+    is $result->{error}->{code}, 'PermissionDenied', 'API is WIP';
+    is $result->{error}->{message_to_client}, 'This API is a work in progress. AFF account will be created for landing company: Deriv Services Ltd.',
+        'Proper WIP message displayed';
+};
 
 done_testing();
