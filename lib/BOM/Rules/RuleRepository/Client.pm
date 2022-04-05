@@ -215,7 +215,8 @@ rule 'client.high_risk_authenticated' => {
         my $client = $context->client($args);
 
         $self->fail('HighRiskNotAuthenticated')
-            if $client->risk_level eq 'high' and not $client->fully_authenticated;
+            if ($client->risk_level_aml eq 'high' or $client->risk_level_sr eq 'high')
+            and not $client->fully_authenticated;
 
         return 1;
     }
