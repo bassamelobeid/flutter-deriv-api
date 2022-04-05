@@ -1371,7 +1371,7 @@ sub sell {
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
 
-    if ($client->landing_company->social_responsibility_check_required) {
+    if ($client->landing_company->social_responsibility_check && $client->landing_company->social_responsibility_check eq 'required') {
         my $loss = $fmb->{buy_price} - $fmb->{sell_price};
 
         $client->increment_social_responsibility_values({
@@ -1574,7 +1574,7 @@ sub cancel {
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
 
-    if ($client->landing_company->social_responsibility_check_required) {
+    if ($client->landing_company->social_responsibility_check && $client->landing_company->social_responsibility_check eq 'required') {
         my $loss = $fmb->{buy_price} - $fmb->{sell_price};
 
         $client->increment_social_responsibility_values({
@@ -2289,7 +2289,8 @@ sub sell_expired_contracts {
 
     my $total_losses = 0;
 
-    my $sr_check_required = $client->landing_company->social_responsibility_check_required;
+    my $sr_check_required =
+        $client->landing_company->social_responsibility_check && $client->landing_company->social_responsibility_check eq 'required';
 
     for my $t (@$sold) {
 
