@@ -22,24 +22,19 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $t = build_wsapi_test();
 
 my %details = (
-    affiliate_account_add  => 1,
-    salutation             => 'Ms',
-    last_name              => 'last-name',
-    first_name             => 'first\'name',
-    date_of_birth          => '1990-12-30',
-    residence              => 'au',
-    place_of_birth         => 'de',
-    address_line_1         => 'Jalan Usahawan',
-    address_line_2         => 'Enterpreneur Center',
-    address_city           => 'Cyberjaya',
-    address_state          => 'Selangor',
-    address_postcode       => '47120',
-    phone                  => '+60321685000',
-    secret_question        => 'Favourite dish',
-    secret_answer          => 'nasi lemak,teh tarik',
-    account_opening_reason => 'Speculative',
-    affiliate_plan         => 'turnover',
-    currency               => 'USD',
+    affiliate_account_add => 1,
+    address_city          => "Timbuktu",
+    address_line_1        => "Askia Mohammed Bvd,",
+    address_postcode      => "QXCQJW",
+    address_state         => "Tombouctou",
+    country               => "ml",
+    first_name            => "John",
+    last_name             => "Doe",
+    non_pep_declaration   => 1,
+    password              => "S3creTp4ssw0rd",
+    phone                 => "+72443598863",
+    tnc_accepted          => 1,
+    username              => "johndoe"
 );
 
 my $lc = LandingCompany::Registry->by_broker('AFF');
@@ -62,13 +57,11 @@ subtest 'new affiliate account' => sub {
     $t->await::authorize({authorize => $token});
 
     $res = $t->await::affiliate_account_add(\%details, {timeout => 10});
-    cmp_deeply $res->{affiliate_account_add},
+    cmp_deeply $res->{affiliate_account_add}, undef;
+    cmp_deeply $res->{error},
         {
-        oauth_token               => re('^a1-.+$'),
-        landing_company           => $lc->name,
-        currency                  => 'USD',
-        landing_company_shortcode => $lc->short,
-        client_id                 => re('^AFF[0-9]+$'),
+        code    => 'PermissionDenied',
+        message => 'This API is a work in progress. AFF account will be created for landing company: Deriv Services Ltd.'
         };
 };
 
