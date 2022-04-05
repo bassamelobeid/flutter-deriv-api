@@ -20,6 +20,7 @@ use List::Util qw(  any  sum0  first  min  uniq  none  );
 use Digest::SHA qw( hmac_sha256_hex );
 use Text::Trim qw( trim );
 use JSON::MaybeUTF8 qw( decode_json_utf8 );
+use URI;
 
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment);
@@ -87,6 +88,7 @@ use constant WITHDRAWAL_PROCESSING_TIMES => {
 # balances. This only affects the balance API call: it does not block other
 # other RPC calls which retrieve lists of accounts.
 use constant MT5_BALANCE_CALL_ENABLED => 0;
+use constant CHANGE_EMAIL_TOKEN_TTL   => 3600;
 
 my $email_field_labels = {
     exclude_until          => 'Exclude from website until',
@@ -1351,10 +1353,9 @@ sub _get_authentication_poa {
 
 rpc change_email => sub {
     my $params = shift;
-
     my $client = $params->{client};
     my ($token_type, $client_ip, $args) = @{$params}{qw/token_type client_ip args/};
-
+    my $brand = request()->brand;
     # allow OAuth token
     unless (($token_type // '') eq 'oauth_token') {
         return BOM::RPC::v3::Utility::permission_error();
@@ -1371,13 +1372,6 @@ rpc change_email => sub {
                     message_to_client => $err->{message_to_client}});
         }
 
-        # only allow social based clients
-        unless ($user->{has_social_signup}) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => "EmailBased",
-                    message_to_client => localize("We can not seem to find your social account. If you need help with logging in, contact us.")});
-        }
-
         my $erring_user = BOM::User->new(email => $args->{new_email});
         if ($erring_user) {
             return BOM::RPC::v3::Utility::create_error({
@@ -1388,16 +1382,31 @@ rpc change_email => sub {
         # send token to new email
         my $code = BOM::Platform::Token->new({
                 email       => $args->{new_email},
-                expires_in  => 3600,
+                expires_in  => CHANGE_EMAIL_TOKEN_TTL,
                 created_for => 'request_email',
             })->token;
-        my $uri = BOM::RPC::v3::NewAccount::get_verification_uri($params->{source});
+        my $uri = BOM::RPC::v3::NewAccount::get_verification_uri($params->{source}) // '';
+
+        my $params = [
+            action => $user->{has_social_signup} ? 'social_email_change' : 'system_email_change',
+            code   => $code,
+            lang   => request()->language,
+            email  => $args->{new_email}];
+        if ($uri) {
+            my $url = URI->new($uri);
+            $url->query_form(@$params);
+            $uri = $url->as_string;
+        }
 
         _send_change_email_verification_email(
             $client, 'verify_change_email',
-            code  => $code,
-            uri   => $uri,
-            email => $args->{new_email});
+            code                  => $code,
+            uri                   => $uri,
+            time_to_expire_in_min => CHANGE_EMAIL_TOKEN_TTL / 60,
+            email                 => $args->{new_email},
+            social_signup         => $user->{has_social_signup} // '',
+            live_chat_url         => $brand->live_chat_url
+        );
 
     } elsif ($args->{change_email} eq 'update') {
         my $error =
@@ -1408,28 +1417,43 @@ rpc change_email => sub {
                     message_to_client => $error->{message_to_client}});
         }
 
-        my $password_error = BOM::RPC::v3::Utility::check_password({
-            email        => $client->email,
-            new_password => $args->{new_password} // ''
-        });
-        return $password_error if $password_error;
+        if ($args->{new_password}) {
+            my $password_error = BOM::RPC::v3::Utility::check_password({
+                email        => $client->email,
+                new_password => $args->{new_password} // ''
+            });
+            return $password_error if $password_error;
+        }
+
+        if (!$args->{new_password} && $user->{has_social_signup}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => "PasswordError",
+                    message_to_client => localize("Unable to update email, password required for social login.")});
+        }
 
         try {
             $client->user->update_email($args->{new_email});
-            $client->user->update_user_password($args->{new_password});
-            my $default_client_loginid = $user->get_default_client(
+            if ($args->{new_password}) {
+                $client->user->update_user_password($args->{new_password});
+            }
+
+            my $default_client = $user->get_default_client(
                 include_disabled   => 1,
                 include_duplicated => 1
-            )->loginid;
+            );
+            my $default_client_loginid = $default_client->loginid;
             BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',    {loginid => $default_client_loginid});
-            BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid});
+            BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid}) unless $default_client->is_virtual;
 
-            my $brand       = request()->brand;
-            my $contact_url = $brand->contact_url({
-                    source   => $params->{source},
-                    language => $params->{language}});
+            my @properties = (
+                $client, 'confirm_change_email',
+                social_signup => $user->{has_social_signup} // '',
+                live_chat_url => $brand->live_chat_url,
+                email         => $args->{new_email});
 
-            _send_change_email_verification_email($client, 'confirm_change_email', email => $args->{new_email}) if ($user->unlink_social);
+            $user->unlink_social if $user->{has_social_signup};
+            _send_change_email_verification_email(@properties);
+
         } catch {
             log_exception();
             return BOM::RPC::v3::Utility::create_error({
@@ -1464,18 +1488,19 @@ Returns undef.
 
 sub _send_change_email_verification_email {
     my ($client, $event, %event_args) = @_;
-
     die unless defined $event;
-
     BOM::Platform::Event::Emitter::emit(
         $event,
         {
             loginid    => $client->loginid,
             properties => {
-                first_name       => $client->first_name,
-                email            => $event_args{email},
-                code             => $event_args{code} // '',
-                verification_uri => $event_args{uri}  // ''
+                first_name            => $client->first_name,
+                email                 => $event_args{email},
+                code                  => $event_args{code}                  // '',
+                verification_uri      => $event_args{uri}                   // '',
+                live_chat_url         => $event_args{live_chat_url}         // '',
+                time_to_expire_in_min => $event_args{time_to_expire_in_min} // '',
+                social_signup         => $event_args{social_signup} ? 1 : 0,
             }});
     return undef;
 }

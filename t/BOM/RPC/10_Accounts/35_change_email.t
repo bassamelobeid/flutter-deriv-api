@@ -65,7 +65,6 @@ subtest 'change email' => sub {
 
     $params->{args}{new_email}         = $email;
     $params->{args}{verification_code} = 'HIIAMCODE';
-
     my $result = $c->tcall($method, $params);
     my $error  = {
         'error' => {
@@ -74,26 +73,13 @@ subtest 'change email' => sub {
         }};
     is_deeply($result, $error, 'change_email returns token error');
 
+    $user->update_has_social_signup(1);
     my $code = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
             created_for => 'request_email'
         })->token;
-    $params->{args}{verification_code} = $code;
-    $result                            = $c->tcall($method, $params);
-    $error                             = {
-        'error' => {
-            'code'              => 'EmailBased',
-            'message_to_client' => 'We can not seem to find your social account. If you need help with logging in, contact us.'
-        }};
-    is_deeply($result, $error, 'change_email returns token error');
 
-    $user->update_has_social_signup(1);
-    $code = BOM::Platform::Token->new({
-            email       => $email,
-            expires_in  => 3600,
-            created_for => 'request_email'
-        })->token;
     $params->{args}{verification_code} = $code;
     $result                            = $c->tcall($method, $params);
     $error                             = {
@@ -122,20 +108,34 @@ subtest 'change email' => sub {
     $params->{args}{new_email}         = $new_email;
     $params->{args}{verification_code} = $code;
 
-    $result = $c->tcall($method, $params);
-    is($result->{status},                          1,                     'change_email returns 1');
-    is($emitted[0][1]->{properties}->{first_name}, 'bRaD',                'first name is correct');
-    is($emitted[0][1]->{loginid},                  'MF90000000',          'loginid is correct');
-    is($emitted[0][0],                             'verify_change_email', 'event name is correct');
+    $code = BOM::Platform::Token->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => 'request_email'
+        })->token;
+
+    $code = BOM::Platform::Token->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => 'request_email'
+        })->token;
+    $params->{args}{social_signup}     = 1;
+    $params->{args}{new_email}         = $new_email;
+    $params->{args}{verification_code} = $code;
+    $result                            = $c->tcall($method, $params);
+    is($result->{status},                             1,                     'change_email returns 1');
+    is($emitted[0][1]->{properties}->{first_name},    'bRaD',                'first name is correct');
+    is($emitted[0][1]->{properties}->{social_signup}, 1,                     'social signup is set to 1');
+    is($emitted[0][1]->{loginid},                     'MF90000000',          'loginid is correct');
+    is($emitted[0][0],                                'verify_change_email', 'event name is correct');
     ok @emitted, 'request_email event emitted correctly';
 
     $params->{args}{change_email}      = 'update';
     $params->{args}{new_email}         = $new_email;
     $params->{args}{new_password}      = $new_password;
     $params->{args}{verification_code} = 'dsf213';
-
-    $result = $c->tcall($method, $params);
-    $error  = {
+    $result                            = $c->tcall($method, $params);
+    $error                             = {
         'error' => {
             'code'              => 'InvalidToken',
             'message_to_client' => 'Your token has expired or is invalid.'
@@ -147,8 +147,7 @@ subtest 'change email' => sub {
             expires_in  => 3600,
             created_for => 'request_email',
         })->token;
-    $params->{args}{change_email}      = 'update';
-    $params->{args}{new_email}         = $new_email;
+
     $params->{args}{new_password}      = 'easypassword';
     $params->{args}{verification_code} = $code;
     $result                            = $c->tcall($method, $params);
@@ -157,18 +156,6 @@ subtest 'change email' => sub {
             'code'              => 'PasswordError',
             'message_to_client' => 'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.'
         }};
-    is_deeply($result, $error, 'change_email returns password error');
-
-    $code = BOM::Platform::Token->new({
-            email       => $new_email,
-            expires_in  => 3600,
-            created_for => 'request_email',
-        })->token;
-    $params->{args}{change_email}      = 'update';
-    $params->{args}{new_email}         = $new_email;
-    $params->{args}{new_password}      = undef;
-    $params->{args}{verification_code} = $code;
-    $result                            = $c->tcall($method, $params);
     is_deeply($result, $error, 'change_email returns password error');
 
     $code = BOM::Platform::Token->new({

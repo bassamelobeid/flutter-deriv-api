@@ -11,6 +11,7 @@ use Email::Valid;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 use Log::Any qw($log);
+use URI;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
@@ -39,7 +40,8 @@ use BOM::RPC::v3::MT5::Account;
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
     REFRESH_TOKEN_LENGTH      => 29,
-    REFRESH_TOKEN_TIMEOUT     => 60 * 60 * 24 * 60    # 60 days.
+    REFRESH_TOKEN_TIMEOUT     => 60 * 60 * 24 * 60,    # 60 days.
+    REQUEST_EMAIL_TOKEN_TTL   => 3600
 };
 
 requires_auth('trading', 'wallet');
@@ -80,7 +82,6 @@ rpc "verify_email",
     auth => [],    # unauthenticated
     sub {
     my $params = shift;
-
     my ($token_details, $website_name, $source, $language, $args) = @{$params}{qw/token_details website_name source language args/};
 
     my ($email, $type, $url_params) = @{$args}{qw/verify_email type url_parameters/};
@@ -94,7 +95,7 @@ rpc "verify_email",
 
     my $code = BOM::Platform::Token->new({
             email       => $email,
-            expires_in  => 3600,
+            expires_in  => REQUEST_EMAIL_TOKEN_TTL,
             created_for => $type,
         })->token;
 
@@ -146,17 +147,24 @@ rpc "verify_email",
                 },
             });
     } elsif ($existing_user and $type eq 'request_email') {
-        my $data = $verification->{request_email}->();
+
+        my $data              = $verification->{request_email}->();
+        my $has_social_signup = $data->{template_args}->{has_social_signup} ? 1 : 0;
+        my $uri               = $data->{template_args}->{verification_url} // '';
+
         BOM::Platform::Event::Emitter::emit(
             'request_change_email',
             {
                 loginid    => $existing_user->get_default_client->loginid,
                 properties => {
-                    verification_url => $data->{template_args}->{verification_url} // '',
-                    first_name       => $existing_user->get_default_client->first_name,
-                    code             => $data->{template_args}->{code} // '',
-                    email            => $email,
-                    language         => $params->{language},
+                    verification_uri      => $data->{template_args}->{verification_url} // '',
+                    first_name            => $existing_user->get_default_client->first_name,
+                    code                  => $data->{template_args}->{code} // '',
+                    email                 => $email,
+                    time_to_expire_in_min => REQUEST_EMAIL_TOKEN_TTL / 60,
+                    language              => $language,
+                    social_signup         => $has_social_signup,
+                    live_chat_url         => request()->brand->live_chat_url
                 },
             });
     } elsif ($type eq 'account_opening') {
