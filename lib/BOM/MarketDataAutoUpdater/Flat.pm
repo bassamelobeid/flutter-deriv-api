@@ -13,7 +13,7 @@ For cleaner pricing engines code, we should not have to handle exception for ins
 =cut
 
 use Moose;
-use Finance::Asset::Market::Registry;
+use Finance::Underlying::Market::Registry;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
 use Date::Utility;
@@ -62,7 +62,7 @@ has all_symbols => (
 sub _build_all_symbols {
     my $self      = shift;
     my %skip_list = map { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
-    my @markets   = Finance::Asset::Market::Registry->instance->all_market_names();
+    my @markets   = Finance::Underlying::Market::Registry->instance->all_market_names();
     return [
         grep { $_->flat_smile }
         map { create_underlying($_) } grep { not $skip_list{$_} } create_underlying_db->get_symbols_for(market => [@markets])];
