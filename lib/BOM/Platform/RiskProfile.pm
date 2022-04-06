@@ -19,8 +19,8 @@ use JSON::MaybeXS;
 use Format::Util::Numbers qw/formatnumber/;
 
 use ExchangeRates::CurrencyConverter qw/in_usd/;
-use Finance::Asset::Market::Registry;
-use Finance::Asset::SubMarket::Registry;
+use Finance::Underlying::Market::Registry;
+use Finance::Underlying::SubMarket::Registry;
 use LandingCompany::Registry;
 
 use BOM::Config::QuantsConfig;
@@ -405,7 +405,7 @@ sub get_client_volume_limits {
 
     if (!defined $default_limit) {
         my $max_volume_positions = 5;
-        my $risk_profile         = Finance::Asset::Market::Registry->get($self->market_name)->{risk_profile};
+        my $risk_profile         = Finance::Underlying::Market::Registry->get($self->market_name)->{risk_profile};
 
         my $max_stake = $limit_defs->{$risk_profile}{multiplier}{$client->currency};
         my $limit     = $max_volume_positions * $max_stake * $max_multiplier;
@@ -445,7 +445,7 @@ sub get_current_profile_definitions {
             : $lc_obj->basic_offerings($offerings_config);
 
         @markets =
-            map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
+            map { Finance::Underlying::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
     } catch ($err) {
         die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
 
@@ -458,7 +458,7 @@ sub get_current_profile_definitions {
     foreach my $market (@markets) {
         my @submarket_list =
             grep { $_->risk_profile }
-            map { Finance::Asset::SubMarket::Registry->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']);
+            map { Finance::Underlying::SubMarket::Registry->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']);
         if (@submarket_list) {
             my @list = map { {
                     name           => $_->display_name,
