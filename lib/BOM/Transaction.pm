@@ -18,7 +18,7 @@ use Log::Any qw($log);
 
 use Brands;
 use BOM::User::Client;
-use Finance::Asset::Market::Types;
+use Finance::Underlying::Market::Types;
 use Finance::Contract::Category;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use List::Util qw(min first);
