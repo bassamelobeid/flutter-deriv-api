@@ -83,6 +83,7 @@ my $permissions = {
     'fetch_client_details.cgi'          => ['CS'],
     'p2p_order_list.cgi'                => ['CS'],
     'p2p_order_manage.cgi'              => ['CS'],                     # additional check in page for P2PWrite for specific functions
+    'p2p_advertiser_list.cgi'           => ['CS'],
     'p2p_advertiser_manage.cgi'         => ['CS'],                     # additional check in page for P2PWrite for specific functions
     'p2p_dynamic_settings.cgi'          => ['IT'],                     # page requires IT+Quants; additional check in page for Quants
     'p2p_payment_method_manage.cgi'     => ['IT'],                     # page requires IT+Quants; additional check in page for Quants

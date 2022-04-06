@@ -235,7 +235,7 @@ if ($p2p_settings) {
 
 print qq~
             <div class="card__content">
-                <h3>Search order</h3>
+                <h3>Search orders</h3>
                 <form action="~ . request()->url_for('backoffice/p2p_order_list.cgi') . qq~" method="get">
                     <label>$brokerselection</label>
                     <input type="submit" class="btn btn--primary" value="Go">
@@ -249,7 +249,14 @@ print qq~
                 </form>
             </div>
             <div class="card__content">
-                <h3>Advertiser management</h3>
+                <h3>Search advertisers</h3>
+                <form action="~ . request()->url_for('backoffice/p2p_advertiser_list.cgi') . qq~" method="get">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>            
+            <div class="card__content">
+                <h3>Advertiser details/management</h3>
                 <form action="~ . request()->url_for('backoffice/p2p_advertiser_manage.cgi') . qq~" method="get">
                     <label>$brokerselection</label>
                     <input type="submit" class="btn btn--primary" value="Go">
