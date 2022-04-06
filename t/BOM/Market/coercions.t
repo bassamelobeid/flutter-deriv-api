@@ -25,7 +25,7 @@ use Test::More (tests => 3);
 use Test::Exception;
 use Test::Warnings;
 
-use Finance::Asset::Market::Types;
+use Finance::Underlying::Market::Types;
 
 lives_ok { TypeTester->new(date => time) } 'Can coerce epoch into Date::Utility.';
 throws_ok { TypeTester->new(date => 'yabadabado') } qr/Invalid datetime format/, 'Cannot coerce junk string into Date::Utility.';

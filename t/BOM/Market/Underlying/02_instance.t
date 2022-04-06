@@ -19,7 +19,7 @@ use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundcommon);
 use BOM::Config::Chronicle;
-use Finance::Asset::SubMarket;
+use Finance::Underlying::SubMarket;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use Postgres::FeedDB::Spot;
@@ -234,7 +234,7 @@ subtest 'sub market' => sub {
 
     foreach my $symbol (@symbols) {
         my $underlying  = create_underlying($symbol);
-        my @submarkets  = Finance::Asset::SubMarket::Registry->find_by_market($underlying->market->name);
+        my @submarkets  = Finance::Underlying::SubMarket::Registry->find_by_market($underlying->market->name);
         my $match_count = grep { $_->name eq $underlying->submarket->name } (@submarkets);
 
         cmp_ok($match_count, '==', 1, $underlying->symbol . ' has a properly defined submarket.');

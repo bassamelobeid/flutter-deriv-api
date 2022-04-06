@@ -8,7 +8,7 @@ use Test::Warnings;
 use Date::Utility;
 
 use BOM::MarketData qw(create_underlying);
-use Finance::Asset::Market::Registry;
+use Finance::Underlying::Market::Registry;
 
 my $index_symbol   = 'GDAXI';
 my $forex_symbol   = 'frxUSDJPY';
@@ -65,7 +65,7 @@ new_ok(
             market => 'forex'
         }]);
 
-my $market = Finance::Asset::Market::Registry->get('forex');
+my $market = Finance::Underlying::Market::Registry->get('forex');
 new_ok(
     'Quant::Framework::Underlying' => [{
             symbol => 'frxUSDJPY',
