@@ -75,10 +75,11 @@ subtest 'Initialization' => sub {
 
 subtest 'Account opening request with an invalid email address' => sub {
     mailbox_clear();
-    $params[1]->{args}->{verify_email} = 'test' . rand(999) . '.@binary.com';
-    $params[1]->{args}->{type}         = 'account_opening';
-    $params[1]->{server_name}          = 'deriv.com';
-    $params[1]->{link}                 = 'deriv.com/some_url';
+    $params[1]->{args}->{verify_email}                 = 'test' . rand(999) . '.@binary.com';
+    $params[1]->{args}->{type}                         = 'account_opening';
+    $params[1]->{args}->{url_parameters}->{utm_medium} = 'email';
+    $params[1]->{server_name}                          = 'deriv.com';
+    $params[1]->{link}                                 = 'deriv.com/some_url';
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidEmail', 'If email address is invalid it should return error')
         ->error_message_is('This email address is invalid.', 'If email address is invalid it should return error_message');
@@ -88,26 +89,29 @@ subtest 'Account opening request with email does not exist' => sub {
     my @emitted;
     no warnings 'redefine';
     local *BOM::Platform::Event::Emitter::emit = sub { push @emitted, @_ };
-    $params[1]->{args}->{verify_email} = 'test' . rand(999) . '@binary.com';
-    $params[1]->{args}->{type}         = 'account_opening';
-    $params[1]->{server_name}          = 'binary.com';
-    $params[1]->{link}                 = 'binary.com/some_url';
+    $params[1]->{args}->{verify_email}                 = 'test' . rand(999) . '@binary.com';
+    $params[1]->{args}->{type}                         = 'account_opening';
+    $params[1]->{args}->{url_parameters}->{utm_medium} = 'email';
+    $params[1]->{server_name}                          = 'binary.com';
+    $params[1]->{link}                                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
     is($emitted[0], 'account_opening_new', 'type=account_opening_new');
     is $emitted[1]->{email}, $params[1]->{args}->{verify_email}, 'email is set';
-    is $emitted[1]->{verification_url}, 'https://www.binary.com/en/redirect.html?action=signup&lang=EN&code=' . $emitted[1]->{code},
+    is $emitted[1]->{verification_url},
+        'https://www.binary.com/en/redirect.html?action=signup&lang=EN&code=' . $emitted[1]->{code} . '&utm_medium=email',
         'verification_url is set';
     is $emitted[1]->{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
 };
 
 subtest 'Account opening request with email exists' => sub {
     mailbox_clear();
-    $params[1]->{args}->{verify_email} = uc $email;
-    $params[1]->{args}->{type}         = 'account_opening';
-    $params[1]->{server_name}          = 'deriv.com';
-    $params[1]->{link}                 = 'deriv.com/some_url';
+    $params[1]->{args}->{verify_email}                 = uc $email;
+    $params[1]->{args}->{type}                         = 'account_opening';
+    $params[1]->{args}->{url_parameters}->{utm_medium} = 'email';
+    $params[1]->{server_name}                          = 'deriv.com';
+    $params[1]->{link}                                 = 'deriv.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
@@ -134,7 +138,7 @@ subtest 'Reset password for exists user' => sub {
     my $code = $emitted[1]->{properties}->{code};
     is(
         $emitted[1]->{properties}->{verification_url},
-        'https://www.binary.com/en/redirect.html?action=reset_password&lang=EN&code=' . $code,
+        'https://www.binary.com/en/redirect.html?action=reset_password&lang=EN&code=' . $code . '&utm_medium=email',
         'the verification_url is correct'
     );
 };

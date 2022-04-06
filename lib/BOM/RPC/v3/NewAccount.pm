@@ -11,6 +11,7 @@ use Email::Valid;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 use Log::Any qw($log);
+use WebService::MyAffiliates;
 use URI;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
@@ -85,6 +86,8 @@ rpc "verify_email",
     my ($token_details, $website_name, $source, $language, $args) = @{$params}{qw/token_details website_name source language args/};
 
     my ($email, $type, $url_params) = @{$args}{qw/verify_email type url_parameters/};
+
+    my $utm_medium = $args->{url_parameters}->{utm_medium} // '';
 
     $email = lc $email;
 
@@ -168,19 +171,46 @@ rpc "verify_email",
                 },
             });
     } elsif ($type eq 'account_opening') {
-        unless ($existing_user) {
-            my $data = $verification->{account_opening_new}->();
-            BOM::Platform::Event::Emitter::emit(
-                'account_opening_new',
-                {
-                    verification_url => $data->{template_args}->{verification_url} // '',
-                    code             => $data->{template_args}->{code}             // '',
-                    email            => $email,
-                    live_chat_url    => $data->{template_args}->{live_chat_url} // '',
-                });
+        if ($utm_medium eq 'affiliate') {
+            my $config = BOM::Config::third_party()->{myaffiliates};
+            my $aff    = WebService::MyAffiliates->new(
+                user    => $config->{user},
+                pass    => $config->{pass},
+                host    => $config->{host},
+                timeout => 10
+            );
+
+            my $myaffiliate_email = $aff->get_affiliate_details($url_params->{affiliate_token})->{TOKEN}->{USER}->{EMAIL};
+
+            if ($myaffiliate_email eq $email) {
+                request_email($email, $verification->{account_opening_existing}->());
+            } else {
+                my $data = $verification->{account_opening_new}->();
+                BOM::Platform::Event::Emitter::emit(
+                    'account_opening_new',
+                    {
+                        verification_url => $data->{template_args}->{verification_url} // '',
+                        code             => $data->{template_args}->{code}             // '',
+                        email            => $email,
+                        live_chat_url    => $data->{template_args}->{live_chat_url} // '',
+                    });
+            }
         } else {
-            request_email($email, $verification->{account_opening_existing}->());
+            unless ($existing_user) {
+                my $data = $verification->{account_opening_new}->();
+                BOM::Platform::Event::Emitter::emit(
+                    'account_opening_new',
+                    {
+                        verification_url => $data->{template_args}->{verification_url} // '',
+                        code             => $data->{template_args}->{code}             // '',
+                        email            => $email,
+                        live_chat_url    => $data->{template_args}->{live_chat_url} // '',
+                    });
+            } else {
+                request_email($email, $verification->{account_opening_existing}->());
+            }
         }
+
     } elsif ($client and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
         my $validation_error = BOM::RPC::v3::Utility::cashier_validation($client, $type);
         return $validation_error if $validation_error;

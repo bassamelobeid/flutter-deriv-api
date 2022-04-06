@@ -37,7 +37,7 @@ test_sendrecv_params 'residence_list/test_send.json',          'residence_list/t
 test_sendrecv_params 'states_list/test_send.json',             'states_list/test_receive.json';
 
 # VIRTUAL ACCOUNT OPENING FOR (CR)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-rpc@binary.com', 'account_opening';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-rpc@binary.com', 'account_opening', 'email';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     _get_token('test-rpc@binary.com'), 'zm', 'test-rpc@binary.com';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
@@ -112,7 +112,7 @@ fail_test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusi
     _get_stashed('new_account_real/oauth_token');
 
 # VIRTUAL ACCOUNT OPENING FOR (MF)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mf@binary.com', 'account_opening';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mf@binary.com', 'account_opening', 'email';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     _get_token('test+mf@binary.com'), 'cz', 'test\\\\+mf@binary.com';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
@@ -142,7 +142,7 @@ test_sendrecv_params 'change_password/test_send.json', 'change_password/test_rec
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive.json',
     _get_stashed('new_account_maltainvest/oauth_token'), 'Binary@1', 'Binary@12';
 
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mf@binary.com', 'reset_password';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mf@binary.com', 'reset_password', 'email';
 test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', _get_token('test+mf@binary.com'), 'Binary@123';
 
 finish;

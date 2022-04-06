@@ -25,10 +25,10 @@ test_sendrecv_params 'ticks_history/test_send_ticks_style.json', 'ticks_history/
     'R_50', '10', '1478625842', '1478710431';
 
 # VIRTUAL ACCOUNT OPENING (VRTC)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+reset@binary.com', 'account_opening';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+reset@binary.com', 'account_opening', 'email';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     _get_token('test+reset@binary.com'), 'es', 'test\\\\+reset@binary.com';
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+reset@binary.com', 'reset_password';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+reset@binary.com', 'reset_password', 'email';
 test_sendrecv_params 'reset_password/test_send_vrt.json', 'reset_password/test_receive.json', _get_token('test+reset@binary.com'), 'Binary@123';
 
 test_sendrecv 'payment_methods/test_send_payment_methods.json', 'payment_methods/test_receive_empty_list.json';
