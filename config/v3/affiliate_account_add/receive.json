@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "New Affiliate Account (response)",
-    "description": "Create afiliate account",
+    "title": "Affiliate: Register (response)",
+    "description": "A message with created affiliate details",
     "type": "object",
     "required": [
         "echo_req",
@@ -10,36 +10,82 @@
     "properties": {
         "affiliate_account_add": {
             "title": "affiliate_account_add",
-            "description": "New real money account details",
+            "description": "The information of the created affiliate user.",
             "type": "object",
             "additionalProperties": false,
             "required": [
-                "client_id",
-                "landing_company",
-                "oauth_token"
+                "address_city",
+                "address_line_1",
+                "address_postcode",
+                "address_state",
+                "affiliate_id",
+                "country",
+                "first_name",
+                "last_name",
+                "non_pep_declaration",
+                "phone",
+                "tnc_accepted",
+                "username"
             ],
             "properties": {
-                "client_id": {
-                    "description": "Client ID of the new affiliate account",
+                "address_city": {
+                    "description": "City name",
                     "type": "string"
                 },
-                "currency": {
-                    "description": "Currency of the new account",
-                    "type": [
-                        "null",
-                        "string"
+                "address_line_1": {
+                    "description": "First line of address.",
+                    "type": "string"
+                },
+                "address_line_2": {
+                    "description": "Second line of address.",
+                    "type": "string"
+                },
+                "address_postcode": {
+                    "description": "Postal code of the address.",
+                    "type": "string"
+                },
+                "address_state": {
+                    "description": "State / Region of the address.",
+                    "type": "string"
+                },
+                "affiliate_id": {
+                    "description": "Affiliate ID from CellXperts for the created affiliate",
+                    "type": "string"
+                },
+                "country": {
+                    "description": "Registered country of the created affiliate.",
+                    "type": "string"
+                },
+                "first_name": {
+                    "description": "First name of the created affiliate.",
+                    "type": "string"
+                },
+                "last_name": {
+                    "description": "Last name of the created affiliate",
+                    "type": "string"
+                },
+                "non_pep_declaration": {
+                    "description": "PEP declaration status of the created affiliate.",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
                     ]
                 },
-                "landing_company": {
-                    "description": "Landing company full name",
+                "phone": {
+                    "description": "Registered phone number of the created affiliate.",
                     "type": "string"
                 },
-                "landing_company_shortcode": {
-                    "description": "Landing company shortcode",
-                    "type": "string"
+                "tnc_accepted": {
+                    "description": "Terms and conditions acceptance status of the created affiliate.",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
                 },
-                "oauth_token": {
-                    "description": "OAuth token for client's login session",
+                "username": {
+                    "description": "Username of the created affiliate.",
                     "type": "string"
                 }
             }
