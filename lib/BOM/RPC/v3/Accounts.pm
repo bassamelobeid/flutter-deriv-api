@@ -3114,4 +3114,51 @@ rpc paymentagent_details => sub {
     return \%result;
 };
 
+rpc get_account_types => sub {
+    return {
+        wallet => {
+            fiat      => {"currencies" => ["USD", "EUR", "AUD", "GBP"]},
+            crypto    => {"currencies" => ["BTC", "LTC"]},
+            p2p       => {"currencies" => ["USD"]},
+            pa        => {"currencies" => ["USD", "EUR", "AUD"]},
+            pa_client => {"currencies" => ["USD", "EUR", "AUD"]}
+        },
+        trading => {
+            deriv => {
+                "linkable_wallet_types"          => ["fiat", "crypto"],
+                "linkable_wallet_currencies"     => ["USD",  "EUR", "AUD", "BTC", "LTC"],
+                "currencies_available"           => ["USD",  "EUR", "BTC", "LTC"],
+                "linkable_to_different_currency" => 0
+            },
+            derivx => {
+                "linkable_wallet_types"          => ["fiat", "p2p"],
+                "linkable_wallet_currencies"     => ["USD",  "EUR", "BTC", "LTC"],
+                "currencies_available"           => ["USD",  "EUR", "BTC"],
+                "linkable_to_different_currency" => 1
+            },
+            mt5 => {
+                "linkable_wallet_types"          => ["fiat"],
+                "linkable_wallet_currencies"     => ["USD"],
+                "currencies_available"           => ["USD"],
+                "linkable_to_different_currency" => 1
+            }}};
+};
+
+rpc get_available_accounts_to_transfer => sub {
+
+    return {
+        account_list => [{
+                "account_type" => "trading",
+                "loginid"      => "CR176299",
+                "type"         => "fiat",
+                "currency"     => "USD"
+            },
+            {
+                "account_type" => "wallet",
+                "loginid"      => "DW2132132",
+                "type"         => "crypto",
+                "currency"     => "BTC"
+            }]};
+};
+
 1;
