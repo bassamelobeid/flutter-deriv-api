@@ -462,47 +462,6 @@ sub emit_new_address_call {
     return $emit;
 }
 
-=head2 fraud_address
-
-calls the subroutine which checks the address if
-exists in the third party
-
-=over 4
-
-=item * C<address> the address to check
-
-=back
-
-Returns 0 in fail or 1 in success
-
-=cut
-
-sub fraud_address {
-
-    my $data = shift;
-
-    my $currency_code = $data->{currency_code};
-    my $currency      = get_currency($currency_code);
-    my $address       = $data->{address};
-
-    my $tp_result = $currency->thirdparty_api_client->tp_fraud_address($address)->get;
-
-    # if the address is found, then we need to insert it in the database,
-    # otherwise, we can either just exit or increment `subscription.fraud_address` metric on datadog
-    # process_fraudulent_address returns count of fraud reported for the address, if the address is not fraud the count will be 0
-    my $count = $currency->process_fraudulent_address($tp_result);
-
-    if ($count) {
-        my $dbic              = BOM::CTC::Database->new();
-        my $validated_address = $currency->get_valid_address($address)->{address};
-        my $rows              = $dbic->insert_fraud_addresses($currency_code, $validated_address, $count);
-        $log->warnf("An error occured while inserting fraud address in database. address: %s, currency_code: %s", $validated_address, $currency_code)
-            unless ($rows);
-    }
-
-    return $count ? 1 : 0;
-}
-
 =head2 _set_deposit_swept
 
 Sets a deposit row as swept. Needed for ERC20 based token internal sweep, as the contract may fail in blockchain.
