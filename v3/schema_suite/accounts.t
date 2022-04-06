@@ -196,6 +196,11 @@ test_sendrecv 'payment_methods/test_send_payment_methods_with_country.json', 'pa
 # BINDING WALLET <-> TRADING ACCOUNTS (Admin Scope)
 test_sendrecv_params 'link_wallet/test_send.json', 'link_wallet/test_receive.json';
 
+#  appstore webservices
+test_sendrecv_params 'get_account_types/test_send.json',  'get_account_types/test_receive.json' , $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'get_available_accounts_to_transfer/test_send.json', 'get_available_accounts_to_transfer/test_receive.json' , $suite->get_stashed('authorize/authorize/loginid');
+
+
 fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
 test_sendrecv 'logout/test_send.json',              'logout/test_receive.json';
 
