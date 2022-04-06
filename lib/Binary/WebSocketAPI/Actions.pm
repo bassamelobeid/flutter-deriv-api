@@ -637,6 +637,18 @@ sub actions_config {
 
         ['new_account_wallet', {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['link_wallet'],
+        [
+            'get_account_types',
+            {
+                msg_group => 'account',
+            }
+        ],
+        [
+            'get_available_accounts_to_transfer',
+            {
+                msg_group => 'account',
+            }
+        ],
     ];
 }
 
