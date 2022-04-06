@@ -49,7 +49,6 @@ my %event_stream_mapping = (
     affiliate_sync_initiated        => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
     crypto_subscription             => 'CRYPTO_EVENTS_STREAM',
     crypto_transaction_updated      => 'CRYPTO_EVENTS_STREAM',
-    fraud_address                   => 'CRYPTO_EVENTS_STREAM',
     new_crypto_address              => 'CRYPTO_EVENTS_STREAM',
     update_crypto_config            => 'CRYPTO_EVENTS_STREAM',
     client_promo_codes_upload       => 'PROMO_CODE_IMPORT_LONG_RUNNING_STREAM',
