@@ -61,6 +61,7 @@ ETH:
             url: https://api.cryptoscamdb.org
             methods:
                 check: /v1/check/
+                download: /v1/addresses
 BUSD:
     withdrawal:
         timeout: "3d"
