@@ -347,15 +347,15 @@ where:
 account_type: demo|real
 server_type: 01|02|...
 market_type: financial|synthetic
-landing_company_short: svg|maltainvest|...
-sub_account_type: std[standard]|sf[swap-free]|hf[high-risk]
+landing_company_short: svg|maltainvest|samoa|...
+sub_account_type: std[standard]|hf[high-risk]
 currency: usd|gbp|...
 
 How does this map to the input?
 
 account_type:     demo|gaming|financial
 mt5_account_type  financial|financial_stp
-mt5_account_category: conventional|swap_free|empty for financial_stp
+mt5_account_category: conventional|empty for financial_stp
 
 =cut
 
@@ -565,21 +565,17 @@ Takes the following parameters:
 
 =item * C<$mt5_account_type> - string representing the mt5 account type (financial|financial_stp)
 
-=item * C<$account_category> - string representing mt5 account category (conventional|swap_free)
-
 =back
 
 =cut
 
 sub _get_sub_account_type {
-    my ($mt5_account_type, $account_category) = @_;
+    my ($mt5_account_type) = @_;
 
     # $sub_account_type depends on $mt5_account_type and $account_category. It is a little confusing, but can't do much about it.
     my $sub_account_type = 'std';
     if (defined $mt5_account_type and $mt5_account_type eq 'financial_stp') {
         $sub_account_type = 'stp';
-    } elsif (defined $account_category and $account_category eq 'swap_free') {
-        $sub_account_type = 'sf';
     }
 
     return $sub_account_type;
@@ -615,7 +611,7 @@ async_rpc "mt5_new_account",
     return create_error_future('InvalidServerInput') if $account_type ne 'gaming' and defined $user_input_trade_server;
 
     $mt5_account_type     = '' if $account_type eq 'gaming';
-    $mt5_account_category = '' if $mt5_account_type eq 'financial_stp' or $mt5_account_category !~ /^swap_free|conventional$/;
+    $mt5_account_category = '' if $mt5_account_type eq 'financial_stp' or $mt5_account_category !~ /^conventional$/;
 
     my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
         email           => $client->email,
@@ -649,9 +645,8 @@ async_rpc "mt5_new_account",
     my $user = $client->user;
 
     # demo accounts type determined if this parameter exists or not
-    my $company_type = $mt5_account_type eq '' ? 'gaming' : 'financial';
-    # swap_free is considered as sub account type in config files
-    my $sub_account_type = $mt5_account_category eq 'swap_free' ? $mt5_account_category : $mt5_account_type;
+    my $company_type     = $mt5_account_type eq '' ? 'gaming' : 'financial';
+    my $sub_account_type = $mt5_account_type;
     my %mt_args          = (
         country          => $residence,
         account_type     => $company_type,

@@ -724,9 +724,9 @@ subtest 'new account on addtional trade server' => sub {
 
     note('unsuspend mt5 real\p01_ts02. Tries to create financial account with new config.');
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
-    $params->{args}{mt5_account_category} = 'swap_free';
+    $params->{args}{mt5_account_category} = 'conventional';
     $c->call_ok($method, $params)->has_no_error('mt5 new account with new config');
-    is($c->result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_sf_usd'}, 'login is MTR20000002');
+    is($c->result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_std_usd'}, 'login is MTR1001016');
     $mocked->unmock_all;
 };
 

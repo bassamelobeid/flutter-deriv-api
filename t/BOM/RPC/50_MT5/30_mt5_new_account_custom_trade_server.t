@@ -150,14 +150,12 @@ subtest 'use default routing rule if server is not provided' => sub {
         });
     my $method = 'mt5_new_account';
     my $args   = {
-        account_type         => 'gaming',
-        email                => 'abc' . $DETAILS{email},
-        name                 => $DETAILS{name},
-        mainPassword         => $DETAILS{password}{main},
-        leverage             => 100,
-        mt5_account_type     => 'financial',
-        mt5_account_category => 'swap_free',
-
+        account_type     => 'financial',
+        email            => 'abc' . $DETAILS{email},
+        name             => $DETAILS{name},
+        mainPassword     => $DETAILS{password}{main},
+        leverage         => 100,
+        mt5_account_type => 'financial',
     };
     my $params = {
         language => 'EN',
@@ -168,9 +166,8 @@ subtest 'use default routing rule if server is not provided' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     note('no server as user input');
     my $res = $c->call_ok($method, $params)->has_no_error->result;
-    is $res->{login},        'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_sf_usd'}, 'defaulted to account on real->p01_ts02';
-    is $res->{account_type}, 'gaming', 'gaming';
-    is $res->{agent},        $expected_agent_id, 'agent linked ' . $expected_agent_id;
+    is $res->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'}, 'defaulted to account on real->p01_ts01';
+    is $res->{account_type}, 'financial', 'financial';
 };
 
 sub _add_affiliate_account {
