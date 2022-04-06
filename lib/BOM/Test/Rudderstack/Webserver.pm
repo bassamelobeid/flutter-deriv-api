@@ -31,11 +31,12 @@ use Unicode::UTF8;
 use Scalar::Util qw(refaddr blessed);
 use curry;
 use Carp qw(croak);
+use POSIX qw/strftime/;
 
 use Log::Any qw($log);
 use Log::Any::Adapter qw(DERIV),
     stderr    => 'json',
-    log_level => 'info';
+    log_level => 'error';
 
 use constant HTML_HEAD =>
     "<!DOCTYPE html><table role=\"presentation\" width=\"800\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"> <tr><td width=\"100%\" style=\"font-family:Arial, sans-serif; font-size:16px; line-height:1.5em; color:#333333; padding:2em; background-color:#e4e4e4;\">";
@@ -86,7 +87,7 @@ async method handle {
     $log->infof('HTTP receives %s %s:%s', $req->method, $req->path, $req->body);
     try {
         my $body_params = decode_json_utf8($req->body || '{}');
-        $self->validates($body_params);
+        $self->validates($body_params) if ($req->path eq '/rudderstack/track');
         $self->record($body_params);
         $self->respond(
             $req,
@@ -122,9 +123,9 @@ method validates($body) {
 =cut
 
 method record($body) {
-    my ($date, $time) = split(/T/, delete $body->{sentAt});
-    chop $time;
-    my $filename = PATH . "$time-CustomerIO_$body->{event}.html";
+    my $prefix   = strftime("%Y%m%d%R", localtime);
+    my $suffix   = $body->{event} // 'Identify_Request';
+    my $filename = PATH . "$prefix-CustomerIO_$suffix.html";
     open(my $fh, '>>', $filename) or die $log->error("Could not open file $filename  $!");
     print $fh HTML_HEAD;
     traverse($fh, $body);
