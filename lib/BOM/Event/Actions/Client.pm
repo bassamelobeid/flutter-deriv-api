@@ -1093,10 +1093,18 @@ async sub onfido_doc_ready_for_upload {
             die "Db returned unexpected file_id on finish. Expected $file_id but got $finish_upload_result. Please check the record"
                 unless $finish_upload_result == $file_id;
 
-            my $document_info = _get_document_details(
-                loginid => $client->loginid,
-                file_id => $file_id
-            );
+            my $document_info = {
+                # to avoid a db hit, we can estimate the `upload_date` to the current timestamp.
+                # all the other fields can be derived from current symbols table.
+                upload_date     => Date::Utility->new->datetime_yyyymmdd_hhmmss,
+                file_name       => $new_file_name,
+                id              => $file_id,
+                lifetime_valid  => $lifetime_valid,
+                document_id     => $document_info->{number} || '',
+                comments        => '',
+                expiration_date => $expiration_date || undef,
+                document_type   => $doc_type
+            };
 
             if ($document_info) {
                 await BOM::Event::Services::Track::document_upload({
@@ -1362,40 +1370,25 @@ sub _get_document_details {
 
     my $loginid = $args{loginid};
     my $file_id = $args{file_id};
+    my $doc     = {};
 
-    return do {
-        my $dbic = BOM::Database::ClientDB->new({
-                client_loginid => $loginid,
-                operation      => 'replica',
-            }
-            )->db->dbic
-            or die "failed to get database connection for login ID " . $loginid;
+    try {
+        my $client = BOM::User::Client->new({loginid => $loginid});
+        $doc = $client->db->dbic->run(
+            ping => sub {
+                $_->selectrow_hashref('SELECT * FROM betonmarkets.get_authentication_document_details(?, ?)', undef, $file_id, $loginid);
+            });
+    } catch {
+        exception_logged();
+        die "An error occurred while getting document details ($file_id) from database for login ID $loginid.";
+    }
 
-        my $doc;
-        try {
-            $doc = $dbic->run(
-                fixup => sub {
-                    $_->selectrow_hashref(<<'SQL', undef, $loginid, $file_id);
-SELECT id,
-   file_name,
-   expiration_date,
-   comments,
-   document_id,
-   upload_date,
-   document_type,
-   lifetime_valid
-FROM betonmarkets.client_authentication_document
-WHERE client_loginid = ?
-AND status != 'uploading'
-AND id = ?
-SQL
-                });
-        } catch {
-            exception_logged();
-            die "An error occurred while getting document details ($file_id) from database for login ID $loginid.";
-        }
-        $doc;
-    };
+    # The code is expecting a falsey
+    unless ($doc->{id}) {
+        return undef;
+    }
+
+    return $doc;
 }
 
 =head2 _set_address_verified

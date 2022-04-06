@@ -23,6 +23,7 @@ use Locale::Country qw/code2country/;
 use Ryu::Source;
 use HTTP::Response;
 use WebService::Async::Onfido::Applicant;
+use Future;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -44,6 +45,7 @@ $user->add_client($test_client);
 $user->add_client($vrtc_client);
 my $action_handler   = BOM::Event::Process->new(category => 'generic')->actions->{onfido_doc_ready_for_upload};
 my $onfido_mocker    = Test::MockModule->new('WebService::Async::Onfido');
+my $track_mocker     = Test::MockModule->new('BOM::Event::Services::Track');
 my $s3_mocker        = Test::MockModule->new('BOM::Platform::S3Client');
 my $event_mocker     = Test::MockModule->new('BOM::Event::Actions::Client');
 my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
@@ -119,11 +121,14 @@ subtest 'Onfido lifetime valid' => sub {
             return Future->done(join '|', 'test', $doc_id);
         });
 
-    $event_mocker->mock(
-        '_get_document_details',
+    $track_mocker->mock(
+        'document_upload',
         sub {
-            $document = $event_mocker->original('_get_document_details')->(@_);
-            return $document;
+            my $args = shift;
+
+            $document = $args->{properties};
+
+            return Future->done(1);
         });
 
     my $upload = sub {
@@ -134,13 +139,14 @@ subtest 'Onfido lifetime valid' => sub {
 
         return $action_handler->({
                 type           => $type,
-                document_id    => $doc_id,
                 client_loginid => $test_client->loginid,
                 applicant_id   => 'dummy_applicant_id',
+                document_id    => $doc_id,
                 file_type      => 'png',
                 document_info  => {
                     type            => $doc_type,
                     expiration_date => $expiration_date,
+                    number          => $doc_id,
                 }});
     };
 
@@ -156,8 +162,95 @@ subtest 'Onfido lifetime valid' => sub {
     ok !$document->{expiration_date}, 'Empty expiration date';
     ok !$document->{lifetime_valid},  'Lifetime valid does not apply to selfie';
 
+    cmp_deeply $document,
+        +{
+        upload_date     => re('\w+'),
+        file_name       => re('\w+'),
+        id              => re('\d+'),
+        lifetime_valid  => 0,
+        document_id     => 'cucamonga',
+        comments        => '',
+        expiration_date => undef,
+        document_type   => 'photo'
+        },
+        'Expected document from _get_document_details';
+
     $onfido_mocker->unmock_all;
     $event_mocker->unmock_all;
+    $track_mocker->unmock_all;
+};
+
+subtest '_get_document_details' => sub {
+    my $doc = BOM::Event::Actions::Client::_get_document_details(
+        loginid => $test_client->loginid,
+        file_id => -1
+    );
+
+    ok !$doc, 'Non existent document is a falsey';
+
+    my $document;
+    my $doc_id;
+    my $expiration_date;
+    my $type;
+    my $doc_type;
+
+    my $upload = sub {
+        $doc_id          = shift;
+        $expiration_date = shift;
+        $type            = shift;
+        $doc_type        = shift;
+
+        return $action_handler->({
+                type           => $type,
+                client_loginid => $test_client->loginid,
+                applicant_id   => 'dummy_applicant_id',
+                file_type      => 'png',
+                document_id    => $doc_id,
+                document_info  => {
+                    type            => $doc_type,
+                    expiration_date => $expiration_date,
+                    number          => $doc_id,
+                }});
+    };
+    $onfido_mocker->mock(
+        'download_document',
+        sub {
+            return Future->done(join '|', 'test', $doc_id);
+        });
+
+    $onfido_mocker->mock(
+        'download_photo',
+        sub {
+            return Future->done(join '|', 'test', $doc_id);
+        });
+
+    $track_mocker->mock(
+        'document_upload',
+        sub {
+            my $args = shift;
+
+            $document = $args->{properties};
+
+            return Future->done(1);
+        });
+
+    $upload->('anotherone', '2019-01-01', 'document', 'passport')->get;
+    cmp_deeply $document,
+        +{
+        upload_date     => re('\w+'),
+        file_name       => re('\w+'),
+        id              => re('\d+'),
+        lifetime_valid  => 0,
+        document_id     => 'anotherone',
+        comments        => '',
+        expiration_date => '2019-01-01',
+        document_type   => 'passport'
+        },
+        'Expected document from _get_document_details';
+
+    $event_mocker->unmock_all;
+    $onfido_mocker->unmock_all;
+    $track_mocker->unmock_all;
 };
 
 subtest 'Check Onfido Rules' => sub {
