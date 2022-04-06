@@ -12,15 +12,6 @@ demo\p01_ts01\financial\bvi_stp_usd:
   sub_account_type: financial_stp
   server: p01_ts01
 
-demo\p01_ts01\financial\maltainvest_sf_eur: &demo_maltainvest_financial_swap_free
-  account_type: demo
-  landing_company_short: maltainvest
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts01
-demo\p01_ts01\financial\maltainvest_sf_gbp: *demo_maltainvest_financial_swap_free
-demo\p01_ts01\financial\maltainvest_sf_usd: *demo_maltainvest_financial_swap_free
-
 demo\p01_ts01\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financial
   account_type: demo
   landing_company_short: maltainvest
@@ -29,14 +20,6 @@ demo\p01_ts01\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
   server: p01_ts01
 demo\p01_ts01\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 demo\p01_ts01\financial\maltainvest_std_usd: *demo_maltainvest_financial_financial
-
-demo\p01_ts01\financial\svg_sf_usd: &demo_svg_financial_swap_free
-  account_type: demo
-  landing_company_short: svg
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts01
-demo\p01_ts01\financial\svg_sf-lim_usd: *demo_svg_financial_swap_free
 
 demo\p01_ts01\financial\svg_std_usd: &demo_svg_financial_financial
   account_type: demo
@@ -51,13 +34,6 @@ demo\p01_ts01\financial\vanuatu_std_usd:
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
-  server: p01_ts01
-
-demo\p01_ts01\synthetic\svg_sf_usd:
-  account_type: demo
-  landing_company_short: svg
-  market_type: synthetic
-  sub_account_type: swap_free
   server: p01_ts01
 
 demo\p01_ts01\synthetic\svg_std_usd:
@@ -92,14 +68,6 @@ demo\p01_ts02\financial\bvi_stp_usd:
   sub_account_type: financial_stp
   server: p01_ts02
 
-demo\p01_ts02\financial\maltainvest_sf_eur: &demo_maltainvest_financial_swap_free
-  account_type: demo
-  landing_company_short: maltainvest
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts02
-demo\p01_ts02\financial\maltainvest_sf_gbp: *demo_maltainvest_financial_swap_free
-
 demo\p01_ts02\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financial
   account_type: demo
   landing_company_short: maltainvest
@@ -107,14 +75,6 @@ demo\p01_ts02\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financi
   sub_account_type: financial
   server: p01_ts02
 demo\p01_ts02\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
-
-demo\p01_ts02\financial\svg_sf_usd: &demo_svg_financial_swap_free
-  account_type: demo
-  landing_company_short: svg
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts02
-demo\p01_ts02\financial\svg_sf-lim_usd: *demo_svg_financial_swap_free
 
 demo\p01_ts02\financial\svg_std_usd: &demo_svg_financial_financial
   account_type: demo
@@ -129,13 +89,6 @@ demo\p01_ts02\financial\vanuatu_std_usd:
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
-  server: p01_ts02
-
-demo\p01_ts02\synthetic\svg_sf_usd:
-  account_type: demo
-  landing_company_short: svg
-  market_type: synthetic
-  sub_account_type: swap_free
   server: p01_ts02
 
 demo\p01_ts02\synthetic\svg_std_usd:
@@ -224,51 +177,6 @@ real\p02_ts02\financial\labuan_stp_usd:
   sub_account_type: financial_stp
   server: p02_ts02
 
-real\p01_ts01\financial\maltainvest_sf-hr_eur: &real_maltainvest_financial_swap_free
-  account_type: real
-  landing_company_short: maltainvest
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts01
-real\p01_ts01\financial\maltainvest_sf-hr_gbp: *real_maltainvest_financial_swap_free
-real\p01_ts01\financial\maltainvest_sf-hr_usd: *real_maltainvest_financial_swap_free
-
-real\p01_ts02\financial\maltainvest_sf-hr_eur: &real_p01ts02_maltainvest_financial_swap_free
-  account_type: real
-  landing_company_short: maltainvest
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts02
-real\p01_ts02\financial\maltainvest_sf-hr_gbp: *real_p01ts02_maltainvest_financial_swap_free
-real\p01_ts02\financial\maltainvest_sf-hr_usd: *real_p01ts02_maltainvest_financial_swap_free
-
-real\p01_ts03\financial\maltainvest_sf-hr_eur: &real_p01ts03_maltainvest_financial_swap_free
-  account_type: real
-  landing_company_short: maltainvest
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts03
-real\p01_ts03\financial\maltainvest_sf-hr_gbp: *real_p01ts03_maltainvest_financial_swap_free
-real\p01_ts03\financial\maltainvest_sf-hr_usd: *real_p01ts03_maltainvest_financial_swap_free
-
-real\p01_ts04\financial\maltainvest_sf-hr_eur: &real_p01ts04_maltainvest_financial_swap_free
-  account_type: real
-  landing_company_short: maltainvest
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts04
-real\p01_ts04\financial\maltainvest_sf-hr_gbp: *real_p01ts04_maltainvest_financial_swap_free
-real\p01_ts04\financial\maltainvest_sf-hr_usd: *real_p01ts04_maltainvest_financial_swap_free
-
-real\p02_ts02\financial\maltainvest_sf-hr_eur: &real_p02ts02_maltainvest_financial_swap_free
-  account_type: real
-  landing_company_short: maltainvest
-  market_type: financial
-  sub_account_type: swap_free
-  server: p02_ts02
-real\p02_ts02\financial\maltainvest_sf-hr_gbp: *real_p02ts02_maltainvest_financial_swap_free
-real\p02_ts02\financial\maltainvest_sf-hr_usd: *real_p02ts02_maltainvest_financial_swap_free
-
 real\p01_ts01\financial\maltainvest_std-hr_eur: &real_maltainvest_financial_financial
   account_type: real
   landing_company_short: maltainvest
@@ -313,47 +221,6 @@ real\p02_ts02\financial\maltainvest_std-hr_gbp: &real_p02ts02_maltainvest_financ
   server: p02_ts02
 real\p02_ts02\financial\maltainvest_std-hr_eur: *real_p02ts02_maltainvest_financial_financial
 real\p02_ts02\financial\maltainvest_std-hr_usd: *real_p02ts02_maltainvest_financial_financial
-
-real\p01_ts01\financial\svg_sf-hr_usd: &real_svg_financial_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts01
-real\p01_ts01\financial\svg_sf_usd: *real_svg_financial_swap_free
-real\p01_ts01\financial\svg_sf-lim_usd: *real_svg_financial_swap_free
-
-real\p01_ts02\financial\svg_sf_usd: &real_p01ts02_svg_financial_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts02
-real\p01_ts02\financial\svg_sf-hr_usd: *real_p01ts02_svg_financial_swap_free
-
-real\p01_ts03\financial\svg_sf-hr_usd: &real_p01ts03_svg_financial_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts03
-real\p01_ts03\financial\svg_sf_usd: *real_p01ts03_svg_financial_swap_free
-
-real\p01_ts04\financial\svg_sf-hr_usd: &real_p01ts04_svg_financial_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: financial
-  sub_account_type: swap_free
-  server: p01_ts04
-real\p01_ts04\financial\svg_sf_usd: *real_p01ts04_svg_financial_swap_free
-
-real\p02_ts02\financial\svg_sf-hr_usd: &real_p02ts02_svg_financial_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: financial
-  sub_account_type: swap_free
-  server: p02_ts02
-real\p02_ts02\financial\svg_sf_usd: *real_p02ts02_svg_financial_swap_free
 
 real\p01_ts01\financial\svg_std-hr_usd: &real_svg_financial_financial
   account_type: real
@@ -430,46 +297,6 @@ real\p02_ts02\financial\vanuatu_std-hr_usd:
   market_type: financial
   sub_account_type: financial
   server: p02_ts02
-
-real\p01_ts01\synthetic\svg_sf-hr_usd: &real_svg_gaming_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts01
-real\p01_ts01\synthetic\svg_sf_usd: *real_svg_gaming_swap_free
-
-real\p01_ts02\synthetic\svg_sf-hr_usd: &real_p01ts02_svg_gaming_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts02
-real\p01_ts02\synthetic\svg_sf_usd: *real_p01ts02_svg_gaming_swap_free
-
-real\p01_ts03\synthetic\svg_sf-hr_usd: &real_p01ts03_svg_gaming_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts03
-real\p01_ts03\synthetic\svg_sf_usd: *real_p01ts03_svg_gaming_swap_free
-
-real\p01_ts04\synthetic\svg_sf-hr_usd: &real_p01ts04_svg_gaming_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p01_ts04
-real\p01_ts04\synthetic\svg_sf_usd: *real_p01ts04_svg_gaming_swap_free
-
-real\p02_ts02\synthetic\svg_sf-hr_usd: &real_p02ts02_svg_gaming_swap_free
-  account_type: real
-  landing_company_short: svg
-  market_type: synthetic
-  sub_account_type: swap_free
-  server: p02_ts02
-real\p02_ts02\synthetic\svg_sf_usd: *real_p02ts02_svg_gaming_swap_free
 
 real\p01_ts01\synthetic\svg_std-hr_usd: &real_svg_gaming_financial
   account_type: real
