@@ -11,8 +11,8 @@ use YAML::XS qw(LoadFile);
 use LandingCompany::Registry;
 
 use Finance::Contract::Category;
-use Finance::Asset::Market::Registry;
-use Finance::Asset::SubMarket::Registry;
+use Finance::Underlying::Market::Registry;
+use Finance::Underlying::SubMarket::Registry;
 
 use BOM::MarketData qw(create_underlying create_underlying_db);
 use BOM::MarketData::Types;
@@ -90,7 +90,7 @@ sub add_underlyings {
     my $self = shift;
 
     my @underlyings = map { create_underlying($_) } create_underlying_db()->get_symbols_for(
-        market           => [Finance::Asset::Market::Registry->all_market_names],
+        market           => [Finance::Underlying::Market::Registry->all_market_names],
         exclude_disabled => 1
     );
 
@@ -168,7 +168,7 @@ sub add_markets {
 
     my $fh = $self->pot_append_fh;
 
-    my @markets = Finance::Asset::Market::Registry->all();
+    my @markets = Finance::Underlying::Market::Registry->all();
 
     foreach my $market (sort { $a->display_name cmp $b->display_name } grep { $_->display_name } @markets) {
         my $msgid = $self->msg_id($market->display_name);
@@ -194,7 +194,7 @@ sub add_submarkets {
 
     my $fh = $self->pot_append_fh;
 
-    my @sub_markets = Finance::Asset::SubMarket::Registry->all();
+    my @sub_markets = Finance::Underlying::SubMarket::Registry->all();
 
     foreach my $submarket (sort { $a->display_name cmp $b->display_name } grep { $_->display_name } @sub_markets) {
         my $msgid = $self->msg_id($submarket->display_name);

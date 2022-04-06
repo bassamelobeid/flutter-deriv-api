@@ -59,13 +59,13 @@ use BOM::MarketData::Display::VolatilitySurface;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
-use Finance::Asset::Market::Registry;
+use Finance::Underlying::Market::Registry;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names();
+my @all_markets = Finance::Underlying::Market::Registry->instance->all_market_names();
 my @update_markets;
 foreach my $market (@all_markets) {
     push @update_markets, $market if request()->param('update_$market');

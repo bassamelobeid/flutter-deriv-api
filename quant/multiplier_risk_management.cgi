@@ -14,6 +14,7 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Config::Chronicle;
 use LandingCompany::Registry;
 use LandingCompany::Utility;
+use Finance::Underlying::Market::Registry;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -203,7 +204,7 @@ sub _get_existing_market_and_symbol_volume_limits {
             {
             market               => $market,
             max_volume_positions => 5,
-            risk_profile         => Finance::Asset::Market::Registry->instance->get($market)->{risk_profile}};
+            risk_profile         => Finance::Underlying::Market::Registry->instance->get($market)->{risk_profile}};
     }
 
     return {

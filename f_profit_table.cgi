@@ -16,7 +16,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use Finance::Asset::Market::Registry;
+use Finance::Underlying::Market::Registry;
 use BOM::ContractInfo;
 use Syntax::Keyword::Try;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -215,7 +215,7 @@ BOM::Backoffice::Request::template()->process(
     {
         sold_contracts              => $sold_contracts,
         open_contracts              => $open_contracts,
-        markets                     => [Finance::Asset::Market::Registry->instance->display_markets],
+        markets                     => [Finance::Underlying::Market::Registry->instance->display_markets],
         email                       => $client->email,
         full_name                   => $client->full_name,
         loginid                     => $client->loginid,

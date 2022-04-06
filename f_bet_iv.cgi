@@ -34,7 +34,7 @@ my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
 my $disabled       = $disabled_write ? "disabled title='no write access' class='btn btn--disabled'" : "class='btn btn--primary'";
 
 Bar("Update volatilities");
-my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
+my @all_markets = Finance::Underlying::Market::Registry->instance->all_market_names;
 print get_update_volatilities_form({'all_markets' => \@all_markets});
 
 # Manually update interest rates

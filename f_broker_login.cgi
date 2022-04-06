@@ -5,7 +5,7 @@ package main;
 use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
-use Finance::Asset::Market::Registry;
+use Finance::Underlying::Market::Registry;
 
 use f_brokerincludeall;
 use BOM::Config;
