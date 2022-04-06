@@ -26,6 +26,7 @@ use BOM::User::Wallet;
 use BOM::User::Affiliate;
 use BOM::User::Onfido;
 use BOM::User::RiskScreen;
+use BOM::User::SocialResponsibility;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw(in_usd);

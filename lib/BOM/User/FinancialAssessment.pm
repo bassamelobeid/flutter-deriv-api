@@ -64,8 +64,11 @@ sub update_financial_assessment {
     my @client_ids = $user->loginids();
     if (my @cr_clients = $user->clients_for_landing_company('svg')) {
 
+        # should we include CR clients since Sr applies on them also now
         return _email_diffs_to_compliance($previous, $args, \@client_ids, $is_new_mf_client)
-            if ((any { $_ =~ /^MT[DR]?/ } @client_ids) && (any { $_->risk_level() eq 'high' } @cr_clients));
+            if ($client->risk_level_sr() eq 'high')
+            || ((any { $_ =~ /^MT[DR]?/ } @client_ids)
+            && (any { $_->risk_level_aml() eq 'high' } @cr_clients));
     } else {
         return _email_diffs_to_compliance($previous, $args, \@client_ids, $is_new_mf_client);
     }
