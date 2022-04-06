@@ -22,8 +22,10 @@ pod_test:
 	@$(PROVE) --norc t/*pod*.t
   
 cover:
+	# disable specific warning for Deparse.pm, it flood during the tests.
+	# code coverage test should exclude those memeory or benchmark performance tests.
 	cover -delete
-	sed -i '1667,1668d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
+	sed -i '/unexpected OP/,/OP_CUSTOM/d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
 	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --ignore-exit --norc -rl -MBOM::Test  $$(find t/unit t/BOM -name "*.t" | grep -v 'memory')
 	cover -report coveralls
 	
