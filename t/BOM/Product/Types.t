@@ -8,7 +8,7 @@ BEGIN {
     package TestClass;
 
     use Moose;
-    use Finance::Asset::Market::Types;
+    use Finance::Underlying::Market::Types;
     use Finance::Contract;
     use BOM::Product::Types;
 

@@ -31,7 +31,7 @@ These would be passed to ["produce\_contract" in BOM::Product::ContractFactory](
 
 ## underlying
 
-The underlying asset, as a [Finance::Asset::Underlying](https://metacpan.org/pod/Finance::Asset::Underlying) instance.
+The underlying asset, as a [Finance::Underlying] instance.
 
 # ATTRIBUTES - Other
 

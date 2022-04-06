@@ -7,8 +7,8 @@ use Exporter qw(import);
 our @EXPORT_OK = qw(generate_trading_durations);
 
 use Digest::MD5 qw(md5_hex);
-use Finance::Asset::Market::Registry;
-use Finance::Asset::SubMarket::Registry;
+use Finance::Underlying::Market::Registry;
+use Finance::Underlying::SubMarket::Registry;
 use Finance::Contract::Category;
 use BOM::MarketData qw(create_underlying);
 use List::UtilsBy qw(sort_by);
@@ -154,8 +154,8 @@ sub generate_trading_durations {
 
     my @markets = $offerings->values_for_key('market');
 
-    my $fm  = Finance::Asset::Market::Registry->instance;
-    my $sub = Finance::Asset::SubMarket::Registry->instance;
+    my $fm  = Finance::Underlying::Market::Registry->instance;
+    my $sub = Finance::Underlying::SubMarket::Registry->instance;
     my @trading_durations;
     foreach my $market (sort { $a->display_order <=> $b->display_order } map { $fm->get($_) } @markets) {
         foreach my $submarket (

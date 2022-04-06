@@ -89,7 +89,7 @@ These would be passed to L<BOM::Product::ContractFactory/produce_contract>.
 
 =head2 underlying
 
-The underlying asset, as a L<Finance::Asset::Underlying> instance.
+The underlying asset, as a L<Finance::Underlying> instance.
 
 =cut
 

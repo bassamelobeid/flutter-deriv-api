@@ -19,10 +19,10 @@ use namespace::autoclean;
 use Cache::RedisDB;
 use List::MoreUtils qw(uniq first_index);
 
-use Finance::Asset::SubMarket;
+use Finance::Underlying::SubMarket;
 use Finance::Contract::Category;
-use Finance::Asset::Market::Registry;
-use Finance::Asset::SubMarket::Registry;
+use Finance::Underlying::Market::Registry;
+use Finance::Underlying::SubMarket::Registry;
 use List::UtilsBy qw(sort_by);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -236,7 +236,7 @@ sub _build_tree {
 
     foreach my $market (
         sort { $a->display_order <=> $b->display_order }
-        map  { Finance::Asset::Market::Registry->instance->get($_) } $offerings_obj->values_for_key('market'))
+        map  { Finance::Underlying::Market::Registry->instance->get($_) } $offerings_obj->values_for_key('market'))
     {
         my $children    = [];
         my $market_info = {
@@ -246,7 +246,7 @@ sub _build_tree {
         };
         foreach my $submarket (
             sort { $a->display_order <=> $b->display_order }
-            map  { Finance::Asset::SubMarket::Registry->instance->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']))
+            map  { Finance::Underlying::SubMarket::Registry->instance->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']))
         {
             my $children       = [];
             my $submarket_info = {

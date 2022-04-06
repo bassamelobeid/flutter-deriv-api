@@ -3,8 +3,8 @@
 use Test::More tests => 2;
 use Test::Warnings;
 use LandingCompany::Registry;
-use Finance::Asset::Market::Registry;
-use Finance::Asset::SubMarket::Registry;
+use Finance::Underlying::Market::Registry;
+use Finance::Underlying::SubMarket::Registry;
 use BOM::Config::Runtime;
 
 use Time::HiRes;
@@ -18,13 +18,13 @@ subtest 'benchmark offerings' => sub {
         $offerings_obj->values_for_key('market');
         my $diff = Time::HiRes::time - $before;
         cmp_ok($diff, "<", 1, "construction of " . $lc->short . " offerings objectis less that 1 seconds");
-        foreach my $market (map { $_->name } Finance::Asset::Market::Registry->all) {
+        foreach my $market (map { $_->name } Finance::Underlying::Market::Registry->all) {
             my @common_calls = [{
                     market          => $market,
                     landing_company => $lc->short
                 },
                 ['submarket']];
-            foreach my $submarket (map { $_->name } Finance::Asset::SubMarket::Registry->all) {
+            foreach my $submarket (map { $_->name } Finance::Underlying::SubMarket::Registry->all) {
                 push @common_calls,
                     [{
                         submarket       => $submarket,
