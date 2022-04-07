@@ -41,7 +41,7 @@ alias:
       PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 
 jobs:
-  syntax:
+  syntax_unit:
     <<: *default
     steps:
       - *ssh_keys
@@ -50,10 +50,13 @@ jobs:
       - *wait_services
       - run:
           <<: *tests
-          name: Code structure and syntax
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
             make syntax
+          name: Code structure and syntax
+      - run:
+          command: make unit
+          name: unit tests
       - store_test_results:
           path: /var/tmp/test-output
   core:
@@ -98,11 +101,9 @@ jobs:
 workflows:
   build-workflow:
     jobs: &1
-    - syntax:
+    - syntax_unit:
         context: perl
     - core:
-        context: perl
-    - unit:
         context: perl
   daily:
     jobs: *1
