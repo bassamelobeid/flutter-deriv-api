@@ -41,7 +41,7 @@ alias:
       PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 
 jobs:
-  syntax:
+  syntax_unit:
     <<: *default
     steps:
       - *ssh_keys
@@ -50,10 +50,13 @@ jobs:
       - *wait_services
       - run:
           <<: *tests
-          name: Code structure and syntax
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
             make syntax
+          name: Code structure and syntax
+      - run:
+          command: make unit
+          name: unit tests
       - store_test_results:
           path: /var/tmp/test-output
   product_contract:
@@ -355,7 +358,7 @@ workflows:
   version: 2
   build-workflow:
     jobs: &workflow_jobs
-      - syntax:
+      - syntax_unit:
           context: perl
       - product_contract:
           context: perl
@@ -378,8 +381,6 @@ workflows:
       - benchmark_SDFC_SDEQ:
           context: perl
       - perl-Pricing-Engine-Tests:
-          context: perl
-      - unit:
           context: perl
   daily:
     jobs: *workflow_jobs
