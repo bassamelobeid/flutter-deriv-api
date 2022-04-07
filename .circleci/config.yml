@@ -150,7 +150,7 @@ jobs:
         name: Security handling
     - store_test_results:
         path: /var/tmp/test-output
-  structure:
+  syntax_unit:
     <<: *6
     steps:
     - *1
@@ -164,6 +164,9 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make structure
         name: Code structure and syntax
+    - run:
+        command: make unit
+        name: unit tests
     - store_test_results:
         path: /var/tmp/test-output
   subscriptions:
@@ -261,7 +264,7 @@ version: 2
 workflows:
   build-workflow:
     jobs: &all-jobs
-    - structure:
+    - syntax_unit:
         context: perl
     - accounts:
         context: perl
@@ -278,8 +281,6 @@ workflows:
     - subscriptions:
         context: perl
     - backends:
-        context: perl
-    - unit:
         context: perl
     - update_docs:
         context: perl
