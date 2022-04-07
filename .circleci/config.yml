@@ -51,7 +51,7 @@ jobs:
         name: core tests
     - store_test_results:
         path: /var/tmp/test-output
-  syntax:
+  syntax_unit:
     <<: *6
     steps:
     - *1
@@ -64,6 +64,9 @@ jobs:
           sudo mkdir -p /home/website/www/temp
           make syntax
         name: Code structure and syntax
+    - run:
+        command: make unit
+        name: unit tests
     - store_test_results:
         path: /var/tmp/test-output
   localize:
@@ -117,17 +120,15 @@ version: 2
 workflows:
   build-workflow:
     jobs: &7
-    - syntax:
+    - syntax_unit:
         context: perl
     - core:
         context: perl
     - localize:
         context: perl
-    - unit:
-        context: perl
   daily:
     jobs:
-    - syntax:
+    - syntax_unit:
         context: perl
     - core:
         context: perl
@@ -135,8 +136,6 @@ workflows:
         context: perl
     - translations:
         context: translation
-    - unit:
-        context: perl
     triggers:
     - schedule:
         cron: 4 20 * * *
