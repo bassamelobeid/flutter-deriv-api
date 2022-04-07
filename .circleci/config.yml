@@ -37,19 +37,20 @@ default: &6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-test
 jobs:
-  syntax:
+  syntax_unit:
     <<: *6
     steps:
     - *1
     - *2
-    - *3
-    - *4
     - run:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make syntax
         name: Code structure and syntax
+    - run:
+        name: unit test
+        command: make unit
     - store_test_results:
         path: /var/tmp/test-output
   core:
@@ -84,11 +85,9 @@ version: 2
 workflows:
   build-workflow:
     jobs: &7
-    - syntax:
+    - syntax_unit:
         context: perl
     - core:
-        context: perl
-    - unit:
         context: perl
   daily:
     jobs: *7
