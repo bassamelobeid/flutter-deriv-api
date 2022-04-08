@@ -84,7 +84,7 @@
                "type" : "array",
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(commodities|forex|indices|synthetic_index)$"
+                  "pattern" : "^(commodities|forex|indices|synthetic_index|basket_index)$"
                }
             }
          },

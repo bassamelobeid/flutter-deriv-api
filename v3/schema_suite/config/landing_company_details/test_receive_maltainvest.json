@@ -71,7 +71,7 @@
             "legal_allowed_markets" : {
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(forex|synthetic_index|cryptocurrency)$"
+                  "pattern" : "^(forex|synthetic_index|cryptocurrency|basket_index)$"
                },
                "minItems" : 1,
                "type" : "array"
