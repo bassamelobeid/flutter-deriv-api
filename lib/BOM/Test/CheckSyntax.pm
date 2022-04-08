@@ -1,4 +1,4 @@
-package BOM::Test::SyntaxCheck;
+package BOM::Test::CheckSyntax;
 
 use strict;
 use warnings;
@@ -13,7 +13,7 @@ use BOM::Test::CheckJsonMaybeXS;
 use Test::Builder qw();
 use YAML::XS qw(LoadFile);
 
-sub syntax_check_on_diff {
+sub check_syntax_on_diff {
 
     my %skipped_files = map { $_ => 1 } @_;
     if (%skipped_files) {
@@ -55,3 +55,5 @@ sub syntax_check_on_diff {
 
     }
 }
+
+1;
