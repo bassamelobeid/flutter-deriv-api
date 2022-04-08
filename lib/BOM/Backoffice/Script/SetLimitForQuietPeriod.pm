@@ -45,7 +45,7 @@ sub script_run {
 
                 my %new_limit = (
                     risk_profile => $risk_profile,
-                    market       => 'forex',
+                    market       => 'forex,basket_index',
                     expiry_type  => $duration,
                     name         => $todo,
                     updated_by   => 'cron job',
@@ -64,7 +64,7 @@ sub script_run {
                 $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
 
                 $between = $start_time->hour . ' to ' . $end_time->hour . ' GMT';
-                send_notification_email(\%new_limit, $todo . ' for forex intraday between ' . $between);
+                send_notification_email(\%new_limit, $todo . ' for forex and basket indices intraday between ' . $between);
             }
             next;
         }
@@ -94,10 +94,10 @@ sub script_run {
 
         $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
 
-        #imposing new limit on forex (tick trade/ ultra short duration)
+        #imposing new limit on forex and basket indices (tick trade/ ultra short duration)
         my %new_limit = (
             risk_profile => $risk_profile,
-            market       => 'forex',
+            market       => 'forex,basket_index',
             expiry_type  => $duration,
             name         => $todo,
             updated_by   => 'cron job',
@@ -106,7 +106,7 @@ sub script_run {
 
         $current_product_profiles->{$uniq_key} = \%new_limit;
         $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
-        send_notification_email(\%new_limit, $todo . ' for forex tick trade between ' . $between);
+        send_notification_email(\%new_limit, $todo . ' for forex and basket indices tick trade between ' . $between);
 
     }
 

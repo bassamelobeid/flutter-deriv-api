@@ -183,7 +183,7 @@ sub decorate_for_display {
         fixup => sub {
             $_->selectall_arrayref("SELECT market from betonmarkets.quants_wishlist group by market");
         });
-    my @market_order = uniq(qw(forex indices commodities synthetic_index default), (map { @$_ } (@$output, @$potentially_new_market)));
+    my @market_order = uniq(qw(forex indices commodities synthetic_index basket_index default), (map { @$_ } (@$output, @$potentially_new_market)));
 
     my $supported = BOM::Database::QuantsConfig::supported_config_type()->{per_landing_company};
 

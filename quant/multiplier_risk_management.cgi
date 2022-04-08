@@ -129,8 +129,9 @@ sub _get_existing_multiplier_config {
     my $all_config       = $qc->get_multiplier_config_default();
     my %display_priority = (
         synthetic_index => 0,
-        forex           => 1,
-        cryptocurrency  => 2,
+        basket_index    => 1,
+        forex           => 2,
+        cryptocurrency  => 3,
     );
 
     my %existing;

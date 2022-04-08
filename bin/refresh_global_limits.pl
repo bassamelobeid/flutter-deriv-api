@@ -22,6 +22,15 @@ my @limits = ({
         limit_amount      => 40000,
     },
     {
+        market       => ['basket_index'],
+        limit_amount => 100000,
+    },
+    {
+        market            => ['basket_index'],
+        underlying_symbol => ['default'],
+        limit_amount      => 40000,
+    },
+    {
         market       => ['synthetic_index'],
         limit_amount => 200000,
     },
