@@ -3,6 +3,7 @@ package BOM::Test::CheckSyntax;
 use strict;
 use warnings;
 
+use Exporter 'import';
 use Test::More;
 use Test::Exception;
 use Test::Vars;
@@ -12,6 +13,7 @@ use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticr
 use BOM::Test::CheckJsonMaybeXS;
 use Test::Builder qw();
 use YAML::XS qw(LoadFile);
+our @EXPORT_OK = qw(check_syntax_on_diff);
 
 sub check_syntax_on_diff {
     my @skipped_files = @_;
