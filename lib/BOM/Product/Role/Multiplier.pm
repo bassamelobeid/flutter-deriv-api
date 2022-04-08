@@ -882,8 +882,8 @@ sub _validate_blackout_start {
     my $self = shift;
 
     # Due to uncertainty around volsurface rollover time, we want to disable buy 5 minutes before rollover and 30 minutes after rollover.
-    # Only applicable for forex.
-    return if $self->underlying->market->name ne 'forex';
+    # Only applicable for forex and basket_index.
+    return if $self->underlying->market->name !~ /^(basket_index|forex)$/;
 
     my $rollover       = $self->volsurface->rollover_date($self->date_start);
     my $blackout_start = $rollover->minus_time_interval('5m');
@@ -958,7 +958,7 @@ sub _validate_cancellation {
     }
 
     my $cancellation_blackout_start = 21;
-    if ($self->underlying->market->name eq 'forex' and $self->date_start->hour >= $cancellation_blackout_start) {
+    if ($self->underlying->market->name =~ /^(basket_index|forex)$/ and $self->date_start->hour >= $cancellation_blackout_start) {
         my $sod = $self->date_start->truncate_to_day;
         return {
             message           => 'deal cancellation blackout period',
@@ -1230,12 +1230,12 @@ sub _build_formula_args {
 override 'pricing_vol' => sub {
     my $self = shift;
 
-    # currently, only synthetic and forex.
+    # currently, only synthetic and forex and basket indices.
     my $sigma;
     my $market = $self->underlying->market->name;
     if ($market eq 'synthetic_index') {
         $sigma = $self->volsurface->get_volatility;
-    } elsif ($market eq 'forex') {
+    } elsif ($market =~ /^(basket_index|forex)$/) {
         $sigma = $self->empirical_volsurface->get_volatility({
             from  => $self->date_start,
             to    => $self->cancellation_expiry,
@@ -1332,7 +1332,7 @@ my $forex_source = {
     AUD => 1,
     JPY => 1,
 };
-my %smart_source_currency = (
+my %basket_source_currency = (
     WLDUSD => $forex_source,
     WLDAUD => $forex_source,
     WLDEUR => $forex_source,
@@ -1349,7 +1349,7 @@ my %smart_source_currency = (
 sub _get_economic_event_commission_multiplier {
     my $self = shift;
 
-    return 0 if $self->underlying->market->name ne 'forex';
+    return 0 if $self->underlying->market->name !~ /^(forex|basket_index)$/;
 
     my $for_date    = $self->underlying->for_date;
     my $ee_calendar = Quant::Framework::EconomicEventCalendar->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date));
@@ -1364,8 +1364,8 @@ sub _get_economic_event_commission_multiplier {
     my $ee_multiplier = 0;
     if (@high_impact_events) {
         my $currencies;
-        if ($self->underlying->submarket->name eq 'smart_fx') {
-            $currencies = $smart_source_currency{$self->underlying->symbol};
+        if ($self->underlying->market->name eq 'basket_index') {
+            $currencies = $basket_source_currency{$self->underlying->symbol};
         } else {
             $currencies = {
                 USD                                       => 1,

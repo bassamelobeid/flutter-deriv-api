@@ -33,7 +33,7 @@ OTC_NDX: *15m_equities
 OTC_SSMI: *15m_equities
 OTC_SPC: *15m_equities
 OTC_SX5E: *30min_equities
-WLDAUD: &smart_fx
+WLDAUD: &forex_basket
   callput:
     intraday:
       spot:
@@ -46,10 +46,10 @@ WLDAUD: &smart_fx
         euro_atm:
           max: 10h
           min: 3m
-WLDEUR: *smart_fx
-WLDGBP: *smart_fx
-WLDUSD: *smart_fx
-WLDXAU: &smart_gold
+WLDEUR: *forex_basket
+WLDGBP: *forex_basket
+WLDUSD: *forex_basket
+WLDXAU: &commodity_basket
   callput:
     intraday:
       spot:

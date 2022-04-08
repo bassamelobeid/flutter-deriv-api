@@ -83,7 +83,7 @@ sub _vols_at_point {
         $vols_to_use{$pair} = $pair_ref->{vol};
     }
 
-    if (none { $market_name eq $_ } (qw(forex commodities indices))) {
+    if (none { $market_name eq $_ } (qw(forex commodities indices basket_index))) {
         $vols_to_use{domqqq} = $vols_to_use{fordom};
         $vols_to_use{forqqq} = $vols_to_use{domqqq};
     }
@@ -209,8 +209,8 @@ sub _build_pricing_vol_for_two_barriers {
             spot => $self->current_spot,
         };
         my $volsurface_obj;
-        if ($market_name eq 'forex') {
-            # ticks in volatility calculation is only use for forex market using empirical volatility
+        if ($market_name =~ /^(forex|basket_index)$/) {
+            # ticks in volatility calculation is only use for forex and basket indices market using empirical volatility
             $vol_args->{ticks} = $self->ticks_for_short_term_volatility_calculation;
             $volsurface_obj = $self->empirical_volsurface;
         } else {

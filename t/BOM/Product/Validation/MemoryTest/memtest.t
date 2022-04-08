@@ -71,7 +71,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     }) for grep { $_->symbol !~ /frx/ } @market_data_underlyings;
 my @currencies = List::Util::uniqstr grep { !!$_ }    # filter out duplicated or empty ('') currency symbols
-    map { $_->market->name =~ /(forex|commodities)/ ? ($_->asset_symbol, $_->quoted_currency_symbol) : ($_->quoted_currency_symbol) } @underlyings;
+    map { $_->market->name =~ /(forex|commodities|basket_index)/ ? ($_->asset_symbol, $_->quoted_currency_symbol) : ($_->quoted_currency_symbol) }
+    @underlyings;
 
 my @payout_curr = qw(USD GBP EUR AUD);
 for (@currencies, @payout_curr, 'AUD-JPY', 'CAD-AUD') {

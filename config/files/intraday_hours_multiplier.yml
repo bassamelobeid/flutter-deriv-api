@@ -45,7 +45,10 @@
   minor_pairs:
     dst: 0.1
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 01:
@@ -94,7 +97,10 @@
   minor_pairs:
     dst: 0.15
     non_dst: 0.1
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 02:
@@ -143,7 +149,10 @@
   minor_pairs:
     dst: 0.1
     non_dst: 0.15
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 03:
@@ -192,7 +201,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0.1
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 04:
@@ -241,7 +253,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 05:
@@ -290,7 +305,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 06:
@@ -339,7 +357,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 07:
@@ -388,7 +409,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 08:
@@ -437,7 +461,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 09:
@@ -486,7 +513,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 10:
@@ -535,7 +565,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 11:
@@ -584,7 +617,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 12:
@@ -633,7 +669,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 13:
@@ -682,7 +721,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 14:
@@ -731,7 +773,10 @@
   minor_pairs:
     dst: 0
     non_dst: 0
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 15:
@@ -780,7 +825,10 @@
   minor_pairs:
     dst: 0.2
     non_dst: 0.1
-  smart_fx:
+  forex_basket:
+    dst: 0.1
+    non_dst: 0
+  commodity_basket:
     dst: 0.1
     non_dst: 0
 16:
@@ -829,7 +877,10 @@
   minor_pairs:
     dst: 0.1
     non_dst: 0.2
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0.1
+  commodity_basket:
     dst: 0
     non_dst: 0.1
 17:
@@ -878,7 +929,10 @@
   minor_pairs:
     dst: 0.1
     non_dst: 0.1
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 18:
@@ -927,7 +981,10 @@
   minor_pairs:
     dst: 0.1
     non_dst: 0.1
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 19:
@@ -976,7 +1033,10 @@
   minor_pairs:
     dst: 0.1
     non_dst: 0.1
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 20:
@@ -1025,7 +1085,10 @@
   minor_pairs:
     dst: 0.1
     non_dst: 0.1
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 21:
@@ -1074,7 +1137,10 @@
   minor_pairs:
     dst: 0.15
     non_dst: 0.15
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 22:
@@ -1123,7 +1189,10 @@
   minor_pairs:
     dst: 0.15
     non_dst: 0.15
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0
 23:
@@ -1172,6 +1241,9 @@
   minor_pairs:
     dst: 0.1
     non_dst: 0.1
-  smart_fx:
+  forex_basket:
+    dst: 0
+    non_dst: 0
+  commodity_basket:
     dst: 0
     non_dst: 0

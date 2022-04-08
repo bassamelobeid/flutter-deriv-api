@@ -13,3 +13,7 @@ futures:
   - traded_market_markup
 sectors:
   - traded_market_markup
+basket_index:
+  - traded_market_markup
+  - economic_event_markup
+  - end_of_day_markup

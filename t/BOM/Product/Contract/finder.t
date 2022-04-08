@@ -38,10 +38,11 @@ my $finder = BOM::Product::ContractFinder->new;
 
 subtest "basic_contracts_for" => sub {
     my %input = (
-        random      => ['R_100',     'RDBEAR'],
-        forex       => ['frxUSDJPY', 'frxAUDCAD', 'frxEURUSD', 'WLDUSD'],
-        indices     => ['OTC_AEX',   'SYNAEX'],
-        commodities => ['frxXAUUSD', 'frxXPDUSD'],
+        random       => ['R_100',     'RDBEAR'],
+        forex        => ['frxUSDJPY', 'frxAUDCAD', 'frxEURUSD'],
+        basket_index => ['WLDUSD'],
+        indices      => ['OTC_AEX',   'SYNAEX'],
+        commodities  => ['frxXAUUSD', 'frxXPDUSD'],
     );
     my %expected = (
         R_100 => {

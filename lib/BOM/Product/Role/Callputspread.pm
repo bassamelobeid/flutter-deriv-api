@@ -105,7 +105,7 @@ override '_build_pricing_engine' => sub {
 
     my $min_max = $self->spot_min_max($self->date_start->minus_time_interval($lookback_duration . 'm'));
 
-    my $rollover_hour = $self->underlying->market->name eq 'forex' ? $self->volsurface->rollover_date($self->date_pricing) : undef;
+    my $rollover_hour = $self->underlying->market->name =~ /^(forex|basket_index)$/ ? $self->volsurface->rollover_date($self->date_pricing) : undef;
 
     my %markup_params = (
         apply_mean_reversion_markup => $self->apply_mean_reversion_markup,
