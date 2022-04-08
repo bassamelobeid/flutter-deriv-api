@@ -14,9 +14,9 @@ use Test::Builder qw();
 use YAML::XS qw(LoadFile);
 
 sub check_syntax_on_diff {
-
-    my %skipped_files = map { $_ => 1 } @_;
-    if (%skipped_files) {
+    my @skipped_files = @_;
+    my %skipped_files = map { $_ => 1 } @skipped_files;
+    if (@skipped_files) {
         diag("skipped_files:");
         diag($_) for keys %skipped_files;
     }
