@@ -24,7 +24,7 @@ dxtrade:
     deriv_symbol: USAMZN
     name: Amazon.com Inc
     quoted_currency: USD
-  AUD Index:
+  AUD Basket:
     deriv_symbol: WLDAUD
     name: AUD vs basket of USD;EUR;GBP;JPY;CAD
     quoted_currency: USD
@@ -208,7 +208,7 @@ dxtrade:
     deriv_symbol: OTC_SX5E
     name: Europe 50
     quoted_currency: EUR
-  EUR Index:
+  EUR Basket:
     deriv_symbol: WLDEUR
     name: EUR vs basket of USD;AUD;GBP;JPY;CAD
     quoted_currency: USD
@@ -312,7 +312,7 @@ dxtrade:
     deriv_symbol: OTC_FCHI
     name: France 40
     quoted_currency: EUR
-  GBP Index:
+  GBP Basket:
     deriv_symbol: WLDGBP
     name: GBP vs basket of USD;EUR;AUD;JPY;CAD
     quoted_currency: USD
@@ -380,7 +380,7 @@ dxtrade:
     deriv_symbol: USGLDSCH
     name: Goldman Sachs Group
     quoted_currency: USD
-  Gold Index:
+  Gold Basket:
     deriv_symbol: WLDXAU
     name: XAU vs basket of USD;EUR;AUD;GBP;JPY
     quoted_currency: USD
@@ -584,7 +584,7 @@ dxtrade:
     deriv_symbol: OTC_SPC
     name: US 500
     quoted_currency: USD
-  USD Index:
+  USD Basket:
     deriv_symbol: WLDUSD
     name: USD vs basket of EUR;GBP;JPY;CAD;AUD
     quoted_currency: USD
