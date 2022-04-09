@@ -285,15 +285,6 @@ $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
     'client_loginid' => $new_loginid,
     'currency_code'  => 'USD',
 });
-my @indices_symbols = create_underlying_db->get_symbols_for(market => 'indices');
-my @smart_index     = create_underlying_db->get_symbols_for(
-    market    => 'indices',
-    submarket => 'smart_index'
-);
-my @smart_fx = create_underlying_db->get_symbols_for(
-    market    => 'forex',
-    submarket => 'smart_fx'
-);
 
 # test with acc that does not exist
 lives_ok {

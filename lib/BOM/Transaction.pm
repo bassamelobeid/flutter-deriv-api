@@ -1285,7 +1285,7 @@ sub sell {
     my $datetime = Date::Utility->new();
 
     # This is for disabling resale on path dependent contracts for AUD, NZD and JPY forex pairs during rollover time
-    if (   $self->contract->underlying->market->name eq 'forex'
+    if (   $self->contract->underlying->market->name =~ /^(forex|basket_index)$/
         && $self->contract->is_path_dependent
         && $self->action_type eq 'sell'
         && $self->contract->category_code ne 'multiplier'

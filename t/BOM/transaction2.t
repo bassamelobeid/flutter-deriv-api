@@ -618,7 +618,7 @@ subtest 'smartfx_turnover_limit', sub {
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            note("smart_fx_turnover_limit's risk type is high_risk");
+            note("forex_basket_turnover_limit's risk type is high_risk");
             note("mocked high_risk USD limit to 149.99");
             BOM::Config::quants()->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
 
@@ -644,7 +644,7 @@ subtest 'smartfx_turnover_limit', sub {
             is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is ProductSpecificTurnoverLimitExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg},              'Exceeds turnover limit on smart_fx_turnover_limit',             'mesg';
+            is $error->{-mesg},              'Exceeds turnover limit on forex_basket_turnover_limit',         'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
