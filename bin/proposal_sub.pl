@@ -556,7 +556,7 @@ method forex_duration_adjustments(%attrs) {
     my $max                 = $attrs{max};
     my ($max_duration_type) = $attrs{max} =~ /\d+(\w)/;
     my $dt                  = DateTime->now;
-    if ($attrs{sub_market} ne 'smart_fx') {
+    if ($attrs{sub_market} ne 'forex_basket') {
 
         # Allow for weekends
         if ($max_duration_type eq 'd' and $attrs{max} ne '1d') {
@@ -571,7 +571,7 @@ method forex_duration_adjustments(%attrs) {
     if ($dt->hour > 20 && $dt->hour < 24) {
         return (0, 0) if $max_duration_type eq 't';
         $min = '5h';
-        $max = '16h' if ($attrs{sub_market} eq 'smart_fx');
+        $max = '16h' if ($attrs{sub_market} eq 'forex_basket');
 
     }
     return ($min, $max);
@@ -607,7 +607,7 @@ method get_params($contract_type, $symbol) {
     my $sub_market = $contract->submarket;
     my $min        = $contract->min_contract_duration;
     my $max        = $contract->max_contract_duration;
-    if ($market eq 'forex') {
+    if ($market =~ /^(forex|basket_index)$/) {
         ($min, $max) = $self->forex_duration_adjustments(
             min        => $min,
             max        => $max,
@@ -659,7 +659,7 @@ method get_params($contract_type, $symbol) {
 
     };
 
-    if ($market eq 'forex') {
+    if ($market =~ /^(forex|basket_index)$/) {
         delete $contract_params->{$contract_type}->{barrier};
     }
     if ($sub_market eq 'minor_pairs') {
