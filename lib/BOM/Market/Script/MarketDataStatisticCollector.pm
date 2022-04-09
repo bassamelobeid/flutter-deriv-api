@@ -57,12 +57,11 @@ sub _collect_vol_ages {
         market            => ['indices', 'commodities'],
         contract_category => 'ANY',
     );
-    my @smart_fx = create_underlying_db->get_symbols_for(
-        market    => 'forex',
-        submarket => 'smart_fx'
+    my @basket_indices = create_underlying_db->get_symbols_for(
+        market => 'basket_index',
     );
 
-    my @offer_underlyings = (@offered_forex, @offered_others, @smart_fx);
+    my @offer_underlyings = (@offered_forex, @offered_others, @basket_indices);
 
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
     my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
@@ -76,8 +75,6 @@ sub _collect_vol_ages {
         if ($market eq 'forex' or $market eq 'commodities') {
             if ($underlying->quanto_only) {
                 $market = 'forex_quanto';
-            } elsif ($underlying->submarket->name eq 'smart_fx') {
-                $market = 'smart_fx';
             }
         }
 
