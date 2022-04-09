@@ -272,10 +272,17 @@ subtest 'get_current_profile_definitions' => sub {
                     'name'           => 'Minor Pairs',
                     'profile_name'   => 'moderate_risk',
                 },
+            ],
+            'basket_index' => [{
+                    'turnover_limit' => "50000.00",
+                    'payout_limit'   => "5000.00",
+                    'name'           => 'Forex Basket',
+                    'profile_name'   => 'moderate_risk',
+                },
                 {
                     'turnover_limit' => "50000.00",
                     'payout_limit'   => "5000.00",
-                    'name'           => 'Smart FX',
+                    'name'           => 'Commodities Basket',
                     'profile_name'   => 'moderate_risk',
                 },
             ],
@@ -347,6 +354,13 @@ subtest 'get_current_profile_definitions' => sub {
                 }
 
                 for (($general->{forex} // [])->@*) {
+                    ok defined $_->{turnover_limit}, 'Turnover Limit is defined';
+                    ok defined $_->{payout_limit},   'Payout Limit is defined';
+                    is $_->{turnover_limit} + 0, 0, 'Turnover Limit defaulted to 0';
+                    is $_->{payout_limit} + 0,   0, 'Payout Limit defaulted to 0';
+                }
+
+                for (($general->{basket_index} // [])->@*) {
                     ok defined $_->{turnover_limit}, 'Turnover Limit is defined';
                     ok defined $_->{payout_limit},   'Payout Limit is defined';
                     is $_->{turnover_limit} + 0, 0, 'Turnover Limit defaulted to 0';
