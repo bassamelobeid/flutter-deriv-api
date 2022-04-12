@@ -15,6 +15,13 @@ use Test::Builder qw();
 use YAML::XS qw(LoadFile);
 our @EXPORT_OK = qw(check_syntax_on_diff);
 
+=head1 check_syntax_on_diff
+
+Gather common syntax tests which used ammon bom-xxx repos.
+and the tests only apply to updated files between master branch.
+
+=cut
+
 sub check_syntax_on_diff {
     my @skipped_files = @_;
     my %skipped_files = map { $_ => 1 } @skipped_files;
