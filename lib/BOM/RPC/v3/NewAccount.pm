@@ -87,7 +87,8 @@ rpc "verify_email",
 
     my ($email, $type, $url_params) = @{$args}{qw/verify_email type url_parameters/};
 
-    my $utm_medium = $args->{url_parameters}->{utm_medium} // '';
+    my $utm_medium   = $args->{url_parameters}->{utm_medium}   // '';
+    my $utm_campaign = $args->{url_parameters}->{utm_campaign} // '';
 
     $email = lc $email;
 
@@ -171,7 +172,7 @@ rpc "verify_email",
                 },
             });
     } elsif ($type eq 'account_opening') {
-        if ($utm_medium eq 'affiliate') {
+        if ($utm_medium eq 'affiliate' and $utm_campaign eq 'MyAffiliates' and $url_params->{affiliate_token}) {
             my $config = BOM::Config::third_party()->{myaffiliates};
             my $aff    = WebService::MyAffiliates->new(
                 user    => $config->{user},
@@ -180,8 +181,13 @@ rpc "verify_email",
                 timeout => 10
             );
 
-            my $myaffiliate_email = $aff->get_affiliate_details($url_params->{affiliate_token})->{TOKEN}->{USER}->{EMAIL};
-
+            my $myaffiliate_email    = '';
+            my $received_aff_details = $aff->get_affiliate_details($url_params->{affiliate_token});
+            if ($received_aff_details and $received_aff_details->{TOKEN}->{USER_ID} !~ m/Error/) {
+                $myaffiliate_email = $received_aff_details->{TOKEN}->{USER}->{EMAIL} // '';
+            } else {
+                $log->warnf("Could not fetch affiliate details from MyAffiliates. Please check credentials: %s", $aff->errstr);
+            }
             if ($myaffiliate_email eq $email) {
                 request_email($email, $verification->{account_opening_existing}->());
             } else {
