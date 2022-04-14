@@ -17,6 +17,9 @@ tidy:
 test:
 	@$(PROVE) t/BOM t/bin
 
+syntax_diff:
+	@$(PROVE) --norc t/00_syntax_diff.t
+
 syntax:
 	@$(PROVE) t/*.t
 
