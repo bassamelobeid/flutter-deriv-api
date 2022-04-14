@@ -18,7 +18,7 @@ our @EXPORT_OK = qw(check_syntax_on_diff check_bom_dependency);
 =head1 check_syntax_on_diff
 
 Gather common syntax tests which used ammon bom-xxx repos.
-and the tests only apply to updated files compare to master branch.
+and the only apply to updated files compare to master branch.
 
 =cut
 
@@ -68,6 +68,7 @@ sub check_syntax_on_diff {
 =head1 check_bom_dependency
 
 check BOM modules dependency under currnet lib
+test fail when there are new dependency detected
 skip test files, Makefile, .proverc, README.md...
 
 =cut
