@@ -15,6 +15,9 @@ tidy:
 	find . -not -path "./.git*" -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
 
+syntax_diff:
+	@$(PROVE) --norc t/00_syntax_diff.t t/01_check_bom_dependency.t t/006_pod_coverage.t
+
 syntax:
 	@$(PROVE) --norc t/*.t
 
