@@ -18,7 +18,7 @@ test:
 	@$(PROVE) t/BOM t/bin
 
 syntax_diff:
-	@$(PROVE) --norc t/00_syntax_diff.t
+	@$(PROVE) --norc t/00_syntax_diff.t t/01_check_bom_dependency.t
 
 syntax:
 	@$(PROVE) t/*.t
