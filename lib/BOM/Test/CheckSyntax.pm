@@ -18,7 +18,7 @@ our @EXPORT_OK = qw(check_syntax_on_diff);
 =head1 check_syntax_on_diff
 
 Gather common syntax tests which used ammon bom-xxx repos.
-and the tests only apply to updated files between master branch.
+and the tests only apply to updated files compare to master branch.
 
 =cut
 
@@ -63,6 +63,34 @@ sub check_syntax_on_diff {
         }
 
     }
+}
+
+=head1 check_bom_dependency
+
+check BOM modules dependency in lib
+skip test files, Makefile, .proverc, README.md...
+also found it inside pod of some pm file like
+lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
+
+=cut
+
+sub check_bom_dependency {
+    my @dependency_allowed = @_;
+    # try to find package name of current repo itself
+    my @self_contain_pm = `find lib/BOM/* -maxdepth 0 -type d`;
+    @self_contain_pm = map { s/lib\/BOM\//BOM::/; s/\s//; $_ } @self_contain_pm;
+
+    # the git grep return like
+    # lib/BOM/MyAffiliates.pm:   use BOM::Config;
+    # " BOM::" should able to detect use|require BOM:: or direct call
+    # with pathspec lib it filter all README and tests
+    my $cmd = 'git grep " BOM::" lib/';
+    $cmd = join(' | grep -v ', $cmd, @dependency_allowed, @self_contain_pm);
+    note("\n$cmd");
+
+    my $result = `$cmd`;
+    ok !$result, "BOM dependency check";
+    diag($result) if $result;
 }
 
 1;
