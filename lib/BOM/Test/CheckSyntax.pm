@@ -78,7 +78,7 @@ sub check_bom_dependency {
     my @dependency_allowed = @_;
     # try to find package name of current repo itself
     my @self_contain_pm = `find lib/BOM/* -maxdepth 0 -type d`;
-    @self_contain_pm = map { s/lib\/BOM\//BOM::/; s/\s//; $_ } @self_contain_pm;
+    @self_contain_pm = map { my $pm = $_; $pm =~ s/lib\/BOM\//BOM::/; $pm =~ s/\s//; $pm } @self_contain_pm;
 
     # the git grep return like
     # lib/BOM/MyAffiliates.pm:   use BOM::Config;
