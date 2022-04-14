@@ -25,13 +25,13 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test_all: $(TESTS)
 
-unit_test_syntax:
-	@$(PROVE) --norc t/*.t
-
 test: $(CORETESTS)
 
 syntax:
 	@$(PROVE) --norc t/*.t
+
+syntax_diff:
+	@$(PROVE) --norc t/00_syntax_diff.t t/001_structure.t t/006_pod_coverage.t
 
 unit_test_product_contract:
 	@$(PROVE) -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFinder/
@@ -90,6 +90,6 @@ cover:
 	sed -i '1667,1668d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
 	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --ignore-exit --timer --norc -It/lib -rl $$(find t/unit t/BOM -name "*.t" | grep -vE 'memtest|benchmark')
 	cover -report coveralls
-	
+
 unit:
 	/etc/rmg/bin/prove -rlv --timer t/unit/

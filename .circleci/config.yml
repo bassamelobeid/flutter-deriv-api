@@ -15,7 +15,7 @@ alias:
     add_ssh_keys:
       fingerprints:
         - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
-  - &git
+  - &update_git
     run:
       name: Update git repositories
       command: /opt/circle/prepare-test.sh
@@ -36,7 +36,7 @@ alias:
             (( count++ )) && (( count >= 20 )) && break
             sleep 1
         done
-  - &tests
+  - &test_output
     environment:
       PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 
@@ -45,14 +45,28 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
-      - *services
-      - *wait_services
+      - *update_git
       - run:
-          <<: *tests
+          <<: *test_output
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
             make syntax
+          name: Code structure and syntax
+      - run:
+          command: make unit
+          name: unit tests
+      - store_test_results:
+          path: /var/tmp/test-output
+  syntax_diff_unit:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - *update_git
+      - run:
+          <<: *test_output
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make syntax_diff
           name: Code structure and syntax
       - run:
           command: make unit
@@ -63,11 +77,11 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: Product contract test
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -78,11 +92,11 @@ jobs:
     <<: *default
     steps:
         - *ssh_keys
-        - *git
+        - *update_git
         - *services
         - *wait_services
         - run:
-            <<: *tests
+            <<: *test_output
             name: Product contract settlement test
             command: |
                 echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -93,11 +107,11 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: Product Contract Extended test
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -108,11 +122,11 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: Validation
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -123,11 +137,11 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: MemoryTest
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -138,11 +152,11 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: Pricing
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -153,11 +167,11 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: Product base
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -184,11 +198,11 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: Merlin Benchmark
           command: |
             cd /home/git/regentmarkets/bom-quant-benchmark
@@ -200,11 +214,11 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: OVRA benchmark
           command: |
             cd /home/git/regentmarkets/bom-quant-benchmark
@@ -217,7 +231,7 @@ jobs:
     working_directory: /home/git/regentmarkets/bom-quant-benchmark
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
@@ -254,18 +268,18 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: perl-Pricing-Engine-European-Digital-Slope
           command: |
             cd /home/git/regentmarkets/perl-Pricing-Engine-European-Digital-Slope
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
             make test
       - run:
-          <<: *tests
+          <<: *test_output
           name: perl-Pricing-Engine-BlackScholes
           command: |
             cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes
@@ -273,7 +287,7 @@ jobs:
             make test
           when: always
       - run:
-          <<: *tests
+          <<: *test_output
           name: perl-Pricing-Engine-Digits
           command: |
             cd /home/git/regentmarkets/perl-Pricing-Engine-Digits
@@ -281,7 +295,7 @@ jobs:
             make test
           when: always
       - run:
-          <<: *tests
+          <<: *test_output
           name: perl-Pricing-Engine-HighLow-Ticks
           command: |
             cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks
@@ -289,7 +303,7 @@ jobs:
             make test
           when: always
       - run:
-          <<: *tests
+          <<: *test_output
           name: perl-Pricing-Engine-Intraday-Forex-Base
           command: |
             cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
@@ -297,7 +311,7 @@ jobs:
             make test
           when: always
       - run:
-          <<: *tests
+          <<: *test_output
           name: perl-Pricing-Engine-Lookback
           command: |
             cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback
@@ -305,7 +319,7 @@ jobs:
             make test
           when: always
       - run:
-          <<: *tests
+          <<: *test_output
           name: perl-Pricing-Engine-Markup
           command: |
             cd /home/git/regentmarkets/perl-Pricing-Engine-Markup
@@ -313,7 +327,7 @@ jobs:
             make test
           when: always
       - run:
-          <<: *tests
+          <<: *test_output
           name: perl-Pricing-Engine-Reset
           command: |
             cd /home/git/regentmarkets/perl-Pricing-Engine-Reset
@@ -321,7 +335,7 @@ jobs:
             make test
           when: always
       - run:
-          <<: *tests
+          <<: *test_output
           name: perl-Pricing-Engine-TickExpiry
           command: |
             cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
@@ -334,9 +348,9 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - run:
-          <<: *tests
+          <<: *test_output
           name: Run Unit Tests
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -347,18 +361,18 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - *git
+      - *update_git
       - *services
       - *wait_services
       - run:
-          <<: *tests
+          <<: *test_output
           name: code coverage tests
           command: make cover
 workflows:
   version: 2
   build-workflow:
-    jobs: &workflow_jobs
-      - syntax_unit:
+    jobs:
+      - syntax_diff_unit:
           context: perl
       - product_contract:
           context: perl
@@ -383,7 +397,31 @@ workflows:
       - perl-Pricing-Engine-Tests:
           context: perl
   daily:
-    jobs: *workflow_jobs
+    jobs:
+    - syntax_unit:
+        context: perl
+    - product_contract:
+        context: perl
+    - product_contract_settlement:
+        context: perl
+    - product_contract_extended:
+        context: perl
+    - validation:
+        context: perl
+    - memory_test:
+        context: perl
+    - pricing:
+        context: perl
+    - product_except_validation_contract_pricing:
+        context: perl
+    - benchmark_merlin:
+        context: perl
+    - benchmark_OVRA:
+        context: perl
+    - benchmark_SDFC_SDEQ:
+        context: perl
+    - perl-Pricing-Engine-Tests:
+        context: perl
     triggers:
     - schedule:
         cron: 30 22 * * *
