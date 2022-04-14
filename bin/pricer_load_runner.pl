@@ -63,8 +63,9 @@ In this format
 
 =item * --time|-t  The amount of time in seconds that the proposal_sub.pl script will be run for, for each subscription amount. Defaults to 120 seconds. Setting this lower than 60 seconds could lead to unreliable results as there is an inbuilt 60 second delay on the statistics gathering. 
 
-=item * --subscriptions|-s : The number of subscriptions per connection, Connections are set at 5 so the figure here will result in 5 times more subscriptions. Default is 10.  
+=item * --subscriptions|-s : The number of subscriptions per connection, Connections are set at 5 so the figure here will result in 5 times more subscriptions. Default is 10.
 
+=item * --a|app_id : The app_id uses to make Websocket requests. Default is 1003
 =item * --mail_to|-e  : Address to email the result to, Optional if left empty it won't email.  For multiple addresses separate with a comma.  
 
 =item * --hostname|-n :  The hostname which in DataDog indicates the statistics to be used for the measurements. If not supplied defaults to the current servers name.  
@@ -87,6 +88,7 @@ This will be the average result of all the iterations for each market.
 GetOptions(
     't|time=i'          => \my $check_time,
     's|subscriptions=i' => \my $initial_subscriptions,
+    'a|app_id'          => \my $app_id,
     'n|hostname=s'      => \my $hostname,
     'e|mail_to=s'       => \my $mail_to,
     'm|markets=s'       => \my $markets,
@@ -103,6 +105,8 @@ pod2usage({
 # Set Defaults
 $check_time            = $check_time            // 120;
 $initial_subscriptions = $initial_subscriptions // 10;
+$app_id                = $app_id                // 1003;
+
 if (!$hostname) {
     $hostname = hostname();
 }
@@ -166,7 +170,7 @@ my $market = shift @markets_to_use;
 
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
-my $pid             = open(my $fh, "-|", "$command -s $initial_subscriptions -c 5 -r $check_time -m $market&")
+my $pid             = open(my $fh, "-|", "$command -s $initial_subscriptions -a $app_id -c 5 -r $check_time -m $market&")
     or die $!;
 
 # I guess because this runs a shell then the script that the PID is always 1 higher than
