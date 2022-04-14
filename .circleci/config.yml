@@ -118,7 +118,7 @@ version: 2
 workflows:
   build-workflow:
     jobs:
-    - syntax_unit_diff:
+    - syntax_diff_unit:
         context: perl
     - core:
         context: perl
