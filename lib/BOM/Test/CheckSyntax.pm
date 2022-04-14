@@ -85,11 +85,14 @@ sub check_bom_dependency {
     # with pathspec lib it filter all README and tests
     my $cmd = 'git grep -E "(use|require)\s+BOM::" lib/';
     $cmd = join(' | grep -v ', $cmd, @dependency_allowed, @self_contain_pm);
-    note("$cmd");
+    diag("$cmd");
 
     my $result = `$cmd`;
     ok !$result, "BOM dependency check";
-    diag($result) if $result;
+    if ($result) {
+        diag("new BOM module dependency detected!!!");
+        diag($result);
+    }
 }
 
 1;
