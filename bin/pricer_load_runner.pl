@@ -88,7 +88,7 @@ This will be the average result of all the iterations for each market.
 GetOptions(
     't|time=i'          => \my $check_time,
     's|subscriptions=i' => \my $initial_subscriptions,
-    'a|app_id=i'          => \my $app_id,
+    'a|app_id=i'        => \my $app_id,
     'n|hostname=s'      => \my $hostname,
     'e|mail_to=s'       => \my $mail_to,
     'm|markets=s'       => \my $markets,
@@ -222,7 +222,7 @@ $timer = IO::Async::Timer::Periodic->new(
                 $start = 0;
             }
             $new_market = 0;
-            $pid        = open(my $fh, "-|", "$command -s $subscriptions -c 5 -r $check_time -m $market&")
+            $pid        = open(my $fh, "-|", "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market&")
                 or die $!;
             $pid++;
         } else {
