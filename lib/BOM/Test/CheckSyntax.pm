@@ -69,8 +69,6 @@ sub check_syntax_on_diff {
 
 check BOM modules dependency under currnet lib
 skip test files, Makefile, .proverc, README.md...
-also found pod of some pm has comments like
-lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
 
 =cut
 
@@ -82,8 +80,11 @@ sub check_bom_dependency {
 
     # the git grep return like
     # lib/BOM/MyAffiliates.pm:   use BOM::Config;
-    # with pathspec lib it filter all README and tests
+    # with pathspec lib it filter README and tests
     my $cmd = 'git grep -E "(use|require)\s+BOM::" lib/';
+    # also found pod of some pm has comments like
+    # lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
+
     $cmd = join(' | grep -v ', $cmd, @dependency_allowed, @self_contain_pm);
     diag("$cmd");
 
