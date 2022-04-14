@@ -13,7 +13,7 @@ use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticr
 use BOM::Test::CheckJsonMaybeXS;
 use Test::Builder qw();
 use YAML::XS qw(LoadFile);
-our @EXPORT_OK = qw(check_syntax_on_diff);
+our @EXPORT_OK = qw(check_syntax_on_diff check_bom_dependency);
 
 =head1 check_syntax_on_diff
 
@@ -67,9 +67,9 @@ sub check_syntax_on_diff {
 
 =head1 check_bom_dependency
 
-check BOM modules dependency in lib
+check BOM modules dependency under currnet lib
 skip test files, Makefile, .proverc, README.md...
-also found it inside pod of some pm file like
+also found pod of some pm has comments like
 lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
 
 =cut
@@ -82,11 +82,10 @@ sub check_bom_dependency {
 
     # the git grep return like
     # lib/BOM/MyAffiliates.pm:   use BOM::Config;
-    # " BOM::" should able to detect use|require BOM:: or direct call
     # with pathspec lib it filter all README and tests
-    my $cmd = 'git grep " BOM::" lib/';
+    my $cmd = 'git grep -E "(use|require)\s+BOM::" lib/';
     $cmd = join(' | grep -v ', $cmd, @dependency_allowed, @self_contain_pm);
-    note("\n$cmd");
+    note("$cmd");
 
     my $result = `$cmd`;
     ok !$result, "BOM dependency check";
