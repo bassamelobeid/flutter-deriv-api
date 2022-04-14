@@ -88,7 +88,7 @@ This will be the average result of all the iterations for each market.
 GetOptions(
     't|time=i'          => \my $check_time,
     's|subscriptions=i' => \my $initial_subscriptions,
-    'a|app_id'          => \my $app_id,
+    'a|app_id=i'          => \my $app_id,
     'n|hostname=s'      => \my $hostname,
     'e|mail_to=s'       => \my $mail_to,
     'm|markets=s'       => \my $markets,
