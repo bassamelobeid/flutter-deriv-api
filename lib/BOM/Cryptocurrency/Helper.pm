@@ -7,6 +7,10 @@ use strict;
 use warnings;
 no indirect;
 
+use Syntax::Keyword::Try;
+use Log::Any qw($log);
+use Log::Any::Adapter 'DERIV';
+
 use Exporter qw/import/;
 
 our @EXPORT_OK = qw(reprocess_address);
@@ -32,7 +36,16 @@ Returns the result as a string containing HTML tags.
 sub reprocess_address {
     my ($currency_wrapper, $address_to_reprocess) = @_;
 
-    my $reprocess_result = $currency_wrapper->reprocess_address($address_to_reprocess);
+    my $reprocess_result = do {
+        try {
+            $currency_wrapper->reprocess_address($address_to_reprocess);
+        } catch ($e) {
+            {
+                message    => $log->warnf("Reprocess failed, $e"),
+                is_success => 0,
+            }
+        }
+    };
 
     return _render_message($reprocess_result->{is_success}, $reprocess_result->{message});
 }
