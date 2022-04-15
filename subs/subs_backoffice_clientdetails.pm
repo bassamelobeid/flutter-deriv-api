@@ -619,25 +619,26 @@ SQL
     my $social_responsibility_risk_status_start_date;
     my $social_responsibility_risk_status_end_date;
     my $social_responsibility_risk_status = 'low';
-    my $show_social_responsibility_client = $client->landing_company->social_responsibility_check;
+    my $show_social_responsibility_client = $client->landing_company->social_responsibility_check // '';
 
-    if ($client->landing_company->social_responsibility_check eq 'required') {
-        $sr_status_key = $client->loginid . ':sr_risk_status';
-        my $redis_events = BOM::Config::Redis::redis_events();
-        $social_responsibility_risk_status = $redis_events->get($sr_status_key) // 'low';
-        if ($show_social_responsibility_client && $social_responsibility_risk_status eq 'high') {
-            my $social_responsibility_risk_status_ttl = $redis_events->ttl($sr_status_key);
-            if ($social_responsibility_risk_status_ttl > 0) {
-                $social_responsibility_risk_status_end_date =
-                    Date::Utility->today()->plus_time_interval($social_responsibility_risk_status_ttl)->date_ddmmmyyyy;
-                $social_responsibility_risk_status_start_date =
-                    Date::Utility->new($social_responsibility_risk_status_end_date)->minus_time_interval(SR_30_DAYS_EXP)->date_ddmmmyyyy;
+    if ($show_social_responsibility_client) {
+        if ($show_social_responsibility_client eq 'required') {
+            $sr_status_key = $client->loginid . ':sr_risk_status';
+            my $redis_events = BOM::Config::Redis::redis_events();
+            $social_responsibility_risk_status = $redis_events->get($sr_status_key) // 'low';
+            if ($social_responsibility_risk_status eq 'high') {
+                my $social_responsibility_risk_status_ttl = $redis_events->ttl($sr_status_key);
+                if ($social_responsibility_risk_status_ttl > 0) {
+                    $social_responsibility_risk_status_end_date =
+                        Date::Utility->today()->plus_time_interval($social_responsibility_risk_status_ttl)->date_ddmmmyyyy;
+                    $social_responsibility_risk_status_start_date =
+                        Date::Utility->new($social_responsibility_risk_status_end_date)->minus_time_interval(SR_30_DAYS_EXP)->date_ddmmmyyyy;
+                }
             }
+        } elsif ($social_responsibility_risk_status eq 'manual') {
+            $social_responsibility_risk_status = BOM::User::SocialResponsibility->get_sr_risk_status($user->id) // 'low';
         }
-    } elsif ($client->landing_company->social_responsibility_check eq 'manual') {
-        $social_responsibility_risk_status = BOM::User::SocialResponsibility->get_sr_risk_status($user->id) // 'low';
     }
-
     my $doughflow_mapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
         client_loginid => $client->loginid,
     });
