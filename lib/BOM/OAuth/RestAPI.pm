@@ -336,7 +336,7 @@ sub pta_login {
     return $c->_make_error('INVALID_BRAND', 400) unless $brand_name;
 
     # Check is current IP blocked.
-    my $redis = BOM::Config::Redis::redis_auth;
+    my $redis = BOM::Config::Redis::redis_auth_write;
     my $ip    = $r->client_ip // '';
     if ($ip && $redis->get("oauth::blocked_by_ip::$ip")) {
         stats_inc('login.authorizer.block.hit');
@@ -435,7 +435,7 @@ sub one_time_token {
     my $brand_name = $c->stash('brand')->name;
     return $c->_make_login_error('INVALID_BRAND') unless $brand_name;
 
-    my $redis = BOM::Config::Redis::redis_auth;
+    my $redis = BOM::Config::Redis::redis_auth_write;
     my $ip    = $r->client_ip // '';
     if ($ip && $redis->get("oauth::blocked_by_ip::$ip")) {
         stats_inc('login.authorizer.block.hit');
@@ -560,7 +560,7 @@ sub _perform_system_login {
         };
     }
 
-    my $redis = BOM::Config::Redis::redis_auth_write;
+    my $redis = BOM::Config::Redis::redis_auth;
     my $user  = $result->{user};
 
     if ($redis->get('oauth::blocked_by_user::' . $user->id)) {
