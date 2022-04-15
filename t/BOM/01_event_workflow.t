@@ -221,7 +221,11 @@ subtest 'process - tracking jobs' => sub {
     my $proc            = BOM::Event::Process->new(category => 'track');
     my $action_mappings = $proc->actions;
 
-    cmp_deeply([keys %$action_mappings], bag(qw/multiplier_hit_type/), 'Correct number of actions that can be emitted');
+    cmp_deeply(
+        [keys %$action_mappings],
+        bag(qw/multiplier_hit_type multiplier_near_expire_notification multiplier_near_dc_notification/),
+        'Correct number of actions that can be emitted'
+    );
 
     is(ref($action_mappings->{$_}), 'CODE', 'event handler is a code reference') for keys %$action_mappings;
 };

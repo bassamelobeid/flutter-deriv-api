@@ -105,8 +105,10 @@ my %EVENT_PROPERTIES = (
     p2p_order_dispute_fraud_refund => [
         qw(dispute_reason disputer user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
     ],
-    p2p_archived_ad             => [qw(adverts)],
-    multiplier_hit_type         => [qw(contract_id hit_type profit sell_price currency)],
+    p2p_archived_ad                     => [qw(adverts)],
+    multiplier_hit_type                 => [qw(contract_id hit_type profit sell_price currency)],
+    multiplier_near_expire_notification => [qw(loginid contract_id)],
+    multiplier_near_dc_notification     => [qw(loginid contract_id)],
     payment_deposit             => [qw(payment_processor transaction_id is_first_deposit trace_id amount payment_fee currency payment_method remark)],
     payment_withdrawal          => [qw(transaction_id trace_id amount payment_fee currency payment_method)],
     payment_withdrawal_reversal => [qw(transaction_id trace_id amount payment_fee currency payment_method)],
@@ -194,6 +196,56 @@ sub multiplier_hit_type {
 
     return track_event(
         event      => 'multiplier_hit_type',
+        loginid    => $args->{loginid},
+        properties => $args,
+    );
+}
+
+=head2 multiplier_near_expire_notification
+
+It is triggered for each B<multiplier_near_expire_notification> event emitted, delivering it to Segment.
+It can be called with the following named parameters:
+
+=over
+
+=item * C<loginid> - required. login id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub multiplier_near_expire_notification {
+    my ($args) = @_;
+
+    return track_event(
+        event      => 'multiplier_near_expire_notification',
+        loginid    => $args->{loginid},
+        properties => $args,
+    );
+}
+
+=head2 multiplier_near_dc_notification
+
+It is triggered for each B<multiplier_near_dc_notification> event emitted, delivering it to Segment.
+It can be called with the following named parameters:
+
+=over
+
+=item * C<loginid> - required. login id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub multiplier_near_dc_notification {
+    my ($args) = @_;
+
+    return track_event(
+        event      => 'multiplier_near_dc_notification',
         loginid    => $args->{loginid},
         properties => $args,
     );
