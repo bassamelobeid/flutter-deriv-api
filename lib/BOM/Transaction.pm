@@ -7,6 +7,7 @@ no indirect;
 use Data::Dumper;
 use Error::Base;
 use Path::Tiny;
+use DateTime;
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
 use JSON::MaybeXS;
@@ -79,9 +80,18 @@ has expiryq => (
     lazy_build => 1,
 );
 
+has redis => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 sub _build_expiryq {
     my $redis = BOM::Config::Redis::redis_expiryq_write();
     return ExpiryQueue->new(redis => $redis);
+}
+
+sub _build_redis {
+    return BOM::Config::Redis::redis_expiryq_write();
 }
 
 sub _build_request_type {
@@ -955,10 +965,28 @@ sub buy {
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
 
+    $self->_enqueue_new_notification($fmb->{id});
+
     # For soft realtime expiration notification.
     $self->expiryq->enqueue_new_transaction(_get_params_for_expiryqueue($self));
 
     return;
+}
+
+sub _enqueue_new_notification {
+    my ($self, $contract_id) = @_;
+
+    my $contract     = $self->contract;
+    my $build_params = $contract->build_parameters;
+    my $redis        = $self->redis;
+    my $separator    = '::';
+
+    return if not($contract->{cancellation});
+
+    my $redis_key_dc = 'NOTIFICATION_MUL_DC_QUEUE';
+
+    my $value = join($separator, $contract_id, $self->client->loginid, $build_params->{language} // 'EN');
+    $redis->zadd($redis_key_dc, int($contract->cancellation_expiry->epoch), $value);
 }
 
 # expected parameters:
@@ -2399,6 +2427,7 @@ sub _get_params_for_expiryqueue {
         }
     }
 
+    $hash->{notify}     = 'NOTIF'               if $contract->category->code eq 'multiplier';
     $hash->{tick_count} = $contract->tick_count if $contract->tick_expiry;
 
     if ($self->contract_parameters && $self->contract_parameters->{language}) {

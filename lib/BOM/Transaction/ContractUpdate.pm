@@ -13,6 +13,7 @@ use Scalar::Util qw(looks_like_number);
 use BOM::Transaction::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Product::ContractFactory qw(produce_contract);
+use Syntax::Keyword::Try;
 use ExpiryQueue;
 use Log::Any qw($log);
 
@@ -316,15 +317,26 @@ sub _requeue_transaction {
 
     my $fmb      = $self->fmb;
     my $contract = $self->contract;
+    my $client   = $self->client;
+    my $user_preferred_lang;
+
+    try {
+        $user_preferred_lang = $client->user->preferred_language;
+    } catch ($error) {
+        $user_preferred_lang = 'EN';
+    }
 
     my $expiry_queue_params = {
         purchase_price        => $fmb->{buy_price},
         transaction_reference => $fmb->{buy_transaction_id},
         contract_id           => $fmb->{id},
         symbol                => $fmb->{underlying_symbol},
-        in_currency           => $self->client->currency,
-        held_by               => $self->client->loginid,
+        in_currency           => $client->currency,
+        held_by               => $client->loginid,
+        language              => $user_preferred_lang,
     };
+
+    $expiry_queue_params->{notify} = 'NOTIF' if $fmb->{bet_class} eq 'multiplier';
 
     my $redis   = BOM::Config::Redis::redis_expiryq_write;
     my $expiryq = ExpiryQueue->new(redis => $redis);
