@@ -81,7 +81,8 @@ sub check_bom_dependency {
     # the git grep return like
     # lib/BOM/MyAffiliates.pm:   use BOM::Config;
     # with pathspec lib it filter README and tests
-    my $cmd = 'git grep -E "(use|require)\s+BOM::" lib/';
+    my $cmd = 'git grep -E "(use|require)\s+BOM::" lib';
+    $cmd .= ' bin' if (-d 'bin');
     # also found pod of some pm has comments like
     # lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
 
