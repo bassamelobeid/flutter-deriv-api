@@ -13,12 +13,12 @@ use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticr
 use BOM::Test::CheckJsonMaybeXS;
 use Test::Builder qw();
 use YAML::XS qw(LoadFile);
-our @EXPORT_OK = qw(check_syntax_on_diff);
+our @EXPORT_OK = qw(check_syntax_on_diff check_bom_dependency);
 
 =head1 check_syntax_on_diff
 
 Gather common syntax tests which used ammon bom-xxx repos.
-and the tests only apply to updated files between master branch.
+It only check updated files compare to master branch.
 
 =cut
 
@@ -62,6 +62,38 @@ sub check_syntax_on_diff {
             lives_ok { LoadFile($file) } "$file YAML valid";
         }
 
+    }
+}
+
+=head1 check_bom_dependency
+
+Check BOM module dependency under currnet lib.
+Test fail when new dependency detected.
+
+=cut
+
+sub check_bom_dependency {
+    my @dependency_allowed = @_;
+    # try to find package name of current repo itself
+    my @self_contain_pm = `find lib/BOM/* -maxdepth 0 -type d`;
+    @self_contain_pm = map { my $pm = $_; $pm =~ s/lib\/BOM\//BOM::/; $pm =~ s/\s//; $pm } @self_contain_pm;
+
+    # the git grep return like
+    # lib/BOM/MyAffiliates.pm:   use BOM::Config;
+    # with pathspec lib it filter README and tests
+    my $cmd = 'git grep -E "(use|require)\s+BOM::" lib';
+    $cmd .= ' bin' if (-d 'bin');
+    # also found pod of some pm has comments like
+    # lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
+
+    $cmd = join(' | grep -v ', $cmd, @dependency_allowed, @self_contain_pm);
+    diag("$cmd");
+
+    my $result = `$cmd`;
+    ok !$result, "BOM dependency check";
+    if ($result) {
+        diag("new BOM module dependency detected!!!");
+        diag($result);
     }
 }
 
