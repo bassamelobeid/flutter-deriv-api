@@ -10,6 +10,9 @@ test_all: $(TESTS)
 test:
 	@$(PROVE) t/BOM
 
+syntax_diff:
+	@$(PROVE) --norc t/00_syntax_diff.t t/01_check_bom_dependency.t t/006_pod_coverage.t
+
 syntax:
 	@$(PROVE) --norc t/*.t
 
