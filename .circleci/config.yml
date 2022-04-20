@@ -39,8 +39,8 @@ alias:
   name: "redis-v6"
 - &debian-ci
   auth:
-      password: $DOCKERHUB_PASSWORD
-      username: circle4regentmarkets
+    password: $DOCKERHUB_PASSWORD
+    username: circle4regentmarkets
   image: regentmarkets/debian-ci:stable
   user: nobody
 default: &6
