@@ -411,7 +411,7 @@ sub edd_status_queries {
     my $client             = BOM::User::Client->new({loginid => $loginid}) || die "Cannot find client: $loginid";
     my $binary_user_id     = $client->binary_user_id;
     my $queries            = [];
-    my @interesting_fields = qw/status start_date last_review_date average_earnings comment/;
+    my @interesting_fields = qw/status start_date last_review_date average_earnings comment reason/;
     my $query              = "tbl = ? AND binary_user_id = ?";
 
     return [] if $client->is_virtual;

@@ -628,7 +628,8 @@ if ($input{whattodo} eq 'save_edd_status') {
             start_date       => $startdate,
             last_review_date => $enddate,
             average_earnings => $average_earnings,
-            comment          => $input{edd_comment});
+            comment          => $input{edd_comment},
+            reason           => $input{edd_reason});
 
         my $withdrawal_locked_reason = "Pending EDD docs/info for withdrawal request";
 
@@ -1670,11 +1671,42 @@ sub print_edd_status_form {
     my $last_review_date = $selected->{last_review_date} // '';
     my $average_earnings = $selected->{average_earnings} ? decode_json_utf8($selected->{average_earnings}) : {};
     my $comment          = $selected->{comment} // '';
+    my $reason           = $selected->{reason}  // '';
 
     $start_date       = Date::Utility->new($start_date)->date       if $start_date;
     $last_review_date = Date::Utility->new($last_review_date)->date if $last_review_date;
 
-    my $options = [{
+    my $reasons_options = [{
+            value => 'card_deposit_monitoring',
+            name  => 'Card deposit monitoring'
+        },
+        {
+            value => 'social_responsibility',
+            name  => 'Social Responsibility'
+        },
+        {
+            value => 'high_deposit',
+            name  => 'High Deposit'
+        },
+        {
+            value => 'fraud',
+            name  => 'Fraud'
+        },
+        {
+            value => 'hish_risk_regulated',
+            name  => 'High risk client (regulated)'
+        },
+        {
+            value => 'crypto_monitoring',
+            name  => 'Crypto monitoring'
+        },
+        {
+            value => 'others',
+            name  => 'Others'
+        },
+    ];
+
+    my $status_options = [{
             value => 'n/a',
             name  => 'Not applicable'
         },
@@ -1698,8 +1730,14 @@ sub print_edd_status_form {
 
     my $dropdown = "<select name='edd_status' required>";
     $dropdown .= "<option value=''></option>" unless $status;
-    $dropdown .= "<option value='$_->{value}'@{[$_->{value} eq $status ? ' selected=\"selected\"' : '']}>$_->{name}</option>" for @$options;
+    $dropdown .= "<option value='$_->{value}'@{[$_->{value} eq $status ? ' selected=\"selected\"' : '']}>$_->{name}</option>" for @$status_options;
     $dropdown .= "</select>";
+
+    my $reason_dropdown = "<select name='edd_reason' required>";
+    $reason_dropdown .= "<option value=''></option>" unless $reason;
+    $reason_dropdown .= "<option value='$_->{value}'@{[$_->{value} eq $reason ? ' selected=\"selected\"' : '']}>$_->{name}</option>"
+        for @$reasons_options;
+    $reason_dropdown .= "</select>";
 
     my @currencies        = LandingCompany::Registry::all_currencies();
     my $currency_dropdown = dropdown('edd_average_earnings_currency', $average_earnings->{currency}, @currencies);
@@ -1709,7 +1747,15 @@ sub print_edd_status_form {
     print "<div class='card__content'><form method='post' action='$self_href#$section_name'><fieldset $is_disabled style='border: none;'>";
 
     print qq{
+            <div class="row">
+            <div class="col">
             <h3>EDD status</h3>
+            </div>
+            <div class="col" style="margin-left:2.5em;">
+            <strong class='error'>Reasons: </strong>
+                $reason_dropdown 
+            </div>
+            </div>
             <input type='hidden' name='whattodo' value='save_edd_status' />
             <div class="row">
                 <label>Status:</label>
