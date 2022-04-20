@@ -72,15 +72,15 @@ jobs:
   localize:
     <<: *6
     steps:
-      - *1
-      - *2
-      - run:
-          <<: *5
-          command: |
-            make localize
-          name: Test translation strings
-      - store_test_results:
-          path: /var/tmp/test-output
+    - *1
+    - *2
+    - run:
+        <<: *5
+        command: |
+          make localize
+        name: Test translation strings
+    - store_test_results:
+        path: /var/tmp/test-output
   translations:
     <<: *6
     steps:
@@ -102,7 +102,7 @@ jobs:
     - run:
         <<: *5
         command: |
-            bin/customerio_translations.pl
+          bin/customerio_translations.pl
         name: Automated translations for Customer.io
   unit:
     <<: *6
@@ -112,7 +112,7 @@ jobs:
     - run:
         <<: *5
         command: |
-            make unit
+          make unit
         name: unit tests
     - store_test_results:
         path: /var/tmp/test-output
