@@ -2,43 +2,43 @@ version: 2
 
 default: &default
   docker:
-    - image: regentmarkets/debian-ci:stable
-      user: nobody
-      auth:
-        username: circle4regentmarkets
-        password: $DOCKERHUB_PASSWORD
+  - image: regentmarkets/debian-ci:stable
+    user: nobody
+    auth:
+      username: circle4regentmarkets
+      password: $DOCKERHUB_PASSWORD
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-market
 
 alias:
-  - &ssh_keys
-    add_ssh_keys:
-      fingerprints:
-        - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
-  - &git
-    run:
-      name: Update git repositories
-      command: /opt/circle/prepare-test.sh
-  - &services
-    run:
-      name: Start services
-      command: |
-        start_services
-        touch /tmp/services.ready
-      background: true
-  - &wait_services
-    run:
-      name: Wait for services to start up
-      command: |
-        count=0
-        while [ ! -f /tmp/services.ready ]; do
-            echo 'Still waiting for services...'
-            (( count++ )) && (( count >= 20 )) && break
-            sleep 1
-        done
-  - &tests
-    environment:
-      PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+- &ssh_keys
+  add_ssh_keys:
+    fingerprints:
+    - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+- &git
+  run:
+    name: Update git repositories
+    command: /opt/circle/prepare-test.sh
+- &services
+  run:
+    name: Start services
+    command: |
+      start_services
+      touch /tmp/services.ready
+    background: true
+- &wait_services
+  run:
+    name: Wait for services to start up
+    command: |
+      count=0
+      while [ ! -f /tmp/services.ready ]; do
+          echo 'Still waiting for services...'
+          (( count++ )) && (( count >= 20 )) && break
+          sleep 1
+      done
+- &tests
+  environment:
+    PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 
 jobs:
   syntax_unit:
@@ -62,48 +62,48 @@ jobs:
   core:
     <<: *default
     steps:
-      - *ssh_keys
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: Market unit test
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make test
-      - store_test_results:
-          path: /var/tmp/test-output
+    - *ssh_keys
+    - *git
+    - *services
+    - *wait_services
+    - run:
+        <<: *tests
+        name: Market unit test
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test
+    - store_test_results:
+        path: /var/tmp/test-output
   code_coverage:
     <<: *default
     steps:
-      - *ssh_keys
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: code coverage tests
-          command: |
-            make cover
+    - *ssh_keys
+    - *git
+    - *services
+    - *wait_services
+    - run:
+        <<: *tests
+        name: code coverage tests
+        command: |
+          make cover
   unit:
     <<: *default
     steps:
-      - *ssh_keys
-      - *git
-      - run:
-          <<: *tests
-          name: Unit test
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make unit
-      - store_test_results:
-          path: /var/tmp/test-output
+    - *ssh_keys
+    - *git
+    - run:
+        <<: *tests
+        name: Unit test
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make unit
+    - store_test_results:
+        path: /var/tmp/test-output
 workflows:
   build-workflow:
     jobs: &all-jobs
     - syntax_unit:
-        context: perl  
+        context: perl
     - core:
         context: perl
   daily:
