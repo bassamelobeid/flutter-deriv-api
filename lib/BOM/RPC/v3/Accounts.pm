@@ -1307,10 +1307,12 @@ sub _get_idv_service_detail {
         $status          = $client->get_idv_status($document);
 
         if ($status eq 'rejected') {
-            my $messages = eval { decode_json_utf8($document->{status_messages}) };
+            my $messages = eval { decode_json_utf8($document->{status_messages} // '[]') };
 
-            $idv_reject_reasons =
-                [map { $RejectedIdentityVerificationReasons{$_} ? localize($RejectedIdentityVerificationReasons{$_}) : () } $messages->@*];
+            $idv_reject_reasons = [
+                map  { $RejectedIdentityVerificationReasons{$_} ? localize($RejectedIdentityVerificationReasons{$_}) : () }
+                grep { $_ } $messages->@*
+            ];
         }
     }
 

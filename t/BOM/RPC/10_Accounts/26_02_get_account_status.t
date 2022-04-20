@@ -223,6 +223,70 @@ subtest 'idv details' => sub {
                 reported_properties => {},
             }
         },
+        {
+            title    => 'empty sting in status messages',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000004',
+                document_type   => 'voter_id',
+                status          => 'failed',
+                status_messages => '',
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => [],
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
+        {
+            title    => 'empty json array in status messages',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000004',
+                document_type   => 'voter_id',
+                status          => 'failed',
+                status_messages => '[]',
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => [],
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
+        {
+            title    => 'undef elem in status messages',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000004',
+                document_type   => 'voter_id',
+                status          => 'failed',
+                status_messages => '[null]',
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => [],
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
+        {
+            title    => 'undef in status messages',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000004',
+                document_type   => 'voter_id',
+                status          => 'failed',
+                status_messages => undef,
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => [],
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
     ];
 
     my $document;
