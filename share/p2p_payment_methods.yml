@@ -52,6 +52,9 @@ bank_transfer:
       display_name: Account Number
     bank_name:
       display_name: Bank Name
+    bank_code:
+      display_name: 'SWIFT or IFSC code'
+      required: 0      
     branch:
       display_name: Branch
       required: 0
@@ -364,10 +367,6 @@ other:
     account:
       display_name: "Account ID / phone number / email"
       required: 0
-    instructions:
-      display_name: Instructions
-      required: 0
-      type: memo
 paga:
   display_name: Paga
   type: ewallet
@@ -488,6 +487,12 @@ simplepay:
   fields:
     account:
       display_name: SimplePay
+solidpaywave:
+  display_name: 'Solidpay Wave'
+  type: ewallet
+  fields:
+    account:
+      display_name: 'Wallet ID'      
 speedpay_mobile:
   display_name: SpeedPay mobile
   type: ewallet
