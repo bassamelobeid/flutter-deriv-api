@@ -106,7 +106,10 @@ subtest 'Account opening request with email does not exist' => sub {
 };
 
 subtest 'Account opening request with email exists' => sub {
-    mailbox_clear();
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { push @emitted, @_ };
+
     $params[1]->{args}->{verify_email}                 = uc $email;
     $params[1]->{args}->{type}                         = 'account_opening';
     $params[1]->{args}->{url_parameters}->{utm_medium} = 'email';
@@ -116,11 +119,14 @@ subtest 'Account opening request with email exists' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    my $msg = mailbox_search(
-        email   => lc($params[1]->{args}->{verify_email}),
-        subject => qr/Duplicate email address submitted|Unsuccessful Deriv account creation/
+    is($emitted[0], 'account_opening_existing', 'type=account_opening_existing');
+    my @keys = keys %{$emitted[1]->{properties}};
+    ok($#keys eq 6, "7 Attributes set");
+    is(
+        $emitted[1]->{properties}->{password_reset_url},
+        'https://www.binary.com/en/user/lost_passwordws.html',
+        'Attribute password_reset_url is correct'
     );
-    ok $msg, 'Email sent successfully';
 };
 
 subtest 'Reset password for exists user' => sub {
@@ -154,7 +160,10 @@ subtest 'Change email for not exists user' => sub {
 };
 
 subtest 'Payment agent withdraw' => sub {
-    mailbox_clear();
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { @emitted = @_ };
+
     $params[1]->{args}->{verify_email} = $client->email;
     $params[1]->{args}->{type}         = 'paymentagent_withdraw';
     $params[1]->{server_name}          = 'binary.com';
@@ -166,26 +175,32 @@ subtest 'Payment agent withdraw' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    my $msg = mailbox_search(
-        email   => $params[1]->{args}->{verify_email},
-        subject => qr/Verify your withdrawal request/
+    is($emitted[0], 'request_payment_withdraw', 'type=request_payment_withdraw');
+    ok($emitted[1]->{properties}, 'Properties are set');
+    my @keys = keys %{$emitted[1]->{properties}};
+    ok($#keys eq 4, "5 Attributes set");
+    is(
+        $emitted[1]->{properties}->{verification_url},
+        'https://www.binary.com/en/redirect.html?action=payment_agent_withdraw&lang=EN&code='
+            . $emitted[1]->{properties}->{code}
+            . '&utm_medium=email',
+        'the verification_url is correct'
     );
-    ok $msg, 'Email sent successfully';
-    mailbox_clear();
+    undef @emitted;
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    $msg = mailbox_search(
-        email   => $params[1]->{args}->{verify_email},
-        subject => qr/Verify your withdrawal request/
-    );
-    ok !$msg, 'no email as token email different from passed email';
+    delete $params[1]->{token};
+    is(scalar @emitted, 0, 'no email as token email different from passed email');
 };
 
 subtest 'Payment withdraw' => sub {
-    mailbox_clear();
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { @emitted = @_ };
+
     $params[1]->{args}->{verify_email} = $client->email;
     $params[1]->{args}->{type}         = 'payment_withdraw';
     $params[1]->{server_name}          = 'binary.com';
@@ -197,22 +212,22 @@ subtest 'Payment withdraw' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    my $msg = mailbox_search(
-        email   => $params[1]->{args}->{verify_email},
-        subject => qr/Verify your withdrawal request/
+    is($emitted[0], 'request_payment_withdraw', 'type=request_payment_withdraw');
+    ok($emitted[1]->{properties}, 'Properties are set');
+    my @keys = keys %{$emitted[1]->{properties}};
+    ok($#keys eq 4, "5 Attributes set");
+    is(
+        $emitted[1]->{properties}->{verification_url},
+        'https://www.binary.com/en/redirect.html?action=payment_withdraw&lang=EN&code=' . $emitted[1]->{properties}->{code} . '&utm_medium=email',
+        'the verification_url is correct'
     );
-    ok $msg, 'Email sent successfully';
-    mailbox_clear();
+    undef @emitted;
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    $msg = mailbox_search(
-        email   => $params[1]->{args}->{verify_email},
-        subject => qr/Verify your withdrawal request/
-    );
-    ok !$msg, 'no email as token email different from passed email';
+    is(scalar @emitted, 0, 'no email as token email different from passed email');
     delete $params[1]->{token};
 };
 
@@ -220,7 +235,10 @@ subtest 'Closed account' => sub {
 
     $client->status->set('disabled', 1, 'test disabled');
 
-    mailbox_clear();
+    my @emitted;
+    no warnings 'redefine';
+    local *BOM::Platform::Event::Emitter::emit = sub { @emitted = @_ };
+
     $params[1]->{args}->{verify_email} = $email;
     $params[1]->{args}->{type}         = 'account_opening';
     $params[1]->{server_name}          = 'binary.com';
@@ -229,11 +247,11 @@ subtest 'Closed account' => sub {
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('no error for disabled account')
         ->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    my $msg = mailbox_search(
-        email   => $params[1]->{args}->{verify_email},
-        subject => qr/We're unable to sign you up/
-    );
-    ok $msg, 'Correct email received for signup attempt on closed account';
+    is($emitted[0], 'verify_email_closed_account_account_opening', 'type=verify_email_closed_account_account_opening');
+    ok($emitted[1]->{properties}, 'Properties are set');
+    my @keys = keys %{$emitted[1]->{properties}};
+    ok($#keys eq 3, "4 Attributes set");
+    undef @emitted;
 
     my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -243,11 +261,11 @@ subtest 'Closed account' => sub {
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('no error after adding a non-disabled account')
         ->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    $msg = mailbox_search(
-        email   => $params[1]->{args}->{verify_email},
-        subject => qr/Duplicate email address submitted|Unsuccessful Deriv account creation/
-    );
-    ok $msg, 'Get the regular email when not all accounts are disabled';
+    is($emitted[0], 'account_opening_existing', 'type=account_opening_existing');
+    ok($emitted[1]->{properties}, 'Properties are set');
+    @keys = keys %{$emitted[1]->{properties}};
+    ok($#keys eq 6, "7 Attributes set");
+    undef @emitted;
 
     $client2->status->set('disabled', 1, 'test disabled');
     mailbox_clear();
@@ -256,23 +274,21 @@ subtest 'Closed account' => sub {
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('no error for disabled account')
         ->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    $msg = mailbox_search(
-        email   => $params[1]->{args}->{verify_email},
-        subject => qr/We couldn't reset your password/
-    );
-    ok $msg, 'Correct email received for reset password attempt on closed account';
+    is($emitted[0], 'verify_email_closed_account_reset_password', 'type=verify_email_closed_account_reset_password');
+    ok($emitted[1]->{properties}, 'Properties are set');
+    @keys = keys %{$emitted[1]->{properties}};
+    ok($#keys eq 3, "4 Attributes set");
+    undef @emitted;
 
-    mailbox_clear();
     $params[1]->{args}->{type} = 'payment_withdraw';
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('no error for disabled account')
         ->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
-    $msg = mailbox_search(
-        email   => $params[1]->{args}->{verify_email},
-        subject => qr/We couldn't verify your email address/
-    );
-    ok $msg, 'Correct email received for payment withdraw attempt on closed account';
+    is($emitted[0], 'verify_email_closed_account_other', 'type=verify_email_closed_account_other');
+    ok($emitted[1]->{properties}, 'Properties are set');
+    @keys = keys %{$emitted[1]->{properties}};
+    ok($#keys eq 3, "4 Attributes set");
 };
 
 subtest 'withdrawal validation' => sub {
@@ -311,8 +327,10 @@ subtest 'Reset password for not exists user' => sub {
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
-    is($emitted[0],                           'send_email',                       'using send emai rather than event emitter');
-    is($emitted[1]->{template_args}->{title}, 'We couldn\'t reset your password', 'the title is correct since user doesn\'t exist');
+    is($emitted[0], 'verify_email_closed_account_reset_password', 'type=verify_email_closed_account_reset_password');
+    ok($emitted[1]->{properties}, 'Properties are set');
+    my @keys = keys %{$emitted[1]->{properties}};
+    ok($#keys eq 3, "4 Attributes set");
 };
 
 done_testing();
