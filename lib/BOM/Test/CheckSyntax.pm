@@ -31,7 +31,7 @@ sub check_syntax_on_diff {
     }
 
     my @changed_files = `git diff --name-only master`;
-
+    @changed_files = `find lib`;
     if (@changed_files) {
         pass "file change detected";
         diag($_) for @changed_files;
