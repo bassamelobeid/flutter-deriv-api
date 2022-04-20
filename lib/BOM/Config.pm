@@ -63,11 +63,6 @@ sub client_limits {
     return $config;
 }
 
-sub crypto {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/crypto_config.yml');
-    return $config;
-}
-
 =head2 crypto_api
 
 Config for connecting to the Crypto API.

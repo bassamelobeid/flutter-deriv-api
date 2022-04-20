@@ -499,20 +499,10 @@ subtest 'Check Types of Suspension' => sub {
 subtest 'currency config' => sub {
     my $offerings_config = BOM::Config::Runtime->instance->get_offerings_config('sell');
     is $offerings_config->{action}, 'sell', 'get_offerings_config for sell';
-    is BOM::Config::CurrencyConfig::local_currency_for_country('ca'),           'CAD',   'local_currency_for_country';
-    is BOM::Config::CurrencyConfig::get_crypto_withdrawal_fee_limit('BTC'),     '10',    'get_crypto_withdrawal_fee_limit';
-    is BOM::Config::CurrencyConfig::get_currency_wait_before_bump('BTC'),       '43200', 'get_currency_wait_before_bump';
-    is BOM::Config::CurrencyConfig::get_crypto_new_address_threshold('BTC'),    '0.003', 'get_crypto_new_address_threshold';
-    is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('BTC'), '1QEdWqpiEfWMCGLHmmABLFqym8SSeib8Ks',
-        'correct external sweep address set for BTC';
-    is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('ETH'), '0x8064bcf4a7892b99c1ce4b92d23252ab2fa129b6',
-        'correct external sweep address set for ETH';
-    is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('eUSDT'), '0x8064bcf4a7892b99c1ce4b92d23252ab2fa129b6',
-        'correct external sweep address set for eUSDT';
-    is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('USDC'), '0x8064bcf4a7892b99c1ce4b92d23252ab2fa129b6',
-        'correct external sweep address set for USDC';
-    is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('USDK'), '',
-        'correct empty address as no external sweep address set for USDK';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('ca'),        'CAD',   'local_currency_for_country';
+    is BOM::Config::CurrencyConfig::get_crypto_withdrawal_fee_limit('BTC'),  '10',    'get_crypto_withdrawal_fee_limit';
+    is BOM::Config::CurrencyConfig::get_currency_wait_before_bump('BTC'),    '43200', 'get_currency_wait_before_bump';
+    is BOM::Config::CurrencyConfig::get_crypto_new_address_threshold('BTC'), '0.003', 'get_crypto_new_address_threshold';
 };
 
 subtest 'rare currencies config' => sub {

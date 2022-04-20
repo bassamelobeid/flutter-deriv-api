@@ -819,29 +819,6 @@ sub get_currency_internal_sweep_config {
 
 }
 
-=head2 get_currency_external_sweep_address
-
-Gets the external sweep address
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns external_sweep address
-
-=cut
-
-sub get_currency_external_sweep_address {
-    my $currency = shift;
-
-    my $currency_config = BOM::Config::crypto()->{$currency};
-    # Not all currencies has the sweep config
-    return '' unless $currency_config && $currency_config->{sweep} && $currency_config->{sweep}->{address};
-    return $currency_config->{sweep}->{address};
-}
-
 =head2 get_gas_limit_incremental_percentage
 
 To get the gas_limit incremental percentage.
