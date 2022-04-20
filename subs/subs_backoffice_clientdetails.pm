@@ -546,7 +546,7 @@ SQL
         for my $idv_record ($idv_records->@*) {
             $messages                      = [];
             $messages                      = eval { decode_json_utf8 $idv_record->{status_messages} } if $idv_record->{status_messages};
-            $idv_record->{status_messages} = [map { $rejected_reasons{$_} ? localize($rejected_reasons{$_}) : $_ } $messages->@*];
+            $idv_record->{status_messages} = [map { $rejected_reasons{$_} ? localize($rejected_reasons{$_}) : $_ } grep { $_ } $messages->@*];
             $idv_record->{issuing_country} = $countries_instance->country_from_code($idv_record->{issuing_country});
             $idv_record->{document_expiration_date} ||= "Lifetime Valid";
             $idv_record->{document_expiration_date} = "-" if uc($idv_record->{status}) eq "FAILED";
