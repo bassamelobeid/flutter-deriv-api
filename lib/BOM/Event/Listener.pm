@@ -47,8 +47,6 @@ sub category { return shift->{category} }
 
 sub maximum_job_time { return shift->{maximum_job_time} }
 
-sub maximum_processing_time { return shift->{maximum_processing_time} }
-
 sub shutdown_time_out { return shift->{shutdown_time_out} // SHUTDOWN_TIMEOUT }
 
 # Set this if it is being run in parallel forks so that the
@@ -65,12 +63,11 @@ sub run {    ## no critic (RequireFinalReturn)
     my $loop = IO::Async::Loop->new;
 
     my $handler = BOM::Event::QueueHandler->new(
-        queue                   => $self->queue,
-        streams                 => $self->streams,
-        category                => $self->category,
-        maximum_job_time        => $self->maximum_job_time,
-        maximum_processing_time => $self->maximum_processing_time,
-        worker_index            => $self->worker_index,
+        queue            => $self->queue,
+        streams          => $self->streams,
+        category         => $self->category,
+        maximum_job_time => $self->maximum_job_time,
+        worker_index     => $self->worker_index,
     );
 
     $loop->add($handler);

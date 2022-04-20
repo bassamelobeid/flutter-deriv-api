@@ -8,18 +8,29 @@ use Test::MockObject;
 use Test::Warn;
 use Test::Deep;
 use Log::Any::Test;
-use BOM::Event::QueueHandler;
 use Log::Any qw($log);
 use Log::Any::Adapter (qw(Stderr), log_level => 'warn');
 use JSON::MaybeUTF8 qw(decode_json_utf8 decode_json_text);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Config::Redis;
-use IO::Async::Loop;
 use Future::AsyncAwait;
 use utf8;
 initialize_events_redis();
+
+my $loop;
+
+BEGIN {
+    # Enable watchdog
+    $ENV{IO_ASYNC_WATCHDOG} = 1;
+    # Set watchdog interval
+    $ENV{IO_ASYNC_WATCHDOG_INTERVAL} = 3;
+    # Consumes the above env variables to set watchdog timeout
+    require IO::Async::Loop;
+    require BOM::Event::QueueHandler;
+    $loop = IO::Async::Loop->new;
+}
+
 my $redis = BOM::Config::Redis::redis_events_write();
-my $loop  = IO::Async::Loop->new;
 my $stream_handler;
 my $mock_log_adapter_test = Test::MockModule->new('Log::Any::Adapter::Test');
 
@@ -28,6 +39,11 @@ subtest 'Startup and shutdown stream' => async sub {
     $loop->add($stream_handler);
     await $stream_handler->should_shutdown;
     throws_ok { $stream_handler->stream_process_loop->get } qr/normal_shutdown/, 'Can shut down';
+};
+
+subtest 'watchdog setup test' => sub {
+    is $loop->WATCHDOG_ENABLE,   '1', 'Watchdog is enabled';
+    is $loop->WATCHDOG_INTERVAL, '3', 'Time interval for watchdog';
 };
 
 subtest 'Consumer naming' => sub {
@@ -148,17 +164,16 @@ SKIP: {
             'actions',
             sub {
                 return {
-                    sync_sub => sub { sleep(shift->{wait}); $log->warn('test did not time out'); }
-
+                    sync_sub => async
+                        sub { my $wait = shift->{wait}; await $loop->delay_future(after => 0.01); sleep($wait); $log->warn('test did not time out'); }
                 };
             });
 
-        # Synchronous jobs running less  than MAXIMUM_PROCESSING_TIME should not time out
+        # Synchronous jobs running less  than MAXIMUM_JOB_TIME should not time out
         $log->clear;
         $stream_handler = BOM::Event::QueueHandler->new(
-            streams                 => ['GENERIC_EVENTS_STREAM'],
-            maximum_job_time        => 20,
-            maximum_processing_time => 3
+            streams          => ['GENERIC_EVENTS_STREAM'],
+            maximum_job_time => 4,
         );
         $loop->add($stream_handler);
         $stream_handler->process_job(
@@ -166,22 +181,22 @@ SKIP: {
             {
                 type    => 'sync_sub',
                 details => {wait => 1}})->get;
-        $log->contains_ok(qr/test did not time out/, "Sync job less than max_processing_time did not time out.");
+        $log->contains_ok(qr/test did not time out/, "Sync job less than maximum_job_time did not time out.");
 
-        # Synchronous jobs running more  than MAXIMUM_PROCESSING_TIME should time out
+        # Synchronous jobs running more  than MAXIMUM_JOB_TIME should time out
         $log->clear;
         $stream_handler = BOM::Event::QueueHandler->new(
-            streams                 => ['GENERIC_EVENTS_STREAM'],
-            maximum_job_time        => 20,
-            maximum_processing_time => 2
+            streams          => ['GENERIC_EVENTS_STREAM'],
+            maximum_job_time => 3,
         );
         $loop->add($stream_handler);
+
         $stream_handler->process_job(
             'GENERIC_EVENTS_STREAM',
             {
                 type    => 'sync_sub',
-                details => {wait => 5}})->get;
-        $log->contains_ok(qr/Max_Processing_Time Reached/, "Sync job longer than max_processing_time did time out");
+                details => {wait => 11}})->get;
+        $log->contains_ok(qr/MAXIMUM_JOB_TIME/i, "Sync job longer than maximum_job_time did time out");
 
         # We do/can have synchronous tasks declared as async functions this changes the timeout behavior.
         # As they get handled by the L<FUTURE> failure.
@@ -191,34 +206,31 @@ SKIP: {
             'actions',
             sub {
                 return {
-                    sync_sub_2 => async sub { sleep(shift->{wait}); $log->warn('test did not time out'); }
+                    sync_sub_2 => async
+                        sub { my $wait = shift->{wait}; await $loop->delay_future(after => 0.01); sleep($wait); $log->warn('test did not time out'); }
                 };
             });
 
-        # Synchronous jobs marked as C<async>  should time out  if longer than MAXIMUM_PROCESSING_TIME but they are treated as a L<FUTURE> fail.
+        # Synchronous jobs marked as C<async>  should time out  if longer than MAXIMUM_JOB_TIME but they are treated as a L<FUTURE> fail.
         $log->clear;
         $stream_handler = BOM::Event::QueueHandler->new(
-            streams                 => ['GENERIC_EVENTS_STREAM'],
-            maximum_job_time        => 20,
-            maximum_processing_time => 1
+            streams          => ['GENERIC_EVENTS_STREAM'],
+            maximum_job_time => 3,
         );
         $loop->add($stream_handler);
         $stream_handler->process_job(
             'GENERIC_EVENTS_STREAM',
             {
                 type    => 'sync_sub_2',
-                details => {wait => 2}})->get;
-        $log->contains_ok(
-            qr/GENERIC_EVENTS_STREAM took longer than 'MAXIMUM_PROCESSING_TIME'/,
-            "Sync job marked as async should time out after maximum_processing_time"
-        );
+                details => {wait => 4}})->get;
+        $log->contains_ok(qr/GENERIC_EVENTS_STREAM took longer than 'MAXIMUM_JOB_TIME'/,
+            "Sync job marked as async should time out after maximum_job_time");
 
-        # Synchronous jobs marked as C<async>  should not time out  if shorter  than MAXIMUM_PROCESSING_TIME.
+        # Synchronous jobs marked as C<async>  should not time out  if shorter  than MAXIMUM_JOB_TIME.
         $log->clear;
         $stream_handler = BOM::Event::QueueHandler->new(
-            streams                 => ['GENERIC_EVENTS_STREAM'],
-            maximum_job_time        => 20,
-            maximum_processing_time => 2
+            streams          => ['GENERIC_EVENTS_STREAM'],
+            maximum_job_time => 3,
         );
         $loop->add($stream_handler);
         $stream_handler->process_job(
@@ -226,23 +238,21 @@ SKIP: {
             {
                 type    => 'sync_sub_2',
                 details => {wait => 1}})->get;
-        $log->contains_ok(qr/test did not time out/, "Sync job marked as async should not time out if less than maximum_processing_time");
+        $log->contains_ok(qr/test did not time out/, "Sync job marked as async should not time out if less than maximum_job_time");
 
         # Synchronous jobs marked as C<async>  should ignore maximum_job_time
         $log->clear;
         $stream_handler = BOM::Event::QueueHandler->new(
-            streams                 => ['GENERIC_EVENTS_STREAM'],
-            maximum_job_time        => 1,
-            maximum_processing_time => 5
+            streams          => ['GENERIC_EVENTS_STREAM'],
+            maximum_job_time => 2,
         );
         $loop->add($stream_handler);
         $stream_handler->process_job(
             'GENERIC_EVENTS_STREAM',
             {
                 type    => 'sync_sub_2',
-                details => {wait => 3}})->get;
-        $log->contains_ok(qr/test did not time out/,
-            "Sync job marked as async should not time out if less than maximum_processing_time but greater than maximum_job_time");
+                details => {wait => 1}})->get;
+        $log->contains_ok(qr/test did not time out/, "Sync job marked as async should not time out if less than maximum_job_time");
 
         $module->unmock_all();
     };
@@ -265,9 +275,8 @@ subtest 'async_subs' => sub {
     # Test when the Job is Async and shorter then maximum_job_time. Should work OK
     $log->clear;
     $stream_handler = BOM::Event::QueueHandler->new(
-        streams                 => ['GENERIC_EVENTS_STREAM'],
-        maximum_job_time        => 2,
-        maximum_processing_time => 10
+        streams          => ['GENERIC_EVENTS_STREAM'],
+        maximum_job_time => 2,
     );
     $loop->add($stream_handler);
     my $f = $stream_handler->process_job(
@@ -285,23 +294,22 @@ subtest 'async_subs' => sub {
         'GENERIC_EVENTS_STREAM',
         {
             type    => 'async_sub_1',
-            details => {wait => 4}})->get;
-    $log->contains_ok(qr/did not complete within 2 sec/, "Async job greater than MAXIMUM_JOB_TIME should timeout");
+            details => {wait => 3}})->get;
+    $log->contains_ok(qr/GENERIC_EVENTS_STREAM took longer than 'MAXIMUM_JOB_TIME'/, "Async job greater than MAXIMUM_JOB_TIME should timeout");
 
-    # Test when the job is async  and runs longer than MAXIMUM_PROCESSING_TIME, should not fail.
+    # Test when the job is async  and runs longer than MAXIMUM_JOB_TIME, should not fail.
     $log->clear;
     $stream_handler = BOM::Event::QueueHandler->new(
-        streams                 => ['GENERIC_EVENTS_STREAM'],
-        maximum_job_time        => 4,
-        maximum_processing_time => 1
+        streams          => ['GENERIC_EVENTS_STREAM'],
+        maximum_job_time => 4,
     );
     $loop->add($stream_handler);
     $f = $stream_handler->process_job(
         'GENERIC_EVENTS_STREAM',
         {
             type    => 'async_sub_1',
-            details => {wait => 2}})->get;
-    is $f, 'test did not time out', "Async job greater then MAXIMUM_PROCESSING_TIME but less than MAXIMUM_JOB_TIME should not time out.";
+            details => {wait => 5}})->get;
+    $log->contains_ok(qr/GENERIC_EVENTS_STREAM took longer than 'MAXIMUM_JOB_TIME'/i, "Async job greater then MAXIMUM_JOB_TIME should time out.");
     $module->unmock_all();
 };
 

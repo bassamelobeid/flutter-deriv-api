@@ -7,7 +7,6 @@ use Pod::Usage;
 use Sys::Info;
 use List::Util qw(max);
 use Parallel::ForkManager;
-use BOM::Event::Listener;
 use DataDog::DogStatsd::Helper;
 use LWP::Simple;
 use Path::Tiny;
@@ -40,9 +39,7 @@ capable of being rerun.
 
 =item * --type  type of jobs to process
 
-=item * --maximum_process_time : The maximum number of seconds a Synchronous job can run for.
-
-=item * --maximum_job_time : The maximum number of seconds an Ansychronous Job can run for.
+=item * --maximum_job_time : The maximum number of seconds an Job can run for.
 
 =item * --number_of_workers :  The Number of forks of this script to run in parallel.  Defaults to  the the number of cpu's available.
 
@@ -63,9 +60,8 @@ $options{json_log_file}     = '/var/log/deriv/' . path($0)->basename . '.json.lo
 $options{log_level}         = 'info';
 
 GetOptions(
-    \%options,            "streams=s",              "number_of_workers=i", "queue=s",
-    "maximum_job_time=i", "maximum_process_time=i", "shutdown_time_out=i", "json_log_file=s",
-    "category=s",         "log_level=s",
+    \%options,         "streams=s",  "number_of_workers=i", "queue=s", "maximum_job_time=i", "shutdown_time_out=i",
+    "json_log_file=s", "category=s", "log_level=s",
 );
 
 Log::Any::Adapter->import(
@@ -78,7 +74,6 @@ Log::Any::Adapter->import(
 # maximum_job_time and maximum_process_time are required options.
 if (   !(!$options{queue} != !$options{streams})
     || !$options{maximum_job_time}
-    || !$options{maximum_process_time}
     || !$options{category})
 {
     pod2usage(1);
@@ -92,6 +87,13 @@ my @workers = (0) x $options{number_of_workers};
 
 # Only works on AWS so default to local for all else.
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4") || '127.0.0.1';
+
+# Enable watchdog
+$ENV{IO_ASYNC_WATCHDOG} = 1;
+# Set watchdog interval
+$ENV{IO_ASYNC_WATCHDOG_INTERVAL} = $options{maximum_job_time} // 30;
+# Listner consumes the above env variables to set watchdog timeout
+require BOM::Event::Listener;
 
 my $pm = Parallel::ForkManager->new($options{number_of_workers});
 
