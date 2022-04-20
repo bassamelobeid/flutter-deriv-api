@@ -355,7 +355,6 @@ subtest 'update duplicate' => sub {
             }]);
 
     my ($id) = grep { $methods->{$_}{fields}{field2}{value} eq 'bbb' } keys %$methods;
-    note $id;
 
     cmp_deeply(
         exception {
@@ -368,6 +367,66 @@ subtest 'update duplicate' => sub {
             message_params => ['Method 1']
         },
         'cannot create duplicate by updating a method'
+    );
+};
+
+subtest 'Instructions field' => sub {
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+
+    my $methods = $advertiser->p2p_advertiser_payment_methods(
+        create => [{
+                method       => 'method1',
+                field1       => 'aaa',
+                instructions => 'my instructions',
+            }]);
+
+    my ($id) = keys %$methods;
+
+    cmp_deeply(
+        $methods->{$id},
+        {
+            method       => 'method1',
+            type         => 'ewallet',
+            display_name => 'Method 1',
+            is_enabled   => bool(1),
+            fields       => {
+                field1 => {
+                    value        => 'aaa',
+                    display_name => 'Field 1',
+                    type         => 'text',
+                    required     => bool(1)
+                },
+                instructions => {
+                    value        => 'my instructions',
+                    display_name => 'Instructions',
+                    type         => 'memo',
+                    required     => bool(0)}}
+        },
+        'create method with instructions'
+    );
+
+    cmp_deeply(
+        $advertiser->p2p_advertiser_payment_methods(update => {$id => {instructions => 'new instructions'}}),
+        {
+            $id => {
+                method       => 'method1',
+                type         => 'ewallet',
+                display_name => 'Method 1',
+                is_enabled   => bool(1),
+                fields       => {
+                    field1 => {
+                        value        => 'aaa',
+                        display_name => 'Field 1',
+                        type         => 'text',
+                        required     => bool(1)
+                    },
+                    instructions => {
+                        value        => 'new instructions',
+                        display_name => 'Instructions',
+                        type         => 'memo',
+                        required     => bool(0)}}}
+        },
+        'update method with instructions'
     );
 };
 

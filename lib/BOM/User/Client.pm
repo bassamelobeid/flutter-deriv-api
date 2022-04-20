@@ -4990,6 +4990,13 @@ sub p2p_payment_methods {
             }
         } keys $method_def->{fields}->%*;
 
+        # this field is needed for all methods
+        $fields{instructions} = {
+            display_name => localize('Instructions'),
+            type         => 'memo',
+            required     => 0,
+        };
+
         $result->{$method} = {
             display_name => localize($method_def->{display_name}),
             type         => $method_def->{type},
@@ -5208,7 +5215,7 @@ sub _p2p_advertiser_payment_method_create {
             next unless $existing_pm->{method} eq $method;
 
             # Compare settings of PM
-            next unless all { lc $item->{$_} eq lc $existing_pm->{fields}{$_} } keys $existing_pm->{fields}->%*;
+            next unless all { lc $item->{$_} eq lc($existing_pm->{fields}{$_} // '') } grep { $_ !~ /^(method|is_enabled)$/ } keys %$item;
 
             die +{
                 error_code     => 'DuplicatePaymentMethod',

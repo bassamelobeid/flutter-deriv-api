@@ -407,6 +407,11 @@ simplepay:
     exclude_countries: 0
     country:
         - 'ng'
+solidpaywave:
+    name: 'Solidpay Wave'
+    exclude_countries: 0
+    country:
+        - 'ng'
 speedpay_mobile:
     name: SpeedPay mobile
     exclude_countries: 0
