@@ -20,7 +20,6 @@ ok BOM::Config::quants(),                           'quants';
 ok BOM::Config::payment_agent(),                    'payment_agent';
 ok BOM::Config::payment_limits(),                   'payment_limits';
 ok BOM::Config::client_limits(),                    'client_limits';
-ok BOM::Config::crypto(),                           'crypto';
 ok BOM::Config::domain(),                           'domain';
 ok BOM::Config::brand(),                            'brand';
 ok BOM::Config::sanction_file(),                    'sanction_file';
