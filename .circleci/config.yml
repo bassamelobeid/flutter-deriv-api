@@ -32,8 +32,8 @@ alias:
   name: "redis-v6"
 - &debian-ci
   auth:
-      password: $DOCKERHUB_PASSWORD
-      username: circle4regentmarkets
+    password: $DOCKERHUB_PASSWORD
+    username: circle4regentmarkets
   image: regentmarkets/debian-ci:stable
   user: nobody
 default: &6
@@ -99,7 +99,7 @@ jobs:
     - run:
         <<: *5
         command: make cover
-        name: code coverage tests  
+        name: code coverage tests
 version: 2
 workflows:
   build-workflow:
