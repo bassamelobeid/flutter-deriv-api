@@ -441,6 +441,9 @@ subtest 'verify identity by smile_identity is passed and name mismatched' => sub
 
     is $http_idv, 1, 'Http idv called once';
     is $http,     0, 'Standalone http not used';
+
+    my $doc = $idv_model->get_last_updated_document();
+    cmp_bag decode_json_utf8($doc->{status_messages}), [qw/NAME_MISMATCH UNDERAGE DOB_MISMATCH/], 'Expected status message';
 };
 
 subtest 'verify identity by smile_identity is passed and DOB mismatch or underage' => sub {
