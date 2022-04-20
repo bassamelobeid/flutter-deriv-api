@@ -10,6 +10,7 @@ use Test::MockModule;
 use Path::Tiny;
 use LandingCompany::Registry;
 
+use BOM::CTC::Config;
 use BOM::CTC::Currency;
 use BOM::Config::CurrencyConfig;
 use BOM::CTC::Database;
@@ -128,7 +129,7 @@ sub deploy_erc20_test_contract {
         gas => 4000000,
     });
 
-    my $decimals = BOM::Config::crypto()->{$currency_code}->{decimal_places};
+    my $decimals = BOM::CTC::Config::crypto()->{$currency_code}->{decimal_places};
 
     # 0 here means that we will unlock this account until geth be restarted
     $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address},
