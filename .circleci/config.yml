@@ -32,14 +32,14 @@ alias:
   name: "redis-v6"
 - &debian-ci
   auth:
-      password: $DOCKERHUB_PASSWORD
-      username: circle4regentmarkets
+    password: $DOCKERHUB_PASSWORD
+    username: circle4regentmarkets
   image: regentmarkets/debian-ci:stable
   user: nobody
 default: &6
   docker:
-    - *debian-ci
-    - *redis6
+  - *debian-ci
+  - *redis6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-rules
 jobs:
