@@ -42,4 +42,46 @@ sub multiplier_hit_type {
     return BOM::Event::Services::Track::multiplier_hit_type(@args);
 }
 
+=head2 multiplier_near_expire_notification
+
+It is triggered for each B<multiplier_near_expire_notification> event emitted.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Hash-ref of event properties.
+
+=back
+
+=cut
+
+sub multiplier_near_expire_notification {
+    my @args = @_;
+
+    return BOM::Event::Services::Track::multiplier_near_expire_notification(@args);
+}
+
+=head2 multiplier_near_dc_notification
+
+It is triggered for each B<multiplier_near_dc_notification> event emitted.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Hash-ref of event properties.
+
+=back
+
+=cut
+
+sub multiplier_near_dc_notification {
+    my @args = @_;
+
+    return BOM::Event::Services::Track::multiplier_near_dc_notification(@args);
+}
+
 1;

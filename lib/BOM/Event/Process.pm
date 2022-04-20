@@ -138,7 +138,9 @@ my $action_mapping = {
         account_opening_new                              => \&BOM::Event::Actions::Client::account_opening_new,
     },
     track => {
-        multiplier_hit_type => \&BOM::Event::Services::Track::multiplier_hit_type,
+        multiplier_hit_type                 => \&BOM::Event::Services::Track::multiplier_hit_type,
+        multiplier_near_expire_notification => \&BOM::Event::Services::Track::multiplier_near_expire_notification,
+        multiplier_near_dc_notification     => \&BOM::Event::Services::Track::multiplier_near_dc_notification,
     },
 };
 
