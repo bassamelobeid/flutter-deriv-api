@@ -53,7 +53,7 @@ sub check_syntax {
           #  syntax_ok($file);
             vars_ok($file);
             critic_ok($file);
-            BOM::Test::CheckJsonMaybeXS::file_ok($file);
+          #  BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 
         # tidy check for all perl files
