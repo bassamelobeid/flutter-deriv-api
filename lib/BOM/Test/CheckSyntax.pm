@@ -29,6 +29,7 @@ sub check_syntax_on_diff {
     if (scalar @check_files) {
         pass "file change detected";
         diag($_) for @check_files;
+
         check_syntax(\@check_files, \@skipped_files);
         check_tidy(@check_files);
         check_yaml(@check_files);
@@ -46,12 +47,12 @@ the test should be same check_syntax_on_diff, but apply to all files.
 
 sub check_syntax_all {
     my @skipped_files = @_;
-    my @check_files   = `find lib bin abc -type f`;
-    @check_files = 'lib/BOM/Test/WebsocketAPI/Template/CashierPayments.pm';
+    my @check_files   = `find lib bin -type f`;
     check_syntax(\@check_files, \@skipped_files);
-    #   @check_files = `find lib bin t -type f`;
 
+    @check_files = `find lib bin t -type f`;
     check_tidy(@check_files);
+
     @check_files = `find . -name "*.yml" -o -name "*.yaml"`;
     check_yaml(@check_files);
 }
@@ -65,20 +66,37 @@ check syntax for perl files
 sub check_syntax {
     my ($check_files, $skipped_files) = @_;
 
-    my %skipped_files = map { $_ => 1 } @$skipped_files;
+    my %skipped_files;
+    my @skipped_path;
+    foreach (@$skipped_files) {
+        if (-f $_) {
+            # if it is file ,then exact match
+            $skipped_files{$_} = 1;
+        } else {
+            # otherwise do match
+            push(@skipped_path, $_);
+
+        }
+        = map { $_ => 1 };
+    }
 
     foreach my $file (@$check_files) {
         chomp $file;
-        next unless -f $file;
-
-        # those check only apply on perl files under lib
-        if ($file =~ /^lib\/.+[.]p[lm]\z/ and not $skipped_files{$file}) {
-            diag("syntax check on $file:");
-            syntax_ok($file);
-            vars_ok($file);
-            critic_ok($file);
-            BOM::Test::CheckJsonMaybeXS::file_ok($file);
+        next unless (-f $file and $file =~ /^lib\/.+[.]p[lm]\z/);
+        next if exists $skipped_files{$file};
+        my $skip_match;
+        foreach (@skipped_path) {
+            if ($file =~ /$_/) {
+                $skip_match = 1;
+                last;
+            }
         }
+        next if $skip_match;
+        diag("syntax check on $file:");
+        syntax_ok($file);
+        vars_ok($file);
+        critic_ok($file);
+        BOM::Test::CheckJsonMaybeXS::file_ok($file);
 
     }
 }

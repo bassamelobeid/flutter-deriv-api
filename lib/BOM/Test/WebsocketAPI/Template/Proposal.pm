@@ -3,7 +3,7 @@ package BOM::Test::WebsocketAPI::Template::Proposal;
 use strict;
 use warnings;
 no indirect;
-
+use JSON::MaybeXS;
 my $json = JSON::MaybeXS->new->allow_blessed;
 
 use BOM::Test::WebsocketAPI::Template::DSL;
