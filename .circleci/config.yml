@@ -103,6 +103,8 @@ workflows:
     jobs:
     - syntax_diff_unit:
         context: perl
+    - syntax_unit:
+        context: perl
     - core:
         context: perl
   daily:
