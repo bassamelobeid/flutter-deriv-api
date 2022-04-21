@@ -50,9 +50,9 @@ sub check_syntax {
         # those check only apply on perl files under lib
         if ($file =~ /^lib\/.+[.]p[lm]\z/ and not $skipped_files{$file}) {
             note("syntax check on $file:");
-            syntax_ok($file);
-          #  vars_ok($file);
-          #  critic_ok($file);
+          #  syntax_ok($file);
+            vars_ok($file);
+            critic_ok($file);
             BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 
