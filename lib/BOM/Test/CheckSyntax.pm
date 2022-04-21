@@ -13,7 +13,7 @@ use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticr
 use BOM::Test::CheckJsonMaybeXS;
 use Test::Builder qw();
 use YAML::XS qw(LoadFile);
-our @EXPORT_OK = qw(check_syntax_on_diff check_bom_dependency);
+our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 
 =head1 check_syntax_on_diff
 
@@ -22,25 +22,28 @@ It only check updated files compare to master branch.
 
 =cut
 
+sub check_syntax_all {
+    my @skipped_files = @_;
+    @check_files = `find lib`;
+
+    check_syntax(\@check_files, \@skipped_files);
+}
+
 sub check_syntax_on_diff {
     my @skipped_files = @_;
-    my %skipped_files = map { $_ => 1 } @skipped_files;
-    if (@skipped_files) {
-        diag("skipped_files:");
-        diag($_) for keys %skipped_files;
-    }
+    my @check_files = `git diff --name-only master`;
 
-    my @changed_files = `git diff --name-only master`;
-    @changed_files = `find lib`;
-    if (@changed_files) {
-        pass "file change detected";
-        diag($_) for @changed_files;
-    } else {
-        pass "no file change detected, skip tests";
-    }
+    check_syntax(\@check_files, \@skipped_files);
 
+}
+
+sub check_syntax {
+    my ($check_files, $skipped_files) = @_;
+    pass "no file change detected, skip tests" unless @$check_files;
+
+    my %skipped_files = map { $_ => 1 } @$skipped_files;
     my $test = Test::Builder->new;
-    foreach my $file (@changed_files) {
+    foreach my $file (@$check_files) {
         chomp $file;
         next unless -f $file;
 
