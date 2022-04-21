@@ -78,6 +78,7 @@ sub check_syntax {
         }
     }
 
+    diag("start checking syntax...");
     foreach my $file (@$check_files) {
         chomp $file;
 
@@ -111,6 +112,7 @@ sub check_tidy {
     my (@check_files) = @_;
     my $test = Test::Builder->new;
 
+    diag("start checking tidy...");
     foreach my $file (@check_files) {
         chomp $file;
         next unless -f $file;
@@ -129,6 +131,7 @@ check yaml files format
 
 sub check_yaml {
     my (@check_files) = @_;
+    diag("start checking yaml...");
     foreach my $file (@check_files) {
         chomp $file;
         next unless -f $file;
