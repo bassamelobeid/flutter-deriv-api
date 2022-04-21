@@ -15,6 +15,6 @@ my @skip_files = qw(
 	lib/BOM/Test/Script/ExperianMock.pm
 );
 
-check_syntax_on_diff(@skip_files);
+check_syntax_all(@skip_files);
 
 done_testing();
