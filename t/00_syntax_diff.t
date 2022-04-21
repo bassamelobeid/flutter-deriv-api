@@ -4,7 +4,7 @@ use Test::More;
 use BOM::Test::CheckSyntax qw(check_syntax_on_diff check_syntax_all);
 my @skip_files = qw(
     lib/BOM/Test/Script
-    lib/BOM/Test/WebsocketAPI/Tests
+    lib/BOM/Test/WebsocketAPI
     lib/BOM/Test.pm
     lib/BOM/Test/Localize.pm
     lib/BOM/Test/Helper.pm
