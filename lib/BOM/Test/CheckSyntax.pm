@@ -24,7 +24,7 @@ It only check updated files compare to master branch.
 
 sub check_syntax_all {
     my @skipped_files = @_;
-    @check_files = `find lib`;
+    my @check_files = `find lib -type f`;
 
     check_syntax(\@check_files, \@skipped_files);
 }

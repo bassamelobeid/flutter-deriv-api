@@ -1,8 +1,9 @@
 use strict;
 use warnings;
 use Test::More;
-use BOM::Test::CheckSyntax qw(check_syntax_on_diff);
+use BOM::Test::CheckSyntax qw(check_syntax_on_diff check_syntax_all);
 my @skip_files = qw(
+	lib/BOM/Test.pm
 	lib/BOM/Test/WebsocketAPI.pm
 	lib/BOM/Test/RPC/BinaryRpcRedis.pm
 	lib/BOM/Test/Rudderstack/Webserver.pm
