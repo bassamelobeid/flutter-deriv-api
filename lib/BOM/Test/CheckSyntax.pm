@@ -75,15 +75,15 @@ sub check_syntax {
         } else {
             # otherwise do match
             push(@skipped_path, $_);
-
         }
-        = map { $_ => 1 };
     }
 
     foreach my $file (@$check_files) {
         chomp $file;
+
         next unless (-f $file and $file =~ /^lib\/.+[.]p[lm]\z/);
         next if exists $skipped_files{$file};
+
         my $skip_match;
         foreach (@skipped_path) {
             if ($file =~ /$_/) {
@@ -92,12 +92,12 @@ sub check_syntax {
             }
         }
         next if $skip_match;
+
         diag("syntax check on $file:");
         syntax_ok($file);
         vars_ok($file);
         critic_ok($file);
         BOM::Test::CheckJsonMaybeXS::file_ok($file);
-
     }
 }
 
