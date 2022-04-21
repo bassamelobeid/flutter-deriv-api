@@ -6,6 +6,7 @@ my @skip_files = qw(
     lib/BOM/Test.pm
     lib/BOM/Test/Helper.pm
     lib/BOM/Test/Email.pm
+    lib/BOM/Test/Helper/CTC.pm
     lib/BOM/Test/Suite/DSL.pm
     lib/BOM/Test/Suite.pm
     lib/BOM/Test/Contract.pm
