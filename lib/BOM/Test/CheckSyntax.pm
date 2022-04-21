@@ -22,49 +22,102 @@ It only check updated files compare to master branch.
 
 =cut
 
-sub check_syntax_all {
-    my @skipped_files = @_;
-    my @check_files = `find lib bin abc -type f`;
-
-    check_syntax(\@check_files, \@skipped_files);
-}
-
 sub check_syntax_on_diff {
     my @skipped_files = @_;
     my @check_files = `git diff --name-only master`;
 
-    check_syntax(\@check_files, \@skipped_files);
-
+      if (scalar @check_files){
+        pass "file change detected";
+        diag($_) for @check_files;
+        check_syntax(\@check_files, \@skipped_files);
+        check_tidy(@check_files);
+        check_yaml(@check_files);
+    }else{
+        pass "no change detected, skip tests";
+    }
 }
+
+=head1 check_syntax_all
+
+run all the common syntax related check on perl and ymal files.
+the test should be same check_syntax_on_diff, but apply to all files.
+
+=cut
+
+sub check_syntax_all {
+    my @skipped_files = @_;
+    my @check_files = `find lib bin abc -type f`;
+
+    #check_syntax(\@check_files, \@skipped_files);
+    @check_files = `find lib bin t -type f`;
+
+   check_tidy(@check_files);
+    @check_files = `find . -name "*.yml" -o -name "*.yaml"`;
+    check_yaml(@check_files);
+}
+
+=head1 check_syntax
+
+check syntax for perl files
+
+=cut
+
 
 sub check_syntax {
     my ($check_files, $skipped_files) = @_;
-    pass "no file change detected, skip tests" unless @$check_files;
 
     my %skipped_files = map { $_ => 1 } @$skipped_files;
-    my $test = Test::Builder->new;
+
     foreach my $file (@$check_files) {
         chomp $file;
         next unless -f $file;
 
         # those check only apply on perl files under lib
         if ($file =~ /^lib\/.+[.]p[lm]\z/ and not $skipped_files{$file}) {
-            note("syntax check on $file:");
-          #  syntax_ok($file);
+            diag("syntax check on $file:");
+            syntax_ok($file);
             vars_ok($file);
             critic_ok($file);
-          #  BOM::Test::CheckJsonMaybeXS::file_ok($file);
+          BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 
-        # tidy check for all perl files
-        if ($file =~ /[.](?:pl|pm|t)\z/) {
-         #   $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
-        }
+    }
+}
 
+=head1 check_tidy
+
+Check is_file_tidy for perl files
+
+=cut
+
+sub check_tidy{
+my (@check_files)=@_;
+    my $test = Test::Builder->new;
+
+    foreach my $file (@check_files) {
+        chomp $file;
+        next unless -f $file;
+    # tidy check for all perl files
+    if ($file =~ /[.](?:pl|pm|t)\z/) {
+        $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
+    }
+}
+}
+
+=head1 check_yaml
+
+check yaml files format
+
+=cut
+
+sub check_yaml{
+    my (@check_files) = @_;
+        foreach my $file (@check_files) {
+        chomp $file;
+        next unless -f $file;
         if ($file =~ /\.(yml|yaml)$/ and not $file =~ /invalid\.yml$/) {
             lives_ok { LoadFile($file) } "$file YAML valid";
         }
-
     }
 }
 
