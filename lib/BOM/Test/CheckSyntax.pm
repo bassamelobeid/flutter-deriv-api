@@ -24,15 +24,15 @@ It only check updated files compare to master branch.
 
 sub check_syntax_on_diff {
     my @skipped_files = @_;
-    my @check_files = `git diff --name-only master`;
+    my @check_files   = `git diff --name-only master`;
 
-      if (scalar @check_files){
+    if (scalar @check_files) {
         pass "file change detected";
         diag($_) for @check_files;
         check_syntax(\@check_files, \@skipped_files);
         check_tidy(@check_files);
         check_yaml(@check_files);
-    }else{
+    } else {
         pass "no change detected, skip tests";
     }
 }
@@ -46,12 +46,12 @@ the test should be same check_syntax_on_diff, but apply to all files.
 
 sub check_syntax_all {
     my @skipped_files = @_;
-    my @check_files = `find lib bin abc -type f`;
+    my @check_files   = `find lib bin abc -type f`;
 
-    #check_syntax(\@check_files, \@skipped_files);
+    check_syntax(\@check_files, \@skipped_files);
     @check_files = `find lib bin t -type f`;
 
-   check_tidy(@check_files);
+    check_tidy(@check_files);
     @check_files = `find . -name "*.yml" -o -name "*.yaml"`;
     check_yaml(@check_files);
 }
@@ -61,7 +61,6 @@ sub check_syntax_all {
 check syntax for perl files
 
 =cut
-
 
 sub check_syntax {
     my ($check_files, $skipped_files) = @_;
@@ -78,7 +77,7 @@ sub check_syntax {
             syntax_ok($file);
             vars_ok($file);
             critic_ok($file);
-          BOM::Test::CheckJsonMaybeXS::file_ok($file);
+            BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 
     }
@@ -90,18 +89,18 @@ Check is_file_tidy for perl files
 
 =cut
 
-sub check_tidy{
-my (@check_files)=@_;
+sub check_tidy {
+    my (@check_files) = @_;
     my $test = Test::Builder->new;
 
     foreach my $file (@check_files) {
         chomp $file;
         next unless -f $file;
-    # tidy check for all perl files
-    if ($file =~ /[.](?:pl|pm|t)\z/) {
-        $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
+        # tidy check for all perl files
+        if ($file =~ /[.](?:pl|pm|t)\z/) {
+            $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
+        }
     }
-}
 }
 
 =head1 check_yaml
@@ -110,9 +109,9 @@ check yaml files format
 
 =cut
 
-sub check_yaml{
+sub check_yaml {
     my (@check_files) = @_;
-        foreach my $file (@check_files) {
+    foreach my $file (@check_files) {
         chomp $file;
         next unless -f $file;
         if ($file =~ /\.(yml|yaml)$/ and not $file =~ /invalid\.yml$/) {
