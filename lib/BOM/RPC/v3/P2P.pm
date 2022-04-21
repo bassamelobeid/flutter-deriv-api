@@ -187,7 +187,7 @@ our %ERROR_MAP = do {
         AdvertFixedRateNotAllowed         => localize('Fixed rate adverts are not available at this time.'),
         AdvertFloatRateNotAllowed         => localize('Floating rate adverts are not available at this time.'),
         FloatRateTooBig                   => localize('The allowed range for floating rate is -[_1]% to +[_1]%.'),
-        FloatRatePrecision                => localize('Floating rate cannot be provided with more than 2 decmial places of precision.'),
+        FloatRatePrecision                => localize('Floating rate cannot be provided with more than 2 decimal places of precision.'),
         OrderCreateFailRateSlippage       =>
             localize("We're unable to create your order because the market rate has moved too much. Please try creating your order again."),
         OrderCreateFailRateRequired => localize('Please provide a rate for this order.'),
