@@ -109,7 +109,6 @@ sub email_verification {
         user_name          => $user_name,
         support_email      => $brand->emails('support'),
         live_chat_url      => $brand->live_chat_url,
-        email              => $email,
     );
 
     return {
@@ -128,7 +127,13 @@ sub email_verification {
             };
         },
         account_opening_existing => sub {
+            my $subject =
+                  $brand->name eq 'deriv' ? localize('Your email address is already in use')
+                : $source == 1            ? localize('Duplicate email address submitted - [_1]', $website_name)
+                :                           localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name);
+
             return {
+                subject       => $subject,
                 template_name => 'account_opening_existing',
                 template_args => {
                     login_url => 'https://oauth.' . lc($brand->website_name) . '/oauth2/authorize?app_id=' . $source . '&brand=' . $brand->name,
@@ -141,7 +146,10 @@ sub email_verification {
         payment_withdraw => sub {
             my $is_paymentagent = $type eq 'paymentagent_withdraw' ? 1                        : 0;
             my $action          = $is_paymentagent                 ? 'payment_agent_withdraw' : $type;
+
             return {
+                subject       => localize('Verify your withdrawal request'),
+                template_name => 'payment_withdraw',
                 template_args => {
                     name  => $name,
                     title => localize('Do you wish to withdraw funds?'),
@@ -178,9 +186,23 @@ sub email_verification {
             };
         },
         closed_account => sub {
+            my ($subject, $title, $title_padding);
+            if ($type eq 'account_opening') {
+                $subject = $title = localize("We're unable to sign you up");
+            } elsif ($type eq 'reset_password') {
+                $subject = $title = localize("We couldn't reset your password");
+            } else {
+                $subject       = $title = localize("We couldn't verify your email address");
+                $title_padding = 90;
+            }
+
             return {
+                subject       => $subject,
+                template_name => 'verify_email_closed_account',
                 template_args => {
-                    name => $name,
+                    name          => $name,
+                    title         => $title,
+                    title_padding => $title_padding,
                     %common_args,
                 },
             };
