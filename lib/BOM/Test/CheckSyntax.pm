@@ -95,13 +95,16 @@ sub check_syntax {
         next if $skip_match;
 
         diag("syntax check on $file:");
-        critic_ok($file);
-        vars_ok($file)                              if $file =~ /^lib\/.+[.]pm\z/;
-        BOM::Test::CheckJsonMaybeXS::file_ok($file) if $file =~ /^lib\/.+[.]pm\z/;
+        if ($file =~ /^lib\/.+[.]pm\z/) {
+            critic_ok($file);
+            vars_ok($file);
+            BOM::Test::CheckJsonMaybeXS::file_ok($file);
+        }
 
         # syntax_ok test fail on current master, because it never run before.
         # because there are no .pl under /lib, .pl is under /bin.
         # so we only check when the .pl file changed or added.
+        # old code as below
         #   for (sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib')) {
         #        syntax_ok($_)      if $_ =~ /\.pl$/;
         #   }
