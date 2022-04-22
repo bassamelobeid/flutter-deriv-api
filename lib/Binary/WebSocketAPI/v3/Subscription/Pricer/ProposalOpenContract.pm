@@ -7,6 +7,8 @@ use Format::Util::Numbers qw/formatnumber roundcommon/;
 use Moo;
 with 'Binary::WebSocketAPI::v3::Subscription::Pricer';
 use namespace::clean;
+use JSON::MaybeUTF8 qw(decode_json_utf8);
+use Log::Any qw($log);
 
 =head1 NAME
 
@@ -73,7 +75,36 @@ after subscribe => sub {
 
     my $redis_pricer_manager = Binary::WebSocketAPI::v3::SubscriptionManager->redis_pricer_manager();
 
-    return $redis_pricer_manager->redis->mset(map { ($_, 1) } @$keys);
+    foreach my $pricer_args (@$keys) {
+        my $args = $pricer_args =~ s/^PRICER_ARGS:://r;
+        my $ttl  = {@{decode_json_utf8($args)}}->{pricing_ttl};
+        if ($ttl) {
+            $redis_pricer_manager->redis->set(
+                $pricer_args,
+                1, 'EX', $ttl,
+                sub {
+                    my ($redis, $err) = @_;
+                    if ($err and $err ne "OK") {
+                        $log->warn("Redis error when setting pricer_args - $err");
+                    }
+                    return;
+                });
+        } else {
+            $redis_pricer_manager->redis->set(
+                $pricer_args,
+                1,
+                sub {
+                    my ($redis, $err) = @_;
+                    if ($err and $err ne "OK") {
+                        $log->warn("Redis error when setting pricer_args - $err");
+                    }
+                    return;
+                });
+            $log->debugf("pricing_ttl is not set in this pricer_args : %s", $pricer_args);
+        }
+    }
+
+    return 1;
 };
 
 # DEMOLISH in subclass will prevent super ROLE's DEMOLISH in Subscription.pm. So here `before` is used.
