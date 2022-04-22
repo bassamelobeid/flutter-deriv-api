@@ -720,7 +720,8 @@ SQL
         risk_disclaimer_updated_by                   => $risk_disclaimer_resubmission_updated_by,
         payment_methods                              => $doughflow_mapper->get_poo_required_methods(),
         proof_of_ownership_list                      => $client->proof_of_ownership->list(),
-        disallow_residence_change                    => @countries_disallow_residence_change
+        disallow_residence_change                    => @countries_disallow_residence_change,
+        onfido_pending_request                       => BOM::User::Onfido::pending_request($client->binary_user_id),
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

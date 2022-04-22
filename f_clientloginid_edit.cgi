@@ -160,17 +160,20 @@ if ($input{kyc_email_checkbox}) {
 }
 
 if (defined $input{run_onfido_check}) {
+    if (BOM::User::Onfido::pending_request($client->binary_user_id)) {
+        print "<p class=\"notify notify--warning\">There is a pending Onfido request for this client.</p>";
+        code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+    }
+
     my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
     my $applicant_id   = $applicant_data->{id};
     unless ($applicant_id) {
         print "<p class=\"notify notify--warning\">No corresponding onfido applicant id found for client $loginid.</p>";
         code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
     }
-    BOM::Platform::Event::Emitter::emit(
-        ready_for_authentication => {
-            loginid      => $loginid,
-            applicant_id => $applicant_id,
-        });
+
+    BOM::User::Onfido::ready_for_authentication($client);
+
     print "<p class=\"notify\">Onfido trigger request sent.</p>";
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
