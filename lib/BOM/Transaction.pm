@@ -936,7 +936,32 @@ sub buy {
         # start streaming newly bought contracts right away,
         # pricing-daemon will delete the key on next second, when no one is subscribed.
         my $pricer_args = BOM::Transaction::Utility::build_poc_pricer_args($poc_parameters);
-        BOM::Config::Redis::redis_pricer()->set($pricer_args, 1);
+
+        if ($poc_parameters->{pricing_ttl}) {
+            BOM::Config::Redis::redis_pricer()->set(
+                $pricer_args,
+                1, 'EX',
+                $poc_parameters->{pricing_ttl},
+                sub {
+                    my ($redis, $err) = @_;
+                    if ($err and $err ne "OK") {
+                        $log->warn("Redis error when setting pricer_args - $err");
+                    }
+                    return;
+                });
+        } else {
+            BOM::Config::Redis::redis_pricer()->set(
+                $pricer_args,
+                1,
+                sub {
+                    my ($redis, $err) = @_;
+                    if ($err and $err ne "OK") {
+                        $log->warn("Redis error when setting pricer_args - $err");
+                    }
+                    return;
+                });
+            $log->debugf("pricing_ttl is not available in this poc_parameters: %s", $poc_parameters);
+        }
 
         $self->contract_details($fmb);
         $self->transaction_details($txn);
