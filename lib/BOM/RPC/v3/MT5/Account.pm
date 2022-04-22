@@ -258,6 +258,17 @@ Returns a Future holding list of MT5 account information (or undef) or a failed 
 
 sub mt5_accounts_lookup {
     my ($client, $account_type) = @_;
+    my %allowed_error_codes = (
+        ConnectionTimeout           => 1,
+        MT5AccountInactive          => 1,
+        NetworkError                => 1,
+        NoConnection                => 1,
+        NotFound                    => 1,
+        ERR_NOSERVICE               => 1,
+        'Service is not available.' => 1,
+        'Timed out'                 => 1,
+        'Connection closed'         => 1
+    );
 
     my @futures;
     for my $login ($client->user->get_mt5_loginids($account_type)) {
@@ -277,17 +288,10 @@ sub mt5_accounts_lookup {
             sub {
                 my ($resp) = @_;
 
-                if (
-                       ref $resp eq 'HASH'
-                    && defined $resp->{error}
-                    && ref $resp->{error} eq 'HASH'
-                    && (   $resp->{error}{code} eq 'NotFound'
-                        || $resp->{error}{code} eq 'MT5AccountInactive'
-                        || $resp->{error}{code} eq 'NetworkError'
-                        || $resp->{error}{code} eq 'NoConnection'
-                        || $resp->{error}{code} eq 'ConnectionTimeout'
-                        || $resp->{error}{message_to_client} eq 'ERR_NOSERVICE'
-                        || $resp->{error}{message_to_client} eq 'Service is not available.'))
+                if ((
+                        ref $resp eq 'HASH' && defined $resp->{error} && ref $resp->{error} eq 'HASH' && ($allowed_error_codes{$resp->{error}{code}}
+                            || $allowed_error_codes{$resp->{error}{message_to_client}}))
+                    || $allowed_error_codes{$resp})
                 {
                     return Future->done(undef);
                 } else {

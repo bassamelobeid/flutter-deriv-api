@@ -169,6 +169,25 @@ subtest 'login list with MT5 connection problem ' => sub {
     $mt5_async_mock->unmock('get_user');
 };
 
+subtest 'login list with MT5 connection problem on HTTP Proxy ' => sub {
+    my $mt5_async_mock = Test::MockModule->new('BOM::MT5::User::Async');
+    $mt5_async_mock->mock(
+        'get_user',
+        sub {
+            return Future->fail('Timed out');
+        });
+
+    my $method = 'mt5_login_list';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {},
+    };
+
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
+    $mt5_async_mock->unmock('get_user');
+};
+
 subtest 'login list with archived login id ' => sub {
     my $bom_user_mock = Test::MockModule->new('BOM::User');
     $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR41000001 MTR00001014) });
