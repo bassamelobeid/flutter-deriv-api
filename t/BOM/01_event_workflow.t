@@ -133,8 +133,6 @@ subtest 'process - generic jobs' => sub {
                 affiliate_loginids_sync p2p_advertiser_approval_changed crypto_withdrawal_email
                 reset_password_request reset_password_confirmation
                 p2p_advertiser_cancel_at_fault p2p_advertiser_temp_banned cms_add_affiliate_client df_anonymization_done
-                account_opening_existing request_payment_withdraw verify_email_closed_account_other
-                verify_email_closed_account_reset_password verify_email_closed_account_account_opening
                 request_change_email verify_change_email confirm_change_email
                 account_opening_new  update_crypto_config account_with_false_info_locked
                 underage_account_closed/
