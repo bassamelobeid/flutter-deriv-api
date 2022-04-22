@@ -193,14 +193,15 @@ sub unsubscribe {
     # See `t/subscription.t` for test coverage here.
     my $f                     = delete $self->channels->{$channel};
     my $channel_unsubscribing = $self->channel_unsubscribing;
-    $channel_unsubscribing->{$channel} = 1;
+    $channel_unsubscribing->{$channel}++;
     delete $self->channel_subscriptions->{$channel};
     my $callback = sub {
         my (undef, $err) = @_;
         # We can do nothing useful if we are already shutting down
         return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
         $log->tracef('Unsubscribed from redis server for %s channel %s in pid %i', $class, $channel, $$);
-        delete $channel_unsubscribing->{$channel};
+        $channel_unsubscribing->{$channel}--;
+        delete $channel_unsubscribing->{$channel} if ($channel_unsubscribing->{$channel} == 0);
         # May have had a sub/unsub sequence before Redis could finish the
         # initial subscription
         $f->cancel unless $f->is_ready;
