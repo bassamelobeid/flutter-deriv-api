@@ -178,7 +178,7 @@ subtest 'Payment agent withdraw' => sub {
     is($emitted[0], 'request_payment_withdraw', 'type=request_payment_withdraw');
     ok($emitted[1]->{properties}, 'Properties are set');
     my @keys = keys %{$emitted[1]->{properties}};
-    ok($#keys eq 4, "5 Attributes set");
+    ok($#keys eq 5, "6 Attributes set");
     is(
         $emitted[1]->{properties}->{verification_url},
         'https://www.binary.com/en/redirect.html?action=payment_agent_withdraw&lang=EN&code='
@@ -215,7 +215,7 @@ subtest 'Payment withdraw' => sub {
     is($emitted[0], 'request_payment_withdraw', 'type=request_payment_withdraw');
     ok($emitted[1]->{properties}, 'Properties are set');
     my @keys = keys %{$emitted[1]->{properties}};
-    ok($#keys eq 4, "5 Attributes set");
+    ok($#keys eq 5, "6 Attributes set");
     is(
         $emitted[1]->{properties}->{verification_url},
         'https://www.binary.com/en/redirect.html?action=payment_withdraw&lang=EN&code=' . $emitted[1]->{properties}->{code} . '&utm_medium=email',
