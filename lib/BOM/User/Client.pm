@@ -62,6 +62,7 @@ use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::User::IdentityVerification;
 use BOM::Platform::Utility qw(error_map);
+use BOM::User::Onfido;
 
 use Carp qw(croak confess);
 
@@ -6509,6 +6510,9 @@ Returns,
 sub get_poi_status {
     my ($self) = @_;
 
+    # The Onfido lock must ensure `pending` status until our event stream queue is processed
+    return 'pending' if BOM::User::Onfido::pending_request($self->binary_user_id);
+
     my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
 
     my ($latest) = $self->latest_poi_by();
@@ -6605,7 +6609,10 @@ Returns,
 sub get_onfido_status {
     my ($self) = @_;
     my $country_code = uc($self->place_of_birth || $self->residence // '');
+
     return 'none' unless BOM::Config::Onfido::is_country_supported($country_code);
+
+    return 'pending' if BOM::User::Onfido::pending_request($self->binary_user_id);
 
     my $onfido = BOM::User::Onfido::get_latest_check($self);
     my ($check, $report_document_status, $report_document_sub_result) =

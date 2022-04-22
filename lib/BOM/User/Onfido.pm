@@ -17,8 +17,12 @@ use Locale::Codes::Country qw(country_code2code);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use List::Util qw(first uniq);
 use BOM::Config::Redis;
+use BOM::Platform::Event::Emitter;
+use Log::Any qw($log);
 
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
+use constant ONFIDO_REQUEST_PENDING_PREFIX  => 'ONFIDO::REQUEST::PENDING::PER::USER::';
+use constant ONFIDO_REQUEST_PENDING_TTL     => 86400;                                     # one day in second
 
 =head2 store_onfido_applicant
 
@@ -722,6 +726,85 @@ sub reported_properties {
     my $fields     = [qw/first_name last_name date_of_birth/];
 
     return +{map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } $fields->@*};
+}
+
+=head2 ready_for_authentication
+
+Fires the infamous event to perform the applicant check request.
+
+This function will also take care of counter increasing and everything
+the the frontend may need to properly render the POI page.
+
+It takes:
+
+=over 4
+
+=item * C<$client> - a client instance
+
+=item * C<$args> - an arrayref of arguments, we are particularly interested in:
+
+=over 4
+
+=item * C<documents> - an arrayref Onfido documents ids (optional)
+
+=back
+
+=back
+
+Returns C<1>.
+
+=cut
+
+sub ready_for_authentication {
+    my ($client, $args) = @_;
+    my $redis = BOM::Config::Redis::redis_events();
+
+    unless ($redis->set(ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1, 'NX', 'EX', ONFIDO_REQUEST_PENDING_TTL)) {
+        # this should not happen as we'd expect the frontend to block further Onfido requests
+        $log->warnf('Unexpected Onfido request when pending flag is still alive, user: %d', $client->binary_user_id);
+        return 0;
+    }
+
+    $redis->multi;
+    $redis->incr(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id);
+    $redis->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, timeout_per_user());
+    $redis->exec;
+
+    my $user_applicant = get_user_onfido_applicant($client->binary_user_id);
+    my $documents      = $args->{documents};
+
+    BOM::Platform::Event::Emitter::emit(
+        ready_for_authentication => {
+            loginid      => $client->loginid,
+            applicant_id => $user_applicant->{id},
+            defined $documents ? (documents => $documents) : (),
+        });
+
+    return 1;
+}
+
+=head2 pending_request
+
+Determines whether there is a pending Onfido request.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$user_id> - the binary user id we are dealing with
+
+=back
+
+Returns a bool scalar.
+
+=cut
+
+sub pending_request {
+    my ($user_id) = @_;
+
+    my $redis = BOM::Config::Redis::redis_events();
+
+    return $redis->get(ONFIDO_REQUEST_PENDING_PREFIX . $user_id);
 }
 
 1;

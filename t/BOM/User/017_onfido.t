@@ -7,6 +7,8 @@ use Test::Warn;
 use Test::Warnings;
 use Test::Deep;
 use Test::MockModule;
+use Log::Any::Test;
+use Log::Any qw($log);
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -860,6 +862,97 @@ subtest 'get consider reasons' => sub {
 
         $status_mock->unmock_all;
         $client_mock->unmock_all;
+    };
+
+    subtest 'ready for auth' => sub {
+        my $emit_mocker = Test::MockModule->new('BOM::Platform::Event::Emitter');
+        my $emission;
+        my $applicant_id;
+        my $redis       = BOM::Config::Redis::redis_events();
+        my $key         = +BOM::User::Onfido::ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id;
+        my $pending_key = +BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $test_client->binary_user_id;
+        $redis->del($key);
+
+        $onfido_mock->mock(
+            'get_user_onfido_applicant',
+            sub {
+                return {id => $applicant_id};
+            });
+
+        $emit_mocker->mock(
+            'emit',
+            sub {
+                $emission = +{@_};
+
+                return 1;
+            });
+
+        $applicant_id = 'R01-x01';
+        ok BOM::User::Onfido::ready_for_authentication($test_client), 'Ready for auth';
+
+        cmp_deeply $emission,
+            {
+            ready_for_authentication => {
+                loginid      => $test_client->loginid,
+                applicant_id => $applicant_id,
+            },
+            },
+            'Expected event emitted';
+
+        ok $redis->get($pending_key), 'Expected pending flag';
+        ok $redis->ttl($pending_key), 'TTL set';
+        is $redis->get($key),         1, 'Expected counter initialized';
+        ok $redis->ttl($key),         'TTL set';
+        ok BOM::User::Onfido::pending_request($test_client->binary_user_id), 'Has a pending request';
+
+        $applicant_id = 'R01-x01';
+        $redis->del($pending_key);
+
+        ok !BOM::User::Onfido::pending_request($test_client->binary_user_id), 'Does not have a pending request';
+        ok BOM::User::Onfido::ready_for_authentication($test_client), 'Ready for auth';
+
+        cmp_deeply $emission,
+            {
+            ready_for_authentication => {
+                loginid      => $test_client->loginid,
+                applicant_id => $applicant_id,
+            },
+            },
+            'Expected event emitted';
+
+        ok $redis->get($pending_key), 'Expected pending flag';
+        ok $redis->ttl($pending_key), 'TTL set';
+        is $redis->get($key),         2, 'Counter increased';
+        ok $redis->ttl($key),         'TTL set';
+
+        $redis->del($pending_key);
+        ok BOM::User::Onfido::ready_for_authentication($test_client, {documents => ['S3', 'X', 'Y']}), 'ready for auth';
+
+        cmp_deeply $emission,
+            {
+            ready_for_authentication => {
+                loginid      => $test_client->loginid,
+                applicant_id => $applicant_id,
+                documents    => ['S3', 'X', 'Y'],
+            },
+            },
+            'Expected event emitted';
+
+        ok $redis->get($pending_key), 'Expected pending flag';
+        ok $redis->ttl($pending_key), 'TTL set';
+        is $redis->get($key),         3, 'Counter increased';
+        ok $redis->ttl($key),         'TTL set';
+
+        subtest 'pending flag still alive' => sub {
+            $log->clear();
+            $emission = {};
+            ok !BOM::User::Onfido::ready_for_authentication($test_client, {documents => ['S2', 'A', 'B']}), 'Could not acquired pending lock';
+            cmp_deeply $emission, {}, 'No event emitted';
+            is $redis->get($key), 3, 'Counter not increased';
+            $log->contains_ok(qr/Unexpected Onfido request when pending flag is still alive/, 'warning log ok');
+        };
+
+        $emit_mocker->unmock_all;
     };
 
     # Finish it
