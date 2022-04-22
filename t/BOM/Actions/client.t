@@ -24,6 +24,8 @@ use BOM::Platform::Context qw(request);
 use WebService::Async::Onfido;
 use BOM::Event::Actions::Client;
 use BOM::Event::Process;
+use BOM::User::Onfido;
+use BOM::Config::Redis;
 
 use WebService::Async::SmartyStreets::Address;
 use Encode qw(encode_utf8);
@@ -570,6 +572,74 @@ subtest "ready for run authentication" => sub {
 
     my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
     ok $applicant_context, 'request context of applicant is present in redis';
+
+    subtest 'consecutive calls to ready_for_authentication' => sub {
+        my $lock_mock = Test::MockModule->new('BOM::Platform::Redis');
+        my $lock;
+        $lock_mock->mock(
+            'acquire_lock',
+            sub {
+                $lock = $lock_mock->original('acquire_lock')->(@_);
+                return $lock;
+            });
+        $lock_mock->mock(
+            'release_lock',
+            sub {
+                $lock = 0;
+                return $lock_mock->original('release_lock')->(@_);
+            });
+        my $consecutive_cli = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+        my $user = BOM::User->create(
+            email          => 'consec@test.com',
+            password       => "hello",
+            email_verified => 1,
+            email_consent  => 1,
+        );
+
+        $user->add_client($consecutive_cli);
+        $consecutive_cli->binary_user_id($user->id);
+        $consecutive_cli->save;
+
+        my $consecutive_applicant = $onfido->applicant_create(
+            first_name => 'Mary',
+            last_name  => 'Jane',
+            dob        => '1999-02-02',
+        )->get;
+        BOM::User::Onfido::store_onfido_applicant($consecutive_applicant, $consecutive_cli->binary_user_id);
+
+        my $checks_counter = 0;
+
+        $onfido_mocker->mock(
+            'applicant_check',
+            sub {
+                $checks_counter++;
+                ok $lock, 'lock acquired';
+
+                return $onfido_mocker->original('applicant_check')->(@_);
+            });
+
+        my $generator = sub {
+            $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $consecutive_cli->binary_user_id)->get;
+            my $f = BOM::Event::Actions::Client::ready_for_authentication({
+                loginid      => $consecutive_cli->loginid,
+                applicant_id => $consecutive_applicant->id,
+            });
+            return $f;
+        };
+
+        my $f = Future->wait_all(map { $generator->() } (1 .. 20));
+        $f->on_ready(
+            sub {
+                my $checks = $onfido->check_list(applicant_id => $consecutive_applicant->id)->as_arrayref->get;
+                is scalar @$checks, $checks_counter, 'Expected checks counter';
+                is $checks_counter, 1, 'One check done';
+            });
+        $f->get;
+        $lock_mock->unmock_all;
+    };
+
     $onfido_mocker->unmock_all;
     $ryu_mock->unmock_all;
 };
@@ -581,10 +651,28 @@ subtest "client_verification" => sub {
     $redis_write->connect->get;
     mailbox_clear();
 
+    my $redis_r_write = $services->redis_replicated_write();
+    my $keys          = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+
+    for my $key (@$keys) {
+        $redis_r_write->del($key)->get;
+    }
+
+    my $lock_key = 'BOM::Event::Actions::Client_LOCK_ONFIDO::APPLICANT_CHECK_LOCK::' . $test_client->binary_user_id;
+    $redis_r_write->set($lock_key, 1, 'NX', 'EX', 30);
+    $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+    is scalar @$keys, 1, 'Lock acquired';
+
     lives_ok {
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check->{href},
             })->get;
+
+        my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+        is scalar @$keys, 0, 'Lock released';
+
+        $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
+        is scalar @$keys, 0, 'Pending lock released';
     }
     "client verification no exception";
     my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
@@ -1861,7 +1949,7 @@ subtest 'onfido resubmission' => sub {
 
     # For this one user's onfido daily counter will be too high, so the checkup won't be made
     my $counter_after3 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
-    $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, $ENV{ONFIDO_REQUEST_PER_USER_LIMIT} // 3)->get;
+    $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, 4)->get;
     $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     $action_handler->($call_args)->get;
     my $counter_after4 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
@@ -3213,5 +3301,4 @@ subtest 'crypto_withdrawal_rejected_email' => sub {
     is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
-
 done_testing();
