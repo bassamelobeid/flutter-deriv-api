@@ -23,7 +23,7 @@ rpc_request {
         country_code               => 'id',
         source                     => '1',
         logging                    => {},
-        token                      => $_->client ? $_->client->token : '',
+        token                      => $_->client->token,
         args                       => {
             cashier_payments => 1,
             provider         => 'crypto',
