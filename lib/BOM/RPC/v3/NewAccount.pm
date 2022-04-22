@@ -276,7 +276,6 @@ rpc "verify_email",
                 loginid    => $client->loginid,
                 properties => {
                     verification_url => $data->{template_args}->{verification_url} // '',
-                    live_chat_url    => $data->{template_args}->{live_chat_url}    // '',
                     first_name       => $client->first_name,
                     code             => $data->{template_args}->{code} // '',
                     email            => $email,
