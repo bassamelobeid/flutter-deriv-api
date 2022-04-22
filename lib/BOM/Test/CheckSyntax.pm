@@ -96,9 +96,8 @@ sub check_syntax {
 
         diag("syntax check on $file:");
         critic_ok($file);
-        syntax_ok($file) if $file =~ /[.]pl\z/;
-        vars_ok($file);
-        if $file =~ /[.]pm\z/;
+        syntax_ok($file)                            if $file =~ /[.]pl\z/;
+        vars_ok($file)                              if $file =~ /[.]pm\z/;
         BOM::Test::CheckJsonMaybeXS::file_ok($file) if $file =~ /[.]pm\z/;
     }
 }
