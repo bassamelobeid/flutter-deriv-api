@@ -238,12 +238,16 @@ rpc "buy",
 
     # this will be passed to proposal_open_contract at websocket level
     # if subscription flag is turned on
-    my $channel          = join '::', ('CONTRACT_PRICE', $landing_company, $transaction_details->{account_id}, $trx->contract_id);
+    my $channel     = join '::', ('CONTRACT_PRICE', $landing_company, $transaction_details->{account_id}, $trx->contract_id);
+    my $pricing_ttl = BOM::Transaction::Utility::get_pricing_ttl($contract->shortcode());
+
     my $pricer_args_keys = [
         BOM::Transaction::Utility::build_poc_pricer_args({
                 landing_company => $landing_company,
                 contract_id     => $trx->contract_id,
-                account_id      => $transaction_details->{account_id}})];
+                account_id      => $transaction_details->{account_id},
+                pricing_ttl     => $pricing_ttl
+            })];
 
     # This is to combate delayed response in proposal open contract when client subscribes for all proposal open contracts before executing buy requests.
     # We push keys here directly to the pricer jobs.
