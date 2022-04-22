@@ -327,7 +327,7 @@ sub startup {
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 ($app_id) ? (source => $app_id) : (),
                 brand       => $binary_brand->name,
-                source_type => $binary_brand->is_app_whitelisted($app_id) ? 'official' : 'unofficial',
+                source_type => $binary_brand->get_app($app_id)->is_whitelisted ? 'official' : 'unofficial',
             );
         });
 
