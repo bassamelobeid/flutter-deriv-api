@@ -58,7 +58,7 @@ sub redis_push {
 
 my $block_app = sub {
     my $app_id = request()->param('app_id');
-    if (request()->brand->is_app_whitelisted($app_id) || !($app_id =~ m/^[0-9]+$/)) {
+    if (request()->brand->get_app($app_id)->is_whitelisted || !($app_id =~ m/^[0-9]+$/)) {
         show_form_result("App ID $app_id can not be blocked.", "notify notify--warning");
     } else {
         my $oauth      = BOM::Database::Model::OAuth->new;
