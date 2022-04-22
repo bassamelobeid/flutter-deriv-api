@@ -12,6 +12,8 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
+use BOM::User::Onfido;
+use BOM::Config::Redis;
 use await;
 
 ## do not send email
@@ -95,7 +97,6 @@ subtest 'POI Attempts' => sub {
         'expected result for empty history';
 
     # TODO: Add more test cases when IDV is implemented
-
 };
 
 subtest 'Proof of ownership' => sub {
@@ -190,7 +191,42 @@ subtest 'Proof of ownership' => sub {
         },
         'expected poo result for already uploaded poo';
     cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [], 'expected needs verification for uploaded poo';
+};
 
+subtest 'Onfido status with pending flag' => sub {
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'onfido+pending+flag@binary.com',
+        client_password => 'abc123',
+        residence       => 'co',
+    });
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'co',
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $client->save;
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    $user->add_client($client);
+    $client->binary_user_id($user->id);
+
+    my $pending_key = +BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $user->id;
+    my $redis       = BOM::Config::Redis::redis_events();
+    $redis->set($pending_key, 1);
+
+    my $res = $t->await::get_account_status({get_account_status => 1});
+    test_schema('get_account_status', $res);
+    is $res->{get_account_status}->{authentication}->{identity}->{services}->{onfido}->{status}, 'pending', 'expected status with pending flag';
+
+    $redis->del($pending_key);
+    $res = $t->await::get_account_status({get_account_status => 1});
+    test_schema('get_account_status', $res);
+    is $res->{get_account_status}->{authentication}->{identity}->{services}->{onfido}->{status}, 'none', 'expected status without pending flag';
 };
 
 sub create_vr_account {
