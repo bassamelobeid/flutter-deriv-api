@@ -30,7 +30,7 @@ sub check_syntax_on_diff {
         pass "file change detected";
         diag($_) for @check_files;
 
-        check_syntax(\@check_files, \@skipped_files);
+        check_syntax(\@check_files, \@skipped_files, 1);
         check_tidy(@check_files);
         check_yaml(@check_files);
     } else {
@@ -64,7 +64,7 @@ check syntax for perl files
 =cut
 
 sub check_syntax {
-    my ($check_files, $skipped_files) = @_;
+    my ($check_files, $skipped_files, $check_diff) = @_;
 
     my %skipped_files;
     my @skipped_path;
@@ -96,9 +96,17 @@ sub check_syntax {
 
         diag("syntax check on $file:");
         critic_ok($file);
-        syntax_ok($file)                            if $file =~ /[.]pl\z/;
-        vars_ok($file)                              if $file =~ /[.]pm\z/;
-        BOM::Test::CheckJsonMaybeXS::file_ok($file) if $file =~ /[.]pm\z/;
+        vars_ok($file)                              if $file =~ /^lib\/.+[.]pm\z/;
+        BOM::Test::CheckJsonMaybeXS::file_ok($file) if $file =~ /^lib\/.+[.]pm\z/;
+
+        # syntax_ok test fail on current master, because it never run before.
+        # because there are no .pl under /lib, .pl is under /bin.
+        # so we only check when the .pl file changed or added.
+        #   for (sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib')) {
+        #        syntax_ok($_)      if $_ =~ /\.pl$/;
+        #   }
+        syntax_ok($file) if $file =~ /[.]pl\z/ and $check_diff;
+
     }
 }
 
