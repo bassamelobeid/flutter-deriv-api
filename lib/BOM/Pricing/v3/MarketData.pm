@@ -22,7 +22,7 @@ use List::MoreUtils qw(uniq);
 
 use Brands;
 use BOM::User::Client;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Product::Offerings::DisplayHelper;
@@ -180,7 +180,7 @@ sub asset_index {
     $landing_company_name //= 'virtual';
 
     my $app_id        = $params->{valid_source} // $params->{source};
-    my $app_offerings = Brands->new(app_id => $app_id)->offerings_for_app();
+    my $app_offerings = request()->brand->get_app($app_id)->offerings();
 
     return generate_asset_index($country_code, $landing_company_name, $language, $app_offerings);
 }
