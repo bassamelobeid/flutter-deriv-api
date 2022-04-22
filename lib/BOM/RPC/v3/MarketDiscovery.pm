@@ -47,7 +47,7 @@ rpc active_symbols => sub {
     # It seems a little weird here where you're passing in $app_id to contruct an object and again passing $app_id
     # to a method to get offerings. This is because the most commonly used object creation method is by name instead of app_id
     # and I want the method to work both ways.
-    my $app_offerings = Brands->new(app_id => $app_id)->offerings_for_app();
+    my $app_offerings = request()->brand->get_app($app_id)->offerings();
 
     my $active_symbols = [];    # API response expects an array eventhough it is empty
     return $active_symbols unless $product_type;
