@@ -9,6 +9,9 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token;
 use Test::BOM::RPC::QueueClient;
 
+use BOM::Config::Redis;
+use BOM::User::Onfido;
+
 my $user = BOM::User->create(
     email    => 'rpc_notif@binary.com',
     password => 'abcdabcd'
@@ -69,10 +72,16 @@ subtest 'Notification - authenntication events' => sub {
             event    => 'poi_documents_uploaded'
         }};
 
+    my $redis       = BOM::Config::Redis::redis_events();
+    my $pending_key = +BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $test_client->binary_user_id;
+    my $key         = +BOM::User::Onfido::ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id;
+    $redis->del($key);
+
     my @emit_args;
     my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
     $mock_emitter->redefine(emit => sub { @emit_args = @_; });
 
+    $redis->del($pending_key);
     is_deeply $c->tcall($method, $params), {status => 1}, 'Expected response';
     is scalar @emit_args, 2, 'Correct number of event args';
     is $emit_args[0], 'ready_for_authentication', 'Emitted event name is correct';
@@ -80,10 +89,12 @@ subtest 'Notification - authenntication events' => sub {
         {
         loginid      => $test_client->loginid,
         applicant_id => undef,
-        documents    => undef,
         },
         'Enitted event args are correct';
+    is $redis->get($key), 1, 'Counter increased';
+    ok $redis->get($pending_key), 'Pending acquired';
 
+    $redis->del($pending_key);
     $params->{args}->{args}->{documents} = [10, 11];
     undef @emit_args;
     is_deeply $c->tcall($method, $params), {status => 1}, 'Expected response';
@@ -96,6 +107,16 @@ subtest 'Notification - authenntication events' => sub {
         documents    => [10, 11],
         },
         'Enitted event args are correct';
+    is $redis->get($key), 2, 'Counter increased';
+    ok $redis->get($pending_key), 'Pending acquired';
+
+    subtest 'pending flag' => sub {
+        undef @emit_args;
+        $params->{args}->{args}->{documents} = [100, 101];
+        is_deeply $c->tcall($method, $params), {status => 1}, 'Expected response';
+        is $redis->get($key), 2, 'Counter not increased';
+        is scalar @emit_args, 0, 'No event emitted';
+    };
 
 };
 

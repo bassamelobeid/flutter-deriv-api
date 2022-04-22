@@ -48,7 +48,7 @@ rpc notification_event => sub {
     # hash that contains what process should be triggered
     my $action_map = {
         authentication => {
-            poi_documents_uploaded => [\&BOM::RPC::v3::Notification::_trigger_poi_check,],
+            poi_documents_uploaded => [\&BOM::User::Onfido::ready_for_authentication,],
         },
     };
 
@@ -74,26 +74,5 @@ rpc notification_event => sub {
     return {status => $all_success_flag};
 
 };
-
-=head2 _trigger_poi_check($client)
-
-_trigger_poi_check triggers the event to request for Onfido check on the client
-
-=cut
-
-sub _trigger_poi_check {
-    my ($client, $args) = @_;
-
-    my $user_applicant = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
-
-    BOM::Platform::Event::Emitter::emit(
-        ready_for_authentication => {
-            loginid      => $client->loginid,
-            applicant_id => $user_applicant->{id},
-            documents    => $args->{documents},
-        });
-
-    return 1;
-}
 
 1;
