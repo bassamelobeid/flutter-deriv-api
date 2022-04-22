@@ -82,7 +82,7 @@ sub check_syntax {
     foreach my $file (@$check_files) {
         chomp $file;
 
-        next unless (-f $file and $file =~ /^lib\/.+[.]p[lm]\z/);
+        next unless (-f $file and $file =~ /[.]p[lm]\z/);
         next if exists $skipped_files{$file};
 
         my $skip_match;
@@ -95,10 +95,11 @@ sub check_syntax {
         next if $skip_match;
 
         diag("syntax check on $file:");
-        syntax_ok($file);
-        vars_ok($file);
         critic_ok($file);
-        BOM::Test::CheckJsonMaybeXS::file_ok($file);
+        syntax_ok($file) if $file =~ /[.]pl\z/;
+        vars_ok($file);
+        if $file =~ /[.]pm\z/;
+        BOM::Test::CheckJsonMaybeXS::file_ok($file) if $file =~ /[.]pm\z/;
     }
 }
 
