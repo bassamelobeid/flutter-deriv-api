@@ -436,6 +436,35 @@ subtest 'get_poi_status' => sub {
 
             $mocked_client->unmock_all;
         };
+
+        subtest 'First Onfido upload and no check was made just yet' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return undef });
+            $is_onfido_supported_country = 1;
+
+            $uploaded = {
+                proof_of_identity => {
+                    is_expired => 0,
+                    documents  => {},
+                }};
+
+            $onfido_document_status = undef;
+            $onfido_sub_result      = undef;
+
+            is $test_client_cr->get_poi_status, 'none', 'Client POI should be none';
+            my $pending_request = 1;
+
+            $mocked_onfido->mock(
+                'pending_request',
+                sub {
+                    return $pending_request;
+                });
+
+            is $test_client_cr->get_poi_status, 'pending', 'Client POI status is pending';
+            $mocked_client->unmock_all;
+            $pending_request = 0;
+            is $test_client_cr->get_poi_status, 'none', 'Client POI should be none when the flag is liquidated';
+        };
     };
 
     subtest 'Regulated account' => sub {
@@ -1269,11 +1298,12 @@ subtest 'First Deposit' => sub {
 subtest 'Sign up' => sub {
     subtest 'MX' => sub {
         my $test_client = BOM::User::Client->rnew(
-            broker_code => 'MX',
-            residence   => 'gb',
-            citizen     => 'gb',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'MLT235711'
+            broker_code     => 'MX',
+            residence       => 'gb',
+            citizen         => 'gb',
+            email           => 'nowthatsan@email.com',
+            loginid         => 'MX235711',
+            client_password => BOM::User::Password::hashpw('asdf12345'),
         );
         my $user = BOM::User->create(
             email          => 'nowthatsan3@email.com',
@@ -1281,16 +1311,14 @@ subtest 'Sign up' => sub {
             email_verified => 1,
         );
         $user->add_client($test_client);
+        $test_client->binary_user_id($user->id);
 
-        my $mocked_client = Test::MockModule->new(ref($test_client));
-        $mocked_client->mock('user', sub { bless {}, 'BOM::User' });
         $uploaded = {};
         ok !$test_client->status->age_verification, 'Not age verified';
         ok !$test_client->fully_authenticated, 'Not fully authenticated';
         ok $test_client->is_verification_required(check_authentication_status => 1), 'Unauthenticated MX account needs verification';
         ok $test_client->needs_poi_verification, 'POI is needed for unauthenticated MX account without deposits';
         ok $test_client->needs_poa_verification, 'POA is needed for unauthenticated MX account without deposits';
-        $mocked_client->unmock_all;
     };
 };
 
@@ -1343,6 +1371,7 @@ subtest 'Experian validated accounts' => sub {
         email_verified => 1,
     );
     $user->add_client($test_client);
+    $test_client->binary_user_id($user->id);
 
     subtest 'POI' => sub {
         my $mocked_client = Test::MockModule->new(ref($test_client));
@@ -1715,6 +1744,7 @@ subtest 'Onfido status' => sub {
         email_verified => 1,
     );
     $user->add_client($test_client);
+    $test_client->binary_user_id($user->id);
 
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
     my $mocked_config = Test::MockModule->new('BOM::Config::Onfido');
@@ -1836,14 +1866,47 @@ subtest 'Onfido status' => sub {
             onfido_check_result    => 'consider',
             onfido_sub_result      => 'clear',
             status                 => 'rejected'
-        }];
+        },
+        {
+            is_supported_country   => 1,
+            pending_flag           => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'consider',
+            onfido_sub_result      => 'clear',
+            status                 => 'pending'
+        },
+        {
+            is_supported_country   => 1,
+            pending_flag           => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'clear',
+            docs                   => {
+                is_expired => 0,
+            },
+            status => 'pending'
+        },
+    ];
 
     for my $test ($tests->@*) {
+        my $pending_key = +BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $user->id;
+        my $redis       = BOM::Config::Redis::redis_events();
+        my $pending_flag;
         my $status;
 
-        ($is_supported_country, $onfido_document_status, $onfido_check_result, $onfido_sub_result, $docs, $status, $is_document_expiry_check_required)
-            = @{$test}
-            {qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status is_document_expiry_check_required/};
+        (
+            $is_supported_country, $onfido_document_status, $onfido_check_result, $onfido_sub_result, $docs, $status,
+            $is_document_expiry_check_required,
+            $pending_flag
+            )
+            = @{$test}{
+            qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status is_document_expiry_check_required pending_flag/
+            };
+
+        if ($pending_flag) {
+            $redis->set($pending_key, 1);
+        } else {
+            $redis->del($pending_key);
+        }
 
         is $test_client->get_onfido_status, $status, "Got the expected status=$status";
     }
@@ -2084,7 +2147,7 @@ subtest 'POI attempts' => sub {
                     status       => 'pending',
                     country_code => $client->place_of_birth // $client->residence,
                     id           => 'onfido-test-1',
-                    timestamp    => $now->epoch,
+                    timestamp    => re('\d+'),
                 }
             ],
         },
@@ -2104,7 +2167,7 @@ subtest 'POI attempts' => sub {
                     status       => 'rejected',
                     country_code => $client->place_of_birth // $client->residence,
                     id           => 'onfido-test-2',
-                    timestamp    => $now->epoch,
+                    timestamp    => re('\d+'),
                 }
             ],
         },
@@ -2124,7 +2187,7 @@ subtest 'POI attempts' => sub {
                     status       => 'verified',
                     country_code => $client->place_of_birth // $client->residence,
                     id           => 'onfido-test-3',
-                    timestamp    => $now->epoch,
+                    timestamp    => re('\d+'),
                 }
             ],
         },
@@ -2143,7 +2206,7 @@ subtest 'POI attempts' => sub {
                     status       => 'pending',
                     country_code => 'ng',
                     id           => '1',
-                    timestamp    => $now->epoch,
+                    timestamp    => re('\d+'),
                 }
             ],
         },
@@ -2162,7 +2225,7 @@ subtest 'POI attempts' => sub {
                     status       => 'rejected',
                     country_code => 'za',
                     id           => '2',
-                    timestamp    => $now->epoch,
+                    timestamp    => re('\d+'),
                 }
             ],
         },
@@ -2181,7 +2244,7 @@ subtest 'POI attempts' => sub {
                     status       => 'rejected',
                     country_code => 'gh',
                     id           => '3',
-                    timestamp    => $now->epoch,
+                    timestamp    => re('\d+'),
                 }
             ],
         },
@@ -2200,7 +2263,7 @@ subtest 'POI attempts' => sub {
                     status       => 'verified',
                     country_code => 'ke',
                     id           => '4',
-                    timestamp    => $now->epoch,
+                    timestamp    => re('\d+'),
                 }
             ],
         },
@@ -2226,14 +2289,14 @@ subtest 'POI attempts' => sub {
                     status       => 'pending',
                     country_code => $client->place_of_birth // $client->residence,
                     id           => 'onfido-test-1',
-                    timestamp    => $after->epoch,
+                    timestamp    => re('\d+'),
                 },
                 {
                     service      => 'idv',
                     status       => 'verified',
                     country_code => 'ke',
                     id           => '4',
-                    timestamp    => $before->epoch,
+                    timestamp    => re('\d+'),
                 }
             ],
         },
@@ -2258,14 +2321,14 @@ subtest 'POI attempts' => sub {
                     status       => 'verified',
                     country_code => 'ke',
                     id           => '4',
-                    timestamp    => $after->epoch,
+                    timestamp    => re('\d+'),
                 },
                 {
                     service      => 'onfido',
                     status       => 'pending',
                     country_code => $client->place_of_birth // $client->residence,
                     id           => 'onfido-test-1',
-                    timestamp    => $before->epoch,
+                    timestamp    => re('\d+'),
                 }
             ],
         },

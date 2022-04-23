@@ -1609,8 +1609,8 @@ sub update_edd_status {
 
     return $self->dbic->run(
         fixup => sub {
-            $_->do('SELECT users.update_edd_status(?, ?, ?, ?, ?, ?)',
-                undef, $self->{id}, @args{qw/status start_date last_review_date average_earnings comment/});
+            $_->do('SELECT users.update_edd_status(?, ?, ?, ?, ?, ?, ?)',
+                undef, $self->{id}, @args{qw/status start_date last_review_date average_earnings comment reason/});
         });
 }
 

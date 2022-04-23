@@ -56,6 +56,11 @@ subtest p2p_payment_methods => sub {
                         display_name => 'Account number',
                         type         => 'text',
                         required     => 1,
+                    },
+                    instructions => {
+                        display_name => 'Instructions',
+                        type         => 'memo',
+                        required     => 0,
                     }}
             },
         },
@@ -81,6 +86,11 @@ subtest p2p_payment_methods => sub {
                 fields       => {
                     note => {
                         display_name => 'Note',
+                        type         => 'memo',
+                        required     => 0,
+                    },
+                    instructions => {
+                        display_name => 'Instructions',
                         type         => 'memo',
                         required     => 0,
                     }}

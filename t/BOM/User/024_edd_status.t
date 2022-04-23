@@ -16,7 +16,8 @@ subtest 'update user edd status' => sub {
         start_date       => '2021-05-30',
         last_review_date => undef,
         average_earnings => {},
-        comment          => 'hello'
+        comment          => 'hello',
+        reason           => 'social_responsibility'
         ),
         'can update user edd status';
 
@@ -28,7 +29,8 @@ subtest 'update user edd status' => sub {
             status           => 'pending',
             average_earnings => undef,
             start_date       => '2021-05-30 00:00:00',
-            comment          => 'hello'
+            comment          => 'hello',
+            reason           => 'social_responsibility'
         },
         'edd status updated'
     );
@@ -41,7 +43,8 @@ subtest 'update user edd status' => sub {
             currency => 'USD',
             amount   => 1000
         },
-        comment => 'hello'
+        comment => 'hello',
+        reason  => 'card_deposit_monitoring'
         ),
         'can update user edd status';
 
@@ -53,7 +56,8 @@ subtest 'update user edd status' => sub {
             status           => 'in_progress',
             average_earnings => '{"amount": 1000, "currency": "USD"}',
             start_date       => '2021-05-30 00:00:00',
-            comment          => 'hello'
+            comment          => 'hello',
+            reason           => 'card_deposit_monitoring'
         },
         'edd status updated'
     );

@@ -62,6 +62,7 @@ use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::User::IdentityVerification;
 use BOM::Platform::Utility qw(error_map);
+use BOM::User::Onfido;
 
 use Carp qw(croak confess);
 
@@ -4990,6 +4991,13 @@ sub p2p_payment_methods {
             }
         } keys $method_def->{fields}->%*;
 
+        # this field is needed for all methods
+        $fields{instructions} = {
+            display_name => localize('Instructions'),
+            type         => 'memo',
+            required     => 0,
+        };
+
         $result->{$method} = {
             display_name => localize($method_def->{display_name}),
             type         => $method_def->{type},
@@ -5208,7 +5216,7 @@ sub _p2p_advertiser_payment_method_create {
             next unless $existing_pm->{method} eq $method;
 
             # Compare settings of PM
-            next unless all { lc $item->{$_} eq lc $existing_pm->{fields}{$_} } keys $existing_pm->{fields}->%*;
+            next unless all { lc $item->{$_} eq lc($existing_pm->{fields}{$_} // '') } grep { $_ !~ /^(method|is_enabled)$/ } keys %$item;
 
             die +{
                 error_code     => 'DuplicatePaymentMethod',
@@ -6502,6 +6510,9 @@ Returns,
 sub get_poi_status {
     my ($self) = @_;
 
+    # The Onfido lock must ensure `pending` status until our event stream queue is processed
+    return 'pending' if BOM::User::Onfido::pending_request($self->binary_user_id);
+
     my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
 
     my ($latest) = $self->latest_poi_by();
@@ -6598,7 +6609,10 @@ Returns,
 sub get_onfido_status {
     my ($self) = @_;
     my $country_code = uc($self->place_of_birth || $self->residence // '');
+
     return 'none' unless BOM::Config::Onfido::is_country_supported($country_code);
+
+    return 'pending' if BOM::User::Onfido::pending_request($self->binary_user_id);
 
     my $onfido = BOM::User::Onfido::get_latest_check($self);
     my ($check, $report_document_status, $report_document_sub_result) =
