@@ -42,24 +42,13 @@ How long (in seconds) to wait for an event on each iteration.
 
 use constant DEFAULT_QUEUE_WAIT_TIME => 10;
 
-=head2 MAXIMUM_PROCESSING_TIME
-
-How long (in seconds) to allow for the process
-call to wait for L<BOM::Event::QueueHandler::process_job>.
-Note: MAXIMUM_JOB_TIME can be greater than this if the job is
-Async.
-
-=cut
-
-use constant MAXIMUM_PROCESSING_TIME => 30;
-
 =head2 MAXIMUM_JOB_TIME
 
-How long (in seconds) to allow for a single async call is allowed.
+How long (in seconds) to allow for a single job call is allowed.
 
 =cut
 
-use constant MAXIMUM_JOB_TIME => 10;
+use constant MAXIMUM_JOB_TIME => 30;
 
 =head2 configure
 
@@ -74,13 +63,8 @@ Takes the following named parameters:
 
 =item * C<queue_wait_time> - how long (in seconds) to wait for events
 
-=item * C<maximum_job_time> - total amount of a time a single async job is
-allowed to take. Note that this is separate from L</MAXIMUM_PROCESSING_TIME>.
-
-=item * C<maximum_processing_time> - maximum amount of time a job can be
-initiated for.  It basically means how long can it spend  in the actual end
-event subroutine. So if the end subroutine is async  this can be shorter
-than the L<MAXIMUM_JOB_TIME>.
+=item * C<maximum_job_time> - total amount of a time a single job is
+allowed to take.
 
 =item * C<streams> - Stream names to monitor
 
@@ -94,7 +78,7 @@ than the L<MAXIMUM_JOB_TIME>.
 
 sub configure {
     my ($self, %args) = @_;
-    for (qw(queue queue_wait_time maximum_job_time maximum_processing_time streams category worker_index)) {
+    for (qw(queue queue_wait_time maximum_job_time streams category worker_index)) {
         $self->{$_} = delete $args{$_} if exists $args{$_};
     }
     return $self->next::method(%args);
@@ -280,14 +264,6 @@ We should not cache this value as it could be changed in run-time
 =cut
 
 sub maximum_job_time { return (shift->{maximum_job_time} // MAXIMUM_JOB_TIME) }
-
-=head2 maximum_processing_time
-
-Returns the maximum timeout configured for the processing of a job.
-
-=cut
-
-sub maximum_processing_time { return (shift->{maximum_processing_time} // MAXIMUM_PROCESSING_TIME) }
 
 =head2 should_shutdown
 
@@ -494,16 +470,10 @@ Returns a L<FUTURE>
 
 =cut
 
-sub process_job {
+async sub process_job {
     my ($self, $stream, $event_data) = @_;
-    try {
-        # A local setting for this is fine here: we are limiting the initial call,
-        # not the time spent in any subsequent context switches due to async/await.
-        local $SIG{ALRM} = sub {
-            die "Max_Processing_Time Reached\n";
-        };
-        alarm($self->maximum_processing_time);
 
+    try {
         # A handler might be a sync sub or an async sub
         # Future->wrap will return immediately if it has a scalar
         # Due to Perl stack refcounting issues, we occasionally see exceptions here with
@@ -514,37 +484,24 @@ sub process_job {
         # to dissect fully.
         my $res = $self->job_processor->process($event_data, $stream);
         my $f   = Future->wrap($res);
-        return Future->wait_any($f, $self->loop->timeout_future(after => $self->maximum_job_time))->on_fail(
-            sub {
-                my $cleaned_data = $self->clean_data_for_logging($event_data);
-                if (defined $f->failure and $f->failure =~ /Max_Processing_Time/) {
-
-                    # This can happen when a job being run is not
-                    # asynchronous, it takes longer than MAX_PROCESSING_TIME and the sub has the async label.
-                    $log->errorf(
-                        "Processing of request from stream %s took longer than 'MAXIMUM_PROCESSING_TIME' %s seconds - data was %s",
-                        $stream, $self->maximum_processing_time,
-                        $cleaned_data
-                    );
-                } elsif (defined $f->failure) {
-                    $log->errorf("Event from stream %s failed - data was %s, error was %s", $stream, $cleaned_data, $f->failure);
-                } else {
-                    $log->errorf("Event from stream %s did not complete within %s sec - data was %s",
-                        $stream, $self->maximum_job_time, $cleaned_data);
-                }
-                stats_inc(lc "$stream.processed.failure");
-            })->else_done();
+        return await Future->wait_any($f, $self->loop->timeout_future(after => $self->maximum_job_time));
     } catch ($e) {
-        $log->errorf('Failed to process data (%s) - %s', $self->clean_data_for_logging($event_data), $e);
+        my $cleaned_data = $self->clean_data_for_logging($event_data);
+        if ($e =~ /^Watchdog timeout|^Timeout/i) {
+            # This can happen when a job being long and timeout happened
+            $log->errorf("Processing of request from stream %s took longer than 'MAXIMUM_JOB_TIME' %s seconds - data was %s",
+                $stream, $self->maximum_job_time, $cleaned_data);
+        } else {
+            $log->errorf('Failed to process data (%s) - %s', $cleaned_data, $e);
+        }
+        stats_inc(lc "$stream.processed.failure");
         exception_logged();
         # This one's less clear cut than other failure cases:
         # we *do* expect occasional failures from processing,
         # and normally that does not imply everything is broken.
         # However, continuous failures should perhaps be treated
         # more seriously?
-        return Future->done;
-    } finally {
-        alarm(0);
+        return undef;
     }
 }
 

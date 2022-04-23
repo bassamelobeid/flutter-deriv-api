@@ -5,7 +5,6 @@ use warnings;
 
 use Pod::Usage;
 use Getopt::Long;
-use BOM::Event::Listener;
 use Log::Any::Adapter;
 use Path::Tiny;
 
@@ -65,6 +64,13 @@ unless ($category && (!$queue != !$streams)) {
     pod2usage(1);
     die "Invalid Options Entered";
 }
+
+# Enable watchdog
+$ENV{IO_ASYNC_WATCHDOG} = 1;
+# Set watchdog interval
+$ENV{IO_ASYNC_WATCHDOG_INTERVAL} = $maximum_job_time // 30;
+# Listner consumes the above env variables to set watchdog timeout
+require BOM::Event::Listener;
 
 $json_log_file ||= '/var/log/deriv/' . path($0)->basename . '.json.log';
 Log::Any::Adapter->import(

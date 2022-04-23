@@ -116,6 +116,10 @@ use constant ONFIDO_RESUBMISSION_COUNTER_TTL        => 2592000;                 
 # Redis key for SR keys expire
 use constant SR_30_DAYS_EXP => 86400 * 30;
 
+# Applicant check lock
+use constant APPLICANT_CHECK_LOCK_PREFIX => 'ONFIDO::APPLICANT_CHECK_LOCK::';
+use constant APPLICANT_CHECK_LOCK_TTL    => 30;
+
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
     passport                                     => 'passport',
@@ -515,7 +519,7 @@ async sub ready_for_authentication {
         $request_count      //= 0;
         $user_request_count //= 0;
 
-        if (!$args->{is_pending} && $user_request_count >= ONFIDO_REQUEST_PER_USER_LIMIT) {
+        if (!$args->{is_pending} && $user_request_count > ONFIDO_REQUEST_PER_USER_LIMIT) {
             $log->debugf('No check performed as client %s exceeded daily limit of %d requests.', $loginid, ONFIDO_REQUEST_PER_USER_LIMIT);
             my $time_to_live = await $redis_events_write->ttl(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id);
 
@@ -618,6 +622,12 @@ async sub client_verification {
                 or die 'Could not instantiate client for login ID ' . $loginid;
             $log->debugf('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
 
+            # release the applicant check lock
+            # release the get_account_status pending lock
+            my $redis_events_write = _redis_events_write();
+            await $redis_events_write->del(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id);
+            BOM::Platform::Redis::release_lock(APPLICANT_CHECK_LOCK_PREFIX . $client->binary_user_id);
+
             # check if the applicant already exist for this check. If not, store the applicant record in db
             # this is to cater the case where CS/Compliance perform manual check in Onfido dashboard
             my $new_applicant_flag = await check_or_store_onfido_applicant($loginid, $applicant_id);
@@ -630,8 +640,6 @@ async sub client_verification {
             }
 
             await _store_applicant_documents($applicant_id, $client, \@all_report);
-
-            my $redis_events_write = _redis_events_write();
 
             my $pending_key = ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id;
 
@@ -2024,6 +2032,12 @@ async sub _upload_documents {
 async sub _check_applicant {
     my ($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client, $documents) = @_;
 
+    # Open a mutex lock to avoid race conditions.
+    # It's very unlikely that we would want to perform more than one check on the same binary_user_id
+    # for whatever reason within a short timeframe. Note this lock will be released when
+    # we get a webhook push from Onfido letting us know the check is ready or expire timeout.
+    return unless BOM::Platform::Redis::acquire_lock(APPLICANT_CHECK_LOCK_PREFIX . $client->binary_user_id, APPLICANT_CHECK_LOCK_TTL);
+
     try {
         my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
 
@@ -2101,8 +2115,7 @@ async sub _check_applicant {
         exception_logged();
     }
 
-    await Future->needs_all(_update_onfido_check_count($redis_events_write),
-        _update_onfido_user_check_count($client, $loginid, $redis_events_write),);
+    await Future->needs_all(_update_onfido_check_count($redis_events_write));
 }
 
 async sub _update_onfido_check_count {
@@ -2116,26 +2129,6 @@ async sub _update_onfido_check_count {
             return $redis_response;
         } catch ($e) {
             $log->debugf("Failed in adding expire to ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY: %s", $e);
-            exception_logged();
-        }
-    }
-
-    return 1;
-}
-
-async sub _update_onfido_user_check_count {
-    my ($client, $loginid, $redis_events_write) = @_;
-    my $user_count = await $redis_events_write->incr(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id);
-    $log->debugf("Onfido check request triggered for %s with current request count=%d on %s",
-        $loginid, $user_count, Date::Utility->new->datetime_ddmmmyy_hhmmss);
-
-    if ($user_count == 1) {
-        try {
-            my $redis_response =
-                await $redis_events_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, ONFIDO_REQUEST_PER_USER_TIMEOUT);
-            return $redis_response;
-        } catch ($e) {
-            $log->debugf("Failed in adding expire to ONFIDO_REQUEST_PER_USER_PREFIX: %s", $e);
             exception_logged();
         }
     }

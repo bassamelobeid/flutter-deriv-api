@@ -104,7 +104,7 @@ my $final_date;
 if ($end_date) {
     $log->infof("join_date = %s", $end_date);
     try {
-        $end_date = Date::Utility->new($end_date);
+        $final_date = Date::Utility->new($end_date);
     } catch ($e) {
         die "ERROR: end date not valid \n";
     }
@@ -167,7 +167,7 @@ sub affiliate_sync_initiated {
 
     while (my @chunk = splice(@login_ids, 0, BOM::Event::Actions::MyAffiliate::AFFILIATE_CHUNK_SIZE)) {
         my $args = {
-            login_ids    => [@chunk],
+            loginids     => [@chunk],
             affiliate_id => $affiliate_id,
             email        => $email,
             action       => 'sync'
@@ -179,7 +179,7 @@ sub affiliate_sync_initiated {
 
 sub _get_clean_loginids {
     my @date_pairs    = get_pairs($date);
-    my $my_affiliate  = BOM::MyAffiliates->new();
+    my $my_affiliate  = BOM::MyAffiliates->new(timeout => 180);
     my @all_customers = ();
     for my $pairs (@date_pairs) {
         my $customers = $my_affiliate->get_customers($pairs);

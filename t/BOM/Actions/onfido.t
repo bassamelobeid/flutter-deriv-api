@@ -23,6 +23,7 @@ use Locale::Country qw/code2country/;
 use Ryu::Source;
 use HTTP::Response;
 use WebService::Async::Onfido::Applicant;
+use BOM::Platform::Redis;
 use Future;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -542,6 +543,7 @@ subtest 'Applicant Check' => sub {
         });
 
     $log->clear();
+    release_onfido_lock();
     BOM::Event::Actions::Client::_check_applicant(undef, BOM::Event::Actions::Client::_onfido(),
         'mocked-applicant-id', undef, $test_client->loginid, undef, undef, $test_client)->get;
     $log->contains_ok(qr/applicant mocked-applicant-id does not have live photos/, 'expected log found');
@@ -563,6 +565,7 @@ subtest 'Applicant Check' => sub {
         });
 
     $log->clear();
+    release_onfido_lock();
     BOM::Event::Actions::Client::_check_applicant(undef, BOM::Event::Actions::Client::_onfido(),
         'mocked-applicant-id', 'CR', $test_client->loginid, 'BRA', undef, $test_client)->get;
     $log->contains_ok(qr/An error occurred while processing Onfido verification for/, 'expected log found');
@@ -1030,5 +1033,13 @@ subtest '_get_onfido_applicant' => sub {
 };
 
 $s3_mocker->unmock_all;
+
+sub release_onfido_lock {
+    my $keys = $redis_replicated->keys('*APPLICANT_CHECK_LOCK*');
+
+    for my $key (@$keys) {
+        $redis_replicated->del($key);
+    }
+}
 
 done_testing();

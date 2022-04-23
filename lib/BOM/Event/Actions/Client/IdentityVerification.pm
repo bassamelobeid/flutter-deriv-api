@@ -146,7 +146,7 @@ async sub verify_identity {
         my $transformed_resp = BOM::Platform::Client::IdentityVerification::transform_response($provider, $provider_response_body) // $response_hash;
 
         # Some of providers like Zaig and IDV microservice might return an array of messages.
-        my @messages = ref $message eq 'ARRAY' ? $message->@* : ($message);
+        my @messages = ref $message eq 'ARRAY' ? $message->@* : ($message // ());
 
         my $refuted_document_handler = sub {
             my ($errors) = @_;
