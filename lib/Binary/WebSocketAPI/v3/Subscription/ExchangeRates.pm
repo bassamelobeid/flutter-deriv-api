@@ -103,13 +103,11 @@ sub handle_message {
     my ($self, $payload) = @_;
 
     my $type = 'exchange_rates';
-    my $c = $self->c;
+    my $c    = $self->c;
 
     my $results = {
-        msg_type => $type,
-        $type    => {
-            $payload->%*,
-        },
+        msg_type     => $type,
+        $type        => {$payload->%*,},
         subscription => {id => $self->uuid},
     };
 

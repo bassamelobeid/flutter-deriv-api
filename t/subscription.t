@@ -213,6 +213,101 @@ subtest 'Subscription class general test' => sub {
     done_testing;
 };
 
+subtest "race condition handling test" => sub {
+    my $c        = mock_c();
+    my $worker01 = new_ok(
+        Example1 => [
+            c    => $c,
+            args => {},
+        ]);
+    @Example1::MESSAGES = ();
+    @Example1::ERRORS   = ();
+    my @subscribe_callback_called;
+    @subscription_requests = ();
+
+    $worker01->subscribe(sub { push @subscribe_callback_called, 'worker01' });
+    weaken(my $status01 = $worker01->status);
+    is(@subscription_requests,     1, 'have a single Redis subscription request for worker01');
+    is(@subscribe_callback_called, 0, 'no any subscribe cb called');
+    {
+        my $req = shift @subscription_requests
+            or die 'no subscription request queued';
+        $req->[1]->();
+        ok($worker01->status->is_done, 'subscription is now done for worker01')
+            or die 'subscription invalid';
+        is($subscribe_callback_called[0], 'worker01', 'the subscription callback is called');
+        @subscribe_callback_called = ();
+    }
+
+    isa_ok(my $on_message = $callbacks{message}, 'CODE')
+        or die 'no on_message callback';
+    is(@Example1::MESSAGES, 0, 'start with no messages');
+    is(@Example1::ERRORS,   0, 'no errors yet');
+    lives_ok {
+        $on_message->(undef, encode_json_utf8({data => 'msg1'}) => $worker01->channel);
+    }
+    'can trigger message with no failures';
+    is(@Example1::MESSAGES, 1, 'now have one message received');
+    is(@Example1::ERRORS,   0, 'no errors either');
+    @Example1::MESSAGES = ();
+
+    undef $worker01;
+    ok($status01, 'status future is still there, because there is a ref in the redis unsubscribe callback');
+
+    my $worker02 = new_ok(
+        Example1 => [
+            c    => $c,
+            args => {},
+        ]);
+    $worker02->subscribe(sub { push @subscribe_callback_called, 'worker02' });
+    weaken(my $status02 = $worker02->status);
+    is(@subscription_requests, 1, 'have a single Redis subscription request for worker02');
+
+    $log->clear;
+    lives_ok {
+        $on_message->(undef, encode_json_utf8({data => 'here'}) => 'example1');
+    }
+    'can trigger message with no failures';
+    $log->empty_ok('No error');
+
+    $worker02->unsubscribe();
+    ok($status02, 'status future is still there, because there is a ref in the redis unsubscribe callback');
+
+    is(@unsubscription_requests, 2, 'There are 2 unsubscribe requests');
+    my $unsubscribe = shift @unsubscription_requests;
+    is($unsubscribe->[0][0], 'example1', 'unsubscribe worker01');
+    $unsubscribe->[1]->();
+    undef $unsubscribe;
+    ok(!$status01, 'Now status is destroyed');
+
+    {
+        my $req = shift @subscription_requests
+            or die 'no subscription request queued';
+        $req->[1]->();
+        is($subscribe_callback_called[0], 'worker02', 'the subscription callback is called');
+        @subscribe_callback_called = ();
+    }
+    # Race condition can happen here
+    $log->clear;
+    lives_ok {
+        $on_message->(undef, encode_json_utf8({data => 'here'}) => 'example1');
+    }
+    'can trigger message with no failures';
+    $log->empty_ok('No error');
+    is(@Example1::MESSAGES, 1, 'now have one message received');
+    is(@Example1::ERRORS,   0, 'no errors either');
+    @Example1::MESSAGES = ();
+
+    is(@unsubscription_requests, 1, 'There is an unsubscribe request');
+    $unsubscribe = shift @unsubscription_requests;
+    is($unsubscribe->[0][0], 'example1', 'unsubscribe worker02');
+    $unsubscribe->[1]->();
+    undef $unsubscribe;
+    ok(!$status02, 'Now status is destroyed');
+
+    done_testing;
+};
+
 subtest "multi subscription to one channel" => sub {
     my $c = mock_c();
     @Example1::MESSAGES = ();
