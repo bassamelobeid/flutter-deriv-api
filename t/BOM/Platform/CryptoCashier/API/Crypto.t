@@ -81,14 +81,18 @@ subtest "_request" => sub {
         $mock_user_agent->mock(
             get => sub {
                 my $http_response = HTTP::Response->new($http_status);
-                my $request       = HTTP::Request->new(GET => $uri);
+                $http_response->content(handle_error_code_content($http_status))
+                    if $http_status != 200;
+                my $request = HTTP::Request->new(GET => $uri);
                 $http_response->request($request);
 
                 return $http_response;
             },
             post => sub {
                 my $http_response = HTTP::Response->new($http_status);
-                my $request       = HTTP::Request->new(POST => $uri);
+                $http_response->content(handle_error_code_content($http_status))
+                    if $http_status != 200;
+                my $request = HTTP::Request->new(POST => $uri);
                 $http_response->request($request);
 
                 return $http_response;
@@ -96,6 +100,13 @@ subtest "_request" => sub {
 
         my $crypto_service = BOM::Platform::CryptoCashier::API->new({});
         my $result         = $crypto_service->_request($method => $uri);
+
+        if ($result->{error}) {
+            is $result->{error}->{message}, handle_error_code_content($http_status), "Correct content message for request error";
+            is $result->{error}->{message_to_client}, 'An error occurred while processing your request. Please try again later.',
+                "Correct errror mesage for client on request error";
+            is $result->{error}->{code}, 'CryptoConnectionError', "Correct error code for request error";
+        }
 
         $mock_crypto_api->unmock_all();
         $mock_dd->unmock_all();
@@ -117,6 +128,16 @@ sub setup_dd_mock {
             is $metric_name, BOM::Platform::CryptoCashier::API::DD_API_CALL_RESULT_KEY, 'Correct DD metric name';
             is_deeply $tags, ["status:$status"], 'Correct tags for the DD metric';
         });
+}
+
+sub handle_error_code_content {
+    my $error_code = shift;
+
+    if ($error_code == 500) {
+        return "Internal Server Error";
+    } elsif ($error_code == 400) {
+        return "Bad request";
+    }
 }
 
 done_testing;

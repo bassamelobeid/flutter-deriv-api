@@ -180,7 +180,7 @@ sub process_send_email {
 
         $vars->{website_url} = $brand->default_url;
         my $app_id = $request->source;
-        if ($app_id && $brand->is_app_whitelisted($app_id)) {
+        if ($app_id && $brand->get_app($app_id)->is_whitelisted) {
             my $app = BOM::Database::Model::OAuth->new->get_app_by_id($app_id);
             $vars->{website_url} = $app->{redirect_uri} if $app;
         }

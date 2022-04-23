@@ -333,22 +333,23 @@ sub _request {
     my ($self, $method, $uri, $content) = @_;
 
     $method = lc $method;
-    my $result = $self->ua->$method($uri, $content // ());
-    my $status = $result->is_success ? "success" : "fail";
+    my $result           = $self->ua->$method($uri, $content // ());
+    my $status           = $result->is_success ? "success" : "fail";
+    my $response_content = $result->{_content} // '';
 
     DataDog::DogStatsd::Helper::stats_inc(DD_API_CALL_RESULT_KEY, {tags => ["status:$status"]});
 
     unless ($result->is_success) {
-        $log->warn("Crypto API call faced network issue while requesting $method $uri");
+        $log->warnf("Crypto API call faced network issue while requesting method: %s uri: %s error: %s", $method, $uri, $response_content);
 
         return create_error({
             code              => 'CryptoConnectionError',
             message_to_client => localize('An error occurred while processing your request. Please try again later.'),
-            message           => $result->{_content},
+            message           => $response_content,
         });
     }
 
-    my $response = decode_json_utf8($result->{_content});
+    my $response = decode_json_utf8($response_content);
     if ($response->{error}) {
         $response->{error}{message_to_client} = delete $response->{error}{message};
     }
