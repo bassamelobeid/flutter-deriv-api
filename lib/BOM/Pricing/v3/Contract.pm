@@ -572,7 +572,7 @@ sub contracts_for {
     return BOM::Pricing::v3::Utility::create_error($invalid_currency) if $invalid_currency;
 
     my $app_id        = $params->{valid_source} // $params->{source};
-    my $app_offerings = Brands->new(app_id => $app_id)->offerings_for_app();
+    my $app_offerings = request()->brand->get_app($app_id)->offerings();
 
     my $finder = BOM::Product::ContractFinder->new;
 
