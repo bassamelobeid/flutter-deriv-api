@@ -14,7 +14,12 @@ cashier_validation:
     - type: conditional
       on: is_internal
       rules_per_value:
-        0: financial_asssessment.completed
+        0:
+          - type: conditional
+            on: action
+            rules_per_value:
+              withdrawal:
+                - financial_asssessment.completed
     - client.documents_not_expired
     - type: conditional
       on: landing_company
