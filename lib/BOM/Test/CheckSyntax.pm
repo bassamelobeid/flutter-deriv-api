@@ -13,7 +13,7 @@ use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticr
 use BOM::Test::CheckJsonMaybeXS;
 use Test::Builder qw();
 use YAML::XS qw(LoadFile);
-our @EXPORT_OK = qw(check_syntax_on_diff check_bom_dependency);
+our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 
 =head1 check_syntax_on_diff
 
@@ -24,44 +24,131 @@ It only check updated files compare to master branch.
 
 sub check_syntax_on_diff {
     my @skipped_files = @_;
-    my %skipped_files = map { $_ => 1 } @skipped_files;
-    if (@skipped_files) {
-        diag("skipped_files:");
-        diag($_) for keys %skipped_files;
-    }
+    my @check_files   = `git diff --name-only master`;
 
-    my @changed_files = `git diff --name-only master`;
-
-    if (@changed_files) {
+    if (scalar @check_files) {
         pass "file change detected";
-        diag($_) for @changed_files;
+        diag($_) for @check_files;
+
+        check_syntax(\@check_files, \@skipped_files, 1);
+        check_tidy(@check_files);
+        check_yaml(@check_files);
     } else {
-        pass "no file change detected, skip tests";
+        pass "no change detected, skip tests";
+    }
+}
+
+=head1 check_syntax_all
+
+run all the common syntax related check on perl and ymal files.
+the test should be same check_syntax_on_diff, but apply to all files.
+
+=cut
+
+sub check_syntax_all {
+    my @skipped_files = @_;
+    my @check_files   = `find lib bin -type f`;
+    check_syntax(\@check_files, \@skipped_files);
+
+    @check_files = `find lib bin t -type f`;
+    check_tidy(@check_files);
+
+    @check_files = `find . -name "*.yml" -o -name "*.yaml"`;
+    check_yaml(@check_files);
+}
+
+=head1 check_syntax
+
+check syntax for perl files
+
+=cut
+
+sub check_syntax {
+    my ($check_files, $skipped_files, $check_diff) = @_;
+
+    my %skipped_files;
+    my @skipped_path;
+    foreach (@$skipped_files) {
+        if (-f $_) {
+            # if it is file ,then exact match
+            $skipped_files{$_} = 1;
+        } else {
+            # otherwise do match
+            push(@skipped_path, $_);
+        }
     }
 
-    my $test = Test::Builder->new;
-    foreach my $file (@changed_files) {
+    diag("start checking syntax...");
+    foreach my $file (@$check_files) {
         chomp $file;
-        next unless -f $file;
 
-        # those check only apply on perl files under lib
-        if ($file =~ /^lib\/.+[.]p[lm]\z/ and not $skipped_files{$file}) {
-            note("syntax check on $file:");
-            syntax_ok($file);
-            vars_ok($file);
+        next unless (-f $file and $file =~ /[.]p[lm]\z/);
+        next if exists $skipped_files{$file};
+
+        my $skip_match;
+        foreach (@skipped_path) {
+            if ($file =~ /$_/) {
+                $skip_match = 1;
+                last;
+            }
+        }
+        next if $skip_match;
+
+        diag("syntax check on $file:");
+        if ($file =~ /^lib\/.+[.]pm\z/) {
             critic_ok($file);
+            vars_ok($file);
             BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 
+        # syntax_ok test fail on current master, because it never run before.
+        # because there are no .pl under /lib, .pl is under /bin.
+        # so we only check when the .pl file changed or added.
+        # old code as below
+        #   for (sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib')) {
+        #        syntax_ok($_)      if $_ =~ /\.pl$/;
+        #   }
+        syntax_ok($file) if $file =~ /[.]pl\z/ and $check_diff;
+
+    }
+}
+
+=head1 check_tidy
+
+Check is_file_tidy for perl files
+
+=cut
+
+sub check_tidy {
+    my (@check_files) = @_;
+    my $test = Test::Builder->new;
+
+    diag("start checking tidy...");
+    foreach my $file (@check_files) {
+        chomp $file;
+        next unless -f $file;
         # tidy check for all perl files
         if ($file =~ /[.](?:pl|pm|t)\z/) {
             $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
         }
+    }
+}
 
+=head1 check_yaml
+
+check yaml files format
+
+=cut
+
+sub check_yaml {
+    my (@check_files) = @_;
+    diag("start checking yaml...");
+    foreach my $file (@check_files) {
+        chomp $file;
+        next unless -f $file;
         if ($file =~ /\.(yml|yaml)$/ and not $file =~ /invalid\.yml$/) {
             lives_ok { LoadFile($file) } "$file YAML valid";
         }
-
     }
 }
 
