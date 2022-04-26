@@ -23,6 +23,10 @@
                     "description": "Client ID of new real money account",
                     "type": "string"
                 },
+                "currency": {
+                    "description": "Currency of an account",
+                    "type": "string"
+                },
                 "landing_company": {
                     "description": "Landing company full name",
                     "type": "string"

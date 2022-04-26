@@ -10,6 +10,6 @@
     "first_name": "Peter",
     "last_name": "Pan",
     "non_pep_declaration": 1,
-    "payment_method": "Skrill",
+    "payment_method": "fiat",
     "phone": "+6123456789"
 }
