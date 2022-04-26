@@ -16,7 +16,7 @@ use HTTP::Headers;
 use Log::Any qw($log);
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
-use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc stats_event);
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use JSON::MaybeXS;
 use Text::Trim;
@@ -65,6 +65,9 @@ use constant {
     HANDOFF_TOKEN_TTL             => 5 * 60,
     TRANSFER_OVERRIDE_ERROR_CODES => [qw(FinancialAssessmentRequired)],
 };
+
+use constant PA_REDIS_KEY   => "PA::JUSTIFICATION::";
+use constant SECONDS_IN_DAY => 86400;
 
 my $payment_limits = BOM::Config::payment_limits;
 
@@ -971,17 +974,20 @@ rpc paymentagent_withdraw => sub {
     try {
         $rule_engine->verify_action(
             'paymentagent_withdraw',
-            loginid_client => $client_loginid,
-            loginid_pa     => $paymentagent_loginid,
-            amount         => $amount,
-            currency       => $currency,
-            dry_run        => $args->{dry_run} // 0,
-
+            loginid_client             => $client_loginid,
+            loginid_pa                 => $paymentagent_loginid,
+            amount                     => $amount,
+            currency                   => $currency,
+            dry_run                    => $args->{dry_run} // 0,
             source_bypass_verification => $source_bypass_verification,
         );
     } catch ($e) {
         return _process_pa_withdraw_error($e, $currency, $client_loginid, $paymentagent_loginid);
     }
+
+    ## TODO : move payment_agent_withdrawal_automation rules into rule-engine
+    my $error_code = payment_agent_withdrawal_automation($client, $source_bypass_verification);
+    return $error_code if $error_code;
 
     # lets make sure that client is withdrawing to payment agent having allowed countries.
     my $pa_target_countries = $paymentagent->get_countries;
@@ -1084,6 +1090,48 @@ rpc paymentagent_withdraw => sub {
         paymentagent_name => $paymentagent->payment_agent_name,
         transaction_id    => $response->{transaction_id}};
 };
+
+=head2 payment_agent_withdrawal_automation
+
+    handles the rpc code and delegates the request to the old and new code.
+    also handles redis key and email
+    TO DO : we need to separate the logic that can be separated to bom-rules later
+
+=cut
+
+sub payment_agent_withdrawal_automation {
+    my ($client, $source_bypass_verification) = @_;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    my $error_code = 'PaymentAgentWithdrawError';
+
+    my $error_sub = sub {
+        my ($message_to_client, $override_code) = @_;
+        return BOM::RPC::v3::Utility::create_error({
+            code              => $override_code // $error_code,
+            message_to_client => $message_to_client,
+        });
+    };
+
+    if ($app_config->system->suspend->payment_agent_withdrawal_automation) {
+
+        return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
+            unless ($source_bypass_verification
+            or BOM::Transaction::Validation->new({clients => [{client => $client}]})->allow_paymentagent_withdrawal_legacy($client));
+
+    } else {
+        my $loginid                       = $client->loginid;
+        my $start                         = Time::HiRes::time;
+        my $allow_paymentagent_withdrawal = BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client);
+
+        my $elapsed = Time::HiRes::time - $start;
+        stats_timing('bom_rpc.allow_payment_agent_withdraw.timing', $elapsed, {tags => ['client_loginid:' . $loginid]});
+
+        return $error_sub->(localize(BOM::RPC::v3::Utility::error_map()->{$allow_paymentagent_withdrawal}), $allow_paymentagent_withdrawal)
+            unless $source_bypass_verification or not $allow_paymentagent_withdrawal;
+    }
+    return;
+}
 
 sub _process_pa_withdraw_error {
     my ($rules_error, $currency, $client_loginid, $pa_loginid) = @_;

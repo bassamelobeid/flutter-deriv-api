@@ -28,12 +28,26 @@ subtest 'tnc acceptance' => sub {
     for my $type (qw(paymentagent_withdraw payment_withdraw withdraw)) {
         isnt BOM::RPC::v3::Utility::cashier_validation($client, $type)->{error}{code}, 'ASK_TNC_APPROVAL', 'TNC approval not required for ' . $type;
     }
+
+    subtest 'check payment_agent_withdrawal suspended' => sub {
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(1);
+        for my $type (qw(paymentagent_withdraw)) {
+            isnt BOM::RPC::v3::Utility::cashier_validation($client, $type)->{error}{code}, 'ASK_TNC_APPROVAL',
+                'TNC approval not required for ' . $type;
+        }
+    }
 };
 
 subtest 'no account currency' => sub {
     # this is also ensures we are calling BOM::Platform::Client::CashierValidation::validate
     for my $type (qw(deposit paymentagent_withdraw payment_withdraw withdraw)) {
         is BOM::RPC::v3::Utility::cashier_validation($client, $type)->{error}{code}, 'ASK_CURRENCY', 'Account currency required for ' . $type;
+    }
+    subtest 'check payment_agent_withdrawal suspended' => sub {
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(1);
+        for my $type (qw(paymentagent_withdraw)) {
+            is BOM::RPC::v3::Utility::cashier_validation($client, $type)->{error}{code}, 'ASK_CURRENCY', 'Account currency required for ' . $type;
+        }
     }
 };
 
@@ -86,6 +100,35 @@ subtest 'disable cashier' => sub {
             'cashier suspended has error for ' . $type
         );
     }
+};
+
+subtest 'payment agent specific rules' => sub {
+    $client->account('USD');
+    $client->save();
+    $app_config->system->suspend->payment_agents(1);
+
+    for my $type (qw(deposit withdraw payment_withdraw)) {
+        is BOM::RPC::v3::Utility::cashier_validation($client, $type), undef, 'payment agents disabled has no error for ' . $type;
+    }
+
+    $app_config->system->suspend->payment_agents(0);
+
+    my $mock_lc = Test::MockModule->new('LandingCompany');
+    $mock_lc->mock(allows_payment_agents => sub { 0 });
+
+    for my $type (qw(deposit withdraw payment_withdraw)) {
+        is BOM::RPC::v3::Utility::cashier_validation($client, $type), undef, 'landing company prohibits payment agents has no error for ' . $type;
+    }
+
+    $mock_lc->unmock_all;
+
+    my $mock_trans_validation = Test::MockModule->new('BOM::Transaction::Validation');
+    $mock_trans_validation->mock(allow_paymentagent_withdrawal_legacy => sub { 0 });
+
+    for my $type (qw(deposit withdraw payment_withdraw)) {
+        is BOM::RPC::v3::Utility::cashier_validation($client, $type), undef, 'pa withdraw not allowed has no error for ' . $type;
+    }
+
 };
 
 done_testing();

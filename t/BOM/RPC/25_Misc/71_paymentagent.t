@@ -18,6 +18,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 use BOM::Test::Helper::Client qw( top_up );
 use ExchangeRates::CurrencyConverter qw( convert_currency );
 use Format::Util::Numbers qw( formatnumber );
+use BOM::Config::Runtime;
 
 my ($Alice, $Alice_id, $Bob, $Bob_id, $test, $test_currency, $test_amount, $amount_boost, $dry_run, $testargs, $res);
 
@@ -836,6 +837,8 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         broker_code => $broker,
     });
     $Alice_id = $Alice->loginid;
+
+    $Alice->status->set('pa_withdrawal_explicitly_allowed', 'sarah', 'enable withdrawal through payment agent');
 
     $user->add_client($Alice);
 

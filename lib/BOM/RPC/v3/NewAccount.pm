@@ -30,6 +30,7 @@ use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Cashier;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
@@ -219,6 +220,9 @@ rpc "verify_email",
 
     } elsif ($client and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
         my $validation_error = BOM::RPC::v3::Utility::cashier_validation($client, $type);
+        return $validation_error if $validation_error;
+
+        $validation_error = BOM::RPC::v3::Cashier::payment_agent_withdrawal_automation($client);
         return $validation_error if $validation_error;
 
         if (_is_impersonating_client($params->{token})) {
