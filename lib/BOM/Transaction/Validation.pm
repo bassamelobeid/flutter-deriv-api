@@ -10,7 +10,7 @@ use YAML::XS qw(LoadFile);
 use JSON::MaybeXS;
 
 use Format::Util::Numbers qw/financialrounding/;
-use ExchangeRates::CurrencyConverter qw(convert_currency);
+use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -19,6 +19,7 @@ use BOM::Database::ClientDB;
 use Date::Utility;
 use BOM::Config;
 use BOM::Transaction::Utility;
+use BOM::Config::Runtime;
 
 has clients => (
     is       => 'ro',
@@ -883,20 +884,16 @@ sub check_client_professional {
     return undef;
 }
 
-=head2 allow_paymentagent_withdrawal
-
+=head2 allow_paymentagent_withdrawal_legacy
 to check client can withdrawal through payment agent. return 1 (allow) or 0 (denied)
-
 - if explicit flag is set it means cs/payments team have verified to allow
 payment agent withdrawal
-
 - if flag is not set then we fallback to check for doughflow or bank wire
 payments, if those does not exists then allow
-
 =cut
 
-sub allow_paymentagent_withdrawal {
-    my ($self, $client) = (shift, shift);
+sub allow_paymentagent_withdrawal_legacy {
+    my ($self, $client) = @_;
 
     return 1 if $client->status->pa_withdrawal_explicitly_allowed;
 
@@ -911,6 +908,92 @@ sub allow_paymentagent_withdrawal {
     @all_loginids;
 
     return 0;
+}
+
+=head2 allow_paymentagent_withdrawal
+
+- if explicit flag is set it means cs/payments team have verified to allow
+payment agent withdrawal
+
+- if flag is not set then we follow the process below to grant permission or not
+
+- returns an error if PAwithdrawal is NOT allowed
+- returns undef if it is allowed
+
+=cut
+
+sub allow_paymentagent_withdrawal {
+    my ($self, $client) = @_;
+
+    return "PaymentAgentVirtualClient" if $client->is_virtual;
+    return undef                       if $client->status->pa_withdrawal_explicitly_allowed;
+
+    # we need to get trades and deposits from last 6 months in the format of 'yyyymmmddd 00:00:00'
+    # This has been configed in reversible_deposits_lookback = 180 days, converted to months = 6 months
+    my $lookback_months = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback / 30;
+    my $from_time       = Date::Utility->new()->_minus_months($lookback_months)->truncate_to_day()->datetime_yyyymmdd_hhmmss;
+
+    my $summary_of_deposits = $client->get_summary_of_deposits($from_time);
+
+    return "PaymentAgentZeroDeposits" unless $client->account->balance;
+
+    my $sum_deposits = $summary_of_deposits->{sum_deposits};
+
+    return undef unless $sum_deposits;    # according to the query if this is undef it means client has only pa deposits
+
+    $sum_deposits = $client->currency ne "USD" ? in_usd($sum_deposits, $client->currency) : $sum_deposits;
+
+    my $sum_of_trades = $client->get_sum_trades($from_time);
+    $sum_of_trades = $client->currency ne "USD" ? in_usd($sum_of_trades, $client->currency) : $sum_of_trades;
+
+    my $traded_half_of_deposits = $sum_of_trades >= $sum_deposits / 2;
+
+    if ($summary_of_deposits->{has_visa}) {
+
+        return $self->apply_reversible_deposit_conditions($client);
+
+    } elsif ($summary_of_deposits->{has_mastercard}) {
+
+        return "PaymentAgentUseOtherMethod";
+
+    } elsif ($summary_of_deposits->{has_reversible}) {    #the same as VISA (most restricted condition)
+
+        return $self->apply_reversible_deposit_conditions($client);
+
+    } elsif ($summary_of_deposits->{has_zingpay}) {
+
+        return "PaymentAgentWithdrawSameMethod";
+
+    } elsif ($summary_of_deposits->{has_irreversible_withdrawal_true} || $summary_of_deposits->{has_p2p}) {
+
+        return "PaymentAgentWithdrawSameMethod" unless $sum_deposits < 200;
+        return "PaymentAgentJustification"      unless $traded_half_of_deposits;
+
+    } elsif ($summary_of_deposits->{has_irreversible_withdrawal_false}) {
+
+        return "PaymentAgentJustification" unless $traded_half_of_deposits;
+
+    } elsif ($summary_of_deposits->{has_crypto}) {
+
+        return "PaymentAgentWithdrawSameMethod" unless $traded_half_of_deposits;
+
+    }
+
+    return undef;
+}
+
+=head2 apply_reversible_deposit_conditions
+
+applies the conditions related to visa/reversible deposits
+
+=cut
+
+sub apply_reversible_deposit_conditions {
+    my ($self, $client) = @_;
+    my $cft_blocked_countries = BOM::Config::cft_blocked_countries();
+
+    return "PaymentAgentUseOtherMethod" if $cft_blocked_countries->{lc $client->residence};
+    return "PaymentAgentWithdrawSameMethod";    ## if !$cft_NOT_blocked_countries
 }
 
 =head2 synthetic_age_verification_check
