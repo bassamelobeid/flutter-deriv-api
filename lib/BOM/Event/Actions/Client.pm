@@ -1509,7 +1509,7 @@ sub account_reactivated {
     return BOM::Event::Services::Track::account_reactivated({%$args, client => $client});
 }
 
-=head2 _email_client_account_verification
+=head2 authenticated_with_scans
 
 Emails client when they have been successfully verified by Back Office
 Raunak 19/06/2019 Please note that we decided to do it as frontend notification but since that is not yet drafted and designed so we will implement email notification
@@ -1524,48 +1524,17 @@ Returns undef
 
 =cut
 
-sub email_client_account_verification {
+sub authenticated_with_scans {
     my ($args) = @_;
-    my $brand = request->brand;
-
     my $client = BOM::User::Client->new($args);
-
-    my $from_email   = $brand->emails('no-reply');
-    my $website_name = $brand->website_name;
-    #TODO: set brand logo address and url
-
-    my $data_tt = {
-        client       => $client,
-        l            => \&localize,
-        website_name => $website_name,
-        contact_url  => $brand->contact_url,
-    };
-
-    my $email_subject = localize("Your address and identity have been verified successfully");
-    my $tt            = Template->new(ABSOLUTE => 1);
-
-    try {
-        $tt->process(BOM::Event::Actions::Common::TEMPLATE_PREFIX_PATH . 'account_verification.html.tt', $data_tt, \my $html);
-        die "Template error: @{[$tt->error]}" if $tt->error;
-        send_email({
-                from          => $from_email,
-                to            => $client->email,
-                subject       => $email_subject,
-                message       => [$html],
-                template_args => {
-                    name          => $client->first_name,
-                    title         => localize("Your address and identity are verified"),
-                    title_padding => 90,
-                },
-                use_email_template    => 1,
-                email_content_is_html => 1,
-                skip_text2html        => 1,
-            });
-    } catch ($e) {
-        $log->warn($e);
-        exception_logged();
-    }
-    return undef;
+    return BOM::Event::Services::Track::authenticated_with_scans({
+        %$args,
+        live_chat_url => request->brand->live_chat_url,
+        contact_url   => request->brand->contact_url,
+        loginid       => $client->loginid,
+        email         => $client->email,
+        first_name    => $client->first_name,
+    });
 }
 
 async sub _send_CS_email_POA_uploaded {
