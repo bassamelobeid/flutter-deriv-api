@@ -10,6 +10,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
+use BOM::Config::Runtime;
+
 use await;
 
 ## do not send email
@@ -54,31 +56,53 @@ subtest 'new real wallet  account' => sub {
         is($res->{new_account_real}, undef,                   'NO account created');
     };
 
-    subtest 'new wallet account' => sub {
+    subtest 'new wallet account is disabled for all countries at the moment' => sub {
         my $res = $t->await::new_account_wallet({
                 %details,
-                payment_method => 'Skrill',
-                currency       => 'USD'
+                currency       => 'USD',
+                payment_method => 'fiat'
             },
             {timeout => 10});
-        ok($res->{new_account_wallet});
-        test_schema('new_account_wallet', $res);
-        my $loginid = $res->{new_account_wallet}->{client_id};
-        like($loginid, qr/^DW\d+$/, "got DW client - $loginid");
+
+        is_deeply $res->{error},
+            {
+            code    => 'InvalidAccountRegion',
+            message => 'Sorry, account opening is unavailable in your region.'
+            },
+            'Wallet service is suspended.';
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
-    subtest 'Personal details are optional in case real account exists' => sub {
-        my $res = $t->await::new_account_wallet({
-                new_account_wallet => 1,
-                payment_method     => 'Zingpay',
-                currency           => 'USD'
-            },
-            {timeout => 10});
-        ok($res->{new_account_wallet});
-        test_schema('new_account_wallet', $res);
-        my $loginid = $res->{new_account_wallet}->{client_id};
-        like($loginid, qr/^DW\d+$/, "got DW client - $loginid");
-    };
+    SKIP: {
+        skip "Since wallets are not enabled for any country at the moment, it's not possible to test the successful scenario."
+            if BOM::Config::Runtime->instance->app_config->system->suspend->wallets;
+
+        subtest 'new wallet account' => sub {
+            my $res = $t->await::new_account_wallet({
+                    %details,
+                    payment_method => 'Skrill',
+                    currency       => 'USD'
+                },
+                {timeout => 10});
+            ok($res->{new_account_wallet});
+            test_schema('new_account_wallet', $res);
+            my $loginid = $res->{new_account_wallet}->{client_id};
+            like($loginid, qr/^DW\d+$/, "got DW client - $loginid");
+        };
+
+        subtest 'Personal details are optional in case real account exists' => sub {
+            my $res = $t->await::new_account_wallet({
+                    new_account_wallet => 1,
+                    payment_method     => 'Zingpay',
+                    currency           => 'USD'
+                },
+                {timeout => 10});
+            ok($res->{new_account_wallet});
+            test_schema('new_account_wallet', $res);
+            my $loginid = $res->{new_account_wallet}->{client_id};
+            like($loginid, qr/^DW\d+$/, "got DW client - $loginid");
+        };
+    }
 };
 
 sub create_vr_account {

@@ -225,9 +225,9 @@ subtest "get error code (reset_pass)" => sub {
     for (my $i = 0; $i < 4; $i++) {
         $t->send_ok({
                 json => {
-                    reset_password => 1,
+                    reset_password    => 1,
                     verification_code => 'Q1234567',
-                    new_password => '!Qwerty123',
+                    new_password      => '!Qwerty123',
                 }})->message_ok;
     }
     my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));

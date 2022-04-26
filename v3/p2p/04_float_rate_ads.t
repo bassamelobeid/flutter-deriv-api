@@ -47,7 +47,7 @@ $app_config->set({
                 }})});
 
 BOM::Test::Helper::P2P::bypass_sendbird();
-note explain (BOM::Config::Runtime->instance->app_config->payments->p2p->country_advert_config);
+note explain(BOM::Config::Runtime->instance->app_config->payments->p2p->country_advert_config);
 
 my $advertiser       = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'id'});
 my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test', ['payments']);
@@ -61,7 +61,7 @@ $app_config->check_for_update;
 
 $t->await::authorize({authorize => $advertiser_token});
 
-my $p2p_config = $t->await::website_status({website_status => 1 })->{website_status}{p2p_config};
+my $p2p_config = $t->await::website_status({website_status => 1})->{website_status}{p2p_config};
 is($p2p_config->{float_rate_adverts}, 'enabled', 'float rate ads enabled in website_status') or note explain $p2p_config;
 is($p2p_config->{fixed_rate_adverts}, 'enabled', 'fixed rate ads enabled in website_status') or note explain $p2p_config;
 
