@@ -77,15 +77,11 @@
             "description": "To set method which is used to transfer to/from wallet.",
             "type": "string",
             "enum": [
-                "Skrill",
-                "Zingpay",
-                "VISA",
-                "WebMoney",
-                "NETellerPS",
-                "Jeton",
-                "StickPay",
-                "PayTrust",
-                "FasaPay"
+                "fiat",
+                "payment_agent",
+                "pa_client",
+                "p2p",
+                "crypto"
             ]
         },
         "phone": {
