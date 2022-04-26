@@ -2180,7 +2180,7 @@ use constant {
         PP007 => "OrderCreateFailAmount",
         PP008 => "OrderCreateFailAmount",
         PP009 => "InvalidAdvertOwn",
-        PP010 => "OrderCreateFailBalance",
+        PP010 => "OrderCreateFailAmountAdvertiser",
     },
 };
 
@@ -2773,7 +2773,7 @@ sub p2p_order_create {
         $amount_advertiser = -$amount;
         $amount_client     = $amount;
 
-        die +{error_code => 'OrderCreateFailAdvertiser'} if $amount > $advertiser->balance_for_cashier('p2p');
+        die +{error_code => 'OrderCreateFailAmountAdvertiser'} if $amount > $advertiser->balance_for_cashier('p2p');
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'}
             if $payment_info
             or $contact_info
@@ -2809,7 +2809,7 @@ sub p2p_order_create {
         );
     } catch {
         die +{
-            error_code => 'OrderCreateFailAdvertiser',
+            error_code => 'OrderCreateFailAmountAdvertiser',
         };
     }
 
