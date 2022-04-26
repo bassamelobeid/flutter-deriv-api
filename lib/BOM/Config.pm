@@ -119,6 +119,17 @@ sub p2p_payment_methods {
     return $config;
 }
 
+=head2 cft_blocked_countries
+
+CFT blocked countries list
+
+=cut
+
+sub cft_blocked_countries {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/cft_blocked_countries.yml');
+    return $config;
+}
+
 {
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');

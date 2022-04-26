@@ -1145,6 +1145,11 @@ system:
           isa: ArrayRef
           default: []
           global: 1
+        payment_agent_withdrawal_automation:
+          description: "Suspend the payment agent withdrawal automation"
+          isa: Bool
+          default: 1
+          global: 1
         cryptocashier:
           description: "Suspend crypto cashier only"
           isa: Bool
