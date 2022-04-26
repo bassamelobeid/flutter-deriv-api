@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -102,6 +103,8 @@ workflows:
   build-workflow:
     jobs:
     - syntax_diff_unit:
+        context: perl
+    - syntax_unit:
         context: perl
     - core:
         context: perl
