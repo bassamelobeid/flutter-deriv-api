@@ -58,6 +58,25 @@ rule 'residence.is_signup_allowed' => {
     },
 };
 
+rule 'residence.account_type_is_available_for_real_account_opening' => {
+    description => "Checks if the requested account type is enabled in the country of residence configuration.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $residence = $context->residence($args);
+
+        die 'Account type is required' unless $args->{account_type};
+        return 1 if $args->{account_type} eq 'trading';
+
+        my $countries_instance = $context->brand($args)->countries_instance;
+
+        my $wallet_lc_name = $countries_instance->wallet_company_for_country($residence, 'real') // 'none';
+
+        $self->fail('InvalidResidence') if $wallet_lc_name eq 'none';
+
+        return 1;
+    },
+};
+
 rule 'residence.not_restricted' => {
     description => 'Fails if the context residence is restricted; succeeds otherwise',
     code        => sub {

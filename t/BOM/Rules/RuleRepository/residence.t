@@ -115,6 +115,39 @@ subtest 'rule residence.not_restricted' => sub {
     $mock_countries->unmock_all;
 };
 
+subtest 'residence.account_type_is_available_for_real_account_opening' => sub {
+    my $rule_name = 'residence.account_type_is_available_for_real_account_opening';
+
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Either residence or loginid is required/, 'loginid is required';
+    my $args = {residence => 'es'};
+
+    my $is_restricted = my $mock_countries = Test::MockModule->new('Brands::Countries');
+    my $wallet_lc     = 'none';
+    $mock_countries->redefine(
+        wallet_company_for_country => sub {
+            my ($self, $country, $type) = @_;
+            return $wallet_lc;
+        });
+
+    like exception { $rule_engine->apply_rules($rule_name, %$args) }, qr/Account type is required/, 'Account type is missing';
+
+    $args->{account_type} = 'trading';
+    is exception { $rule_engine->apply_rules($rule_name, %$args) }, undef, 'No error for trading account type';
+
+    $args->{account_type} = 'wallet';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+        {
+        error_code => 'InvalidResidence',
+        rule       => $rule_name
+        },
+        'correct error when the account type is disabled';
+
+    $wallet_lc = 'wallet-svg';
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'rule apples if wallet landing company is not empty';
+
+    $mock_countries->unmock_all;
+};
+
 subtest 'rule residence.is_signup_allowed' => sub {
     my $rule_name = 'residence.is_signup_allowed';
 
