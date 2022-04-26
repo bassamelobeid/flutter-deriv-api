@@ -94,14 +94,13 @@ our %ERROR_MAP = do {
         RateTooSmall                      => localize("Ad rate should not be less than [_1]. Please adjust the value."),
 
         # bom-user errors
-        AdvertIsDisabled             => localize("This ad is currently unavailable. Please choose another ad or check back later."),
-        OrderCreateFailAdvertiser    => localize("This ad is currently unavailable. Please choose another ad or check back later."),
-        OrderCreateFailClient        => localize("There was a problem in placing this order. [_1]"),
-        OrderCreateFailClientBalance => localize('The amount of the order exceeds your funds available in Deriv P2P.'),
-        OrderCreateFailBalance       => localize("An order cannot be created for this amount at this time. Please try adjusting the amount."),
-        AdvertiserNameRequired       => localize("Please provide your name."),
-        AdvertiserNameTaken          => localize("This name is already in use. Please provide a different name."),
-        AdvertiserNotApproved        =>
+        AdvertIsDisabled                => localize("This ad is currently unavailable. Please choose another ad or check back later."),
+        OrderCreateFailAmountAdvertiser => localize("An order cannot be created for this amount at this time. Please try adjusting the amount."),
+        OrderCreateFailClient           => localize("There was a problem in placing this order. [_1]"),
+        OrderCreateFailClientBalance    => localize('The amount of the order exceeds your funds available in Deriv P2P.'),
+        AdvertiserNameRequired          => localize("Please provide your name."),
+        AdvertiserNameTaken             => localize("This name is already in use. Please provide a different name."),
+        AdvertiserNotApproved           =>
             localize("Before you can post an ad, we need to verify your identity. Please complete your identity verification at Deriv.com."),
         AdvertiserNotFound      => localize("We can't find the advertiser. Please review the details and try again."),
         AdvertiserNotListed     => localize("This advertiser is currently inactive. Please check again later or choose another advertiser."),
@@ -213,7 +212,7 @@ our %DB_ERRORS = (
     BI238 => 'ClientDailyOrderLimitExceeded',
     BI239 => 'OpenOrdersDeleteAdvert',
     BI242 => 'OrderRefundInvalid',
-    BI243 => 'OrderCreateFailBalance',
+    BI243 => 'OrderCreateFailAmountAdvertiser',
     BI244 => 'ActivePaymentMethodRequired',
     BI245 => 'PaymentMethodRemoveActiveOrdersDB',
 );
