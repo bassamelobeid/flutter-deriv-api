@@ -15,21 +15,10 @@ use Digest::SHA1 qw(sha1_hex);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Event::Emitter;
 use BOM::Config;
-
+use Log::Any qw($log);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use BOM::Config::Redis;
 use Time::HiRes qw(gettimeofday tv_interval);
-
-use Log::Any '$dxapi_log',
-    category  => 'dxapi_log',
-    log_level => 'info';
-use Log::Any::Adapter;
-
-try {
-    Log::Any::Adapter->set({category => 'dxapi_log'}, 'File', '/var/lib/binary/devexperts_api_errors.log');
-} catch {
-    Log::Any::Adapter->set({category => 'dxapi_log'}, 'Null');
-}
 
 =head1 NAME 
 
@@ -472,6 +461,10 @@ sub deposit {
             remark       => $remark,
             txn_details  => \%txn_details,
         );
+
+        $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
+        $self->client->user->daily_transfer_incr(PLATFORM_ID);
+
     } catch {
         die +{error_code => 'DXDepositFailed'};
     }
@@ -489,9 +482,6 @@ sub deposit {
     } catch {
         die +{error_code => 'DXDepositIncomplete'};
     }
-
-    $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
-    $self->client->user->daily_transfer_incr(PLATFORM_ID);
 
     # get updated balance
     my $update;
@@ -553,10 +543,9 @@ sub withdraw {
         currency          => $args{currency},
     );
 
-    my $resp = $self->call_api(
+    my %call_args = (
         server        => $server,
         method        => 'account_withdrawal',
-        quiet         => 1,
         account_code  => $account->{attributes}{account_code},
         clearing_code => $account->{attributes}{clearing_code},
         id            => $self->unique_id,                        # must be unique for withdrawals on this login
@@ -564,13 +553,15 @@ sub withdraw {
         currency      => $account->{currency},
     );
 
+    my $resp = $self->call_api(%call_args, quiet => 1);
+
     die +{error_code => 'DXInsufficientBalance'}
         if $resp->{content}{error_code}
         and $resp->{content}{error_code} eq '30005'
         and $resp->{status} eq '422';
 
     unless ($resp->{success}) {
-        $self->handle_api_error($resp, 'DXWithdrawalFailed', $server, 'account_withdrawal');
+        $self->handle_api_error($resp, 'DXWithdrawalFailed', %call_args);
     }
 
     my %txn_details = (
@@ -592,12 +583,13 @@ sub withdraw {
             remark       => $remark,
             txn_details  => \%txn_details,
         );
+
+        $self->insert_payment_details($txn->payment_id, $args{from_account}, $args{amount} * -1);
+        $self->client->user->daily_transfer_incr(PLATFORM_ID);
+
     } catch {
         die +{error_code => 'DXWithdrawalIncomplete'};
     }
-
-    $self->insert_payment_details($txn->payment_id, $args{from_account}, -$args{amount});
-    $self->client->user->daily_transfer_incr(PLATFORM_ID);
 
     # get updated balance
     my $update;
@@ -790,8 +782,6 @@ sub call_api {
 
     my $quiet   = delete $args{quiet};
     my $payload = encode_json_utf8(\%args);
-
-    $dxapi_log->context->{request} = {map { $_ => $_ eq 'password' ? '<hidden>' : $args{$_} } keys %args};
     my $resp;
 
     try {
@@ -810,9 +800,7 @@ sub call_api {
         die unless $resp->{success} or $quiet;    # we expect some calls to fail, eg. client_get
         return $resp;
     } catch ($e) {
-        $self->handle_api_error($resp, undef, @args{qw(server method)});
-    } finally {
-        delete $dxapi_log->context->{request};
+        $self->handle_api_error($resp, undef, %args);
     }
 }
 
@@ -823,10 +811,12 @@ Called when an unexpcted Devexperts API error occurs. Dies with generic error co
 =cut
 
 sub handle_api_error {
-    my ($self, $resp, $error_code, $server, $method) = @_;
+    my ($self, $resp, $error_code, %args) = @_;
 
-    stats_inc('devexperts.rpc_service.api_call_fail', {tags => ["server:$server", "method:$method"]});
-    $dxapi_log->info($resp->{content} // sprintf('No content, HTTP code %s, reason %s', $resp->{status} // 'unknown', $resp->{reason} // 'unknown'));
+    $args{password} = '<hidden>'                            if $args{password};
+    $resp           = [$resp->@{qw/content reason status/}] if ref $resp;
+    stats_inc('devexperts.rpc_service.api_call_fail', {tags => ['server:' . $args{server}, 'method:' . $args{method}]});
+    $log->warnf('devexperts call failed for %s: %s, call args: %s', $self->client->loginid, $resp, \%args);
     die +{error_code => $error_code // 'DXGeneral'};
 }
 
@@ -851,20 +841,21 @@ sub dxclient_get {
 
     my $login = $self->dxtrade_login;
 
-    my $resp = $self->call_api(
+    my %args = (
         server => $server,
         method => 'client_get',
-        quiet  => 1,
         login  => $login,
         domain => DX_DOMAIN,
     );
+
+    my $resp = $self->call_api(%args, quiet => 1);
 
     return $resp->{content} if $resp->{success};
 
     # expected response for not found
     return undef if ($resp->{status} eq '404' and ref $resp->{content} eq 'HASH' and ($resp->{content}{error_code} // '') eq '30002');
 
-    $self->handle_api_error($resp, undef, $server, 'client_get');
+    $self->handle_api_error($resp, undef, %args);
 }
 
 =head2 dxtrade_login

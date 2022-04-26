@@ -758,7 +758,7 @@ subtest 'Buyer tries to place a "buy" order with an amount that exceeds the adve
         )
     };
 
-    is $err->{error_code}, 'OrderCreateFailAdvertiser', 'Could not create order, got error code OrderCreateFailAdvertiser';
+    is $err->{error_code}, 'OrderCreateFailAmountAdvertiser', 'Could not create order, got error code OrderCreateFailAmountAdvertiser';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -921,7 +921,7 @@ subtest 'payment validation' => sub {
     };
     cmp_deeply(
         $err,
-        {error_code => 'OrderCreateFailAdvertiser'},
+        {error_code => 'OrderCreateFailAmountAdvertiser'},
         'Advertiser validate_payment failed error has no details - fails with a rule-engine object'
     );
     $mock_client->unmock_all;

@@ -2180,7 +2180,7 @@ use constant {
         PP007 => "OrderCreateFailAmount",
         PP008 => "OrderCreateFailAmount",
         PP009 => "InvalidAdvertOwn",
-        PP010 => "OrderCreateFailBalance",
+        PP010 => "OrderCreateFailAmountAdvertiser",
     },
 };
 
@@ -2773,7 +2773,7 @@ sub p2p_order_create {
         $amount_advertiser = -$amount;
         $amount_client     = $amount;
 
-        die +{error_code => 'OrderCreateFailAdvertiser'} if $amount > $advertiser->balance_for_cashier('p2p');
+        die +{error_code => 'OrderCreateFailAmountAdvertiser'} if $amount > $advertiser->balance_for_cashier('p2p');
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'}
             if $payment_info
             or $contact_info
@@ -2809,7 +2809,7 @@ sub p2p_order_create {
         );
     } catch {
         die +{
-            error_code => 'OrderCreateFailAdvertiser',
+            error_code => 'OrderCreateFailAmountAdvertiser',
         };
     }
 
@@ -7361,6 +7361,40 @@ sub has_forged_documents {
     }
 
     return 0;
+}
+
+=head2 get_sum_trades
+
+gets the sum of trades directly form database
+
+=cut
+
+sub get_sum_trades {
+    my ($self, $from_time) = @_;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref(
+                "select sum(buy_price) sum_trade from betonmarkets.get_client_sold_contracts_v3(?, ?, ?, ?, ?, ?);",
+                {Slice => {}},
+                $self->account->id, $from_time, 'tomorrow', '', 0, 0
+            );
+        })->{sum_trade} // 0;
+}
+
+=head2 get_summary_of_deposits
+
+gets the summary of deposits
+
+=cut
+
+sub get_summary_of_deposits {
+    my ($self, $from_time) = @_;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT * FROM payment.summary_of_deposits(?,?)", {Slice => {}}, $self->account->id, $from_time);
+        });
 }
 
 =head2 today_payment_agent_withdrawal_sum_count
