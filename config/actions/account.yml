@@ -7,6 +7,7 @@ new_account:
     - residence.is_signup_allowed
     - residence.market_type_is_available
     - residence.not_restricted
+    - residence.account_type_is_available_for_real_account_opening
     - landing_company.currency_is_allowed
     - currency.is_currency_suspended
     - currency.experimental_currency
