@@ -295,6 +295,7 @@ subtest 'doughflow methods that may require POO' => sub {
         reversible           => 1,
         deposit_poi_required => 1,
         poo_required         => 1,
+        withdrawal_supported => 1,
     );
 
     $poo_methods = $doughflow_datamapper->get_poo_required_methods();
@@ -308,6 +309,7 @@ subtest 'doughflow methods that may require POO' => sub {
         reversible           => 1,
         deposit_poi_required => 1,
         poo_required         => 1,
+        withdrawal_supported => 1,
     );
 
     $poo_methods = $doughflow_datamapper->get_poo_required_methods();
@@ -321,6 +323,7 @@ subtest 'doughflow methods that may require POO' => sub {
         reversible           => 1,
         deposit_poi_required => 1,
         poo_required         => 1,
+        withdrawal_supported => 1,
     );
 
     $poo_methods = $doughflow_datamapper->get_poo_required_methods();
@@ -333,8 +336,8 @@ sub create_pm {
 
     my $result = $db->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_create(?, ?, ?, ?, ?)',
-                undef, @args{qw/payment_processor payment_method reversible deposit_poi_required poo_required/});
+            $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_create(?, ?, ?, ?, ?, ?)',
+                undef, @args{qw/payment_processor payment_method reversible deposit_poi_required poo_required withdrawal_supported/});
         });
 
     return $result;
