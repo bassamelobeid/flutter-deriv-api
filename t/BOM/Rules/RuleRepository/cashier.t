@@ -73,30 +73,4 @@ subtest $rule_name => sub {
     $mock_client->unmock_all;
 };
 
-$rule_name = 'cashier.paymentagent_withdrawal_allowed';
-subtest $rule_name => sub {
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-
-    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
-
-    my %args            = (loginid => $client->loginid);
-    my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
-
-    $mock_validation->redefine(allow_paymentagent_withdrawal => 1);
-    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule passes if client allowed to do PA withdrawals';
-
-    $mock_validation->redefine(allow_paymentagent_withdrawal => 0);
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'PAWithdrawalNotAllowed',
-        rule       => $rule_name
-        },
-        'Correct error when pa withdrawal is not allowed';
-
-    $args{source_bypass_verification} = 1;
-    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule passes if client verifications are bypassed';
-
-    $mock_validation->unmock_all;
-};
-
 done_testing();
