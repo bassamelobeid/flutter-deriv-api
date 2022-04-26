@@ -26,6 +26,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Token::API;
+use BOM::Config::Runtime;
 use utf8;
 
 use IO::Pipe;
@@ -694,6 +695,7 @@ subtest $method => sub {
                 broker_code => 'VRTC',
                 email       => $email,
                 citizen     => '',
+                first_name  => ''
             });
             $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -1198,7 +1200,6 @@ $params = {
     language => 'EN',
     source   => $app_id,
     args     => {
-        residence        => 'id',
         last_name        => 'Test' . rand(999),
         first_name       => 'Test1' . rand(999),
         date_of_birth    => '1987-09-04',
@@ -1225,6 +1226,7 @@ subtest $method => sub {
                 broker_code => 'VRTC',
                 email       => $email,
                 citizen     => 'de',
+                residence   => 'de'
             });
             $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -1233,17 +1235,37 @@ subtest $method => sub {
         'Initial users and clients';
     };
 
+    my $mock_countries = Test::MockModule->new('Brands::Countries');
+
     subtest 'Create new wallet real' => sub {
         $emit_data = {};
         $params->{token} = $auth_token;
+
         $user->update_email_fields(email_verified => 1);
+
+        my $app_config = BOM::Config::Runtime->instance->app_config;
+        ok $app_config->system->suspend->wallets, 'wallets are suspended';
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('PermissionDenied',
+            'It should return error code if wallet is unavailable in country of residence.')
+            ->error_message_is('Wallet account creation is currently suspended.', 'Error message about service unavailability.');
+
+        $app_config->system->suspend->wallets(0);
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidAccountRegion',
+            'It should return error code if wallet is unavailable in country of residence.')
+            ->error_message_is('Sorry, account opening is unavailable in your region.', 'Error message about service unavailability.');
+
+        $mock_countries->redefine(wallet_company_for_country => 'wallet-svg');
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error code if missing any details')
             ->error_message_is('Please provide complete details for your account.', 'It should return error message if missing any details')
             ->error_details_is({missing => ["currency", "payment_method"]});
 
-        $params->{args}->{payment_method} = 'Skrill';
+        $params->{args}->{payment_method} = 'fiat';
         $params->{args}->{currency}       = 'USD';
 
         $rpc_ct->call_ok($method, $params)
@@ -1259,11 +1281,15 @@ subtest $method => sub {
         isa_ok($wallet_client, 'BOM::User::Wallet', 'get_client_instance returns instance of wallet');
         ok($wallet_client->is_wallet,  'wallet client is_wallet is true');
         ok(!$wallet_client->can_trade, 'wallet client can_trade is false');
+        is $wallet_client->residence, 'de', 'Residence is copied from the virtual account';
 
-        is($wallet_client->payment_method, 'Skrill', 'Payment method is set for wallet');
+        is($wallet_client->payment_method, 'fiat', 'Payment method is set for wallet');
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
 
+        $app_config->system->suspend->wallets(1);
     };
+
+    $mock_countries->unmock_all;
 };
 
 subtest 'Empty phone number' => sub {

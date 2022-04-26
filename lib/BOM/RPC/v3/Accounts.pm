@@ -319,7 +319,7 @@ rpc "landing_company",
     $landing_company{id} = $country;
 
     foreach my $type ('gaming_company', 'financial_company') {
-        if (($landing_company{$type} // '') ne 'none') {
+        if (($landing_company{$type} // 'none') ne 'none') {
             $landing_company{$type} = __build_landing_company(LandingCompany::Registry->by_name($landing_company{$type}), $country);
         } else {
             delete $landing_company{$type};
@@ -371,6 +371,8 @@ rpc "landing_company",
                 __build_landing_company(LandingCompany::Registry->by_name($dx_lc), $country);
         }
     }
+
+    delete $landing_company{wallet};
 
     return \%landing_company;
     };

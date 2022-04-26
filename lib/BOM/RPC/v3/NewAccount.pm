@@ -467,9 +467,9 @@ rpc "new_account_virtual",
     my $args   = $params->{args};
 
     $args->{token_details} = delete $params->{token_details};
-    $args->{type}          = $args->{type} // 'trading';        # default to 'trading'
+    $args->{type} //= 'trading';    # default to 'trading'
 
-    if ($args->{type} eq 'wallet' and BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
+    if ($args->{type} eq 'wallet' && BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
             message_to_client => localize("Wallet account creation is currently suspended."),
@@ -528,42 +528,54 @@ rpc "new_account_virtual",
                 code              => $error->{code},
                 message_to_client => $error->{message_to_client},
                 details           => $error->{details}});
-    }
+    };
     };
 
 rpc new_account_wallet => sub {
     my $params = shift;
 
-    my ($from_client, $args) = @{$params}{qw/client args/};
+    my ($client, $args) = @{$params}{qw/client args/};
 
-    my $broker = 'DW';
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize("Wallet account creation is currently suspended."),
+        });
+    }
 
-    my $company = LandingCompany::Wallet::get_wallet_for_broker($broker)->{landing_company};
+    $args->{residence} //= $client->residence;
+    $client->residence($args->{residence}) unless $client->residence;
+    my $countries_instance = request()->brand->countries_instance;
 
-    $args->{residence} = $from_client->residence;
+    my $wallet_short_code = $countries_instance->wallet_company_for_country($client->residence, 'real');
+    my $wallet_lc         = LandingCompany::Wallet::get($wallet_short_code // '');
+
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $wallet_lc;
+
+    my $company = $wallet_lc->{landing_company};
+    my $broker  = $wallet_lc->{broker_codes}->[0];
 
     my $response = create_new_real_account(
-        client          => $from_client,
+        client          => $client,
         args            => $args,
         account_type    => 'wallet',
         broker_code     => $broker,
         landing_company => $company,
-        # TODO: again better to unbind wallet accunts from synthetic/gaming accounts.
-        market_type => 'synthetic',
-        environment => request()->login_env($params),
-        ip          => $params->{client_ip} // '',
-        source      => $params->{source},
+        environment     => request()->login_env($params),
+        ip              => $params->{client_ip} // '',
+        source          => $params->{source},
     );
     return $response if $response->{error};
 
-    my $client          = $response->{client};
-    my $landing_company = $client->landing_company;
+    my $new_client      = $response->{client};
+    my $landing_company = $new_client->landing_company;
 
     return {
-        client_id                 => $client->loginid,
+        client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($params->{source}, $client->loginid),
+        oauth_token               => _create_oauth_token($params->{source}, $new_client->loginid),
+        currency                  => $new_client->currency,
     };
 };
 
@@ -590,8 +602,8 @@ sub create_virtual_account {
     my ($error);
 
     if ($args->{token_details} and not $args->{verification_code}) {
-        # To create a second virtual account, check for token
-        for my $field (qw( client_password residence )) {
+        # To create a second virtual account, check for token; password is redundant
+        for my $field (qw( client_password )) {
             die +{
                 code              => 'InvalidRequestParams',
                 message_to_client => localize('Invalid request parameters.'),
@@ -600,6 +612,8 @@ sub create_virtual_account {
         }
         my $user = BOM::User->new(loginid => $args->{token_details}->{loginid});
         $args->{email} = $user->{email};
+        # get residence from an existing client
+        $args->{residence} = $user->get_default_client->residence;
     } else {
         # To create a new user, check for client_password, residence and verification_code
         # These required fields were excluded from JSON schema, we need to handle it here
@@ -619,6 +633,14 @@ sub create_virtual_account {
                 email        => $args->{email},
                 new_password => $args->{client_password}});
         die $error if $error;
+    }
+
+    if ($args->{type} eq 'wallet') {
+        my $countries_instance = request()->brand->countries_instance;
+        my $company_name       = $countries_instance->wallet_company_for_country($args->{residence}, 'virtual');
+
+        die BOM::RPC::v3::Utility::create_error_by_code('invalid residence')
+            if ($company_name // 'none') eq 'none';
     }
 
     # Create account

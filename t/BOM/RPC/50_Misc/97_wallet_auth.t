@@ -21,8 +21,11 @@ my %params = (
 );
 my $def = def(%params);
 
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-my $token  = BOM::Platform::Token::API->new->create_token($client->loginid, 'test');
+my $client   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $token_cr = BOM::Platform::Token::API->new->create_token($client->loginid, 'test');
+
+my $wallet       = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'DW'});
+my $token_wallet = BOM::Platform::Token::API->new->create_token($wallet->loginid, 'test');
 
 subtest 'client and runtime checks' => sub {
 
@@ -44,12 +47,12 @@ subtest 'client and runtime checks' => sub {
         'sub with wallet auth, no token'
     );
 
-    is BOM::RPC::wrap_rpc_sub($def)->({token => $token}), 'success', 'wallets disabled, trading token can call wallet only sub';
+    is BOM::RPC::wrap_rpc_sub($def)->({token => $token_cr}), 'success', 'wallets disabled, trading token can call wallet only sub';
 
     BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
 
     cmp_deeply(
-        BOM::RPC::wrap_rpc_sub($def)->({token => $token}),
+        BOM::RPC::wrap_rpc_sub($def)->({token => $token_cr}),
         {
             error => {
                 code              => 'PermissionDenied',
@@ -62,23 +65,19 @@ subtest 'client and runtime checks' => sub {
     $params{auth} = ['wallet', 'trading'];
     $def = def(%params);
 
-    is BOM::RPC::wrap_rpc_sub($def)->({token => $token}), 'success', 'both types ok for trading token';
+    is BOM::RPC::wrap_rpc_sub($def)->({token => $token_cr}), 'success', 'both types ok for trading token';
 
-    my $mock_lc_wallet = Test::MockModule->new('LandingCompany::Wallet');
-    $mock_lc_wallet->mock(get_wallet_for_broker => sub { 1 });
-
-    is BOM::RPC::wrap_rpc_sub($def)->({token => $token}), 'success', 'both types ok for wallet token';
+    is BOM::RPC::wrap_rpc_sub($def)->({token => $token_wallet}), 'success', 'both types ok for wallet token';
 
     $params{auth} = ['wallet'];
     $def = def(%params);
-
-    is BOM::RPC::wrap_rpc_sub($def)->({token => $token}), 'success', 'wallet token is ok for wallet only sub';
+    is BOM::RPC::wrap_rpc_sub($def)->({token => $token_wallet}), 'success', 'wallet token is ok for wallet only sub';
 
     $params{auth} = ['trading'];
     $def = def(%params);
 
     cmp_deeply(
-        BOM::RPC::wrap_rpc_sub($def)->({token => $token}),
+        BOM::RPC::wrap_rpc_sub($def)->({token => $token_wallet}),
         {
             error => {
                 code              => 'PermissionDenied',
@@ -90,11 +89,9 @@ subtest 'client and runtime checks' => sub {
 
     BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
 
-    is BOM::RPC::wrap_rpc_sub($def)->({token => $token}), 'success', 'no error for wallet token if wallets are suspended';
+    is BOM::RPC::wrap_rpc_sub($def)->({token => $token_wallet}), 'success', 'no error for wallet token if wallets are suspended';
 
-    $mock_lc_wallet->unmock_all;
-
-    is BOM::RPC::wrap_rpc_sub($def)->({token => $token}), 'success', 'no error for trading token if wallets are suspended';
+    is BOM::RPC::wrap_rpc_sub($def)->({token => $token_cr}), 'success', 'no error for trading token if wallets are suspended';
 };
 
 subtest 'auth attribute of all rpc definitions' => sub {

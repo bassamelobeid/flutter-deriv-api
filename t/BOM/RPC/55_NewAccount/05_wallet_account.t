@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use utf8;
 
 use Test::More;
 use Test::Mojo;
@@ -21,8 +22,6 @@ use BOM::User::Wallet;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Token::API;
 
-use utf8;
-
 my $rpc_ct;
 subtest 'Initialization' => sub {
     lives_ok {
@@ -32,6 +31,7 @@ subtest 'Initialization' => sub {
 };
 
 my $method = 'new_account_virtual';
+BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
 
 subtest 'virtual account' => sub {
 
@@ -50,27 +50,51 @@ subtest 'virtual account' => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^VRTC\d+/, 'new VRTC loginid';
 
-        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
-
         $params->{args}->{type} = 'wallet';
         delete $params->{args}->{verification_code};
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied')
+            ->error_message_is("Wallet account creation is currently suspended.", 'Wallets are disabled in countries.yml as of now');
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
 
         # bad token
         $params->{token} = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token', ['read']);
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('InvalidToken')
-            ->error_message_is("The token is invalid, requires 'admin' scope.");
+            ->error_message_is("The token is invalid, requires 'admin' scope.", 'correct error for invalid token scope');
 
         $params->{token} = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token', ['admin']);
 
-        # invalid request params
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('InvalidRequestParams')
-            ->error_message_is("Invalid request parameters.");
-
-        delete $params->{args}->{residence};
+        # redundant arguments
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is_deeply $result->{error},
+            {
+            code              => 'InvalidRequestParams',
+            details           => {field => 'client_password'},
+            message_to_client => 'Invalid request parameters.'
+            },
+            'Correct error for missing password';
         delete $params->{args}->{client_password};
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully');
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid residence')
+            ->error_message_is("Sorry, our service is not available for your country of residence.",
+            'Wallets are disabled in countries.yml as of now');
+
+        my $mock_countries = Test::MockModule->new('Brands::Countries');
+        $mock_countries->redefine(
+            wallet_company_for_country => sub {
+                my ($self, $country, $type) = @_;
+                $type //= '';
+                return "wallet-$type" if ($type =~ qr/svg|virtual/);
+
+                return 'none';
+            });
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully after the country settings was changed');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^VRDW\d+/, 'new VRDW loginid';
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
     };
 
     subtest 'create VRDW, then add VRTC' => sub {
@@ -79,8 +103,32 @@ subtest 'virtual account' => sub {
         my $params = {};
         $params->{args}->{type} = 'wallet';
 
-        $params->{args}->{residence}         = 'id';
-        $params->{args}->{client_password}   = 'pWd12345';
+        $params->{args}->{residence}       = 'id';
+        $params->{args}->{client_password} = 'pWd12345';
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied')
+            ->error_message_is("Wallet account creation is currently suspended.", 'Wallet servie is suspended');
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid residence')
+            ->error_message_is("Sorry, our service is not available for your country of residence.",
+            'Wallets are disabled in countries.yml as of now');
+
+        my $mock_countries = Test::MockModule->new('Brands::Countries');
+        $mock_countries->redefine(
+            wallet_company_for_country => sub {
+                my ($self, $country, $type) = @_;
+                $type //= '';
+                return "wallet-$type" if ($type =~ qr/svg|virtual/);
+
+                return 'none';
+            });
+
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $email,
             created_for => 'account_opening'
@@ -90,15 +138,13 @@ subtest 'virtual account' => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^VRDW\d+/, 'new VRDW loginid';
 
-        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
-
         $params->{args}->{type} = 'trading';
         delete $params->{args}->{verification_code};
 
         # bad token
         $params->{token} = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token', ['read']);
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('InvalidToken')
-            ->error_message_is("The token is invalid, requires 'admin' scope.");
+            ->error_message_is("The token is invalid, requires 'admin' scope.", 'Token without admin scope');
 
         $params->{token} = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token', ['admin']);
 
@@ -111,6 +157,8 @@ subtest 'virtual account' => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^VRTC\d+/, 'new VRTC loginid';
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
     };
 
     subtest 'suspend wallet' => sub {
@@ -131,6 +179,25 @@ subtest 'virtual account' => sub {
             ->error_message_is("Wallet account creation is currently suspended.");
 
         BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid residence')
+            ->error_message_is("Sorry, our service is not available for your country of residence.",
+            'Wallets are disabled in countries.yml as of now');
+
+        my $mock_countries = Test::MockModule->new('Brands::Countries');
+        $mock_countries->redefine(
+            wallet_company_for_country => sub {
+                my ($self, $country, $type) = @_;
+                $type //= '';
+                return "wallet-$type" if ($type =~ qr/svg|virtual/);
+
+                return 'none';
+            });
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully');
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^VRDW\d+/, 'new VRDW loginid';
