@@ -13,7 +13,7 @@ use Log::Any::Adapter 'DERIV';
 
 use Exporter qw/import/;
 
-our @EXPORT_OK = qw(reprocess_address);
+our @EXPORT_OK = qw(reprocess_address render_message);
 
 =head2 reprocess_address
 
@@ -47,10 +47,10 @@ sub reprocess_address {
         }
     };
 
-    return _render_message($reprocess_result->{is_success}, $reprocess_result->{message});
+    return render_message($reprocess_result->{is_success}, $reprocess_result->{message});
 }
 
-=head2 _render_message
+=head2 render_message
 
 Renders the result output with proper HTML tags and color.
 
@@ -66,7 +66,7 @@ Returns the message as a string containing HTML tags.
 
 =cut
 
-sub _render_message {
+sub render_message {
     my ($is_success, $message) = @_;
 
     my ($class, $title) = $is_success ? ('success', 'SUCCESS') : ('error', 'ERROR');

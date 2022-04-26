@@ -1,3 +1,5 @@
+[% USE date %]
+
 [% BLOCK html_link %]
     [% IF text && url %]
         <a class="link" href="[% url %]" target="_blank">[% text %]</a>
@@ -7,7 +9,11 @@
 [% BLOCK info %]
 <div class="grd-margin-bottom">
     <strong>[% title %]:</strong><br />
-    [% content | none %]
+    [% IF type == 'date' %]
+        [% content && date.format(content, '%Y-%m-%d %T') | none %]
+    [% ELSE %]
+        [% content | none %]
+    [% END %]
 </div>
 [% END %]
 
@@ -101,43 +107,43 @@
                     [% FOREACH trx IN transactions %]
                         <tr id="trx_[% trx.id %]">
                             <td valign="top">
-                                [% WRAPPER info title=trx.transaction_type.ucfirst %]
+                                [% WRAPPER info title=trx.type.ucfirst %]
                                     [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
                                 [% END %]
                             </td>
                             <td valign="top">
-                                [% WRAPPER info title='Address' %][% INCLUDE html_link url=trx.address_url text=trx.address %][% END %]
-                                [% WRAPPER info title='Blockchain ID' %][% INCLUDE html_link url=trx.transaction_url text=trx.blockchain_txn.substr(0, 6) _ '...' %][% END %]
+                                [% WRAPPER info title='Address' %][% INCLUDE html_link url=trx.explorer_url.address text=trx.address %][% END %]
+                                [% WRAPPER info title='Blockchain ID' %][% INCLUDE html_link url=trx.explorer_url.transaction text=trx.hash.substr(0, 6) _ '...' %][% END %]
                             </td>
                             <td valign="top">
                                 [% WRAPPER info title='Amount' %][% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount || 'not available' %])[% END %]
                                 [% UNLESS loginid %]
                                     [% WRAPPER info title='Client' %]
                                         <ul style="margin-top: 0;">
-                                            <li><a class="link link--primary" href="[% get_clientedit_url(trx.client_loginid) %]">[% trx.client_loginid %]</a></li>
-                                            <li><a class="link" href="[% get_crypto_statement_url(trx.client_loginid) %]">Crypto Statement</a></li>
-                                            <li><a class="link" href="[% get_profit_url(trx.client_loginid) %]">Profit</a></li>
+                                            <li><a class="link link--primary" href="[% get_clientedit_url(trx.loginid) %]">[% trx.loginid %]</a></li>
+                                            <li><a class="link" href="[% get_crypto_statement_url(trx.loginid) %]">Crypto Statement</a></li>
+                                            <li><a class="link" href="[% get_profit_url(trx.loginid) %]">Profit</a></li>
                                         </ul>
                                     [% END %]
                                 [% END %]
                                 [% INCLUDE info title='Payment ID' content=trx.payment_id %]
-                                [% IF trx.transaction_type == 'withdrawal'%]
-                                    [% INCLUDE info title='Estimated Fee' content=trx.estimated_fee %]
-                                    [% INCLUDE info title='Transaction Fee' content=trx.txn_fee %]
+                                [% IF trx.type == 'withdrawal'%]
+                                    [% INCLUDE info title='Estimated Fee'   content=trx.estimated_fee %]
+                                    [% INCLUDE info title='Transaction Fee' content=trx.fee %]
                                 [% END %]
                             </td>
                             <td valign="top">
-                                    [% INCLUDE info title='Creation' content=trx.creation_date %]
-                                [% IF trx.transaction_type == 'deposit' %]
-                                    [% INCLUDE info title='Pending' content=trx.pending_date %]
-                                    [% INCLUDE info title='Confirmed' content=trx.confirmed_date %]
-                                [% ELSIF trx.transaction_type == 'withdrawal' %]
-                                    [% INCLUDE info title='Verified' content=trx.verified_date %]
-                                    [% INCLUDE info title='Rejected' content=trx.rejected_date %]
-                                    [% INCLUDE info title='Cancelled' content=trx.cancelled_date %]
-                                    [% INCLUDE info title='Processing' content=trx.processing_date %]
-                                    [% INCLUDE info title='Performing Blockchain' content=trx.performing_blockchain_txn_date %]
-                                    [% INCLUDE info title='Sent' content=trx.sent_date %]
+                                    [% INCLUDE info type='date' title='Creation' content=trx.creation_date %]
+                                [% IF trx.type == 'deposit' %]
+                                    [% INCLUDE info type='date' title='Pending'   content=trx.status_history.PENDING %]
+                                    [% INCLUDE info type='date' title='Confirmed' content=trx.status_history.CONFIRMED %]
+                                [% ELSIF trx.type == 'withdrawal' %]
+                                    [% INCLUDE info type='date' title='Verified'              content=trx.status_history.VERIFIED %]
+                                    [% INCLUDE info type='date' title='Rejected'              content=trx.status_history.REJECTED %]
+                                    [% INCLUDE info type='date' title='Cancelled'             content=trx.status_history.CANCELLED %]
+                                    [% INCLUDE info type='date' title='Processing'            content=trx.status_history.PROCESSING %]
+                                    [% INCLUDE info type='date' title='Performing Blockchain' content=trx.status_history.PERFORMING_BLOCKCHAIN_TXN %]
+                                    [% INCLUDE info type='date' title='Sent'                  content=trx.status_history.SENT %]
                                 [% END %]
                             </td>
                             <td valign="top">
@@ -145,7 +151,7 @@
                                 [% INCLUDE info title='Error' content=trx.error_text %]
                             </td>
                             <td valign="top" align="center">
-                                [% IF trx.transaction_type == 'deposit' %]
+                                [% IF trx.type == 'deposit' %]
                                     <form method="POST">
                                         <input type="hidden" name="loginID" value="[% loginid %]" />
                                         <input type="hidden" name="trx_id_to_reprocess" value="[% trx.id %]" />

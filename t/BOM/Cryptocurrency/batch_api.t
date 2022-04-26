@@ -55,32 +55,60 @@ subtest 'BOM::Cryptocurrency::BatchAPI' => sub {
 
     throws_ok { $batch->get_response() } qr/There is no response yet/, 'Throws error when getting response before executing the batch.';
 
-    my $expected_response = [{
+    my $batch_response = [{
             id     => $id_1,
             status => 1,
+            body   => {
+                is_success => 1,
+                message    => 'Operation was successful',
+            },
         },
         {
             id     => $id_2,
             status => 0,
+            body   => {
+                error => {
+                    code    => 'CryptoBatchError',
+                    message => 'Request did not processed due to an issue.',
+                },
+            },
         },
     ];
     my $mock_api = Test::MockModule->new('BOM::CTC::API::Batch');
-    $mock_api->mock(process => sub { return {responses => $expected_response}; });
+    $mock_api->mock(process => sub { return {responses => $batch_response}; });
 
     my $received_response = $batch->process();
-    is_deeply $received_response, $expected_response, 'Invoking execute() returns the correct response.';
+    is_deeply $received_response, $batch_response, 'Invoking execute() returns the correct response.';
 
-    my $all_responses = $batch->get_response();
+    my $expected_response = {map { $_->{id} => $_ } $batch_response->@*};
+    my $all_responses     = $batch->get_response();
     is_deeply $all_responses, $expected_response, 'Invoking get_response() with no parameter, returns the correct response.';
 
-    my ($response_1, $response_2) = $batch->get_response($id_1, $id_2)->@*;
-    is_deeply $response_1, $expected_response->[0], 'Invoking get_response() with multiple parameters, returns the correct response for each id (1).';
-    is_deeply $response_2, $expected_response->[1], 'Invoking get_response() with multiple parameters, returns the correct response for each id (2).';
+    my $responses = $batch->get_response($id_1, $id_2);
+    is_deeply $responses->{$id_1}, $expected_response->{$id_1},
+        'Invoking get_response() with multiple parameters, returns the correct response for each id (1).';
+    is_deeply $responses->{$id_2}, $expected_response->{$id_2},
+        'Invoking get_response() with multiple parameters, returns the correct response for each id (2).';
 
-    $response_1 = $batch->get_response($id_1)->[0];
-    is_deeply $response_1, $expected_response->[0], 'Returns the correct response for each id (1).';
-    $response_2 = $batch->get_response($id_2)->[0];
-    is_deeply $response_2, $expected_response->[1], 'Returns the correct response for each id (2).';
+    my $single_response = $batch->get_response($id_1);
+    is_deeply $single_response, $expected_response->{$id_1}, 'Returns the correct response for single id (1).';
+    $single_response = $batch->get_response($id_2);
+    is_deeply $single_response, $expected_response->{$id_2}, 'Returns the correct response for single id (2).';
+
+    my $expected_bodies = {map { $_->{id} => $_->{body} } $batch_response->@*};
+    my $all_bodies      = $batch->get_response_body();
+    is_deeply $all_bodies, $expected_bodies, 'Invoking get_response_body() with no parameter, returns the correct bodies.';
+
+    my $bodies = $batch->get_response_body($id_1, $id_2);
+    is_deeply $bodies->{$id_1}, $expected_bodies->{$id_1},
+        'Invoking get_response_body() with multiple parameters, returns the correct body for each id (1).';
+    is_deeply $bodies->{$id_2}, $expected_bodies->{$id_2},
+        'Invoking get_response_body() with multiple parameters, returns the correct body for each id (2).';
+
+    my $single_body = $batch->get_response_body($id_1);
+    is_deeply $single_body, $expected_bodies->{$id_1}, 'Returns the correct body for single id (1).';
+    $single_body = $batch->get_response_body($id_2);
+    is_deeply $single_body, $expected_bodies->{$id_2}, 'Returns the correct body for single id (2).';
 
     $mock_api->unmock_all();
 };

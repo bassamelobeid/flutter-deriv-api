@@ -22,9 +22,16 @@ BOM::Cryptocurrency::BatchAPI - Batch request helper
     # Processing the batch
     my $all_responses = $batch->process();
 
-    # Retrieving the responses
-    my $all_responses    = $batch->get_response();
-    my $address_response = $batch->get_response($address_request_id)->[0];
+    # Retrieving the responses (method 1)
+    my $responses_by_id  = $batch->get_response();
+    my $address_response = $responses_by_id->{$address_request_id}
+
+    # Retrieving the responses (method 2)
+    my $address_response = $batch->get_response($address_request_id);
+
+    # Retrieving the response body
+    my $address_response_body = $batch->get_response($address_request_id)->{body};
+    my $address_response_body = $batch->get_response_body($address_request_id);
 
 =head1 DESCRIPTION
 
@@ -126,7 +133,7 @@ sub process {
 
 =head2 get_response
 
-Get the responses of a processed batch.
+Get the responses of the processed batch.
 
 =over 4
 
@@ -134,9 +141,12 @@ Get the responses of a processed batch.
 
 =back
 
-In case the result of C<process()> was a success, returns an arrayref
-containing either all the responses or those matching the passed C<@ids>
-otherwise, returns the received error.
+In case the result of C<process()> was a success:
+  - If the C<@ids> provided with only one value, returns its response.
+  - If the C<@ids> provided with multiple values or not provided,
+    returns a hashref containing the matched C<id>s and their response.
+
+Otherwise, returns the received error.
 
 =cut
 
@@ -148,10 +158,70 @@ sub get_response {
     die 'There is no response yet. Maybe you forgot to invoke "process()" on the batch.'
         unless $self->{responses};
 
-    return clone $self->{responses} unless @ids;
+    my $mapped_responses = $self->_get_mapped_response();
 
-    my %id_lookup = map { $_ => 1 } @ids;
-    return clone [grep { exists $id_lookup{$_->{id}} } $self->{responses}->@*];
+    return $mapped_responses unless @ids;
+
+    return scalar(@ids) == 1
+        ? $mapped_responses->{$ids[0]}
+        : {%{$mapped_responses}{@ids}};
+}
+
+=head2 get_response_body
+
+Get the response C<body> of the processed batch.
+
+=over 4
+
+=item * C<@ids> - Optional. The list of C<id> to return the response C<body> of.
+
+=back
+
+In case the result of C<process()> was a success:
+  - If the C<@ids> provided with only one value, returns its response C<body>.
+  - If the C<@ids> provided with multiple values or not provided,
+    returns a hashref containing the matched C<id>s and their response.
+
+Otherwise, returns undef.
+
+=cut
+
+sub get_response_body {
+    my ($self, @ids) = @_;
+
+    return clone $self->{response_error} if $self->{response_error};
+
+    die 'There is no response yet. Maybe you forgot to invoke "process()" on the batch.'
+        unless $self->{responses};
+
+    my $mapped_responses = $self->_get_mapped_response();
+
+    my $bodies = {map { $_ => $mapped_responses->{$_}{body} } keys $mapped_responses->%*};
+
+    return $bodies unless @ids;
+
+    return scalar(@ids) == 1
+        ? $bodies->{$ids[0]}
+        : {%{$bodies}{@ids}};
+}
+
+=head2 _get_mapped_response
+
+Creates a hashref containing C<id> of responses as keys and the corresponding
+response as value, in order to provide easier access by C<id>.
+
+Returns undef in case of error or no response yet, otherwise returns a hashref.
+
+=cut
+
+sub _get_mapped_response {
+    my ($self) = @_;
+
+    return undef if ($self->{response_error} || !$self->{responses});
+
+    $self->{responses_by_id} //= {map { $_->{id} => $_ } $self->{responses}->@*};
+
+    return clone $self->{responses_by_id};
 }
 
 =head2 _generate_new_id

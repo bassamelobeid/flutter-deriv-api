@@ -6,11 +6,9 @@ use warnings;
 
 use Text::Trim qw(trim);
 use f_brokerincludeall;
-use Syntax::Keyword::Try;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel );
 use BOM::Backoffice::Sysinit ();
-use BOM::Config;
 use BOM::Cryptocurrency::BatchAPI;
 BOM::Backoffice::Sysinit::init();
 use POSIX;
@@ -41,7 +39,6 @@ sub get_trimmed_param {
 my @batch_requests;
 
 my $type = request()->param('type');
-my $post_data;
 
 my $blocked_list;
 my $search    = 0;
@@ -158,11 +155,11 @@ if (@batch_requests) {
     $batch->add_request($_->%*) for @batch_requests;
     $batch->process();
 
-    $blocked_list = $batch->get_response('list')->[0]{body}{address_list};
+    $blocked_list = $batch->get_response_body('list')->{address_list};
 
     # Set successful update for displaying
-    if (my $update_response = $batch->get_response('update')->[0]) {
-        my %updated_successfully = map { $_->{address} => $_->{is_success} } $update_response->{body}{address_list}->@*;
+    if (my $update_response = $batch->get_response_body('update')) {
+        my %updated_successfully = map { $_->{address} => $_->{is_success} } $update_response->{address_list}->@*;
         for my $address_info ($blocked_list->@*) {
             $address_info->{has_updated} = 1 if $updated_successfully{$address_info->{address}};
         }
@@ -180,6 +177,7 @@ Bar('CRYPTO FRAUDULENT ADDRESSES');
 BOM::Backoffice::Request::template()->process(
     'backoffice/crypto_fraudulent_addresses.html.tt',
     {
+        is_update => request()->param('updated_addresses') ? 1 : 0,
         data_url  => request()->url_for('backoffice/crypto_fraudulent_addresses.cgi'),
         data      => $blocked_list,
         search    => $search,

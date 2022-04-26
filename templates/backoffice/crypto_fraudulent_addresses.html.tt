@@ -70,6 +70,9 @@
                 <th>Creation date</th>
                 <th>Last update date</th>
                 <th>Staff</th>
+                [% IF is_update %]
+                <th>Updated</th>
+                [% END %]
             </tr>
             [% FOREACH row IN data %]
                 <tr class="data">
@@ -80,13 +83,17 @@
                     <td>
                         <input type="text" class="data-remark" value="[% row.investigation_remarks %]" data-initialvalue="[% row.investigation_remarks %]" onkeyup="setChanged(this)" />
                     </td>
-                    <td align="middle">
+                    <td class="center">
                         <input type="checkbox" class="data-is_blocked" value="[% row.is_blocked %]" data-initialvalue="[% row.is_blocked %]" onclick="this.value = this.checked ? 1 : 0; setChanged(this)" [% IF row.is_blocked %] checked="checked" [% END %] />
-                        <span style="color: var(--color-darkblue); [% !row.has_updated && 'display: none;' %]" tooltip="Updated">&#10004;</span>
                     </td>
                     <td>[% date.format(row.insert_date, '%Y-%m-%d %T') %]</td>
                     <td>[% row.last_status_date %]</td>
                     <td>[% row.last_status_update_by %]</td>
+                    [% IF is_update %]
+                    <td class="center">
+                        <span style="color: var(--color-darkblue); [% !row.has_updated && 'display: none;' %]">&#10004;</span>
+                    </td>
+                    [% END %]
                 </tr>
             [% END %]
         </table>

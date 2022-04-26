@@ -8,12 +8,9 @@ no indirect;
 use Text::Trim qw( trim );
 use Locale::Country;
 use f_brokerincludeall;
-use HTML::Entities;
 use List::Util qw( max );
 use ExchangeRates::CurrencyConverter qw( in_usd );
 use Format::Util::Numbers qw( formatnumber );
-use Syntax::Keyword::Try;
-use Log::Any qw($log);
 
 use BOM::User::Client;
 use BOM::Platform::Locale;
@@ -21,16 +18,13 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw( request );
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
-use BOM::Cryptocurrency::Helper qw( reprocess_address );
-use BOM::CTC::Currency;
-use BOM::CTC::Database;
+use BOM::Cryptocurrency::BatchAPI;
+use BOM::Cryptocurrency::Helper qw( render_message );
 
 use constant CRYPTO_DEFAULT_TRANSACTION_COUNT => 50;
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
-
-my $cryptodb_helper = BOM::CTC::Database->new();
 
 my $broker  = request()->broker_code;
 my $loginid = uc(request()->param('loginID') // '');
@@ -47,7 +41,8 @@ my $encoded_loginid = encode_entities($loginid);
 BrokerPresentation($loginid ? "$encoded_loginid Crypto History" : "$address Address History");
 
 my $tt = BOM::Backoffice::Request::template;
-my ($client_currency, $currencies_info);
+my ($client_currency, $exchange_rates);
+my @batch_requests;
 
 my $get_client_edit_url      = get_url_factory('f_clientloginid_edit',     $broker);
 my $get_statement_url        = get_url_factory('f_manager_history',        $broker);
@@ -60,19 +55,12 @@ my $get_profit_url           = get_url_factory(
         enddate   => Date::Utility->today()->date,
     });
 
-my $get_currency_info = sub {
+my $get_exchange_rate = sub {
     my ($currency_code) = @_;
 
-    my $info = $currencies_info->{$currency_code};
+    $exchange_rates->{$currency_code} //= eval { in_usd(1.0, $currency_code) };
 
-    unless ($info) {
-        $info->{wrapper}         = BOM::CTC::Currency->new(currency_code => $currency_code);
-        $info->{address_url}     = $info->{wrapper}->get_address_blockchain_url;
-        $info->{transaction_url} = $info->{wrapper}->get_transaction_blockchain_url;
-        $info->{exchange_rate}   = eval { in_usd(1.0, $currency_code) };
-    }
-
-    return $info;
+    return $exchange_rates->{$currency_code};
 };
 
 my $render_client_info = sub {
@@ -123,7 +111,7 @@ my $render_client_info = sub {
     BarEnd();
 };
 
-my $render_crypto_transactions = sub {
+my $prepare_transaction = sub {
     my ($txn_type) = @_;
 
     return undef if $client_currency && !BOM::Config::CurrencyConfig::is_valid_crypto_currency($client_currency);
@@ -138,93 +126,123 @@ my $render_crypto_transactions = sub {
         $search_address = trim(request()->param($search_param));
     }
 
-    my %query_params = (
-        ($loginid ? (loginid => $loginid) : ()),
-        limit          => $limit,
-        offset         => $offset,
-        address        => $search_address,
-        sort_direction => 'DESC'
-    );
-
-    my @trxns = map {
-        my $currency_info = $get_currency_info->($_->{currency_code});
-        my $amount = $_->{amount} //= 0;    # it will be undef on newly generated addresses
-        if ($currency_info->{exchange_rate}) {
-            $_->{usd_amount} = formatnumber('amount', 'USD', $amount * $currency_info->{exchange_rate});
-        }
-        $_->{address_url} = URI->new($currency_info->{address_url} . $_->{address}) if $_->{address};
-        if ($_->{blockchain_txn}) {
-            $_->{transaction_url} = $currency_info->{transaction_url} ? URI->new($currency_info->{transaction_url} . $_->{blockchain_txn}) : '#';
-            $log->warnf("Blockchain transaction url is not defined for currency %s. client_loginid: %s", $_->{currency_code}, $loginid)
-                unless $currency_info->{transaction_url};
-        }
-
-        $_
-    } $cryptodb_helper->get_crypto_transactions($txn_type, %query_params)->@*;
-
-    my %client_details;
-    if ($loginid) {
-        my %fiat = get_fiat_login_id_for($loginid, $broker);
-        %client_details = (
-            loginid      => $loginid,
-            details_link => $get_client_edit_url->($loginid),
-            fiat_loginid => $fiat{fiat_loginid},
-            fiat_link    => $fiat{fiat_link},
-        );
-    }
-
     my $reprocess_info;
     if ($txn_type eq 'deposit' && $action eq 'reprocess_address') {
-        my $currency_wrapper = $get_currency_info->(request()->param('trx_currency_to_reprocess'))->{wrapper};
-
         $reprocess_info->{trx_id} = request()->param('trx_id_to_reprocess');
-        $reprocess_info->{result} = reprocess_address($currency_wrapper, request()->param('address_to_reprocess'));
+        push @batch_requests, {    # Request for reprocess
+            id     => 'reprocess',
+            action => 'deposit/reprocess',
+            body   => {
+                address       => request()->param('address_to_reprocess'),
+                currency_code => request()->param('trx_currency_to_reprocess'),
+            },
+        };
+    } elsif ($txn_type eq 'withdrawal' && defined $client_currency) {
+        push @batch_requests, {    # Request for minimum withdrawal
+            id     => 'min_withdrawal',
+            action => 'withdrawal/get_limits',
+            body   => {
+                currency_code => $client_currency,
+            },
+        };
     }
 
-    my $make_pagination_url = sub {
-        my ($offset_value) = @_;
-        return request()->url_for(
-            'backoffice/f_manager_crypto_history.cgi',
+    push @batch_requests, {        # Request for transaction list
+        id     => $txn_type . '_list',
+        action => 'transaction/get_list',
+        body   => {
+            address        => $search_address,
+            limit          => $limit,
+            offset         => $offset,
+            type           => $txn_type,
+            detail_level   => 'full',
+            sort_direction => 'DESC',
+            ($loginid ? (loginid => $loginid) : ()),
+        },
+    };
+
+    my $render = sub {
+        my ($transaction_list, %info) = @_;
+
+        for my $transaction_info ($transaction_list->@*) {
+            if (my $exchange_rate = $get_exchange_rate->($transaction_info->{currency_code})) {
+                $transaction_info->{usd_amount} = formatnumber('amount', 'USD', ($transaction_info->{amount} // 0) * $exchange_rate);
+            }
+        }
+
+        my %client_details;
+        if ($loginid) {
+            my %fiat = get_fiat_login_id_for($loginid, $broker);
+            %client_details = (
+                loginid      => $loginid,
+                details_link => $get_client_edit_url->($loginid),
+                fiat_loginid => $fiat{fiat_loginid},
+                fiat_link    => $fiat{fiat_link},
+            );
+        }
+
+        if ($info{reprocess}) {
+            $reprocess_info->{result} = render_message(@{$info{reprocess}}{qw/ is_success message /});
+        }
+
+        my $make_pagination_url = sub {
+            my ($offset_value) = @_;
+            return request()->url_for(
+                'backoffice/f_manager_crypto_history.cgi',
+                {
+                    request()->params->%*,
+                    $offset_param => max($offset_value, 0),
+                })->fragment($txn_type);
+        };
+        my $transactions_count = scalar $transaction_list->@*;
+        my $pagination_info    = {
+            prev_url => $offset                              ? $make_pagination_url->($offset - $limit) : undef,
+            next_url => $limit == scalar $transactions_count ? $make_pagination_url->($offset + $limit) : undef,
+            range    => ($offset + !!$transactions_count) . ' - ' . ($offset + $transactions_count),
+        };
+
+        my %min_withdrawal_info = exists $info{min_withdrawal} ? (minimum_withdrawal_limit => $info{min_withdrawal}) : ();
+
+        $tt->process(
+            'backoffice/crypto_cashier/manage_crypto_transactions_cs.tt',
             {
-                request()->params->%*,
-                $offset_param => max($offset_value, 0),
-            })->fragment($txn_type);
-    };
-    my $pagination_info = {
-        prev_url => $offset                 ? $make_pagination_url->($offset - $limit) : undef,
-        next_url => $limit == scalar @trxns ? $make_pagination_url->($offset + $limit) : undef,
-        range    => ($offset + !!@trxns) . ' - ' . ($offset + @trxns),
+                transactions             => $transaction_list,
+                currency                 => $client_currency,
+                txn_type                 => $txn_type,
+                search_address           => $search_address,
+                pagination               => $pagination_info,
+                reprocess                => $reprocess_info,
+                get_clientedit_url       => $get_client_edit_url,
+                get_crypto_statement_url => $get_crypto_statement_url,
+                get_profit_url           => $get_profit_url,
+                %client_details,
+                %min_withdrawal_info,
+            }) || die $tt->error() . "\n";
     };
 
-    my %min_withdrawal_info;
-    if ($txn_type eq 'withdrawal' && defined($client_currency)) {
-        %min_withdrawal_info = (
-            minimum_withdrawal_limit => BOM::CTC::Currency->new(currency_code => $client_currency)->get_minimum_withdrawal,
-        );
-    }
-
-    $tt->process(
-        'backoffice/crypto_cashier/manage_crypto_transactions_cs.tt',
-        {
-            transactions             => \@trxns,
-            broker                   => $broker,
-            currency                 => $client_currency,
-            testnet                  => BOM::Config::on_qa() ? 1 : 0,
-            txn_type                 => $txn_type,
-            search_address           => $search_address,
-            pagination               => $pagination_info,
-            reprocess                => $reprocess_info,
-            get_clientedit_url       => $get_client_edit_url,
-            get_crypto_statement_url => $get_crypto_statement_url,
-            get_profit_url           => $get_profit_url,
-            %client_details,
-            %min_withdrawal_info,
-        }) || die $tt->error() . "\n";
+    return $render;
 };
 
 $render_client_info->();
 
-$render_crypto_transactions->($_) for qw(deposit withdrawal);
+my @transaction_types = qw(deposit withdrawal);
+my %render_subs       = map { $_ => $prepare_transaction->($_) } @transaction_types;
+
+my $batch = BOM::Cryptocurrency::BatchAPI->new();
+$batch->add_request($_->%*) for @batch_requests;
+$batch->process();
+
+my $response_bodies  = $batch->get_response_body();
+my %reprocess_result = ($response_bodies->{reprocess} ? (reprocess => $response_bodies->{reprocess}) : ());
+
+$render_subs{$_}->(
+    $response_bodies->{$_ . '_list'}{transaction_list},
+    (
+          $_ eq 'deposit'
+        ? %reprocess_result
+        : (min_withdrawal => $response_bodies->{min_withdrawal}{minimum_amount})
+    ),
+) for @transaction_types;
 
 code_exit_BO();
 
