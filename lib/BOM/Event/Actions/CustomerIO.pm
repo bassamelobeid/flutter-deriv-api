@@ -57,17 +57,15 @@ Delete a user data from customer.io by C<user_id>
 
 async sub anonymize_user {
     my $self = shift;
-    my $user_id;
 
     try {
-        $user_id = $self->user->id;
+        my $customers = await $self->_instance->get_customers_by_email($self->user->email);
 
-        die 'user_id is missing.' unless $user_id;
-
-        my $customer = $self->_instance->new_customer(id => $user_id);
-        await $customer->delete_customer();
+        for my $customer ($customers->@*) {
+            await $customer->delete_customer();
+        }
     } catch ($error) {
-        $log->errorf("Customerio data deletion failed for user %s with failure reason %s", $user_id, $error);
+        $log->errorf("Customerio data deletion failed for user %s with failure reason %s", $self->user->id, $error);
         return $error;
     }
 
