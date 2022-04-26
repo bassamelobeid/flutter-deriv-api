@@ -7363,6 +7363,40 @@ sub has_forged_documents {
     return 0;
 }
 
+=head2 get_sum_trades
+
+gets the sum of trades directly form database
+
+=cut
+
+sub get_sum_trades {
+    my ($self, $from_time) = @_;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref(
+                "select sum(buy_price) sum_trade from betonmarkets.get_client_sold_contracts_v3(?, ?, ?, ?, ?, ?);",
+                {Slice => {}},
+                $self->account->id, $from_time, 'tomorrow', '', 0, 0
+            );
+        })->{sum_trade} // 0;
+}
+
+=head2 get_summary_of_deposits
+
+gets the summary of deposits
+
+=cut
+
+sub get_summary_of_deposits {
+    my ($self, $from_time) = @_;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT * FROM payment.summary_of_deposits(?,?)", {Slice => {}}, $self->account->id, $from_time);
+        });
+}
+
 =head2 today_payment_agent_withdrawal_sum_count
 
 Gets the total amount and count of the payment  agent  withdrawal performed by a client in the current day.
