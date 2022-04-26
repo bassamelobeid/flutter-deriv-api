@@ -123,7 +123,7 @@ is($msg, undef, 'No email for non CR account');
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-BOM::Event::Actions::Client::email_client_account_verification({loginid => $test_client_cr->loginid});
+BOM::Event::Actions::Client::authenticated_with_scans({loginid => $test_client_cr->loginid});
 
 $msg = mailbox_search(subject => qr/Your address and identity have been verified successfully/);
 
@@ -3301,4 +3301,49 @@ subtest 'crypto_withdrawal_rejected_email' => sub {
     is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
+
+subtest 'authenticated_with_scans event' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client->email('test2@deriv.com');
+    $client->first_name('Jane');
+    $client->last_name('Doe');
+    $client->salutation('MR');
+    $client->save;
+
+    my $user = BOM::User->create(
+        email          => $client->email,
+        password       => "1234",
+        email_verified => 1,
+    )->add_client($client);
+
+    undef @track_args;
+
+    BOM::Event::Actions::Client::authenticated_with_scans({
+            loginid => $client->loginid,
+        })->get;
+
+    my ($customer, %args) = @track_args;
+
+    is $args{event}, 'authenticated_with_scans', "got correct event name";
+
+    cmp_deeply $args{properties},
+        {
+        'email'         => $client->email,
+        'first_name'    => $client->first_name,
+        'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true',
+        'lang'          => 'EN',
+        'brand'         => 'deriv',
+        'contact_url'   => 'https://deriv.com/en/contact-us',
+        'loginid'       => $client->loginid
+        },
+        'event properties are ok';
+
+    is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
 done_testing();
+

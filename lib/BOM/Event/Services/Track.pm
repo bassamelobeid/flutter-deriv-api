@@ -133,7 +133,8 @@ my %EVENT_PROPERTIES = (
     unknown_login                  => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
     account_with_false_info_locked => [qw(email authentication_url profile_url is_name_change)],
     underage_account_closed        => [qw(tnc_approval)],
-    account_opening_new            => [qw(first_name verification_url code email live_chat_url)]);
+    account_opening_new            => [qw(first_name verification_url code email live_chat_url)],
+    authenticated_with_scans       => [qw(first_name email contact_url live_chat_url)]);
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
 
@@ -160,6 +161,7 @@ my @COMMON_EVENT_METHODS = qw(
     verify_change_email
     request_change_email
     reset_password_confirmation
+    authenticated_with_scans
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1290,6 +1292,10 @@ It is triggered for B<verify_email tag: request_email> event emitted, delivering
 =head2 reset_password_confirmation
 
 It is triggered for each B<reset_password_confirmation> event emitted, delivering it to Segment.
+
+=head2 authenticated_with_scans
+
+It is triggered for each B<authenticated_with_scans> event emitted, delivering it to Segment.
 
 =over
 
