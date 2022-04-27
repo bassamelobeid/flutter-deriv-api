@@ -91,6 +91,7 @@ paymentagent_withdraw:
       ruleset:
         - paymentagent.pa_allowed_in_landing_company
         - trading_account.should_complete_financial_assessment # better to be renamed - it is not exclusive to trading accounts
+        - cashier.paymentagent_withdrawal_allowed
     - type: group
       rule_group: cashier_validation
       argument_mapping:
