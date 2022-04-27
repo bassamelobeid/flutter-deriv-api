@@ -15,7 +15,7 @@ test:
 	@$(PROVE) -r t/BOM/
 
 syntax_diff:
-	@$(PROVE) --norc t/00_syntax_diff.t t/01_check_bom_dependency.t t/006_pod_coverage.t
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
 
 syntax:
 	@$(PROVE) --norc t/*.t
