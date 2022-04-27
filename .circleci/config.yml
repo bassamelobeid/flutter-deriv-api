@@ -54,6 +54,22 @@ jobs:
         name: unit tests
     - store_test_results:
         path: /var/tmp/test-output
+  syntax_diff_unit:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make syntax_diff
+        name: Code structure and syntax
+    - run:
+        command: make unit
+        name: unit tests
+    - store_test_results:
+        path: /var/tmp/test-output
   core:
     <<: *6
     steps:
@@ -97,13 +113,17 @@ jobs:
 version: 2
 workflows:
   build-workflow:
-    jobs: &7
-    - syntax_unit:
+    jobs:
+    - syntax_diff_unit:
         context: perl
     - core:
         context: perl
   daily:
-    jobs: *7
+    jobs:
+    - syntax_unit:
+        context: perl
+    - core:
+        context: perl
     triggers:
     - schedule:
         cron: 31 20 * * *
