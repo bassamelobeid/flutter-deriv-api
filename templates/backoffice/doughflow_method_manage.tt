@@ -43,7 +43,7 @@
                                 <option value="0" [% !item.deposit_poi_required && 'selected' %]>NO</option>
                             </select>
                         </td>
-                    </tr>
+                    </tr>     
                     <tr>
                         <td class="label">POO required</td>
                         <td>
@@ -52,16 +52,7 @@
                                 <option value="0" [% !item.poo_required && 'selected' %]>NO</option>
                             </select>
                         </td>
-                    </tr>
-                    <tr>
-                        <td class="label">Is Withdrawal Supported</td>
-                        <td>
-                            <select name="withdrawal_supported">
-                                <option value="1" [% item.withdrawal_supported && 'selected' %]>YES</option>
-                                <option value="0" [% !item.withdrawal_supported && 'selected' %]>NO</option>
-                            </select>
-                        </td>
-                    </tr>
+                    </tr>                     
                 </table>
                 [% IF item %]
                 <button type="submit" class="btn btn--primary" name="update_confirm" value="[% item.id %]">Save</button>
@@ -100,11 +91,10 @@
                     <th scope="col">Processor</th>
                     <th scope="col">Method</th>
                     <th scope="col">Reversible</th>
-                    <th scope="col">Deposit POI</th>                    
+                    <th scope="col">Deposit POI</th>
                     <th scope="col">Poo required</th>
-                    <th scope="col">Withdrawal Supported</th>
                     <th scope="col">Deposits</th>
-                    <th scope="col">Last deposit</th>
+                    <th scope="col">Last deposit</th>                    
                     <th scope="col">Withdrawls</th>
                     <th scope="col">Last withdrawal</th>
                     <th scope="col">Modified by</th>
@@ -121,7 +111,6 @@
                     [% IF m.reversible %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
                     [% IF m.deposit_poi_required %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
                     [% IF m.poo_required %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
-                    [% IF m.withdrawal_supported %]<td style="background-color:LightGreen">Yes[% ELSE %]<td>No[% END %]</td>
                     <td>[% m.deposit_count %]</td>
                     <td>[% m.deposit_latest %]</td>
                     <td>[% m.withdrawal_count || 0 %]</td>
