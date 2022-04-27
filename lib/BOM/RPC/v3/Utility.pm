@@ -619,27 +619,6 @@ sub error_map {
         'SelfExclusion'                 => localize(
             'You have chosen to exclude yourself from trading on our website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact us via live chat.'
         ),
-        'SetSelfExclusionError'          => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
-        'PaymentAgentNotAvailable'       => localize('The payment agent facility is not available for this account.'),
-        'PaymentAgentAlreadyExists'      => localize("You've already submitted a payment agent application request."),
-        'DXSuspended'                    => localize('Deriv X account management is currently suspended.'),
-        'DXGeneral'                      => localize('This service is currently unavailable. Please try again later.'),
-        'DXServerSuspended'              => localize('This feature is suspended for system maintenance. Please try later.'),
-        'DXNoServer'                     => localize('Server must be provided for Deriv X service token.'),
-        'DXNoAccount'                    => localize('You do not have a Deriv X account on the provided server.'),
-        'DXTokenGenerationFailed'        => localize('Token generation failed. Please try later.'),
-        'OpenP2POrders'                  => localize('You cannot change account currency while you have open P2P orders.'),
-        'PaymentAgentWithdrawSameMethod' => localize("To continue withdrawals, please select the same payment method you used to deposit."),
-        'PaymentAgentJustification'      => localize(
-            "To continue withdrawals via payment agents, please get in touch with us via LiveChat and explain the reason for the withdrawal."),
-        'PaymentAgentJustificationAdded' => localize(
-            "We're processing your request to withdraw funds via a payment agent. You'll get to know the status of your request via email within 24 hours."
-        ),
-        'PaymentAgentUseOtherMethod' => localize(
-            "Please use an e-wallet that you have used for deposits previously or create a new e-wallet if you don't have one. Ensure the e-wallet supports withdrawal. See the list of e-wallets that support withdrawals here: https://deriv.com/payment-methods"
-        ),
-        'PaymentAgentZeroDeposits'  => localize("Withdrawals are not possible because there are no funds in this account yet."),
-        'PaymentAgentVirtualClient' => localize("Withdrawals are not possible on your demo account. You can only withdraw from a real account."),
         'SetSelfExclusionError'     => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
         'PaymentAgentNotAvailable'  => localize('The payment agent facility is not available for this account.'),
         'PaymentAgentAlreadyExists' => localize("You've already submitted a payment agent application request."),
