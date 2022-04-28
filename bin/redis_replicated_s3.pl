@@ -18,10 +18,11 @@ use YAML qw(LoadFile);
 STDOUT->autoflush(1);
 
 # defaults
-my $download_redis = 0;
-my $upload_redis   = 0;
-my $s3_config      = '/etc/rmg/redis_s3.yml';
-my $file_name      = 'binary_chronicle_redis.dump';
+my $download_redis      = 0;
+my $upload_redis        = 0;
+my $s3_config           = '/etc/rmg/redis_s3.yml';
+my $file_name           = 'binary_chronicle_redis.dump';
+my $flush_before_import = 0;
 my $help;
 
 GetOptions(
@@ -30,6 +31,7 @@ GetOptions(
     'u|upload-redis=i'   => \$upload_redis,
     'f|dump-file=s'      => \$file_name,
     'h|help'             => \$help,
+    'fa|fulsh-all=i'     => \$flush_before_import,
 );
 
 my $show_help = $help || !($download_redis || $upload_redis);
@@ -48,6 +50,7 @@ These options are available:
   -u, --upload-redis       Set it when you want redis data to be extracted and uploaded to redis
   -f, --dump-file          Name of dump file (default: binary_chronicle_redis.dump)
   -h, --help               Show this message.
+  -fa, --fulsh-all         Flush all the data redis data before imported.
 EOF
 
 my @redis_keys = ('interest', 'dividend', 'economic', 'volatility', 'correlation', 'partial_trading', 'holidays', 'app_settings');
@@ -82,6 +85,12 @@ sub download_redis {
     my $content   = $s3->get_object(key => $file_name)->get;
     my $writer    = BOM::Config::Chronicle::get_chronicle_writer();
     my $timestamp = Date::Utility->new;
+
+    if ($flush_before_import) {
+        # Remove chronicle keys related to app_settings
+        my @keys = map { @{$writer->cache_writer->scan_all(MATCH => "$_*")} } ('app_settings');
+        map { $writer->cache_writer->del($_) } @keys;
+    }
 
     my @lines = split /\n/, $content;
     foreach my $line (@lines) {
