@@ -40,6 +40,7 @@ use BOM::Config::Onfido;
 use BOM::Platform::Context qw(localize);
 use BOM::TradingPlatform::DXTrader;
 use BOM::Config::P2P;
+use BOM::Config::Runtime;
 
 =head2 residence_list
 
@@ -271,6 +272,64 @@ sub _crypto_config {
     return \%crypto_config;
 }
 
+=head2 _mt5_status
+
+Returns mt5 platform suspension status
+
+Returns a HASH.
+
+=cut
+
+sub _mt5_status {
+    my $mt5_real_servers = BOM::Config::MT5->new(group_type => 'real')->servers;
+    my $mt5_demo_servers = BOM::Config::MT5->new(group_type => 'demo')->servers;
+
+    my (@real_objects, @demo_objects);
+    my ($server_name, $platform, $server_number);
+
+    my $mt5_api_suspend_config = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
+
+    # Populating demo mt5 trading server objects.
+    foreach my $number (keys $mt5_demo_servers->@*) {
+        ($server_name) = %{$mt5_demo_servers->[$number]};
+        $server_name =~ m/p(\d+)_ts(\d+)/;
+
+        $platform      = int($1);
+        $server_number = int($2);
+
+        push @demo_objects,
+            {
+            all           => $mt5_api_suspend_config->all || $mt5_api_suspend_config->demo->$server_name->all,
+            server_number => $server_number,
+            platform      => $platform,
+            };
+    }
+
+    # Populating real mt5 trading server objects.
+    foreach my $number (keys $mt5_real_servers->@*) {
+        ($server_name) = %{$mt5_real_servers->[$number]};
+        $server_name =~ m/p(\d+)_ts(\d+)/;
+
+        $platform      = int($1);
+        $server_number = int($2);
+
+        push @real_objects,
+            {
+            all         => $mt5_api_suspend_config->all || $mt5_api_suspend_config->real->$server_name->all,
+            withdrawals => $mt5_api_suspend_config->all
+                || $mt5_api_suspend_config->withdrawals
+                || $mt5_api_suspend_config->real->$server_name->withdrawals,
+            deposits => $mt5_api_suspend_config->all || $mt5_api_suspend_config->deposits || $mt5_api_suspend_config->real->$server_name->deposits,
+            server_number => $server_number,
+            platform      => $platform,
+            };
+    }
+
+    return {
+        demo => [@demo_objects],
+        real => [@real_objects]};
+}
+
 rpc website_status => sub {
     my $params = shift;
 
@@ -286,6 +345,7 @@ rpc website_status => sub {
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
         crypto_config            => _crypto_config(),
+        mt5_status               => _mt5_status(),
         payment_agents           => {
             initial_deposit_per_country => decode_json($app_config->payment_agents->initial_deposit_per_country),
         },
