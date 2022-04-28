@@ -1136,8 +1136,9 @@ subtest 'update email' => sub {
     my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user->id);
     is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
 
-    my $new_email = 'an_email@anywhere.com';
+    my $new_email = 'AN_email@anywhere.com';
     is $user->update_email($new_email), 1, 'user email changed is OK';
+    is $user->email, lc $new_email, 'user\'s email was updated';
 
     $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
     is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly';

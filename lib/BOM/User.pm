@@ -774,6 +774,7 @@ sub add_login_history {
 ################################################################################
 sub update_email_fields {
     my ($self, %args) = @_;
+    $args{email} = lc $args{email} if $args{email};
     my ($email, $email_consent, $email_verified) = $self->dbic->run(
         fixup => sub {
             $_->selectrow_array('select * from users.update_email_fields(?, ?, ?, ?)',
