@@ -786,13 +786,29 @@ sub update_email_fields {
 }
 
 sub update_totp_fields {
-    my ($self,            %args)       = @_;
-    my ($is_totp_enabled, $secret_key) = $self->dbic->run(
+    my ($self, %args) = @_;
+
+    my $user_is_totp_enabled = $self->is_totp_enabled;
+
+    # if 2FA is enabled, we won't update the secret key
+    if ($args{secret_key} && $user_is_totp_enabled && ($args{is_totp_enabled} // 1)) {
+        return;
+    }
+
+    my ($new_is_totp_enabled, $secret_key) = $self->dbic->run(
         fixup => sub {
             $_->selectrow_array('select * from users.update_totp_fields(?, ?, ?)', undef, $self->{id}, $args{is_totp_enabled}, $args{secret_key});
         });
-    $self->{is_totp_enabled} = $is_totp_enabled;
+    $self->{is_totp_enabled} = $new_is_totp_enabled;
     $self->{secret_key}      = $secret_key;
+
+    # revoke tokens if 2FA is updated
+    if ($user_is_totp_enabled xor $new_is_totp_enabled) {
+        my $oauth = BOM::Database::Model::OAuth->new;
+        $oauth->revoke_tokens_by_loginid($_->loginid) for ($self->clients);
+        $oauth->revoke_refresh_tokens_by_user_id($self->id);
+    }
+
     return $self;
 }
 
