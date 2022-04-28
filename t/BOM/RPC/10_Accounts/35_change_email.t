@@ -51,7 +51,7 @@ $mock_emitter->mock('emit' => sub { push @emitted, [@_]; });
 
 my $method = 'change_email';
 subtest 'change email' => sub {
-    my $new_email    = 'anyemail@xyz.com';
+    my $new_email    = 'ANYemail@xyz.com';
     my $new_password = 'Fsfjxljfwkls3@fs9';
     my $params       = {
         token => $token,
@@ -143,7 +143,7 @@ subtest 'change email' => sub {
     is_deeply($result, $error, 'change_email returns token error');
 
     $code = BOM::Platform::Token->new({
-            email       => $new_email,
+            email       => lc $new_email,
             expires_in  => 3600,
             created_for => 'request_email',
         })->token;
@@ -159,7 +159,7 @@ subtest 'change email' => sub {
     is_deeply($result, $error, 'change_email returns password error');
 
     $code = BOM::Platform::Token->new({
-            email       => $new_email,
+            email       => lc $new_email,
             expires_in  => 3600,
             created_for => 'request_email',
         })->token;
@@ -187,7 +187,8 @@ subtest 'change email' => sub {
     isnt($user->{password}, $hash_pwd, 'client password updated');
 
     $password = $new_password;
-    isnt($user->{email},                         $email, 'users email updated');
+    isnt($user->{email}, $email, 'user\'s email is not old_email');
+    is($user->{email}, lc $new_email, 'user\'s email updated to new_email');
     isnt($test_client->get_mt5_details->{email}, $email, 'mt5\'s user email updated');
 };
 

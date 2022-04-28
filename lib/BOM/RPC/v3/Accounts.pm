@@ -1366,6 +1366,7 @@ rpc change_email => sub {
     }
 
     my $user = $client->user;
+    $args->{new_email} = lc $args->{new_email} if $args->{new_email};
 
     if ($args->{change_email} eq 'verify') {
         my $err =
