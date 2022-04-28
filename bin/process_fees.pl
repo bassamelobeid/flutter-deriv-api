@@ -22,6 +22,7 @@ use BOM::Backoffice::Config;
 use BOM::User::AuditLog;
 use BOM::User::Client;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
 
 use Log::Any::Adapter qw(Stderr), log_level => 'debug';
 use Log::Any qw($log);
