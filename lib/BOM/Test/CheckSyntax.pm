@@ -82,7 +82,7 @@ sub check_syntax {
     foreach my $file (@$check_files) {
         chomp $file;
 
-        next unless (-f $file and $file =~ /[.](?:pl|pm|cgi)\z/);
+        next unless (-f $file and $file =~ /[.]p[lm]\z/);
         next if exists $skipped_files{$file};
 
         my $skip_match;
@@ -108,8 +108,8 @@ sub check_syntax {
         #   for (sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib')) {
         #        syntax_ok($_)      if $_ =~ /\.pl$/;
         #   }
-        syntax_ok($file)                                      if $file =~ /[.](?:pl|cgi)\z/ and $check_diff;
-        is(system("$^X", "-c", $file), 0, "file compiles OK") if $file =~ /[.](?:pl|cgi)\z/;
+        syntax_ok($file)                                      if $file =~ /[.]pl\z/ and $check_diff;
+        is(system("$^X", "-c", $file), 0, "file compiles OK") if $file =~ /[.]pl\z/;
     }
 }
 
