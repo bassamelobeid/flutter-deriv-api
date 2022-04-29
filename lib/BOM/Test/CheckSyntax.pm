@@ -82,7 +82,7 @@ sub check_syntax {
     foreach my $file (@$check_files) {
         chomp $file;
 
-        next unless (-f $file and $file =~ /[.]p[lm]\z/);
+        next unless (-f $file and $file =~ /[.](?:pl|pm|cgi)\z/);
         next if exists $skipped_files{$file};
 
         my $skip_match;
