@@ -29,6 +29,7 @@ use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use BOM::User::Client;
 use BOM::Transaction::ContractUpdate;
 use BOM::Transaction::ContractUpdateHistory;
+use BOM::Rules::Engine;
 use Date::Utility;
 
 use constant DEFAULT_CONTRACT_UPDATE_HISTORY_LIMIT => 500;

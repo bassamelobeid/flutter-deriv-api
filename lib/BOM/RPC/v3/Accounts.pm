@@ -1005,9 +1005,19 @@ rpc get_account_status => sub {
         client          => $client,
         stop_on_failure => 0
     );
-    my $base_validation     = BOM::Platform::Client::CashierValidation::validate($client->loginid, '',           0, $rule_engine);
-    my $deposit_validation  = BOM::Platform::Client::CashierValidation::validate($client->loginid, 'deposit',    0, $rule_engine);
-    my $withdraw_validation = BOM::Platform::Client::CashierValidation::validate($client->loginid, 'withdrawal', 0, $rule_engine);
+    my %args = (
+        loginid     => $client->loginid,
+        action      => '',
+        is_internal => 0,
+        bbb         => 'aaa',
+        rule_engine => $rule_engine
+    );
+    my $base_validation     = BOM::Platform::Client::CashierValidation::validate(%args);
+    my $deposit_validation  = BOM::Platform::Client::CashierValidation::validate(%args, action => 'deposit');
+    my $withdraw_validation = BOM::Platform::Client::CashierValidation::validate(%args, action => 'withdrawal');
+
+    $withdraw_validation->{status} //= [];
+    $withdraw_validation->{status} = [map { $_ =~ s/^ServiceNotAllowedForPA$/WithdrawServiceUnavailableForPA/r } $withdraw_validation->{status}->@*];
 
     my @cashier_validation     = uniq map { ($_->{status} // [])->@* } $base_validation, $deposit_validation, $withdraw_validation;
     my @cashier_missing_fields = uniq map { ($_->{missing_fields} // [])->@* } $deposit_validation, $withdraw_validation;

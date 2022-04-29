@@ -204,6 +204,24 @@ subtest 'Payment withdraw' => sub {
     ok $msg, 'Email sent successfully';
     mailbox_clear();
 
+    subtest 'payment agent restrictions' => sub {
+        my $mock_pa = Test::MockObject->new;
+        $mock_pa->mock(status           => sub { 'authorized' });
+        $mock_pa->mock(services_allowed => sub { return [] });
+
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        $mock_client->redefine(get_payment_agent => $mock_pa);
+
+        $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token 1');
+        $params[1]->{token} = $token;
+
+        $rpc_ct->call_ok(@params)
+            ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier withdrawal is not available for PAs by default')
+            ->error_message_is('This service is not available for payment agents.', 'Serivce unavailability error message');
+
+        $mock_client->unmock_all;
+    };
+
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");

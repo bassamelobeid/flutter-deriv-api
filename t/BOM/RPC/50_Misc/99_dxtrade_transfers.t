@@ -155,6 +155,21 @@ subtest 'platform deposit and withdrawal' => sub {
         ->has_no_system_error->has_error->error_code_is('DXSuspended', 'cannot deposit when dxtrade suspended');
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
+    # payment agent restriction
+    my $mock_pa = Test::MockObject->new;
+    $mock_pa->mock(status           => sub { 'authorized' });
+    $mock_pa->mock(services_allowed => sub { return [] });
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine(get_payment_agent => $mock_pa);
+
+    $c->call_ok('trading_platform_deposit', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferToNonPaSibling', 'Payment agents cannot make DXTrade deposits.');
+
+    $mock_client->unmock_all;
+
+    # successful transfer
     my $res = $c->call_ok('trading_platform_deposit', $params)->has_no_system_error->has_no_error->result;
     delete $res->{stash};
     cmp_deeply($res, {transaction_id => re('\d+')}, 'deposit transaction id returned');

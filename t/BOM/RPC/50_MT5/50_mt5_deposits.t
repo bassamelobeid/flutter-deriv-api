@@ -4,6 +4,7 @@ use Guard;
 use Test::More;
 use Test::Mojo;
 use Test::MockModule;
+use Test::MockObject;
 use Test::MockTime qw(:all);
 use JSON::MaybeUTF8;
 
@@ -197,6 +198,28 @@ subtest 'deposit' => sub {
     $c->call_ok($method, $params)->has_error('client is blocked from withdrawal')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
     $test_client->status->clear_mt5_withdrawal_locked;
+
+    my $mock_client         = Test::MockModule->new('BOM::User::Client');
+    my $pa_services_allowed = [];
+    $mock_client->redefine(
+        get_payment_agent => sub {
+            my $result = Test::MockObject->new();
+            $result->mock(status           => sub { 'authorized' });
+            $result->mock(services_allowed => sub { return $pa_services_allowed });
+
+            return $result;
+        });
+
+    $c->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('MT5DepositError', 'Payment agents cannot make MT5 deposits.')
+        ->error_message_is('You are not allowed to transfer to this account.', 'Error message is about PAs');
+
+    $pa_services_allowed = BOM::User::Client::PaymentAgent::ALLOWABLE_SERVICES;
+    $c->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('MT5DepositError',
+        'Payment agents cannot make MT5 deposits, even whith all services allowed.')
+        ->error_message_is('You are not allowed to transfer to this account.', 'MT5 trasfer cannot be allowed');
+
+    $mock_client->unmock_all;
 
     $demo_account_mock->unmock_all();
 

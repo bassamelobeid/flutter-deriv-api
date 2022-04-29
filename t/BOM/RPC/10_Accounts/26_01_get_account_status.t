@@ -184,8 +184,9 @@ subtest 'get account status' => sub {
             my $validation = {'' => {error => 1}};
             $mocked_cashier_validation->redefine(
                 validate => sub {
-                    my ($loginid, $action) = @_;
-                    return $validation->{$action};
+                    my %args = @_;
+
+                    return $validation->{$args{action}};
                 });
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(

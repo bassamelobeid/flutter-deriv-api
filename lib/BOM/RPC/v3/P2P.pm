@@ -183,6 +183,7 @@ our %ERROR_MAP = do {
         AdvertiserBlocked                 => localize('You cannot place an order on the advert, because you have blocked the advertiser.'),
         InvalidAdvertForOrder             => localize('It is not possible to place an order on this advert. Please choose another advert.'),
         AdvertInfoMissingParam            => localize('An advert ID must be provided when not subscribing.'),
+        ServiceNotAllowedForPA            => localize('This service is not available for payment agents.'),
         AdvertFixedRateNotAllowed         => localize('Fixed rate adverts are not available at this time.'),
         AdvertFloatRateNotAllowed         => localize('Floating rate adverts are not available at this time.'),
         FloatRateTooBig                   => localize('The allowed range for floating rate is -[_1]% to +[_1]%.'),
@@ -260,9 +261,19 @@ sub p2p_rpc {
     return rpc $method => category => 'p2p',
         sub {
         my $params = shift;
+
         try {
             my $app_config = BOM::Config::Runtime->instance->app_config;
             my $client     = $params->{client};
+
+            my $rule_engine = BOM::Rules::Engine->new(client => $client);
+            # We're directly checking a single rule here; but with P2P rule engine integration, it can be changed into:
+            # $rule_engine->verify_action($method, $params->{args}->%*)
+            $rule_engine->apply_rules(
+                'paymentagent.action_is_allowed',
+                loginid           => $client->loginid,
+                underlying_action => $method
+            );
 
             _check_client_access($client, $app_config);
 
@@ -273,7 +284,7 @@ sub p2p_rpc {
                 account     => $acc,
                 app_config  => $app_config,
                 params      => $params,
-                rule_engine => BOM::Rules::Engine->new(client => $client),
+                rule_engine => $rule_engine,
             );
         } catch ($exception) {
             my ($err_code, $err_code_db, $err_params, $err_details);
@@ -353,6 +364,7 @@ p2p_rpc p2p_advertiser_create => sub {
     my (%args) = @_;
 
     my $client = $args{client};
+
     return $client->p2p_advertiser_create($args{params}{args}->%*);
 };
 
@@ -590,6 +602,7 @@ p2p_rpc p2p_advert_list => sub {
     my %args = @_;
 
     my $client = $args{client};
+
     return {list => $client->p2p_advert_list($args{params}{args}->%*)};
 };
 

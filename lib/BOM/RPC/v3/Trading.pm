@@ -12,6 +12,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw (send_email);
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Token;
+use BOM::Platform::Utility;
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::MT5::Errors;
@@ -84,7 +85,7 @@ my %ERROR_MAP = do {
         InvalidMinAmount                 => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
         InvalidMaxAmount                 => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
         CurrencyTypeNotAllowed           => localize('This currency is temporarily suspended. Please select another currency to proceed.'),
-        PlatformPasswordChangeSuspended  => localize("We're unable to reset your trading password due to system maintenance. Please try again later.")
+        PlatformPasswordChangeSuspended => localize("We're unable to reset your trading password due to system maintenance. Please try again later."),
     );
 };
 
@@ -487,7 +488,9 @@ sub handle_error {
 
     if (ref $e eq 'HASH') {
         if (my $code = $e->{error_code} // $e->{code}) {
-            if (my $message = $e->{message_to_client} // $ERROR_MAP{$code} // BOM::RPC::v3::Utility::error_map()->{$code}) {
+            if (my $message = $e->{message_to_client} // $ERROR_MAP{$code} // BOM::RPC::v3::Utility::error_map()->{$code}
+                // BOM::Platform::Utility::error_map()->{$code})
+            {
                 return BOM::RPC::v3::Utility::create_error({
                     code              => $code,
                     message_to_client => localize($message, ($e->{message_params} // [])->@*),

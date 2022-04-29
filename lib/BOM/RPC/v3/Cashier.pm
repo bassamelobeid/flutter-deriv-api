@@ -1319,15 +1319,17 @@ rpc transfer_between_accounts => sub {
             is_internal_transfer => $is_internal_transfer
         );
     } catch ($e) {
-        if (ref $e eq 'HASH' && $e->{error_code} eq 'ExchangeRatesUnavailable') {
+        if (ref $e eq 'HASH' && $e->{error_code}) {
             stats_event(
                 'Exchange Rates Issue - No offering to clients',
                 'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
                 {
                     alert_type => 'warning',
-                    tags       => ['currency:' . $e->{params} . '_USD']});
+                    tags       => ['currency:' . $e->{params} . '_USD']}) if $e->{error_code} eq 'ExchangeRatesUnavailable';
+
+            return BOM::RPC::v3::Utility::missing_details_error(details => $e->{details}->{fields})
+                if $e->{error_code} eq 'CashierRequirementsMissing';
         }
-        return BOM::RPC::v3::Utility::missing_details_error(details => $e->{details}->{fields}) if $e->{error_code} eq 'CashierRequirementsMissing';
         return BOM::RPC::v3::Utility::rule_engine_error($e);
     }
 

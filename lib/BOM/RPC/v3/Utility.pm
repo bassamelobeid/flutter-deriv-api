@@ -1241,7 +1241,14 @@ sub cashier_validation {
 
     my $rule_engine     = BOM::Rules::Engine->new(client => $client);
     my $validation_type = $type =~ /^(payment_withdraw|paymentagent_withdraw)$/ ? 'withdraw' : $type;
-    my $validation      = BOM::Platform::Client::CashierValidation::validate($client->loginid, $validation_type, 1, $rule_engine);
+    my $validation      = BOM::Platform::Client::CashierValidation::validate(
+        loginid           => $client->loginid,
+        action            => $validation_type,
+        is_internal       => 1,
+        rule_engine       => $rule_engine,
+        underlying_action => $type,
+    );
+
     return create_error($validation->{error}) if exists $validation->{error};
 
     return;

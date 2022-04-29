@@ -1390,27 +1390,50 @@ subtest 'transfer with no fee' => sub {
     my $previous_to_amt = $client_cr_usd->default_account->balance;
     my $previous_fm_amt = $client_cr_pa_btc->default_account->balance;
 
-    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
+    my $result =
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_message_is('You are not allowed to transfer to this account.',
+        'Transfer from a PA to a non-pa sibling is impossible');
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine(
+        get_payment_agent => sub {
+            my $mock_pa = Test::MockObject->new;
+            $mock_pa->mock(status           => sub { 'authorized' });
+            $mock_pa->mock(services_allowed => sub { return [] });
+            return $mock_pa;
+        });
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('PA to PA transfer is allowed');
 
     my $fee_percent     = 0;
     my $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
     cmp_ok $client_cr_pa_btc->default_account->balance, '==', $previous_fm_amt - $amount, 'correct balance after transfer excluding fees';
     cmp_ok $client_cr_usd->default_account->balance, '==', $previous_to_amt + $transfer_amount,
-        'authorised pa to non-pa transfer (BTC to USD), no fees will be charged';
+        'authorised pa to pa transfer (BTC to USD), no fees will be charged';
+    $mock_client->unmock('get_payment_agent');
 
     sleep(2);
     $params->{args}->{account_to} = $client_cr_pa_usd->loginid;
 
     $previous_fm_amt = $client_cr_pa_btc->default_account->balance;
     $previous_to_amt = $client_cr_pa_usd->default_account->balance;
-    $result          = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr_pa_usd->loginid, 'Transaction successful';
+
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_message_is('You are not allowed to transfer to this account.',
+        'Transfer from a PA to a non-authorized pa sibling is impossible');
+
+    my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+    $mock_pa->redefine(status => 'authorized');
+
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr_pa_usd->loginid, 'Transaction successful if both sides are payment agents';
 
     $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
     cmp_ok($client_cr_pa_btc->default_account->balance + 0, '==', ($previous_fm_amt - $amount), 'correct balance after transfer excluding fees');
     cmp_ok $client_cr_pa_usd->default_account->balance + 0, '==', $previous_to_amt + $transfer_amount,
-        'authorised pa to unauthrised pa (BTC to USD), one pa is authorised so no transaction fee charged';
+        'authorised pa to authrised pa (BTC to USD), no transaction fee charged';
+
+    $mock_pa->unmock_all;
 
     sleep(2);
     $amount          = 10;

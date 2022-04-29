@@ -1664,12 +1664,14 @@ async_rpc "mt5_deposit",
                         message => localize("The maximum amount you may transfer is: [_1].", $fm_client->default_account->balance),
                     }) if $amount > $fm_client->default_account->balance;
             } else {
+                my $rule_engine = BOM::Rules::Engine->new(client => $fm_client);
+
                 try {
                     $fm_client->validate_payment(
                         currency     => $fm_client->default_account->currency_code(),
                         amount       => -1 * $amount,
                         payment_type => 'mt5_transfer',
-                        rule_engine  => BOM::Rules::Engine->new(client => $fm_client),
+                        rule_engine  => $rule_engine,
                     );
                 } catch ($e) {
                     return create_error_future(
@@ -2114,7 +2116,6 @@ sub _mt5_validate_and_get_amount {
 
             } catch {
                 log_exception();
-                warn $loginid;
                 return create_error_future(
                     'InvalidLoginid',
                     {
@@ -2299,7 +2300,14 @@ sub _mt5_validate_and_get_amount {
 
             unless ($client->is_virtual and _is_account_demo($mt5_group)) {
                 my $rule_engine = BOM::Rules::Engine->new(client => $client);
-                my $validation  = BOM::Platform::Client::CashierValidation::validate($loginid, $action_counterpart, 0, $rule_engine);
+                my $validation  = BOM::Platform::Client::CashierValidation::validate(
+                    loginid           => $loginid,
+                    action            => $action_counterpart,
+                    is_internal       => 0,
+                    underlying_action => ($action eq 'deposit' ? 'mt5_transfer' : 'mt5_withdraw'),
+                    rule_engine       => $rule_engine
+                );
+
                 return create_error_future(
                     $error_code,
                     {

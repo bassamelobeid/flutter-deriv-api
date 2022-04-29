@@ -31,7 +31,7 @@ subtest 'tnc acceptance' => sub {
 };
 
 subtest 'no account currency' => sub {
-    # this is also ensures we are calling BOM::Platform::Client::CashierValidation::validate
+    # this also ensures we are calling BOM::Platform::Client::CashierValidation::validate
     for my $type (qw(deposit paymentagent_withdraw payment_withdraw withdraw)) {
         is BOM::RPC::v3::Utility::cashier_validation($client, $type)->{error}{code}, 'ASK_CURRENCY', 'Account currency required for ' . $type;
     }

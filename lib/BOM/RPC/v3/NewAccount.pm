@@ -133,6 +133,7 @@ rpc "verify_email",
             loginid      => $loginid,
             db_operation => 'replica'
         });
+
         return {status => 1} unless $client->email eq $email;
     }
 
@@ -218,6 +219,8 @@ rpc "verify_email",
         }
 
     } elsif ($client and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
+        # TODO: the following should be replaced by $rule_engine->validate_action($type )
+        # We should just wait until rhe rule engine integration of PA-withdrawal and cashier withdrawal actions.
         my $validation_error = BOM::RPC::v3::Utility::cashier_validation($client, $type);
         return $validation_error if $validation_error;
 

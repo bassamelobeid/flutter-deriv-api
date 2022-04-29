@@ -214,6 +214,20 @@ subtest 'Adverts' => sub {
 
     $params->{args} = {name => 'bond007'};
 
+    subtest 'PA restriction' => sub {
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        $mock_client->redefine(
+            get_payment_agent => sub {
+                my $mock_pa = Test::MockObject->new;
+                $mock_pa->mock(status           => sub { 'authorized' });
+                $mock_pa->mock(services_allowed => sub { return [] });
+                return $mock_pa;
+            });
+        $c->call_ok('p2p_advertiser_create', $params)
+            ->has_no_system_error->has_error->error_code_is('ServiceNotAllowedForPA', 'Payment agents cannot create orders.');
+        $mock_client->unmock('get_payment_agent');
+    };
+
     my $res = $c->call_ok('p2p_advertiser_create', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'advertiser created';
 
@@ -245,6 +259,21 @@ subtest 'Adverts' => sub {
         is_listed   => 0,
     );
     delete $client_advertiser->{_p2p_advertiser_cached};
+
+    subtest 'PA restriction' => sub {
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        $mock_client->redefine(
+            get_payment_agent => sub {
+                my $mock_pa = Test::MockObject->new;
+                $mock_pa->mock(status           => sub { 'authorized' });
+                $mock_pa->mock(services_allowed => sub { return [] });
+                return $mock_pa;
+            });
+
+        $c->call_ok('p2p_advert_create', $params)
+            ->has_no_system_error->has_error->error_code_is('ServiceNotAllowedForPA', 'Payment agents cannot create orders.');
+        $mock_client->unmock_all;
+    };
 
     my @offer_ids = ();    # store all agent's offer's ids to check p2p_agent_offers later
     $params->{args} = $advert_params;
@@ -362,6 +391,21 @@ subtest 'Create new order' => sub {
         advert_id => $advert->{id},
         amount    => 100,
     };
+
+    subtest 'PA restriction' => sub {
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        $mock_client->redefine(
+            get_payment_agent => sub {
+                my $mock_pa = Test::MockObject->new;
+                $mock_pa->mock(status           => sub { 'authorized' });
+                $mock_pa->mock(services_allowed => sub { return [] });
+                return $mock_pa;
+            });
+        $c->call_ok('p2p_order_create', $params)
+            ->has_no_system_error->has_error->error_code_is('ServiceNotAllowedForPA', 'Payment agents cannot create orders.');
+        $mock_client->unmock_all;
+    };
+
     my $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
     ok($order->{id},               'Order is created');
     ok($order->{account_currency}, 'Order has account_currency');
