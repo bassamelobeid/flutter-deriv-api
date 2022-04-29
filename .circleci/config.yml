@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -54,7 +55,7 @@ jobs:
         name: unit tests
     - store_test_results:
         path: /var/tmp/test-output
-  syntax_diff_unit:
+  core_syntax_diff:
     <<: *6
     steps:
     - *1
@@ -63,7 +64,10 @@ jobs:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make syntax_diff
+          make test
+        name: Core tests
+    - run:
+        command: make syntax_diff
         name: Code structure and syntax
     - run:
         command: make unit
@@ -114,9 +118,7 @@ version: 2
 workflows:
   build-workflow:
     jobs:
-    - syntax_diff_unit:
-        context: perl
-    - core:
+    - core_syntax_diff:
         context: perl
   daily:
     jobs:
@@ -137,7 +139,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "50 2 * * 6"
+        cron: 50 2 * * 6
         filters:
           branches:
             only:
