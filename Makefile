@@ -18,10 +18,10 @@ test:
 	@$(PROVE) t/BOM t/bin
 
 syntax_diff:
-	@$(PROVE) t/00_syntax_diff.t t/01_check_bom_dependency.t
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
 
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 doc:
 	pod2markdown lib/BOM/Test.pm > README.md
