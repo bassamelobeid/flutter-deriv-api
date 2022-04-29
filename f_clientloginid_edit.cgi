@@ -1298,9 +1298,13 @@ if ($payment_agent) {
         my $label = BOM::Backoffice::Utility::payment_agent_column_labels()->{$field};
         print "<tr><td>$label</td><td>" . encode_entities($value) . "</td></tr>";
     }
-
-    my $pa_countries = $client->get_payment_agent->get_countries;
+    my $pa           = $client->get_payment_agent;
+    my $pa_countries = $pa->get_countries;
     print "<tr><td>Target countries</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";
+
+    my $services_allowed = $pa->services_allowed // [];
+    print "<tr><td>Services Allowed</td><td>" . encode_entities(join(',', @$services_allowed)) . "</td></tr>";
+    print "<tr><td>Services Allowed Comments</td><td>" . encode_entities($pa->services_allowed_comments) . "</td></tr>";
 
     print '</table></div>';
 }

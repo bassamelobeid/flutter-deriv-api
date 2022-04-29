@@ -14,6 +14,7 @@ use Digest::SHA qw(sha256_hex);
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::User::Client;
+use BOM::User::Client::PaymentAgent;
 
 use constant SALT_FOR_CSRF_TOKEN => 'emDWVx1SH68JE5N1ba9IGz5fb';
 
@@ -1083,6 +1084,38 @@ sub get_payment_agent_registration_form {
         },
     };
 
+    my $label_services_allowed = {
+        'label' => {
+            'text' => 'RESTRICTED SERVICES ALLOWED:',
+        }};
+
+    my @input_fields_services_allowed;
+    for my $service (BOM::User::Client::PaymentAgent::ALLOWABLE_SERVICES->@*) {
+        push @input_fields_services_allowed,
+            {
+            'label' => {
+                'text' => "&nbsp;" x 10 . $service,
+                'for'  => "pa_services_allowed_$service",
+            },
+            'input' => HTML::FormBuilder::Select->new(
+                'id'      => "pa_services_allowed_$service",
+                'name'    => "pa_services_allowed_$service",
+                'values'  => ['0'],
+                'options' => _select_yes_no(),
+            )};
+    }
+    my $input_field_pa_serices_allowed_comments = {
+        'label' => {
+            'text' => 'Services Allowed Comments',
+            'for'  => 'pa_services_allowed_comments',
+        },
+        'input' => {
+            'id'        => 'pa_services_allowed_comments',
+            'name'      => 'pa_services_allowed_comments',
+            'type'      => 'text',
+            'maxlength' => 500,
+        }};
+
     my $input_hidden_field_whattodo = {
         'id'    => 'whattodo',
         'name'  => 'whattodo',
@@ -1163,6 +1196,11 @@ sub get_payment_agent_registration_form {
         $fieldset->add_field($input_field_pa_listed);
     }
     $fieldset->add_field($input_field_pa_countries);
+
+    $fieldset->add_field($label_services_allowed);
+    $fieldset->add_field($_) for @input_fields_services_allowed;
+    $fieldset->add_field($input_field_pa_serices_allowed_comments);
+
     $fieldset->add_field($hidden_fields);
     $fieldset->add_field($input_submit_button);
 

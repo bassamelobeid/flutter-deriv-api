@@ -21,35 +21,42 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 use constant MAP_FIELDS => {
-    pa_name                     => 'payment_agent_name',
-    pa_risk_level               => 'risk_level',
-    pa_coc_approval             => 'code_of_conduct_approval',
-    pa_email                    => 'email',
-    pa_tel                      => 'phone_numbers',
-    pa_url                      => 'urls',
-    pa_comm_depo                => 'commission_deposit',
-    pa_comm_with                => 'commission_withdrawal',
-    pa_max_withdrawal           => 'max_withdrawal',
-    pa_min_withdrawal           => 'min_withdrawal',
-    pa_info                     => 'information',
-    pa_status                   => 'status',
-    pa_listed                   => 'is_listed',
-    pa_supported_payment_method => 'supported_payment_methods',
-    pa_countries                => 'target_country',
-    pa_affiliate_id             => 'affiliate_id',
-    pa_status_comment           => 'status_comment',
+    pa_name                      => 'payment_agent_name',
+    pa_risk_level                => 'risk_level',
+    pa_coc_approval              => 'code_of_conduct_approval',
+    pa_email                     => 'email',
+    pa_tel                       => 'phone_numbers',
+    pa_url                       => 'urls',
+    pa_comm_depo                 => 'commission_deposit',
+    pa_comm_with                 => 'commission_withdrawal',
+    pa_max_withdrawal            => 'max_withdrawal',
+    pa_min_withdrawal            => 'min_withdrawal',
+    pa_info                      => 'information',
+    pa_status                    => 'status',
+    pa_listed                    => 'is_listed',
+    pa_supported_payment_method  => 'supported_payment_methods',
+    pa_countries                 => 'target_country',
+    pa_affiliate_id              => 'affiliate_id',
+    pa_status_comment            => 'status_comment',
+    pa_services_allowed          => 'services_allowed',
+    pa_services_allowed_comments => 'services_allowed_comments',
 };
 
 sub _prepare_display_values {
     my ($pa) = @_;
 
-    my %input_fields = map { my $sub_name = MAP_FIELDS->{$_}; $_ => $pa->$sub_name } keys MAP_FIELDS->%*;
+    my %input_fields = map { my $sub_name = MAP_FIELDS->{$_}; $_ => $pa->$sub_name // '' } keys MAP_FIELDS->%*;
     # convery 0/1 to yes/no
     $input_fields{$_} = $input_fields{$_} ? 'yes' : 'no' for (qw/pa_coc_approval pa_auth pa_listed/);
     $input_fields{$_} ||= '0.00' for (qw/pa_comm_depo pa_comm_with/);
 
     my $pa_countries = $pa->get_countries;
     $input_fields{pa_countries} = join(',', @$pa_countries);
+
+    for my $service (BOM::User::Client::PaymentAgent::ALLOWABLE_SERVICES->@*) {
+        my $service_is_allowed = any { $_ eq $service } ($pa->services_allowed // [])->@*;
+        $input_fields{"pa_services_allowed_$service"} = $service_is_allowed ? 'yes' : 'no';
+    }
 
     for my $field (qw/pa_url pa_tel pa_supported_payment_method/) {
         my $main_attr = $pa->details_main_field->{MAP_FIELDS->{$field}};
@@ -92,12 +99,14 @@ if ($whattodo eq 'create') {
     code_exit_BO("Payment agents are suspended in client's residence country.") if is_payment_agents_suspended_in_country($client->residence);
 
     my $values = {
-        pa_name         => $client->full_name,
-        pa_email        => $client->email,
-        pa_tel          => $client->phone,
-        pa_comm_depo    => '0.00',
-        pa_comm_with    => '0.00',
-        pa_coc_approval => 'yes'
+        pa_name                      => $client->full_name,
+        pa_email                     => $client->email,
+        pa_tel                       => $client->phone,
+        pa_comm_depo                 => '0.00',
+        pa_comm_with                 => '0.00',
+        pa_coc_approval              => 'yes',
+        pa_services_allowed          => [],
+        pa_services_allowed_comments => ''
     };
 
     # try to copy from a sibling payment agent
@@ -168,6 +177,8 @@ if ($whattodo eq 'show') {
     code_exit_BO("Invalid deposint commission amount: it should be between 0 and 9")   unless $pa_comm_depo >= 0 and $pa_comm_depo <= 9;
     code_exit_BO("Invalid withdrawal commission amount: it should be between 0 and 9") unless $pa_comm_with >= 0 and $pa_comm_with <= 9;
 
+    my @services = map { request->param("pa_services_allowed_$_") eq 'yes' ? $_ : () } BOM::User::Client::PaymentAgent::ALLOWABLE_SERVICES->@*;
+
     my %args = map { MAP_FIELDS->{$_} => request()->param($_) } keys MAP_FIELDS->%*;
     for my $arg (qw/urls phone_numbers supported_payment_methods/) {
         my $main_attr = $pa->details_main_field->{$arg};
@@ -180,6 +191,8 @@ if ($whattodo eq 'show') {
     }
     $args{$_} = ($args{$_} eq 'yes') for (qw/is_listed code_of_conduct_approval/);
     $args{currency_code} = $currency;
+
+    $args{services_allowed} = \@services;
 
     $args{skip_coc_validation} = 1 if $editing;
     try {
