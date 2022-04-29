@@ -59,7 +59,12 @@ sub handshake {
     return $c->_render_error(localize("Invalid currency.")) if ($client->currency !~ /^$currency$/i);
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    my $validation  = BOM::Platform::Client::CashierValidation::validate($loginid, $action, 0, $rule_engine);
+    my $validation  = BOM::Platform::Client::CashierValidation::validate(
+        loginid     => $loginid,
+        action      => $action,
+        is_internal => 0,
+        rule_engine => $rule_engine
+    );
     return $c->_render_error($validation->{error}->{message_to_client}) if $validation->{error};
 
     my $res = _check_handoff_token_key($loginid, $token);
@@ -124,7 +129,12 @@ sub _act {
     return $c->_render_error(localize('Invalid request.')) unless $client->default_account;
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    my $validation  = BOM::Platform::Client::CashierValidation::validate($loginid, $action, 0, $rule_engine);
+    my $validation  = BOM::Platform::Client::CashierValidation::validate(
+        loginid     => $loginid,
+        action      => $action,
+        is_internal => 0,
+        rule_engine => $rule_engine
+    );
     # this validation is also done in RPC but better to be done here as well to be double sure
     return $c->_render_error($validation->{error}->{message_to_client}) if exists $validation->{error};
 

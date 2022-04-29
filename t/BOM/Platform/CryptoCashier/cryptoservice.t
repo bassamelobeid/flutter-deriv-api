@@ -39,7 +39,12 @@ get '/btc/handshake' => sub {
     });
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    my $validation  = BOM::Platform::Client::CashierValidation::validate($loginid, $action, 0, $rule_engine);
+    my $validation  = BOM::Platform::Client::CashierValidation::validate(
+        loginid     => $loginid,
+        action      => $action,
+        is_internal => 0,
+        rule_engine => $rule_engine
+    );
     return $c->render(
         text   => $validation->{error}->{message_to_client},
         status => 200,

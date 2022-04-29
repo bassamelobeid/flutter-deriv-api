@@ -86,10 +86,16 @@ Returns undef for successful validation or a hashref containing error details.
 =cut
 
 sub validate {
-    my ($loginid, $action, $is_internal, $rule_engine) = @_;
+    my %args = @_;
+    my ($loginid, $action, $is_internal, $underlying_action) = @args{qw(loginid action is_internal underlying_action)};
 
     my $client = BOM::User::Client->get_client_instance($loginid, 'replica') or return _create_error(localize('Invalid account.'));
     $action =~ s/^withdraw$/withdrawal/;
+
+    my $rule_engine = delete $args{rule_engine};
+
+    $underlying_action //= {};
+    $underlying_action = {name => $underlying_action} unless ref $underlying_action;
 
     my $errors   = check_availability($client, $action) // {};
     my $currency = $client->account ? $client->account->currency_code : '';
@@ -98,6 +104,8 @@ sub validate {
 
     my $rules_result = $rule_engine->verify_action(
         'cashier_validation',
+        underlying_action => $underlying_action->{name} // ('cashier_' . $action),
+        $underlying_action->{args}->%*,
         loginid     => $loginid,
         action      => $action,
         currency    => $currency,
