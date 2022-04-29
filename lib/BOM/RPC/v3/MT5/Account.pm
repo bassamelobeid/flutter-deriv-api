@@ -53,7 +53,13 @@ use constant MT5_SVG_FINANCIAL_MOCK_LEVERAGE => 1;
 use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
 use constant MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT => 'MT5 Virtual Money deposit';
-use constant USER_RIGHT_TRADE_DISABLED         => '0x0000000000000004';
+
+use constant USER_RIGHT_ENABLED         => 0x0000000000000001;
+use constant USER_RIGHT_TRAILING        => 0x0000000000000020;
+use constant USER_RIGHT_EXPERT          => 0x0000000000000040;
+use constant USER_RIGHT_API             => 0x0000000000000080;
+use constant USER_RIGHT_REPORTS         => 0x0000000000000100;
+use constant USER_RIGHT_TRADE_DISABLED  => 0x0000000000000004;
 
 # This is the default trading server key for
 # - demo account
@@ -819,6 +825,12 @@ async_rpc "mt5_new_account",
     if ($client->landing_company->is_for_affiliates) {
         $args->{rights} = USER_RIGHT_TRADE_DISABLED;
     }
+
+    # disable trading for payment agents
+    if (defined $client->payment_agent && $client->payment_agent->status eq 'authorized') {
+        $args->{rights} = USER_RIGHT_ENABLED | USER_RIGHT_TRAILING | USER_RIGHT_EXPERT| USER_RIGHT_API | USER_RIGHT_REPORTS | USER_RIGHT_TRADE_DISABLED;
+    }
+
 
     return get_mt5_logins($client, $account_type)->then(
         sub {
