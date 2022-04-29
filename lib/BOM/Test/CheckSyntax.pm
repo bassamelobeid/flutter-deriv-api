@@ -128,7 +128,7 @@ sub check_tidy {
         chomp $file;
         next unless -f $file;
         # tidy check for all perl files
-        if ($file =~ /[.](?:pl|pm|t)\z/) {
+        if ($file =~ /[.](?:pl|pm|t|cgi)\z/) {
             $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
         }
     }
