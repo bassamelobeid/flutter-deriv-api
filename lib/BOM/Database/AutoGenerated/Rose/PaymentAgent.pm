@@ -37,8 +37,10 @@ __PACKAGE__->meta->setup(
             ], 
             db_type => 'betonmarkets.payment_agent_status', 
         },
-        status_comment        => { type => 'varchar' },
-        risk_level                    => { type => 'text', not_null => 1 },
+        status_comment            => { type => 'varchar' },
+        risk_level                => { type => 'text', not_null => 1 },
+        services_allowed          => {type => 'array'},
+        services_allowed_comments => {type => 'text'},
     ],
 
     primary_key_columns => [ 'client_loginid' ],
