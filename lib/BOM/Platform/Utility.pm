@@ -234,6 +234,10 @@ sub error_map {
         P2PDepositsTransfer   => localize('The maximum you can transfer is [_1] [_3]. You can withdraw the balance ([_2] [_3]) through Deriv P2P.'),
         P2PDepositsWithdrawalZero => localize('Please use Deriv P2P to make a withdrawal.'),
         P2PDepositsTransferZero   => localize('Please use Deriv P2P to make a withdrawal. Transfers aren’t possible for your account at the moment.'),
+
+        ServiceNotAllowedForPA => localize('This service is not available for payment agents.'),
+        TransferToOtherPA      => localize('You are not allowed to transfer to other payment agents.'),
+        TransferToNonPaSibling => localize('You are not allowed to transfer to this account.'),
     };
 }
 
