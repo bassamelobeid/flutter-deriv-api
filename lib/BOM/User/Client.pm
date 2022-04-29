@@ -5345,6 +5345,7 @@ sub validate_payment {
             is_internal         => (any { $payment_type eq $_ } @internal)       ? 1 : 0,
             is_p2p_restricted   => (any { $payment_type eq $_ } @p2p_restricted) ? 1 : 0,
             brand               => request->brand(),
+            payment_type        => $payment_type,
             rule_engine_context => {
                 client_list     => [$self],
                 stop_on_failure => 1,

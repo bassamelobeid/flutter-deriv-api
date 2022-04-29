@@ -365,12 +365,42 @@ subtest 'validate payment agent details' => sub {
 
     }
 
-    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
+    subtest 'Services allowed' => sub {
+        $args{services_allowed} = 'scalar value';
+        like exception { $pa->validate_payment_agent_details(%args) }, qr/ServicesAllowedInvalidType/,
+            'Scalar values are not accepatable for allowed_services';
+
+        $args{services_allowed} = ['invalid name'];
+        like exception { $pa->validate_payment_agent_details(%args) }, qr/ServicesAllowedInvalidName/, 'Serivce name should be valid';
+
+        $args{services_allowed} = ['p2p'];
+        like exception { $pa->validate_payment_agent_details(%args) }, qr/ServicesAllowedComments/, 'Serivce comment cannot be empty';
+
+        my $result;
+        $args{services_allowed}          = undef;
+        $args{services_allowed_comments} = 'This comment will be removed - no allowed services';
+        is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
+        is $result->{services_allowed},          undef, 'Services are removed from output';
+        is $result->{services_allowed_comments}, undef, 'Services comments are removed from output';
+
+        $args{services_allowed}          = [];
+        $args{services_allowed_comments} = 'This comment will be cleared - empty services';
+        is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
+        is_deeply $result->{services_allowed}, [], 'Services are empty - but not removed';
+        is $result->{services_allowed_comments}, '', 'Services comments are cleared with empty services';
+
+        $args{services_allowed}          = ['p2p', 'cashier_withdraw'];
+        $args{services_allowed_comments} = 'This PA is a sweetheart';
+        is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
+        is_deeply $result->{services_allowed},   $args{services_allowed},          'Services are there';
+        is $result->{services_allowed_comments}, $args{services_allowed_comments}, 'Services comments are there';
+    };
 
     set_fixed_time(1000);
-    my $result = $pa->validate_payment_agent_details(%args);
-    is_deeply $result,
-        {
+    $args{services_allowed} = undef;
+
+    my $min_max         = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
+    my $expected_result = {
         'payment_agent_name'            => 'Nobody',
         'email'                         => $client1->email,
         'phone_numbers'                 => [{phone_number => $client1->phone}],
@@ -388,9 +418,11 @@ subtest 'validate payment agent details' => sub {
         'supported_payment_methods'     => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '',
-        'code_of_conduct_approval_time' => 1000,
-        },
-        'Expected default values are returned - coc approval is set to current time';
+        'code_of_conduct_approval_time' => 1000
+    };
+
+    my $result = $pa->validate_payment_agent_details(%args);
+    is_deeply $result, $expected_result, 'Expected default values are returned - coc approval is set to current time';
 
     $result = $pa->validate_payment_agent_details(%args, payment_agent_name => " Nobody  ");
     is_deeply $result,
@@ -448,6 +480,8 @@ subtest 'validate payment agent details' => sub {
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '123abcd',
         'code_of_conduct_approval_time' => 1000,
+        'services_allowed'              => ['p2p'],
+        'services_allowed_comments'     => 'This PA is my sweetheart',
     );
 
     @args{qw(payment_agent_name min_withdrawal max_withdrawal)} = ('test name', -1, -1);
@@ -489,6 +523,8 @@ subtest 'validate payment agent details' => sub {
     lives_ok { $object_pa->validate_payment_agent_details(%args, payment_agent_name => $object_pa2->payment_agent_name) }
     'No error if pa name is the same as one of sibling PAs';
 
+    lives_ok { $pa->validate_payment_agent_details(%args) } 'PA arguments are valid';
+
     subtest 'Code of conduct approval time' => sub {
         $result = $pa->validate_payment_agent_details(%args);
         is_deeply($result, \%args, 'Non-empty args are not changed');
@@ -529,12 +565,10 @@ subtest 'validate payment agent details' => sub {
 
         $result = $pa->validate_payment_agent_details(%args);
         is_deeply($result, {%args, code_of_conduct_approval_time => 1000}, 'COC approval time is set to current time if is not already approved');
-
         $existing_pa->code_of_conduct_approval(0);
         $existing_pa->save;
         $result = $pa->validate_payment_agent_details(%args);
         is_deeply($result, {%args, code_of_conduct_approval_time => 1000}, 'COC approval time is not changed if it is already approved');
-
     };
 
     restore_time();
