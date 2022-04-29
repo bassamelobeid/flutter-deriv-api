@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -29,7 +30,7 @@ alias:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 - &redis6
   image: redis:6
-  name: "redis-v6"
+  name: redis-v6
 - &debian-ci
   auth:
     password: $DOCKERHUB_PASSWORD
@@ -144,7 +145,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "30 5 * * 6"
+        cron: 30 5 * * 6
         filters:
           branches:
             only:
