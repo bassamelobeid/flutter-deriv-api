@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::Transfers;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::Transfers
+BOM::Rules::RuleRepository::Transfers
 
 =head1 DESCRIPTION
 
@@ -211,6 +211,7 @@ rule 'transfers.crypto_exchange_rates_availability' => {
             next if $currencies{$_}->{type} ne 'crypto';
 
             my $currency = $currencies{$_}->{code};
+
             $self->fail('ExchangeRatesUnavailable', params => $currency) unless ExchangeRates::CurrencyConverter::offer_to_clients($currency);
         }
 

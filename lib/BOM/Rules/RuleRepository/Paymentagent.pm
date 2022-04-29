@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::Paymentagent;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::Paymentagent
+BOM::Rules::RuleRepository::Paymentagent
 
 =head1 DESCRIPTION
 
@@ -13,14 +13,34 @@ This modules declares rules and regulations applied on paymentagents and clients
 use strict;
 use warnings;
 
-use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
+use List::Util qw(none any first);
+use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
 use Format::Util::Numbers qw(financialrounding);
 use Date::Utility;
 
 use BOM::Rules::Registry qw(rule);
 use BOM::Config::PaymentAgent;
 use BOM::Database::ClientDB;
+use BOM::User::Client::PaymentAgent;
 use BOM::Config;
+
+# Some actions are mapped to services restricted for payment agents in BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES.
+# If a service is allowed for a payment agent, it's mapping actions will be allowed as well.
+use constant PA_ACTION_MAPPING => {
+    p2p_advertiser_create     => 'p2p',
+    p2p_advert_create         => 'p2p',
+    p2p_order_create          => 'p2p',
+    buy                       => 'trading',
+    withdraw                  => 'cashier_withdraw',
+    cashier_withdrawal        => 'cashier_withdraw',
+    payment_withdraw          => 'cashier_withdraw',
+    transfer_between_accounts => 'transfer_to_non_pa_sibling',
+    mt5_deposit               => 'trading_platform_deposit',
+    mt5_transfer              => 'trading_platform_deposit',
+    trading_account_deposit   => 'trading_platform_deposit',
+    paymentagent_transfer     => 'transfer_to_pa',
+    paymentagent_withdraw     => 'transfer_to_pa'
+};
 
 rule 'paymentagent.pa_allowed_in_landing_company' => {
     description => "Checks the landing company and dies with PaymentAgentNotAvailable error code.",
@@ -42,6 +62,64 @@ rule 'paymentagent.paymentagent_shouldnt_already_exist' => {
             error_code => 'PaymentAgentAlreadyExists',
             }
             if $context->client($args)->get_payment_agent;
+
+        return 1;
+    },
+};
+
+rule 'paymentagent.action_is_allowed' => {
+    description =>
+        "Some services are not allowed for payment agents (trading, p2p, cashier withdrawal, ...), unless they are unlocked from backoffice.",
+    code => sub {
+        my ($self, $context, $args) = @_;
+
+        my $action = $args->{underlying_action} // $context->{action} or die 'Action name is required';
+        # sometimes we get p2p.advert.create rather than p2p_advert_create
+        $action =~ s/\./_/g;
+
+        my $pa_client;
+
+        # we have transfer_between_accounts_part1..3 events
+        if ($action =~ qr/^transfer_between_accounts.*/) {
+            my $loginid_to = $args->{loginid_to};
+
+            # a PA can transfer to a sibling account, if the sibling is also a payment agent;
+            $pa_client = $context->client({loginid => $args->{loginid_from}});
+            my $client_to = $context->client({loginid => $loginid_to});
+            my $pa_to     = $client_to->get_payment_agent;
+
+            return 1 if $pa_to and $pa_to->status eq 'authorized';
+
+            $action = 'transfer_to_non_pa_sibling';
+        } elsif ($action eq 'paymentagent_transfer') {
+            $pa_client = $context->client({loginid => $args->{loginid_pa}});
+            my $client = $context->client({loginid => $args->{loginid_client}});
+
+            return 1 if (!$client->get_payment_agent || $client->get_payment_agent->status ne 'authorized');
+        } elsif ($action eq 'paymentagent_withdraw') {
+            $pa_client = $context->client({loginid => $args->{loginid_client} // $args->{loginid}});
+        } else {
+            my $loginid = $args->{loginid} or die 'loginid is required';
+            $pa_client = $context->client({loginid => $loginid});
+        }
+
+        my $pa = $pa_client->get_payment_agent;
+        return 1 unless $pa && $pa->status eq 'authorized';
+
+        my $service = PA_ACTION_MAPPING->{$action} // $action;
+
+        my %error_mapping = (
+            transfer_to_pa             => 'TransferToOtherPA',
+            paymentagent_withdraw      => 'TransferToOtherPA',
+            transfer_to_non_pa_sibling => 'TransferToNonPaSibling',
+            trading_platform_deposit   => 'TransferToNonPaSibling',
+            mt5_deposit                => 'TransferToNonPaSibling',
+        );
+
+        return 1 unless any { $_ eq $service } BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES->@*;
+
+        my $services_allowed = $pa->services_allowed // [];
+        $self->fail($error_mapping{$service} // 'ServiceNotAllowedForPA') unless any { $_ eq $service } (@$services_allowed);
 
         return 1;
     },

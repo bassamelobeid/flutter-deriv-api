@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::Client;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::Client
+BOM::Rules::RuleRepository::Client
 
 =head1 DESCRIPTION
 

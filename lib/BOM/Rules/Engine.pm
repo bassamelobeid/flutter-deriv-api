@@ -12,7 +12,7 @@ BOM::Rules::Engine
     try {
         $rule_engine->verify_action('set_settings', loginid => $client->loginid, first_name => 'Sir John', last_name => 'Falstaff');
     catch ($error) {
-        # error hadling
+        # error handling
     }
 
     # This can be rewritten equalantly without dying on failure:
@@ -20,7 +20,7 @@ BOM::Rules::Engine
     my $rule_engine = BOM::Rules::Engine->new(client => $client, stop_on_failure => 0);
     my $result = $rule_engine->verify_action('set_settings', loginid => $client->loginid, first_name => 'Sir John', last_name => 'Falstaff');
     if ($result->has_error) {
-        # error hadling       
+        # error handling       
     }
 
 
@@ -99,7 +99,7 @@ Verifies an B<action> by checking the configured B<rules> against current B<cont
 
 =over 4
 
-=item C<rule_engine_contex> With this special argument you can override rule engine's context attributes, like I<stop_on_failure>.
+=item C<rule_engine_context> With this special argument you can override rule engine's context attributes, like I<stop_on_failure>.
 
 =back
 
@@ -118,7 +118,7 @@ sub verify_action {
     die "Unknown action '$action_name' cannot be verified" unless $action;
 
     my $rule_engine_context = delete($args{rule_engine_context}) // {};
-    my $context             = $self->context->clone(%$rule_engine_context);
+    my $context             = $self->context->clone(%$rule_engine_context, action => $action_name);
 
     return $action->verify($context, \%args);
 }

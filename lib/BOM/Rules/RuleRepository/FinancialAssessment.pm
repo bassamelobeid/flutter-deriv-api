@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::FinancialAssessment;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::FinancialAssessment
+BOM::Rules::RuleRepository::FinancialAssessment
 
 =head1 DESCRIPTION
 

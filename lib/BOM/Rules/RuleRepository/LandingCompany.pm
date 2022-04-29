@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::LandingCompany;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::landing_company
+BOM::Rules::RuleRepository::landing_company
 
 =head1 DESCRIPTION
 

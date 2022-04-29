@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::Payment;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::Payment
+BOM::Rules::RuleRepository::Payment
 
 =head1 DESCRIPTION
 

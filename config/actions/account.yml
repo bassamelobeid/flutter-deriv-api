@@ -36,8 +36,10 @@ new_account:
         gb:
           - profile.address_postcode_mandatory
           - client.forbidden_postcodes
+
 paymentagent_create:
   description: A set of rules to be applied on paymentagent create
   ruleset:
     - paymentagent.pa_allowed_in_landing_company
     - paymentagent.paymentagent_shouldnt_already_exist
+

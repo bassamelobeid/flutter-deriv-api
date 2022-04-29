@@ -44,8 +44,8 @@ subtest 'Verify an action' => sub {
     ok $rule_engine_1->verify_action('test_action'), 'action result is as expected';
     is scalar @action_verify_args, 3, 'Number of args is correct';
     my ($action, $context, $args) = @action_verify_args;
-    is $action, $test_action, 'Correct action is sought';
-    is_deeply $context, $rule_engine_1->context, 'Action verification is trggered with correct context';
+    is $action, $test_action, 'Correct action is cought';
+    is_deeply $context, {$rule_engine_1->context->%*, action => 'test_action'}, 'Correct context, action name included.';
     is_deeply $args, {}, 'Action is verified with empty args';
 
     undef @action_verify_args;
@@ -58,7 +58,7 @@ subtest 'Verify an action' => sub {
     is scalar @action_verify_args, 3, 'Number of args is correct';
     ($action, $context, $args) = @action_verify_args;
     is $action, $test_action, 'Correct action is sought';
-    is_deeply $context, $rule_engine_1->context, 'Action verification is trggered with correct context';
+    is_deeply $context, {$rule_engine_1->context->%*, action => 'test_action'}, 'Correct context, action name included.';
     is_deeply $args,
         {
         a => 1,

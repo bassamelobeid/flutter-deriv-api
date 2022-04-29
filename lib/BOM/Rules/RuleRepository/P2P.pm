@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::P2P;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::P2P
+BOM::Rules::RuleRepository::P2P
 
 =head1 DESCRIPTION
 

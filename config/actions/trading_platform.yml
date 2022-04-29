@@ -19,6 +19,7 @@ new_trading_account:
 trading_account_deposit:
   description: Contains rules to be applied on deposit to trading platform accounts
   ruleset:
+    - paymentagent.action_is_allowed
     - transfers.experimental_currency_email_whitelisted
     - transfers.currency_should_match
     - transfers.daily_limit

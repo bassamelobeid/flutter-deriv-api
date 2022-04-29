@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::Basic;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::Basic
+BOM::Rules::RuleRepository::Basic
 
 =head1 DESCRIPTION
 
