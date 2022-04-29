@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::Cashier;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::Cashier
+BOM::Rules::RuleRepository::Cashier
 
 =head1 DESCRIPTION
 

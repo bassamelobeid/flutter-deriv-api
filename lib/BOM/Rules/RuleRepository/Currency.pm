@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::Currency;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::Currency
+BOM::Rules::RuleRepository::Currency
 
 =head1 DESCRIPTION
 

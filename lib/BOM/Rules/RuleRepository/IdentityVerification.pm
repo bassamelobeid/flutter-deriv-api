@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::IdentityVerification;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::IdentityVerification
+BOM::Rules::RuleRepository::IdentityVerification
 
 =head1 DESCRIPTION
 

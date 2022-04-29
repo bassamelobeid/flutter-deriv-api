@@ -2,7 +2,7 @@ package BOM::Rules::RuleRepository::Onfido;
 
 =head1 NAME
 
-BOM::Rules::RuleRepositry::Onfido
+BOM::Rules::RuleRepository::Onfido
 
 =head1 DESCRIPTION
 

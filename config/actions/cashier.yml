@@ -52,6 +52,7 @@ transfer_between_accounts:
           - currency.known_currencies_allowed
           - transfers.same_landing_companies
           - currency.account_currency_is_legal
+          - paymentagent.action_is_allowed
           - type: group
             argument_mapping:
               loginid: loginid_from

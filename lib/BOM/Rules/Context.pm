@@ -36,6 +36,7 @@ around BUILDARGS => sub {
         _cache          => \%cache,
         stop_on_failure => $stop_on_failure,
         client_list     => $client_list,
+        action          => $constructor_args{action},
     );
 };
 
@@ -80,6 +81,17 @@ Prevents exit on the first failure and perform all actions
 has stop_on_failure => (
     is      => 'ro',
     default => 1
+);
+
+=head2 action
+
+The name of the current action.
+
+=cut
+
+has action => (
+    is      => 'ro',
+    default => ''
 );
 
 =head2 _cache
