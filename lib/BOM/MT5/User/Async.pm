@@ -94,7 +94,7 @@ sub _get_error_mapping {
 }
 
 sub _get_create_user_fields {
-    return (@common_fields, qw/mainPassword investPassword agent group/);
+    return (@common_fields, qw/mainPassword investPassword agent group rights/);
 }
 
 sub _get_user_fields {
