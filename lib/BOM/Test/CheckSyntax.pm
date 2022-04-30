@@ -14,6 +14,7 @@ use BOM::Test::CheckJsonMaybeXS;
 use Test::Builder qw();
 use YAML::XS qw(LoadFile);
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
+our $skip_tidy;
 
 =head1 check_syntax_on_diff
 
@@ -30,8 +31,8 @@ sub check_syntax_on_diff {
         pass "file change detected";
         diag($_) for @check_files;
 
-        check_syntax(\@check_files, \@skipped_files, 1);
-        check_tidy(@check_files);
+        check_syntax(\@check_files, \@skipped_files, 'syntax_diff');
+        check_tidy(\@check_files, \@skipped_files);
         check_yaml(@check_files);
     } else {
         pass "no change detected, skip tests";
@@ -51,8 +52,7 @@ sub check_syntax_all {
     check_syntax(\@check_files, \@skipped_files);
 
     @check_files = `find lib bin t -type f`;
-    check_tidy(@check_files);
-
+    check_tidy(\@check_files, \@skipped_files);
     @check_files = `find . -name "*.yml" -o -name "*.yaml"`;
     check_yaml(@check_files);
 }
@@ -64,35 +64,14 @@ check syntax for perl files
 =cut
 
 sub check_syntax {
-    my ($check_files, $skipped_files, $check_diff) = @_;
-
-    my %skipped_files;
-    my @skipped_path;
-    foreach (@$skipped_files) {
-        if (-f $_) {
-            # if it is file ,then exact match
-            $skipped_files{$_} = 1;
-        } else {
-            # otherwise do match
-            push(@skipped_path, $_);
-        }
-    }
+    my ($check_files, $skipped_files, $syntax_diff) = @_;
 
     diag("start checking syntax...");
     foreach my $file (@$check_files) {
         chomp $file;
 
         next unless (-f $file and $file =~ /[.]p[lm]\z/);
-        next if exists $skipped_files{$file};
-
-        my $skip_match;
-        foreach (@skipped_path) {
-            if ($file =~ /$_/) {
-                $skip_match = 1;
-                last;
-            }
-        }
-        next if $skip_match;
+        next if is_skipped_file($file, $skipped_files);
 
         diag("syntax check on $file:");
         if ($file =~ /^lib\/.+[.]pm\z/) {
@@ -108,7 +87,7 @@ sub check_syntax {
         #   for (sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib')) {
         #        syntax_ok($_)      if $_ =~ /\.pl$/;
         #   }
-        syntax_ok($file)                                      if $file =~ /[.]pl\z/ and $check_diff;
+        syntax_ok($file)                                      if $file =~ /[.]pl\z/ and $syntax_diff;
         is(system("$^X", "-c", $file), 0, "file compiles OK") if $file =~ /[.]pl\z/;
     }
 }
@@ -120,13 +99,14 @@ Check is_file_tidy for perl files
 =cut
 
 sub check_tidy {
-    my (@check_files) = @_;
+    my ($check_files, $skipped_files) = @_;
     my $test = Test::Builder->new;
 
     diag("start checking tidy...");
-    foreach my $file (@check_files) {
+    foreach my $file (@$check_files) {
         chomp $file;
         next unless -f $file;
+        next if $skip_tidy && is_skipped_file($file, $skipped_files);
         # tidy check for all perl files
         if ($file =~ /[.](?:pl|pm|t|cgi)\z/) {
             $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
@@ -182,6 +162,12 @@ sub check_bom_dependency {
         diag("new BOM module dependency detected!!!");
         diag($result);
     }
+}
+
+sub is_skipped_file {
+    my ($check_file, $skipped_files) = @_;
+    return unless @$skipped_files;
+    return grep { $check_file =~ /$_/ } @$skipped_files;
 }
 
 1;
