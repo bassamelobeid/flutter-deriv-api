@@ -61,6 +61,18 @@ sub check_syntax_all {
 
 check syntax for perl files
 
+Parameters:
+
+=over
+
+=item * check_files - array ref of files that need to be check.
+
+=item * skipped_files - array ref of files that will skip syntax check.
+
+=item * syntax_diff - flag to decide if is test for changed files.
+
+=back
+
 =cut
 
 sub check_syntax {
