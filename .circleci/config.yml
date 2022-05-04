@@ -74,6 +74,27 @@ jobs:
           make test
     - store_test_results:
         path: /var/tmp/test-output
+  core_syntax_diff:
+    <<: *default
+    steps:
+    - *ssh_keys
+    - *git
+    - *services
+    - *wait_services
+    - run:
+        <<: *tests
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test
+        name: Core tests
+    - run:
+        command: make unit
+        name: unit tests
+    - run:
+        command: make syntax_diff
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
   code_coverage:
     <<: *default
     steps:
