@@ -49,6 +49,8 @@ jobs:
         <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          sudo tee -a /etc/hosts < hosts.db
+          cat /etc/hosts
           make test
         name: Core tests
     - run:
