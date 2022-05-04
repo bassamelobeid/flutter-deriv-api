@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -37,6 +38,27 @@ default: &6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-myaffiliates
 jobs:
+  core_syntax_diff:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test
+        name: Core tests
+    - run:
+        command: make unit
+        name: unit tests
+    - run:
+        command: make syntax_diff
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
   syntax_unit:
     <<: *6
     steps:
@@ -98,13 +120,15 @@ jobs:
 version: 2
 workflows:
   build-workflow:
-    jobs: &7
+    jobs:
+    - core_syntax_diff:
+        context: perl
+  daily:
+    jobs:
     - syntax_unit:
         context: perl
     - core:
         context: perl
-  daily:
-    jobs: *7
     triggers:
     - schedule:
         cron: 21 20 * * *
@@ -118,7 +142,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "30 2 * * 6"
+        cron: 30 2 * * 6
         filters:
           branches:
             only:
