@@ -43,6 +43,27 @@ default: &6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-paymentapi
 jobs:
+  core_syntax_diff:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test
+        name: Core tests
+    - run:
+        command: make syntax_diff
+        name: Code structure and syntax
+    - run:
+        command: make unit
+        name: unit tests
+    - store_test_results:
+        path: /var/tmp/test-output
   syntax_unit:
     <<: *6
     steps:
@@ -50,9 +71,7 @@ jobs:
     - *2
     - run:
         <<: *5
-        command: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make syntax
+        command: make syntax
         name: Code structure and syntax
     - run:
         command: make unit
@@ -69,10 +88,9 @@ jobs:
     - run:
         <<: *5
         command: |
-          sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make test
-        name: Core test
+        name: Core tests
     - store_test_results:
         path: /var/tmp/test-output
   unit:
@@ -98,7 +116,6 @@ jobs:
     - run:
         <<: *5
         command: |
-          sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db
           make cover
         name: code coverage tests
 version: 2
