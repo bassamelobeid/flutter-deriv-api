@@ -6,14 +6,17 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test_all: $(TESTS)
 
+syntax_diff:
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
+
 syntax:
 	@$(PROVE) --norc t/*.t
 
 test1:
-	@$(PROVE) t/BOM/RPC/[0-4]* t/999_redis_keys.t
+	@$(PROVE) t/BOM/RPC/[0-4]* t/BOM/999_redis_keys.t
 
 test2:
-	@$(PROVE) t/BOM/RPC/[5-9]* t/999_redis_keys.t
+	@$(PROVE) t/BOM/RPC/[5-9]* t/BOM/999_redis_keys.t
 
 test: test1 test2
 

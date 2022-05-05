@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -36,7 +37,7 @@ alias:
     name: Check services are running
 - &redis6
   image: redis:6
-  name: "redis-v6"
+  name: redis-v6
 - &debian-ci
   auth:
     password: $DOCKERHUB_PASSWORD
@@ -63,10 +64,26 @@ jobs:
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make json_schemas
-        name: Run tests
+        name: Run json_schemas tests
     - store_test_results:
         path: /var/tmp/test-output
   syntax_unit:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make syntax
+        name: Code structure and syntax
+    - run:
+        command: make unit
+        name: unit tests
+    - store_test_results:
+        path: /var/tmp/test-output
+  schemas_syntax_diff:
     <<: *6
     steps:
     - *1
@@ -78,7 +95,10 @@ jobs:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make syntax
+          make json_schemas
+        name: Run json_schemas tests
+    - run:
+        command: make syntax_diff
         name: Code structure and syntax
     - run:
         command: make unit
@@ -152,7 +172,15 @@ jobs:
 version: 2
 workflows:
   build-workflow:
-    jobs: &7
+    jobs:
+    - core1:
+        context: perl
+    - core2:
+        context: perl
+    - schemas_syntax_diff:
+        context: perl
+  daily:
+    jobs:
     - syntax_unit:
         context: perl
     - core1:
@@ -161,8 +189,6 @@ workflows:
         context: perl
     - schema:
         context: perl
-  daily:
-    jobs: *7
     triggers:
     - schedule:
         cron: 28 20 * * *
@@ -176,7 +202,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "50 5 * * 6"
+        cron: 50 5 * * 6
         filters:
           branches:
             only:
