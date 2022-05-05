@@ -13,6 +13,9 @@ pod_test:
 	@$(PROVE) t/*pod*.t
 
 
+syntax_diff:
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
+
 syntax:
 	@$(PROVE) --norc t/*.t
 
