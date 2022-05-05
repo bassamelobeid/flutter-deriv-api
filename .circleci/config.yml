@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -37,7 +38,7 @@ alias:
     name: Check services are running
 - &redis6
   image: redis:6
-  name: "redis-v6"
+  name: redis-v6
 
 - &debian-ci
   auth:
@@ -150,7 +151,7 @@ jobs:
         name: Security handling
     - store_test_results:
         path: /var/tmp/test-output
-  syntax_unit:
+  structure:
     <<: *6
     steps:
     - *1
@@ -264,7 +265,7 @@ version: 2
 workflows:
   build-workflow:
     jobs: &all-jobs
-    - syntax_unit:
+    - structure:
         context: perl
     - accounts:
         context: perl
@@ -303,7 +304,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "30 7 * * 6"
+        cron: 30 7 * * 6
         filters:
           branches:
             only:
