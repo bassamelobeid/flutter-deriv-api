@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -43,13 +44,32 @@ jobs:
     steps:
     - *1
     - *2
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make syntax
+        name: Code structure and syntax
+    - run:
+        command: make unit
+        name: unit tests
+    - store_test_results:
+        path: /var/tmp/test-output
+  core_syntax_diff:
+    <<: *6
+    steps:
+    - *1
+    - *2
     - *3
     - *4
     - run:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make syntax
+          make test
+        name: Core tests
+    - run:
+        command: make syntax_diff
         name: Code structure and syntax
     - run:
         command: make unit
@@ -99,13 +119,15 @@ jobs:
 version: 2
 workflows:
   build-workflow:
-    jobs: &7
+    jobs:
+    - core_syntax_diff:
+        context: perl
+  daily:
+    jobs:
     - syntax_unit:
         context: perl
     - core:
         context: perl
-  daily:
-    jobs: *7
     triggers:
     - schedule:
         cron: 31 20 * * *
@@ -119,7 +141,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "50 2 * * 6"
+        cron: 50 2 * * 6
         filters:
           branches:
             only:
