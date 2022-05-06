@@ -121,13 +121,15 @@ jobs:
 version: 2
 workflows:
   build-workflow:
-    jobs: &7
+    jobs:
+    - core_syntax_diff:
+        context: perl
+  daily:
+    jobs:
     - syntax_unit:
         context: perl
     - core:
         context: perl
-  daily:
-    jobs: *7
     triggers:
     - schedule:
         cron: 3 20 * * *
