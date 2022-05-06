@@ -6,7 +6,7 @@ my @skip_files = qw(
     lib/BOM/Product/ContractValidator.pm
     lib/BOM/Product/ContractVol.pm
     lib/BOM/Product/ContractPricer.pm
-
+    bin/profile_price_timing.pl
 );
 
 check_syntax_all(@skip_files);
