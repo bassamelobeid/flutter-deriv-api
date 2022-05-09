@@ -62,7 +62,7 @@ subtest 'residence_list' => sub {
                         documents_supported  => {
                             nin_slip => {
                                 display_name => 'NIN Slip',
-                                format       => '^[0-9]{10,11}$',
+                                format       => '^[0-9]{11}$',
                             },
                             drivers_license => {
                                 display_name => 'Drivers License',
