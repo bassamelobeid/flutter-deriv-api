@@ -635,7 +635,7 @@ SQL
                         Date::Utility->new($social_responsibility_risk_status_end_date)->minus_time_interval(SR_30_DAYS_EXP)->date_ddmmmyyyy;
                 }
             }
-        } elsif ($social_responsibility_risk_status eq 'manual') {
+        } elsif ($show_social_responsibility_client eq 'manual') {
             $social_responsibility_risk_status = BOM::User::SocialResponsibility->get_sr_risk_status($user->id) // 'low';
         }
     }
