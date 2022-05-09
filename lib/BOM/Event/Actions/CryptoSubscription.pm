@@ -206,12 +206,11 @@ sub set_pending_transaction {
         }
 
         # for omnicore we need to check if the property id is correct
-        if ($transaction->{property_id}
-            && ($transaction->{property_id} + 0) != ($currency->get_property_id() + 0))
-        {
+        unless ($currency->is_valid_property_id($transaction->{property_id})) {
             $error = sprintf("%s - Invalid property ID for transaction: %s", $currency_code, $transaction->{hash});
             $log->warnf($error);
             stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:failed']});
+
             return {
                 status => 0,
                 error  => $error
