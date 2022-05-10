@@ -538,6 +538,13 @@ subtest 'set settings' => sub {
     $full_args{account_opening_reason} = 'Income Earning';
 
     $params->{args} = {%{$params->{args}}, %full_args};
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Sorry, the provided state is not valid for your country of residence.',
+        'real account cannot update residence'
+    );
+
+    $params->{args}->{address_state} = 'Jejudo';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
 
     $params->{args} = {%full_args};
@@ -731,7 +738,11 @@ subtest 'set settings' => sub {
 
         subtest 'empty/unspecified' => sub {
             $params->{token} = $token_T_mx;
-            $params->{args}  = {%full_args, citizen => ''};
+            $params->{args}  = {
+                %full_args,
+                address_state => 'LND',
+                citizen       => ''
+            };
             is(
                 $c->tcall($method, $params)->{error}{message_to_client},
                 'Please provide complete details for your account.',

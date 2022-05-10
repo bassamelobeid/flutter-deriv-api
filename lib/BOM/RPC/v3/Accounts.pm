@@ -1746,6 +1746,8 @@ rpc set_settings => sub {
     my $tax_residence             = $args->{'tax_residence'}             // $current_client->tax_residence             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // $current_client->tax_identification_number // '';
 
+    # Residence is used in validating other fields like address_state
+    $args->{residence} ||= $current_client->residence;
     unless ($current_client->is_virtual) {
         my $error = $current_client->format_input_details($args);
         return BOM::RPC::v3::Utility::create_error_by_code($error->{error}) if $error;
@@ -1809,12 +1811,6 @@ rpc set_settings => sub {
     my $account_opening_reason = $args->{'account_opening_reason'} // $current_client->account_opening_reason;
     my $secret_answer          = $args->{secret_answer} ? BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) : '';
     my $secret_question        = $args->{secret_question} // '';
-
-    if ($args->{'address_state'}) {
-        my $match = BOM::Platform::Locale::validate_state($addressState, $current_client->residence);
-        return BOM::RPC::v3::Utility::create_error_by_code('InvalidState') unless (defined $match);
-        $addressState = $match->{value};
-    }
 
     my ($needs_verify_address_trigger, $cil_message);
     if (   ($address1 and $address1 ne $current_client->address_1)

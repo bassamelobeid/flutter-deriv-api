@@ -81,7 +81,6 @@ $client_details = {
     address_line_1         => 'Sovetskaya street',
     address_line_2         => 'home 1',
     address_city           => 'Samara',
-    address_state          => 'Samara',
     address_postcode       => '112233',
     phone                  => '+79272075932',
     secret_question        => 'test',
@@ -438,6 +437,7 @@ subtest $method => sub {
         isnt $result->{error}->{code}, 'InvalidAccount', 'No error with duplicate details but residence not provided so it errors out';
 
         $params->{args}->{residence}      = 'id';
+        $params->{args}->{address_state}  = 'Sumatera';
         $params->{args}->{place_of_birth} = 'id';
 
         @{$params->{args}}{keys %$client_details} = values %$client_details;
@@ -725,7 +725,7 @@ subtest $method => sub {
 
     subtest 'Create new account maltainvest' => sub {
         $params->{args}->{accept_risk} = 1;
-        delete $params->{args}->{non_pep_delclaration};
+        delete $params->{args}->{non_pep_declaration};
         %datadog_args = ();
         $params->{token} = $auth_token;
 
@@ -830,7 +830,7 @@ subtest $method => sub {
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
         ok($cl->status->financial_risk_approval, 'For mf accounts we will set financial risk approval status');
         is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
-            'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
+            'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';
 
         is $cl->status->crs_tin_information->{reason}, 'Client confirmed tax information', "CRS status is set";
 
@@ -896,6 +896,7 @@ subtest $method => sub {
                 broker_code              => 'MLT',
                 email                    => $email,
                 residence                => 'cz',
+                address_state            => '',
                 secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
                 non_pep_declaration_time => '2020-01-02',
             });
@@ -914,7 +915,7 @@ subtest $method => sub {
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'de';
         $params->{args}->{citizen}     = 'at';
-        delete $params->{args}->{non_pep_delclaration};
+        delete $params->{args}->{non_pep_declaration};
         %datadog_args = ();
 
         mailbox_clear();
@@ -928,8 +929,8 @@ subtest $method => sub {
         delete $params->{args}->{secret_question};
         delete $params->{args}->{secret_answer};
         delete $params->{args}->{residence};
-        my $result      = $rpc_ct->call_ok($method, $params)->result;
-        my $new_loginid = $result->{client_id};
+        my $result = $rpc_ct->call_ok($method, $params)->result;
+        ok my $new_loginid = $result->{client_id}, 'New loginid is returned';
 
         my $token_db = BOM::Database::Model::AccessToken->new();
         my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
@@ -951,7 +952,7 @@ subtest $method => sub {
         is $cl->get_authentication('ID_DOCUMENT')->status, "pass", 'authentication method should be updated upon signup between MLT and MF';
         ok $cl->status->age_verification, 'age verification synced between mlt and mf.';
         is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
-            'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
+            'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';
 
         cmp_ok $cl->non_pep_declaration_time, 'ne', $client_mlt->non_pep_declaration_time, 'non_pep declaration time is different from MLT account';
     };
@@ -983,7 +984,7 @@ subtest $method => sub {
             $user->add_client($client_mx);
 
             is $client_mx->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
-                'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
+                'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args (test create_account call)';
             $client_mx->non_pep_declaration_time('2020-01-02');
             $client_mx->status->set('age_verification', 'system', 'Age verified client');
             $client_mx->save;
@@ -995,7 +996,7 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'de';
-        delete $params->{args}->{non_pep_delclaration};
+        delete $params->{args}->{non_pep_declaration};
         %datadog_args = ();
 
         # call with totally random values - our client still should have correct one
@@ -1004,7 +1005,6 @@ subtest $method => sub {
         $params->{args}->{date_of_birth} = '1990-09-09';
 
         $client_mx->status->set('unwelcome', 'system', 'test');
-
         my $result = $rpc_ct->call_ok($method, $params)->result;
         is $result->{error}->{code}, undef, 'Allow to open even if Client KYC is pending and status is unwelcome';
 
@@ -1026,7 +1026,7 @@ subtest $method => sub {
 
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
         ok $cl->status->age_verification, 'age verification synced between mx and mf.';
-        ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
+        ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';
         cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
     };
 
@@ -1094,7 +1094,7 @@ subtest $method => sub {
 
         my $cl = BOM::User::Client->new({loginid => $result->{client_id}});
         ok $cl->non_pep_declaration_time,
-            'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
+            'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args (test create_account call)';
     };
 
     subtest 'Create new account maltainvest without MLT' => sub {
@@ -1122,11 +1122,12 @@ subtest $method => sub {
 
         $params->{token}                   = $auth_token;
         $params->{args}->{residence}       = 'at';
+        $params->{address_state}           = 'Salzburg';
         $params->{args}->{secret_answer}   = 'test';
         $params->{args}->{secret_question} = 'test';
 
         my $result = $rpc_ct->call_ok($method, $params)->has_no_error->result;
-        ok $result->{client_id}, "Czech users can create MF account from the virtual account";
+        ok $result->{client_id}, "Austrian users can create MF account from the virtual account";
 
         $auth_token = BOM::Platform::Token::API->new->create_token($result->{client_id}, 'test token');
     };
@@ -1205,7 +1206,7 @@ $params = {
         date_of_birth    => '1987-09-04',
         address_line_1   => 'Sovetskaya street',
         address_city     => 'Samara',
-        address_state    => 'Samara',
+        address_state    => 'Papua',
         address_postcode => '112233',
     },
 };
@@ -1261,6 +1262,13 @@ subtest $method => sub {
         $mock_countries->redefine(wallet_company_for_country => 'wallet-svg');
 
         $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidState',
+            'correct error code if address state doesnt match the country of residence')
+            ->error_message_is('Sorry, the provided state is not valid for your country of residence.', 'Invalid state error message');
+
+        $params->{args}->{address_state} = 'HH';
+
+        $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error code if missing any details')
             ->error_message_is('Please provide complete details for your account.', 'It should return error message if missing any details')
             ->error_details_is({missing => ["currency", "payment_method"]});
@@ -1296,6 +1304,7 @@ subtest 'Empty phone number' => sub {
     my $email = 'empty+phone1241241@asdf.com';
     $params->{country}                   = 'br';
     $params->{args}->{residence}         = 'br';
+    $params->{args}->{address_state}     = 'SP';
     $params->{args}->{client_password}   = '123Abas!';
     $params->{args}->{phone}             = '';
     $params->{args}->{first_name}        = 'i dont have';

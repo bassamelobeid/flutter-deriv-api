@@ -39,7 +39,6 @@ sub new_client_details {
         date_of_birth          => '1987-09-04',
         address_line_1         => 'test address_line_1',
         address_city           => 'test address_city',
-        address_state          => 'test address_state',
         address_postcode       => 'test address_postcode',
         phone                  => sprintf("+15417555%03d", rand(999)),
         secret_question        => 'test secret_question',
