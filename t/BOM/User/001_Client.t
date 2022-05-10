@@ -259,6 +259,23 @@ subtest "format and validate" => sub {
     $args = {date_of_birth => '2010-15-15'};
     is $client->format_input_details($args)->{error}, 'InvalidDateOfBirth', 'InvalidDateOfBirth';
 
+    $args = {address_state => 'Dummy Value'};
+    is $client->format_input_details($args), undef, 'No error for invalid state without residence';
+    is $args->{address_state}, undef, 'Invalid state is removed if residence is empty';
+
+    $args = {
+        address_state => 'Dummy Value',
+        residence     => 'id'
+    };
+    is $client->format_input_details($args)->{error}, 'InvalidState', 'Correct error for invalid state';
+
+    $args = {
+        address_state => 'Sumatera',
+        residence     => 'id'
+    };
+    is $client->format_input_details($args), undef, 'No error for a valid state name with residence';
+    is $args->{address_state}, 'SM', 'State name is converted form text to code';
+
     $args = {date_of_birth => '2010-10-15'};
     is $client->validate_common_account_details($args)->{error}, 'BelowMinimumAge', 'validate_common_account_details: BelowMinimumAge';
     $args = {secret_question => 'test'};

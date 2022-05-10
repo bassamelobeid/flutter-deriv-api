@@ -1856,7 +1856,16 @@ sub format_input_details {
         date_of_birth => sub {
             eval { Date::Utility->new(shift)->date } // die "InvalidDateOfBirth\n";
         },
-    );
+        address_state => sub {
+            my $state     = shift;
+            my $residence = $args->{residence};
+
+            return undef unless $residence;
+
+            my $match = BOM::Platform::Locale::validate_state($state, $residence) or die "InvalidState\n";
+
+            return $match->{value};
+        });
 
     try {
         $args->{$_} = $format{$_}->($args->{$_}) for grep { $args->{$_} && exists $format{$_} } keys %$args;
