@@ -18,8 +18,6 @@ use BOM::Config::Redis;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::Config;
 
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
-
 # the mejority of contracts are sold by expiryd, within 30s.
 # the 5m ttl is for the few that end up at riskd.
 use constant KEY_RETENTION_SECOND => 300;
@@ -59,9 +57,6 @@ sub build_poc_parameters {
     my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
     $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
 
-    #an upperbound for the duration that contract needs to be priced and stay in redis_pricer
-    my $pricing_ttl = get_pricing_ttl($fmb->{short_code});
-
     my $contract_parameters = {
         app_markup_percentage => 0,                                 # we charge app_markup on buy side only
         short_code            => $fmb->{short_code},
@@ -76,7 +71,6 @@ sub build_poc_parameters {
         purchase_time         => $purchase_time,
         sell_time             => $sell_time,
         transaction_ids       => $transaction_ids,
-        pricing_ttl           => $pricing_ttl,
         symbol                => $fmb->{underlying_symbol},
         contract_type         => $fmb->{bet_type},
     };
@@ -91,38 +85,6 @@ sub build_poc_parameters {
     }
 
     return $contract_parameters;
-}
-
-=head2 get_pricing_ttl
-calculate ttl form contract's shortcode
-tick contracts : TTL = number_of_ticks * 2 + extra_retention
-other contracts : TTL = date_expiry - date_start + extra_retention
-extra_retention = 120s
-=cut
-
-sub get_pricing_ttl {
-    my ($short_code) = @_;
-
-    return undef unless $short_code;
-
-    my $sc_params      = shortcode_to_parameters($short_code);
-    my $remaining_time = 0;
-
-    if ($sc_params->{duration_type} eq 'ticks') {
-        return undef unless ($sc_params->{duration} and $sc_params->{date_start});
-        my $duration = $sc_params->{duration} =~ s/\D//r;
-        $remaining_time = $sc_params->{date_start} + $duration * 2 - time;
-    } else {
-        return undef unless $sc_params->{date_expiry};
-        $remaining_time = $sc_params->{date_expiry} - time;
-    }
-
-    my $extra_retention = 120;
-    my $ttl             = max(0, $remaining_time) + $extra_retention;
-
-    #we don't want pricing_ttl to be more than a day.
-    $ttl = min($ttl, 86400);
-    return $ttl;
 }
 
 =head2 set_poc_parameters
@@ -167,7 +129,6 @@ sub build_poc_pricer_args {
             landing_company  => $poc_parameters->{landing_company},
             contract_id      => $poc_parameters->{contract_id},
             account_id       => $poc_parameters->{account_id},
-            pricing_ttl      => $poc_parameters->{pricing_ttl},
             symbol           => $poc_parameters->{underlying_symbol},
             contract_type    => $poc_parameters->{contract_type},
         ]);
