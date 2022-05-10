@@ -397,7 +397,7 @@ sub write_transaction_line {
         } elsif ($c->type =~ /^(payout_created|payout_inprogress)$/) {
             # Don't allow balances to ever go negative! Include any fee in this test.
             my $balance = $client->default_account->balance;
-            if ($amount + $fee > $balance) {
+            if (financialrounding('amount', $currency_code, $amount + $fee) > financialrounding('amount', $currency_code, $balance)) {
                 my $plusfee = $fee ? " plus fee $fee" : '';
                 return $c->status_bad_request(
                     "Requested withdrawal amount $amount$plusfee $currency_code exceeds client balance $balance $currency_code");
