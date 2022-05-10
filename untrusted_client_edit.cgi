@@ -258,23 +258,14 @@ sub notify_submission_of_documents_for_pending_payout {
     );
     BOM::Platform::Context::request($req);
 
-    my $email_subject = localize('Verify your identity and address for your Deriv or Binary account');
-    my $due_date      = Date::Utility->today->plus_time_interval('3d');
-    my $email_data    = {
-        name  => $client->first_name,
-        title => localize("Just one more step to withdraw your funds"),
-        date  => join(' ', $due_date->day_of_month, $due_date->month_as_string, $due_date->year),
-    };
-    send_email({
-        to                    => $client->email,
-        subject               => $email_subject,
-        template_name         => 'pending_payout',
-        template_args         => $email_data,
-        template_loginid      => $client->loginid,
-        email_content_is_html => 1,
-        use_email_template    => 1,
-        use_event             => 1,
-        language              => $client->user->preferred_language
-    });
+    my $due_date = Date::Utility->today->plus_time_interval('3d');
+
+    BOM::Platform::Event::Emitter::emit(
+        account_verification_for_pending_payout => {
+            loginid    => $client->loginid,
+            properties => {
+                email => $client->email,
+                date  => $due_date->date_ddmmyyyy,
+            }});
 }
 
