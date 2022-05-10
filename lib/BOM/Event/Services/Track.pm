@@ -125,20 +125,30 @@ my %EVENT_PROPERTIES = (
     crypto_withdrawal_rejected_email                 => [qw(loginid reject_reason amount currency_code title live_chat_url meta_data fiat_account)],
     p2p_advert_created                               =>
         [qw(advert_id created_time type account_currency local_currency country amount rate rate_type min_order_amount max_order_amount is_visible)],
-    p2p_advertiser_cancel_at_fault => [qw(order_id cancels_remaining)],
-    p2p_advertiser_temp_banned     => [qw(order_id block_end_time)],
-    request_change_email           => [qw(loginid first_name email code verification_uri live_chat_url social_signup time_to_expire_in_min)],
-    verify_change_email            => [qw(loginid first_name email code verification_uri live_chat_url social_signup time_to_expire_in_min)],
-    confirm_change_email           => [qw(loginid first_name email live_chat_url social_signup)],
-    unknown_login                  => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
-    account_with_false_info_locked => [qw(email authentication_url profile_url is_name_change)],
-    underage_account_closed        => [qw(tnc_approval)],
-    account_opening_new            => [qw(first_name verification_url code email live_chat_url)],
-    authenticated_with_scans       => [qw(first_name email contact_url live_chat_url)]);
+    p2p_advertiser_cancel_at_fault    => [qw(order_id cancels_remaining)],
+    p2p_advertiser_temp_banned        => [qw(order_id block_end_time)],
+    request_change_email              => [qw(loginid first_name email code verification_uri live_chat_url social_signup time_to_expire_in_min)],
+    verify_change_email               => [qw(loginid first_name email code verification_uri live_chat_url social_signup time_to_expire_in_min)],
+    confirm_change_email              => [qw(loginid first_name email live_chat_url social_signup)],
+    unknown_login                     => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
+    account_with_false_info_locked    => [qw(email authentication_url profile_url is_name_change)],
+    underage_account_closed           => [qw(tnc_approval)],
+    account_opening_new               => [qw(first_name verification_url code email live_chat_url)],
+    account_opening_existing          => [qw(loginid email live_chat_url login_url password_reset_url)],
+    request_payment_withdraw          => [qw(loginid email live_chat_url verification_url code paymentagent)],
+    verify_email_closed_account_other => [qw(loginid email type live_chat_url)],
+    verify_email_closed_account_reset_password  => [qw(loginid email type live_chat_url)],
+    verify_email_closed_account_account_opening => [qw(loginid email type live_chat_url)],
+    account_verification_for_pending_payout     => [qw(date email)],
+    authenticated_with_scans                    => [qw(first_name email contact_url live_chat_url)],
+);
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
 
 my @COMMON_EVENT_METHODS = qw(
+    account_with_false_info_locked
+    underage_account_closed
+    account_verification_for_pending_payout
     api_token_created
     api_token_deleted
     account_reactivated
@@ -1203,6 +1213,18 @@ sub _time_to_iso_8601 {
     )->to_string;
 }
 
+=head2 underage_account_closed
+
+It is triggered for each B<underage_account_closed> event emitted, delivering it to Rudderstack.
+
+=head2 account_with_false_info_locked
+
+It is triggered for each B<account_with_false_info_locked> event emitted, delivering it to Rudderstack.
+
+=head2 account_verification_for_pending_payout
+
+It is triggered for B<vaccount_verification_for_pending_payout> event emitted, delivering it to Rudderstack.
+
 =head2 api_token_created
 
 It is triggered for each B<signup> event emitted, delivering it to Segment.
@@ -1337,23 +1359,6 @@ It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it
 
 =back
 
-=cut
-
-# generate attribute accessor
-for my $event_name (@COMMON_EVENT_METHODS) {
-    no strict 'refs';    # allow symbol table manipulation
-    *{__PACKAGE__ . '::' . $event_name} = sub {
-        my ($args) = @_;
-        return track_event(
-            event      => $event_name,
-            client     => $args->{client},
-            loginid    => $args->{loginid},
-            properties => $args->{properties} || $args,
-        );
-        }
-        unless __PACKAGE__->can($event_name);
-}
-
 =head2 crypto_withdrawal_rejected_email
 
 Send rudderstack event when a crypto payout is rejected
@@ -1382,63 +1387,19 @@ Send rudderstack event when a crypto payout is rejected
 
 =cut
 
-sub crypto_withdrawal_rejected_email {
-    my ($properties) = @_;
-
-    return track_event(
-        event      => 'crypto_withdrawal_rejected_email',
-        loginid    => $properties->{loginid},
-        properties => $properties,
-    );
-}
-
-=head2 account_with_false_info_locked
-
-It is triggered for each B<account_with_false_info_locked> event emitted, delivering it to Rudderstack.
-It can be called with the following parameters:
-    
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub account_with_false_info_locked {
-    my ($args) = @_;
-    my $properties = $args->{properties};
-
-    return track_event(
-        event      => 'account_with_false_info_locked',
-        loginid    => $args->{loginid},
-        properties => $properties,
-    );
-}
-
-=head2 underage_account_closed
-
-It is triggered for each B<underage_account_closed> event emitted, delivering it to Rudderstack.
-It can be called with the following parameters:
-    
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=back
-
-=cut
-
-sub underage_account_closed {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'underage_account_closed',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
+# generate attribute accessor
+for my $event_name (@COMMON_EVENT_METHODS) {
+    no strict 'refs';    # allow symbol table manipulation
+    *{__PACKAGE__ . '::' . $event_name} = sub {
+        my ($args) = @_;
+        return track_event(
+            event      => $event_name,
+            client     => $args->{client},
+            loginid    => $args->{loginid},
+            properties => $args->{properties} || $args,
+        );
+        }
+        unless __PACKAGE__->can($event_name);
 }
 
 1;

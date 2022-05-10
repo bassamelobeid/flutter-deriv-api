@@ -18,7 +18,7 @@ use Brands::Countries;
 use Crypt::OpenSSL::RSA;
 use Data::UUID;
 use Date::Utility;
-use DataDog::DogStatsd::Helper qw( stats_inc );
+use DataDog::DogStatsd::Helper;
 use Digest::SHA qw( sha256_hex );
 use Future::AsyncAwait;
 use IO::Async::Loop;
@@ -29,6 +29,7 @@ use MIME::Base64 qw( decode_base64  encode_base64 );
 use Scalar::Util qw( blessed );
 use Syntax::Keyword::Try;
 use Text::Trim;
+use Time::HiRes;
 use URL::Encode qw(url_encode);
 
 use BOM::Config;
@@ -107,6 +108,8 @@ async sub verify_identity {
 
     my $provider = _get_provider($client, $document);
 
+    my @common_datadog_tags = (sprintf('provider:%s', $provider), sprintf('country:%s', $document->{issuing_country}));
+
     return undef if $provider eq 'onfido';
 
     die $log->errorf('Could not trigger IDV, the function for provider %s not found.', $provider) unless exists TRIGGER_MAP->{$provider};
@@ -116,6 +119,8 @@ async sub verify_identity {
             $provider, $document->{id}, $loginid);
 
         $idv_model->incr_submissions();
+
+        my $request_start = [Time::HiRes::gettimeofday];
 
         my @result = await TRIGGER_MAP->{_is_microservice_available($provider) ? 'microservice' : $provider}(
             $client,
@@ -132,10 +137,15 @@ async sub verify_identity {
                 });
             }) // undef;
 
+        DataDog::DogStatsd::Helper::stats_timing(
+            'event.identity_verification.callout.timing',
+            (1000 * Time::HiRes::tv_interval($request_start)),
+            {tags => [@common_datadog_tags,]});
+
         DataDog::DogStatsd::Helper::stats_inc(
             'event.identity_verification.request',
             {
-                tags => [sprintf('handler:%s', _is_microservice_available($provider) ? 'microservice' : 'legacy'), sprintf('provider:%s', $provider)],
+                tags => [@common_datadog_tags, sprintf('handler:%s', _is_microservice_available($provider) ? 'microservice' : 'legacy'),],
             });
 
         my ($status, $response_hash, $message) = @result;
@@ -227,6 +237,12 @@ async sub verify_identity {
         } elsif ($status eq RESULT_STATUS->{reject}) {
             $refuted_document_handler->(_messages_to_hashref(@messages));
         } else {
+            DataDog::DogStatsd::Helper::stats_inc(
+                'event.identity_verification.failure',
+                {
+                    tags => [@common_datadog_tags, sprintf('message:%s', $messages[0] // 'UNKNOWN'),],
+                });
+
             $idv_model->update_document_check({
                 document_id   => $document->{id},
                 status        => 'failed',
@@ -236,7 +252,7 @@ async sub verify_identity {
                 response_body => encode_json_utf8($provider_response_body),
             });
 
-            $log->debugf('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, \@messages);
+            $log->infof('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, \@messages);
         }
     } catch ($e) {
         $log->errorf('An error occurred while triggering IDV for document %s associated by client %s via provider %s due to %s',
