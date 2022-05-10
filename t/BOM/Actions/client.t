@@ -2740,6 +2740,9 @@ subtest 'request_change_email' => sub {
     my $result = $handler->($args)->get;
     ok $result, 'OK result';
     is scalar @track_args, 7, 'OK event';
+    my ($customer, %args) = @track_args;
+    is $args{event}, 'request_change_email', "event name";
+    is $args{properties}{first_name}, $args->{properties}{first_name}, "event properties";
 };
 
 subtest 'verify_change_email' => sub {
@@ -2766,6 +2769,9 @@ subtest 'verify_change_email' => sub {
     ok $handler->($args), 'OK args';
     my $result = $handler->($args)->get;
     ok $result, 'OK result';
+    my ($customer, %args) = @track_args;
+    is $args{event}, 'verify_change_email', "event event name";
+    is $args{properties}{first_name}, $args->{properties}{first_name}, "event properties";
     is scalar @track_args, 7, 'OK event';
 };
 
@@ -2793,6 +2799,9 @@ subtest 'confirm_change_email' => sub {
     ok $handler->($args), 'OK args';
     my $result = $handler->($args)->get;
     ok $result, 'OK result';
+    my ($customer, %args) = @track_args;
+    is $args{event}, 'confirm_change_email', "event name";
+    is $args{properties}{first_name}, $args->{properties}{first_name}, "event properties";
     is scalar @track_args, 7, 'OK event';
 };
 
@@ -3343,6 +3352,141 @@ subtest 'authenticated_with_scans event' => sub {
 
     is $args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
+subtest 'request payment withdraw' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name       => 'Backend',
+            verification_url => 'https://Binary.url',
+            email            => 'Backend@binary.com',
+            code             => 'CODE',
+            language         => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{request_payment_withdraw};
+    ok $handler->($args);
+    my $result = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+    my ($customer, %args) = @track_args;
+    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
+subtest 'verify email closed account other' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name       => 'Backend',
+            verification_url => 'https://Binary.url',
+            email            => 'Backend@binary.com',
+            code             => 'CODE',
+            language         => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_email_closed_account_other};
+
+    ok $handler->($args);
+    my $result = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+    my ($customer, %args) = @track_args;
+    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
+subtest 'verify email closed account reset password' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name       => 'Backend',
+            verification_url => 'https://Binary.url',
+            email            => 'Backend@binary.com',
+            code             => 'CODE',
+            language         => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_email_closed_account_reset_password};
+
+    ok $handler->($args);
+    my $result = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+    my ($customer, %args) = @track_args;
+    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
+subtest 'verify email closed account opening' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name       => 'Backend',
+            verification_url => 'https://Binary.url',
+            email            => 'Backend@binary.com',
+            code             => 'CODE',
+            language         => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_email_closed_account_account_opening};
+    ok $handler->($args);
+    my $result = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
 };
 
 done_testing();

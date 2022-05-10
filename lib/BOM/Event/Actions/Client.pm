@@ -3438,4 +3438,114 @@ sub account_opening_new {
     );
 }
 
+=head2 account_opening_existing
+
+handler for account_opening_existing event
+
+=over
+
+=item * C<args> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub account_opening_existing {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'account_opening_existing',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 request_payment_withdraw
+
+handler for payment_withdrawal event
+
+=over
+
+=item * C<args> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub request_payment_withdraw {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'request_payment_withdraw',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 verify_email_closed_account_other
+
+handler for closed_account event
+
+=over
+
+=item * C<args> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub verify_email_closed_account_other {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'verify_email_closed_account_other',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 verify_email_closed_account_account_opening
+
+handler for closed_account event
+
+=over
+
+=item * C<args> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub verify_email_closed_account_account_opening {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'verify_email_closed_account_account_opening',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 verify_email_closed_account_reset_password
+
+handler for closed_account event
+
+=over
+
+=item * C<args> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub verify_email_closed_account_reset_password {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'verify_email_closed_account_reset_password',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
 1;

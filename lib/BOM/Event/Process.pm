@@ -136,6 +136,11 @@ my $action_mapping = {
         account_with_false_info_locked                   => \&BOM::Event::Services::Track::account_with_false_info_locked,
         mt5_archived_account_reset_trading_password      => \&BOM::Event::Actions::MT5::mt5_archived_account_reset_trading_password,
         account_opening_new                              => \&BOM::Event::Actions::Client::account_opening_new,
+        account_opening_existing                         => \&BOM::Event::Actions::Client::account_opening_existing,
+        request_payment_withdraw                         => \&BOM::Event::Actions::Client::request_payment_withdraw,
+        verify_email_closed_account_other                => \&BOM::Event::Actions::Client::verify_email_closed_account_other,
+        verify_email_closed_account_account_opening      => \&BOM::Event::Actions::Client::verify_email_closed_account_account_opening,
+        verify_email_closed_account_reset_password       => \&BOM::Event::Actions::Client::verify_email_closed_account_reset_password,
     },
     track => {
         multiplier_hit_type                 => \&BOM::Event::Services::Track::multiplier_hit_type,
