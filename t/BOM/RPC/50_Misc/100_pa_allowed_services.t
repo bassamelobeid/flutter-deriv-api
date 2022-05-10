@@ -83,6 +83,9 @@ my $c = BOM::Test::RPC::QueueClient->new();
 
 subtest 'cashier_withdraw restriction' => sub {
     subtest 'Verify email - cashier withdrawal' => sub {
+        my @emitted;
+        no warnings 'redefine';
+        local *BOM::Platform::Event::Emitter::emit = sub { @emitted = @_ };
         my $method = 'verify_email';
 
         my $params = {
@@ -99,23 +102,18 @@ subtest 'cashier_withdraw restriction' => sub {
             ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier withdrawal is not available for PAs by default')
             ->error_message_is('This service is not available for payment agents.', 'Serivce unavailability error message');
 
-        is mailbox_search(
-            email   => $params->{args}->{verify_email},
-            subject => qr/Verify your withdrawal request/
-            ),
-            undef, 'No email is sent';
+        is(scalar @emitted, 0, 'no email as token email different from passed email');
 
         my $pa = $client_pa->get_payment_agent;
         $pa->services_allowed(['cashier_withdraw']);
         $pa->save;
         $c->call_ok($method, $params)->has_no_system_error->has_no_error('No error when the service is made available.');
 
-        ok mailbox_search(
-            email   => $params->{args}->{verify_email},
-            subject => qr/Verify your withdrawal request/
-            ),
-            'Email sent successfully';
-        mailbox_clear();
+        is($emitted[0], 'request_payment_withdraw', 'type=request_payment_withdraw');
+        ok($emitted[1]->{properties}, 'Properties are set');
+        is($emitted[1]->{properties}{email}, lc $params->{args}->{verify_email}, 'email is set');
+        is $emitted[1]->{properties}{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
+        undef @emitted;
 
         $pa->services_allowed([]);
         $pa->save;
@@ -244,6 +242,10 @@ subtest 'transfer to a non-pa sibling API call' => sub {
 
 subtest 'transfer_to_pa restriction' => sub {
     subtest 'Verify email - payment agent withdrawal' => sub {
+        my @emitted;
+        no warnings 'redefine';
+        local *BOM::Platform::Event::Emitter::emit = sub { @emitted = @_ };
+
         my $method = 'verify_email';
         my $params = {
             language      => 'EN',
@@ -259,23 +261,18 @@ subtest 'transfer_to_pa restriction' => sub {
             ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'PA withdrawal is not available for PAs by default')
             ->error_message_is('You are not allowed to transfer to other payment agents.', 'Serivce unavailability error message');
 
-        is mailbox_search(
-            email   => $params->{args}->{verify_email},
-            subject => qr/Verify your withdrawal request/
-            ),
-            undef, 'No email is sent';
+        is(scalar @emitted, 0, 'no email as token email different from passed email');
 
         my $pa = $client_pa->get_payment_agent;
         $pa->services_allowed(['transfer_to_pa']);
         $pa->save;
         $c->call_ok($method, $params)->has_no_system_error->has_no_error('No error when the service is made available.');
 
-        ok mailbox_search(
-            email   => $params->{args}->{verify_email},
-            subject => qr/Verify your withdrawal request/
-            ),
-            'Email sent successfully';
-        mailbox_clear();
+        is($emitted[0], 'request_payment_withdraw', 'type=request_payment_withdraw');
+        ok($emitted[1]->{properties}, 'Properties are set');
+        is($emitted[1]->{properties}{email}, lc $params->{args}->{verify_email}, 'email is set');
+        is $emitted[1]->{properties}{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
+        undef @emitted;
 
         $pa->services_allowed([]);
         $pa->save;

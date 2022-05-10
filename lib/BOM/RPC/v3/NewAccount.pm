@@ -120,7 +120,22 @@ rpc "verify_email",
     );
 
     if ($existing_user and $existing_user->is_closed) {
-        request_email($email, $verification->{closed_account}->());
+        my $data           = $verification->{closed_account}->();
+        my %possible_types = (
+            account_opening => "verify_email_closed_account_account_opening",
+            reset_password  => "verify_email_closed_account_reset_password"
+        );
+
+        BOM::Platform::Event::Emitter::emit(
+            $possible_types{$type} // "verify_email_closed_account_other",
+            {
+                loginid    => ($existing_user->bom_loginids)[0],
+                properties => {
+                    language      => $params->{language},
+                    type          => $data->{template_args}->{type}          // '',
+                    live_chat_url => $data->{template_args}->{live_chat_url} // '',
+                    email         => $data->{template_args}->{email}         // '',
+                }});
         return {status => 1};
     }
 
@@ -190,7 +205,21 @@ rpc "verify_email",
                 $log->warnf("Could not fetch affiliate details from MyAffiliates. Please check credentials: %s", $aff->errstr);
             }
             if ($myaffiliate_email eq $email) {
-                request_email($email, $verification->{account_opening_existing}->());
+                my $data = $verification->{account_opening_existing}->();
+                BOM::Platform::Event::Emitter::emit(
+                    'account_opening_existing',
+                    {
+                        loginid    => $existing_user->get_default_client->loginid,
+                        properties => {
+                            code               => $data->{template_args}->{code} // '',
+                            language           => $params->{language},
+                            login_url          => $data->{template_args}->{login_url}          // '',
+                            password_reset_url => $data->{template_args}->{password_reset_url} // '',
+                            live_chat_url      => $data->{template_args}->{live_chat_url}      // '',
+                            verification_url   => $data->{template_args}->{verification_url}   // '',
+                            email              => $data->{template_args}->{email}              // '',
+                        },
+                    });
             } else {
                 my $data = $verification->{account_opening_new}->();
                 BOM::Platform::Event::Emitter::emit(
@@ -214,10 +243,23 @@ rpc "verify_email",
                         live_chat_url    => $data->{template_args}->{live_chat_url} // '',
                     });
             } else {
-                request_email($email, $verification->{account_opening_existing}->());
+                my $data = $verification->{account_opening_existing}->();
+                BOM::Platform::Event::Emitter::emit(
+                    'account_opening_existing',
+                    {
+                        loginid    => $existing_user->get_default_client->loginid,
+                        properties => {
+                            code               => $data->{template_args}->{code} // '',
+                            language           => $params->{language},
+                            login_url          => $data->{template_args}->{login_url}          // '',
+                            password_reset_url => $data->{template_args}->{password_reset_url} // '',
+                            live_chat_url      => $data->{template_args}->{live_chat_url}      // '',
+                            verification_url   => $data->{template_args}->{verification_url}   // '',
+                            email              => $data->{template_args}->{email}              // '',
+                        },
+                    });
             }
         }
-
     } elsif ($client and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
         # TODO: the following should be replaced by $rule_engine->validate_action($type )
         # We should just wait until rhe rule engine integration of PA-withdrawal and cashier withdrawal actions.
@@ -229,7 +271,20 @@ rpc "verify_email",
                     code              => 'Permission Denied',
                     message_to_client => localize('You can not perform a withdrawal while impersonating an account')});
         }
-        request_email($email, $verification->{payment_withdraw}->());
+        my $data = $verification->{payment_withdraw}->();
+        BOM::Platform::Event::Emitter::emit(
+            'request_payment_withdraw',
+            {
+                loginid    => $client->loginid,
+                properties => {
+                    verification_url => $data->{template_args}->{verification_url} // '',
+                    live_chat_url    => $data->{template_args}->{live_chat_url}    // '',
+                    first_name       => $client->first_name,
+                    code             => $data->{template_args}->{code} // '',
+                    email            => $email,
+                    language         => $params->{language},
+                },
+            });
     } elsif ($existing_user and $type eq 'trading_platform_password_reset') {
         my $verification = $verification->{trading_platform_password_reset}->();
         request_email($email, $verification);
