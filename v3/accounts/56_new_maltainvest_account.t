@@ -35,7 +35,6 @@ my %client_details = (
     address_line_1            => 'Jalan Usahawan',
     address_line_2            => 'Enterpreneur Center',
     address_city              => 'Cyberjaya',
-    address_state             => 'Selangor',
     address_postcode          => '47120',
     phone                     => '+60321685000',
     secret_question           => 'Favourite dish',
@@ -751,6 +750,7 @@ subtest 'Address validation' => sub {
     $details{address_line_1}            = "123° Fake Street";
     $details{address_line_2}            = "123º Evergreen Terrace";
     $details{residence}                 = 'de';
+    $details{address_state}             = 'Hamburg';
     $details{phone}                     = '+442072343457';
     $details{tax_identification_number} = '11122233344';
 
@@ -760,6 +760,8 @@ subtest 'Address validation' => sub {
     my $cli = BOM::User::Client->new({loginid => $res->{new_account_maltainvest}->{client_id}});
     is $cli->address_line_1, $details{address_line_1}, 'Expected address line 1';
     is $cli->address_line_2, $details{address_line_2}, 'Expected address line 2';
+    is $cli->address_state,  'HH', 'State name is convered into state code';
+
 };
 
 subtest 'Can specify currency' => sub {

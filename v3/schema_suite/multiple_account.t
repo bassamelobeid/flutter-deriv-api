@@ -95,7 +95,8 @@ test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currenc
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'USD';
 
 # not allowed to make maltainvest as new sibling
-fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'Howdee', 'dk', '+61234567000',
+fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'Howdee', 'dk', 81,
+    '+61234567000',
     '1112223334';
 
 test_sendrecv_params 'logout/test_send.json', 'logout/test_receive.json';
@@ -113,18 +114,21 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
 # for germany we don't have gaming company so it should fail
 fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'MFName', 'de', '+61298765432';
 
-test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', '+61 2 9876 5434',
+test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', 'HH',
+    '+61 2 9876 5434',
     '11122233344';
 $placeholder = $suite->get_stashed('new_account_maltainvest/new_account_maltainvest/oauth_token');
 
 # not allowed multiple upgrade from financial
-fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', '+61234567006',
+fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', 'HH',
+    '+61234567006',
     '11122233344';
 
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf.json', $placeholder, 'test-multiple-mf@binary.com', 'MFName';
 
 # not allowed as currency not set for existing account
-fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', '+61234567007',
+fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', 'HH',
+    '+61234567007',
     '11122233344';
 
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'BTC';
@@ -132,7 +136,8 @@ fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_cu
 test_sendrecv_params 'set_account_currency/test_send.json',      'set_account_currency/test_receive.json', 'EUR';
 
 # still not allowed as all accounts exhausted
-fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', '+61234567008',
+fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', 'HH',
+    '+61234567008',
     '11122233344';
 
 finish;

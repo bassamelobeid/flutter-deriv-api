@@ -26,9 +26,9 @@ my %details = (
     last_name          => 'last-name',
     first_name         => 'first\'name',
     date_of_birth      => '1990-12-30',
-    address_line_1     => 'Jalan Usahawan',
-    address_city       => 'Cyberjaya',
-    address_state      => 'Selangor',
+    address_line_1     => 'Tolstoy',
+    address_city       => 'Moskva',
+    address_state      => 'Moskva',
     address_postcode   => '47120',
     phone              => '+60321685000',
 );
@@ -47,30 +47,13 @@ subtest 'new real wallet  account' => sub {
     subtest 'new wallet account without currency' => sub {
         my $res = $t->await::new_account_wallet({%details, payment_method => 'Skrill'}, {timeout => 10});
         is($res->{error}->{code},    'InputValidationFailed', 'Currency is mandatory');
-        is($res->{new_account_real}, undef,                   'NO account created');
+        is($res->{new_account_wallet}, undef,                   'NO account created');
     };
 
     subtest 'new wallet account without payment method' => sub {
         my $res = $t->await::new_account_wallet({%details, currency => 'USD'}, {timeout => 10});
         is($res->{error}->{code},    'InputValidationFailed', 'Payment method is mandatory');
-        is($res->{new_account_real}, undef,                   'NO account created');
-    };
-
-    subtest 'new wallet account is disabled for all countries at the moment' => sub {
-        my $res = $t->await::new_account_wallet({
-                %details,
-                currency       => 'USD',
-                payment_method => 'fiat'
-            },
-            {timeout => 10});
-
-        is_deeply $res->{error},
-            {
-            code    => 'InvalidAccountRegion',
-            message => 'Sorry, account opening is unavailable in your region.'
-            },
-            'Wallet service is suspended.';
-        is($res->{new_account_real}, undef, 'NO account created');
+        is($res->{new_account_wallet}, undef,                   'NO account created');
     };
 
     SKIP: {
@@ -88,6 +71,10 @@ subtest 'new real wallet  account' => sub {
             test_schema('new_account_wallet', $res);
             my $loginid = $res->{new_account_wallet}->{client_id};
             like($loginid, qr/^DW\d+$/, "got DW client - $loginid");
+
+
+            my $client = BOM::User::Client->new({loginid => $loginid});
+            $client->address_state, 'MOW', 'State name is convered into state code';
         };
 
         subtest 'Personal details are optional in case real account exists' => sub {
@@ -102,7 +89,21 @@ subtest 'new real wallet  account' => sub {
             my $loginid = $res->{new_account_wallet}->{client_id};
             like($loginid, qr/^DW\d+$/, "got DW client - $loginid");
         };
-    }
+    };
+
+    subtest 'new wallet account is disabled for all countries at the moment' => sub {
+        ok(BOM::Config::Runtime->instance->app_config->system->suspend->wallets, 'wallet service is disabled at the moment');
+
+        my $res = $t->await::new_account_wallet({
+                %details,
+                currency       => 'USD',
+                payment_method => 'fiat'
+            },
+            {timeout => 10});
+
+        ok $res->{error}, 'error is received when wallet service is suspended.';
+        is($res->{new_account_wallet}, undef, 'NO account created');
+    };
 };
 
 sub create_vr_account {

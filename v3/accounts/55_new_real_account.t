@@ -1,7 +1,8 @@
 use strict;
 use warnings;
-use Test::More;
+use utf8;
 
+use Test::More;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request/;
@@ -29,8 +30,7 @@ my %client_details = (
     place_of_birth         => 'de',
     address_line_1         => 'Jalan Usahawan',
     address_line_2         => 'Enterpreneur Center',
-    address_city           => 'Cyberjaya',
-    address_state          => 'Selangor',
+    address_city           => 'Sydney',
     address_postcode       => '47120',
     phone                  => '+60321685000',
     secret_question        => 'Favourite dish',
@@ -51,7 +51,13 @@ subtest 'new CR real account' => sub {
 
     subtest 'create CR account' => sub {
         # Note the p.o. box address should not fail the call for CR accounts
-        my ($res, $call_params) = call_mocked_consumer_groups_request($t, {%client_details, address_line_1 => 'p.o. box 25325'});
+        my ($res, $call_params) = call_mocked_consumer_groups_request(
+            $t,
+            {
+                %client_details,
+                address_state  => 'Australian Capital Territory',
+                address_line_1 => 'p.o. box 25325'
+            });
         is $call_params->{token}, $token;
         ok($res->{msg_type}, 'new_account_real');
         ok($res->{new_account_real});
@@ -71,6 +77,16 @@ subtest 'create account failed' => sub {
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t->await::authorize({authorize => $token});
+
+    subtest 'Invalid state' => sub {
+        my %details = %client_details;
+        $details{address_state} = 'Selngor';
+
+        my $res = $t->await::new_account_real(\%details);
+
+        is($res->{error}->{code},    'InvalidState', 'State name does not match the country');
+        is($res->{new_account_real}, undef,          'NO account created');
+    };
 
     subtest 'email unverified' => sub {
         $user->update_email_fields(email_verified => 'f');
@@ -317,16 +333,20 @@ subtest 'Address validation' => sub {
         residence      => 'br',
         first_name     => 'Homer',
         last_name      => 'Thompson',
+        address_state  => 'São Paulo',
         address_line_1 => '123° Fake Street',
         address_line_2 => '123º Evergreen Terrace',
     };
 
     my $res = $t->await::new_account_real($cli_details);
     test_schema('new_account_real', $res);
+    is $res->{error}, undef, 'account created successfully';
+    ok $res->{new_account_real}->{client_id}, 'Loginid is returned';
 
     my $cli = BOM::User::Client->new({loginid => $res->{new_account_real}->{client_id}});
     is $cli->address_line_1, $cli_details->{address_line_1}, 'Expected address line 1';
     is $cli->address_line_2, $cli_details->{address_line_2}, 'Expected address line 2';
+    is $cli->address_state,  'SP', 'Address state name is converted to state code';
 };
 
 sub create_vr_account {

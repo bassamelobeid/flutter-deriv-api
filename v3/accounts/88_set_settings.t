@@ -30,7 +30,6 @@ my %client_details = (
     address_line_1         => 'Jalan Usahawan',
     address_line_2         => 'Enterpreneur Center',
     address_city           => 'Cyberjaya',
-    address_state          => 'Selangor',
     address_postcode       => '47120',
     phone                  => '+60321685000',
     secret_question        => 'Favourite dish',
@@ -119,6 +118,7 @@ subtest 'Tax residence on restricted country' => sub {
     $set_settings_params = {
         set_settings   => 1,
         address_line_1 => 'Lake of Rage 123',
+        address_state  => 'Amazonas'
     };
 
     $res = $t->await::set_settings($set_settings_params);
@@ -126,6 +126,7 @@ subtest 'Tax residence on restricted country' => sub {
     $cli = BOM::User::Client->new({loginid => $loginid});
     is $cli->address_line_1, $set_settings_params->{address_line_1},
         'Successfully called /set_settings under restricted country in tax residence scenario';
+    is $cli->address_state, 'AM', 'State name is converted into state code';
 };
 
 subtest 'feature flag test' => sub {
