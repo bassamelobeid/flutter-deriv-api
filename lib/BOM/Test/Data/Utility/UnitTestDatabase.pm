@@ -12,6 +12,7 @@ use MooseX::Singleton;
 use Postgres::FeedDB;
 use Finance::Underlying;
 use BOM::User::Utility;
+use BOM::Platform::Locale;
 
 use BOM::Database::ClientDB;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
@@ -143,6 +144,10 @@ sub create_client {
     # any modify args were specified?
     for (keys %$args) {
         $client_data->{$_} = $args->{$_};
+    }
+    if ($args->{residence} && !$args->{address_state}) {
+        my $states = BOM::Platform::Locale::get_state_option($args->{residence});
+        $client_data->{address_state} = $states->[0]->{value} if $states;
     }
 
     my $client = LandingCompany::Wallet::get_wallet_for_broker($broker_code) ? BOM::User::Wallet->rnew : BOM::User::Client->rnew;
