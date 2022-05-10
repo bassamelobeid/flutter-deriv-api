@@ -2822,6 +2822,13 @@ subtest 'crypto_withdrawal_email event' => sub {
         email_verified => 1,
     )->add_client($client);
 
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'Deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
     undef @track_args;
 
     BOM::Event::Actions::Client::crypto_withdrawal_email({
@@ -3311,7 +3318,46 @@ subtest 'crypto_withdrawal_rejected_email' => sub {
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
+subtest 'account_verification_for_pending_payout event' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'Deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    undef @track_args;
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test@deriv.com',
+    });
+
+    my $args = {
+        loginid    => $client->loginid,
+        properties => {
+            email => $client->email,
+            date  => "28 Mar 2022"
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{account_verification_for_pending_payout};
+    ok $handler->($args);
+    my $result = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+    my ($customer, %returned_args) = @track_args;
+    is $returned_args{event}, 'account_verification_for_pending_payout', 'track event name is set correctly';
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+};
+
 subtest 'authenticated_with_scans event' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'Deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });

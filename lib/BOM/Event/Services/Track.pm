@@ -139,12 +139,16 @@ my %EVENT_PROPERTIES = (
     verify_email_closed_account_other => [qw(loginid email type live_chat_url)],
     verify_email_closed_account_reset_password  => [qw(loginid email type live_chat_url)],
     verify_email_closed_account_account_opening => [qw(loginid email type live_chat_url)],
+    account_verification_for_pending_payout     => [qw(date email)],
     authenticated_with_scans                    => [qw(first_name email contact_url live_chat_url)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
 
 my @COMMON_EVENT_METHODS = qw(
+    account_with_false_info_locked
+    underage_account_closed
+    account_verification_for_pending_payout
     api_token_created
     api_token_deleted
     account_reactivated
@@ -1209,6 +1213,18 @@ sub _time_to_iso_8601 {
     )->to_string;
 }
 
+=head2 underage_account_closed
+
+It is triggered for each B<underage_account_closed> event emitted, delivering it to Rudderstack.
+
+=head2 account_with_false_info_locked
+
+It is triggered for each B<account_with_false_info_locked> event emitted, delivering it to Rudderstack.
+
+=head2 account_verification_for_pending_payout
+
+It is triggered for B<vaccount_verification_for_pending_payout> event emitted, delivering it to Rudderstack.
+
 =head2 api_token_created
 
 It is triggered for each B<signup> event emitted, delivering it to Segment.
@@ -1343,23 +1359,6 @@ It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it
 
 =back
 
-=cut
-
-# generate attribute accessor
-for my $event_name (@COMMON_EVENT_METHODS) {
-    no strict 'refs';    # allow symbol table manipulation
-    *{__PACKAGE__ . '::' . $event_name} = sub {
-        my ($args) = @_;
-        return track_event(
-            event      => $event_name,
-            client     => $args->{client},
-            loginid    => $args->{loginid},
-            properties => $args->{properties} || $args,
-        );
-        }
-        unless __PACKAGE__->can($event_name);
-}
-
 =head2 crypto_withdrawal_rejected_email
 
 Send rudderstack event when a crypto payout is rejected
@@ -1388,63 +1387,19 @@ Send rudderstack event when a crypto payout is rejected
 
 =cut
 
-sub crypto_withdrawal_rejected_email {
-    my ($properties) = @_;
-
-    return track_event(
-        event      => 'crypto_withdrawal_rejected_email',
-        loginid    => $properties->{loginid},
-        properties => $properties,
-    );
-}
-
-=head2 account_with_false_info_locked
-
-It is triggered for each B<account_with_false_info_locked> event emitted, delivering it to Rudderstack.
-It can be called with the following parameters:
-    
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub account_with_false_info_locked {
-    my ($args) = @_;
-    my $properties = $args->{properties};
-
-    return track_event(
-        event      => 'account_with_false_info_locked',
-        loginid    => $args->{loginid},
-        properties => $properties,
-    );
-}
-
-=head2 underage_account_closed
-
-It is triggered for each B<underage_account_closed> event emitted, delivering it to Rudderstack.
-It can be called with the following parameters:
-    
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=back
-
-=cut
-
-sub underage_account_closed {
-    my ($args) = @_;
-
-    return track_event(
-        event      => 'underage_account_closed',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
+# generate attribute accessor
+for my $event_name (@COMMON_EVENT_METHODS) {
+    no strict 'refs';    # allow symbol table manipulation
+    *{__PACKAGE__ . '::' . $event_name} = sub {
+        my ($args) = @_;
+        return track_event(
+            event      => $event_name,
+            client     => $args->{client},
+            loginid    => $args->{loginid},
+            properties => $args->{properties} || $args,
+        );
+        }
+        unless __PACKAGE__->can($event_name);
 }
 
 1;
