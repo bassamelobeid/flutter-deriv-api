@@ -286,6 +286,41 @@ subtest 'buy ads' => sub {
     check_stats($client,     $stats_cli, 'client stats after order expired');
 };
 
+subtest 'expire within/beyond grace period' => sub {
+
+    my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 1,
+        expiry    => 5,               # grace period is 10min
+    );
+
+    tt_secs(6);
+    BOM::Test::Helper::P2P::expire_order($advertiser, $order->{id});
+    $client->p2p_expire_order(id => $order->{id});
+
+    delete $client->{_p2p_advertiser_cached};
+    is $client->p2p_advertiser_info->{total_completion_rate}, undef, 'within grace period: undef buy completion';
+    is $client->p2p_advertiser_info->{buy_completion_rate},   undef, 'within grace period: undef total completion';
+
+    (undef, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+
+    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 1,
+        expiry    => 10 * 60,
+    );
+
+    tt_secs((10 * 60) + 1);
+    BOM::Test::Helper::P2P::expire_order($advertiser, $order->{id});
+    $client->p2p_expire_order(id => $order->{id});
+
+    delete $client->{_p2p_advertiser_cached};
+    cmp_ok $client->p2p_advertiser_info->{total_completion_rate}, '==', 0, 'beyond grace period: zero buy completion';
+    cmp_ok $client->p2p_advertiser_info->{buy_completion_rate},   '==', 0, 'beyond grace period: zero total completion';
+};
+
 subtest 'dispute resolution - fraud' => sub {
 
     subtest 'advertiser seller fraud' => sub {

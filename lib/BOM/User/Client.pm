@@ -3376,13 +3376,17 @@ sub p2p_expire_order {
     my $txn_time = Date::Utility->new->datetime;
 
     my $days_for_release = BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
+    my $grace_period     = BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_grace_period * 60;    # config period is minutes
     my $p2p_redis        = BOM::Config::Redis->redis_p2p_write();
     my $redis_payload    = join('|', $order_id, $self->loginid);
+    my $elapsed          = time - Date::Utility->new($order->{created_time})->epoch;
+    my $buyer_fault      = $elapsed < $grace_period ? 0 : 1;    # negatively affect the buyer's completion rate when after grace period
 
     my ($old_status, $new_status, $expiry) = $self->db->dbic->txn(
         fixup => sub {
-            $_->selectrow_array('SELECT * FROM p2p.order_expire(?, ?, ?, ?, ?, ?, ?)',
-                undef, $order_id, $escrow->loginid, $param{source}, $param{staff}, $txn_time, $days_for_release, $order->{advert_id});
+            $_->selectrow_array('SELECT * FROM p2p.order_expire(?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $order_id, $escrow->loginid, $param{source}, $param{staff}, $txn_time, $days_for_release, $order->{advert_id}, $buyer_fault);
+
         });
 
     $new_status //= '';
