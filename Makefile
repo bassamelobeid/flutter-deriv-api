@@ -10,7 +10,7 @@ TESTS=merlin_benchmark \
 
 M=rm -f /tmp/l4p.log && [ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
-P=/etc/rmg/bin/prove -v --timer -I$D/lib -I$D -I$D/t  -I/home/git/regentmarkets/bom-postgres/lib
+P=/etc/rmg/bin/prove -vl --timer
 L=|| { [ -t 1 -a "$$TRAVIS" != true ] && echo '\033[01;31msee also /tmp/l4p.log\033[00m' || cat /tmp/l4p.log; false; }
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@" $L; }; p
 
@@ -20,8 +20,11 @@ default:
 	@echo "  test         - Run lib tests"
 	@echo "  tidy         - Run perltidy"
 
+syntax_diff:
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
+
 syntax:
-	/etc/rmg/bin/prove -l --norc t/002_autosyntax.t t/002_critic_check.t
+	@$(PROVE) --norc t/*.t
 
 test: $(TESTS)
 
@@ -60,8 +63,5 @@ tidy:
 	find . -name '*.p?.bak' -delete
 	. /etc/profile.d/perl5.sh;find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
-
-compile:
-	/etc/rmg/bin/prove -v -l t/BOM/002_autosyntax.t
 
 
