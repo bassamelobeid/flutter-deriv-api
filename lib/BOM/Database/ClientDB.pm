@@ -124,8 +124,8 @@ sub _build_db {
             type     => $type,
             driver   => 'Pg',
             database => "$domain-$type$db_postfix",
-            host     => '/var/run/postgresql',
-            port     => 6432,
+            host     => $ENV{BOMDB_HOST} || '/var/run/postgresql',
+            port     => $ENV{BOMDB_PORT} || 6432,
             username => 'write',
             password => '',
         );
