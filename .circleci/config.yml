@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -37,6 +38,28 @@ default: &6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-backoffice
 jobs:
+  core_syntax_diff:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          make test
+        name: Core tests
+    - run:
+        command: make unit
+        name: unit tests
+    - run:
+        command: |
+          sudo mkdir -p /home/website/www/temp
+          make syntax_diff
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
   core:
     <<: *6
     steps:
@@ -47,7 +70,7 @@ jobs:
     - run:
         <<: *5
         command: |
-          sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db && make test
+          make test
         name: core tests
     - store_test_results:
         path: /var/tmp/test-output
@@ -119,10 +142,8 @@ jobs:
 version: 2
 workflows:
   build-workflow:
-    jobs: &7
-    - syntax_unit:
-        context: perl
-    - core:
+    jobs:
+    - core_syntax_diff:
         context: perl
     - localize:
         context: perl
