@@ -9,8 +9,11 @@ test_all: $(TESTS)
 test:
 	@$(PROVE) t/BOM
 
+syntax_diff:
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
+
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
