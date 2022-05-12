@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -224,13 +225,5 @@ workflows:
         context: perl
     - OVRA_benchmark:
         context: perl
-  daily:
-    jobs: *7
-    triggers:
-    - schedule:
-        cron: 40 20 * * *
-        filters:
-          branches:
-            only:
-            - master
+# this repo already been test by the regentmarkets/bom, so no need daily cron build for it.
   version: 2
