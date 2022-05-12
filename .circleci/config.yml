@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -37,13 +38,34 @@ default: &5
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-postgres
 jobs:
-  syntax_unit:
+  core_syntax_diff:
     <<: *5
     steps:
     - *1
     - *2
     - *3
     - *4
+    - run:
+        <<: *environment
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          sudo tee -a /etc/hosts < hosts.db
+          cat /etc/hosts
+          make test
+        name: Core tests
+    - run:
+        command: make unit
+        name: unit tests
+    - run:
+        command: make syntax_diff
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
+  syntax_unit:
+    <<: *5
+    steps:
+    - *1
+    - *2
     - run:
         <<: *environment
         command: |
@@ -98,13 +120,15 @@ jobs:
 version: 2
 workflows:
   build-workflow:
-    jobs: &6
+    jobs:
+    - core_syntax_diff:
+        context: perl
+  daily:
+    jobs:
     - syntax_unit:
         context: perl
     - core:
         context: perl
-  daily:
-    jobs: *6
     triggers:
     - schedule:
         cron: 50 20 * * *
@@ -118,7 +142,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "30 4 * * 6"
+        cron: 30 4 * * 6
         filters:
           branches:
             only:

@@ -25,6 +25,9 @@ unit_test_database_model:
 unit_test_database_all:
 	@$(PROVE) t/BOM/Database/*.t
 
+syntax_diff:
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
+
 syntax:
 	@$(PROVE) --norc t/*.t
 
