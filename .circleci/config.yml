@@ -1,3 +1,4 @@
+---
 version: 2
 
 default: &default
@@ -14,7 +15,7 @@ alias:
 - &ssh_keys
   add_ssh_keys:
     fingerprints:
-    - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+    - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
 - &git
   run:
     name: Update git repositories
@@ -36,7 +37,7 @@ alias:
           (( count++ )) && (( count >= 20 )) && break
           sleep 1
       done
-- &tests
+- &environment
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 
@@ -49,7 +50,7 @@ jobs:
     - *services
     - *wait_services
     - run:
-        <<: *tests
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make syntax
@@ -67,11 +68,32 @@ jobs:
     - *services
     - *wait_services
     - run:
-        <<: *tests
+        <<: *environment
         name: Market unit test
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make test
+    - store_test_results:
+        path: /var/tmp/test-output
+  core_syntax_diff:
+    <<: *default
+    steps:
+    - *ssh_keys
+    - *git
+    - *services
+    - *wait_services
+    - run:
+        <<: *environment
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test
+        name: Core tests
+    - run:
+        command: make unit
+        name: unit tests
+    - run:
+        command: make syntax_diff
+        name: Code structure and syntax
     - store_test_results:
         path: /var/tmp/test-output
   code_coverage:
@@ -82,7 +104,7 @@ jobs:
     - *services
     - *wait_services
     - run:
-        <<: *tests
+        <<: *environment
         name: code coverage tests
         command: |
           make cover
@@ -92,7 +114,7 @@ jobs:
     - *ssh_keys
     - *git
     - run:
-        <<: *tests
+        <<: *environment
         name: Unit test
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -101,13 +123,15 @@ jobs:
         path: /var/tmp/test-output
 workflows:
   build-workflow:
-    jobs: &all-jobs
+    jobs:
+    - core_syntax_diff:
+        context: perl
+  daily:
+    jobs:
     - syntax_unit:
         context: perl
     - core:
         context: perl
-  daily:
-    jobs: *all-jobs
     triggers:
     - schedule:
         cron: 47 20 * * *
@@ -121,7 +145,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "30 3 * * 6"
+        cron: 30 3 * * 6
         filters:
           branches:
             only:

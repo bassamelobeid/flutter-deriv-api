@@ -9,6 +9,9 @@ test_all: $(TESTS)
 test:
 	@$(PROVE) t/BOM
 
+syntax_diff:
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
+
 syntax:
 	@$(PROVE) --norc t/*.t
 
