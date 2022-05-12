@@ -2,7 +2,7 @@ TESTS=test unit syntax
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 export SKIP_EMAIL=1
-P=/etc/rmg/bin/prove -vrl --timer
+P=/etc/rmg/bin/prove -vrl --timer -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/lib -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/local/lib/perl5
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test_all: $(TESTS)
@@ -30,8 +30,11 @@ tidy:
 	find . -not -path "./.git*" -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
 
+syntax_diff:
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
+
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 cover:
 	cover -delete
