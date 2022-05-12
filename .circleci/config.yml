@@ -1,3 +1,4 @@
+---
 version: 2
 
 default: &default
@@ -14,7 +15,7 @@ alias:
 - &ssh_keys
   add_ssh_keys:
     fingerprints:
-    - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+    - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
 - &update_git
   run:
     name: Update git repositories
@@ -88,36 +89,6 @@ jobs:
           make unit_test_product_contract
     - store_test_results:
         path: /var/tmp/test-output
-  product_contract_settlement:
-    <<: *default
-    steps:
-    - *ssh_keys
-    - *update_git
-    - *services
-    - *wait_services
-    - run:
-        <<: *test_output
-        name: Product contract settlement test
-        command: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make unit_test_product_contract_settlement
-    - store_test_results:
-        path: /var/tmp/test-output
-  product_contract_extended:
-    <<: *default
-    steps:
-    - *ssh_keys
-    - *update_git
-    - *services
-    - *wait_services
-    - run:
-        <<: *test_output
-        name: Product Contract Extended test
-        command: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make unit_test_product_contract_extended
-    - store_test_results:
-        path: /var/tmp/test-output
   validation:
     <<: *default
     steps:
@@ -163,7 +134,7 @@ jobs:
           make unit_test_pricing
     - store_test_results:
         path: /var/tmp/test-output
-  product_except_validation_contract_pricing:
+  product_others:
     <<: *default
     steps:
     - *ssh_keys
@@ -172,29 +143,30 @@ jobs:
     - *wait_services
     - run:
         <<: *test_output
-        name: Product base
+        name: Product extended
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make unit_test_product_base
+          make unit_test_product_contract_extended
+    - run:
+        name: Product base
+        command: make unit_test_product_base
+        when: always
     - run:
         name: Product model
-        command: |
-          make unit_test_product_model
+        command: make unit_test_product_model
         when: always
     - run:
         name: Valatility
-        command: |
-          make unit_test_volatility
+        command: make unit_test_volatility
         when: always
     - run:
         name: Offerings
-        command: |
-          make unit_test_offerings
+        command: make unit_test_offerings
         when: always
     - store_test_results:
         path: /var/tmp/test-output
 # bom repo changes frequently so it is important to check the below repo tests here
-  benchmark_merlin:
+  benchmark_merlin_ovra:
     <<: *default
     steps:
     - *ssh_keys
@@ -208,15 +180,6 @@ jobs:
           cd /home/git/regentmarkets/bom-quant-benchmark
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make merlin_benchmark
-    - store_test_results:
-        path: /var/tmp/test-output
-  benchmark_OVRA:
-    <<: *default
-    steps:
-    - *ssh_keys
-    - *update_git
-    - *services
-    - *wait_services
     - run:
         <<: *test_output
         name: OVRA benchmark
@@ -226,7 +189,7 @@ jobs:
         when: always
     - store_test_results:
         path: /var/tmp/test-output
-  benchmark_SDFC_SDEQ:
+  benchmark_SD:
     <<: *default
     working_directory: /home/git/regentmarkets/bom-quant-benchmark
     steps:
@@ -376,23 +339,17 @@ workflows:
         context: perl
     - product_contract:
         context: perl
-    - product_contract_settlement:
-        context: perl
-    - product_contract_extended:
-        context: perl
     - validation:
         context: perl
     - memory_test:
         context: perl
     - pricing:
         context: perl
-    - product_except_validation_contract_pricing:
+    - product_others:
         context: perl
-    - benchmark_merlin:
+    - benchmark_merlin_ovra:
         context: perl
-    - benchmark_OVRA:
-        context: perl
-    - benchmark_SDFC_SDEQ:
+    - benchmark_SD:
         context: perl
     - perl-Pricing-Engine-Tests:
         context: perl
@@ -402,23 +359,17 @@ workflows:
         context: perl
     - product_contract:
         context: perl
-    - product_contract_settlement:
-        context: perl
-    - product_contract_extended:
-        context: perl
     - validation:
         context: perl
     - memory_test:
         context: perl
     - pricing:
         context: perl
-    - product_except_validation_contract_pricing:
+    - product_others:
         context: perl
-    - benchmark_merlin:
+    - benchmark_merlin_ovra:
         context: perl
-    - benchmark_OVRA:
-        context: perl
-    - benchmark_SDFC_SDEQ:
+    - benchmark_SD:
         context: perl
     - perl-Pricing-Engine-Tests:
         context: perl
@@ -435,7 +386,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "40 6 * * 6"
+        cron: 40 6 * * 6
         filters:
           branches:
             only:
