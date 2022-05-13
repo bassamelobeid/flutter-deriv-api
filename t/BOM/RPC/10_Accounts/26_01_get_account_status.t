@@ -12,6 +12,7 @@ use Encode qw(encode);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Platform::Token::API;
+use BOM::Platform::Utility;
 use BOM::User::Password;
 use BOM::User;
 use BOM::User::Onfido;
@@ -3586,7 +3587,7 @@ subtest 'Rejected reasons' => sub {
             return $poi_name_mismatch;
         });
 
-    my %catalog = %BOM::RPC::v3::Accounts::RejectedOnfidoReasons;
+    my %catalog = BOM::Platform::Utility::rejected_onfido_reasons()->%*;
     my $tests   = [map { +{reasons => [$_], poi_status => 'rejected', expected => [$catalog{$_}], test => "Testing $_",} } keys %catalog];
 
     # Adding more cases

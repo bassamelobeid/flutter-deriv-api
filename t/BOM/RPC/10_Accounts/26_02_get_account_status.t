@@ -10,6 +10,7 @@ use Date::Utility;
 
 use BOM::RPC::v3::Accounts;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Platform::Utility;
 use BOM::User;
 use BOM::Platform::Token;
 
@@ -17,7 +18,7 @@ my $c = Test::BOM::RPC::QueueClient->new();
 my $m = BOM::Platform::Token::API->new;
 
 subtest 'idv details' => sub {
-    my %rejected_reasons = %BOM::RPC::v3::Accounts::RejectedIdentityVerificationReasons;
+    my %rejected_reasons = BOM::Platform::Utility::rejected_identity_verification_reasons()->%*;
     my $client           = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
