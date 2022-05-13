@@ -2190,6 +2190,8 @@ use constant {
         PP008 => "OrderCreateFailAmount",
         PP009 => "InvalidAdvertOwn",
         PP010 => "OrderCreateFailAmountAdvertiser",
+        PP011 => "OpenOrdersDeleteAdvert",
+        PP012 => "PaymentMethodRemoveActiveOrdersDB",
     },
 };
 
@@ -2625,22 +2627,17 @@ sub p2p_advert_update {
         $redis->hdel(P2P_ARCHIVE_DATES_KEY, $id);
     }
 
-    $self->db->dbic->txn(
+    my $updated_advert = $self->db->dbic->run(
         fixup => sub {
             my $dbh = shift;
-
-            if ($param{delete}) {
-                my ($open_orders) = $dbh->selectrow_array('SELECT active_orders FROM p2p.p2p_advert WHERE id = ? FOR UPDATE', undef, $id);
-                die +{error_code => 'OpenOrdersDeleteAdvert'} if $open_orders > 0;
-            }
-
-            $dbh->do(
-                'SELECT FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            return $dbh->selectrow_hashref(
+                'SELECT * FROM p2p.advert_update_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $id,
                 @param{
                     qw/is_active delete description payment_method payment_info contact_info payment_method_ids payment_method_names local_currency remaining_amount rate min_order_amount max_order_amount rate_type/
                 });
         });
+    $self->_p2p_db_error_handler($updated_advert);
 
     BOM::Platform::Event::Emitter::emit(
         p2p_adverts_updated => {
@@ -5332,13 +5329,13 @@ Dies or returns undef.
 =cut
 
 sub _p2p_db_error_handler {
-    my ($self, $order) = @_;
+    my ($self, $p2p_object) = @_;
 
-    return unless $order->{error_code};
+    return unless $p2p_object->{error_code};
 
     die +{
-        error_code => P2P_DB_ERR_MAP->{$order->{error_code}},
-        $order->{error_params} ? (message_params => $order->{error_params}) : (),
+        error_code => P2P_DB_ERR_MAP->{$p2p_object->{error_code}},
+        $p2p_object->{error_params} ? (message_params => $p2p_object->{error_params}) : (),
     };
 }
 
