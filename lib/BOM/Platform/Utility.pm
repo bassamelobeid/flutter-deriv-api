@@ -301,4 +301,121 @@ sub has_idv {
     return 1;
 }
 
+=head2 rejected_onfido_reasons
+
+return a hashref about strings of recjected onfido reasons
+
+=cut
+
+sub rejected_onfido_reasons {
+    ## no critic(TestingAndDebugging::ProhibitNoWarnings)
+    no warnings 'redefine';
+    local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
+    return {
+        'data_comparison.first_name'                    => localize("The name on your document doesn't match your profile."),
+        'data_comparison.last_name'                     => localize("The name on your document doesn't match your profile."),
+        'data_comparison.date_of_birth'                 => localize("The date of birth on your document doesn't match your profile."),
+        'data_comparison.date_of_expiry'                => localize("Your document has expired."),
+        'data_comparison.issuing_country'               => localize("Your document appears to be invalid."),
+        'data_comparison.document_type'                 => localize("Your document appears to be invalid."),
+        'data_comparison.document_numbers'              => localize("Your document appears to be invalid."),
+        'visual_authenticity.original_document_present' =>
+            localize("Your document appears to be a scanned copy that contains markings or text that shouldn't be on your document."),
+        'visual_authenticity.original_document_present.scan' => localize(
+            "We're unable to verify the document you provided because it contains markings or text that should not be on your document. Please provide a clear photo or a scan of your original identity document."
+        ),
+        'visual_authenticity.original_document_present.document_on_printed_paper' => localize("Your document appears to be a printed copy."),
+        'visual_authenticity.original_document_present.screenshot'                => localize("Your document appears to be a screenshot."),
+        'visual_authenticity.original_document_present.photo_of_screen' => localize("Your document appears to be a photo of a device screen."),
+        'visual_authenticity.fonts'                                     => localize("Your document appears to be invalid."),
+        'visual_authenticity.face_detection'                            => localize("Your document appears to be invalid."),
+        'visual_authenticity.security_features'                         => localize("Your document appears to be invalid."),
+        'visual_authenticity.template'                                  => localize("Your document appears to be invalid."),
+        'visual_authenticity.digital_tampering'                         => localize("Your document appears to be invalid."),
+        'visual_authenticity.picture_face_integrity'                    => localize("Your document appears to be invalid."),
+        'data_validation.date_of_birth'               => localize("Some details on your document appear to be invalid, missing, or unclear."),
+        'data_validation.document_expiration'         => localize("Your document has expired."),
+        'data_validation.document_numbers'            => localize("Some details in your document appear to be invalid, missing, or unclear."),
+        'data_validation.no_document_numbers'         => localize("The serial number of your document couldn't be verified."),
+        'data_validation.expiry_date'                 => localize("Some details on your document appear to be invalid, missing, or unclear."),
+        'data_validation.mrz'                         => localize("Some details on your document appear to be invalid, missing, or unclear."),
+        'image_integrity.conclusive_document_quality' => localize("Your document appears to be invalid."),
+        'image_integrity.conclusive_document_quality.missing_back' =>
+            localize("The back of your document appears to be missing. Please include both sides of your identity document."),
+        'image_integrity.conclusive_document_quality.digital_document'                => localize("Your document appears to be a digital document."),
+        'image_integrity.conclusive_document_quality.punctured_document'              => localize("Your document appears to be damaged or cropped."),
+        'image_integrity.conclusive_document_quality.corner_removed'                  => localize("Your document appears to be damaged or cropped."),
+        'image_integrity.conclusive_document_quality.watermarks_digital_text_overlay' =>
+            localize("Your document contains markings or text that should not be on your document."),
+        'image_integrity.conclusive_document_quality.abnormal_document_features' =>
+            localize("Some details on your document appear to be invalid, missing, or unclear."),
+        'image_integrity.conclusive_document_quality.obscured_security_features' =>
+            localize("Some details on your document appear to be invalid, missing, or unclear."),
+        'image_integrity.conclusive_document_quality.obscured_data_points' =>
+            localize("Some details on your document appear to be invalid, missing, or unclear."),
+        'image_integrity.colour_picture' =>
+            localize("Your document appears to be in black and white. Please upload a colour photo of your document."),
+        'image_integrity.supported_document' =>
+            localize("The document you provided is not supported for your country. Please provide a supported document for your country."),
+        'image_integrity.image_quality' =>
+            localize("The image quality of your document is too low. Please provide a hi-res photo of your identity document."),
+        'image_integrity.image_quality.dark_photo' => localize(
+            "We were unable to verify your selfie because it's not clear. Please take a clearer photo and try again. Ensure that there's enough light where you are and that your entire face is in the frame."
+        ),
+        'image_integrity.image_quality.glare_on_photo' => localize(
+            "We were unable to verify your selfie because it's not clear. Please take a clearer photo and try again. Ensure that there's enough light where you are and that your entire face is in the frame."
+        ),
+        'image_integrity.image_quality.blurred_photo' => localize(
+            "We were unable to verify your selfie because it's not clear. Please take a clearer photo and try again. Ensure that there's enough light where you are and that your entire face is in the frame."
+        ),
+        'image_integrity.image_quality.covered_photo' => localize(
+            "We're unable to verify the document you provided because some details appear to be missing. Please try again or provide another document."
+        ),
+        'image_integrity.image_quality.other_photo_issue' => localize(
+            "We're unable to verify the document you provided because some details appear to be missing. Please try again or provide another document."
+        ),
+        'image_integrity.image_quality.damaged_document' => localize(
+            "We're unable to verify the document you provided because it appears to be damaged. Please try again or upload another document."),
+        'image_integrity.image_quality.incorrect_side' =>
+            localize("The front of your document appears to be missing. Please provide both sides of your identity document."),
+        'image_integrity.image_quality.cut_off_document' => localize(
+            "We're unable to verify the document you provided because it appears to be damaged. Please try again or upload another document."),
+        'image_integrity.image_quality.no_document_in_image' => localize(
+            "We're unable to verify the document you provided because it appears to be a blank image. Please try again or upload another document."),
+        'image_integrity.image_quality.two_documents_uploaded' =>
+            localize("The document you provided appears to be two different types. Please try again or provide another document."),
+        'compromised_document'                => localize("Your document failed our verification checks."),
+        'age_validation.minimum_accepted_age' => localize(
+            "Your age in the document you provided appears to be below 18 years. We're only allowed to offer our services to clients above 18 years old, so we'll need to close your account. If you have a balance in your account, contact us via live chat and we'll help to withdraw your funds before your account is closed."
+        ),
+        'selfie' => localize(
+            "Your selfie isn't clear. Please take a clearer photo and try again. Ensure that there's enough light where you are and that your entire face is in the frame."
+        ),
+    };
+
+}
+
+=head2 rejected_identity_verification_reasons
+
+return a hashref about strings of recjected identity verificationreasons
+
+=cut
+
+sub rejected_identity_verification_reasons {
+    ## no critic(TestingAndDebugging::ProhibitNoWarnings)
+    no warnings 'redefine';
+    local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
+    return {
+        'UNDERAGE'           => localize("You're under legal age."),
+        'NAME_MISMATCH'      => localize("The name retrieved from your document doesn't match your profile."),
+        'DOB_MISMATCH'       => localize("The date of birth retrieved from your document doesn't match your profile."),
+        'EMPTY_STATUS'       => localize("The verification status was empty, rejected for lack of information."),
+        'INFORMATION_LACK'   => localize("The verfication is passed but the personal info is not available to compare."),
+        'DOCUMENT_REJECTED'  => localize("Document was rejected by the provider."),
+        'UNAVAILABLE_STATUS' => localize("The verification status is not available, provider says: N/A."),
+        'UNAVAILABLE_ISSUER' => localize("The verification status is not available, provider says: Issuer Unavailable."),
+        'EXPIRED'            => localize("The document's validity has been expired."),
+    };
+}
+
 1;
