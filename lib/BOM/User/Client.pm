@@ -2802,10 +2802,9 @@ sub p2p_order_create {
             rule_engine  => $rule_engine,
         );
     } catch ($e) {
-        chomp($e);
         die +{
             error_code     => 'OrderCreateFailClient',
-            message_params => [$e],
+            message_params => [$e->{message_to_client}],
         };
     }
 
@@ -5334,14 +5333,10 @@ sub validate_payment {
     my $action_type  = $amount > 0 ? 'deposit' : 'withdrawal';
     my $payment_type = $args{payment_type} // '';
     my $rule_engine  = $args{rule_engine};
-    # this argument is used by paymentapi to generate it's own custom error messages.
-    my $die_with_error_object = $args{die_with_error_object};
 
     # validate expects 'deposit'/'withdraw' so if action_type is 'withdrawal' should be replaced to 'withdraw'
     my $validation = BOM::Platform::Client::CashierValidation::check_availability($self, $action_type);
-    if (exists $validation->{error}) {
-        die $die_with_error_object ? $validation->{error} : "$validation->{error}->{message_to_client}\n";
-    }
+    die $validation->{error} if exists $validation->{error};
 
     # todo: extend rule engine to support conditional rules matching multiple values
     my @internal = qw(internal_transfer mt5_transfer dxtrade_transfer);
@@ -5364,15 +5359,20 @@ sub validate_payment {
                 stop_on_failure => 1,
             })
     } catch ($e) {
-        die $e unless ref $e;
+        unless (ref $e) {
+            $log->errorf('An error occurred while validating payment for client %s: %s', $self->loginid, $e);
+            $e = {};
+        }
 
-        my $code    = $e->{error_code} or die $e;
-        my $message = error_map->{$code};
-        my $params  = $e->{params} // [];
+        my $code    = $e->{error_code} // 'PaymentValidationError';
+        my $params  = $e->{params}     // [];
+        my $message = localize(error_map->{$code}, @$params);
 
-        die $e if $die_with_error_object;
-
-        die localize($message, @$params) . "\n";
+        die +{
+            code              => $code,
+            params            => $params,
+            message_to_client => $message,
+        };
     };
 
     return 1;

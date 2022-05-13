@@ -158,7 +158,8 @@ sub create_client {
             $log->infof('Group details for %s is %s', 'real\\svg', $group_details);
 
         } catch ($e) {
-            $log->errorf('Failed - %s', $e);
+            my $msg = ref $e eq 'HASH' ? $e->{message_to_client} : $e;
+            $log->errorf('Failed - %s', $msg);
         }
     })->()->get;
 

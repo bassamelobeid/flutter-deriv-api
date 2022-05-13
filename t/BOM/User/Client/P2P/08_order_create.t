@@ -881,7 +881,7 @@ subtest 'payment validation' => sub {
             my ($self, %args) = @_;
             if ($self->loginid eq $client->loginid) {
                 ok $args{amount} > 0, 'sell ad is validated as client deposit';
-                die "fail client reason\n";
+                die +{message_to_client => "fail client reason"};
             }
         },
         _p2p_orders => sub { return [1] });
@@ -894,11 +894,11 @@ subtest 'payment validation' => sub {
         qr/Rule engine object is missing/, 'Rule engine object is required (unless skip_rule argument is used)';
 
     $args{rule_engine} = $rule_engine;
-    my $err = exception {
-        $client->p2p_order_create(%args);
-    };
+
     cmp_deeply(
-        $err,
+        exception {
+            $client->p2p_order_create(%args);
+        },
         {
             error_code     => 'OrderCreateFailClient',
             message_params => ['fail client reason']
@@ -912,15 +912,14 @@ subtest 'payment validation' => sub {
             my ($self, %args) = @_;
             if ($self->loginid eq $advertiser->loginid) {
                 ok $args{amount} < 0, 'sell ad is validated as advertiser withdrawal';
-                die "fail advertiser reason\n";
+                die +{message_to_client => "fail advertiser reason"};
             }
         });
 
-    $err = exception {
-        $client->p2p_order_create(%args);
-    };
     cmp_deeply(
-        $err,
+        exception {
+            $client->p2p_order_create(%args);
+        },
         {error_code => 'OrderCreateFailAmountAdvertiser'},
         'Advertiser validate_payment failed error has no details - fails with a rule-engine object'
     );
@@ -940,7 +939,7 @@ subtest 'payment validation' => sub {
             return $mock_client->original('validate_payment')->(@_);
         });
 
-    $err = exception {
+    cmp_deeply exception {
         $client->p2p_order_create(
             advert_id    => $advert->{id},
             amount       => 10,
@@ -948,8 +947,7 @@ subtest 'payment validation' => sub {
             contact_info => 'x',
             rule_engine  => $rule_engine,
         );
-    };
-    cmp_deeply($err, undef, 'validate_payment pass');
+    }, undef, 'validate_payment pass';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };

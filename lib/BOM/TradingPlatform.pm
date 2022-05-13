@@ -257,10 +257,9 @@ sub validate_transfer {
             rule_engine  => $self->rule_engine,
         );
     } catch ($e) {
-        chomp($e);
         die +{
             error_code     => 'PlatformTransferError',
-            message_params => [$e],
+            message_params => [$e->{message_to_client}],
         };
     }
 

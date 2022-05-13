@@ -7,6 +7,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::Fatal;
+use Test::Deep;
 use Test::MockTime qw(set_fixed_time restore_time);
 use Test::MockModule;
 
@@ -56,7 +57,13 @@ my %deposit = (
 
 $client->status->set('unwelcome', 'calum', '..dont like you, sorry.');
 
-throws_ok { $client->validate_payment(%deposit) } qr/Your account is restricted to withdrawals only./, 'cannot deposit when unwelcome.';
+is_deeply exception { $client->validate_payment(%deposit) },
+    {
+    code              => 'UnwelcomeStatus',
+    params            => ['CR10000'],
+    message_to_client => 'Your account is restricted to withdrawals only.'
+    },
+    'cannot deposit when unwelcome';
 
 $client->status->clear_unwelcome;
 
@@ -64,7 +71,13 @@ ok $client->validate_payment(%deposit), 'can deposit when not unwelcome.';
 
 $client->status->set('disabled', 'calum', '..dont like you, sorry.');
 
-throws_ok { $client->validate_payment(%deposit) } qr/Your account is disabled/, 'cannot deposit when disabled.';
+is_deeply exception { $client->validate_payment(%deposit) },
+    {
+    code              => 'DisabledAccount',
+    params            => ['CR10000'],
+    message_to_client => 'Your account is disabled.'
+    },
+    'cannot deposit when disabled';
 
 $client->status->clear_disabled;
 
@@ -72,7 +85,13 @@ ok $client->validate_payment(%deposit), 'can deposit when not disabled.';
 
 $client->status->set('cashier_locked', 'calum', '..dont like you, sorry.');
 
-throws_ok { $client->validate_payment(%deposit) } qr/Your cashier is locked/, 'cannot deposit when cashier is locked.';
+is_deeply exception { $client->validate_payment(%deposit) },
+    {
+    code              => 'CashierLocked',
+    params            => [],
+    message_to_client => 'Your cashier is locked.'
+    },
+    'cannot deposit when cashier is locked';
 
 $client->status->clear_cashier_locked;
 
@@ -84,34 +103,26 @@ ok(!$client->status->unwelcome, 'CR client still not unwelcome after first-depos
 
 subtest 'max balance messages' => sub {
 
-    throws_ok { $client->validate_payment(%deposit, amount => 1_000_000) }
-    qr/^This deposit will cause your account balance to exceed your account limit of \d+ \w+\.$/,
-        'cannot deposit an amount that puts client over maximum balance.';
-
-    is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000, die_with_error_object => 1) },
+    is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000) },
         {
-        error_code => 'BalanceExceeded',
-        params     => [300000, 'USD'],
-        rule       => 'deposit.total_balance_limits'
+        code              => 'BalanceExceeded',
+        params            => [300_000, 'USD'],
+        message_to_client => 'This deposit will cause your account balance to exceed your account limit of 300000 USD.'
         },
-        'correct error message with die_with_error_object=1';
+        'cannot deposit an amount that puts client over maximum balance';
 
     $client->set_exclusion();
     $client->self_exclusion->max_balance(1000);
     $client->save;
 
-    throws_ok { $client->validate_payment(%deposit, amount => 1_000_000) }
-    qr/^This deposit will cause your account balance to exceed your limit of \d+ \w+\. To proceed with this deposit, please adjust your self exclusion settings\.$/,
-        'cannot deposit an amount that puts client over self exclusion max balance.';
-
-    is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000, die_with_error_object => 1) },
+    is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000) },
         {
-        error_code => 'SelfExclusionLimitExceeded',
-        params     => [1000, 'USD'],
-        rule       => 'deposit.total_balance_limits'
+        code              => 'SelfExclusionLimitExceeded',
+        params            => [1000, 'USD'],
+        message_to_client =>
+            "This deposit will cause your account balance to exceed your limit of 1000 USD. To proceed with this deposit, please adjust your self exclusion settings.",
         },
-        'CTA added with die_with_error_object=1';
-
+        'cannot deposit an amount that puts client over self exclusion max balance.';
 };
 
 subtest 'GB fund protection' => sub {
@@ -150,7 +161,13 @@ subtest 'GB fund protection' => sub {
     $client_iom->set_default_account('GBP');
     $deposit_iom{rule_engine} = BOM::Rules::Engine->new(client => $client_iom);
 
-    throws_ok { $client_iom->validate_payment(%deposit_iom) } qr/Please accept Funds Protection./, 'GB residence needs to accept fund protection';
+    is_deeply exception { $client_iom->validate_payment(%deposit_iom) },
+        {
+        code              => 'NoUkgcFundsProtection',
+        params            => [],
+        message_to_client => "Please accept Funds Protection.",
+        },
+        'GB residence needs to accept fund protection';
 
     $client_iom->status->set('ukgc_funds_protection', 'system', 'testing');
     ok $client_iom->validate_payment(%deposit_iom), 'can deposit when no deposit limit set.';
@@ -211,8 +228,15 @@ subtest 'deposit limit' => sub {
         set_fixed_time($payment_time + ($limit_duration - 1) * 86400);
 
         my $short_name = $limit_name =~ s/max_deposit_//r;
-        throws_ok { $client_iom->validate_payment(%$one_usd_payment) } qr/Deposit exceeds $short_name limit/,
+
+        cmp_deeply exception { $client_iom->validate_payment(%$one_usd_payment) },
+            {
+            code              => 'DepositLimitExceeded',
+            params            => [$short_name, re(qr/[\d\.]+/), re(qr/[\d\.]+/), re(qr/[\d\.]+/),],
+            message_to_client => re(qr/Deposit exceeds $short_name limit [\d\.]+. Aggregated deposit over period [\d\.]+. Current amount [\d\.]+./),
+            },
             "cannot deposit when amount exceeds $limit_duration-day deposit limit.";
+
         lives_ok { $client_cr->validate_payment(%$one_usd_payment) } "we can deposit if deposit limits are disabled for the landing company";
 
         # move time forward exactly the same number of days as limit duration

@@ -7,6 +7,7 @@ use warnings;
 use Test::MockTime qw( set_fixed_time);
 use Test::More;
 use Test::Exception;
+use Test::Deep;
 use Test::Fatal;
 use Test::MockModule;
 use File::Spec;
@@ -119,19 +120,50 @@ subtest 'Client-specific' => sub {
     my $client = new_client('USD');
 
     $client->status->set('withdrawal_locked', 'calum', 'reason?');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/Your account is locked for withdrawals./, 'Client withdrawals have been locked.';
+
+    is_deeply exception { $client->validate_payment(%withdrawal) },
+        {
+        code              => 'WithdrawalLockedStatus',
+        params            => [],
+        message_to_client => 'Your account is locked for withdrawals.',
+        },
+        'Client withdrawals have been locked.';
+
     $client->status->clear_withdrawal_locked;
 
     $client->status->clear_unwelcome;
     $client->status->set('disabled', 'a-payments-clerk', '..dont like you, sorry.');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/disabled/, 'Client disabled.';
+
+    is_deeply exception { $client->validate_payment(%withdrawal) },
+        {
+        code              => 'DisabledAccount',
+        params            => ['CR10001'],
+        message_to_client => 'Your account is disabled.',
+        },
+        'Client disabled';
 
     $client->status->set('cashier_locked', 'calum', 'reason?');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/Your cashier is locked/, 'Client withdrawals have been locked.';
+
+    is_deeply exception { $client->validate_payment(%withdrawal) },
+        {
+        code              => 'CashierLocked',
+        params            => [],
+        message_to_client => 'Your cashier is locked.',
+        },
+        'Cashier locked, withdrawals not allowed';
+
     $client->status->clear_cashier_locked;
 
     $client->status->setnx('disabled', 'calum', 'reason?');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/Your account is disabled/, 'Client withdrawals have been locked.';
+
+    is_deeply exception { $client->validate_payment(%withdrawal) },
+        {
+        code              => 'DisabledAccount',
+        params            => ['CR10001'],
+        message_to_client => 'Your account is disabled.',
+        },
+        'Client disabled, withdrawals not allowed';
+
     $client->status->clear_disabled;
 };
 
@@ -140,8 +172,14 @@ subtest "withdraw vs Balance" => sub {
     plan tests => 1;
     my $client = new_client('USD');
     $client->smart_payment(%deposit);
-    throws_ok { $client->validate_payment(%withdrawal, amount => -100.01) } qr/Withdrawal amount \[.* USD\] exceeds client balance \[.* USD\]/,
-        "Withdraw more than balance";
+
+    is_deeply exception { $client->validate_payment(%withdrawal, amount => -100.01) },
+        {
+        code              => 'AmountExceedsBalance',
+        params            => ['100.01', 'USD', '100.00',],
+        message_to_client => 'Withdrawal amount [100.01 USD] exceeds client balance [100.00 USD].',
+        },
+        'Withdraw more than balance';
 };
 
 # Test for CR withdrawal limits
@@ -163,17 +201,15 @@ subtest 'CR withdrawal' => sub {
             });
 
         $client->smart_payment(%deposit, amount => 10500);
-        throws_ok { $client->validate_payment(%withdrawal, amount => -10001) }
-        qr/We're unable to process your withdrawal request because it exceeds the limit of 10000.00 USD. Please authenticate your account before proceeding with this withdrawal./,
-            'Non-Authed CR withdrawal greater than USD10K';
 
-        is_deeply exception { $client->validate_payment(%withdrawal, amount => -10001, die_with_error_object => 1) },
+        is_deeply exception { $client->validate_payment(%withdrawal, amount => -10001) },
             {
-            error_code => 'WithdrawalLimit',
-            params     => ['10000.00', 'USD'],
-            rule       => 'withdrawal.landing_company_limits'
+            code              => 'WithdrawalLimit',
+            params            => ['10000.00', 'USD',],
+            message_to_client =>
+                "We're unable to process your withdrawal request because it exceeds the limit of 10000.00 USD. Please authenticate your account before proceeding with this withdrawal.",
             },
-            'Correct message with die_with_error_object=1';
+            'Non-Authed CR withdrawal greater than USD10K';
 
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Non-Authed CR withdrawal USD10K';
 
@@ -181,22 +217,27 @@ subtest 'CR withdrawal' => sub {
 
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal, amount => -5001) }
-            qr/We're unable to process your withdrawal request because it exceeds the limit of 5000.00 USD. Please authenticate your account before proceeding with this withdrawal./,
+
+            is_deeply exception { $client->smart_payment(%withdrawal, amount => -5001) },
+                {
+                code              => 'WithdrawalLimit',
+                params            => ['5000.00', 'USD',],
+                message_to_client =>
+                    "We're unable to process your withdrawal request because it exceeds the limit of 5000.00 USD. Please authenticate your account before proceeding with this withdrawal."
+                },
                 'total withdraw cannot > 10k';
+
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'second 5k withdrawal';
             is($emitted{$client->loginid}, 'withdrawal_limit_reached', 'An event is emitted to set the client as needs_action');
-            throws_ok { $client->validate_payment(%withdrawal, amount => -100) }
-            qr/You've reached the maximum withdrawal limit of 10000.00 USD. Please authenticate your account before proceeding with this withdrawal/,
-                'withdrawal_limit_reached';
 
-            is_deeply exception { $client->validate_payment(%withdrawal, amount => -100, die_with_error_object => 1) },
+            is_deeply exception { $client->validate_payment(%withdrawal, amount => -100) },
                 {
-                error_code => 'WithdrawalLimitReached',
-                params     => ['10000.00', 'USD'],
-                rule       => 'withdrawal.landing_company_limits'
+                code              => 'WithdrawalLimitReached',
+                params            => ['10000.00', 'USD',],
+                message_to_client =>
+                    "You've reached the maximum withdrawal limit of 10000.00 USD. Please authenticate your account before proceeding with this withdrawal.",
                 },
-                'Correct message with die_with_error_object=1';
+                'withdrawal_limit_reached';
         };
 
         $mock_events->unmock_all();
@@ -206,16 +247,31 @@ subtest 'CR withdrawal' => sub {
     subtest 'in EUR, unauthenticated' => sub {
         my $client = new_client('EUR');
         my $var    = $client->smart_payment(%deposit_eur, amount => 10500);
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -10001) }
-        qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ EUR. Please authenticate your account before proceeding with this withdrawal./,
+
+        cmp_deeply exception { $client->validate_payment(%withdrawal_eur, amount => -10001) },
+            {
+            code              => 'WithdrawalLimit',
+            params            => [re(qr/[\d\.]+/), 'EUR',],
+            message_to_client => re(
+                qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ EUR. Please authenticate your account before proceeding with this withdrawal./
+            ),
+            },
             'Non-Authed CR withdrawal greater than USD 10K';
+
         lives_ok { $client->validate_payment(%withdrawal_eur, amount => -8411.84) } 'Non-Authed CR withdrawal USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_eur, amount => -8410.84) } 'Non-Authed CR withdrawal USD 9999';
 
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal_eur, amount => -5000) } 'first 5k USD withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal_eur, amount => -5001) }
-            qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ EUR. Please authenticate your account before proceeding with this withdrawal./,
+
+            cmp_deeply exception { $client->smart_payment(%withdrawal_eur, amount => -5001) },
+                {
+                code              => 'WithdrawalLimit',
+                params            => [re(qr/[\d\.]+/), 'EUR',],
+                message_to_client => re(
+                    qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ EUR. Please authenticate your account before proceeding with this withdrawal./
+                )
+                },
                 'total withdraw cannot > 10k';
         };
     };
@@ -224,14 +280,31 @@ subtest 'CR withdrawal' => sub {
     subtest 'in BTC, unauthenticated' => sub {
         my $client = new_client('BTC');
         my $var    = $client->smart_payment(%deposit_btc, amount => 3.00000000);
-        throws_ok { $client->validate_payment(%withdrawal_btc, amount => -2) } qr/We're unable to process your withdrawal request/,
+
+        cmp_deeply exception { $client->validate_payment(%withdrawal_btc, amount => -2) },
+            {
+            code              => 'WithdrawalLimit',
+            params            => [re(qr/[\d\.]+/), 'BTC',],
+            message_to_client => re(
+                qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ BTC. Please authenticate your account before proceeding with this withdrawal./
+            ),
+            },
             'Non-Authed CR withdrawal greater than USD 10K';
+
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -1.81818181) } 'Non-Authed CR withdrawal USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -1.80000000) } 'Non-Authed CR withdrawal USD 9999';
 
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal_btc, amount => -0.90909090) } 'first 5k USD withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal_btc, amount => -0.91000000) } qr/We're unable to process your withdrawal request/,
+
+            cmp_deeply exception { $client->smart_payment(%withdrawal_btc, amount => -0.91000000) },
+                {
+                code              => 'WithdrawalLimit',
+                params            => [re(qr/[\d\.]+/), 'BTC',],
+                message_to_client => re(
+                    qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ BTC. Please authenticate your account before proceeding with this withdrawal./
+                ),
+                },
                 'total withdraw cannot > 10k';
         };
     };
@@ -240,14 +313,31 @@ subtest 'CR withdrawal' => sub {
     subtest 'in LTC, unauthenticated' => sub {
         my $client = new_client('LTC');
         $client->smart_payment(%deposit_ltc, amount => 201.00000000);
-        throws_ok { $client->validate_payment(%withdrawal_ltc, amount => -201.00000000) } qr/We're unable to process your withdrawal request/,
+
+        cmp_deeply exception { $client->validate_payment(%withdrawal_ltc, amount => -201.00000000) },
+            {
+            code              => 'WithdrawalLimit',
+            params            => [re(qr/[\d\.]+/), 'LTC',],
+            message_to_client => re(
+                qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ LTC. Please authenticate your account before proceeding with this withdrawal./
+            ),
+            },
             'Non-Authed CR withdrawal greater than USD 10K';
+
         lives_ok { $client->validate_payment(%withdrawal_ltc, amount => -200.00000000) } 'Non-Authed CR withdrawal USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_ltc, amount => -199.98000000) } 'Non-Authed CR withdrawal USD 9999';
 
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal_ltc, amount => -100.00000000) } 'first 5k USD withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal_ltc, amount => -100.02000000) } qr/We're unable to process your withdrawal request/,
+
+            cmp_deeply exception { $client->smart_payment(%withdrawal_ltc, amount => -100.02000000) },
+                {
+                code              => 'WithdrawalLimit',
+                params            => [re(qr/[\d\.]+/), 'LTC',],
+                message_to_client => re(
+                    qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ LTC. Please authenticate your account before proceeding with this withdrawal./
+                ),
+                },
                 'total withdraw cannot > 10k';
         };
     };
@@ -293,7 +383,15 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
         amount   => $gbp_amount,
         currency => 'GBP'
     );
-    throws_ok { $client->validate_payment(%deposit_gbp) } qr/Please accept Funds Protection./, 'GB residence needs to accept fund protection';
+
+    is_deeply exception { $client->validate_payment(%deposit_gbp) },
+        {
+        code              => 'NoUkgcFundsProtection',
+        params            => [],
+        message_to_client => "Please accept Funds Protection.",
+        },
+        'GB residence needs to accept fund protection';
+
     $client->status->set('ukgc_funds_protection', 'system', 'testing');
     $client->smart_payment(%deposit_gbp);
     $client->status->clear_cashier_locked;    # first-deposit will cause this in non-CR clients!
@@ -314,8 +412,16 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my %wd3001 = (%wd_gbp, amount => -_GBP_equiv(3001));
 
     # Test that the client cannot withdraw the equivalent of EUR 3001
-    throws_ok { $client->validate_payment(%wd3001) } qr/We're unable to process your withdrawal request .* GBP/,
-        'Unauthed, not allowed to withdraw GBP equiv of EUR3001.';
+    cmp_deeply exception { $client->validate_payment(%wd3001) },
+        {
+        code              => 'WithdrawalLimit',
+        params            => [re(qr/[\d\.]+/), 'GBP',],
+        message_to_client => re(
+            qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ GBP. Please authenticate your account before proceeding with this withdrawal./
+        ),
+        },
+        'Unauthed, not allowed to withdraw GBP equiv of EUR3001';
+
     # mx client should be cashier locked and unwelcome
     ok $client->status->unwelcome,      'MX client is unwelcome after wihtdrawal limit is reached';
     ok $client->status->cashier_locked, 'MX client is cashier_locked after wihtdrawal limit is reached';
@@ -336,7 +442,14 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my $payment      = $client->db->dbic->run(fixup => sub { $_->selectrow_hashref("SELECT * FROM payment.payment ORDER BY id DESC LIMIT 1"); });
     my $payment_time = Date::Utility->new($payment->{payment_time})->epoch;
 
-    throws_ok { $client->validate_payment(%wd0501) } qr/We're unable to process your withdrawal request .* GBP/,
+    cmp_deeply exception { $client->validate_payment(%wd0501) },
+        {
+        code              => 'WithdrawalLimit',
+        params            => [re(qr/[\d\.]+/), 'GBP',],
+        message_to_client => re(
+            qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ GBP. Please authenticate your account before proceeding with this withdrawal./
+        ),
+        },
         'Unauthed, not allowed to withdraw equiv 2500 EUR then 501 making total over 3000.';
 
     # remove for further testing
@@ -348,7 +461,14 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     # move forward 29 days
     set_fixed_time($payment_time + 29 * 86400);
 
-    throws_ok { $client->validate_payment(%wd0501) } qr/We're unable to process your withdrawal request .* GBP/,
+    cmp_deeply exception { $client->validate_payment(%wd0501) },
+        {
+        code              => 'WithdrawalLimit',
+        params            => [re(qr/[\d\.]+/), 'GBP',],
+        message_to_client => re(
+            qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ GBP. Please authenticate your account before proceeding with this withdrawal./
+        ),
+        },
         'Unauthed, not allowed to withdraw equiv 3000 EUR then 1 more 29 days later';
 
     # remove for further testing
@@ -380,8 +500,13 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
 
     # Test for unauthenticated withdrawals
     subtest 'unauthenticated' => sub {
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2001) }
-        qr/We're unable to process your withdrawal request because it exceeds the limit of 2000\.00 EUR\./,
+        is_deeply exception { $client->validate_payment(%withdrawal_eur, amount => -2001) },
+            {
+            code              => 'WithdrawalLimit',
+            params            => ['2000.00', 'EUR',],
+            message_to_client =>
+                "We're unable to process your withdrawal request because it exceeds the limit of 2000.00 EUR. Please authenticate your account before proceeding with this withdrawal.",
+            },
             'Unauthed, not allowed to withdraw EUR2001.';
 
         is $client->status->unwelcome,      undef, 'Only MX client is unwelcome after it exceeds limit';
@@ -390,12 +515,25 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         ok $client->validate_payment(%withdrawal_eur, amount => -2000), 'Unauthed, allowed to withdraw EUR2000.';
 
         $client->smart_payment(%withdrawal_eur, amount => -1900);
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -101) }
-        qr/We're unable to process your withdrawal request because it exceeds the limit of 100\.00 EUR\./,
+
+        is_deeply exception { $client->validate_payment(%withdrawal_eur, amount => -101) },
+            {
+            code              => 'WithdrawalLimit',
+            params            => ['100.00', 'EUR',],
+            message_to_client =>
+                "We're unable to process your withdrawal request because it exceeds the limit of 100.00 EUR. Please authenticate your account before proceeding with this withdrawal.",
+            },
             'Unauthed, total withdrawal (1900+101) > EUR2000.';
 
         ok $client->smart_payment(%withdrawal_eur, amount => -100), 'Unauthed, allowed to withdraw total EUR (1900+100).';
-        throws_ok { $client->smart_payment(%withdrawal_eur, amount => -101) } qr/You've reached the maximum withdrawal limit of 2000\.00 EUR\./,
+
+        is_deeply exception { $client->smart_payment(%withdrawal_eur, amount => -101) },
+            {
+            code              => 'WithdrawalLimitReached',
+            params            => ['2000.00', 'EUR',],
+            message_to_client =>
+                "You've reached the maximum withdrawal limit of 2000.00 EUR. Please authenticate your account before proceeding with this withdrawal.",
+            },
             'withdrawal_limit_reached';
 
     };
@@ -412,7 +550,13 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         $client->set_authentication('ID_DOCUMENT', {status => 'pending'});
         $client->save;
 
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/You've reached the maximum withdrawal limit of 2000\.00 EUR\./,
+        is_deeply exception { $client->validate_payment(%withdrawal_eur, amount => -100) },
+            {
+            code              => 'WithdrawalLimitReached',
+            params            => ['2000.00', 'EUR',],
+            message_to_client =>
+                "You've reached the maximum withdrawal limit of 2000.00 EUR. Please authenticate your account before proceeding with this withdrawal.",
+            },
             'Unauthed, not allowed to withdraw as limit already > EUR2000';
     };
 };
@@ -430,7 +574,13 @@ subtest 'Frozen bonus.' => sub {
     cmp_ok($account->balance, '==', 20, 'client\'s balance is USD20 initially.');
 
     my %wd_bonus = (%withdrawal, amount => -$account->balance);
-    throws_ok { $client->validate_payment(%wd_bonus) } qr/includes frozen/, 'client not allowed to withdraw frozen bonus.';
+    is_deeply exception { $client->validate_payment(%wd_bonus) },
+        {
+        code              => 'AmountExceedsUnfrozenBalance',
+        params            => ['USD', '20.00', '20.00', '20.00',],
+        message_to_client => "Withdrawal is 20.00 USD but balance 20.00 includes frozen bonus 20.00.",
+        },
+        'client not allowed to withdraw frozen bonus.';
 
     $client->smart_payment(%deposit, amount => 300);
 
@@ -438,7 +588,12 @@ subtest 'Frozen bonus.' => sub {
 
     ok $client->validate_payment(%withdrawal, amount => -300), 'client is allowed to withdraw entire non-frozen part of balance';
 
-    throws_ok { $client->validate_payment(%withdrawal, amount => -320) } qr/includes frozen/,
+    is_deeply exception { $client->validate_payment(%withdrawal, amount => -320) },
+        {
+        code              => 'AmountExceedsUnfrozenBalance',
+        params            => ['USD', '320.00', '320.00', '20.00',],
+        message_to_client => "Withdrawal is 320.00 USD but balance 320.00 includes frozen bonus 20.00.",
+        },
         'client not allowed to withdraw funds including frozen bonus.';
 
     # gift was given:
