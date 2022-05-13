@@ -4,8 +4,10 @@ use warnings;
 use Test::More;
 use Test::MockModule;
 use Test::Deep;
+use Test::Exception;
 
 use BOM::Backoffice::Script::CustomerIOTranslation;
+use BOM::Platform::Context;
 
 my $cio = BOM::Backoffice::Script::CustomerIOTranslation->new(token => 'x');
 
@@ -61,6 +63,7 @@ subtest 'email parsing' => sub {
             strings => [{
                     id           => ignore(),
                     loc_text     => 'hello [_1]',
+                    orig_text    => $subject,
                     placeholders => ['{{event.name | capitalize}}']}
             ],
             subject => re('^\{\{snippets\.\w+?\}\}$'),
@@ -83,6 +86,7 @@ subtest 'email parsing' => sub {
             strings => [{
                     id           => ignore(),
                     loc_text     => 'You [_1]passed[_2]failed[_3].',
+                    orig_text    => $subject,
                     placeholders => ['{%if event.pass %}', '{% else %}', '{% endif %}']}
             ],
             subject => re('^\{\{snippets\.\w+?\}\}$'),
@@ -105,6 +109,7 @@ subtest 'email parsing' => sub {
             strings => [{
                     id           => ignore(),
                     loc_text     => 'hello [_1][_2][_3]',
+                    orig_text    => 'hello <b>{{event.name}}</b>',
                     placeholders => ['<b>', '{{event.name}}', '</b>']}
             ],
             subject => '',
@@ -128,6 +133,7 @@ subtest 'email parsing' => sub {
             strings => [{
                     id           => ignore(),
                     loc_text     => 'visit [_1][_2][_3]',
+                    orig_text    => 'visit <i>{{event.url}}</i>',
                     placeholders => ['<i>', '{{event.url}}', '</i>']}
             ],
             subject => '',
@@ -136,6 +142,43 @@ subtest 'email parsing' => sub {
         },
         '<loc> tags'
     );
+
+    my $res = $cio->process_camapign({
+            template => {
+                type    => 'email',
+                subject => '[spam] hi there',
+                body    => 'click [{{event.link}}] here',
+                layout  => ''
+            }});
+
+    cmp_deeply(
+        $res,
+        {
+            strings => bag({
+                    id           => ignore(),
+                    loc_text     => '~[spam~] hi there',
+                    orig_text    => '[spam] hi there',
+                    placeholders => []
+                },
+                {
+                    id           => ignore(),
+                    loc_text     => 'click ~[[_1]~] here',
+                    orig_text    => 'click [{{event.link}}] here',
+                    placeholders => ['{{event.link}}']}
+            ),
+            subject => re('\{\{snippets\.\w+?\}\}'),
+            body    => re('\{\{snippets\.\w+?\}\}'),
+        },
+        'escaping of square brackets'
+    );
+
+    for my $string ($res->{strings}->@*) {
+        lives_ok {
+            is BOM::Platform::Context::localize($string->{loc_text}, $string->{placeholders}->@*), $string->{orig_text},
+                'square brackets localized properly'
+        }
+        'localize square brackets had no error';
+    }
 
     cmp_deeply(
         $cio->process_camapign({
@@ -150,11 +193,13 @@ subtest 'email parsing' => sub {
             strings => bag({
                     id           => ignore(),
                     loc_text     => 'Yo [_1]',
+                    orig_text    => 'Yo {{event.name}}',
                     placeholders => ['{{event.name}}']
                 },
                 {
                     id           => ignore(),
                     loc_text     => '[_1] happened',
+                    orig_text    => '{{event.thing}} happened',
                     placeholders => ['{{event.thing}}']
                 },
 
@@ -167,7 +212,7 @@ subtest 'email parsing' => sub {
     );
 
     $body = "<style>ignore this</style><!-- ignore this too -->";
-    my $res = $cio->process_camapign({
+    $res  = $cio->process_camapign({
             template => {
                 type    => 'email',
                 subject => '',
@@ -201,6 +246,37 @@ subtest 'email parsing' => sub {
             }});
     cmp_deeply [map { $_->{loc_text} } $res->{strings}->@*], bag('orphan text', 'root div', 'para text', 'table text'),
         'all strings found in nested structure';
+
+};
+
+subtest 'generate snippet' => sub {
+    my $mock_cio = Test::MockModule->new('BOM::Backoffice::Script::CustomerIOTranslation');
+    $mock_cio->mock(localize  => sub { die });
+    $mock_cio->mock(languages => ['EN', 'CN', 'FR']);
+
+    my $item = {
+        id           => 123,
+        loc_text     => 'hello [_1]',
+        orig_text    => 'hello {{event.name}}',
+        placeholders => ['x']};
+
+    is $cio->generate_snippet($item, 'my campaign'), 'hello {{event.name}}', 'original text used when localize dies';
+
+    $mock_cio->mock(localize => sub { BOM::Platform::Context::request->language . ' ' . shift });
+
+    $item->{loc_text} = 'hello';
+
+    is(
+        $cio->generate_snippet($item, 'my campaign'),
+        q/{% if event.lang == "CN" %}
+CN hello
+{% elsif event.lang == "FR" %}
+FR hello
+{% else %}
+EN hello
+{% endif %}/,
+        'snippet generated successfully'
+    );
 
 };
 

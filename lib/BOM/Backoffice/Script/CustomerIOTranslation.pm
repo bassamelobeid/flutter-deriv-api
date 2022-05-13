@@ -66,21 +66,23 @@ sub update_campaigns_and_snippets {
             next CAMPAIGN;
         }
 
-        for my $string ($result->{strings}->@*) {
-            my $id       = $string->{id};
-            my $new_snip = $self->generate_snippet($string->{loc_text}, $string->{placeholders});
+        my %strings_by_id = map { $_->{id} => $_ } $result->{strings}->@*;
+
+        for my $id (keys %strings_by_id) {
+            my $string   = $strings_by_id{$id};
+            my $new_snip = $self->generate_snippet($string, $campaign->{name});
             next if exists $current_snips->{$id} and $current_snips->{$id} eq $new_snip;
 
-            $log->debugf("updating snippet %s for '%s'", $id, $string->{loc_text});
+            $log->debugf("updating snippet %s for string '%s'", $id, $string->{orig_text});
             unless ($self->update_snippet($id, $new_snip)) {
-                $log->warnf("Skipping campaign '%s' because we could not update a snippet", $campaign->{name});
+                $log->warnf("Skipping campaign '%s' because we could not update a snippet:\n%s", $campaign->{name}, $new_snip);
                 push @snips_to_keep, @campaign_snips;
                 next CAMPAIGN;
             }
         }
 
         if ($result->{body} ne $campaign->{live}{body} or $result->{subject} ne $campaign->{live}{subject}) {
-            $log->debugf("updating action for campaign '%s'", $campaign->{name});
+            $log->debugf("updating 'send automatically' action of campaign '%s'", $campaign->{name});
 
             if ($self->update_campaign_action($campaign, $result->{body}, $result->{subject})) {
                 @campaign_snips = map { $_->{id} } $result->{strings}->@*;
@@ -144,7 +146,7 @@ sub call_api {
     my $res = $self->http->request(@args);
     die "$res->{content}\n" unless $res->{success};
 
-    return $res->{headers}{'content-type'} ? decode_json_utf8($res->{content}) : 1;
+    return $res->{headers}{'content-type'} =~ /application\/json/ ? decode_json_utf8($res->{content}) : 1;
 }
 
 =head2 get_campaigns
@@ -256,7 +258,7 @@ sub update_snippet {
                 value => $snip
             });
     } catch ($e) {
-        $log->errorf('Failed to update snippet %s: %s', $id, $e);
+        $log->warnf('Failed to update snippet %s: %s', $id, $e);
         return undef;
     }
 }
@@ -273,7 +275,7 @@ sub delete_snippet {
     try {
         return $self->call_api('DELETE', 'snippets/' . $id);
     } catch ($e) {
-        $log->errorf('Failed to delete snippet %s: %s', $id, $e);
+        $log->warnf('Failed to delete snippet %s: %s', $id, $e);
         return undef;
     }
 }
@@ -523,7 +525,7 @@ Convert HTML tags and Customer IO placeholders to localizable placeholders.
 =cut
 
 sub process_text {
-    my $text = trim(shift);
+    my $orig_text = trim(shift);
 
     my ($i, @placeholders);
 
@@ -533,12 +535,14 @@ sub process_text {
         return '[_' . ++$i . ']';
     };
 
-    $text =~ s/(\{\{[^}]*\}\}|<[^>]*>|\{%.+?%\})/$re_sub->($1)/gme;
+    my $loc_text = $orig_text =~ s/[~\[\]]/~$&/gr;    # escape square brackets, see https://metacpan.org/pod/Locale::Maketext#BRACKET-NOTATION
+    $loc_text =~ s/(\{\{[^}]*\}\}|<[^>]*>|\{%.+?%\})/$re_sub->($1)/gme;
 
     return {
-        loc_text     => $text,
+        orig_text    => $orig_text,
+        loc_text     => $loc_text,
         placeholders => \@placeholders,
-        id           => sha1_hex(encode_utf8($text), @placeholders),
+        id           => sha1_hex(encode_utf8($orig_text)),
     };
 }
 
@@ -549,12 +553,20 @@ Generates snippet content with all the possible translations.
 =cut
 
 sub generate_snippet {
-    my ($self, $string, $placeholders) = @_;
+    my ($self, $string, $campaign_name) = @_;
 
     my $req = BOM::Platform::Context::Request->new(language => 'EN');
     request($req);
 
-    my $en_text = localize($string, @$placeholders);
+    my $en_text;
+    try {
+        $en_text = localize($string->{loc_text}, $string->{placeholders}->@*);
+    } catch ($e) {
+        $log->warnf("Localize() failed for string '%s' in campaign '%s': %s", $string->{loc_text}, $campaign_name, $e);
+        # we can assume it's going to fail for the other languages too
+        return $string->{orig_text};
+    }
+
     my %trans;
 
     for my $lang ($self->languages->@*) {
@@ -563,7 +575,12 @@ sub generate_snippet {
         my $req = BOM::Platform::Context::Request->new(language => $lang);
         request($req);
 
-        my $tr = localize($string, @$placeholders);
+        my $tr = $string->{orig_text};
+        try {
+            $tr = localize($string->{loc_text}, $string->{placeholders}->@*);
+        } catch ($e) {
+            $log->warnf("Localize() failed for string '%s' in campaign '%s': %s", $string->{loc_text}, $campaign_name, $e);
+        }
 
         # if translation missed
         next if $tr eq $en_text;
