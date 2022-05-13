@@ -687,4 +687,32 @@ subtest 'copy payment agent details and related' => sub {
         };
 };
 
+subtest 'services allowed' => sub {
+    my $pa = $pa_client->get_payment_agent;
+
+    my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+
+    for my $status (undef, 'applied') {
+        $mock_pa->redefine(status => $status);
+
+        ok $pa->service_is_allowed('dummy service'), 'unknown service is allowed for unauthorized PA';
+        for my $service (BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES->@*) {
+            ok $pa->service_is_allowed($service), "Restricted service $service is allowed for unauthorized PA";
+        }
+    }
+
+    $mock_pa->redefine(status => 'authorized');
+    for my $service (BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES->@*) {
+        ok $pa->service_is_allowed('dummy service'), 'unknown service is allowed for authorized PA';
+
+        ok !$pa->service_is_allowed($service), "Restricted service $service is blocked for authorized PA";
+
+        $mock_pa->redefine(services_allowed => [$service]);
+        ok $pa->service_is_allowed($service), "$service is allowed for authorized PA if it's added to the list";
+
+        $mock_pa->unmock('services_allowed');
+    }
+
+};
+
 done_testing();

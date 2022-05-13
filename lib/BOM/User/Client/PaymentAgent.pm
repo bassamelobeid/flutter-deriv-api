@@ -657,4 +657,31 @@ sub convert_withdrawal_limits {
     return $result;
 }
 
+=head2  service_is_allowed
+
+Takes a service name and tells if the service is allowed for the current payment agent.
+Certain services are blocked for the authenticated payment agents,
+some of which can be allowed from backoffice. 
+It takes the following args:
+
+=over 4
+
+=item C<service> - the service name.
+
+=back
+
+=cut
+
+sub service_is_allowed {
+    my ($self, $service) = @_;
+
+    # no service is restricted for unauthorized payment agents
+    return 1 unless ($self->status // '') eq 'authorized';
+
+    # unrestricted services are alway allowed
+    return 1 if none { $_ eq $service } RESTRICTED_SERVICES->@*;
+
+    return any { $_ eq $service } ($self->services_allowed // [])->@*;
+}
+
 1;
