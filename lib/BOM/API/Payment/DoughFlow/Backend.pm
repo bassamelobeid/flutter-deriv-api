@@ -183,10 +183,7 @@ sub _genrate_payment_error_message {
     # no need to process unknown erros
     return $error unless ref($error) eq 'HASH';
 
-    # if message  is already localized (cashier validation errors), lets return it
-    return $error->{message_to_client} if $error->{message_to_client};
-
-    my $code    = $error->{error_code} // 'InternalCashierError';
+    my $code    = $error->{code} // 'InternalCashierError';
     my $params  = $error->{params};
     my $message = error_map->{$code};
 
@@ -194,6 +191,8 @@ sub _genrate_payment_error_message {
         $message = $custom_errors{$code}->{message};
         my $link_name = $custom_errors{$code}->{link};
         push @$params, request()->brand->$link_name;
+    } else {
+        return $error->{message_to_client};
     }
 
     return localize($message, @$params);
@@ -226,12 +225,11 @@ sub validate_as_payment {
         # deposits are not validated becaause we already did so for deposit_validate
         # and at this point we are holding the client funds from payment processor
         $client->validate_payment(
-            currency              => $currency,
-            amount                => $signed_amount,
-            action_type           => $action,
-            die_with_error_object => 1,
-            payment_type          => 'doughflow',
-            rule_engine           => BOM::Rules::Engine->new(client => $client),
+            currency     => $currency,
+            amount       => $signed_amount,
+            action_type  => $action,
+            payment_type => 'doughflow',
+            rule_engine  => BOM::Rules::Engine->new(client => $client),
         ) unless $c->type eq 'deposit';
 
         if ($action eq 'deposit' and not $client->status->age_verification) {

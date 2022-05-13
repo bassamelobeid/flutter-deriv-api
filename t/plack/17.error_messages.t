@@ -21,25 +21,25 @@ my $mock_client = Test::MockModule->new('BOM::User::Client');
 my $req = deposit_validate(loginid => $client->loginid);
 ok decode_json($req->content)->{allowed}, 'Successful deposit validate';
 
-$mock_client->redefine(validate_payment => sub { die {error_code => 'SelfExclusionLimitExceeded', params => [999, 'USD']} });
+$mock_client->redefine(validate_payment => sub { die {code => 'SelfExclusionLimitExceeded', params => [999, 'USD']} });
 $req = deposit_validate(loginid => $client->loginid);
 my $msg = decode_json($req->content)->{message};
 like $msg, qr(https://app.deriv.com), 'url in SelfExclusionLimitExceeded error (deposit_validate)';
 like $msg, qr(999 USD),               'amount in SelfExclusionLimitExceeded error (deposit_validate)';
 
-$mock_client->redefine(validate_payment => sub { die {error_code => 'BalanceExceeded', params => [998, 'USD']} });
+$mock_client->redefine(validate_payment => sub { die {code => 'BalanceExceeded', params => [998, 'USD']} });
 $req = deposit_validate(loginid => $client->loginid);
 $msg = decode_json($req->content)->{message};
 like $msg, qr(https://app.deriv.com), 'url in BalanceExceeded error (deposit_validate)';
 like $msg, qr(998 USD),               'amount in BalanceExceeded error (deposit_validate)';
 
-$mock_client->redefine(validate_payment => sub { die {error_code => 'WithdrawalLimit', params => [997, 'USD']} });
+$mock_client->redefine(validate_payment => sub { die {code => 'WithdrawalLimit', params => [997, 'USD']} });
 $req = withdrawal_validate(loginid => $client->loginid);
 $msg = decode_json($req->content)->{message};
 like $msg, qr(https://app.deriv.com), 'url in WithdrawalLimit error (withdrawal_validate)';
 like $msg, qr(997 USD),               'amount in WithdrawalLimit error (withdrawal_validate)';
 
-$mock_client->redefine(validate_payment => sub { die {error_code => 'WithdrawalLimitReached', params => [996, 'USD']} });
+$mock_client->redefine(validate_payment => sub { die {code => 'WithdrawalLimitReached', params => [996, 'USD']} });
 $req = withdrawal_validate(loginid => $client->loginid);
 $msg = decode_json($req->content)->{message};
 like $msg, qr(https://app.deriv.com), 'url in WithdrawalLimitReached error (withdrawal_validate)';
