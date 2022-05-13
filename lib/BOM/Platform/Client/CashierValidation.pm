@@ -15,19 +15,19 @@ use warnings;
 no indirect;
 
 use Date::Utility;
-use Scalar::Util qw(looks_like_number);
-use ExchangeRates::CurrencyConverter qw/convert_currency/;
-use Format::Util::Numbers qw/get_min_unit financialrounding/;
-use List::Util qw(any);
+use ExchangeRates::CurrencyConverter qw( convert_currency );
+use Format::Util::Numbers qw( get_min_unit financialrounding );
+use List::Util qw( any none );
+use Scalar::Util qw( looks_like_number );
 use Syntax::Keyword::Try;
 
-use BOM::User::Client;
 use LandingCompany::Registry;
 
-use BOM::Config::Runtime;
-use BOM::Platform::Context qw/request localize/;
 use BOM::Config::CurrencyConfig;
-use BOM::Platform::Utility qw(error_map);
+use BOM::Config::Runtime;
+use BOM::Platform::Context qw( request localize );
+use BOM::Platform::Utility qw( error_map );
+use BOM::User::Client;
 
 # custom error codes to override the default error code CashierForwardError
 use constant OVERRIDE_ERROR_CODES => qw(
@@ -42,26 +42,36 @@ use constant OVERRIDE_ERROR_CODES => qw(
     FinancialAssessmentRequired
 );
 
+# error codes that should not pushed to status
+use constant SUPPRESSED_CODES_TO_BECOME_STATUS => qw(
+    VirtualAccount
+    InvalidAccount
+    IllegalCurrency
+);
+
 # a mapping from error codes to the FE status codes.
 my %error_to_status_mapping = (
-    NoResidence                 => 'no_residence',
-    SetExistingAccountCurrency  => 'ASK_CURRENCY',
-    CashierLocked               => 'cashier_locked_status',
-    DisabledAccount             => 'disabled_status',
-    CurrencyNotApplicable       => 'illegal_currency',
-    DocumentsExpired            => 'documents_expired',
-    NotAuthenticated            => 'ASK_AUTHENTICATE',
-    FinancialRiskNotApproved    => 'ASK_FINANCIAL_RISK_APPROVAL',
-    NoTaxInformation            => 'ASK_TIN_INFORMATION',
-    NoUkgcFundsProtection       => 'ASK_UK_FUNDS_PROTECTION',
-    NoMaxTuroverLimit           => 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET',
-    UnwelcomeStatus             => 'unwelcome_status',
-    CashierRequirementsMissing  => 'ASK_FIX_DETAILS',
-    NoWithdrawalOrTradingStatus => 'no_withdrawal_or_trading_status',
-    WithdrawalLockedStatus      => 'withdrawal_locked_status',
-    HighRiskNotAuthenticated    => 'ASK_AUTHENTICATE',
-    PotentialFraud              => 'ASK_AUTHENTICATE',
-    system_maintenance_crypto   => 'system_maintenance',
+    NoResidence                       => 'no_residence',
+    SetExistingAccountCurrency        => 'ASK_CURRENCY',
+    CashierLocked                     => 'cashier_locked_status',
+    DisabledAccount                   => 'disabled_status',
+    CurrencyNotApplicable             => 'IllegalCurrency',
+    DocumentsExpired                  => 'documents_expired',
+    NotAuthenticated                  => 'ASK_AUTHENTICATE',
+    FinancialRiskNotApproved          => 'ASK_FINANCIAL_RISK_APPROVAL',
+    NoTaxInformation                  => 'ASK_TIN_INFORMATION',
+    NoUkgcFundsProtection             => 'ASK_UK_FUNDS_PROTECTION',
+    NoMaxTuroverLimit                 => 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET',
+    UnwelcomeStatus                   => 'unwelcome_status',
+    CashierRequirementsMissing        => 'ASK_FIX_DETAILS',
+    NoWithdrawalOrTradingStatus       => 'no_withdrawal_or_trading_status',
+    WithdrawalLockedStatus            => 'withdrawal_locked_status',
+    HighRiskNotAuthenticated          => 'ASK_AUTHENTICATE',
+    PotentialFraud                    => 'ASK_AUTHENTICATE',
+    SystemMaintenance                 => 'system_maintenance',
+    SystemMaintenanceCrypto           => 'system_maintenance',
+    SystemMaintenanceDepositOutage    => 'system_maintenance',
+    SystemMaintenanceWithdrawalOutage => 'system_maintenance',
 );
 
 =head2 validate
@@ -89,7 +99,14 @@ sub validate {
     my %args = @_;
     my ($loginid, $action, $is_internal, $underlying_action) = @args{qw(loginid action is_internal underlying_action)};
 
-    my $client = BOM::User::Client->get_client_instance($loginid, 'replica') or return _create_error(localize('Invalid account.'));
+    my $errors = {};
+    my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
+
+    unless ($client) {
+        _add_error_by_code($errors, 'InvalidAccount');
+        return $errors;
+    }
+
     $action =~ s/^withdraw$/withdrawal/;
 
     my $rule_engine = delete $args{rule_engine};
@@ -97,7 +114,8 @@ sub validate {
     $underlying_action //= {};
     $underlying_action = {name => $underlying_action} unless ref $underlying_action;
 
-    my $errors   = check_availability($client, $action) // {};
+    $errors = check_availability($client, $action) // {};
+
     my $currency = $client->account ? $client->account->currency_code : '';
 
     my $failed_rules;
@@ -112,6 +130,7 @@ sub validate {
         is_internal => $is_internal ? 1 : 0,
         # Keep the rule engine from stopping on failure
         rule_engine_context => {stop_on_failure => 0});
+
     $failed_rules = $rules_result->failed_rules;
 
     _convert_rule_failure_to_cashier_error($failed_rules // [], $errors);
@@ -145,13 +164,13 @@ sub check_availability {
     $action =~ s/^withdraw$/withdrawal/;
 
     my $errors = {};
-    _add_error_by_code($errors, 'system_maintenance')
+    _add_error_by_code($errors, 'SystemMaintenance')
         if (BOM::Config::CurrencyConfig::is_payment_suspended());
 
-    _add_error_by_code($errors, 'system_maintenance')
+    _add_error_by_code($errors, 'SystemMaintenance')
         if (BOM::Config::CurrencyConfig::is_payment_suspended());
 
-    _add_error_by_code($errors, 'virtual_account')
+    _add_error_by_code($errors, 'VirtualAccount')
         if $client->is_virtual;
 
     return $errors if $errors->{error};
@@ -159,17 +178,17 @@ sub check_availability {
     my $currency      = $client->account ? $client->account->currency_code : '';
     my $currency_type = LandingCompany::Registry::get_currency_type($currency);
 
-    _add_error_by_code($errors, 'system_maintenance')
+    _add_error_by_code($errors, 'SystemMaintenance')
         if $currency_type eq 'fiat' and BOM::Config::CurrencyConfig::is_cashier_suspended();
 
-    _add_error_by_code($errors, 'system_maintenance_crypto')
+    _add_error_by_code($errors, 'SystemMaintenanceCrypto')
         if $currency_type eq 'crypto'
         and (BOM::Config::CurrencyConfig::is_crypto_cashier_suspended() or BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency));
 
-    _add_error($errors, localize('Deposits are temporarily unavailable for [_1]. Please try later.', $currency), 'system_maintenance')
+    _add_error_by_code($errors, 'SystemMaintenanceDepositOutage', params => [$currency])
         if $currency_type eq 'crypto' && BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended($currency);
 
-    _add_error($errors, localize('Withdrawals are temporarily unavailable for [_1]. Please try later.', $currency), 'system_maintenance')
+    _add_error_by_code($errors, 'SystemMaintenanceWithdrawalOutage', params => [$currency])
         if $currency_type eq 'crypto' && $action eq 'withdrawal' && BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended($currency);
 
     return $errors;
@@ -196,6 +215,7 @@ sub invalid_currency_error {
 
     return {
         code              => 'InvalidCurrency',
+        params            => [$currency],
         message_to_client => BOM::Platform::Context::localize('The provided currency [_1] is invalid.', $currency),
     };
 }
@@ -281,66 +301,6 @@ sub calculate_to_amount_with_fees {
     return ($amount, $fee_applied, $fee_percent, $min_fee, $fee_calculated_by_percent);
 }
 
-=head2 _create_error
-
-Create error structure.
-
-=over 4
-
-=item * C<message> - localized error message to be returned by api.
-
-=item * C<code> - error code to be returned by api, optional.
-
-=item * C<details> - hashref of additional details to be returned by api, optional.
-
-=back
-
-Returns error structure.
-
-=cut
-
-sub _create_error {
-    my ($message, $code, $details) = @_;
-
-    $code = 'CashierForwardError' unless any { $code and $code eq $_ } OVERRIDE_ERROR_CODES;
-
-    return {
-        error => {
-            code              => $code,
-            message_to_client => $message,
-            $details ? (details => $details) : (),
-        }};
-}
-
-=head2 _add_error
-
-Generates first message and accumulates all error codes that FE is interested in.
-
-=over 4
-
-=item * C<current> - hashref to be updated in-place.
-
-=item * C<message> - localized error message to be returned by api.
-
-=item * C<code> - error code to be returned by api, optional.
-
-=item * C<details> - hashref of additional details to be returned by api, optional.
-
-=back
-
-Returns nothing.
-
-=cut
-
-sub _add_error {
-    my ($current, $message, $code, $details) = @_;
-
-    $current->{error} //= _create_error($message, $code, $details)->{error};
-    push $current->{status}->@*, $code if $code;
-
-    $current->{missing_fields} = $details->{fields} if $code && ($code eq 'ASK_FIX_DETAILS');
-}
-
 =head2 _add_error_by_code
 
 Takes the first error message and accumulated FE codes, just like B<_add_error>; but it takes error codes 
@@ -363,15 +323,36 @@ Returns nothing.
 sub _add_error_by_code {
     my ($current, $code, %args) = @_;
 
-    my $message = localize(error_map->{$code}, ref $args{params} eq 'ARRAY' ? $args{params}->@* : $args{params});
-    my $details = $args{details};
+    # get params and pour in an array
+    my @params = ();
+    if ($args{params}) {
+        @params = ref $args{params} eq 'ARRAY' ? $args{params}->@* : ($args{params});
+    }
 
+    # make localized message based on original code and the params
+    my $message = localize(error_map->{$code}, @params);
+
+    # map error code to status (FE requires)
     $code = $error_to_status_mapping{$code} // $code;
 
-    # some errors were generated without an error code; let's keep it the same as of now.
-    $code = undef if $code =~ qr/virtual_account|illegal_currency/;
+    # override codes if needed to a general code (FE requires)
+    my $overrided_code = $code;
+    $overrided_code = 'CashierForwardError' unless any { $code and $code eq $_ } OVERRIDE_ERROR_CODES;
 
-    _add_error($current, $message, $code, $details);
+    my $details = $args{details};
+
+    # put unified error hash into current error instance
+    $current->{error} //= {
+        code              => $overrided_code,
+        params            => \@params,
+        message_to_client => $message,
+        $details ? (details => $details) : (),
+    };
+
+    # push code to statuses list if not suppressed
+    push $current->{status}->@*, $code if $code and none { $_ eq $code } SUPPRESSED_CODES_TO_BECOME_STATUS;
+
+    $current->{missing_fields} = $details->{fields} if $code && ($code eq 'ASK_FIX_DETAILS');
 }
 
 =head2 _convert_rule_failure_to_cashier_error

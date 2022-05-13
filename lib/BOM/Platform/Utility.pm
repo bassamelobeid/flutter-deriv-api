@@ -148,10 +148,11 @@ sub error_map {
 
     return {
         # Cashier validation
-        virtual_account => localize('This is a virtual-money account. Please switch to a real-money account to access cashier.'),
-        NoResidence     => localize('Please set your country of residence.'),
-        CashierLocked   => localize('Your cashier is locked.'),
-        DisabledAccount => localize('Your account is disabled.'),
+        PaymentValidationError => localize('An error occurred while processing your request. Please try again later.'),
+        VirtualAccount         => localize('This is a virtual-money account. Please switch to a real-money account to access cashier.'),
+        NoResidence            => localize('Please set your country of residence.'),
+        CashierLocked          => localize('Your cashier is locked.'),
+        DisabledAccount        => localize('Your account is disabled.'),
 
         DocumentsExpired =>
             localize('Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.'),
@@ -164,19 +165,22 @@ sub error_map {
         ),
         UnwelcomeStatus => localize('Your account is restricted to withdrawals only.'),
 
-        InternalCashierError        => localize('Sorry, cashier is temporarily unavailable. Please try again later.'),
-        system_maintenance          => localize('Sorry, cashier is temporarily unavailable due to system maintenance.'),
-        system_maintenance_crypto   => localize('Sorry, crypto cashier is temporarily unavailable due to system maintenance.'),
-        CurrencyNotApplicable       => localize('[_1] transactions may not be performed with this account.'),
-        SetExistingAccountCurrency  => localize('Please set the currency.'),
-        FinancialAssessmentRequired => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
-        FinancialRiskNotApproved    => localize('Financial Risk approval is required.'),
-        CashierRequirementsMissing  => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
-        NoUkgcFundsProtection       => localize('Please accept Funds Protection.'),
-        NoWithdrawalOrTradingStatus => localize('Your account is restricted to deposits only.'),
-        WithdrawalLockedStatus      => localize('Your account is locked for withdrawals.'),
-        HighRiskNotAuthenticated    => localize('Please authenticate your account.'),
-        PotentialFraud              => localize('Please authenticate your account.'),
+        InternalCashierError              => localize('Sorry, cashier is temporarily unavailable. Please try again later.'),
+        system_maintenance                => localize('Sorry, cashier is temporarily unavailable due to system maintenance.'),
+        SystemMaintenance                 => localize('Sorry, cashier is temporarily unavailable due to system maintenance.'),
+        SystemMaintenanceCrypto           => localize('Sorry, crypto cashier is temporarily unavailable due to system maintenance.'),
+        SystemMaintenanceDepositOutage    => localize('Deposits are temporarily unavailable for [_1]. Please try later.'),
+        SystemMaintenanceWithdrawalOutage => localize('Withdrawals are temporarily unavailable for [_1]. Please try later.'),
+        CurrencyNotApplicable             => localize('[_1] transactions may not be performed with this account.'),
+        SetExistingAccountCurrency        => localize('Please set the currency.'),
+        FinancialAssessmentRequired       => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
+        FinancialRiskNotApproved          => localize('Financial Risk approval is required.'),
+        CashierRequirementsMissing        => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
+        NoUkgcFundsProtection             => localize('Please accept Funds Protection.'),
+        NoWithdrawalOrTradingStatus       => localize('Your account is restricted to deposits only.'),
+        WithdrawalLockedStatus            => localize('Your account is locked for withdrawals.'),
+        HighRiskNotAuthenticated          => localize('Please authenticate your account.'),
+        PotentialFraud                    => localize('Please authenticate your account.'),
 
         # Payment validation
         CurrencyMismatch           => localize("Payment currency [_1] not client currency [_2]."),    # test it!
@@ -187,6 +191,7 @@ sub error_map {
         DepositLimitExceeded => localize('Deposit exceeds [_1] limit [_2]. Aggregated deposit over period [_3]. Current amount [_4].'),    # test it
         AmountExceedsBalance => localize('Withdrawal amount ~[[_1] [_2]~] exceeds client balance ~[[_3] [_2]~].'),
         AmountExceedsUnfrozenBalance => localize('Withdrawal is [_2] [_1] but balance [_3] includes frozen bonus [_4].'),
+        InvalidAccount               => localize('Invalid account.'),
         InvalidLandingCompany        => localize('Invalid landing company - [_1]'),
         WithdrawalLimitReached       => localize(
             "You've reached the maximum withdrawal limit of [_1] [_2]. Please authenticate your account before proceeding with this withdrawal."),

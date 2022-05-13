@@ -46,7 +46,7 @@ get '/btc/handshake' => sub {
         rule_engine => $rule_engine
     );
     return $c->render(
-        text   => $validation->{error}->{message_to_client},
+        text   => $validation->{error}{message_to_client},
         status => 200,
     ) if $validation->{error};
 

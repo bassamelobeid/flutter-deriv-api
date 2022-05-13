@@ -244,9 +244,10 @@ subtest 'Cashier validation common' => sub {
     $cr_client->save;
 
     my $expected = {
-        'code'              => 'ASK_FIX_DETAILS',
-        'details'           => {'fields' => ['address_city']},
-        'message_to_client' => 'Your profile appears to be incomplete. Please update your personal details to continue.'
+        code              => 'ASK_FIX_DETAILS',
+        details           => {'fields' => ['address_city']},
+        params            => [],
+        message_to_client => 'Your profile appears to be incomplete. Please update your personal details to continue.'
     };
 
     $res = BOM::Platform::Client::CashierValidation::validate(%args, action => 'withdraw');
@@ -271,6 +272,7 @@ subtest 'Cashier validation common' => sub {
         {
             error => {
                 code              => 'SelfExclusion',
+                params            => [$excluded_until],
                 details           => {excluded_until => $excluded_until},
                 message_to_client =>
                     "You have chosen to exclude yourself from trading on our website until $excluded_until. If you are unable to place a trade or deposit after your self-exclusion period, please contact us via live chat.",
@@ -351,6 +353,7 @@ subtest 'Cashier validation withdraw' => sub {
         {
             error => {
                 code              => 'ASK_AUTHENTICATE',
+                params            => [],
                 message_to_client => 'Please authenticate your account.'
             },
             status => ['ASK_AUTHENTICATE']
@@ -627,6 +630,7 @@ subtest 'uderlying action' => sub {
         is_listed             => 't',
     });
     $cr_client_2->save;
+
     my $pa = $cr_client_2->get_payment_agent;
 
     my %args = (
@@ -638,8 +642,10 @@ subtest 'uderlying action' => sub {
 
     my $expected_error = {
         message_to_client => 'This service is not available for payment agents.',
-        code              => 'CashierForwardError'
+        code              => 'CashierForwardError',
+        params            => [],
     };
+
     my $res = BOM::Platform::Client::CashierValidation::validate(%args);
     is_deeply $res->{error}, $expected_error, 'Cashier validation fails for withdrawal by a PA by default';
 
@@ -649,6 +655,7 @@ subtest 'uderlying action' => sub {
 
         $pa->services_allowed(['cashier_withdraw']);
         $pa->save;
+
         $res = BOM::Platform::Client::CashierValidation::validate(%args, underlying_action => $action_name);
         is $res->{error}, undef, "Cashier validation passes for action $action_name if the service is allowed for the PA";
 

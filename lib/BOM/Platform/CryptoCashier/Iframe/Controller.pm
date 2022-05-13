@@ -2,12 +2,12 @@ package BOM::Platform::CryptoCashier::Iframe::Controller;
 
 use v5.10;
 use Mojo::Base 'Mojolicious::Controller';
-use List::Util qw(first any);
+use List::Util qw( first any );
 use Text::Trim;
 use Date::Utility;
 
 use BOM::User::Client;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw( localize );
 use BOM::Platform::Client::CashierValidation;
 use BOM::Platform::CryptoCashier::Config;
 use BOM::Platform::CryptoCashier::API;
@@ -20,7 +20,7 @@ use BOM::Config::Runtime;
 use BOM::Rules::Engine;
 
 use LandingCompany::Registry;
-use Log::Any qw($log);
+use Log::Any qw( $log );
 
 use constant {
     ACTION_TYPE_CANCEL_WITHDRAWAL => 'cancel_withdraw',
@@ -65,7 +65,7 @@ sub handshake {
         is_internal => 0,
         rule_engine => $rule_engine
     );
-    return $c->_render_error($validation->{error}->{message_to_client}) if $validation->{error};
+    return $c->_render_error($validation->{error}{message_to_client}) if $validation->{error};
 
     my $res = _check_handoff_token_key($loginid, $token);
 
@@ -136,7 +136,7 @@ sub _act {
         rule_engine => $rule_engine
     );
     # this validation is also done in RPC but better to be done here as well to be double sure
-    return $c->_render_error($validation->{error}->{message_to_client}) if exists $validation->{error};
+    return $c->_render_error($validation->{error}{message_to_client}) if exists $validation->{error};
 
     if ($c->session($brand . '__handshake')) {
         # first time on this page from /handshake, generate action dependant session
