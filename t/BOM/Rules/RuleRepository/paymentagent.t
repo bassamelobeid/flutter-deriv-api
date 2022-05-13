@@ -4,6 +4,7 @@ use warnings;
 use Test::Most;
 use Test::Fatal;
 use Test::MockModule;
+use Test::Warnings qw(warning);
 use Test::MockTime qw( set_absolute_time restore_time);
 use Format::Util::Numbers qw(financialrounding);
 
@@ -104,6 +105,10 @@ subtest $rule_name => sub {
         $args{underlying_action} = $action_name;
 
         my $service_name = BOM::Rules::RuleRepository::Paymentagent::PA_ACTION_MAPPING->{$action_name =~ s/\./_/rg} // $action_name;
+
+        $pa->status(undef);
+        $pa->save();
+        is_deeply warning { $rule_engine->apply_rules($rule_name, %args) }, [], "No error or warning when the PA status is undefined";
 
         $pa->status('suspended');
         $pa->save;

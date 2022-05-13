@@ -95,7 +95,8 @@ rule 'paymentagent.action_is_allowed' => {
             $pa_client = $context->client({loginid => $args->{loginid_pa}});
             my $client = $context->client({loginid => $args->{loginid_client}});
 
-            return 1 if (!$client->get_payment_agent || $client->get_payment_agent->status ne 'authorized');
+            return 1 if !$client->get_payment_agent;
+            return 1 if ($client->get_payment_agent->status // '') ne 'authorized';
         } elsif ($action eq 'paymentagent_withdraw') {
             $pa_client = $context->client({loginid => $args->{loginid_client} // $args->{loginid}});
         } else {
@@ -104,7 +105,7 @@ rule 'paymentagent.action_is_allowed' => {
         }
 
         my $pa = $pa_client->get_payment_agent;
-        return 1 unless $pa && $pa->status eq 'authorized';
+        return 1 unless $pa && ($pa->status // '') eq 'authorized';
 
         my $service = PA_ACTION_MAPPING->{$action} // $action;
 
