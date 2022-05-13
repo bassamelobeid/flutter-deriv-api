@@ -3851,7 +3851,7 @@ sub _validate_advert_payment_method_ids {
     return unless $param{payment_method_ids};
 
     if ($param{type} eq 'buy') {
-        die +{error_code => 'AdertPaymentMethodsNotAllowed'} if $param{payment_method_ids}->@*;
+        die +{error_code => 'AdvertPaymentMethodsNotAllowed'} if $param{payment_method_ids}->@*;
         return;
     }
 
@@ -3868,11 +3868,17 @@ sub _validate_advert_payment_method_ids {
             advert_id => $param{id},
             status    => P2P_ORDER_STATUS->{active});
         my @used_methods = map { ($_->{advert_payment_method_names} // [])->@* } @$orders;
-
         if (my ($removed_method) = array_minus(@used_methods, @method_names)) {
+
+            my @payment_methods_display_name_array;
+            foreach (@used_methods) {
+                push(@payment_methods_display_name_array, $method_defs->{$_}{display_name});
+            }
+
+            my $payment_methods_display_name_joined = join(', ', sort @payment_methods_display_name_array);
             die +{
                 error_code     => 'PaymentMethodRemoveActiveOrders',
-                message_params => [$method_defs->{$removed_method}{display_name}]};
+                message_params => [$payment_methods_display_name_joined]};
         }
     }
 }

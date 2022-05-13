@@ -804,7 +804,7 @@ subtest $method => sub {
                 type               => 'buy',
                 payment_method_ids => [1, 2]);
         },
-        {error_code => 'AdertPaymentMethodsNotAllowed'},
+        {error_code => 'AdvertPaymentMethodsNotAllowed'},
         'Error for buy ad with ids'
     );
 
@@ -931,7 +931,7 @@ subtest $method => sub {
         },
         {
             error_code     => 'PaymentMethodRemoveActiveOrders',
-            message_params => ['Method 1']
+            message_params => ['Method 1, Method 1, Method 2']
         },
         'Cannot remove pm name from ad with multiple active orders'
     );

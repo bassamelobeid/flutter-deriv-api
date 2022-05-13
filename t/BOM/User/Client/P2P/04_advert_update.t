@@ -299,7 +299,7 @@ subtest 'Buy ads' => sub {
 
     cmp_deeply(
         exception { $advertiser->p2p_advert_update(id => $advert->{id}, payment_method_ids => [1, 2, 3]) },
-        {error_code => 'AdertPaymentMethodsNotAllowed'},
+        {error_code => 'AdvertPaymentMethodsNotAllowed'},
         'cannot set payment_method_ids'
     );
 
