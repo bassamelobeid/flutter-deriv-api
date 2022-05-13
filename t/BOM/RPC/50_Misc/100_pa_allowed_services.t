@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 use Test::Mojo;
 use Test::Deep;
+use Test::Warnings qw(warning);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -31,7 +32,7 @@ my $payment_agent_args = {
     summary               => 'Test Summary',
     commission_deposit    => 0,
     commission_withdrawal => 0,
-    status                => 'authorized',
+    status                => 'authorized'
 };
 
 my $email_pa  = 'pa_restrictions_pa@binary.com';
@@ -181,6 +182,12 @@ subtest 'cashier_withdraw restriction' => sub {
         $res = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
         cmp_deeply $res->{status},             none('withdrawal_locked'),               'Withdrawal is unlocked after allowing the service';
         cmp_deeply $res->{cashier_validation}, none('WithdrawServiceUnavailableForPA'), 'Validation flag is removed.';
+
+        my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+        $mock_pa->redefine(status => undef);
+        is_deeply warning { $c->call_ok($method, $params)->has_no_system_error->has_no_error->result }, [],
+            'No warning when the PA status is undefined';
+        $mock_pa->unmock_all;
 
         $pa->services_allowed([]);
         $pa->save;
