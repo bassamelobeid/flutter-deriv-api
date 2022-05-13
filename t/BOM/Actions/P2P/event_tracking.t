@@ -502,7 +502,9 @@ subtest 'p2p_advertiser_temp_banned' => sub {
     my %args = (
         loginid        => $client->loginid,
         order_id       => 789,
-        block_end_time => '2030-01-01 00:00:00'
+        limit          => 3,
+        block_end_date => '2030-01-01',
+        block_end_time => '23:59',
     );
     $handler->(\%args)->get;
 

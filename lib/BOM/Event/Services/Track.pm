@@ -126,7 +126,7 @@ my %EVENT_PROPERTIES = (
     p2p_advert_created                               =>
         [qw(advert_id created_time type account_currency local_currency country amount rate rate_type min_order_amount max_order_amount is_visible)],
     p2p_advertiser_cancel_at_fault    => [qw(order_id cancels_remaining)],
-    p2p_advertiser_temp_banned        => [qw(order_id block_end_time)],
+    p2p_advertiser_temp_banned        => [qw(order_id limit block_end_date block_end_time)],
     request_change_email              => [qw(loginid first_name email code verification_uri live_chat_url social_signup time_to_expire_in_min)],
     verify_change_email               => [qw(loginid first_name email code verification_uri live_chat_url social_signup time_to_expire_in_min)],
     confirm_change_email              => [qw(loginid first_name email live_chat_url social_signup)],
