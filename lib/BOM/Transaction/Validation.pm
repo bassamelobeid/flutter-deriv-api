@@ -200,7 +200,7 @@ sub _validate_payment_agent_restriction {
     my $pa = $client->get_payment_agent;
 
     return undef unless $pa;
-    return undef unless $pa->status eq 'authorized';
+    return undef unless ($pa->status // '') eq 'authorized';
 
     my $allowed_services = $pa->services_allowed // [];
 
