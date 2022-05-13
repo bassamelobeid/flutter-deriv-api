@@ -283,8 +283,7 @@ subtest 'transfer_to_pa restriction' => sub {
         my $params = {
             language => 'EN',
             token    => $token_cr,
-            #token_details => {loginid => $client_cr->loginid},
-            args => {
+            args     => {
                 $method              => 1,
                 amount               => 10,
                 currency             => "USD",
@@ -330,8 +329,7 @@ subtest 'transfer_to_pa restriction' => sub {
         my $params = {
             language => 'EN',
             token    => $token_pa,
-            #token_details => {loginid => $client_pa->loginid},
-            args => {
+            args     => {
                 $method     => 1,
                 amount      => 10,
                 currency    => "USD",
@@ -354,6 +352,60 @@ subtest 'transfer_to_pa restriction' => sub {
         $pa->services_allowed([]);
         $pa->save;
     };
+};
+
+subtest 'get account status' => sub {
+    my $method = 'get_account_status';
+
+    my $params = {
+        language => 'EN',
+        token    => $token_pa,
+        args     => {
+            $method => 1,
+        },
+    };
+
+    my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+
+    my @test_cases = ({
+            status           => 'applied',
+            services_allowed => [],
+            p2p_blocked      => 0,
+            title            => 'status => applied, no service allowed'
+        },
+        {
+            status           => 'applied',
+            services_allowed => ['p2p'],
+            p2p_blocked      => 0,
+            title            => 'status = applied, p2p allowed'
+        },
+        {
+            status           => 'authorized',
+            services_allowed => [],
+            p2p_blocked      => 1,
+            title            => 'status = authorized, no service allowed'
+        },
+        {
+            status           => 'authorized',
+            services_allowed => ['p2p'],
+            p2p_blocked      => 0,
+            title            => 'status = authorized, p2p service allowed'
+        },
+    );
+
+    for my $test_case (@test_cases) {
+        $mock_pa->redefine(status           => $test_case->{status});
+        $mock_pa->redefine(services_allowed => $test_case->{services_allowed});
+
+        my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+
+        if ($test_case->{p2p_blocked}) {
+            cmp_deeply $result->{status}, superbagof('p2p_blocked_for_pa'), "P2P-blocked status is found: $test_case->{title}";
+        } else {
+            cmp_deeply $result->{status}, noneof('p2p_blocked_for_pa'), "P2P-blocked status is not found: $test_case->{title}";
+        }
+    }
+
 };
 
 done_testing;

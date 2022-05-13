@@ -1001,6 +1001,8 @@ rpc get_account_status => sub {
 
     push(@$status, 'needs_affiliate_coc_approval') if $client->user->affiliate_coc_approval_required;
 
+    push(@$status, 'p2p_blocked_for_pa') if $client->payment_agent && !$client->get_payment_agent->service_is_allowed('p2p');
+
     my $rule_engine = BOM::Rules::Engine->new(
         client          => $client,
         stop_on_failure => 0
