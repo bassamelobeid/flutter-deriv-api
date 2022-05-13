@@ -10,7 +10,6 @@
 - regentmarkets/bom-transaction
 - regentmarkets/bom-marketdataautoupdater
 - regentmarkets/bom-oauth
-- regentmarkets/bom-pricing
 - regentmarkets/bom-cryptocurrency
 - regentmarkets/bom-events
 - regentmarkets/bom-rules

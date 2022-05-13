@@ -35,6 +35,7 @@ use BOM::Platform::Context;
 use BOM::Platform::S3Client;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Utility;
 use BOM::Backoffice::FormAccounts;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Request qw(request);
@@ -45,7 +46,6 @@ use BOM::Backoffice::Request qw(request);
 use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
 use BOM::User::IdentityVerification;
-use BOM::RPC::v3::Accounts;
 use BOM::Platform::Doughflow;
 use BOM::Platform::Client::IdentityVerification;
 use BOM::User::RiskScreen;
@@ -538,15 +538,14 @@ SQL
 
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
-    my %rejected_reasons = %BOM::RPC::v3::Accounts::RejectedIdentityVerificationReasons;
-
     my $idv_records = $idv_model->get_document_list;
     my $messages;
     if ($idv_records) {
+        my $rejected_reasons = BOM::Platform::Utility::rejected_onfido_reasons();
         for my $idv_record ($idv_records->@*) {
             $messages                      = [];
             $messages                      = eval { decode_json_utf8 $idv_record->{status_messages} } if $idv_record->{status_messages};
-            $idv_record->{status_messages} = [map { $rejected_reasons{$_} ? localize($rejected_reasons{$_}) : $_ } grep { $_ } $messages->@*];
+            $idv_record->{status_messages} = [map { $rejected_reasons->{$_} ? localize($rejected_reasons->{$_}) : $_ } grep { $_ } $messages->@*];
             $idv_record->{issuing_country} = $countries_instance->country_from_code($idv_record->{issuing_country});
             $idv_record->{document_expiration_date} ||= "Lifetime Valid";
             $idv_record->{document_expiration_date} = "-" if uc($idv_record->{status}) eq "FAILED";
