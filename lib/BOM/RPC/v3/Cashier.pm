@@ -644,7 +644,9 @@ rpc paymentagent_transfer => sub {
         if (length($description) > MAX_DESCRIPTION_LENGTH);
 
     my $cashier_error = BOM::Platform::Client::CashierValidation::check_availability($client_fm, 'withdrawal');
-    return $error_sub->($error_sub->($cashier_error->{message_to_client})) if $cashier_error->{error};
+    if (exists $cashier_error->{error}) {
+        return $error_sub->($cashier_error->{error}{message_to_client});
+    }
 
     my $rule_engine = BOM::Rules::Engine->new(client => [$client_fm, $client_to]);
     try {
@@ -965,7 +967,9 @@ rpc paymentagent_withdraw => sub {
     }
 
     my $cashier_error = BOM::Platform::Client::CashierValidation::check_availability($client, 'withdraw');
-    return $error_sub->($cashier_error->{error}->{message_to_client}) if $cashier_error->{error};
+    if (exists $cashier_error->{error}) {
+        return $error_sub->($cashier_error->{error}{message_to_client});
+    }
 
     my $rule_engine = BOM::Rules::Engine->new(client => [$client, $pa_client]);
     try {
@@ -1330,6 +1334,7 @@ rpc transfer_between_accounts => sub {
             return BOM::RPC::v3::Utility::missing_details_error(details => $e->{details}->{fields})
                 if $e->{error_code} eq 'CashierRequirementsMissing';
         }
+
         return BOM::RPC::v3::Utility::rule_engine_error($e);
     }
 
@@ -1572,61 +1577,52 @@ rpc transfer_between_accounts => sub {
 
     $rule_engine = BOM::Rules::Engine->new(client => [$client_from, $client_to]);
 
-    try {
-        $client_from->is_virtual
-            || $client_from->validate_payment(
-            currency     => $currency,
-            amount       => -1 * $amount,
-            payment_type => 'internal_transfer',
-            rule_engine  => $rule_engine,
-            )
-            || die "validate_payment [$loginid_from]";
-    } catch ($err) {
-        log_exception();
+    unless ($client_from->is_virtual) {
+        try {
+            $client_from->validate_payment(
+                currency     => $currency,
+                amount       => -1 * $amount,
+                payment_type => 'internal_transfer',
+                rule_engine  => $rule_engine,
+            );
+        } catch ($err) {
+            log_exception();
 
-        my $limit;
-        if ($err =~ /exceeds client balance/) {
-            $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance);
-        } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
-            my $frozen_bonus = $1;
-            $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance - $frozen_bonus);
-        } elsif ($err =~ /exceeds withdrawal limit \[(.+)\](?:\((.+)\)\s+)?/) {
+            my $limit;
+            if ($err->{code} eq 'AmountExceedsBalance') {
+                my $currency = $err->{params}->[1];
+                my $balance  = $err->{params}->[2];
 
-            my $bal_1 = $1;
-            my $bal_2 = $2;
-            $limit = $bal_1;
-            if ($bal_1 =~ /^([a-zA-Z0-9]{2,20})\s+/ and $1 ne $currency) {
-                $limit .= " ($bal_2)";
+                $limit = join ' ', $currency, $balance;
+            } elsif ($err->{code} eq 'AmountExceedsUnfrozenBalance') {
+                my $currency     = $err->{params}->[1];
+                my $balance      = $err->{params}->[2];
+                my $frozen_bonus = $err->{params}->[3];
+
+                $limit = join ' ', $currency, $balance - $frozen_bonus;
             }
+
+            my $msg = (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : $err->{message_to_client};
+            return $error_audit_sub->("validate_payment failed for $loginid_from [$err]", $msg);
         }
-
-        my $msg = (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '';
-        $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
-        $msg = $err                   if $err =~ m/Your identity documents have expired/i;
-        $msg = $err                   if $err =~ m/Please authenticate your account/i;
-        $msg = $err                   if $err =~ m/Deriv P2P/;
-        return $error_audit_sub->("validate_payment failed for $loginid_from [$err]", $msg);
     }
 
-    try {
-        $client_to->is_virtual
-            || $client_to->validate_payment(
-            currency     => $to_currency,
-            amount       => $to_amount,
-            payment_type => 'internal_transfer',
-            rule_engine  => $rule_engine,
-            )
-            || die "validate_payment [$loginid_to]";
-    } catch ($err) {
-        log_exception();
-        my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
-        $msg = localize("Your account balance will exceed set limits. Please specify a lower amount.")
-            if ($err =~ /Balance would exceed limit/);
-        $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
-        $msg = $err                   if $err =~ m/Your identity documents have expired/i;
-        $msg = $err                   if $err =~ m/Please authenticate your account/i;
-        return $error_audit_sub->("validate_payment failed for $loginid_to [$err]", $msg);
+    unless ($client_to->is_virtual) {
+        try {
+
+            $client_to->validate_payment(
+                currency     => $to_currency,
+                amount       => $to_amount,
+                payment_type => 'internal_transfer',
+                rule_engine  => $rule_engine,
+            );
+        } catch ($err) {
+            log_exception();
+            my $msg = $err->{message_to_client} || localize("Transfer validation failed on [_1].", $loginid_to);
+            return $error_audit_sub->("validate_payment failed for $loginid_to [$err]", $msg);
+        }
     }
+
     my $response;
     try {
         my $remark = "Account transfer from $loginid_from to $loginid_to.";

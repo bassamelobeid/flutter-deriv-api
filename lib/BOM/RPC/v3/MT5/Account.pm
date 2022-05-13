@@ -30,6 +30,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Utility;
 use BOM::User;
 use BOM::User::Utility qw(parse_mt5_group);
 use BOM::User::Client;
@@ -1689,11 +1690,8 @@ async_rpc "mt5_deposit",
                     return create_error_future(
                         $error_code,
                         {
-                            message => BOM::RPC::v3::Cashier::__client_withdrawal_notes({
-                                    client => $fm_client,
-                                    amount => $amount,
-                                    error  => $e
-                                })});
+                            message => $e->{message_to_client},
+                        });
                 };
             }
 
