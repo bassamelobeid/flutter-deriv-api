@@ -1,0 +1,34 @@
+<p>An underage client has been detected by our system: [% loginid %]</p>'
+
+<p>The following loginids have balance:<p>
+<ul>
+    [% IF have_balance.size %]
+        [% FOR sibling IN have_balance %]
+            <li><b>[% sibling.loginid %]:</b> [% sibling.balance %] [% sibling.currency %]</li>
+        [% END %]
+    [% ELSE %]
+        <li><b>None</b></li>
+    [% END %]
+</ul>
+
+<p>The client posseses the following Deriv X loginids:<p>
+<ul>
+    [% IF dx_loginids.size %]
+        [% FOR dx IN dx_loginids %]
+            <li><b>[% dx %]</b></li>
+        [% END %]
+    [% ELSE %]
+        <li><b>None</b></li>
+    [% END %]
+</ul>
+
+<p>The client posseses the following MT5 loginids:<p>
+<ul>
+    [% IF mt_loginids.size %]
+        [% FOR mt IN mt_loginids %]
+            <li><b>[% mt %]</b></li>
+        [% END %]
+    [% ELSE %]
+        <li><b>None</b></li>
+    [% END %]
+</ul>

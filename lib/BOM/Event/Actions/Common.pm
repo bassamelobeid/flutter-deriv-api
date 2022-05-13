@@ -127,44 +127,68 @@ sub _send_CS_email_POA_pending {
 sub handle_under_age_client {
     my ($client, $provider) = @_;
 
-    # send livechat ticket to compliance
-    send_email({
-        from    => '<no-reply@deriv.com>',
-        to      => 'compliance@deriv.com',
-        subject => 'Underage client detection',
-        message => [sprintf('An underage client has been detected by our system: %s', $client->loginid)],
-    });
-
     # check if there is balance
-    my $siblings = $client->real_account_siblings_information(include_disabled => 0);
+    my $siblings     = $client->real_account_siblings_information(include_disabled => 0);
+    my @have_balance = grep { $siblings->{$_}->{balance} > 0 } keys $siblings->%*;
+    my @mt5_loginids = $client->user->get_trading_platform_loginids('mt5',      'real');
+    my @dx_loginids  = $client->user->get_trading_platform_loginids('dxtrader', 'real');
+    my $loginid      = $client->loginid;
 
-    my $have_balance = (any { $siblings->{$_}->{balance} > 0 } keys %{$siblings}) ? 1 : 0;
+    # send livechat ticket to CS only if the account won't be disabled due to
+    # having balance or deriv x or mt5 accounts.
 
-    return undef if $have_balance;
-    return undef if $client->user->get_trading_platform_loginids('mt5',      'real');
-    return undef if $client->user->get_trading_platform_loginids('dxtrader', 'real');
+    my $brand      = request->brand;
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('authentications');
+    my $tt         = Template::AutoFilter->new({
+        ABSOLUTE => 1,
+        ENCODING => 'utf8'
+    });
+    my $subject = "Underage client detection $loginid";
 
-    # push the virtual
-    $siblings->{$client->user->bom_virtual_loginid} = undef if $client->user->bom_virtual_loginid;
-
-    # if all of the account doesn't have any balance, disable them
-    for my $each_siblings (keys %{$siblings}) {
-        my $current_client = BOM::User::Client->new({loginid => $each_siblings});
-        $current_client->status->setnx('disabled', 'system', "$provider - client is underage");
-    }
-
-    # need to send email to client
-    my $brand  = request->brand;
-    my $params = {
-        language => uc($client->user->preferred_language // request->language // 'en'),
+    my $data = {
+        have_balance => [map { $siblings->{$_} } @have_balance],
+        mt_loginids  => [@mt5_loginids],
+        dx_loginids  => [@dx_loginids],
+        loginid      => $loginid,
+        title        => $subject,
     };
 
-    BOM::Platform::Event::Emitter::emit(
-        underage_account_closed => {
-            loginid    => $client->loginid,
-            properties => {
-                tnc_approval => $brand->tnc_approval_url($params),
-            }});
+    try {
+        $tt->process(BOM::Event::Actions::Common::TEMPLATE_PREFIX_PATH . 'underage_client_detection.html.tt', $data, \my $html);
+        die "Template error: @{[$tt->error]}" if $tt->error;
+
+        die "failed to send underage detection email ($loginid)"
+            unless Email::Stuffer->from($from_email)->to($to_email)->subject($subject)->html_body($html)->send();
+    } catch ($e) {
+        $log->warn($e);
+        exception_logged();
+    }
+
+    # disable and notify the client only if they do not have balance/mt5/derivx accounts
+    unless (@have_balance || @dx_loginids || @mt5_loginids) {
+        # push the virtual
+        $siblings->{$client->user->bom_virtual_loginid} = undef if $client->user->bom_virtual_loginid;
+
+        # if all of the account doesn't have any balance, disable them
+        for my $each_siblings (keys %{$siblings}) {
+            my $current_client = BOM::User::Client->new({loginid => $each_siblings});
+            $current_client->status->setnx('disabled', 'system', "$provider - client is underage");
+        }
+
+        # need to send email to client
+        my $brand  = request->brand;
+        my $params = {
+            language => uc($client->user->preferred_language // request->language // 'en'),
+        };
+
+        BOM::Platform::Event::Emitter::emit(
+            underage_account_closed => {
+                loginid    => $client->loginid,
+                properties => {
+                    tnc_approval => $brand->tnc_approval_url($params),
+                }});
+    }
 }
 
 =head2 _email_client_age_verified

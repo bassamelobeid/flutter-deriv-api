@@ -556,7 +556,7 @@ subtest 'verify identity by smile_identity is passed and DOB mismatch or underag
 
     my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-    ok $msg, 'underage email sent to compliance';
+    ok $msg, 'underage email not sent CS';
 
     is $idv_model->submissions_left, 0, 'submissions reset to 0 correctly';
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is not set correctly';

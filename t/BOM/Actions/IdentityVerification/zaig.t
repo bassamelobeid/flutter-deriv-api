@@ -696,12 +696,8 @@ subtest 'verify' => sub {
                     ok $client->status->poi_name_mismatch, 'POI name mismatch is set';
                 }
 
-                my $msg = mailbox_search(subject => qr/Underage client detection/);
-
                 if (grep { $_ eq 'UNDERAGE' } $msgs->@*) {
-                    ok $msg, 'underage email sent to compliance';
-                } else {
-                    ok !$msg, 'underage email not sent to compliance';
+                    ok $client->status->disabled, 'Disabled due to underage detection';
                 }
 
                 if ($status eq 'verified') {

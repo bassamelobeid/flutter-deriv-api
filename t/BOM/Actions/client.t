@@ -2909,12 +2909,29 @@ subtest 'underage_account_closed' => sub {
 };
 
 subtest 'Underage detection' => sub {
+    my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $emissions      = {};
+    $mocked_emitter->mock(
+        'emit',
+        sub {
+            my $args = {@_};
+
+            $emissions = {$emissions->%*, $args->%*};
+
+            return undef;
+        });
+
     my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         email       => 'vrtc+test1@bin.com',
     });
 
     $test_client->user->add_client($vrtc_client);
+
+    my $brand  = request->brand;
+    my $params = {
+        language => uc($test_client->user->preferred_language // request->language // 'en'),
+    };
 
     my $trading_platform_loginids = {};
     my $underage_result;
@@ -2965,6 +2982,7 @@ subtest 'Underage detection' => sub {
 
     subtest 'underage result is consider' => sub {
         $trading_platform_loginids = {};
+        $emissions                 = {};
         $underage_result           = 'consider';
         $reported_dob              = undef;
         $report_result             = 'consider';
@@ -2984,15 +3002,6 @@ subtest 'Underage detection' => sub {
         }
         'the event made it alive!';
 
-        cmp_deeply $test_client->status->disabled,
-            +{
-            last_modified_date => re('\w'),
-            status_code        => 'disabled',
-            staff_name         => 'system',
-            reason             => 'Onfido - client is underage',
-            },
-            'Expected disabled status';
-
         cmp_deeply $vrtc_client->status->disabled,
             +{
             last_modified_date => re('\w'),
@@ -3002,22 +3011,42 @@ subtest 'Underage detection' => sub {
             },
             'Expected disabled status';
 
+        cmp_deeply $test_client->status->disabled,
+            +{
+            last_modified_date => re('\w'),
+            status_code        => 'disabled',
+            staff_name         => 'system',
+            reason             => 'Onfido - client is underage',
+            },
+            'Expected disabled status';
+
+        cmp_deeply $emissions->{underage_account_closed},
+            {
+            loginid    => $test_client->loginid,
+            properties => {
+                tnc_approval => $brand->tnc_approval_url($params),
+            }
+            },
+            'underage_account_closed event emitted';
+
         ok !$test_client->status->age_verification, 'Not age verified';
 
         my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-        ok $msg, 'underage email sent to compliance';
+        ok $msg, 'underage email sent to CS';
 
         subtest 'it has a mt5 real account' => sub {
             $trading_platform_loginids = {
                 mt5 => {
-                    real => [qw/MTR9009/],
+                    real => [qw/MTR9009 MTR90000/],
+                    demo => [qw/MTD90000/]
                 },
             };
 
             $underage_result = 'consider';
             $reported_dob    = undef;
             $report_result   = 'consider';
+            $emissions       = {};
 
             $vrtc_client->status->clear_disabled();
             $vrtc_client->status->_build_all();
@@ -3040,12 +3069,19 @@ subtest 'Underage detection' => sub {
 
             ok !$test_client->status->age_verification, 'Not age verified';
 
-            my $msg = mailbox_search(subject => qr/Underage client detection/);
+            ok !$emissions->{underage_account_closed}, 'underage_account_closed not event emitted';
 
-            ok $msg, 'underage email sent to compliance';
+            my $msg = mailbox_search(subject => qr/Underage client detection/);
+            ok $msg, 'underage email sent to CS';
+            ok $msg->{body} =~ /The client posseses the following MT5 loginids/, 'MT5 loginds detected';
+            ok $msg->{body} =~ /\bMTR9009\b/,                                    'Real MT5 loginid reported';
+            ok $msg->{body} =~ /\bMTR90000\b/,                                   'Real MT5 loginid reported';
+            ok $msg->{body} !~ /\bMTD90000\b/, 'Demo MT5 loginid not reported';
+            cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
         };
 
         subtest 'it has a mt5 demo account' => sub {
+            $emissions                 = {};
             $trading_platform_loginids = {
                 mt5 => {
                     demo => [qw/MTD9009/],
@@ -3077,9 +3113,18 @@ subtest 'Underage detection' => sub {
 
             ok !$test_client->status->age_verification, 'Not age verified';
 
+            cmp_deeply $emissions->{underage_account_closed},
+                {
+                loginid    => $test_client->loginid,
+                properties => {
+                    tnc_approval => $brand->tnc_approval_url($params),
+                }
+                },
+                'underage_account_closed event emitted';
+
             my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-            ok $msg, 'underage email sent to compliance';
+            ok $msg, 'underage email not sent CS';
         };
     };
 
@@ -3088,6 +3133,7 @@ subtest 'Underage detection' => sub {
         $underage_result           = 'rejected';
         $reported_dob              = undef;
         $report_result             = 'rejected';
+        $emissions                 = {};
 
         $vrtc_client->status->clear_disabled();
         $vrtc_client->status->_build_all();
@@ -3103,6 +3149,15 @@ subtest 'Underage detection' => sub {
                 })->get;
         }
         'the event made it alive!';
+
+        cmp_deeply $emissions->{underage_account_closed},
+            {
+            loginid    => $test_client->loginid,
+            properties => {
+                tnc_approval => $brand->tnc_approval_url($params),
+            }
+            },
+            'underage_account_closed event emitted';
 
         cmp_deeply $vrtc_client->status->disabled,
             +{
@@ -3126,12 +3181,14 @@ subtest 'Underage detection' => sub {
 
         my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-        ok $msg, 'underage email sent to compliance';
+        ok $msg, 'underage email sent to CS';
 
         subtest 'it has a dxtrader real account' => sub {
+            $emissions                 = {};
             $trading_platform_loginids = {
-                mt5 => {
+                dxtrader => {
                     real => [qw/DXR9009/],
+                    demo => [qw/DXD90000/],
                 },
             };
 
@@ -3154,6 +3211,8 @@ subtest 'Underage detection' => sub {
             }
             'the event made it alive!';
 
+            ok !$emissions->{underage_account_closed}, 'underage_account_closed event emitted';
+
             ok !$vrtc_client->status->disabled, 'Disabled status not set (dxtrader real)';
 
             ok !$test_client->status->disabled, 'Disabled status not set (dxtrader real)';
@@ -3161,8 +3220,11 @@ subtest 'Underage detection' => sub {
             ok !$test_client->status->age_verification, 'Not age verified';
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
-
-            ok $msg, 'underage email sent to compliance';
+            ok $msg, 'underage email sent to CS';
+            ok $msg->{body} =~ /The client posseses the following Deriv X loginids/, 'DX loginds detected';
+            ok $msg->{body} =~ /\bDXR9009\b/,                                        'Real DX loginid reported';
+            ok $msg->{body} !~ /\bDXD90000\b/, 'Demo DX loginid not reported';
+            cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
         };
 
         subtest 'it has a dxtrader demo account' => sub {
@@ -3175,6 +3237,7 @@ subtest 'Underage detection' => sub {
             $underage_result = 'rejected';
             $reported_dob    = undef;
             $report_result   = 'rejected';
+            $emissions       = {};
 
             $vrtc_client->status->clear_disabled();
             $vrtc_client->status->_build_all();
@@ -3191,6 +3254,15 @@ subtest 'Underage detection' => sub {
             }
             'the event made it alive!';
 
+            cmp_deeply $emissions->{underage_account_closed},
+                {
+                loginid    => $test_client->loginid,
+                properties => {
+                    tnc_approval => $brand->tnc_approval_url($params),
+                }
+                },
+                'underage_account_closed event emitted';
+
             ok $vrtc_client->status->disabled, 'Disabled status set (dxtrader demo)';
 
             ok $test_client->status->disabled, 'Disabled status set (dxtrader demo)';
@@ -3199,7 +3271,7 @@ subtest 'Underage detection' => sub {
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-            ok $msg, 'underage email sent to compliance';
+            ok $msg, 'underage email sent to cs';
         };
     };
 
@@ -3208,6 +3280,7 @@ subtest 'Underage detection' => sub {
         $underage_result           = 'clear';
         $reported_dob              = '1989-10-10';
         $report_result             = 'clear';
+        $emissions                 = {};
         $reported_first_name       = $test_client->first_name;
         $reported_last_name        = $test_client->last_name;
 
@@ -3226,17 +3299,73 @@ subtest 'Underage detection' => sub {
         }
         'the event made it alive!';
 
+        ok !$emissions->{underage_account_closed}, 'underage_account_closed event was not emitted';
+
         ok !$vrtc_client->status->disabled, 'Not disabled';
         ok !$test_client->status->disabled, 'Not disabled';
         ok $test_client->status->age_verification, 'Age verified';
 
         my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-        ok !$msg, 'underage email not sent to compliance';
+        ok !$msg, 'underage email sent to cs';
+
+        subtest 'it has balance' => sub {
+            $trading_platform_loginids = {};
+            $emissions                 = {};
+            $underage_result           = 'rejected';
+            $reported_dob              = undef;
+            $report_result             = 'rejected';
+
+            $vrtc_client->status->clear_disabled();
+            $vrtc_client->status->_build_all();
+            $test_client->status->clear_disabled();
+            $test_client->status->clear_age_verification();
+            $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->_build_all();
+            mailbox_clear();
+
+            my $test_client_loginid   = $test_client->loginid;
+            my $test_sibling_loginids = $test_sibling->loginid;
+
+            $test_sibling->status->clear_disabled;
+            $test_client->payment_free_gift(
+                currency => 'USD',
+                amount   => 10,
+                remark   => 'freeeeee'
+            );
+            $test_sibling->payment_free_gift(
+                currency => 'LTC',
+                amount   => 5,
+                remark   => 'freeeeee'
+            );
+
+            lives_ok {
+                BOM::Event::Actions::Client::client_verification({
+                        check_url => $check->{href},
+                    })->get;
+            }
+            'the event made it alive!';
+
+            ok !$emissions->{underage_account_closed}, 'underage_account_closed event not emitted';
+
+            ok !$vrtc_client->status->disabled, 'Disabled status not set (dxtrader real)';
+
+            ok !$test_client->status->disabled, 'Disabled status not set (dxtrader real)';
+
+            ok !$test_client->status->age_verification, 'Not age verified';
+
+            my $msg = mailbox_search(subject => qr/Underage client detection/);
+            ok $msg, 'underage email sent to CS';
+            ok $msg->{body} =~ /The following loginids have balance:/,  'Balances > 0 detected';
+            ok $msg->{body} =~ qr/$test_client_loginid.*10\.00 USD/,    'Client with balance reported';
+            ok $msg->{body} =~ qr/$test_sibling_loginids.*5\.0* LTC\b/, 'Sibling with balance reported';
+            cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
+        };
     };
 
     $mocked_report->unmock_all();
     $mocked_onfido->unmock_all();
+    $mocked_emitter->unmock_all();
 };
 
 subtest 'crypto_withdrawal_rejected_email' => sub {
