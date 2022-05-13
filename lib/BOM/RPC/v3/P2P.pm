@@ -211,11 +211,9 @@ our %DB_ERRORS = (
     BI236 => 'OrderConfirmCompleted',
     BI237 => 'InvalidOrderCurrency',
     BI238 => 'ClientDailyOrderLimitExceeded',
-    BI239 => 'OpenOrdersDeleteAdvert',
+    BI240 => 'OrderCreateFailAmount',
     BI242 => 'OrderRefundInvalid',
     BI243 => 'OrderCreateFailAmountAdvertiser',
-    BI244 => 'ActivePaymentMethodRequired',
-    BI245 => 'PaymentMethodRemoveActiveOrdersDB',
 );
 
 sub DB_ERROR_PARAMS {
