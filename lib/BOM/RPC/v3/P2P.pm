@@ -73,7 +73,7 @@ our %ERROR_MAP = do {
 
         # Invalid data
         AdvertContactInfoRequired          => localize("Please provide your contact details."),
-        AdertPaymentMethodsNotAllowed      => localize("Saved payment methods cannot be provided for buy ads. Please provide payment method names."),
+        AdvertPaymentMethodsNotAllowed     => localize("Saved payment methods cannot be provided for buy ads. Please provide payment method names."),
         AdvertPaymentMethodNamesNotAllowed => localize("Payment method names cannot be provided for sell ads. Please provide saved payment methods."),
         AlreadyInProgress                  => localize("Order is in progress. Changes are no longer allowed."),
         InvalidListLimit                   => localize("Please enter a limit value that's greater than 0."),
@@ -174,7 +174,7 @@ our %ERROR_MAP = do {
         ActivePaymentMethodRequired => localize('At least one active payment method is required.'),
         AdvertPaymentMethodRequired => localize("Please provide a payment method for this advert."),
         AdvertPaymentInfoRequired   => localize("Please provide your payment details."),
-        PaymentMethodRemoveActiveOrders   => localize('You must keep a [_1] payment method on this advert while it has active orders.'),
+        PaymentMethodRemoveActiveOrders   => localize('You have active orders on this ad, so you must keep these payment methods: [_1]'),
         PaymentMethodRemoveActiveOrdersDB => localize('You cannot remove payment methods used by active orders on this advert.'),
         PaymentMethodNotInAd              => localize('[_1] is not available as a payment method for this advert.'),
         AdvertPaymentMethodParam          => localize('Payment method field cannot be combined with other payment methods.'),
