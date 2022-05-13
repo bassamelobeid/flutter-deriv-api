@@ -5,7 +5,5 @@
 - postgres-crypto
 - postgres-feed
 - postgres-user
-- pricing-queue
-- pricing-daemon
 - redis
 - redis-replicated
