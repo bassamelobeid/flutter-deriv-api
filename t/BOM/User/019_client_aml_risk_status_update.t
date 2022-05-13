@@ -110,13 +110,9 @@ subtest 'aml risk becomes high CR landing company' => sub {
     ok !$client_cr2->status->withdrawal_locked, "sibling account is not withdrawal_locked";
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
 
-    test_event($result, $landing_company);
-
     $expected_db_rows = [];
     $result           = $c->update_aml_high_risk_clients_status($landing_company);
     is @$result, 0, 'No result after withdrawal locked';
-
-    test_event($result, $landing_company);
 
     $client_cr->status->clear_withdrawal_locked();
     $client_cr->status->clear_allow_document_upload();
@@ -136,8 +132,6 @@ subtest 'aml risk becomes high CR landing company' => sub {
     ok $client_cr->status->allow_document_upload,  "client is allow_document_upload";
     ok $client_cr2->status->withdrawal_locked,     "sibling account is withdrawal_locked";
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
-
-    test_event($result, $landing_company);
 
     clear_clients($client_cr, $client_cr2);
 };
@@ -311,26 +305,6 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     $mocked_client->unmock_all;
     $mocked_documents->unmock_all;
 };
-
-sub test_event {
-    my ($result, $landing_company) = @_;
-
-    undef @emitted_args;
-    my $res = $c->emit_aml_status_change_event($landing_company, $result);
-    ok($res, "aml status change event emitted");
-
-    is_deeply \@emitted_args,
-        [
-        'aml_client_status_update',
-        {
-            template_args => {
-                landing_company     => $landing_company,
-                aml_updated_clients => $result,
-            }
-        },
-        ],
-        'Correct event is emitted with correct args';
-}
 
 sub clear_clients {
     for my $client (@_) {

@@ -20,8 +20,7 @@ sub run {
     my $self = shift;
 
     foreach my $landing_company (@{$self->{landing_companies}}) {
-        my $result = $self->update_aml_high_risk_clients_status($landing_company);
-        $self->emit_aml_status_change_event($landing_company, $result) if @$result;
+        $self->update_aml_high_risk_clients_status($landing_company);
     }
 }
 
@@ -83,31 +82,6 @@ sub _get_recent_high_risk_clients {
         fixup => sub {
             $_->selectall_arrayref('SELECT * from betonmarkets.get_recent_high_risk_clients();', {Slice => {}});
         });
-}
-
-=head2 emit_aml_status_change_event
-
-sends an email to respective department
-email will be as per landing company.
-
-=cut
-
-sub emit_aml_status_change_event {
-    my ($class, $landing_company, $aml_updated_clients) = @_;
-
-    try {
-        BOM::Platform::Event::Emitter::emit(
-            'aml_client_status_update',
-            {
-                template_args => {
-                    landing_company     => $landing_company,
-                    aml_updated_clients => $aml_updated_clients
-                }});
-        return 1;
-    } catch ($e) {
-        $log->errorf('Failed to emit event for emit_aml_status_change_event:  error : %s', $e);
-        return undef;
-    }
 }
 
 1
