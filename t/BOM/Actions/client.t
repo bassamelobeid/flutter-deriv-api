@@ -1799,24 +1799,6 @@ subtest 'segment document upload' => sub {
     is $args{properties}->{uploaded_manually_by_staff}, 0,                        'uploaded_manually_by_staff is correct';
 };
 
-subtest 'aml risk becomes high withdrawal_locked email CR landing company' => sub {
-    mailbox_clear();
-    my $landing_company  = 'CR';
-    my $aml_high_clients = [{login_ids => $test_client->loginid}];
-    #send email
-    BOM::Event::Actions::Client::aml_client_status_update({
-            template_args => {
-                landing_company     => $landing_company,
-                aml_updated_clients => @$aml_high_clients
-            }});
-    my $subject = 'High risk status reached - pending KYC-FA - withdrawal locked accounts';
-    my $msg     = mailbox_search(
-        email   => 'compliance-alerts@deriv.com',
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
-};
-
 subtest 'onfido resubmission' => sub {
     # Redis key for resubmission counter
     use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';

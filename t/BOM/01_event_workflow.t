@@ -123,7 +123,7 @@ subtest 'process - generic jobs' => sub {
                 p2p_order_created p2p_order_updated p2p_order_expired p2p_timeout_refund p2p_dispute_expired p2p_chat_received p2p_archived_ad
                 affiliate_sync_initiated withdrawal_limit_reached
                 api_token_created api_token_deleted
-                app_registered app_updated app_deleted self_exclude set_financial_assessment crypto_withdrawal aml_client_status_update
+                app_registered app_updated app_deleted self_exclude set_financial_assessment crypto_withdrawal
                 client_promo_codes_upload new_crypto_address onfido_doc_ready_for_upload shared_payment_method_found
                 dispute_notification account_reactivated verify_false_profile_info check_onfido_rules mt5_inactive_notification mt5_inactive_account_closed mt5_archived_account_reset_trading_password
                 identity_verification_requested trading_platform_account_created trading_platform_password_reset_request

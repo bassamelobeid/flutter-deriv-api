@@ -2761,43 +2761,6 @@ sub crypto_withdrawal_rejected_email {
             fiat_account  => $params->{fiat_account}});
 }
 
-=head2 aml_client_status_update
-
-Send email to compliance-alerts@binary.com if some clients that are set withdrawal_locked
-
-=cut
-
-sub aml_client_status_update {
-    my $data  = shift;
-    my $brand = request->brand;
-
-    my $template_args   = $data->{template_args};
-    my $system_email    = $brand->emails('no-reply');
-    my $to              = $brand->emails('compliance_alert');
-    my $landing_company = $template_args->{landing_company} // '';
-    my $email_subject   = "High risk status reached - pending KYC-FA - withdrawal locked accounts (" . $landing_company . ")";
-
-    my $tt = Template::AutoFilter->new({
-        ABSOLUTE => 1,
-        ENCODING => 'utf8'
-    });
-    try {
-        $tt->process(BOM::Event::Actions::Common::TEMPLATE_PREFIX_PATH . 'clients_update_status.html.tt', $template_args, \my $html);
-        die "Template error: @{[$tt->error]}" if $tt->error;
-
-        unless (Email::Stuffer->from($system_email)->to($to)->subject($email_subject)->html_body($html)->send()) {
-            $log->errorf($template_args);
-            die "failed to send aml_risk_clients_update_status email.";
-        }
-
-        return undef;
-    } catch ($e) {
-        $log->errorf("Failed to send AML Risk withdrawal_locked email to compliance %s on %s", $template_args, $e);
-        exception_logged();
-        return undef;
-    }
-}
-
 =head2 _save_request_context
 
 Store current request context.

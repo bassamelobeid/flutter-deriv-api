@@ -99,7 +99,6 @@ my $action_mapping = {
         app_updated                                      => \&BOM::Event::Actions::App::app_updated,
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,
         set_financial_assessment                         => \&BOM::Event::Actions::Client::set_financial_assessment,
-        aml_client_status_update                         => \&BOM::Event::Actions::Client::aml_client_status_update,
         self_exclude                                     => \&BOM::Event::Actions::App::self_exclude,
         crypto_withdrawal                                => \&BOM::Event::Actions::Client::handle_crypto_withdrawal,
         crypto_withdrawal_email                          => \&BOM::Event::Actions::Client::crypto_withdrawal_email,
