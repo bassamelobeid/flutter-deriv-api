@@ -156,7 +156,7 @@ read_csv_row_and_callback(
 
                 my $rule_engine = BOM::Rules::Engine->new(client => $client);
                 try { $client->validate_payment(currency => $currency, amount => $signed_amount, rule_engine => $rule_engine) } catch ($e) {
-                    $error = $e
+                    $error = $e->{message_to_client}
                 };
                 last if $error;
 
@@ -209,8 +209,8 @@ read_csv_row_and_callback(
                         rule_engine       => BOM::Rules::Engine->new(client => $client),
                     );
                 } catch ($e) {
-                    $err = $e;
-                    $log->errorf('%s failed - %s', $login_id, $err,);
+                    $err = ref $e eq 'HASH' ? $e->{message_to_client} : $e;
+                    $log->errorf('%s failed - %s', $login_id, $err);
                 };
                 if ($err) {
                     $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");

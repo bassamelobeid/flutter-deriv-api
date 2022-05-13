@@ -17,6 +17,7 @@ use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::ClientDB;
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Utility;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
@@ -171,7 +172,7 @@ read_csv_row_and_callback(
                 die "Same transaction found in client account. Check [transaction id: $duplicate_record]\n";
             }
         } catch ($e) {
-            $error = $e;
+            $error = ref $e eq 'HASH' ? $e->{message_to_client} : $e;
         }
 
         my %row = (
@@ -227,7 +228,8 @@ read_csv_row_and_callback(
                     );
                 }
             } catch ($e) {
-                $client_account_table .= construct_row_line(%row, error => "Transaction Error: $e");
+                my $msg = ref $e eq 'HASH' ? $e->{message_to_client} : $e;
+                $client_account_table .= construct_row_line(%row, error => "Transaction Error: $msg");
                 return;
             }
 
@@ -336,8 +338,14 @@ sub construct_row_line {
     my %args = @_;
 
     $args{$_} = encode_entities($args{$_}) for keys %args;
-    my $notes = $args{error} || $args{remark};
-    my $class = $args{error} ? 'error' : 'success';
+    my $notes = $args{remark};
+    my $class = 'success';
+
+    if ($args{error}) {
+        $notes = $args{error}->{message_to_client};
+        $class = 'error';
+    }
+
     $args{$_} ||= '&nbsp;' for keys %args;
 
     return qq[ <tr>

@@ -230,7 +230,7 @@ unless ($params{skip_validation}) {
         }
         1;
     } catch ($err) {
-        print qq[<p class="error">$encoded_loginID Failed. $err</p>];
+        print "<p class=\"error\">$encoded_loginID Failed. $err->{message_to_client}</p>";
         code_exit_BO();
     };
 
@@ -326,8 +326,11 @@ try {
     # we should make it pass-through
     # please refer to perldoc of CGI::Compile and Try::Tiny::Except
     die $error if ref($error) eq 'ARRAY' and @$error == 2 and $error->[0] eq "EXIT\n";
-    print "<p>TRANSACTION ERROR: This payment violated a fundamental database rule.  Details:<br/>$error</p>";
-    printf STDERR "Error: $error\n";
+
+    my $msg = ref $error eq 'HASH' ? $error->{message_to_client} : $error;
+
+    print "<p>TRANSACTION ERROR: This payment violated a fundamental database rule.  Details:<br/>$msg</p>";
+    printf STDERR "Error: $msg\n";
     code_exit_BO();
 }
 
