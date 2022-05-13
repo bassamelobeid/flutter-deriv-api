@@ -4267,7 +4267,7 @@ sub _advertiser_details {
         $details->{balance_available}  = $self->balance_for_cashier('p2p');
         $details->{basic_verification} = $self->status->age_verification ? 1 : 0;
         $details->{full_verification}  = $self->fully_authenticated      ? 1 : 0;
-        $details->{cancels_remaining}  = $self->_p2p_advertiser_cancellations_remaining;
+        $details->{cancels_remaining}  = $self->_p2p_advertiser_cancellations->{remaining};
 
         for my $limit (qw/daily_buy daily_sell daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/) {
             $details->{$limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{$limit})
@@ -4792,9 +4792,9 @@ sub _p2p_order_cancelled {
 
     my $buyer_advertiser = $buyer_client->_p2p_advertisers(loginid => $buyer_loginid)->[0] // return;
     return if $buyer_client->_p2p_get_advertiser_bar_error($buyer_advertiser);
-    my $cancels_remaining = $buyer_client->_p2p_advertiser_cancellations_remaining;
+    my $cancellations = $buyer_client->_p2p_advertiser_cancellations;
 
-    if ($cancels_remaining == 0) {
+    if ($cancellations->{remaining} == 0) {
         my $block_time = Date::Utility->new->plus_time_interval($config->cancellation_barring->bar_time . 'h');
         $buyer_client->db->dbic->run(
             fixup => sub {
@@ -4812,27 +4812,38 @@ sub _p2p_order_cancelled {
             p2p_advertiser_temp_banned => {
                 loginid        => $buyer_loginid,
                 order_id       => $order->{id},
-                block_end_time => $block_time->datetime,
+                limit          => $cancellations->{limit},
+                block_end_date => $block_time->date,
+                block_end_time => $block_time->time_hhmm,
+
             });
     } else {
         BOM::Platform::Event::Emitter::emit(
             p2p_advertiser_cancel_at_fault => {
                 loginid           => $buyer_loginid,
                 order_id          => $order->{id},
-                cancels_remaining => $cancels_remaining,
+                cancels_remaining => $cancellations->{remaining},
             });
     }
 
     return;
 }
 
-=head2 _p2p_advertiser_cancellations_remaining
+=head2 _p2p_advertiser_cancellations
 
-Returns the remaining cancellations allowed for a client.
+Returns a hashref containing:
+    
+=over 4
+
+=item *  C<remaining> - remaining cancellations allowed for a client
+
+=item *  C<limit> - current cancellation limit
+
+=back
 
 =cut
 
-sub _p2p_advertiser_cancellations_remaining {
+sub _p2p_advertiser_cancellations {
 
     my ($self) = @_;
     my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
@@ -4840,7 +4851,11 @@ sub _p2p_advertiser_cancellations_remaining {
     # config period is hours
     my ($period, $limit) = ($config->cancellation_barring->period, $config->cancellation_barring->count);
     my $stats = $self->_p2p_advertiser_stats($self->loginid, $period);
-    return max($limit - $stats->{cancel_count}, 0);
+
+    return {
+        remaining => max($limit - $stats->{cancel_count}, 0),
+        limit     => $limit,
+    };
 }
 
 =head2 _p2p_get_advertiser_bar_error

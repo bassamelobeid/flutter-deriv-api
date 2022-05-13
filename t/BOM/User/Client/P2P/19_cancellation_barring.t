@@ -104,7 +104,9 @@ subtest general => sub {
         {
             loginid        => $client->loginid,
             order_id       => $ord2->{id},
-            block_end_time => $block_until->datetime,
+            limit          => 2,
+            block_end_time => $block_until->time_hhmm,
+            block_end_date => $block_until->date,
         },
         'p2p_advertiser_temp_banned event emitted'
     );
