@@ -10,14 +10,14 @@ my @skip_files = qw(
     lib/BOM/Test/Helper.pm
     lib/BOM/Test/Email.pm
     lib/BOM/Test/Helper/CTC.pm
-    lib/BOM/Test/Suite/DSL.pm
-    lib/BOM/Test/Suite.pm
+    lib/BOM/Test/Suite
     lib/BOM/Test/Contract.pm
     lib/BOM/Test/Initializations.pm
     lib/BOM/Test/App/WebSocket.pm
     lib/BOM/Test/RPC/BinaryRpcRedis.pm
     lib/BOM/Test/Rudderstack/Webserver.pm
     lib/BOM/Test/Data/Utility/UnitTestMarketData.pm
+    bin/binary_rpc_redis_for_test.pl
 );
 
 check_syntax_all(@skip_files);
