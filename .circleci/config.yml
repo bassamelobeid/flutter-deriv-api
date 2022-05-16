@@ -68,7 +68,7 @@ jobs:
           make test
         name: Core tests
     - run:
-        command: make syntax_diff
+        command: make syntax
         name: Code structure and syntax
     - run:
         command: make unit
