@@ -17,6 +17,7 @@ my @skip_files = qw(
     lib/BOM/Test/RPC/BinaryRpcRedis.pm
     lib/BOM/Test/Rudderstack/Webserver.pm
     lib/BOM/Test/Data/Utility/UnitTestMarketData.pm
+    bin/binary_rpc_redis_for_test.pl
 );
 
 check_syntax_all(@skip_files);
