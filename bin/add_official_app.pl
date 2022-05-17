@@ -6,7 +6,6 @@ use Getopt::Long qw( GetOptions );
 use Log::Any::Adapter qw(DERIV), stdout => 'text';
 use Log::Any qw($log);
 use BOM::Database::Model::OAuth;
-use BOM::RPC::v3::Utility;
 
 my (%opt, $app_id, $is_primary, $is_internal);
 
