@@ -6,7 +6,6 @@ use warnings;
 use parent qw(IO::Async::Notifier);
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use Commission::Config::SymbolMap;
 use Date::Utility;
 use BOM::User::Client;
 use BOM::Config::Runtime;
@@ -81,10 +80,6 @@ Commission database
 
 Exchange rates for convertion from deal currency to IB account currency
 
-=head2 _config_symbol_map
-
-Config to map external underlying symbols to internal symbols
-
 =head2 cfd_provider
 
 CFD platform provider. E.g. dxtrade
@@ -124,7 +119,6 @@ sub redis_exchangerates_config { shift->{redis_exchangerates_config} }
 sub _dbic                      { shift->{_dbic} }
 sub _clientdbs                 { shift->{_clientdbs} // {} }
 sub _exchange_rates            { shift->{_exchange_rates} }
-sub _config_symbol_map         { Commission::Config::SymbolMap->new() }
 
 =head2 new
 
@@ -262,12 +256,6 @@ async sub calculate {
 
     await $self->_load_exchange_rates();
 
-    # register reload of exchange rates
-    $self->_reload_exchange_rates()->retain->on_fail(
-        sub {
-            $log->warnf("Failed to load exchange rates [%s]", @_);
-        });
-
     # Get the count of deals
     my $date_deals = await $self->_get_effective_deals_count();
 
@@ -306,22 +294,10 @@ async sub _calculate_page {
         async sub {
             my ($deal) = @_;
 
-            my $symbol_config = $self->_config_symbol_map->target_symbol($deal->{provider}, $deal->{symbol});
-            my $target_symbol = $symbol_config->{deriv_symbol};
-
-            if (not defined $target_symbol) {
-                stats_inc(
-                    'cms.no_deriv_symbol',
-                    $self->_prepare_statsd_tag(
-                        cfd_provider => $deal->{provider},
-                        symbol       => $deal->{symbol}));
-
-                $log->errorf("No deriv symbol found for %s (%s)", $deal->{symbol}, $deal->{provider});
-                return;
-            }
+            my $target_symbol = $deal->{symbol};
 
             my $target_currency = $deal->{payment_currency};
-            my $exchange_rate   = $self->_exchange_rate($symbol_config->{quoted_currency}, $target_currency);
+            my $exchange_rate   = $self->_exchange_rate($deal->{currency}, $target_currency);
 
             if (not defined $exchange_rate) {
                 stats_inc(
@@ -330,7 +306,7 @@ async sub _calculate_page {
                         cfd_provider => $deal->{provider},
                         currency     => $deal->{currency}));
 
-                $log->errorf("No exchange rate found for %s (%s)", $symbol_config->{quoted_currency} . '-' . $target_currency, $deal->{provider});
+                $log->errorf("No exchange rate found for %s (%s)", $deal->{payment_currency} . '-' . $target_currency, $deal->{provider});
                 return;
             }
 
@@ -343,11 +319,10 @@ async sub _calculate_page {
                     $self->_prepare_statsd_tag(
                         cfd_provider => $deal->{provider},
                         account_type => $deal->{account_type},
-                        symbol       => $target_symbol,
-                        base_symbol  => $deal->{symbol}));
+                        symbol       => $deal->{symbol},
+                    ));
 
-                $log->errorf("No commission rate found for mapped symbol %s:%s on %s deal from %s",
-                    $deal->{symbol}, $target_symbol, $deal->{account_type}, $deal->{provider});
+                $log->errorf("No commission rate found for symbol %s on %s deal from %s", $deal->{symbol}, $deal->{account_type}, $deal->{provider});
                 return;
             }
 
@@ -792,27 +767,12 @@ commission type by symbol
 sub _get_commission_type {
     my ($self, $symbol) = @_;
 
-    my $symbol_config = Finance::Underlying->by_symbol($symbol);
+    # we can't use instrument->type as of now because CFD contains a mixture of indices, synthetic & commidities
+    my $market = ($symbol =~ /^(?:Vol|Jump|Crash|Boom|RB\s\d+)/ or $symbol =~ /Basket$/) ? 'synthetic' : 'financial';
 
     # TODO: this should be change to $symbol_config->{is_generated} when it is released
-    return $self->_config->type->synthetic if $symbol_config->{market} eq 'synthetic';
+    return $self->_config->type->synthetic if $market eq 'synthetic';
     return $self->_config->type->financial;
-}
-
-=head2 _reload_exchange_rates
-
-Reload exchange rate and inverted exchange rates from redis every 5 minutes
-
-=cut
-
-async sub _reload_exchange_rates {
-    my $self = shift;
-
-    while (1) {
-        $log->infof("Reload exchange rates");
-        await $self->_load_exchange_rates();
-        await $self->loop->delay_future(after => 300);
-    }
 }
 
 =head2 _load_exchange_rates

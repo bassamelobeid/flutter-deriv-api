@@ -34,8 +34,8 @@ use Database::Async;
 use Database::Async::Engine::PostgreSQL;
 use Syntax::Keyword::Try;
 
+use JSON::MaybeXS qw(decode_json);
 use YAML::XS qw(LoadFile);
-use Commission::Config::SymbolMap;
 use Commission::Deal::DXTrade;
 use Date::Utility;
 use Log::Any qw($log);
@@ -80,6 +80,7 @@ sub new {
         redis_consumer_group => $args{redis_consumer_group},
         provider             => $args{provider},
         _client_map          => {},
+        _symbols_map         => {},
     };
 
     die "Please provide db_uri (eg. postgresql://localhost...) or db_service (e.g. cms01) arguments"
@@ -136,6 +137,7 @@ async sub start {
     my $self = shift;
 
     await $self->_load_client_map();
+    await $self->_load_symbols_map();
 
     my $redis = $self->{redis};
     my $group = $self->{redis_consumer_group};
@@ -205,6 +207,33 @@ async sub _load_client_map {
     $self->{_client_map} = {map { $_->{id} => 1 } $client_ids->@*};
 }
 
+=head2 _load_symbols_map
+
+Load instrument list from DevExperts REST API
+
+=cut
+
+async sub _load_symbols_map {
+    my $self = shift;
+
+    my $redis = $self->{redis};
+
+    my $data = await $redis->hgetall('DERIVX_CONFIG::INSTRUMENT_LIST');
+
+    return unless $data;
+
+    my %symbols = $data->@*;
+    my %symbols_map;
+    foreach my $symbol (keys %symbols) {
+        my $instrument_data = decode_json($symbols{$symbol});
+        $symbols_map{$symbol} = $instrument_data->{currency};
+    }
+
+    $self->{_symbols_map} = \%symbols_map;
+
+    return;
+}
+
 =head2 _update_client_map
 
 Update affiliate-client information through data received from redis stream
@@ -267,7 +296,14 @@ async sub _insert_into_db {
 
     my $deal_id;
     try {
-        my $currency = $self->_config_symbols_map->target_symbol($self->{provider}, $deal->underlying_symbol)->{quoted_currency};
+        my $currency = $self->{_symbols_map}->{$deal->underlying_symbol};
+
+        unless ($currency) {
+            # It seems it we may have added a new symbol to product offerings. Reload symbols map and try again.
+            await $self->_load_symbols_map();
+            $currency = $self->{_symbols_map}->{$deal->underlying_symbol}
+                // $log->errorf("quoted currency is undefined for %s", $deal->underlying_symbol);
+        }
 
         ($deal_id) = await $self->{dbic}->query(
             q{SELECT * FROM transaction.add_new_deal($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)},
@@ -359,13 +395,5 @@ async sub _reconnect {
 
     $self->add_child($self->{dbic} = Database::Async->new(%parameters));
 }
-
-=head2 _config_symbols_map
-
-Config to map external underlying symbols to internal symbols
-
-=cut
-
-sub _config_symbols_map { Commission::Config::SymbolMap->new() }
 
 1;

@@ -131,11 +131,11 @@ my @test_cases = ({
             }
         ],
         _make_affiliate_payment => [],
-        _config_commission_rate => {standard => {R_10 => {'volume' => '0.0000075'}}},
+        _config_commission_rate => {standard => {'Vol 10' => {'volume' => '0.0000075'}}},
         expected_store          => [{
                 commission_type       => 'volume',
                 'exchange_rate'       => 1,
-                'mapped_symbol'       => 'R_10',
+                'mapped_symbol'       => 'Vol 10',
                 'price'               => '6484.719',
                 'applied_commission'  => '0.0000075',
                 'provider'            => 'dxtrade',
@@ -157,7 +157,7 @@ my @test_cases = ({
                 commission_type       => 'volume',
                 'provider'            => 'dxtrade',
                 'applied_commission'  => '0.0000075',
-                'mapped_symbol'       => 'R_10',
+                'mapped_symbol'       => 'Vol 10',
                 'price'               => '6484.819',
                 'exchange_rate'       => 1,
                 'base_currency'       => 'USD',
