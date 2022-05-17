@@ -87,8 +87,7 @@ Bar($loginid_bar);
 print "<span class='error'>PAYMENT AGENT</span>" if ($pa and $pa->status and $pa->status eq 'authorized');
 
 # We either choose the dropdown currency from transaction page or use the client currency for quick jump
-my $currency         = $client->currency;
-my $currency_wrapper = BOM::CTC::Currency->new(currency_code => $client->currency);
+my $currency = $client->currency;
 if (my $currency_dropdown = request()->param('currency_dropdown')) {
     $currency = $currency_dropdown unless $currency_dropdown eq 'default';
 }

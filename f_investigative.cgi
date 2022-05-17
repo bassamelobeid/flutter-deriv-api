@@ -11,7 +11,6 @@ use Path::Tiny;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
-use BOM::CTC::Database;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
