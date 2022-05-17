@@ -3033,7 +3033,7 @@ subtest 'Underage detection' => sub {
 
         my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-        ok $msg, 'underage email sent to CS';
+        ok !$msg, 'underage email not sent to CS';
 
         subtest 'it has a mt5 real account' => sub {
             $trading_platform_loginids = {
@@ -3124,7 +3124,7 @@ subtest 'Underage detection' => sub {
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-            ok $msg, 'underage email not sent CS';
+            ok !$msg, 'underage email not sent CS';
         };
     };
 
@@ -3181,7 +3181,7 @@ subtest 'Underage detection' => sub {
 
         my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-        ok $msg, 'underage email sent to CS';
+        ok !$msg, 'underage email not sent to CS';
 
         subtest 'it has a dxtrader real account' => sub {
             $emissions                 = {};
@@ -3271,7 +3271,7 @@ subtest 'Underage detection' => sub {
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-            ok $msg, 'underage email sent to cs';
+            ok !$msg, 'underage email not sent to cs';
         };
     };
 
@@ -3307,7 +3307,7 @@ subtest 'Underage detection' => sub {
 
         my $msg = mailbox_search(subject => qr/Underage client detection/);
 
-        ok !$msg, 'underage email sent to cs';
+        ok !$msg, 'underage email not sent to cs';
 
         subtest 'it has balance' => sub {
             $trading_platform_loginids = {};

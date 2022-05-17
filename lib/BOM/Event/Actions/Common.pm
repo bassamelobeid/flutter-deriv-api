@@ -154,19 +154,23 @@ sub handle_under_age_client {
         title        => $subject,
     };
 
-    try {
-        $tt->process(BOM::Event::Actions::Common::TEMPLATE_PREFIX_PATH . 'underage_client_detection.html.tt', $data, \my $html);
-        die "Template error: @{[$tt->error]}" if $tt->error;
+    # We will send an LC ticket to authentications if the client has real balance
+    # or a real dervix/mt5 account.
+    # Otherwise, we'll disable and notify the client.
+    my $send_lc_ticket = @have_balance || @dx_loginids || @mt5_loginids;
 
-        die "failed to send underage detection email ($loginid)"
-            unless Email::Stuffer->from($from_email)->to($to_email)->subject($subject)->html_body($html)->send();
-    } catch ($e) {
-        $log->warn($e);
-        exception_logged();
-    }
+    if ($send_lc_ticket) {
+        try {
+            $tt->process(BOM::Event::Actions::Common::TEMPLATE_PREFIX_PATH . 'underage_client_detection.html.tt', $data, \my $html);
+            die "Template error: @{[$tt->error]}" if $tt->error;
 
-    # disable and notify the client only if they do not have balance/mt5/derivx accounts
-    unless (@have_balance || @dx_loginids || @mt5_loginids) {
+            die "failed to send underage detection email ($loginid)"
+                unless Email::Stuffer->from($from_email)->to($to_email)->subject($subject)->html_body($html)->send();
+        } catch ($e) {
+            $log->warn($e);
+            exception_logged();
+        }
+    } else {
         # push the virtual
         $siblings->{$client->user->bom_virtual_loginid} = undef if $client->user->bom_virtual_loginid;
 
