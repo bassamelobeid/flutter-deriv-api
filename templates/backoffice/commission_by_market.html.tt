@@ -1,38 +1,17 @@
 <p>Commission rate summary by market</p>
 
 <div class="tab">
-  <button class="tablinks" onclick="openCity(event, 'forex')">Forex</button>
-  <button class="tablinks" onclick="openCity(event, 'synthetic_index')">Synthetic Index</button>
-  <button class="tablinks" onclick="openCity(event, 'stocks')">Stocks</button>
-  <button class="tablinks" onclick="openCity(event, 'commodities')">Commodities</button>
-  <button class="tablinks" onclick="openCity(event, 'cryptocurrency')">Cryptocurrency</button>
-  <button class="tablinks" onclick="openCity(event, 'indices')">Indices</button>
+  [% FOREACH market IN markets %]
+      <button class="tablinks" onclick="openCity(event, '[% market %]')">[% market %]</button>
+  [% END %]
 </div>
 
 <!-- Tab content -->
-<div id="forex" class="tabcontent">
-    [% INCLUDE 'backoffice/commission_table.html.tt' data = commission.forex %]
-</div>
-
-<div id="synthetic_index" class="tabcontent">
-    [% INCLUDE 'backoffice/commission_table.html.tt' data = commission.synthetic_index %]
-</div>
-
-<div id="stocks" class="tabcontent">
-    [% INCLUDE 'backoffice/commission_table.html.tt' data = commission.stocks %]
-</div>
-
-<div id="commodities" class="tabcontent">
-    [% INCLUDE 'backoffice/commission_table.html.tt' data = commission.commodities %]
-</div>
-
-<div id="cryptocurrency" class="tabcontent">
-    [% INCLUDE 'backoffice/commission_table.html.tt' data = commission.cryptocurrency %]
-</div>
-
-<div id="indices" class="tabcontent">
-    [% INCLUDE 'backoffice/commission_table.html.tt' data = commission.indices %]
-</div>
+[% FOREACH market IN markets %]
+    <div id="[% market %]" class="tabcontent">
+        [% INCLUDE 'backoffice/commission_table.html.tt' data = commission.$market %]
+    </div>
+[% END %]
 
 <style type="text/css">
 .tab {

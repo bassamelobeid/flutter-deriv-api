@@ -8,12 +8,13 @@ use Data::Dumper;
 use Format::Util::Numbers qw(financialrounding);
 use Syntax::Keyword::Try;
 use BOM::Database::CommissionDB;
-use Finance::Underlying;
 use BOM::User::Client;
 use Scalar::Util qw(looks_like_number);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
+use BOM::Config::Redis;
+use JSON::MaybeXS qw(decode_json);
 
 =head2 get_commission_by_provider
 
@@ -33,17 +34,25 @@ sub get_commission_by_provider {
             $_->selectall_arrayref(q{SELECT * FROM affiliate.get_commission_by_provider(?)}, undef, $provider);
         });
 
+    die 'currently only supports dxtrade' if $provider ne 'dxtrade';
+
+    my $config      = BOM::Config::Redis::redis_cfds()->hgetall('DERIVX_CONFIG::INSTRUMENT_LIST');
+    my %symbols_map = $config->@*;
     my $by_market;
-    foreach my $data (sort { $a->[1] cmp $b->[1] } $commissions->@*) {
+    foreach my $data (sort { $a->[2] cmp $b->[2] } $commissions->@*) {
         my ($account_type, $type, $symbol, $rate) = $data->@*;
-        my $underlying = Finance::Underlying->by_symbol($symbol);
-        push @{$by_market->{$underlying->{market}}},
+        my $symbol_config = decode_json($symbols_map{$symbol} // '{}');
+        if (not %$symbol_config) {
+            warn "missing symbol configuration for $symbol, from provider $provider";
+            next;
+        }
+        push @{$by_market->{$symbol_config->{type}}},
             {
             symbol       => $symbol,
             account_type => $account_type,
             type         => $type,
             rate         => $rate,
-            display_name => $underlying->{display_name}};
+            };
     }
 
     return $by_market;
@@ -75,8 +84,9 @@ sub save_commission {
     return {error => 'commission_rate must be numeric'} unless defined $args->{commission_rate} and looks_like_number($args->{commission_rate});
     return {error => 'commission_rate must be less than 1'} if $args->{commission_rate} >= 1;
 
-    # remove whitetespace
-    $args->{symbol} =~ s/\s+//g;
+    # remove whitetespace at the beginning or end of symbol
+    $args->{symbol} =~ s/^\s+//g;
+    $args->{symbol} =~ s/\s+$//g;
     my @symbols = split ',', $args->{symbol};
 
     my $output = {success => 1};

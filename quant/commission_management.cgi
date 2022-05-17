@@ -33,8 +33,11 @@ BOM::Backoffice::Request::template()->process(
     }) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Existing rates");
-BOM::Backoffice::Request::template()->process('backoffice/commission_by_market.html.tt', {commission => $commission_by_market})
-    || die BOM::Backoffice::Request::template()->error;
+BOM::Backoffice::Request::template()->process(
+    'backoffice/commission_by_market.html.tt',
+    {
+        commission => $commission_by_market,
+        markets    => [sort { $a cmp $b } keys %$commission_by_market]}) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Update Commssion");
 BOM::Backoffice::Request::template()->process(

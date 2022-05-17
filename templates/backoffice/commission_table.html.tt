@@ -1,7 +1,6 @@
 <table>
     <tbody>
         <tr>
-            <th>Display Name</th>
             <th>Symbol</th>
             <th>Account Type</th>
             <th>Commission Type</th>
@@ -9,7 +8,6 @@
         </tr>
         [% FOREACH row IN data %]
             <tr>
-                <td>$row.display_name</td>
                 <td>$row.symbol</td>
                 <td>$row.account_type</td>
                 <td>$row.type</td>
