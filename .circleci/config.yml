@@ -121,7 +121,7 @@ version: 2
 workflows:
   build-workflow:
     jobs:
-    - core_syntax_diff:
+    - syntax_unit:
         context: perl
   daily:
     jobs:
@@ -137,7 +137,7 @@ workflows:
             only:
             - master
   weekly-code-coverage:
-    jobs:
+    njobs:
     - code_coverage:
         context: perl
     triggers:
