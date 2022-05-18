@@ -327,6 +327,10 @@ subtest 'create advert (sell)' => sub {
         delete @expected{
             qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info days_until_archive payment_method_ids active_orders)
         };
+        # Fields that are only visible when viewing a different advertiser
+        $expected{advertiser_details}->{is_blocked}     = $expected{advertiser_details}->{is_favourite} = 0;
+        $expected{advertiser_details}->{is_recommended} = undef;
+
         cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
     };
 
@@ -387,6 +391,7 @@ subtest 'create order (buy)' => sub {
     # not returned from order list
     delete $order->{payment_method_details};
     delete $order_info->{payment_method_details};
+    $order->{advertiser_details}{is_recommended} = undef;
 
     cmp_deeply($order_info,   $listed_order, 'Order info matches order list');
     cmp_deeply($listed_order, $order,        'Order list matches order create');
