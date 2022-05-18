@@ -137,7 +137,7 @@ workflows:
             only:
             - master
   weekly-code-coverage:
-    njobs:
+    jobs:
     - code_coverage:
         context: perl
     triggers:
