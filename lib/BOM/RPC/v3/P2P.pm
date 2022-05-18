@@ -192,6 +192,11 @@ our %ERROR_MAP = do {
             localize("We're unable to create your order because the market rate has moved too much. Please try creating your order again."),
         OrderCreateFailRateRequired => localize('Please provide a rate for this order.'),
         OrderCreateFailRateChanged  => localize('The rate of the advert has changed. Please try creating your order again.'),
+        OrderReviewNotComplete      => localize('This order can only be reviewed after it has been successfully completed.'),
+        OrderReviewStatusInvalid    => localize('This order cannot be reviewed. It was not successfully completed.'),
+        OrderReviewExists           => localize('You have already reviewed this order.'),
+        OrderReviewPeriodExpired    =>
+            localize("It's not possible to give a review now. Reviews can only be placed within [_1] hours of successfully completing the order."),
     );
 };
 
@@ -747,6 +752,19 @@ p2p_rpc p2p_order_cancel => sub {
         id     => $order_id,
         status => $order->{status},
     };
+};
+
+=head2 p2p_order_review
+
+Creates an order review.
+
+=cut
+
+p2p_rpc p2p_order_review => sub {
+    my (%args) = @_;
+
+    my $client = $args{client};
+    return $client->p2p_order_review($args{params}{args}->%*);
 };
 
 =head2 p2p_chat_create

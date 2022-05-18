@@ -868,11 +868,12 @@ subtest 'P2P Order Info' => sub {
         created_time       => re('\d+'),
         is_incoming        => 0,
         advertiser_details => {
-            loginid    => $advertiser->loginid,
-            id         => re('\d+'),
-            name       => $advertiser->p2p_advertiser_info->{name},
-            first_name => $advertiser->first_name,
-            last_name  => $advertiser->last_name,
+            loginid        => $advertiser->loginid,
+            id             => re('\d+'),
+            name           => $advertiser->p2p_advertiser_info->{name},
+            first_name     => $advertiser->first_name,
+            last_name      => $advertiser->last_name,
+            is_recommended => undef,
         },
         contact_info     => 'Tel: 123456',
         type             => 'sell',
@@ -885,7 +886,8 @@ subtest 'P2P Order Info' => sub {
             disputer_loginid => undef,
             dispute_reason   => undef
         },
-        stash => {
+        is_reviewable => 0,
+        stash         => {
             source_bypass_verification => 0,
             app_markup_percentage      => '0',
             valid_source               => 1
