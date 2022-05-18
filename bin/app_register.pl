@@ -105,7 +105,7 @@ sub __validate_app_links {
 
     for (grep { length($_) } @sites) {
         next if $_ =~ m{^https?://play\.google\.com/store/apps/details\?id=[\w.]+$};
-        $validation_error = BOM::RPC::v3::Utility::validate_uri($_);
+        $validation_error = validate_uri($_);
         return $validation_error if $validation_error;
     }
 
@@ -147,4 +147,42 @@ sub create_error {
             message_to_client => $args->{message_to_client},
             $args->{message} ? (message => $args->{message}) : (),
             $args->{details} ? (details => $args->{details}) : ()}};
+}
+
+sub validate_uri {
+    my $original_url = shift;
+    my $url          = URI->new($original_url);
+
+    if ($original_url =~ /[^[:ascii:]]/) {
+        return localize('Unicode is not allowed in URL');
+    }
+
+    if (not defined $url->scheme or $url->scheme !~ /^[a-z][a-z0-9.+\-]*$/) {
+        return localize('The given URL scheme is not valid');
+    }
+
+    if ($url->fragment) {
+        return localize('URL should not have fragment');
+    }
+
+    if ($url->query) {
+        return localize('URL should not have query');
+    }
+
+    if ($url->has_recognized_scheme) {
+        if ($url->userinfo) {
+            return localize('URL should not have user info');
+        }
+
+        if ($url->port != 80 && $url->port != 443) {
+            return localize('Only ports 80 and 443 are allowed');
+        }
+
+        my $host = $url->host;
+        if (!$host || $original_url =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
+            return localize('Invalid URL');
+        }
+    }
+
+    return undef;
 }
