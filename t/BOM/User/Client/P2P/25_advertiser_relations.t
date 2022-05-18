@@ -29,7 +29,8 @@ subtest 'favourites' => sub {
     cmp_deeply(exception { $client->p2p_advertiser_relations }, {error_code => 'AdvertiserNotRegistered'}, 'not an advertiser');
 
     my $info = $client->p2p_advertiser_info(id => $me->_p2p_advertiser_cached->{id});
-    ok !exists $info->{is_favourite} & !exists $info->{is_blocked}, 'no flags for non advertiser viewing advertiser';
+    is $info->{is_blocked},   0, 'is_blocked = 0 for non advertiser viewing advertiser';
+    is $info->{is_favourite}, 0, 'is_favourite = 0 for non advertiser viewing advertiser';
 
     cmp_deeply(
         $me->p2p_advertiser_relations,
@@ -64,18 +65,24 @@ subtest 'favourites' => sub {
         'events fired'
     );
 
-    is $me->p2p_advertiser_info->{favourited}, 0, 'nobody likes me';
-
     $info = $me->p2p_advertiser_info(id => $fav->_p2p_advertiser_cached->{id});
-    ok $info->{is_favourite}, 'favourite flag in advertiser info';
-    is $info->{favourited}, 1, 'favourited count';
+    is $info->{is_favourite}, 1, 'is_favourite in advertiser info viewing a favourite';
+    is $info->{is_blocked},   0, 'is_favourite in advertiser info viewing a favourite';
 
     my @ads = $me->p2p_advert_list(type => 'sell')->@*;
     cmp_deeply([map { $_->{id} } @ads], bag($my_ad->{id}, $fav_ad->{id}, $other_ad->{id}), 'see all ads by default');
 
     for my $ad (@ads) {
-        ok(($ad->{advertiser_details}{is_favourite} // 0) == ($ad->{id} == $fav_ad->{id} ? 1 : 0), 'ad favourite flag');
-        ok !exists $ad->{advertiser_details}{is_blocked}, 'ad is not blocked';
+        if ($ad->{id} == $my_ad->{id}) {
+            ok !(
+                   exists $ad->{advertiser_details}{is_blocked}
+                or exists $ad->{advertiser_details}{is_favourite}
+                ),
+                'blocked and favourite flags not present in own ad';
+        } else {
+            is($ad->{advertiser_details}{is_favourite}, ($ad->{id} == $fav_ad->{id} ? 1 : 0), 'ad favourite flag');
+            is $ad->{advertiser_details}{is_blocked}, 0, 'ad is not blocked';
+        }
     }
 
     @ads = $me->p2p_advertiser_adverts->@*;
@@ -126,7 +133,6 @@ subtest 'favourites' => sub {
 
     $info = $me->p2p_advertiser_info(id => $fav->_p2p_advertiser_cached->{id});
     ok !exists $info->{favourite}, 'favourite flag in advertiser info not present';
-    is $info->{favourited}, 0, 'favourited count decreased';
 
     cmp_deeply(
         $emitted_events,

@@ -120,11 +120,14 @@ subtest 'advertiser Registration' => sub {
         show_name             => 0,
         balance_available     => num(0),
         cancels_remaining     => 3,
-        favourited            => 0,
         buy_time_avg          => undef,
         partner_count         => 0,
         total_turnover        => num(0),
         advert_rates          => undef,
+        rating_average        => undef,
+        rating_count          => 0,
+        recommended_average   => undef,
+        recommended_count     => undef,
         %params
     };
 
@@ -136,6 +139,8 @@ subtest 'advertiser Registration' => sub {
     delete $expected->@{
         qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available cancels_remaining/
     };
+    $expected->{is_blocked}     = $expected->{is_favourite} = 0;
+    $expected->{is_recommended} = undef;
     cmp_deeply($advertiser_info, $expected, 'sensitve fields hidden in advertiser_info for other client');
 };
 
@@ -426,6 +431,10 @@ subtest 'Creating advert' => sub {
             name                   => $name,
             total_completion_rate  => undef,
             completed_orders_count => 0,
+            rating_average         => undef,
+            rating_count           => 0,
+            recommended_average    => undef,
+            recommended_count      => undef,
         },
         is_visible             => bool(1),
         active_orders          => 0,
@@ -477,6 +486,8 @@ subtest 'Creating advert' => sub {
 
     # Fields that should only be visible to advert owner
     delete $expected_advert->@{@sensitive_fields};
+    $expected_advert->{advertiser_details}{is_blocked}     = $expected_advert->{advertiser_details}{is_favourite} = 0;
+    $expected_advert->{advertiser_details}{is_recommended} = undef;
 
     cmp_deeply($test_client_cr->p2p_advert_list, [$expected_advert], "p2p_advert_list returns less fields for client");
 
@@ -1057,6 +1068,8 @@ subtest 'subscriptions' => sub {
     );
 
     delete $advert->@{@sensitive_fields};
+    $advert->{advertiser_details}{is_blocked}     = $advert->{advertiser_details}{is_favourite} = 0;
+    $advert->{advertiser_details}{is_recommended} = undef;
 
     cmp_deeply($resp, {%$advert, %$expected_response}, 'response for other client subscribing to ad');
 

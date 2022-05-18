@@ -273,8 +273,8 @@ sub p2p_on_advert_view {
             qw(payment_method payment_method_names is_active local_currency rate min_order_amount_limit max_order_amount_limit rate_offset effective_rate)
         ],
         client            => [qw(is_visible payment_info contact_info active_orders amount remaining_amount min_order_amount max_order_amount)],
-        advertiser_common => [qw(total_completion_rate)],
-        advertiser_client => [qw(is_favourite is_blocked)],
+        advertiser_common => [qw(total_completion_rate rating_average recommended_average)],
+        advertiser_client => [qw(is_favourite is_blocked is_recommended)],
     );
 
     my $p2p_redis    = BOM::Config::Redis->redis_p2p_write();

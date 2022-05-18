@@ -2324,7 +2324,7 @@ sub p2p_advertiser_update {
     my $update = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, NULL, ?)',
+                'SELECT * FROM p2p.advertiser_update_v2(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, NULL, ?, NULL)',
                 undef,
                 $advertiser_info->{id},
                 @param{qw/is_approved is_listed name default_advert_description payment_info contact_info show_name/});
@@ -2379,19 +2379,18 @@ sub p2p_advertiser_relations {
                     @param{qw/add_favourites add_blocked remove_favourites remove_blocked/});
             });
 
+        # is_favourite/is_blocked can change on subscribed advertisers and ads
         for my $advertiser (values %$advertisers) {
-
-            # favourited value can change on advertiser info
             BOM::Platform::Event::Emitter::emit(
                 p2p_advertiser_updated => {
                     client_loginid => $advertiser->{loginid},
                 });
 
-            # is_favourite/is_blocked can change on subscribed ads
             BOM::Platform::Event::Emitter::emit(
                 p2p_adverts_updated => {
                     advertiser_id => $advertiser->{id},
                 });
+
         }
     }
 
@@ -3026,6 +3025,63 @@ sub p2p_order_cancel {
     return $update;
 }
 
+=head2 p2p_order_review
+
+Creates a review for order of $param{id}.
+
+=cut
+
+sub p2p_order_review {
+    my ($self, %param) = @_;
+
+    my $id    = $param{order_id} // die +{error_code => 'OrderNotFound'};
+    my $order = $self->_p2p_orders(
+        id      => $id,
+        loginid => $self->loginid,    # ensure order belongs to client
+    )->[0] // die +{error_code => 'OrderNotFound'};
+
+    die +{error_code => 'OrderReviewNotComplete'} if $order->{status} =~ /^(pending|buyer-confirmed|timed-out)$/;
+    die +{error_code => 'OrderReviewStatusInvalid'} unless $order->{status} eq 'completed' and $order->{completion_time};
+
+    my $reviewee_role = $self->loginid eq $order->{client_loginid} ? 'advertiser' : 'client';
+    die +{error_code => 'OrderReviewExists'} if $order->{$reviewee_role . '_review_rating'};
+
+    my $review_hours = BOM::Config::Runtime->instance->app_config->payments->p2p->review_period;
+    die +{
+        error_code     => 'OrderReviewPeriodExpired',
+        message_params => [$review_hours],
+        }
+        if (time - Date::Utility->new($order->{completion_time})->epoch) > ($review_hours * 60 * 60);
+
+    my ($reviewee, $reviewer) = $reviewee_role eq 'client' ? $order->@{qw(client_id advertiser_id)} : $order->@{qw(advertiser_id client_id)};
+
+    my $review = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM p2p.order_review(?, ?, ?, ?, ?)', undef, $id, $reviewee, $reviewer, @param{qw(rating recommended)});
+        });
+
+    $review->{created_time} = Date::Utility->new($review->{created_time})->epoch;
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_advertiser_updated => {
+            client_loginid => $reviewee_role eq 'advertiser' ? $order->{advertiser_loginid} : $order->{client_loginid},
+        });
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_adverts_updated => {
+            advertiser_id => $reviewee,
+        });
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            client_loginid => $self->loginid,
+            order_id       => $id,
+            order_event    => 'review_created',
+        });
+
+    return $review;
+}
+
 =head2 p2p_chat_create
 
 Creates a sendbird chat channel for an order, and users if required.
@@ -3123,9 +3179,9 @@ sub p2p_chat_token {
     $self->db->dbic->run(
         fixup => sub {
             $_->do(
-                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $advertiser_info->{id},
-                undef, undef, undef, undef, undef, undef, undef, $token, $expiry
+                'SELECT * FROM p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, NULL, NULL, NULL, NULL, NULL)',
+                undef,  $advertiser_info->{id},
+                $token, $expiry
             );
         });
 
@@ -3479,9 +3535,16 @@ Returns a list of advertisers filtered by id and/or loginid.
 sub _p2p_advertisers {
     my ($self, %param) = @_;
 
+    # take care not to vivivy $self->{_p2p_advertiser_cached}
+    my $self_id = $self->{_p2p_advertiser_cached} ? $self->{_p2p_advertiser_cached}{id} : undef;
+
     my $advertisers = $self->db->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_list(?, ?, ?, ?)', {Slice => {}}, @param{qw/id loginid name unique_name/});
+            $_->selectall_arrayref(
+                'SELECT * FROM p2p.advertiser_list_v2(?, ?, ?, ?, ?)',
+                {Slice => {}},
+                @param{qw/id loginid name unique_name/}, $self_id
+            );
         });
 
     for my $adv (@$advertisers) {
@@ -4242,7 +4305,10 @@ sub _advertiser_details {
         cancel_time_avg            => $stats{cancel_time_avg},
         partner_count              => $stats{partner_count},
         advert_rates               => $stats{advert_rates},
-        favourited                 => $advertiser->{favourited} // 0,
+        rating_average             => defined $advertiser->{rating_average} ? sprintf('%.2f', $advertiser->{rating_average}) : undef,
+        rating_count               => $advertiser->{rating_count} // 0,
+        recommended_average        => defined $advertiser->{recommended_average} ? sprintf('%.1f', $advertiser->{recommended_average} * 100) : undef,
+        recommended_count          => defined $advertiser->{recommended_average} ? $advertiser->{recommended_count}                          : undef,
     };
 
     if ($advertiser->{show_name}) {
@@ -4280,11 +4346,9 @@ sub _advertiser_details {
         my $auth_client = BOM::User::Client->new({loginid => $loginid});
         $details->{basic_verification} = $auth_client->status->age_verification ? 1 : 0;
         $details->{full_verification}  = $auth_client->fully_authenticated      ? 1 : 0;
-
-        if (my $relations = $self->_p2p_advertiser_relation_lists) {
-            $details->{is_favourite} = 1 if any { $_->{id} == $advertiser->{id} } $relations->{favourite_advertisers}->@*;
-            $details->{is_blocked}   = 1 if any { $_->{id} == $advertiser->{id} } $relations->{blocked_advertisers}->@*;
-        }
+        $details->{is_blocked}         = $advertiser->{blocked};
+        $details->{is_favourite}       = $advertiser->{favourite};
+        $details->{is_recommended}     = $advertiser->{recommended};
     }
 
     return $details;
@@ -4351,11 +4415,23 @@ sub _advert_details {
                     last_name  => $advert->{advertiser_last_name},
                     )
                 : (),
-                $advert->{advertiser_favourite} ? (is_favourite => 1) : (),
-                $advert->{advertiser_blocked}   ? (is_blocked   => 1) : (),
+                ($self->loginid ne $advert->{advertiser_loginid})
+                ? (
+                    is_favourite   => $advert->{advertiser_favourite},
+                    is_blocked     => $advert->{advertiser_blocked},
+                    is_recommended => $advert->{advertiser_recommended},
+                    )
+                : (),
                 completed_orders_count =>
                     $redis->zcount(join('::', P2P_STATS_REDIS_PREFIX, $advert->{advertiser_loginid}, 'BUY_COMPLETED'),  $start_ts, '+inf') +
                     $redis->zcount(join('::', P2P_STATS_REDIS_PREFIX, $advert->{advertiser_loginid}, 'SELL_COMPLETED'), $start_ts, '+inf'),
+                rating_average      => defined $advert->{advertiser_rating_average} ? sprintf('%.2f', $advert->{advertiser_rating_average}) : undef,
+                rating_count        => $advert->{advertiser_rating_count} // 0,
+                recommended_average => defined $advert->{advertiser_recommended_average}
+                ? sprintf('%.1f', $advert->{advertiser_recommended_average} * 100)
+                : undef,
+                # calculate the number of positive recommendations
+                recommended_count => defined $advert->{advertiser_recommended_average} ? $advert->{advertiser_recommended_count} : undef,
             },
         };
 
@@ -4427,9 +4503,11 @@ Takes and returns an arrayref of orders.
 
 sub _order_details {
     my ($self, $list) = @_;
-    my (@results, $payment_method_defs);
+    my (@results, $payment_method_defs, $review_hours);
 
     for my $order (@$list) {
+        my $role = $self->loginid eq $order->{client_loginid} ? 'client' : 'advertiser';
+
         my $result = +{
             account_currency   => $order->{account_currency},
             created_time       => Date::Utility->new($order->{created_time})->epoch,
@@ -4437,7 +4515,7 @@ sub _order_details {
             contact_info       => $order->{contact_info} // '',
             expiry_time        => Date::Utility->new($order->{expire_time})->epoch,
             id                 => $order->{id},
-            is_incoming        => $self->loginid eq $order->{advertiser_loginid} ? 1 : 0,
+            is_incoming        => $role eq 'advertiser' ? 1 : 0,
             local_currency     => $order->{local_currency},
             amount             => $order->{amount},
             amount_display     => financialrounding('amount', $order->{account_currency}, $order->{amount}),
@@ -4454,6 +4532,8 @@ sub _order_details {
                 loginid    => $order->{advertiser_loginid},
                 first_name => $order->{advertiser_first_name},
                 last_name  => $order->{advertiser_last_name},
+                ($role eq 'client' and exists $order->{advertiser_recommended}) ? (is_recommended => $order->{advertiser_recommended}) : (),
+
             },
             client_details => {
                 id         => $order->{client_id}   // '',
@@ -4461,6 +4541,7 @@ sub _order_details {
                 loginid    => $order->{client_loginid},
                 first_name => $order->{client_first_name},
                 last_name  => $order->{client_last_name},
+                ($role eq 'advertiser' and exists $order->{client_recommended}) ? (is_recommended => $order->{client_recommended}) : (),
             },
             advert_details => {
                 id             => $order->{advert_id},
@@ -4472,9 +4553,24 @@ sub _order_details {
                 dispute_reason   => $order->{dispute_reason},
                 disputer_loginid => $order->{disputer_loginid},
             },
-            ($order->{payment_method}) ? (payment_method => $order->{payment_method}) : (),
-            ($order->{payment_method_details} and $order->{payment_method_details}->%*)
-            ? (payment_method_details => $order->{payment_method_details})
+            ($order->{payment_method})                                                  ? (payment_method         => $order->{payment_method}) : (),
+            ($order->{payment_method_details} and $order->{payment_method_details}->%*) ? (payment_method_details => $order->{payment_method_details})
+            : (),
+            ($role eq 'client' and $order->{advertiser_review_rating})
+            ? (
+                review_details => {
+                    created_time => Date::Utility->new($order->{advertiser_review_time})->epoch,
+                    rating       => $order->{advertiser_review_rating},
+                    recommended  => $order->{advertiser_review_recommended},
+                })
+            : (),
+            ($role eq 'advertiser' and $order->{client_review_rating})
+            ? (
+                review_details => {
+                    created_time => Date::Utility->new($order->{client_review_time})->epoch,
+                    rating       => $order->{client_review_rating},
+                    recommended  => $order->{client_review_recommended},
+                })
             : (),
         };
 
@@ -4483,6 +4579,13 @@ sub _order_details {
             $result->{payment_method_names} =
                 [map { $payment_method_defs->{$_}{display_name} } grep { exists $payment_method_defs->{$_} } split ',', $order->{payment_method}];
         }
+
+        my $can_review = 0;
+        if ((!$result->{review_details}) and $order->{status} eq 'completed' and $order->{completion_time}) {
+            $review_hours //= BOM::Config::Runtime->instance->app_config->payments->p2p->review_period;
+            $can_review = 1 if (time - Date::Utility->new($order->{completion_time})->epoch) <= ($review_hours * 60 * 60);
+        }
+        $result->{is_reviewable} = $can_review;
 
         push @results, $result;
     }
@@ -4796,7 +4899,7 @@ sub _p2p_order_cancelled {
         $buyer_client->db->dbic->run(
             fixup => sub {
                 $_->do(
-                    'SELECT p2p.advertiser_update(?,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,?)',
+                    'SELECT p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ?, NULL, NULL)',
                     undef, $buyer_advertiser->{id},
                     $block_time->datetime
                 );
@@ -4913,7 +5016,8 @@ sub _p2p_order_fraud {
         # disable the advertiser
         $self->db->dbic->run(
             fixup => sub {
-                $_->do('SELECT p2p.advertiser_update(?,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,FALSE)', undef, $advertiser->{id});
+                $_->do('SELECT p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, FALSE, NULL, NULL, NULL)',
+                    undef, $advertiser->{id});
             });
     }
 
