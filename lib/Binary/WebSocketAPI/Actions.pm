@@ -606,6 +606,12 @@ sub actions_config {
                 msg_group => 'p2p',
             },
         ],
+        [
+            'p2p_order_review',
+            {
+                msg_group => 'p2p',
+            },
+        ],
         ['trading_platform_accounts'],
         ['trading_platform_new_account'],
         ['trading_platform_deposit',    {stash_params => [qw/ token_type /]}],
