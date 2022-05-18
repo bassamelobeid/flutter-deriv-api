@@ -61,7 +61,7 @@ if ($input{update}) {
 
         my ($existing) = $db->run(
             fixup => sub {
-                $_->selectrow_array('SELECT * FROM p2p.advertiser_list(NULL,NULL,NULL,?) WHERE id != ?', undef, $name, $id);
+                $_->selectrow_array('SELECT * FROM p2p.advertiser_list_v2(NULL,NULL,NULL,?,NULL) WHERE id != ?', undef, $name, $id);
             });
 
         die "There is already another advertiser with this nickname\n" if $existing;
@@ -135,7 +135,7 @@ if ($input{loginID} || $input{name} || $input{id}) {
     $output{advertiser} = $db->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT l.*, c.first_name, c.last_name, c.residence FROM p2p.advertiser_list(?,?,NULL,?) l
+                'SELECT l.*, c.first_name, c.last_name, c.residence FROM p2p.advertiser_list_v2(?,?,NULL,?,NULL) l
             JOIN betonmarkets.client c ON c.loginid = l.client_loginid', undef, @input{qw/id loginID name/});
         });
     $output{error} //= 'Advertiser not found' unless $output{advertiser};
@@ -210,6 +210,18 @@ if ($output{advertiser}) {
     $output{not_approved_statuses} = [qw/cashier_locked disabled unwelcome duplicate_account withdrawal_locked no_withdrawal_or_trading/];
     $output{not_approved_by} =
         [grep { $client->status->$_(); } $output{not_approved_statuses}->@*];
+
+    $output{rating} =
+        $output{advertiser}->{rating_average}
+        ? 'Average ' . sprintf('%.2f', $output{advertiser}->{rating_average}) . ' (' . $output{advertiser}->{rating_count} . ' ratings)'
+        : 'no reviews yet';
+    $output{recommend} =
+        $output{advertiser}->{recommended_average}
+        ? 'Average '
+        . sprintf('%.1f', $output{advertiser}->{recommended_average} * 100) . '% ('
+        . $output{advertiser}->{recommended_count}
+        . ' users)'
+        : 'no recommentations yet';
 
 } elsif ($input{loginID}) {
     try {

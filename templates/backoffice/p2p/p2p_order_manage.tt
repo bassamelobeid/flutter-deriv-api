@@ -42,6 +42,12 @@
             <td>Client advertiser name</td>
             <td>[% order.client_name %]</td>
         </tr>
+        [% IF order.advertiser_review_time.defined %]
+        <tr>
+            <td>Client review</td>
+            <td>Rating: [% order.advertiser_review_rating %][% IF order.advertiser_review_recommended.defined %], recommended: [% IF order.advertiser_review_recommended == 1 %]yes[% ELSE %]no[% END %][% END %] (review at [% order.advertiser_review_time %])</td>
+        </tr>
+        [% END %]        
         <tr>
             <td>Advertiser&nbsp;&nbsp;<span style="color:var(--color-blue);font-weight:bold;">[% order.advertiser_role %]</span></td>
             <td class="link-group">[% order.advertiser_loginid %]
@@ -63,10 +69,12 @@
             <td>Advertiser confirmed</td>
             <td><b>[% order.advertiser_confirmed %]</b></td>
         </tr>
+        [% IF order.client_review_time.defined %]
         <tr>
-            <td>Amount</td>
-            <td>[% order.account_currency %] [% order.amount %]</td>
+            <td>Advertisier review</td>
+            <td>Rating: [% order.client_review_rating %][% IF order.client_review_recommended.defined %], recommended: [% IF order.client_review_recommended == 1 %]yes[% ELSE %]no[% END %][% END %] (review at [% order.client_review_time %])</td>
         </tr>
+        [% END %]
         <tr>
             <td>Payment due</td>
             <td>[% order.local_currency %] [% order.price_display %]
