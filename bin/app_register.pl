@@ -5,7 +5,6 @@ use Getopt::Long qw( GetOptions );
 use Log::Any::Adapter qw(DERIV), stdout => 'text';
 use Log::Any qw($log);
 use BOM::Database::Model::OAuth;
-use BOM::RPC::v3::Utility;
 
 my (%opt, $verbose, $quiet, $name, $redirect_uri, $verification_uri, $homepage, $github, $appstore, $googleplay, $app_markup_percentage, $scopes,
     $user_id);
@@ -36,7 +35,7 @@ sub app_register {
 
     my $error_sub = sub {
         my ($error) = @_;
-        return BOM::RPC::v3::Utility::create_error({
+        return create_error({
             code              => 'AppRegister',
             message_to_client => $error,
         });
@@ -139,3 +138,13 @@ sub get_all_options {
     return \%opt;
 }
 
+sub create_error {
+    my $args = shift;
+
+    return {
+        error => {
+            code              => $args->{code},
+            message_to_client => $args->{message_to_client},
+            $args->{message} ? (message => $args->{message}) : (),
+            $args->{details} ? (details => $args->{details}) : ()}};
+}
