@@ -13,3 +13,8 @@
 - regentmarkets/bom-cryptocurrency
 - regentmarkets/bom-events
 - regentmarkets/bom-rules
+# following will be used by only translation.
+# That break the rule that bom-backoffice should not depend on them. Adding them back is a temp resolution. we need fix it
+- regentmarkets/bom-paymentapi
+- regentmarkets/bom-pricing
+- regentmarkets/bom-rpc
