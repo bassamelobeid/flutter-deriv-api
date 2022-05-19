@@ -715,11 +715,6 @@ subtest 'new account on addtional trade server' => sub {
     $mocked->unmock_all;
     $params->{args}{account_type}     = 'financial';
     $params->{args}{mt5_account_type} = 'financial';
-#    $c->call_ok($method, $params)->has_no_error('mt5 new account with new config');
-#    is($c->result->{balance},         0,             'Balance is 0');
-#    is($c->result->{display_balance}, '0.00',        'Display balance is "0.00"');
-#    is($c->result->{currency},        'USD',         'Currency is "USD"');
-#    is($c->result->{login},           'MTR000\p01_ts01\p01_ts016', 'login is MTR000\p01_ts01\p01_ts016');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
 
     note('unsuspend mt5 real\p01_ts02. Tries to create financial account with new config.');
@@ -862,6 +857,53 @@ subtest 'country=au, financial account' => sub {
         $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')
         ->error_message_is(
         'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
+};
+
+subtest 'country=latam african, financial STP account' => sub {
+    my @latam_african_countries =
+        qw(dz ao ai ag ar aw bs bb bz bj bo bw bv br io bf bi cv cm ky cf td cl co km cg cd cr ci cu cw dj dm do ec eg sv gq er sz et fk gf tf ga gm gh gd gp gt gn gw gy ht hn jm ke ls lr ly mg mw ml mq mr mu yt mx ms ma mz na ni ne ng pa pe re bl sh kn lc mf vc st sn sc sl sx so za gs sd sr tz tg tt tn tc ug uy ve eh zm zw ss);
+
+    foreach my $country (@latam_african_countries) {
+        my $new_email  = $country . $details{email};
+        my $new_client = create_client('CR', undef, {residence => $country});
+        my $token      = $m->create_token($new_client->loginid, 'test token 2');
+        $new_client->set_default_account('USD');
+        $new_client->email($new_email);
+
+        my $user = BOM::User->create(
+            email    => $new_email,
+            password => 's3kr1t',
+        );
+        $user->update_trading_password($details{password}{main});
+        $user->add_client($new_client);
+
+        my $method = 'mt5_new_account';
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_type     => 'financial',
+                mt5_account_type => 'financial_stp',
+                email            => $new_email,
+                name             => $details{name},
+                mainPassword     => $details{password}{main},
+                leverage         => 100,
+            },
+        };
+
+        # Fill up required user details for financial_stp account
+        BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+        $new_client->status->clear_crs_tin_information;
+        $new_client->phone('12345678');
+        $new_client->tax_residence('mt');
+        $new_client->tax_identification_number('111222333');
+        $new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+        $new_client->account_opening_reason('nothing');
+        $new_client->save;
+        my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
+
+        is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\labuan_stp_usd'};
+    }
 };
 
 # reset
