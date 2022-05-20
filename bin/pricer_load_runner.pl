@@ -103,7 +103,7 @@ pod2usage({
     }) if $help;
 
 # Set Defaults
-$check_time            = $check_time            // 120;
+$check_time            = $check_time            // 80;
 $initial_subscriptions = $initial_subscriptions // 10;
 $app_id                = $app_id                // 1003;
 
@@ -170,6 +170,7 @@ my $market = shift @markets_to_use;
 
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
+say "$command -s $initial_subscriptions -a $app_id -c 5 -r $check_time -m $market&";
 my $pid             = open(my $fh, "-|", "$command -s $initial_subscriptions -a $app_id -c 5 -r $check_time -m $market&")
     or die $!;
 
@@ -343,6 +344,7 @@ sub process_response {
     my ($response)       = @_;
     my $json_response    = $response->content;
     my $decoded_response = $json->decode($json_response);
+    print STDERR Dumper($decoded_response);
     my $results          = $decoded_response->{series}->[0]->{pointlist};
     return map { $_->[1] } @$results;
 }
