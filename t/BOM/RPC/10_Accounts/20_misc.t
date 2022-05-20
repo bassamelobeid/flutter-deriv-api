@@ -152,8 +152,6 @@ subtest 'payout currencies' => sub {
 
 $method = 'landing_company';
 subtest 'landing company' => sub {
-    #TODO: remove this line after translations are fixed
-    return ok(1, 'skipping for https://github.com/regentmarkets/bom-rpc/pull/4330');
     is_deeply(
         $c->tcall(
             $method,
