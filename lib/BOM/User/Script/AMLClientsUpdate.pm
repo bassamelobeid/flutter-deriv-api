@@ -2,26 +2,120 @@ package BOM::User::Script::AMLClientsUpdate;
 
 use strict;
 use warnings;
+
+use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
+use List::Util qw(any);
+use Syntax::Keyword::Try;
+
+use BOM::User;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 use BOM::Platform::Event::Emitter;
+use BOM::Config::Runtime;
+use BOM::Platform::Email qw(send_email);
+
 use Log::Any qw($log);
+
+use constant BROKER_CODES => (qw/CR MF/);
+
+=head2 new
+
+Class constructor; it's called without any arguments.
+
+=cut
 
 sub new {
     my ($class, %args) = @_;
-    unless ($args{landing_companies}) {
-        return undef;
-    }
+
     return bless \%args, $class;
 }
 
-sub run {
+=head2 client_status_update
+
+Takes the list of recent high risk clients from database, makes them withdrawal locked and 
+prepares for POI notificaitons in the front-end.
+
+=cut
+
+sub client_status_update {
     my $self = shift;
 
-    foreach my $landing_company (@{$self->{landing_companies}}) {
-        $self->update_aml_high_risk_clients_status($landing_company);
+    foreach my $broker (BROKER_CODES) {
+        $self->update_aml_high_risk_clients_status($broker);
     }
+}
+
+=head2 aml_risk_update
+
+Updates client aml risk levels based on the configured thresholds.
+
+=cut
+
+sub aml_risk_update {
+    my $self = shift;
+
+    my $thresholds      = BOM::Config::Runtime->instance->app_config->compliance->aml_risk_thresholds;
+    my $thresholds_hash = decode_json_utf8($thresholds);
+    my @broker_codes    = keys %$thresholds_hash;
+
+    # The DB function accepts thresholds as a json array, rather than a hash.
+    my @threshold_array = map { +{broker_code => $_, $thresholds_hash->{$_}->%*} } keys %$thresholds_hash;
+    my $threshold_json  = encode_json_utf8(\@threshold_array);
+
+    foreach my $broker_code (@broker_codes) {
+        my $dbic = BOM::Database::ClientDB->new({
+                broker_code => $broker_code,
+            })->db->dbic;
+
+        my $result = $dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref("SELECT * FROM betonmarkets.update_aml_risk(?)", {Slice => {}}, $threshold_json);
+            });
+
+        _send_risk_report_email($broker_code, $result) if scalar(@$result);
+    }
+}
+
+=head2 _send_risk_report_email
+
+Sends an email to the compliance team, containing the list of the recently found high rish clients.
+
+=cut
+
+sub _send_risk_report_email {
+    my ($broker_code, $result) = @_;
+
+    my $date = Date::Utility->new->date_yyyymmdd;
+
+    my $content =
+          "<h1>Daily AML risk update for $broker_code - $date</h1>\n"
+        . '<table border="1" cellpadding="5" style="border-collapse:collapse">'
+        . "<tr><th> Operation </th><th> Loginids </th><th> Reason </th><th> AML Risk Level </th></tr>\n";
+    for my $row (@$result) {
+        try {
+            my $user = BOM::User->new(id => $row->{binary_user_id});
+            die "User with id $row->{binary_user_id} was not found" unless $user;
+
+            my $loginids = join ',', $user->loginids;
+
+            $content .= "<tr><td>AML Risk Updated</td><td>$loginids</td><td>$row->{reason}</td><td>$row->{aml_risk_classification}</td></tr>";
+        } catch ($e) {
+            warn $e;
+            $log->errorf("Failed to load user info for AML risk update report: %s", $e);
+        }
+    }
+    $content .= "\n</table>";
+
+    send_email({
+        from                  => 'no-reply@deriv.com',
+        to                    => 'compliance-alerts@binary.com',
+        subject               => "Daily AML risk update - $broker_code",
+        message               => [$content],
+        use_email_template    => 0,
+        email_content_is_html => 1,
+        skip_text2html        => 1,
+    });
 }
 
 =head2 update_aml_high_risk_clients_status

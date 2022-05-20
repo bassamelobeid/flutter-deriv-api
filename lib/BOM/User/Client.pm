@@ -627,6 +627,34 @@ sub risk_level_sr {
     return $risk;
 }
 
+=head2 was_locked_for_high_risk
+
+In some cases high risk clients drop do standard/low risk level before authentication and FA submission;
+these clients will remain withdrawal_locked without any notification or instructions in the front-end about what's wrong 
+(these instructions are exclusively sent for igh-risk clients only).
+This moethid identifies such clients in order to flag them properly in B<get_account_status> API response.
+
+This method returns true if:
+
+1- client is not high-risk at the monent
+
+2- client is allowed to upload documents because of high risk
+
+3- FA is not completed or POI is not done yet
+
+=cut
+
+sub was_locked_for_high_risk {
+    my $self = shift;
+
+    return
+           ($self->risk_level_aml ne 'high')
+        && $self->status->withdrawal_locked
+        && $self->status->allow_document_upload
+        && ($self->status->allow_document_upload->{reason} eq 'BECOME_HIGH_RISK')
+        || 0;
+}
+
 =head2 is_financial_assessment_complete
 
 Check if the client has filled out the financial assessment information:
@@ -644,10 +672,14 @@ sub is_financial_assessment_complete {
 
     my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information');
 
-    my $is_fa_required = $self->status->financial_assessment_required;
+    my $is_fa_required =
+           $self->status->financial_assessment_required
+        || $self->risk_level_aml() eq 'high'
+        || $self->risk_level_sr() eq 'high'
+        || $self->was_locked_for_high_risk;
 
     if ($sc ne 'maltainvest') {
-        return 0 if (($self->risk_level_aml() eq 'high' || $self->risk_level_sr() eq 'high' || $is_fa_required) && !$is_FI);
+        return 0 if ($is_fa_required && !$is_FI);
         return 1;
     }
 
