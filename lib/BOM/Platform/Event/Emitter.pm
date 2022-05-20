@@ -45,7 +45,6 @@ my %event_stream_mapping = (
     client_verification                 => 'DOCUMENT_AUTHENTICATION_STREAM',
     onfido_doc_ready_for_upload         => 'DOCUMENT_AUTHENTICATION_STREAM',
     identity_verification_requested     => 'DOCUMENT_AUTHENTICATION_STREAM',
-    underage_account_closed             => 'DOCUMENT_AUTHENTICATION_STREAM',
     affiliate_sync_initiated            => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
     crypto_subscription                 => 'CRYPTO_EVENTS_STREAM',
     crypto_transaction_updated          => 'CRYPTO_EVENTS_STREAM',
@@ -59,11 +58,9 @@ my %event_stream_mapping = (
     multiplier_near_expire_notification => 'CONTRACT_STREAM',
     multiplier_near_dc_notification     => 'CONTRACT_STREAM',
     bulk_authentication                 => 'BULK_EVENTS_STREAM',
-    # We want to move these events out of general queue, without creating a new service.
-    # ANONYMIZATION_QUEUE can be renamed to avoid confusion.
-    mt5_inactive_account_closed => 'ANONYMIZATION_STREAM',
-    mt5_inactive_notification   => 'ANONYMIZATION_STREAM',
-    affiliate_loginids_sync     => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
+    mt5_inactive_account_closed         => 'BULK_EVENTS_STREAM',
+    mt5_inactive_notification           => 'BULK_EVENTS_STREAM',
+    affiliate_loginids_sync             => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
 );
 
 my $config = LoadFile('/etc/rmg/redis-events.yml');
