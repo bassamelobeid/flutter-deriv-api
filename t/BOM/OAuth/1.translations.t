@@ -125,7 +125,7 @@ is $events->{send_email}->{event}, 'unknown_login', 'send_email has correct even
 
 cmp_deeply $events->{send_email}->{properties},
     {
-    device                    => undef,
+    device                    => '',
     lang                      => 'id',
     app_name                  => 'Test App',
     is_reset_password_allowed => 0,
