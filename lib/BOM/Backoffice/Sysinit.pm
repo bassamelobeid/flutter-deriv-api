@@ -154,7 +154,7 @@ my $permissions = {
 
     'quant/callputspread_barrier_multiplier/index_callputspread_barrier_multiplier.cgi'      => ['Quants'],
     'quant/callputspread_barrier_multiplier/callputspread_barrier_multiplier_controller.cgi' => ['Quants'],
-    'compliance_dashboard.cgi'                                                               => ['Compliance']};
+    'compliance_dashboard.cgi'                                                               => ['Compliance', 'IT']};
 
 sub init {
     $ENV{REQUEST_STARTTIME} = Time::HiRes::time;    ## no critic (RequireLocalizedPunctuationVars)

@@ -55,12 +55,18 @@ if (@$rows > $limit) {
 }
 
 my (@history, %cols);
+my $json = JSON->new->allow_nonref;
+$json->canonical([1]);
 for my $row (@$rows) {
     my $val = decode_json($row->{value});
     my $data;
-    if ($type eq 'json_string') {
+    if ($type eq 'json_string' && ref decode_json($val->{data}) eq 'HASH') {
         $data = decode_json($val->{data});
-        $cols{$_} = 1 for keys %$data;
+
+        for my $key (keys %$data) {
+            $cols{$key} = 1;
+            $data->{$key} = $json->encode($data->{$key}) if ref($data->{$key});
+        }
     } else {
         $data->{Value} = $val->{data};
         $cols{value} = 1;
