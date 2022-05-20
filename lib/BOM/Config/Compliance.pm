@@ -14,9 +14,22 @@ use strict;
 use warnings;
 no indirect;
 
-use List::Util qw(uniq);
-use JSON::MaybeUTF8 qw(decode_json_utf8);
+use Format::Util::Numbers qw(financialrounding);
+use List::Util qw(any uniq);
+use Scalar::Util qw(looks_like_number);
+use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
+
 use BOM::Config::Runtime;
+
+use constant RISK_THRESHOLDS => ({
+        name  => 'yearly_high',
+        title => 'Yearly High Risk'
+    },
+    {
+        name  => 'yearly_standard',
+        title => 'Yearly Standard Risk'
+    },
+);
 
 use constant RISK_LEVELS => qw/standard high/;
 
@@ -42,7 +55,86 @@ Returns an instance of global app-config class, used for reading data.
 =cut
 
 sub _app_config {
+    my $self = shift;
+
     return BOM::Config::Runtime->instance->app_config;
+}
+
+=head2 get_risk_thresholds
+
+Get the risk thresholds along with the app_config revision. It takes the following args:
+
+=over 4
+
+=item * type - risk type: I<aml> or I<mt5>
+
+=item * high - list of countries with high risk level.
+
+=back
+
+The return thresholds by broker codes is a hash-ref with the following structure:
+
+{
+    revision: ...,
+    CR: { high: ..., standard: ...},
+    MF: { high: ..., standard: ...}
+}
+
+=cut
+
+sub get_risk_thresholds {
+    my ($self, $type) = @_;
+
+    die 'Threshold type is missing'    unless $type;
+    die "Invalid threshold type $type" unless $type =~ qr/(aml|mt5)/;
+
+    my $app_config = $self->_app_config;
+    return {
+        decode_json_utf8($app_config->get("compliance.${type}_risk_thresholds"))->%*,
+        revision => $app_config->global_revision(),
+    };
+}
+
+=head2 validate_risk_thresholds
+
+Takes the risk thresholds (AML or MT5) and validates their values. It works with these args:
+
+=over 4
+
+=item * data - A rish thresholds by broker code, represented as a hash
+
+=back
+
+It returns the same thresholds in a hash-ref with finnacial rounding applied.
+
+=cut
+
+sub validate_risk_thresholds {
+    my ($self, %values) = @_;
+
+    for my $broker (keys %values) {
+        next if $broker eq 'revision';
+
+        my $broker_settings = $values{$broker};
+        for my $threshold (RISK_THRESHOLDS) {
+            my $value = $broker_settings->{$threshold->{name}};
+
+            if ($value) {
+                die "Invalid numeric value for $broker $threshold->{title}: $value\n" unless looks_like_number($value) and $value > 0;
+                $value = financialrounding('amount', 'EUR', $value);
+            } else {
+                $value = undef;
+            }
+            $broker_settings->{$threshold->{name}} = $value;
+        }
+
+        if ($broker_settings->{yearly_high} && $broker_settings->{yearly_standard}) {
+            die "Yearly Standard threshold is higher than Yearly High Risk threshold - $broker\n"
+                if $broker_settings->{yearly_standard} > $broker_settings->{yearly_high};
+        }
+    }
+
+    return \%values;
 }
 
 =head2 _countries
@@ -102,13 +194,10 @@ It returns the same structure as a hash-ref with sorted, unique country lists.
 sub validate_jurisdiction_risk_rating {
     my ($self, %args) = @_;
 
-    die "App config revision is missing\n" unless $args{revision};
-
-    my $result = {revision => $args{revision}};
-
     # an auxilary hash for finding duplicate country codes
     my %contry_to_risk_level;
 
+    my $result;
     for my $risk_level (RISK_LEVELS) {
         my @country_list = uniq $args{$risk_level}->@*;
 

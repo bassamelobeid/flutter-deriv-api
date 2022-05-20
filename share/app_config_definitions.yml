@@ -1112,6 +1112,16 @@ compliance:
           isa: Str
           global: 1
           default: ""
+    aml_risk_thresholds:
+      description: "AML risk level transaction thresholds (in EUR)"
+      isa: json_string
+      global: 1
+      default: '{"CR": {"yearly_standard": 10000, "yearly_high": 20000}, "MF": {"yearly_standard": 10000, "yearly_high": 20000} }'
+    mt5_risk_thresholds:
+      description: "AML risk level transaction thresholds (in EUR)"
+      isa: json_string
+      global: 1
+      default: '{"real/bvi": {"yearly_standard": null, "yearly_high": null}, "real/labuan": {"yearly_standard": null, "yearly_high": null}, "real/vanuatu": {"yearly_standard": null, "yearly_high": null} }'
     jurisdiction_risk_rating:
       description: "Defines the jurisdiction risk ratings for certain countries"
       isa: json_string
