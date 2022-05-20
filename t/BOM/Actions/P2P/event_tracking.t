@@ -456,7 +456,7 @@ subtest 'confirmed order expired' => sub {
 };
 
 subtest 'p2p_advert_created' => sub {
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_advert_created};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{p2p_advert_created};
     undef @track_args;
 
     my $event_args;
@@ -476,7 +476,7 @@ subtest 'p2p_advert_created' => sub {
 };
 
 subtest 'p2p_advertiser_cancel_at_fault' => sub {
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_advertiser_cancel_at_fault};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{p2p_advertiser_cancel_at_fault};
 
     undef @track_args;
     my %args = (
@@ -496,7 +496,7 @@ subtest 'p2p_advertiser_cancel_at_fault' => sub {
 };
 
 subtest 'p2p_advertiser_temp_banned' => sub {
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_advertiser_temp_banned};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{p2p_advertiser_temp_banned};
 
     undef @track_args;
     my %args = (

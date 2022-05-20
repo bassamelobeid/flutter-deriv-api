@@ -309,8 +309,10 @@ It can be called with the following named parameters:
 =cut
 
 sub signup {
-    my ($args)     = @_;
-    my $client     = $args->{client};
+    my ($args) = @_;
+
+    my $client = BOM::User::Client->new({loginid => $args->{loginid}})
+        or die 'Could not instantiate client for login ID ' . $args->{loginid};
     my $properties = $args->{properties};
 
     # traits will be used for identify
@@ -355,7 +357,7 @@ sub account_closure {
 
     return track_event(
         event                => 'account_closure',
-        client               => $args->{client},
+        loginid              => $args->{loginid},
         properties           => $args,
         is_identify_required => 1,
     );
@@ -386,7 +388,7 @@ sub new_mt5_signup {
     );
 }
 
-=head2 profile_change
+=head2 profile_change 
 
 It is triggered for each B<changing in user profile> event emitted, delivering it to Segment.
 It can be called with the following parameters:
@@ -403,7 +405,7 @@ It can be called with the following parameters:
 
 sub profile_change {
     my ($args)     = @_;
-    my $client     = $args->{client};
+    my $client     = BOM::User::Client->new({loginid => $args->{loginid}});
     my $properties = $args->{properties} // {};
 
     my $traits = _create_traits($client);

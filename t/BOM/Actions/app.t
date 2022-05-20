@@ -75,7 +75,7 @@ subtest 'app registered' => sub {
         brand            => 'deriv',
         lang             => 'ID'
     };
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{app_registered};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{app_registered};
     my $result  = $handler->($args)->get;
     ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
@@ -125,7 +125,7 @@ subtest 'app updated' => sub {
         brand      => 'deriv',
         lang       => 'ID'
     };
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{app_updated};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{app_updated};
     my $result  = $handler->($args)->get;
     ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
@@ -172,7 +172,7 @@ subtest 'app deleted' => sub {
         brand   => 'deriv',
         lang    => 'ID'
     };
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{app_deleted};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{app_deleted};
     my $result  = $handler->($args)->get;
     ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';

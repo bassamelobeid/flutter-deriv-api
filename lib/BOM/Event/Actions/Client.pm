@@ -1454,7 +1454,19 @@ sub account_closure {
             use_event             => 1,
         });
 
-    return BOM::Event::Services::Track::account_closure({%$data, client => $client});
+    return 1;
+}
+
+=head2 track_account_closure
+
+This is handler for each B<account_closure> event emitted, when handled by the track worker.
+
+=cut
+
+sub track_account_closure {
+    my $data = shift;
+
+    return BOM::Event::Services::Track::account_closure($data);
 }
 
 =head2 account_reactivated
@@ -1506,7 +1518,30 @@ sub account_reactivated {
             use_event             => 0
         }) if $client->landing_company->social_responsibility_check && $client->landing_company->social_responsibility_check eq 'required';
 
-    return BOM::Event::Services::Track::account_reactivated({%$args, client => $client});
+    return 1;
+}
+
+=head2 track_account_reactivated
+
+This is handler for each B<account_reactivated> event emitted, when handled by the track worker.
+
+=cut
+
+sub track_account_reactivated {
+    my ($args) = @_;
+
+    my $client = BOM::User::Client->new({loginid => $args->{loginid}});
+    my $brand  = request->brand;
+
+    return BOM::Event::Services::Track::account_reactivated({
+        loginid          => $client->loginid,
+        needs_poi        => $client->needs_poi_verification(),
+        profile_url      => $brand->profile_url,
+        resp_trading_url => $brand->responsible_trading_url,
+        live_chat_url    => $brand->live_chat_url,
+        name             => $client->first_name,
+        title            => $brand->name eq 'deriv' ? localize('Welcome Back!') : localize('Your account has been reactivated'),
+    });
 }
 
 =head2 authenticated_with_scans
@@ -2309,7 +2344,19 @@ async sub payment_deposit {
 
     BOM::Platform::Event::Emitter::emit('check_name_changes_after_first_deposit', {loginid => $client->loginid});
 
-    return BOM::Event::Services::Track::payment_deposit({%$args, client => $client});
+    return 1;
+}
+
+=head2 track_payment_deposit
+
+This is handler for each B<payment_deposit> event emitted, when handled by the track worker.
+
+=cut
+
+sub track_payment_deposit {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::payment_deposit($args);
 }
 
 =head2 on_user_payment_accounts_limit_reached
@@ -2502,11 +2549,21 @@ async sub signup {
         $log->warnf('Failed to emit %s event for loginid %s, while processing the signup event: %s', $emitting, $client->loginid, $error);
     };
 
-    # Both of these methods contains sync code, because  of that we cannot run them concurrently
     await check_email_for_fraud($client);
-    await BOM::Event::Services::Track::signup({%$data, client => $client});
 
     return 1;
+}
+
+=head2 track_signup
+
+This is handler for each B<signup> event emitted, when handled by the track worker.
+
+=cut
+
+sub track_signup {
+    my $data = shift;
+
+    return BOM::Event::Services::Track::signup($data);
 }
 
 =head2 check_email_for_fraud

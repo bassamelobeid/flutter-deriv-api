@@ -409,7 +409,7 @@ subtest 'upload document' => sub {
                     language         => 'en',
                 }};
 
-            my $handler = BOM::Event::Process->new(category => 'generic')->actions->{reset_password_request};
+            my $handler = BOM::Event::Process->new(category => 'track')->actions->{reset_password_request};
             ok $handler->($args);
             my $result = $handler->($args)->get;
             ok $result, 'Success result';
@@ -437,7 +437,7 @@ subtest 'upload document' => sub {
                     type       => 'reset_password',
                 }};
 
-            my $handler = BOM::Event::Process->new(category => 'generic')->actions->{reset_password_confirmation};
+            my $handler = BOM::Event::Process->new(category => 'track')->actions->{reset_password_confirmation};
             ok $handler->($args);
             my $result = $handler->($args)->get;
             ok $result, 'Success result';
@@ -966,7 +966,7 @@ subtest 'sync_onfido_details' => sub {
 
 };
 
-subtest 'signup event' => sub {
+subtest 'signup event for track worker' => sub {
 
     # Data sent for virtual signup should be loginid, country and landing company. Other values are not defined for virtual
     my $virtual_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -1001,7 +1001,7 @@ subtest 'signup event' => sub {
     request($req);
     undef @identify_args;
     undef @track_args;
-    undef @emit_args;
+
     my $vr_args = {
         loginid    => $virtual_client2->loginid,
         properties => {
@@ -1015,7 +1015,7 @@ subtest 'signup event' => sub {
                 date_first_contact => '2019-11-28'
             }}};
     $virtual_client2->set_default_account('USD');
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{signup};
     my $result  = $handler->($vr_args)->get;
     ok $result, 'Success result';
 
@@ -1063,8 +1063,6 @@ subtest 'signup event' => sub {
         'properties is properly set for virtual account signup';
     test_segment_customer($customer, $virtual_client2, '', $virtual_client2->date_joined, 'virtual', 'labuan,svg');
 
-    is_deeply \@emit_args, ['new_crypto_address', {loginid => $virtual_client2->loginid}], 'new_crypto_address event is emitted';
-
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => 'test2@bin.com',
@@ -1078,7 +1076,6 @@ subtest 'signup event' => sub {
 
     undef @identify_args;
     undef @track_args;
-    undef @emit_args;
 
     $result = $handler->($real_args)->get;
 
@@ -1139,6 +1136,80 @@ subtest 'signup event' => sub {
         },
         'properties is set properly for real account signup event';
 
+    $test_client2->set_default_account('EUR');
+
+    ok $handler->($real_args)->get, 'successful signup track after setting currency';
+
+    ($customer, %args) = @track_args;
+    test_segment_customer($customer, $test_client2, 'EUR', $virtual_client2->date_joined, 'svg', 'labuan,svg');
+};
+
+subtest 'signup event' => sub {
+    # Data sent for virtual signup should be loginid, country and landing company. Other values are not defined for virtual
+    my $virtual_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code      => 'VRTC',
+        email            => 'test23@bin.com',
+        first_name       => '',
+        last_name        => '',
+        date_of_birth    => undef,
+        phone            => '',
+        address_line_1   => '',
+        address_line_2   => '',
+        address_city     => '',
+        address_state    => '',
+        address_postcode => '',
+    });
+    my $email = $virtual_client2->email;
+
+    my $user2 = BOM::User->create(
+        email          => $virtual_client2->email,
+        password       => "hello",
+        email_verified => 1,
+        email_consent  => 1,
+    );
+
+    $user2->add_client($virtual_client2);
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    undef @emit_args;
+    my $vr_args = {
+        loginid    => $virtual_client2->loginid,
+        properties => {
+            type     => 'trading',
+            subtype  => 'virtual',
+            utm_tags => {
+                utm_source         => 'direct',
+                signup_device      => 'desktop',
+                utm_content        => 'synthetic-ebook',
+                utm_term           => 'term',
+                date_first_contact => '2019-11-28'
+            }}};
+    $virtual_client2->set_default_account('USD');
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
+    my $result  = $handler->($vr_args);
+    ok $result, 'Success result';
+    is_deeply \@emit_args, ['new_crypto_address', {loginid => $virtual_client2->loginid}], 'new_crypto_address event is emitted';
+
+    my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test2@bin.com',
+    });
+    my $real_args = {
+        loginid    => $test_client2->loginid,
+        properties => {
+            type => 'real',
+        }};
+    $user2->add_client($test_client2);
+
+    undef @emit_args;
+    is exception { $handler->($real_args) }, undef, 'Event processed successfully';
     is_deeply \@emit_args,
         [
         'new_crypto_address',
@@ -1151,13 +1222,6 @@ subtest 'signup event' => sub {
         }
         ],
         'new_crypto_address and verify_false_profile_info events are emitted';
-
-    $test_client2->set_default_account('EUR');
-
-    ok $handler->($real_args)->get, 'successful signup track after setting currency';
-
-    ($customer, %args) = @track_args;
-    test_segment_customer($customer, $test_client2, 'EUR', $virtual_client2->date_joined, 'svg', 'labuan,svg');
 };
 
 subtest 'wallet signup event' => sub {
@@ -1206,7 +1270,7 @@ subtest 'wallet signup event' => sub {
                 date_first_contact => '2019-11-28'
             }}};
     $virtual_wallet_client->set_default_account('USD');
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{signup};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{signup};
     my $result  = $handler->($vr_args)->get;
     ok $result, 'Success result';
 
@@ -1338,9 +1402,53 @@ subtest 'account closure' => sub {
     my $mock_client = Test::MockModule->new('BOM::Event::Actions::Client');
     $mock_client->redefine('send_email', sub { $email_args = shift; });
 
+    undef $email_args;
+
+    my $loginid = $test_client->loginid;
+
+    my $call_args = {
+        closing_reason    => 'There is no reason',
+        loginid           => $loginid,
+        loginids_disabled => [$loginid],
+        loginids_failed   => [],
+        email_consent     => 0
+    };
+
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{account_closure};
+    my $result         = $action_handler->($call_args);
+    ok $result, 'Success result';
+
+    is_deeply $email_args,
+        {
+        to                    => $test_client->email,
+        subject               => 'Your account is deactivated',
+        template_name         => 'account_closure',
+        email_content_is_html => 1,
+        use_email_template    => 1,
+        use_event             => 1,
+        template_args         => {
+            name  => $test_client->first_name,
+            title => 'Your account has been closed',
+        }
+        },
+        'correct email is sent';
+
+    $mock_client->unmock_all;
+};
+
+subtest 'account closure track' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    my $email_args;
+    my $mock_client = Test::MockModule->new('BOM::Event::Actions::Client');
+
     undef @identify_args;
     undef @track_args;
-    undef $email_args;
 
     my $loginid = $test_client->loginid;
 
@@ -1353,7 +1461,7 @@ subtest 'account closure' => sub {
         email_consent     => 0
     };
 
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{account_closure};
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{account_closure};
     my $result         = $action_handler->($call_args)->get;
     ok $result, 'Success result';
 
@@ -1379,21 +1487,6 @@ subtest 'account closure' => sub {
         },
         },
         'track context and properties are correct.';
-
-    is_deeply $email_args,
-        {
-        to                    => $test_client->email,
-        subject               => 'Your account is deactivated',
-        template_name         => 'account_closure',
-        email_content_is_html => 1,
-        use_email_template    => 1,
-        use_event             => 1,
-        template_args         => {
-            name  => $test_client->first_name,
-            title => 'Your account has been closed',
-        }
-        },
-        'correct email is sent';
 
     undef @identify_args;
     undef @track_args;
@@ -1441,7 +1534,7 @@ subtest 'transfer between accounts event' => sub {
             time               => '2020-01-09 10:00:00.000'
         }};
 
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{transfer_between_accounts};
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{transfer_between_accounts};
     ok $action_handler->($args), 'transfer_between_accounts triggered successfully';
     my ($customer, %args) = @track_args;
     is scalar(@identify_args), 0, 'identify is not called';
@@ -1541,7 +1634,7 @@ subtest 'api token create' => sub {
         name    => [$loginid],
         scopes  => ['read', 'payment']};
 
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{api_token_created};
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{api_token_created};
     my $result         = $action_handler->($call_args)->get;
     ok $result, 'Success result';
 
@@ -1597,7 +1690,7 @@ subtest 'api token delete' => sub {
         name    => [$loginid],
         scopes  => ['read', 'payment']};
 
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{api_token_deleted};
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{api_token_deleted};
     my $result         = $action_handler->($call_args)->get;
     ok $result, 'Success result';
 
@@ -1721,7 +1814,7 @@ subtest 'set financial assessment segment' => sub {
 
     undef @track_args;
 
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{set_financial_assessment};
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{set_financial_assessment};
     my $loginid        = $test_client->loginid;
     my $args           = {
         'params' => {
@@ -2177,7 +2270,6 @@ subtest 'account_reactivated' => sub {
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{account_reactivated};
 
     mailbox_clear();
-    undef @track_args;
 
     request(
         BOM::Platform::Context::Request->new(
@@ -2187,13 +2279,56 @@ subtest 'account_reactivated' => sub {
         ));
     my $brand = request->brand;
 
-    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
+    is exception { $handler->($call_args) }, undef, 'Event processed successfully';
     my $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
     ok $msg, 'Email to client is found';
     like $msg->{body},    qr/Check your personal details/, 'Email contains link to profile page';
     unlike $msg->{body},  qr/Upload your documents/,       'No link to POI page';
     is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
 
+    $needs_verification = 1;
+    mailbox_clear();
+
+    is exception { $handler->($call_args) }, undef, 'Event processed successfully';
+    $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
+    ok $msg, 'Email to client is found';
+    unlike $msg->{body},  qr/Check your personal details/, 'Email contains link to profile page';
+    like $msg->{body},    qr/Upload your documents/,       'No link to POI page';
+    is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
+
+    $msg = mailbox_search(
+        subject => qr/has been reactivated/,
+    );
+    ok !$msg, 'No SR email is sent';
+
+    $social_responsibility = 'required';
+    mailbox_clear();
+    is exception { $handler->($call_args) }, undef, 'Event processed successfully';
+    $msg = mailbox_search(subject => qr/has been reactivated/);
+    ok $msg, 'Email to SR team is found';
+    is_deeply $msg->{to}, [request->brand->emails('social_responsibility')], 'SR email address is correct';
+};
+
+subtest 'account_reactivated for track worker' => sub {
+    my $needs_verification = 0;
+    my $mock_client        = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine('needs_poi_verification', sub { return $needs_verification; });
+    request(
+        BOM::Platform::Context::Request->new(
+            brand_name => 'deriv',
+            language   => 'EN',
+            app_id     => $app_id,
+        ));
+    my $brand = request->brand;
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{account_reactivated};
+    undef @track_args;
+
+    my $call_args = {
+        loginid => $test_client->loginid,
+        reason  => 'test reason'
+    };
+    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
     my (undef, %args) = @track_args;
 
     cmp_deeply(
@@ -2213,28 +2348,6 @@ subtest 'account_reactivated' => sub {
         },
         'track event params'
     );
-
-    $needs_verification = 1;
-    mailbox_clear();
-
-    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
-    $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
-    ok $msg, 'Email to client is found';
-    unlike $msg->{body},  qr/Check your personal details/, 'Email contains link to profile page';
-    like $msg->{body},    qr/Upload your documents/,       'No link to POI page';
-    is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
-
-    $msg = mailbox_search(
-        subject => qr/has been reactivated/,
-    );
-    ok !$msg, 'No SR email is sent';
-
-    $social_responsibility = 'required';
-    mailbox_clear();
-    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
-    $msg = mailbox_search(subject => qr/has been reactivated/);
-    ok $msg, 'Email to SR team is found';
-    is_deeply $msg->{to}, [request->brand->emails('social_responsibility')], 'SR email address is correct';
 };
 
 subtest 'withdrawal_limit_reached' => sub {
@@ -2719,7 +2832,7 @@ subtest 'request_change_email' => sub {
             language   => 'EN',
         }};
 
-    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{request_change_email};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{request_change_email};
     ok $handler->($args), 'OK args';
     my $result = $handler->($args)->get;
     ok $result, 'OK result';
@@ -2749,7 +2862,7 @@ subtest 'verify_change_email' => sub {
             language   => 'EN',
         }};
 
-    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{verify_change_email};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{verify_change_email};
     ok $handler->($args), 'OK args';
     my $result = $handler->($args)->get;
     ok $result, 'OK result';
@@ -2779,7 +2892,7 @@ subtest 'confirm_change_email' => sub {
             language   => 'EN',
         }};
 
-    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{confirm_change_email};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{confirm_change_email};
     ok $handler->($args), 'OK args';
     my $result = $handler->($args)->get;
     ok $result, 'OK result';
@@ -2871,7 +2984,7 @@ subtest 'new account opening' => sub {
         email            => $test_client->email,
     };
 
-    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{account_opening_new};
+    my $handler = BOM::Event::Process::->new(category => 'track')->actions->{account_opening_new};
     ok $handler->($param);
     my $result = $handler->($param)->get;
     ok $result, 'Success result';
@@ -2897,7 +3010,7 @@ subtest 'underage_account_closed' => sub {
 
     undef @track_args;
 
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{underage_account_closed};
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{underage_account_closed};
 
     $action_handler->({
             loginid    => $client->loginid,
