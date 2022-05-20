@@ -4374,6 +4374,19 @@ sub _advertiser_details {
             $details->{blocked_until} = $block_time->epoch if Date::Utility->new->is_before($block_time);
         }
 
+        # if ad rates are not in the default setting, FE needs to know if advertiser has active ads of each type
+        my $advert_config = BOM::Config::P2P::advert_config()->{$self->residence};
+        if ($advert_config->{fixed_ads} ne 'enabled' or $advert_config->{float_ads} ne 'disabled') {
+            my $ads = $self->_p2p_adverts(
+                advertiser_id => $advertiser->{id},
+                is_active     => 1
+            );
+            for my $type ('fixed', 'float') {
+                my $count = scalar grep { $_->{rate_type} eq $type } @$ads;
+                $details->{'active_' . $type . '_ads'} = $count if $count > 0;
+            }
+        }
+
     } else {
         my $auth_client = BOM::User::Client->new({loginid => $loginid});
         $details->{basic_verification} = $auth_client->status->age_verification ? 1 : 0;
