@@ -3956,6 +3956,55 @@ subtest 'affiliate code of conduct' => sub {
     );
 };
 
+subtest 'clients withdrawal-locked for high AML risk' => sub {
+    my $user = BOM::User->create(
+        email    => 'high_aml_withdrawal_locked@deriv.com',
+        password => '1234pass',
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $client->account('USD');
+    $user->add_client($client);
+    my $token = $m->create_token($client->loginid, 'test token');
+
+    for my $risk_level (qw/low standard/) {
+        $client->status->set('withdrawal_locked',     'test', 'Pending authentication or FA');
+        $client->status->set('allow_document_upload', 'test', 'BECOME_HIGH_RISK');
+        $client->aml_risk_classification($risk_level);
+        $client->save;
+
+        my $result = $c->tcall($method, {token => $token});
+        cmp_deeply $result->{cashier_validation}, ["ASK_AUTHENTICATE", "FinancialAssessmentRequired", "withdrawal_locked_status"],
+            "Both POI and FA flags are returned - $risk_level risk client";
+
+        # authenticated client
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        $mock_client->redefine(fully_authenticated => 1);
+
+        $result = $c->tcall($method, {token => $token});
+        cmp_deeply $result->{cashier_validation}, ["FinancialAssessmentRequired", "withdrawal_locked_status"],
+            "Only FA flags is returned if client is authenticated";
+        $mock_client->unmock('fully_authenticated');
+
+        # financial assesslemt
+        $mock_client->redefine(is_financial_assessment_complete => 1);
+
+        $result = $c->tcall($method, {token => $token});
+        cmp_deeply $result->{cashier_validation}, ["ASK_AUTHENTICATE", "withdrawal_locked_status"], "Only POI flags is returned if FA is complete";
+        $mock_client->unmock('is_financial_assessment_complete');
+
+        # client locked for other reason
+        $client->status->clear_allow_document_upload;
+        $client->status->set('allow_document_upload', 'test', 'some other reason');
+        $result = $c->tcall($method, {token => $token});
+        cmp_deeply $result->{cashier_validation}, ["withdrawal_locked_status"], "No flag if the reason for doc upload reason is something else";
+
+        $client->status->clear_allow_document_upload;
+        $client->status->clear_withdrawal_locked;
+        $mock_client->unmock_all;
+    }
+};
+
 $documents_mock->unmock_all;
 
 done_testing();

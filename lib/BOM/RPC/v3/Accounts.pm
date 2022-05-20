@@ -852,6 +852,12 @@ rpc get_account_status => sub {
     my $status                     = $client->status->visible;
     my $id_auth_status             = $client->authentication_status;
     my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
+
+    # some clients were withdrawal locked for high aml risk;
+    # but their risk level has dropped before they could authenticate their accounts.
+    # this flag is used to let them get correct instructions in the FE.
+    my $was_locked_for_high_risk = $client->was_locked_for_high_risk;
+
     my $is_withdrawal_locked_for_fa =
         $client->status->withdrawal_locked && $client->status->withdrawal_locked->{reason} =~ /FA needs to be completed/;
 
@@ -860,7 +866,7 @@ rpc get_account_status => sub {
     if ($client->fully_authenticated()) {
         push @$status, 'authenticated';
         # we send this status as client is already authenticated
-        # so they can view upload more documents if needed
+        # so they can view or upload more documents if needed
         push @$status, 'allow_document_upload';
     } elsif ($client->landing_company->is_authentication_mandatory
         or $risk_aml eq 'high'
@@ -921,6 +927,11 @@ rpc get_account_status => sub {
     my @cashier_validation     = uniq map { ($_->{status} // [])->@* } $base_validation, $deposit_validation, $withdraw_validation;
     my @cashier_missing_fields = uniq map { ($_->{missing_fields} // [])->@* } $deposit_validation, $withdraw_validation;
 
+    if ($was_locked_for_high_risk) {
+        push @cashier_validation, 'ASK_AUTHENTICATE'            unless $client->fully_authenticated;
+        push @cashier_validation, 'FinancialAssessmentRequired' unless $client->is_financial_assessment_complete;
+    }
+
     if ($base_validation->{error} or ($deposit_validation->{error} and $withdraw_validation->{error})) {
         push @$status, 'cashier_locked';
     } elsif ($deposit_validation->{error}) {
@@ -938,14 +949,14 @@ rpc get_account_status => sub {
     my $is_verification_required          = $client->is_verification_required(
         check_authentication_status => 1,
         has_mt5_regulated_account   => $has_mt5_regulated_account,
-        risk_aml                    => $risk_aml,
+        risk_aml                    => $was_locked_for_high_risk ? 'high' : $risk_aml,
         risk_sr                     => $risk_sr
     );
     my $authentication = _get_authentication(
         client                            => $client,
         is_document_expiry_check_required => $is_document_expiry_check_required,
         is_verification_required          => $is_verification_required,
-        risk_aml                          => $risk_aml,
+        risk_aml                          => $was_locked_for_high_risk ? 'high' : $risk_aml,
         risk_sr                           => $risk_sr
     );
 
