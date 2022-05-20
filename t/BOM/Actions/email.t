@@ -139,6 +139,7 @@ subtest 'email event - unknown_login' => sub {
         {
         brand                     => 'deriv',
         loginid                   => $client->loginid,
+        email                     => $client->email,
         lang                      => 'EN',
         device                    => 'android',
         lang                      => 'EN',

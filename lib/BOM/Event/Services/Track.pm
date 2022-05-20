@@ -130,7 +130,7 @@ my %EVENT_PROPERTIES = (
     request_change_email              => [qw(loginid first_name email code verification_uri live_chat_url social_signup time_to_expire_in_min)],
     verify_change_email               => [qw(loginid first_name email code verification_uri live_chat_url social_signup time_to_expire_in_min)],
     confirm_change_email              => [qw(loginid first_name email live_chat_url social_signup)],
-    unknown_login                     => [qw(first_name title country device browser app_name ip is_reset_password_allowed password_reset_url)],
+    unknown_login                     => [qw(first_name email title country device browser app_name ip is_reset_password_allowed password_reset_url)],
     account_with_false_info_locked    => [qw(email authentication_url profile_url is_name_change)],
     underage_account_closed           => [qw(tnc_approval)],
     account_opening_new               => [qw(first_name verification_url code email live_chat_url)],
@@ -329,6 +329,7 @@ sub signup {
     $properties->{landing_company} = $client->landing_company->short;
     $properties->{date_joined}     = $client->date_joined;
     $properties->{email_consent}   = $client->user->email_consent;
+    $properties->{first_name}      = $properties->{first_name} // $client->first_name // '';
 
     my $user_connect = BOM::Database::Model::UserConnect->new;
     $properties->{provider} = $client->user ? $user_connect->get_connects_by_user_id($client->user->{id})->[0] // 'email' : 'email';
@@ -966,7 +967,8 @@ sub track_event {
             {
                 ($client ? (loginid => $client->loginid) : ()),
                 lang  => uc(($client ? $client->user->preferred_language : undef) // request->language // ''),
-                brand => $args{brand}->{name} // request->brand->name,
+                brand => $args{brand}->{name}       // request->brand->name,
+                email => $args{properties}->{email} // ($client ? $client->email : undef),
                 ($args{properties} // {})->%*,
             },
             $args{event},
@@ -1125,7 +1127,7 @@ sub _create_traits {
         created_at => Date::Utility->new($created_at)->datetime_iso8601,
         #description: not_supported,
         email      => $client->email,
-        first_name => $client->first_name,
+        first_name => $client->first_name // '',
         #gender     => not_supported for Deriv,
         #id: not_supported,
         last_name => $client->last_name,
