@@ -19,6 +19,26 @@ use BOM::RPC::v3::PaymentMethods;
 
 require Test::NoWarnings;
 
+my $pm_mock      = Test::MockModule->new('BOM::RPC::v3::PaymentMethods');
+my $stats_inc    = {};
+my $stats_timing = {};
+
+$pm_mock->mock(
+    'stats_inc',
+    sub {
+        my $key = shift;
+
+        $stats_inc->{$key} = [@_];
+    });
+
+$pm_mock->mock(
+    'stats_timing',
+    sub {
+        my $key = shift;
+
+        $stats_timing->{$key} = [@_];
+    });
+
 my $rpc_ct;
 subtest 'Initialization' => sub {
     lives_ok {
@@ -44,6 +64,9 @@ $client_cr->set_default_account('USD');
 $user_client_cr->add_client($client_cr);
 
 subtest 'PaymentMethods' => sub {
+    $stats_timing = {};
+    $stats_inc    = {};
+
     my $params = {};
     $params->{args}->{payment_methods} = 1;
     $params->{args}->{country}         = '';
@@ -58,6 +81,70 @@ subtest 'PaymentMethods' => sub {
     $params->{country} = '';
     $params->{token}   = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token123');
     $rpc_ct->call_ok('payment_methods', $params)->has_no_system_error->has_no_error;
+
+    cmp_deeply $stats_timing,
+        {'bom_rpc.v_3.payment_methods.running_time.success' =>
+            [re('\d+'), {'tags' => ['country:' . $client_cr->residence, 'client:' . $client_cr->loginid]}]}, 'Expected stats timing called';
+
+    cmp_deeply $stats_inc,
+        {
+        'bom_rpc.v_3.no_payment_methods_found.count' => [],
+        },
+        'Expected stats inc called';
+};
+
+subtest 'PaymentMethods with Exception' => sub {
+    $pm_mock->mock(
+        'get_payment_methods',
+        sub {
+            die 'testing';
+        });
+
+    $stats_timing = {};
+    $stats_inc    = {};
+
+    my $params = {};
+    $params->{args}->{payment_methods} = 1;
+    $params->{args}->{country}         = '';
+
+    # authenticated account
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token123');
+    $rpc_ct->call_ok('payment_methods', $params)->has_error;
+
+    cmp_deeply $stats_timing,
+        {'bom_rpc.v_3.payment_methods.running_time.error' =>
+            [re('\d+'), {'tags' => ['country:' . $client_cr->residence, 'client:' . $client_cr->loginid]}]}, 'Expected stats timing called';
+
+    cmp_deeply $stats_inc, {}, 'Expected stats inc called';
+
+    $pm_mock->unmock('get_payment_methods');
+};
+
+subtest 'PaymentMethods with at least 1 pm' => sub {
+    $pm_mock->mock(
+        'get_payment_methods',
+        sub {
+            return ['Doge'];
+        });
+
+    $stats_timing = {};
+    $stats_inc    = {};
+
+    my $params = {};
+    $params->{args}->{payment_methods} = 1;
+    $params->{args}->{country}         = '';
+
+    # authenticated account
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token123');
+    $rpc_ct->call_ok('payment_methods', $params)->has_no_system_error->has_no_error;
+
+    cmp_deeply $stats_timing,
+        {'bom_rpc.v_3.payment_methods.running_time.success' =>
+            [re('\d+'), {'tags' => ['country:' . $client_cr->residence, 'client:' . $client_cr->loginid]}]}, 'Expected stats timing called';
+
+    cmp_deeply $stats_inc, {}, 'Expected stats inc called';
+
+    $pm_mock->unmock('get_payment_methods');
 };
 
 subtest 'get_p2p_as_payment_method' => sub {

@@ -13,7 +13,8 @@ This is a package contains the handler sub for `payment_methods` rpc call.
 use strict;
 use warnings;
 
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use Time::Moment;
 use List::Util qw(any uniq);
 use Syntax::Keyword::Try;
 
@@ -71,6 +72,7 @@ rpc "payment_methods", sub {
         $country = $client->residence;
     }
 
+    my $init = Time::Moment->now;
     try {
         my $payment_methods_list = get_payment_methods($country, $brand);
         my $p2p_payment_methods  = get_p2p_as_payment_method($country, $client);
@@ -78,8 +80,17 @@ rpc "payment_methods", sub {
         push @$payment_methods_list, $p2p_payment_methods if defined($p2p_payment_methods);
         stats_inc('bom_rpc.v_3.no_payment_methods_found.count') unless scalar @$payment_methods_list;
 
+        stats_timing(
+            'bom_rpc.v_3.payment_methods.running_time.success',
+            $init->delta_milliseconds(Time::Moment->now),
+            {tags => ['country:' . ($country || 'all'), 'client:' . ($client ? $client->{loginid} : 'none')]});
+
         return $payment_methods_list;
     } catch ($error) {
+        stats_timing(
+            'bom_rpc.v_3.payment_methods.running_time.error',
+            $init->delta_milliseconds(Time::Moment->now),
+            {tags => ['country:' . ($country || 'all'), 'client:' . ($client ? $client->{loginid} : 'none')]});
         if ($error =~ m/Unknown country code/) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'UnknownCountryCode',
