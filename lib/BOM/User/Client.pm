@@ -2224,6 +2224,8 @@ use constant {
         PP010 => "OrderCreateFailAmountAdvertiser",
         PP011 => "OpenOrdersDeleteAdvert",
         PP012 => "PaymentMethodRemoveActiveOrdersDB",
+        PP013 => "DuplicatePaymentMethod",
+
     },
 };
 
@@ -5372,6 +5374,7 @@ sub _p2p_advertiser_payment_method_create {
 
     for my $item (@$new) {
         my $method = $item->{method};
+
         die +{
             error_code     => 'InvalidPaymentMethod',
             message_params => [$method]}
@@ -5406,16 +5409,24 @@ sub _p2p_advertiser_payment_method_create {
         $existing->{rand()} = {
             method => $method,
             fields => {pairgrep { $a !~ /^(method|is_enabled)$/ } %$item}};
-    }
 
-    $self->db->dbic->run(
-        fixup => sub {
-            $_->do(
-                'SELECT p2p.advertiser_payment_method_create(?, ?)',
-                undef,
-                $self->_p2p_advertiser_cached->{id},
-                Encode::encode_utf8($json->encode($new)));
-        });
+        my $created_pm = $self->db->dbic->run(
+            fixup => sub {
+                my $dbh = shift;
+                return $dbh->selectrow_hashref(
+                    'SELECT *  FROM p2p.advertiser_payment_method_create_v2(?, ?)',
+                    undef,
+                    $self->_p2p_advertiser_cached->{id},
+                    Encode::encode_utf8($json->encode($item)));
+            });
+
+        if ($created_pm->{error_params}->[0]) {
+            $created_pm->{error_params}->[0] = $method_defs->{$item->{method}}{display_name};
+        }
+
+        $self->_p2p_db_error_handler($created_pm);
+
+    }
 
     return;
 }
