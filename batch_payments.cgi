@@ -155,22 +155,25 @@ read_csv_row_and_callback(
                     amount      => $signed_amount,
                     rule_engine => BOM::Rules::Engine->new(client => $client));
             }
+            if ($payment_type ne 'test_account') {
+                # check pontential duplicate entry
+                my $payment_mapper = BOM::Database::DataMapper::Payment->new({
+                    client_loginid => $login_id,
+                    currency_code  => $currency,
+                });
 
-            # check pontential duplicate entry
-            my $payment_mapper = BOM::Database::DataMapper::Payment->new({
-                client_loginid => $login_id,
-                currency_code  => $currency,
-            });
+                chomp($statement_comment);
+                if (
+                    my $duplicate_record = $payment_mapper->get_transaction_id_of_account_by_comment({
+                            amount  => ($action eq 'debit' ? $amount * -1 : $amount),
+                            comment => $statement_comment
+                        }))
+                {
+                    die "Same transaction found in client account. Check [transaction id: $duplicate_record]\n";
+                }
 
-            chomp($statement_comment);
-            if (
-                my $duplicate_record = $payment_mapper->get_transaction_id_of_account_by_comment({
-                        amount  => ($action eq 'debit' ? $amount * -1 : $amount),
-                        comment => $statement_comment
-                    }))
-            {
-                die "Same transaction found in client account. Check [transaction id: $duplicate_record]\n";
             }
+
         } catch ($e) {
             $error = ref $e eq 'HASH' ? $e->{message_to_client} : $e;
         }
