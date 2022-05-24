@@ -2920,7 +2920,7 @@ subtest 'crypto_withdrawal_email event' => sub {
     )->add_client($client);
 
     my $req = BOM::Platform::Context::Request->new(
-        brand_name => 'Deriv',
+        brand_name => 'deriv',
         language   => 'EN',
         app_id     => $app_id,
     );
