@@ -243,6 +243,7 @@ sub error_map {
         ServiceNotAllowedForPA => localize('This service is not available for payment agents.'),
         TransferToOtherPA      => localize('You are not allowed to transfer to other payment agents.'),
         TransferToNonPaSibling => localize('You are not allowed to transfer to this account.'),
+        ExperimentalCurrency   => localize("This currency is temporarily suspended. Please select another currency to proceed."),
     };
 }
 
