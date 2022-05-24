@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
+use Test::Deep;
 use BOM::Config;
 use BOM::Config::Runtime;
 
@@ -151,12 +152,57 @@ subtest 'doughflow deriv sportsbook landing company consistency' => sub {
 };
 
 subtest 'get_payment_methods' => sub {
+    my $dd_trace = {};
+
+    my $df_mock = Test::MockModule->new('BOM::Platform::Doughflow');
+    $df_mock->mock(
+        'stats_timing',
+        sub {
+            my ($metric, $time, $tags) = @_;
+
+            $dd_trace->{$metric} = {
+                time => $time,
+                $tags->%*,
+            };
+
+            return undef;
+        });
 
     my $brand   = 'deriv';
     my $country = 'br';
-    @params = ();
+    @params   = ();
+    $dd_trace = {};
 
     my $payment_methods = get_payment_methods($country, $brand);
+
+    cmp_deeply $dd_trace,
+        {
+        'bom.platform.doughflow.buiding_pm.timing' => {
+            time => re('\d+'),
+            tags => ['country:br', 'brand:deriv', re('^payment_methods_count:\d+$')],
+        },
+        'bom.platform.doughflow.deposit_building.timing' => {
+            time => re('\d+'),
+            tags => ['country:br', 'brand:deriv', re('^deposit_options:\d+$')],
+        },
+        'bom.platform.doughflow.get_payment_keys.timing' => {
+            time => re('\d+'),
+            tags => ['country:br', 'brand:deriv'],
+        },
+        'bom.platform.doughflow.get_redis_data.timing' => {
+            time => re('\d+'),
+            tags => ['country:br', 'brand:deriv', re('^keys_count:\d+$')],
+        },
+        'bom.platform.doughflow.payment_methods.timing' => {
+            time => re('\d+'),
+            tags => ['country:br', 'brand:deriv'],
+        },
+        'bom.platform.doughflow.payout_building.timing' => {
+            time => re('\d+'),
+            tags => ['country:br', 'brand:deriv', re('^payout_options:\d+$')],
+        },
+        },
+        'The datadog has been correctly called';
 
     is(ref $payment_methods, 'ARRAY', 'Returns an ARRAY ref.');
     ok(scalar $payment_methods->@*, 'The array returned is not empty.');
@@ -164,11 +210,41 @@ subtest 'get_payment_methods' => sub {
     is($params[0],     'DERIV::CASHIER::PAYMENT_METHODS::1::BR', 'Redis key for Brazil, sportsbook 1');
     is($params[1],     'DERIV::CASHIER::PAYMENT_METHODS::2::BR', 'Redis key for Brazil, sportsbook 2');
 
-    $brand   = undef;
-    $country = 'ar';
-    @params  = ();
+    $brand    = undef;
+    $country  = 'ar';
+    @params   = ();
+    $dd_trace = {};
 
     $payment_methods = get_payment_methods($country, $brand);
+
+    cmp_deeply $dd_trace,
+        {
+        'bom.platform.doughflow.buiding_pm.timing' => {
+            time => re('\d+'),
+            tags => ['country:ar', 'brand:n/a', re('^payment_methods_count:\d+$')],
+        },
+        'bom.platform.doughflow.deposit_building.timing' => {
+            time => re('\d+'),
+            tags => ['country:ar', 'brand:n/a', re('^deposit_options:\d+$')],
+        },
+        'bom.platform.doughflow.get_payment_keys.timing' => {
+            time => re('\d+'),
+            tags => ['country:ar', 'brand:n/a'],
+        },
+        'bom.platform.doughflow.get_redis_data.timing' => {
+            time => re('\d+'),
+            tags => ['country:ar', 'brand:n/a', re('^keys_count:\d+$')],
+        },
+        'bom.platform.doughflow.payment_methods.timing' => {
+            time => re('\d+'),
+            tags => ['country:ar', 'brand:n/a'],
+        },
+        'bom.platform.doughflow.payout_building.timing' => {
+            time => re('\d+'),
+            tags => ['country:ar', 'brand:n/a', re('^payout_options:\d+$')],
+        },
+        },
+        'The datadog has been correctly called';
 
     is(ref $payment_methods, 'ARRAY', 'Returns an ARRAY ref. (no brand)');
     ok(scalar $payment_methods->@* > 0, 'Brand param is not passed, the array returned is not empty.');
@@ -176,11 +252,41 @@ subtest 'get_payment_methods' => sub {
     is($params[0],     'DERIV::CASHIER::PAYMENT_METHODS::1::AR', 'Redis key for Argentina, sportsbook 1');
     is($params[1],     'DERIV::CASHIER::PAYMENT_METHODS::2::AR', 'Redis key for Argentina, sportsbook 2');
 
-    $brand   = undef;
-    $country = undef;
-    @params  = ();
+    $brand    = undef;
+    $country  = undef;
+    @params   = ();
+    $dd_trace = {};
 
     $payment_methods = get_payment_methods($country, $brand);
+
+    cmp_deeply $dd_trace,
+        {
+        'bom.platform.doughflow.buiding_pm.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:n/a', re('^payment_methods_count:\d+$')],
+        },
+        'bom.platform.doughflow.deposit_building.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:n/a', re('^deposit_options:\d+$')],
+        },
+        'bom.platform.doughflow.get_payment_keys.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:n/a'],
+        },
+        'bom.platform.doughflow.get_redis_data.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:n/a', re('^keys_count:\d+$')],
+        },
+        'bom.platform.doughflow.payment_methods.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:n/a'],
+        },
+        'bom.platform.doughflow.payout_building.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:n/a', re('^payout_options:\d+$')],
+        },
+        },
+        'The datadog has been correctly called';
 
     is(ref $payment_methods, 'ARRAY', 'Returns an ARRAY ref. (no brand, no country)');
     ok(scalar $payment_methods->@*, 'Brand and country param are not passed, the array returned is not empty.');
@@ -190,11 +296,41 @@ subtest 'get_payment_methods' => sub {
     is($params[2],     'DERIV::CASHIER::PAYMENT_METHODS::2::AR', 'Redis key for Argentina, sportsbook 2');
     is($params[3],     'DERIV::CASHIER::PAYMENT_METHODS::2::BR', 'Redis key for Brazil, sportsbook 2');
 
-    $brand   = 'binary';
-    $country = undef;
-    @params  = ();
+    $brand    = 'binary';
+    $country  = undef;
+    @params   = ();
+    $dd_trace = {};
 
     $payment_methods = get_payment_methods($country, $brand);
+
+    cmp_deeply $dd_trace,
+        {
+        'bom.platform.doughflow.buiding_pm.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:binary', re('^payment_methods_count:\d+$')],
+        },
+        'bom.platform.doughflow.deposit_building.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:binary', re('^deposit_options:\d+$')],
+        },
+        'bom.platform.doughflow.get_payment_keys.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:binary'],
+        },
+        'bom.platform.doughflow.get_redis_data.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:binary', re('^keys_count:\d+$')],
+        },
+        'bom.platform.doughflow.payment_methods.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:binary'],
+        },
+        'bom.platform.doughflow.payout_building.timing' => {
+            time => re('\d+'),
+            tags => ['country:all', 'brand:binary', re('^payout_options:\d+$')],
+        },
+        },
+        'The datadog has been correctly called';
 
     is(ref $payment_methods, 'ARRAY', 'Returns an ARRAY ref. (no country)');
     ok(scalar $payment_methods->@*, 'Country param is not passed, the array returned is not empty.');

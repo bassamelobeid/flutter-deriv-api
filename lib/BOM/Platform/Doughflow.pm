@@ -16,6 +16,8 @@ use warnings;
 
 use JSON::MaybeXS;
 use List::MoreUtils qw(any uniq);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use Time::Moment;
 
 use BOM::Config;
 use BOM::Config::Runtime;
@@ -240,8 +242,11 @@ sub get_payment_methods {
     my $country = shift;
     my $brand   = shift;
 
+    my $start = Time::Moment->now;
+
     my $redis_payment = BOM::Config::Redis::redis_payment();
 
+    # Get the Country or countries.
     my @short_codes;
     if ($country) {
         my $country_details = Brands->new(name => $brand)->countries_instance->countries_list->{$country};
@@ -254,6 +259,7 @@ sub get_payment_methods {
     @short_codes = uniq grep { $_ && ($_ ne 'none') } @short_codes;
     return [] unless scalar @short_codes;
 
+    # Just getting the sportsbooks
     my @landing_companies =
         map { LandingCompany::Registry->by_name($_) } @short_codes;
 
@@ -266,18 +272,32 @@ sub get_payment_methods {
             }
         }
     }
-    @sportsbook_names = uniq @sportsbook_names;
+    @sportsbook_names = uniq @sportsbook_names;    # All the required sportsbooks.
 
-    my @redis_keys = _get_all_payment_keys($redis_payment, $country);
+    # Getting the payment keys from redis.
+    my $time_to_get_pm_keys = Time::Moment->now;
+    my @redis_keys          = _get_all_payment_keys($redis_payment, $country);
+    stats_timing(
+        'bom.platform.doughflow.get_payment_keys.timing',
+        $time_to_get_pm_keys->delta_milliseconds(Time::Moment->now),
+        {tags => ['country:' . ($country || 'all'), 'brand:' . ($brand || 'n/a')]});
 
+    # Getting data from Redis.
+    my $get_redis_data  = Time::Moment->now;
     my $payment_methods = {};
     for my $key (@redis_keys) {
         my $payment_method = decode_json($redis_payment->get($key));
         $payment_methods->{$payment_method->{frontend_name}} = $payment_method
             if grep { uc $_ eq uc $payment_method->{frontend_name} } @sportsbook_names;
     }
+    stats_timing(
+        'bom.platform.doughflow.get_redis_data.timing',
+        $get_redis_data->delta_milliseconds(Time::Moment->now),
+        {tags => ['country:' . ($country || 'all'), 'brand:' . ($brand || 'n/a'), 'keys_count:' . scalar @redis_keys]});
 
-    my $response = {};
+    # Building the payment method structure
+    my $building_time = Time::Moment->now;
+    my $response      = {};
     for my $frontend_name (keys %$payment_methods) {
         my ($deposit_options, $payout_options, $base_currency) =
             @{$payment_methods->{$frontend_name}}{"deposit_options", "payout_options", "base_currency"};
@@ -286,6 +306,7 @@ sub get_payment_methods {
         $deposit_options = _filter_payment_methods($deposit_options, $country);
         $payout_options  = _filter_payment_methods($payout_options,  $country);
 
+        my $deposit_building = Time::Moment->now;
         for my $deposit (@$deposit_options) {
             my $payment_method =
                 ($response->{$deposit->{payment_method}} //= {});
@@ -302,9 +323,13 @@ sub get_payment_methods {
                 max => $deposit->{maximum_amount}};
 
             $payment_method->{deposit_time} = 'instant';
-
         }
+        stats_timing(
+            'bom.platform.doughflow.deposit_building.timing',
+            $deposit_building->delta_milliseconds(Time::Moment->now),
+            {tags => ['country:' . ($country || 'all'), 'brand:' . ($brand || 'n/a'), 'deposit_options:' . scalar @$deposit_options]});
 
+        my $payout_building = Time::Moment->now;
         for my $payout (@$payout_options) {
             my $payment_method =
                 ($response->{$payout->{payment_method}} //= {});
@@ -329,8 +354,17 @@ sub get_payment_methods {
             $payment_method->{supported_currencies} =
                 [uniq $payment_method->{supported_currencies}->@*];
         }
+        stats_timing(
+            'bom.platform.doughflow.payout_building.timing',
+            $payout_building->delta_milliseconds(Time::Moment->now),
+            {tags => ['country:' . ($country || 'all'), 'brand:' . ($brand || 'n/a'), 'payout_options:' . scalar @$payout_options]});
     }
+    stats_timing(
+        'bom.platform.doughflow.buiding_pm.timing',
+        $building_time->delta_milliseconds(Time::Moment->now),
+        {tags => ['country:' . ($country || 'all'), 'brand:' . ($brand || 'n/a'), 'payment_methods_count:' . scalar keys %$payment_methods]});
 
+    # Normalizing the rest of fields.
     for my $id (keys %$response) {
         my $payment_method = $response->{$id};
         $payment_method->{deposit_limits} //= {};
@@ -351,6 +385,11 @@ sub get_payment_methods {
     my $ret = [];
 
     push @$ret, $response->{$_} for sort keys %$response;
+
+    stats_timing(
+        'bom.platform.doughflow.payment_methods.timing',
+        $start->delta_milliseconds(Time::Moment->now),
+        {tags => ['country:' . ($country || 'all'), 'brand:' . ($brand || 'n/a')]});
 
     return $ret;
 }
