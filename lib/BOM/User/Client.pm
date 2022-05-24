@@ -3692,11 +3692,11 @@ sub _validate_advert {
     $self->_validate_advert_amount(%param);
     $self->_validate_advert_rates(%param);
     $self->_validate_advert_min_max(%param);
-    $self->_validate_advert_payment_contact_info(%param);
     $self->_validate_advert_duplicates(%param);
     $self->_validate_advert_payment_method_type(%param);
     $self->_validate_advert_payment_method_ids(%param);
     $self->_validate_advert_payment_method_names(%param);
+    $self->_validate_advert_payment_contact_info(%param);
 }
 
 =head2 _validate_advert_amount
