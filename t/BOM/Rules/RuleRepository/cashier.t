@@ -88,7 +88,7 @@ subtest $rule_name => sub {
     $mock_validation->redefine(allow_paymentagent_withdrawal => 0);
     is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
         {
-        error_code => 'PAWithdrawalNotAllowed',
+        error_code => 'PaymentagentWithdrawalNotAllowed',
         rule       => $rule_name
         },
         'Correct error when pa withdrawal is not allowed';
