@@ -5,6 +5,7 @@ cashier_validation:
     - action
     - is_internal
   ruleset:
+    - currency.experimental_currency
     - client.residence_is_not_empty
     - client.has_currency_set
     - cashier.is_not_locked
