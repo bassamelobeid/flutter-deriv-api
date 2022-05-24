@@ -933,7 +933,8 @@ rpc get_account_status => sub {
     }
 
     if ($base_validation->{error} or ($deposit_validation->{error} and $withdraw_validation->{error})) {
-        push @$status, 'cashier_locked';
+        # Skip adding the cashier_locked status only if there is one status from the validation and its ExperimentalCurrency
+        push @$status, 'cashier_locked' unless (scalar @cashier_validation == 1 and $cashier_validation[0] eq 'ExperimentalCurrency');
     } elsif ($deposit_validation->{error}) {
         push @$status, 'deposit_locked';
     } elsif ($withdraw_validation->{error}) {
