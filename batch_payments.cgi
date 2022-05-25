@@ -10,6 +10,7 @@ use Date::Utility;
 use HTML::Entities;
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw(looks_like_number);
+use JSON::MaybeXS;
 
 use LandingCompany::Registry;
 
@@ -26,6 +27,7 @@ use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
+use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use Log::Any qw($log);
 BOM::Backoffice::Sysinit::init();
@@ -47,6 +49,9 @@ my $skip_validation   = $cgi->param('skip_validation')   || 0;
 my $format            = $confirm                         || $preview || die "either preview or confirm";
 my $now               = Date::Utility->new;
 my $payments_csv      = $cgi->param('payments_csv');
+my $payment_limits    = JSON::MaybeXS->new->decode(BOM::Config::Runtime->instance->app_config->payments->payment_limits);
+
+my $staff_limit = $payment_limits->{$clerk} or code_exit_BO("ERROR: There is no payment limit configured for user $clerk");
 
 Bar('Batch Credit/Debit to Clients Accounts');
 
@@ -124,6 +129,7 @@ read_csv_row_and_callback(
         $line_number++;
 
         my $client;
+
         try {
             my $curr_regex = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
             $amount = formatnumber('price', $currency, $amount) if looks_like_number($amount);
@@ -134,6 +140,10 @@ read_csv_row_and_callback(
             die "'Statement comment can not be empty\n" unless $statement_comment;
 
             $client = BOM::User::Client->new({loginid => $login_id}) or die "Invalid loginid: $login_id\n";
+            die "Currency $currency does not match client $login_id currency of " . $client->account->currency_code . "\n"
+                if $client->account->currency_code ne $currency;
+            die "Amount $currency $amount exceeds the payment limit of USD $staff_limit for user $clerk\n"
+                if in_usd($amount, $currency) > $staff_limit;
 
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
@@ -345,7 +355,7 @@ sub construct_row_line {
     my $class = 'success';
 
     if ($args{error}) {
-        $notes = $args{error}->{message_to_client};
+        $notes = $args{error};
         $class = 'error';
     }
 
