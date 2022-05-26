@@ -44,7 +44,7 @@ alias:
   auth:
     password: $DOCKERHUB_PASSWORD
     username: circle4regentmarkets
-  image: regentmarkets/debian-ci:lq
+  image: regentmarkets/debian-ci:stable
   user: nobody
 
 default: &6
