@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use Log::Any qw($log);
+use Time::HiRes qw(time sleep);
 use DateTime;
 use Getopt::Long;
 use BOM::Config::Redis;
@@ -28,8 +29,13 @@ sub _daemon_run {
     my $notifications_service = BOM::Event::NotificationsService->new(redis => BOM::Config::Redis::redis_expiryq_write);
 
     while (1) {
+        my $start = time;
+        my $next  = int($start + 1);
         $notifications_service->dequeue_notifications();
         $notifications_service->dequeue_dc_notifications();
+        my $remaining = $next - time;
+        # well, you don't want this process to be polling from redis a gazillion times every second
+        sleep($remaining) if ($remaining > 0);
     }
 }
 
