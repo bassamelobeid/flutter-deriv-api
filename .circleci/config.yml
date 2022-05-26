@@ -32,7 +32,7 @@ alias:
   auth:
     password: $DOCKERHUB_PASSWORD
     username: circle4regentmarkets
-  image: regentmarkets/debian-ci:stable
+  image: regentmarkets/debian-ci:lq
   user: nobody
 - &redis6
   image: redis:6
