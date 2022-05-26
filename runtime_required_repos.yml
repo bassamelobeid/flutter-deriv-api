@@ -4,3 +4,4 @@
 - regentmarkets/bom-postgres-clientdb
 - regentmarkets/bom-postgres-collectordb
 - regentmarkets/bom-postgres-userdb
+- regentmarkets/bom-postgres-authdb
