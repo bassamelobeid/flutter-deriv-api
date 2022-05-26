@@ -17,6 +17,7 @@ use Sys::Hostname;
 use URI::QueryParam;
 use Data::Dumper;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
+use Date::Utility;
 
 =head1 NAME
 
@@ -85,6 +86,7 @@ This will be the average result of all the iterations for each market.
 
 =cut
 
+
 GetOptions(
     't|time=i'          => \my $check_time,
     's|subscriptions=i' => \my $initial_subscriptions,
@@ -95,6 +97,7 @@ GetOptions(
     'i|iterations=i'    => \my $iterations,
     'r|datadog'         => \my $report,
     'h|help'            => \my $help,
+    'd|debug'           => \my $debug,
 );
 
 pod2usage({
@@ -106,7 +109,7 @@ pod2usage({
 $check_time            = $check_time            // 120;
 $initial_subscriptions = $initial_subscriptions // 10;
 $app_id                = $app_id                // 1003;
-
+our $| = 1;
 if (!$hostname) {
     $hostname = hostname();
 }
@@ -188,6 +191,7 @@ $SIG{'INT'} = sub {
 #Catch on Die , kill subscript if running
 END {
     `kill $pid` if $pid;
+    say Date::Utiltiy->new->datetime . " exiting";
     exit;
 }
 
@@ -255,15 +259,17 @@ $timer = IO::Async::Timer::Periodic->new(
     },
 );
 $timer->start;
-
-my $timer_print_datetime = IO::Async::Timer::Periodic->new(
-    interval => 1,
-    on_tick => sub {
-        say Date::Utility->new()->datetime;
-    }
-)
-$timer_print_datetime->start;
-$loop->add($timer_print_datetime);
+my $timer_print_datetime;
+if($debug){
+    my $timer_print_datetime = IO::Async::Timer::Periodic->new(
+        interval => 1,
+        on_tick => sub {
+            say Date::Utility->new()->datetime;
+        }
+    );
+    $timer_print_datetime->start;
+    $loop->add($timer_print_datetime);
+}
 $loop->add($http);
 $loop->add($timer);
 $loop->run();
