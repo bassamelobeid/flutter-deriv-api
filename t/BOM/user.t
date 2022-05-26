@@ -1169,4 +1169,39 @@ subtest 'unlink social' => sub {
     lives_ok { $user->update_has_social_signup(0) } 'reset has_social_signup';
 };
 
+subtest 'Populate users table on signup' => sub {
+
+    my @randstr = ("A" .. "Z", "a" .. "z");
+    my $randstr;
+    $randstr .= $randstr[rand @randstr] for 1 .. 9;
+
+    my @randnum = ("0" .. "9");
+    my $randnum;
+    $randnum .= $randnum[rand @randnum] for 1 .. 9;
+
+    my $loginid = 'MTD' . $randnum;
+    $email = "test_http_${randstr}_${randnum}_\@testing.com";
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email,
+    });
+
+    $user = BOM::User->create(
+        email          => $test_client->email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+
+    $user->add_loginid($loginid, 'mt5', 'demo', 'USD', {test => 'test'});
+
+    my $mt5_logins = $user->loginid_details;
+
+    is $mt5_logins->{$loginid}->{loginid},      $loginid, "Got correct 'loginid' value";
+    is $mt5_logins->{$loginid}->{platform},     "mt5",  "Got correct 'platform' value";
+    is $mt5_logins->{$loginid}->{account_type}, "demo", "Got correct 'account_type' value";
+    is $mt5_logins->{$loginid}->{currency},     "USD",  "Got correct 'currency' value";
+    cmp_deeply $mt5_logins->{$loginid}->{attributes}, {test => 'test'}, "Got correct 'attributes' value";
+};
+
 done_testing();
