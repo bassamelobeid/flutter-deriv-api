@@ -10,6 +10,10 @@
 - regentmarkets/bom-rules
 - regentmarkets/bom-transaction
 - regentmarkets/bom-user
-- regentmarkets/bom-postgres-feeddb
+- regentmarkets/bom-postgres-authdb
+- regentmarkets/bom-postgres-chronicledb
 - regentmarkets/bom-postgres-clientdb
 - regentmarkets/bom-postgres-collectordb
+- regentmarkets/bom-postgres-cryptodb
+- regentmarkets/bom-postgres-feeddb
+- regentmarkets/bom-postgres-userdb
