@@ -3,7 +3,7 @@ version: 2
 
 default: &default
   docker:
-  - image: regentmarkets/debian-ci:lq
+  - image: regentmarkets/debian-ci:stable
     user: nobody
     auth:
       username: circle4regentmarkets
