@@ -151,9 +151,9 @@ Returns the remark as string.
 sub _get_txn_remark {
     my ($txn, $client) = @_;
 
-    my $details = $txn->{details}              // return;
-    my $gateway = $txn->{payment_gateway_code} // '';
-
+    my $details      = $txn->{details}              // return;
+    my $gateway      = $txn->{payment_gateway_code} // '';
+    my $gateway_type = $txn->{payment_type_code}    // '';
     # MT5
     if (my $mt5_account = $details->{mt5_account}) {
         if ($txn->{action_type} eq 'transfer') {
@@ -275,6 +275,11 @@ sub _get_txn_remark {
             }
             return localize('Transfer from Deriv X account [_1]', $dxtrade_account);
         }
+    }
+
+    # dxtrade_adjustment
+    if ($gateway_type eq 'dxtrade_adjustment') {
+        return localize('Manual Deriv X Adjustment');
     }
 
     return undef;

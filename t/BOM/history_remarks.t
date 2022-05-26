@@ -533,6 +533,28 @@ subtest 'get remarks by payment_type_code' => sub {
     is $res[0], 'Reset to default demo account balance.';
 };
 
+subtest 'get remarks by dxtrade_adjustment' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'dxtrade_adjustment@binary.com'
+    });
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+
+    my $txn = $client->payment_legacy_payment(
+        currency     => 'USD',
+        remark       => 'dxtrade adjustment',
+        amount       => 10,
+        payment_type => 'dxtrade_adjustment'
+    );
+
+    my @res = get_remarks($client);
+    is $res[0], 'Manual Deriv X Adjustment';
+};
+
 sub get_remarks {
     return map { $_->{payment_remark} } get_transaction_history({client => shift})->@*;
 }
