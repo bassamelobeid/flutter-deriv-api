@@ -18,6 +18,7 @@ use URI::QueryParam;
 use Data::Dumper;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Date::Utility;
+use Path::Tiny;
 
 =head1 NAME
 
@@ -173,16 +174,27 @@ my $market = shift @markets_to_use;
 
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
-my $pid             = open(my $fh, "-|", "$command -s $initial_subscriptions -a $app_id -c 5 -r $check_time -m $market&")
-    or die $!;
+my $pid;
+sub start_subscription{
+    $pid = undef;
+    my $pid_file = path('/tmp/proposal_sub.pid');
+    $pid_file->remove();
+    open(my $fh, "-|", "$command -s $initial_subscriptions -a $app_id -c 5 -r $check_time -m $market&")
+        or die $!;
+    for(1..10){
+        if($pid_file->exists){
+            $pid = $pid_file->slurp();
+            last;
+        }
+        sleep 1;
+    }
+    die "proposal_sub process not started successfully" unless $pid;
+    say 'pid ' . $pid;
+    close $fh;
 
-# I guess because this runs a shell then the script that the PID is always 1 higher than
-# returned.  This may not be reliable but since this is just a test running script maybe
-# we can get away with it?
-$pid++;
-say 'pid ' . $pid;
-close $fh;
-
+   
+}
+start_subscription();
 # Kill the sub script if Ctrl-C is pressed.
 $SIG{'INT'} = sub {
     exit;    #this will end up running the END block
@@ -191,7 +203,7 @@ $SIG{'INT'} = sub {
 #Catch on Die , kill subscript if running
 END {
     `kill $pid` if $pid;
-    say Date::Utiltiy->new->datetime . " exiting";
+    say Date::Utility->new->datetime . " exiting";
     exit;
 }
 
@@ -225,9 +237,7 @@ $timer = IO::Async::Timer::Periodic->new(
                 $start = 0;
             }
             $new_market = 0;
-            $pid        = open(my $fh, "-|", "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market&")
-                or die $!;
-            $pid++;
+            start_subscription();
         } else {
             if ($number_of_runs < $iterations) {
                 say 'Run Number ' . $number_of_runs;
