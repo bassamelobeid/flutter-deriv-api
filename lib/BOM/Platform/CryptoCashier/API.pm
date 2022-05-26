@@ -35,6 +35,11 @@ use constant API_ENDPOINTS => {
     WITHDRAW_CANCEL => 'withdraw_cancel',
 };
 
+use constant HTTP_METHODS => {
+    GET  => 'get',
+    POST => 'post',
+};
+
 =head2 new
 
 The constructor, returns a new instance of this module.
@@ -75,14 +80,22 @@ sub config {
 
 Generates the URL based on the passed arguments.
 
+=over 4
+
+=item * C<$endpoint> - api endpoint name (string)
+
+=item * C<$args> - an hashref containing parameters to be added to the url
+
+=back
+
 =cut
 
 sub create_url {
-    my ($self, $api_name, $args) = @_;
+    my ($self, $endpoint, $args) = @_;
 
     my $api_url = $self->config->{host} . ':' . $self->config->{port};
 
-    my $url = URI->new($api_url . API_PATH . API_ENDPOINTS->{$api_name});
+    my $url = URI->new($api_url . API_PATH . $endpoint);
     $url->query_param_append($_, $args->{$_}) for sort keys $args->%*;
 
     my %context_params = %{$self->{context_params}}{qw/domain l language app_id source brand/};
@@ -116,8 +129,10 @@ Returns a hashref containing the deposit address or error.
 sub deposit {
     my ($self, $loginid) = @_;
 
-    my $url    = $self->create_url(DEPOSIT => {loginid => $loginid});
-    my $result = $self->_request(GET => $url);
+    my $result = $self->_request({
+            method       => HTTP_METHODS->{GET},
+            endpoint     => API_ENDPOINTS->{DEPOSIT},
+            query_params => {loginid => $loginid}});
 
     return $result if $result->{error};
 
@@ -181,14 +196,15 @@ sub withdraw {
         });
     }
 
-    my $url    = $self->create_url('WITHDRAW');
-    my $result = $self->_request(
-        POST => $url => {
-            loginid => $loginid,
-            address => $address,
-            amount  => $amount,
-            dry_run => $is_dry_run,
-        });
+    my $result = $self->_request({
+            method   => HTTP_METHODS->{POST},
+            endpoint => API_ENDPOINTS->{WITHDRAW},
+            payload  => {
+                loginid => $loginid,
+                address => $address,
+                amount  => $amount,
+                dry_run => $is_dry_run,
+            }});
 
     return $result if $result->{error};
 
@@ -235,12 +251,13 @@ sub withdrawal_cancel {
         });
     }
 
-    my $url    = $self->create_url('WITHDRAW_CANCEL');
-    my $result = $self->_request(
-        POST => $url => {
-            loginid => $loginid,
-            id      => $id,
-        });
+    my $result = $self->_request({
+            method   => HTTP_METHODS->{POST},
+            endpoint => API_ENDPOINTS->{WITHDRAW_CANCEL},
+            payload  => {
+                loginid => $loginid,
+                id      => $id,
+            }});
 
     return $result if $result->{error};
 
@@ -297,31 +314,32 @@ Returns pending transactions as an arrayref containing hashrefs with the followi
 sub transactions {
     my ($self, $loginid, $transaction_type) = @_;
 
-    my $url = $self->create_url(
-        TRANSACTIONS => {
-            loginid          => $loginid,
-            transaction_type => $transaction_type,
-        });
-    my $result = $self->_request(GET => $url);
-
-    return $result if ref $result eq 'HASH' and $result->{error};
+    my $result = $self->_request({
+            method       => HTTP_METHODS->{GET},
+            endpoint     => API_ENDPOINTS->{TRANSACTIONS},
+            query_params => {
+                loginid          => $loginid,
+                transaction_type => $transaction_type,
+            }});
 
     return $result;
 }
 
 =head2 _request
 
-Makes an HTTP request.
+Makes an HTTP request and returns the result.
 
-Takes the following parameters:
+Takes an hashref with following parameters as input:
 
 =over 4
 
-=item * C<$method> - The request method, either C<GET> or C<POST>
+=item * C<method> - The request method, either C<GET> or C<POST>
 
-=item * C<$uri> - The endpoint URI
+=item * C<endpoint> - The request endpoint name. Ex: deposit/withdraw
 
-=item * C<$content> - The request contents, should be either a hashref or an encoded JSON
+=item * C<query_params> - HTTP GET request parameters to be added to the url
+
+=item * C<payload> - HTTP POST request contents to be added to the request body, should be either a hashref or an encoded JSON
 
 =back
 
@@ -330,14 +348,17 @@ Returns a hashref containing the response or error.
 =cut
 
 sub _request {
-    my ($self, $method, $uri, $content) = @_;
+    my ($self, $params) = @_;
 
-    $method = lc $method;
-    my $result           = $self->ua->$method($uri, $content // ());
+    my ($method, $endpoint, $query_params, $payload) = @{$params}{qw(method endpoint query_params payload)};
+
+    my $uri = $self->create_url($endpoint, $query_params);
+
+    my $result           = $self->ua->$method($uri, $payload // ());
     my $status           = $result->is_success ? "success" : "fail";
     my $response_content = $result->{_content} // '';
 
-    DataDog::DogStatsd::Helper::stats_inc(DD_API_CALL_RESULT_KEY, {tags => ["status:$status"]});
+    DataDog::DogStatsd::Helper::stats_inc(DD_API_CALL_RESULT_KEY, {tags => ["status:$status", "endpoint:$endpoint"]});
 
     unless ($result->is_success) {
         $log->warnf("Crypto API call faced network issue while requesting method: %s uri: %s error: %s", $method, $uri, $response_content);

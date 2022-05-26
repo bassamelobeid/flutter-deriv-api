@@ -62,8 +62,24 @@ subtest "_request" => sub {
         my $dry_run     = $case->{dry_run} // 0;
         my $method      = $case->{method}  // 'get';
         my $status      = $http_status == 200 ? "success" : "fail";
-        my $uri =
-            "http://localhost:5055/api/v1/$endpoint?loginid=CR90000001&app_id=$app_id&brand=$brand&domain=deriv.com&l=EN&language=EN&source=16303";
+        my $uri         = "http://localhost:5055/api/v1/$endpoint?loginid=&app_id=$app_id&brand=$brand&domain=&&&source=16303";
+
+        my $query_params = {
+            loginid  => 'CR90000001',
+            app_id   => $app_id,
+            brand    => $brand,
+            domain   => 'deriv.com',
+            l        => 'EN',
+            language => 'EN',
+            source   => 16303,
+        };
+
+        my $payload = {
+            loginid => 'CR90000001',
+            address => 'address',
+            amount  => 123,
+            dry_run => $dry_run,
+        };
 
         setup_dd_mock({
             endpoint => $endpoint,
@@ -98,8 +114,13 @@ subtest "_request" => sub {
                 return $http_response;
             });
 
+        my $request_data = {
+            method   => $method,
+            endpoint => $endpoint,
+            ($method eq 'get' ? (query_params => $query_params) : (payload => $payload))};
+
         my $crypto_service = BOM::Platform::CryptoCashier::API->new({});
-        my $result         = $crypto_service->_request($method => $uri);
+        my $result         = $crypto_service->_request($request_data);
 
         if ($result->{error}) {
             is $result->{error}->{message}, handle_error_code_content($http_status), "Correct content message for request error";
@@ -126,7 +147,7 @@ sub setup_dd_mock {
             my $tags = $params->{tags};
 
             is $metric_name, BOM::Platform::CryptoCashier::API::DD_API_CALL_RESULT_KEY, 'Correct DD metric name';
-            is_deeply $tags, ["status:$status"], 'Correct tags for the DD metric';
+            is_deeply $tags, ["status:$status", "endpoint:$endpoint"], 'Correct tags for the DD metric';
         });
 }
 
