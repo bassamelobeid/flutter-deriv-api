@@ -117,7 +117,19 @@ sub profile_change {
     $client->update_status_after_auth_fa()
         if any { $params->{properties}->{updated_fields}->{$_} } qw/mifir_id tax_residence tax_identification_number/;
 
-    return BOM::Event::Services::Track::profile_change({%$params, client => $client});
+    return 1;
+}
+
+=head2 track_profile_change
+
+This is handler for each B<profile_change> event emitted, when handled by track worker.
+
+=cut
+
+sub track_profile_change {
+    my $data = shift;
+
+    return BOM::Event::Services::Track::profile_change($data);
 }
 
 =head2 verify_false_profile_info

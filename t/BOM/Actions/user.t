@@ -68,7 +68,7 @@ $mock_app->mock(
     });
 
 subtest 'login event' => sub {
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{login};
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{login};
     my $req            = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
         language   => 'id'
@@ -287,52 +287,9 @@ subtest 'user profile change event' => sub {
                 'residence'      => 'af'
             },
         }};
-    undef @identify_args;
-    undef @track_args;
     undef @emit_args;
-    my $segment_response = Future->done(1);
-    my $result           = $action_handler->($args)->get;
+    my $result = $action_handler->($args);
     ok $result, 'Success profile_change result';
-    my ($customer, %args) = @identify_args;
-    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
-
-    is_deeply \%args,
-        {
-        'context' => {
-            'active' => 1,
-            'app'    => {'name' => 'deriv'},
-            'locale' => 'id'
-        }
-        },
-        'identify context is properly set for profile change';
-
-    ($customer, %args) = @track_args;
-    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
-    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
-    is_deeply \%args, {
-        context => {
-            active => 1,
-            app    => {name => 'deriv'},
-            locale => 'id'
-        },
-        event      => 'profile_change',
-        properties => {
-            brand   => 'deriv',
-            loginid => $test_client->loginid,
-
-            'address_line_1' => 'street 1',
-            'address_city'   => 'Ambon',
-            'address_state'  => "Balkh",
-            'phone'          => '+15417541233',
-            'citizen'        => 'Afghanistan',
-            'place_of_birth' => 'Afghanistan',
-            'residence'      => 'Afghanistan',
-            'lang'           => 'ID',
-            'loginid'        => $test_client->loginid,
-        }
-        },
-        'properties are set properly for user profile change event';
-
     ok !@emit_args, 'No event is emitted';
 
     subtest 'apply sanctions on profile change' => sub {
@@ -384,7 +341,7 @@ subtest 'user profile change event' => sub {
                     },
                 }};
             undef @emit_args;
-            my $result = $action_handler->($args)->get;
+            my $result = $action_handler->($args);
             ok $result, 'Success profile_change result';
             is scalar keys %sanctions_args, 0, 'Sanctions not triggered for address_line_1 update';
 
@@ -409,7 +366,7 @@ subtest 'user profile change event' => sub {
                     },
                 }};
 
-            $result = $action_handler->($args)->get;
+            $result = $action_handler->($args);
             ok $result, 'Success profile_change result';
             cmp_deeply \%sanctions_args,
                 {
@@ -457,7 +414,7 @@ subtest 'user profile change event' => sub {
                     },
                 }};
 
-            $result = $action_handler->($args)->get;
+            $result = $action_handler->($args);
             ok $result, 'Success profile_change result';
             cmp_deeply \%sanctions_args,
                 {
@@ -493,7 +450,7 @@ subtest 'user profile change event' => sub {
                     },
                 }};
 
-            $result = $action_handler->($args)->get;
+            $result = $action_handler->($args);
             ok $result, 'Success profile_change result';
             my $msg = mailbox_search(subject => qr/$test_loginid possible match in sanctions list - Triggered by profile update/);
             ok $msg, 'Sanctions email sent';
@@ -521,18 +478,108 @@ subtest 'user profile change event' => sub {
                 },
             }};
 
-        $action_handler->($args)->get();
+        $action_handler->($args);
         is $update_status_called, 0, 'update_status_after_auth_fa is not called when name is updated';
 
         for my $field (qw/tax_residence tax_identification_number mifir_id/) {
             $args->{properties}->{updated_fields} = {$field => 1};
             $update_status_called = 0;
-            $action_handler->($args)->get();
+            $action_handler->($args);
             is $update_status_called, 1, "update_status_after_auth_fa is called  when $field is updated";
         }
 
         $mock_client->unmock_all;
     };
+};
+
+subtest 'user profile change event track' => sub {
+    my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{profile_change};
+    my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => 'test4@bin.com',
+    });
+    my $user = BOM::User->create(
+        email          => $virtual_client->email,
+        password       => "hello",
+        email_verified => 1,
+    );
+    $user->add_client($virtual_client);
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test4@bin.com',
+    });
+
+    $user->add_client($test_client);
+    $test_client->city('Ambon');
+    $test_client->phone('+15417541233');
+    $test_client->address_state('BAL');
+    $test_client->address_line_1('street 1');
+    $test_client->citizen('af');
+    $test_client->place_of_birth('af');
+    $test_client->residence('af');
+    $test_client->save();
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            loginid          => $test_client->loginid,
+            'updated_fields' => {
+                'address_line_1' => 'street 1',
+                'address_city'   => 'Ambon',
+                'address_state'  => "BAL",
+                'phone'          => '+15417541233',
+                'citizen'        => 'af',
+                'place_of_birth' => 'af',
+                'residence'      => 'af'
+            },
+        }};
+    undef @identify_args;
+    undef @track_args;
+    undef @emit_args;
+    my $segment_response = Future->done(1);
+    my $result           = $action_handler->($args)->get;
+    ok $result, 'Success profile_change result';
+    my ($customer, %args) = @identify_args;
+    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
+
+    is_deeply \%args,
+        {
+        'context' => {
+            'active' => 1,
+            'app'    => {'name' => 'deriv'},
+            'locale' => 'id'
+        }
+        },
+        'identify context is properly set for profile change';
+
+    ($customer, %args) = @track_args;
+    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    is_deeply \%args, {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'id'
+        },
+        event      => 'profile_change',
+        properties => {
+            brand   => 'deriv',
+            loginid => $test_client->loginid,
+
+            'address_line_1' => 'street 1',
+            'address_city'   => 'Ambon',
+            'address_state'  => "Balkh",
+            'phone'          => '+15417541233',
+            'citizen'        => 'Afghanistan',
+            'place_of_birth' => 'Afghanistan',
+            'residence'      => 'Afghanistan',
+            'lang'           => 'ID',
+            'loginid'        => $test_client->loginid,
+        }
+        },
+        'properties are set properly for user profile change event';
+
+    ok !@emit_args, 'No event is emitted';
 };
 
 subtest 'false profile info' => sub {

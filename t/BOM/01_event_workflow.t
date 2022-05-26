@@ -111,31 +111,27 @@ subtest 'process - generic jobs' => sub {
     cmp_deeply(
         [keys %$action_mappings],
         bag(
-            qw/email_statement sync_user_to_MT5 send_email
-                store_mt5_transaction new_mt5_signup mt5_password_changed anonymize_client bulk_anonymization
+            qw/email_statement sync_user_to_MT5
+                store_mt5_transaction new_mt5_signup anonymize_client bulk_anonymization
                 document_upload ready_for_authentication account_closure client_verification
                 verify_address social_responsibility_check sync_onfido_details
                 crypto_subscription crypto_transaction_updated authenticated_with_scans qualifying_payment_check
-                payment_deposit payment_withdrawal payment_withdrawal_reversal
-                login signup transfer_between_accounts profile_change
+                payment_deposit send_email
+                signup profile_change
                 p2p_advertiser_created p2p_advertiser_updated
-                p2p_advert_created p2p_advert_updated
-                p2p_order_created p2p_order_updated p2p_order_expired p2p_timeout_refund p2p_dispute_expired p2p_chat_received p2p_archived_ad
+                p2p_advert_updated
+                p2p_order_created p2p_order_updated p2p_order_expired p2p_timeout_refund p2p_dispute_expired p2p_chat_received
                 affiliate_sync_initiated withdrawal_limit_reached
-                api_token_created api_token_deleted
-                app_registered app_updated app_deleted self_exclude set_financial_assessment crypto_withdrawal
+                crypto_withdrawal
                 client_promo_codes_upload new_crypto_address onfido_doc_ready_for_upload shared_payment_method_found
-                dispute_notification account_reactivated verify_false_profile_info check_onfido_rules mt5_inactive_notification mt5_inactive_account_closed mt5_archived_account_reset_trading_password
-                identity_verification_requested trading_platform_account_created trading_platform_password_reset_request
-                trading_platform_investor_password_reset_request trading_platform_password_changed trading_platform_password_change_failed
-                trading_platform_investor_password_changed trading_platform_investor_password_change_failed mt5_inactive_account_closure_report bulk_authentication
-                check_name_changes_after_first_deposit p2p_adverts_updated crypto_withdrawal_rejected_email
-                affiliate_loginids_sync p2p_advertiser_approval_changed crypto_withdrawal_email
-                reset_password_request reset_password_confirmation
-                p2p_advertiser_cancel_at_fault p2p_advertiser_temp_banned cms_add_affiliate_client df_anonymization_done
-                request_change_email verify_change_email confirm_change_email
-                account_opening_new  update_crypto_config account_with_false_info_locked
-                underage_account_closed account_opening_existing request_payment_withdraw
+                dispute_notification account_reactivated verify_false_profile_info check_onfido_rules mt5_archived_account_reset_trading_password
+                identity_verification_requested
+                mt5_inactive_account_closure_report bulk_authentication
+                check_name_changes_after_first_deposit p2p_adverts_updated
+                affiliate_loginids_sync p2p_advertiser_approval_changed
+                cms_add_affiliate_client df_anonymization_done
+                update_crypto_config
+                account_opening_existing request_payment_withdraw
                 verify_email_closed_account_other verify_email_closed_account_reset_password
                 verify_email_closed_account_account_opening account_verification_for_pending_payout/
         ),
@@ -225,7 +221,21 @@ subtest 'process - tracking jobs' => sub {
 
     cmp_deeply(
         [keys %$action_mappings],
-        bag(qw/multiplier_hit_type multiplier_near_expire_notification multiplier_near_dc_notification/),
+        bag(
+            qw/multiplier_hit_type multiplier_near_expire_notification multiplier_near_dc_notification
+                crypto_withdrawal_rejected_email crypto_withdrawal_email
+                api_token_created api_token_deleted app_registered app_updated app_deleted
+                mt5_password_changed mt5_inactive_notification mt5_inactive_account_closed
+                p2p_archived_ad p2p_advert_created p2p_advertiser_cancel_at_fault p2p_advertiser_temp_banned
+                payment_withdrawal payment_withdrawal_reversal reset_password_request reset_password_confirmation
+                request_change_email confirm_change_email verify_change_email account_reactivated
+                login transfer_between_accounts set_financial_assessment payment_deposit
+                account_closure profile_change account_opening_new trading_platform_account_created
+                trading_platform_password_reset_request trading_platform_investor_password_reset_request
+                trading_platform_password_changed trading_platform_password_change_failed
+                trading_platform_investor_password_changed trading_platform_investor_password_change_failed
+                underage_account_closed account_with_false_info_locked self_exclude signup/
+        ),
         'Correct number of actions that can be emitted'
     );
 
