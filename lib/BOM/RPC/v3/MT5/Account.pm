@@ -955,8 +955,23 @@ async_rpc "mt5_new_account",
                         return create_error_future('permission') if $status->{error} =~ /Not enough permissions/;
                         return create_error_future($error_code, {message => $status->{error}});
                     }
-                    my $mt5_login = $status->{login};
-                    $user->add_loginid($mt5_login);
+
+                    my $mt5_login    = $status->{login};
+                    my $mt5_currency = $args->{currency};
+                    my $mt5_leverage = $args->{leverage};
+                    my $market_type  = _get_market_type($account_type, $mt5_account_type);
+                    my $acc_type     = _is_account_demo($args->{group}) ? 'demo' : 'real';
+
+                    my $mt5_attributes = {
+                        group           => $group,
+                        landing_company => $binary_company_name,
+                        currency        => $mt5_currency,
+                        market_type     => $market_type,
+                        account_type    => $acc_type,
+                        leverage        => $mt5_leverage
+                    };
+
+                    $user->add_loginid($mt5_login, 'mt5', $acc_type, $mt5_currency, $mt5_attributes);
 
                     BOM::Platform::Event::Emitter::emit(
                         'new_mt5_signup',
