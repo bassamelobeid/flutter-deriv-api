@@ -55,7 +55,7 @@ rule 'cashier.paymentagent_withdrawal_allowed' => {
         my $client = $context->client($args);
 
         # TODO: we will copy `allow_paymentagent_withdrawal` code here after the Redmine card #10688 is merged and will remove rependency to bom-transaction.
-        $self->fail('PAWithdrawalNotAllowed')
+        $self->fail('PaymentagentWithdrawalNotAllowed')
             unless ($args->{source_bypass_verification}
             or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
 
