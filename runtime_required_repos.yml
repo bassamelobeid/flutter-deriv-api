@@ -3,3 +3,4 @@
 - regentmarkets/bom-postgres-feeddb
 - regentmarkets/bom-postgres-clientdb
 - regentmarkets/bom-postgres-collectordb
+- regentmarkets/bom-postgres-userdb
