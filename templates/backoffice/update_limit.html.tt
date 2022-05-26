@@ -75,18 +75,23 @@
         <tr>
             <td>Start time:</td>
             <td>
-                <input type="text" name="start_time" class="datepick" size="20" maxlength="19"
-                       pattern="^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\$" data-lpignore="true" />
+                <input type="time" step="1" name="start_time" data-lpignore="true" />
             </td>
-            <td> e.g '2018-01-02 09:00', optional start time for the limit - format is YYYY-MM-DD HH:MI:SS </td>
+            <td> e.g '09:00 AM', optional start time for the limit - format is HH:MI AM </td>
         </tr>
         <tr>
             <td>End time:</td>
             <td>
-                <input type="text" name="end_time" class="datepick" size="20" maxlength="19"
-                       pattern="^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\$" data-lpignore="true" />
+                <input type="time" step="1" name="end_time" data-lpignore="true" />
             </td>
-            <td> e.g '2018-01-02 21:00', optional end time for the limit - format is YYYY-MM-DD HH:MI:SS </td>
+            <td> e.g '09:00 PM', optional end time for the limit - format is HH:MI PM </td>
+        </tr>
+        <tr>
+            <td>Date(s):</td>
+            <td>
+                <input type="text" name="limit_dates" id="limit_dates" data-lpignore="true" />
+            </td>
+            <td> e.g '2018-01-02', optional dates for the limit - format is YYYY-MM-DD </td>
         </tr>
         <tr>
             <td><input type="submit" class="btn btn--primary" name="update_limit" value="Update"></td>
@@ -142,7 +147,17 @@
         .addClass('date-picker-inited');
     };
 
+    initMultipleDatePickers = function(){
+        \$('#limit_dates')
+        .not('.date-picker-inited')
+        .multiDatesPicker({
+            dateFormat: "yy-mm-dd",
+        })
+        .addClass('date-picker-inited');
+    };
+
     \$(document).ready(function() {
         initDatePickers();
+        initMultipleDatePickers();
     });
 </script>

@@ -18,7 +18,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
-use BOM::Backoffice::Utility qw(is_valid_time);
+use BOM::Backoffice::Utility qw(is_valid_time is_valid_date_time);
 use BOM::DynamicSettings;
 use BOM::Config;
 use BOM::Platform::RiskProfile;
@@ -27,6 +27,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 use BOM::Config::Runtime;
+use Storable qw(dclone);
 
 BOM::Backoffice::Sysinit::init();
 my $json = JSON::MaybeXS->new(
@@ -99,26 +100,35 @@ if ($r->param('update_limit')) {
         }
     }
 
+    my ($start_time_obj, $end_time_obj);
+
     my $start_time = $r->param('start_time');
     if ($start_time) {
-        code_exit_BO("invalid start_time, $start_time") unless is_valid_time($start_time);
+        code_exit_BO("Date field cannot be empty when setting the start time.") unless $r->param('limit_dates');
+        code_exit_BO("invalid start_time, $start_time") unless $start_time ne '' and $start_time_obj = is_valid_time($start_time);
         $ref{start_time} = $start_time;
     }
+
     my $end_time = $r->param('end_time');
     if ($end_time) {
-        code_exit_BO("invalid end_time, $end_time") unless is_valid_time($end_time);
-        code_exit_BO("end_time is in the past, $end_time")
-            unless Date::Utility->new($end_time)->is_after(Date::Utility->new);
+        code_exit_BO("Date field cannot be empty when setting the end time.") unless $r->param('limit_dates');
+        code_exit_BO("invalid end_time, $end_time") unless $start_time ne '' and $end_time_obj = is_valid_time($end_time);
         $ref{end_time} = $end_time;
     }
+
+    my $limit_dates = $r->param('limit_dates');
+    if ($limit_dates) {
+        code_exit_BO("Start time is required when setting a date for update limits.") unless $r->param('start_time');
+    }
+
     if ($start_time && $end_time) {
-        if (Date::Utility->new($end_time)->is_before(Date::Utility->new($start_time))) {
+        # compare method returns 1 if the $end_time is more than $start_time
+        unless ($end_time_obj->compare($start_time_obj) > 0) {
             code_exit_BO("invalid range end_time < start_time ($end_time < $start_time)");
         }
     }
 
-    my $uniq_key = substr(md5_hex(sort { $a cmp $b } values %ref), 0, 16);
-
+    my $uniq_key;
     # if we just want to add client into watchlist, custom conditions is not needed
     my $has_custom_conditions = keys(%ref);
     if (my $custom_name = $r->param('custom_name')) {
@@ -154,34 +164,65 @@ if ($r->param('update_limit')) {
         code_exit_BO('Unrecognize risk profile.');
     }
 
+    # We put a mocked value inside the array, therefore our loop runs at least for once.
+    my @limit_dates_array = (1);
+    @limit_dates_array = split ', ', $limit_dates if $limit_dates;
+
     if (my $id = $r->param('client_loginid')) {
         my $comment = $r->param('comment');
-        $current_client_profiles->{$id}->{custom_limits}->{$uniq_key} = \%ref    if $has_custom_conditions;
-        $current_client_profiles->{$id}->{reason}                     = $comment if $comment;
-        $current_client_profiles->{$id}->{updated_by}                 = $staff;
-        $current_client_profiles->{$id}->{updated_on}                 = Date::Utility->new->date;
-        $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
+        foreach my $limit_date (@limit_dates_array) {
+            # A clone of origial %ref.
+            my $ref_c = dclone(\%ref);
+            # Attaching days to the start and end time values.
+            my ($start_time, $end_time) = _concat_date_and_time(\%ref, $limit_date);
 
-        $args_content = join(q{, }, map { qq{$_ =>  $current_client_profiles->{$id}->{$_}} } keys %{$current_client_profiles->{$id}});
-        BOM::Backoffice::QuantsAuditLog::log($staff, "updateclientlimitviaPMS clientid:$id", $args_content);
-        send_trading_ops_email(
-            "Product management: client limit updated ($id##$uniq_key):",
-            {
-                %ref,
-                updated_by => $staff,
-                updated_on => Date::Utility->new->date
-            });
+            $ref_c->{start_time} = $start_time;
+            $ref_c->{end_time}   = $end_time;
+
+            # Generating uniq_key.
+            $uniq_key = substr(md5_hex(sort { $a cmp $b } values $ref_c->%*), 0, 16);
+
+            $current_client_profiles->{$id}->{custom_limits}->{$uniq_key} = $ref_c   if $has_custom_conditions;
+            $current_client_profiles->{$id}->{reason}                     = $comment if $comment;
+            $current_client_profiles->{$id}->{updated_by}                 = $staff;
+            $current_client_profiles->{$id}->{updated_on}                 = Date::Utility->new->date;
+
+            $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
+
+            $args_content = join(q{, }, map { qq{$_ =>  $current_client_profiles->{$id}->{$_}} } keys %{$current_client_profiles->{$id}});
+            BOM::Backoffice::QuantsAuditLog::log($staff, "updateclientlimitviaPMS clientid:$id", $args_content);
+            send_trading_ops_email(
+                "Product management: client limit updated ($id##$uniq_key):",
+                {
+                    $ref_c->%*,
+                    updated_by => $staff,
+                    updated_on => Date::Utility->new->date
+                });
+        }
     } else {
-        $ref{updated_by}                       = $staff;
-        $ref{updated_on}                       = Date::Utility->new->date;
-        $current_product_profiles->{$uniq_key} = \%ref;
-        send_notification_email(\%ref, 'Disable') if ($profile and $profile eq 'no_business');
-        send_trading_ops_email("Product management: limit updated ($uniq_key):", \%ref);
-        $current_product_profiles = _filter_past_limits($current_product_profiles);
-        $app_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+        foreach my $limit_date (@limit_dates_array) {
+            # A clone of origial %ref.
+            my $ref_c = dclone(\%ref);
+            # Attaching days to the start and end time values.
+            my ($start_time, $end_time) = _concat_date_and_time(\%ref, $limit_date);
 
-        $args_content = join(q{, }, map { qq{$_ => $ref{$_}} } keys %ref);
-        BOM::Backoffice::QuantsAuditLog::log($staff, "updatecustomlimitviaPMS", $args_content);
+            $ref_c->{start_time} = $start_time;
+            $ref_c->{end_time}   = $end_time;
+
+            # Generating uniq_key.
+            $uniq_key = substr(md5_hex(sort { $a cmp $b } values $ref_c->%*), 0, 16);
+
+            $ref_c->{updated_by}                   = $staff;
+            $ref_c->{updated_on}                   = Date::Utility->new->date;
+            $current_product_profiles->{$uniq_key} = $ref_c;
+            send_notification_email($ref_c, 'Disable') if ($profile and $profile eq 'no_business');
+            send_trading_ops_email("Product management: limit updated ($uniq_key):", $ref_c);
+            $current_product_profiles = _filter_past_limits($current_product_profiles);
+            $app_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+
+            $args_content = join(q{, }, map { qq{$_ => $ref_c->{$_}} } keys $ref_c->%*);
+            BOM::Backoffice::QuantsAuditLog::log($staff, "updatecustomlimitviaPMS", $args_content);
+        }
     }
 }
 
@@ -338,6 +379,31 @@ sub _filter_past_limits {
         }
     }
     return $filtered;
+}
+
+sub _is_valid_date {
+    my ($limit_date, $start_time) = @_;
+    my $date_time = sprintf("%s %s", $limit_date, $start_time);
+
+    if ($date_time =~ /^\d{4}-\d{1,2}-\d{1,2}\s\d{2}:\d{2}:\d{2}$/) {
+        code_exit_BO('Starting date cannot be less than current date and time.')
+            unless Date::Utility->new($date_time)->is_after(Date::Utility->new);
+        return 1;
+    }
+
+    code_exit_BO('Selected date and time are not in correct format.');
+}
+
+sub _concat_date_and_time {
+    my ($ref, $date) = @_;
+
+    my $start_time = $ref->{start_time};
+    my $end_time   = $ref->{end_time};
+
+    $start_time = $date . " " . $start_time if _is_valid_date($date, $start_time);
+    $end_time   = $date . " " . $end_time   if $end_time;
+
+    return ($start_time, $end_time);
 }
 
 code_exit_BO();

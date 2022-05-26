@@ -13,8 +13,8 @@ sub bo_js_files_for {
     my $page = shift;
 
     my @js_files = (
-        'external/jquery-3.1.1.min.js',   'external/jquery-ui.min.js', 'external/sortable.js', 'external/jquery.form.js',
-        'external/jquery.jsonify-0.1.js', 'backoffice_new.js?v=2021-06-20'
+        'external/jquery-3.1.1.min.js',   'external/jquery-ui.min.js',      'external/sortable.js', 'external/jquery.form.js',
+        'external/jquery.jsonify-0.1.js', 'backoffice_new.js?v=2021-06-20', 'jquery-ui.multidatespicker.js'
     );
     for ($page) {
         push @js_files, 'bbdl.js' if /f_bet_iv/;

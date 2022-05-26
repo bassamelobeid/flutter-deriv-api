@@ -38,8 +38,13 @@ sub BrokerPresentation {
     print '<link rel="preconnect" href="https://fonts.gstatic.com">';
     print '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&display=swap" rel="stylesheet">';
 
-    print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/' . $_) . '"/>'
-        for ('style_new.css?v=2021-06-23', 'sell_popup.css', 'external/grid.css?v=2021-03-31', 'external/jquery-ui.custom.css?v=2021-05-06');
+    print '<link rel="stylesheet" type="text/css" href="'
+        . request()->url_for('css/' . $_)
+        . '"/>'
+        for (
+        'style_new.css?v=2021-06-23', 'sell_popup.css', 'external/grid.css?v=2021-03-31',
+        'external/jquery-ui.custom.css?v=2021-05-06', 'jquery-ui.multidatespicker.css'
+        );
 
     foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';

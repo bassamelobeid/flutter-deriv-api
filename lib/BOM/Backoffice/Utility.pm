@@ -9,10 +9,11 @@ use BOM::StaffPages;
 use Syntax::Keyword::Try;
 use Date::Utility;
 use LandingCompany::Registry;
+use Time::Piece;
 
 use Exporter qw(import export_to_level);
 
-our @EXPORT_OK = qw(get_languages master_live_server_error is_valid_time get_payout_currencies);
+our @EXPORT_OK = qw(get_languages master_live_server_error is_valid_time is_valid_date_time get_payout_currencies);
 
 sub get_languages {
     return {
@@ -32,7 +33,7 @@ sub get_languages {
 
 =head2 is_valid_time
 
-Routine to check if the time is a valid value & format
+Routine to check if the given value is a valid time and the format is H:M:S (21:30:30)
 
 =over 4
 
@@ -44,11 +45,34 @@ Routine to check if the time is a valid value & format
 
 sub is_valid_time {
     try {
+        return Time::Piece->strptime(shift, "%H:%M:%S");
+    } catch {
+        return 0;
+    }
+
+    return 0;
+}
+
+=head2 is_valid_date_time
+
+Routine to check if the datetime is a valid value & format
+
+=over 4
+
+=item * C<datetime> - Datetime to be checked
+
+=back
+
+=cut
+
+sub is_valid_date_time {
+    try {
         Date::Utility->new(shift);
         return 1;
     } catch {
         return 0;
     }
+
     return 0;
 }
 

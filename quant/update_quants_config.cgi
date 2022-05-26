@@ -12,13 +12,14 @@ use BOM::Backoffice::Auth0;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsConfigHelper;
-use BOM::Backoffice::Utility qw(is_valid_time);
+use BOM::Backoffice::Utility qw(is_valid_date_time);
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 use Brands;
 use Time::Duration::Concise;
 use Syntax::Keyword::Try;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
+use Storable qw(dclone);
 
 BOM::Backoffice::Sysinit::init();
 my $json       = JSON::MaybeXS->new;
@@ -27,31 +28,41 @@ my $app_config = BOM::Config::Runtime->instance->app_config;
 
 if (request()->param('save_limit')) {
     my %args = map { $_ => request()->param($_) }
-        qw(market new_market expiry_type contract_group underlying_symbol landing_company barrier_type limit_type limit_amount comment start_time end_time);
+        qw(market new_market expiry_type contract_group underlying_symbol landing_company barrier_type limit_type limit_amount comment start_time end_time limit_dates);
 
-    for my $field (qw{start_time end_time}) {
-        my $date = $args{$field};
-        next unless $date;
-        unless (is_valid_time($date)) {
-            print $json->encode({error => "Please match the correct format for `$field` field."});
-            return;
-        }
-    }
-
-    if ($args{start_time} && $args{start_time} gt $args{end_time}) {
+    if ($args{start_time} && Date::Utility->new("2000-01-01 " . $args{start_time})->is_after(Date::Utility->new("2000-01-01 " . $args{end_time}))) {
         print $json->encode({error => "`start_time` should be less than `end_time`."});
         return;
     }
+    
+    my @output_array;
+    my @limit_dates_array = (1);
+    @limit_dates_array = split ', ', $args{limit_dates} if $args{limit_dates};
 
-    my %email_args = (%args, action => 'New');
-    my $output     = BOM::Backoffice::QuantsConfigHelper::save_limit(\%args, $staff);
-    print $json->encode($output);
+    for my $limit_date (@limit_dates_array) {
+        my $args_c = dclone(\%args);
 
-    if (!$output->{error}) {
-        my %email = _format_email_for_limit(%email_args);
-        _send_compliance_email(%email);
-        send_trading_ops_email("Quants risk management tool: limit saved", \%email_args);
+        $args_c->{start_time} = $limit_date . " " . $args{start_time};
+        $args_c->{end_time} = $limit_date . " " . $args{end_time};
+
+        unless (_is_limit_date_valid($limit_date, $args{start_time})) {
+            print $json->encode({error => "Date field is not in correct format or is behind the current time."});
+            return;
+        }
+
+        my %email_args = ($args_c->%*, action => 'New');
+        my $output     = BOM::Backoffice::QuantsConfigHelper::save_limit($args_c, $staff);
+        
+        push @output_array, $output;
+
+        if (!$output->{error}) {
+            my %email = _format_email_for_limit(%email_args);
+            _send_compliance_email(%email);
+            send_trading_ops_email("Quants risk management tool: limit saved", \%email_args);
+        }
     }
+
+    print $json->encode(\@output_array);
 }
 
 if (request()->param('delete_market_group')) {
@@ -265,5 +276,19 @@ sub _send_compliance_email {
         message => $args{message},
     });
     return;
+}
+
+sub _is_limit_date_valid {
+    my ($limit_date, $start_time) = @_;
+
+    try {   
+        my $timecheck = sprintf("%s %s", $limit_date, $start_time);
+        return 0 unless Date::Utility->new(sprintf("%s %s", $limit_date, $start_time))->is_after(Date::Utility->new);
+        return 1;
+    } catch {
+        return 0;
+    }
+
+    return 0;
 }
 

@@ -88,26 +88,18 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
             </div>
             <hr/>
             <div>
-                <span tooltip=
-                "Format is YYYY-MM-DD HH:MI e.g. 2018-01-02 09:00
-                You can also enter 'today 9'
-                Or just enter the time ('9') and the date defaults to today">
-                    <b>Start time</b>
-                    <span class="tooltip-blue">?</span>
-                </span> <br/>
-
-                <input type="text" name="start_time" class="datepick" size="18" maxlength="19"
-                    pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
-
-                <br /><span class="hint" style="font-size:10px">Format: yyyy-mm-dd (HH:mm:ss)</span>
+                <b>Start time</b><br/>
+                <input type="time" step="1" name="start_time" data-lpignore="true" />
             </div>
             <hr/>
             <div>
                 <b>End time</b><br/>
-                <input type="text" name="end_time" class="datepick" size="18" maxlength="19"
-                    pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
-
-                <br /><span class="hint" style="font-size:10px">Format: yyyy-mm-dd (HH:mm:ss)</span>
+                <input type="time" step="1" name="end_time" data-lpignore="true" />
+            </div>
+            <hr />
+            <div>
+                <b>Date(s)</b><br/>
+                <input type="text" name="limit_dates" class="multi-datepick" data-lpignore="true" />
             </div>
             <hr/>
             <div>
@@ -384,6 +376,9 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
             var end_time = el.find('input[name="end_time"]').val();
             el.find('input[name="end_time"]').val('');
 
+            var limit_dates = el.find('input[name="limit_dates"]').val();
+            el.find('input[name="limit_dates"]').val('');
+
             var result = el.find("span.save_result");
 
             //Both start_time and end_time should be empty or fill
@@ -393,10 +388,16 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
                 return;
             }
 
+            if (start_time !== '' && limit_dates === '') {
+                result.css('color', 'var(--color-red)');
+                result.text('`Date` cannot be empty');
+                return;
+            }
+
             if(!isDatePickersValid()) return false;
 
             if(start_time !== '') {
-                if(new Date(start_time) >= new Date(end_time)) {
+                if(new Date("01/01/2000 " + start_time) >= new Date("01/01/2000 " + end_time)) {
                     result.css('color', 'var(--color-red)');
                     result.text('`start_time` should be less than `end_time`.');
                     return;
@@ -421,6 +422,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
                     comment: comment,
                     start_time: start_time,
                     end_time: end_time,
+                    limit_dates: limit_dates,
                 },
                 success: function(data) {
                     var config = \$.parseJSON(data);
@@ -428,8 +430,10 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
                         result.text(config.error).css('color', 'var(--color-red)');
                     } else {
                         result.text('saved').css('color', 'var(--color-green)');
-                        createDisplayTable(config.limit.records, config.limit.header, 'per_landing_company');
-                        createDisplayTable(config.market_group.records, config.market_group.header, 'market_group_display');
+                        \$.each(config, function (index, item) {
+                            createDisplayTable(item.limit.records, item.limit.header, 'per_landing_company');
+                            createDisplayTable(item.market_group.records, item.market_group.header, 'market_group_display');
+                        });
                     }
                 }
             });
@@ -447,12 +451,22 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
 
     \$(document).ready(function() {
         initDatePickers();
+        initMultipleDatePickers();
     });
 
     initDatePickers = function(){
         \$('.datepick')
         .not('.date-picker-inited')
         .datepicker({dateFormat: "yy-mm-dd 00:00:00"})
+        .addClass('date-picker-inited');
+    };
+
+    initMultipleDatePickers = function(){
+        \$('.multi-datepick')
+        .not('.date-picker-inited')
+        .multiDatesPicker({
+            dateFormat: "yy-mm-dd",
+        })
         .addClass('date-picker-inited');
     };
 
