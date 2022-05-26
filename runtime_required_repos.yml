@@ -5,3 +5,4 @@
 - regentmarkets/bom-postgres-collectordb
 - regentmarkets/bom-postgres-userdb
 - regentmarkets/bom-postgres-authdb
+- regentmarkets/bom-postgres-cryptodb
