@@ -118,6 +118,7 @@
             <option value="commission_paid"     >Commission Paid</option>
             <option value="voucher"             >Voucher</option>
             <option value="mt5_adjustment"      >MT5 Adjustment</option>
+            <option value="dxtrade_adjustment"  >DXtrade Adjustment</option> 
             <option value="account_transfer"    >Account Transfer</option>
             <option value="closed_account"      >Closed Account</option>
         </select>
