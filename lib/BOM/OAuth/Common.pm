@@ -156,7 +156,7 @@ sub notify_login {
                     ip                  => $ip,
                     location            => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
                     browser             => $bd->browser,
-                    device              => $bd->device // $bd->os_string,
+                    device              => $bd->device // $bd->os_string // '',
                     new_signin_activity => $unknown_location ? 1 : 0,
                 }});
     }
@@ -172,8 +172,8 @@ sub notify_login {
         my $email_data = {
             title                     => localize("New device login"),    # Deriv email header: https://fly.customer.io/env/89555/layouts/5
             country                   => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
-            device                    => $bd->device                                                             // $bd->os_string,
-            browser                   => $bd->browser_string                                                     // $bd->browser,
+            device                    => $bd->device // $bd->os_string // '',
+            browser                   => $bd->browser_string // $bd->browser,
             app_name                  => $app->{name},
             ip                        => $ip,
             lang                      => lc($request->language),
