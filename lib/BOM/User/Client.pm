@@ -5620,6 +5620,7 @@ sub smart_payment {
         voucher             => 'legacy_payment',
         account_transfer    => 'legacy_payment',
         closed_account      => 'legacy_payment',
+        dxtrade_adjustment  => 'legacy_payment',
     );
 
     $payment_gateway_code ||= $gateway_map{$payment_type}

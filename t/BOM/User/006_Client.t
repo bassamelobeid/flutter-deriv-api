@@ -224,9 +224,15 @@ subtest 'payment transaction' => sub {
     $txn                                      = $client->payment_arbitrary_markup(%$args);
     verify_txn($txn, $account, $args, $initial_balance, $payment_expected);
 
+    $payment_expected->{payment_type_code}    = 'dxtrade_adjustment';
+    $payment_expected->{payment_gateway_code} = 'legacy_payment';
+    $initial_balance                          = 120;
+    $txn                                      = $client->payment_legacy_payment(%$args, payment_type => 'dxtrade_adjustment');
+    verify_txn($txn, $account, $args, $initial_balance, $payment_expected);
+
     $payment_expected->{payment_type_code}    = 'external_cashier';
     $payment_expected->{payment_gateway_code} = 'doughflow';
-    $initial_balance                          = 120;
+    $initial_balance                          = 135;
     delete $args->{source};
     $txn = $client->payment_doughflow(%$args);
     isa_ok $txn, 'BOM::User::Client::PaymentTransaction::Doughflow', 'Correct class for doughflow payment transaction object';
