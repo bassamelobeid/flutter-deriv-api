@@ -667,4 +667,37 @@ subtest 'uderlying action' => sub {
     is $res, undef, 'Cashier validation passes for withdrawal by a PA with a dummy underlying action';
 };
 
+subtest 'Cashier validation - Experimental currency' => sub {
+
+    $app_config->system->suspend->experimental_currencies([$cr_client_2->currency]);
+
+    my %args = (
+        loginid     => $cr_client_2->loginid,
+        action      => '',
+        is_internal => 0,
+        rule_engine => $rule_engine
+    );
+
+    my $res = BOM::Platform::Client::CashierValidation::validate(%args);
+
+    cmp_deeply(
+        $res,
+        {
+            error => {
+                code              => 'CashierForwardError',
+                message_to_client => 'This currency is temporarily suspended. Please select another currency to proceed.',
+                params            => []
+            },
+            status => ['ExperimentalCurrency']
+        },
+        'Error message for experimental currencies is correct'
+    );
+
+    $app_config->payments->experimental_currencies_allowed([$cr_client_2->email]);
+    ok !BOM::Platform::Client::CashierValidation::validate(%args), 'No error when the client email is allowed for experimental currencies';
+
+    $app_config->payments->experimental_currencies_allowed([]);
+    $app_config->system->suspend->experimental_currencies([]);
+};
+
 done_testing();

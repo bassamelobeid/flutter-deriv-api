@@ -2,23 +2,8 @@
 use strict;
 use warnings;
 
+use BOM::Platform::Onfido::Webhook;
 use Log::Any::Adapter qw(DERIV), stderr => 'json', log_level => 'info';
-
-package BOM::Platform::Onfido::Webhook;
-use parent qw(Mojolicious);
-
-use BOM::Platform::Onfido::Webhook::Check;
-
-use Log::Any qw($log);
-
-sub startup {
-    my ($self) = @_;
-    $self->moniker('onfido_webhook');
-    $self->plugin('Config' => {file => '/etc/rmg/onfido_webhook.conf'});
-    $log->infof('Starting webhook handler');
-    $self->routes->post('/')->to('check#check');
-    $self->routes->get('/')->to('check#check');
-}
 
 return BOM::Platform::Onfido::Webhook->new if caller;
 
