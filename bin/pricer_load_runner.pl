@@ -205,7 +205,6 @@ $timer = IO::Async::Timer::Periodic->new(
 
     on_tick => sub {
         my ($overflow_amount, $max_queue_size) = check_stats();
-
         # We have completed a cycle so kill off the current load test
         `kill $pid` if $pid;
         $pid = undef;
@@ -256,6 +255,15 @@ $timer = IO::Async::Timer::Periodic->new(
     },
 );
 $timer->start;
+
+my $timer_print_datetime = IO::Async::Timer::Periodic->new(
+    interval => 1,
+    on_tick => sub {
+        say Date::Utility->new()->datetime;
+    }
+)
+$timer_print_datetime->start;
+$loop->add($timer_print_datetime);
 $loop->add($http);
 $loop->add($timer);
 $loop->run();
