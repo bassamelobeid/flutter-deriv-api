@@ -548,4 +548,62 @@ subtest 'ad list filtering' => sub {
     ok !$client->p2p_advert_list->@*, 'all disabled';
 };
 
+subtest 'advertiser active ads flags' => sub {
+    my $client = BOM::Test::Helper::P2P::create_advertiser;
+
+    $config->country_advert_config(
+        encode_json_utf8({
+                $client->residence => {
+                    float_ads => 'enabled',
+                    fixed_ads => 'enabled'
+                }}));
+
+    my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
+        client           => $client,
+        rate_type        => 'fixed',
+        min_order_amount => 1,
+        max_order_amount => 2
+    );
+    BOM::Test::Helper::P2P::create_advert(
+        client           => $client,
+        rate_type        => 'float',
+        min_order_amount => 3,
+        max_order_amount => 4,
+        rate             => 1
+    );
+    BOM::Test::Helper::P2P::create_advert(
+        client           => $client,
+        rate_type        => 'float',
+        min_order_amount => 5,
+        max_order_amount => 6,
+        rate             => 2
+    );
+
+    $config->country_advert_config(
+        encode_json_utf8({
+                $client->residence => {
+                    float_ads => 'disabled',
+                    fixed_ads => 'enabled'
+                }}));
+
+    ok !exists $client->p2p_advertiser_info->{active_float_ads}, 'active_float_ads not present';
+    ok !exists $client->p2p_advertiser_info->{active_fixed_ads}, 'active_fixed_ads not present';
+
+    $config->country_advert_config(
+        encode_json_utf8({
+                $client->residence => {
+                    float_ads => 'disabled',
+                    fixed_ads => 'list_only'
+                }}));
+
+    is $client->p2p_advertiser_info->{active_float_ads}, 2, 'active_float_ads exists and is correct';
+    is $client->p2p_advertiser_info->{active_fixed_ads}, 1, 'active_fixed_ads exists and is correct';
+
+    $client->p2p_advert_update(
+        id        => $ad->{id},
+        is_active => 0
+    );
+    ok !exists $client->p2p_advertiser_info->{active_fixed_ads}, 'active_fixed_ads not present when none';
+};
+
 done_testing();

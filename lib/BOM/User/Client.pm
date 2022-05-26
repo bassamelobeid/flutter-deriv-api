@@ -627,6 +627,34 @@ sub risk_level_sr {
     return $risk;
 }
 
+=head2 was_locked_for_high_risk
+
+In some cases high risk clients drop do standard/low risk level before authentication and FA submission;
+these clients will remain withdrawal_locked without any notification or instructions in the front-end about what's wrong 
+(these instructions are exclusively sent for igh-risk clients only).
+This moethid identifies such clients in order to flag them properly in B<get_account_status> API response.
+
+This method returns true if:
+
+1- client is not high-risk at the monent
+
+2- client is allowed to upload documents because of high risk
+
+3- FA is not completed or POI is not done yet
+
+=cut
+
+sub was_locked_for_high_risk {
+    my $self = shift;
+
+    return
+           ($self->risk_level_aml ne 'high')
+        && $self->status->withdrawal_locked
+        && $self->status->allow_document_upload
+        && ($self->status->allow_document_upload->{reason} eq 'BECOME_HIGH_RISK')
+        || 0;
+}
+
 =head2 is_financial_assessment_complete
 
 Check if the client has filled out the financial assessment information:
@@ -644,10 +672,14 @@ sub is_financial_assessment_complete {
 
     my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information');
 
-    my $is_fa_required = $self->status->financial_assessment_required;
+    my $is_fa_required =
+           $self->status->financial_assessment_required
+        || $self->risk_level_aml() eq 'high'
+        || $self->risk_level_sr() eq 'high'
+        || $self->was_locked_for_high_risk;
 
     if ($sc ne 'maltainvest') {
-        return 0 if (($self->risk_level_aml() eq 'high' || $self->risk_level_sr() eq 'high' || $is_fa_required) && !$is_FI);
+        return 0 if ($is_fa_required && !$is_FI);
         return 1;
     }
 
@@ -2192,6 +2224,8 @@ use constant {
         PP010 => "OrderCreateFailAmountAdvertiser",
         PP011 => "OpenOrdersDeleteAdvert",
         PP012 => "PaymentMethodRemoveActiveOrdersDB",
+        PP013 => "DuplicatePaymentMethod",
+
     },
 };
 
@@ -3660,11 +3694,11 @@ sub _validate_advert {
     $self->_validate_advert_amount(%param);
     $self->_validate_advert_rates(%param);
     $self->_validate_advert_min_max(%param);
-    $self->_validate_advert_payment_contact_info(%param);
     $self->_validate_advert_duplicates(%param);
     $self->_validate_advert_payment_method_type(%param);
     $self->_validate_advert_payment_method_ids(%param);
     $self->_validate_advert_payment_method_names(%param);
+    $self->_validate_advert_payment_contact_info(%param);
 }
 
 =head2 _validate_advert_amount
@@ -4340,6 +4374,19 @@ sub _advertiser_details {
         if ($advertiser->{blocked_until}) {
             my $block_time = Date::Utility->new($advertiser->{blocked_until});
             $details->{blocked_until} = $block_time->epoch if Date::Utility->new->is_before($block_time);
+        }
+
+        # if ad rates are not in the default setting, FE needs to know if advertiser has active ads of each type
+        my $advert_config = BOM::Config::P2P::advert_config()->{$self->residence};
+        if ($advert_config->{fixed_ads} ne 'enabled' or $advert_config->{float_ads} ne 'disabled') {
+            my $ads = $self->_p2p_adverts(
+                advertiser_id => $advertiser->{id},
+                is_active     => 1
+            );
+            for my $type ('fixed', 'float') {
+                my $count = scalar grep { $_->{rate_type} eq $type } @$ads;
+                $details->{'active_' . $type . '_ads'} = $count if $count > 0;
+            }
         }
 
     } else {
@@ -5327,6 +5374,7 @@ sub _p2p_advertiser_payment_method_create {
 
     for my $item (@$new) {
         my $method = $item->{method};
+
         die +{
             error_code     => 'InvalidPaymentMethod',
             message_params => [$method]}
@@ -5361,16 +5409,24 @@ sub _p2p_advertiser_payment_method_create {
         $existing->{rand()} = {
             method => $method,
             fields => {pairgrep { $a !~ /^(method|is_enabled)$/ } %$item}};
-    }
 
-    $self->db->dbic->run(
-        fixup => sub {
-            $_->do(
-                'SELECT p2p.advertiser_payment_method_create(?, ?)',
-                undef,
-                $self->_p2p_advertiser_cached->{id},
-                Encode::encode_utf8($json->encode($new)));
-        });
+        my $created_pm = $self->db->dbic->run(
+            fixup => sub {
+                my $dbh = shift;
+                return $dbh->selectrow_hashref(
+                    'SELECT *  FROM p2p.advertiser_payment_method_create_v2(?, ?)',
+                    undef,
+                    $self->_p2p_advertiser_cached->{id},
+                    Encode::encode_utf8($json->encode($item)));
+            });
+
+        if ($created_pm->{error_params}->[0]) {
+            $created_pm->{error_params}->[0] = $method_defs->{$item->{method}}{display_name};
+        }
+
+        $self->_p2p_db_error_handler($created_pm);
+
+    }
 
     return;
 }
