@@ -176,10 +176,13 @@ my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
 my $pid;
 sub start_subscription{
+    my $subscriptions = shift;
     $pid = undef;
     my $pid_file = path('/tmp/proposal_sub.pid');
     $pid_file->remove();
-    open(my $fh, "-|", "$command -s $initial_subscriptions -a $app_id -c 5 -r $check_time -m $market&")
+    my $whole_command = "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market&";
+    say "start command '$whole_command'";
+    open(my $fh, "-|", $whole_command)
         or die $!;
     for(1..10){
         if($pid_file->exists){
@@ -194,7 +197,7 @@ sub start_subscription{
 
    
 }
-start_subscription();
+start_subscription($initial_subscriptions);
 # Kill the sub script if Ctrl-C is pressed.
 $SIG{'INT'} = sub {
     exit;    #this will end up running the END block
@@ -237,7 +240,7 @@ $timer = IO::Async::Timer::Periodic->new(
                 $start = 0;
             }
             $new_market = 0;
-            start_subscription();
+            start_subscription($subscriptions);
         } else {
             if ($number_of_runs < $iterations) {
                 say 'Run Number ' . $number_of_runs;
@@ -272,7 +275,7 @@ $timer->start;
 my $timer_print_datetime;
 if($debug){
     my $timer_print_datetime = IO::Async::Timer::Periodic->new(
-        interval => 1,
+        interval => 10,
         on_tick => sub {
             say Date::Utility->new()->datetime;
         }
