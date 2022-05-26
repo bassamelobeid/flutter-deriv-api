@@ -2818,7 +2818,7 @@ subtest 'request_change_email' => sub {
     });
 
     my $req = BOM::Platform::Context::Request->new(
-        brand_name => 'Deriv',
+        brand_name => 'deriv',
         language   => 'EN',
         app_id     => $app_id,
     );
@@ -2848,7 +2848,7 @@ subtest 'verify_change_email' => sub {
     });
 
     my $req = BOM::Platform::Context::Request->new(
-        brand_name => 'Deriv',
+        brand_name => 'deriv',
         language   => 'EN',
         app_id     => $app_id,
     );
@@ -2878,7 +2878,7 @@ subtest 'confirm_change_email' => sub {
     });
 
     my $req = BOM::Platform::Context::Request->new(
-        brand_name => 'Deriv',
+        brand_name => 'deriv',
         language   => 'EN',
         app_id     => $app_id,
     );
@@ -3546,7 +3546,7 @@ subtest 'crypto_withdrawal_rejected_email' => sub {
 
 subtest 'account_verification_for_pending_payout event' => sub {
     my $req = BOM::Platform::Context::Request->new(
-        brand_name => 'Deriv',
+        brand_name => 'deriv',
         language   => 'EN',
         app_id     => $app_id,
     );
@@ -3578,7 +3578,7 @@ subtest 'account_verification_for_pending_payout event' => sub {
 
 subtest 'authenticated_with_scans event' => sub {
     my $req = BOM::Platform::Context::Request->new(
-        brand_name => 'Deriv',
+        brand_name => 'deriv',
         language   => 'EN',
         app_id     => $app_id,
     );
