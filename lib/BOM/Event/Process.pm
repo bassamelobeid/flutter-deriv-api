@@ -27,6 +27,7 @@ use BOM::Event::Actions::App;
 use BOM::Event::Utility qw(exception_logged);
 use BOM::Event::Actions::Authentication;
 use BOM::Event::Services::Track;
+use BOM::Event::Actions::Common;
 
 use Scalar::Util qw(blessed);
 
@@ -106,6 +107,7 @@ my $action_mapping = {
         verify_email_closed_account_other           => \&BOM::Event::Actions::Client::verify_email_closed_account_other,
         verify_email_closed_account_account_opening => \&BOM::Event::Actions::Client::verify_email_closed_account_account_opening,
         verify_email_closed_account_reset_password  => \&BOM::Event::Actions::Client::verify_email_closed_account_reset_password,
+        trigger_cio_broadcast                       => \&BOM::Event::Actions::Common::trigger_cio_broadcast,
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,

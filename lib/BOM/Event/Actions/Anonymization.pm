@@ -235,7 +235,7 @@ async sub _anonymize {
         return "closeIOError" unless BOM::Platform::CloseIO->new(user => $user)->anonymize_user();
 
         # Delete data on customer io.
-        await BOM::Event::Actions::CustomerIO->new(user => $user)->anonymize_user();
+        await BOM::Event::Actions::CustomerIO->new->anonymize_user($user);
 
         # Delete desk data from s3
         return "deskError" unless await BOM::Platform::Desk->new(user => $user)->anonymize_user();

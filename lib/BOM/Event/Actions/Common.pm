@@ -26,6 +26,7 @@ use BOM::Platform::Event::Emitter;
 use BOM::User::Client;
 use Email::Stuffer;
 use BOM::Event::Actions::P2P;
+use BOM::Event::Actions::CustomerIO;
 
 use Brands;
 
@@ -256,6 +257,30 @@ sub _email_client_age_verified {
     }
 
     return undef;
+}
+
+=head2 trigger_cio_broadcast
+
+Triggers a customer.io broadcast campaign.
+Only triggering by user ids is supported for now.
+
+=cut
+
+sub trigger_cio_broadcast {
+    my $data = shift;
+
+    my $campaign_id = delete $data->{campaign_id};
+    unless ($campaign_id) {
+        $log->warn('No campaign_id provided to trigger_cio_broadcast');
+        return 0;
+    }
+
+    if (my $ids = delete $data->{ids}) {
+        return BOM::Event::Actions::CustomerIO->new->trigger_broadcast_by_ids($campaign_id, $ids, $data);
+    }
+
+    $log->warn('No valid recipients provided to trigger_cio_broadcast');
+    return 0;
 }
 
 1;

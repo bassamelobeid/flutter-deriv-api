@@ -2,27 +2,44 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Exception;
+use Test::Deep;
+use Test::MockModule;
+use Test::MockObject;
 
 use BOM::Event::Actions::CustomerIO;
-use BOM::Test;
-use BOM::User;
-use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 
-my $user = BOM::User->create(
-    email    => 'test@binary.com',
-    password => BOM::User::Password::hashpw('password'));
+subtest 'trigger broadcast' => sub {
+    my @activations;
+    my $mock_trigger = Test::MockObject->new;
+    $mock_trigger->mock(activate => sub { shift; push @activations, [@_] });
 
-subtest 'initialization' => sub {
-    throws_ok {
-        BOM::Event::Actions::CustomerIO->new
-    }
-    qr/Missing required arguments: user/;
+    my @triggers;
+    my $mock_api = Test::MockObject->new;
+    $mock_api->mock(new_trigger => sub { shift; push @triggers, [@_]; $mock_trigger });
 
-    lives_ok {
-        BOM::Event::Actions::CustomerIO->new(user => $user);
-    }
-    'Instance created successfully';
+    my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
+    $mock_customerio->redefine('_instance' => sub { $mock_api });
+
+    my $cio = BOM::Event::Actions::CustomerIO->new;
+    $cio->trigger_broadcast_by_ids(1, [1, 2], {my_var => 'my val'})->get;
+
+    cmp_deeply \@triggers, [[campaign_id => 1]], 'campaign_id';
+    cmp_deeply \@activations,
+        [[{
+                ids    => [1, 2],
+                my_var => 'my val'
+            }]
+        ],
+        'activations';
+
+    my @ids = (1 .. 10000);
+    @activations = ();
+
+    $cio->trigger_broadcast_by_ids(2, \@ids,)->get;
+
+    is scalar @activations, 2, 'more than 9999 ids split into 2 triggers';
+    is scalar $activations[0]->[0]->{ids}->@*, 9999, 'first trigger has 9999 ids';
+    is scalar $activations[1]->[0]->{ids}->@*, 1,    'second trigger has 1 id';
 };
 
 done_testing();

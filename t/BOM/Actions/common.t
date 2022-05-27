@@ -302,6 +302,20 @@ subtest 'set_age_verification' => sub {
     }
 };
 
+subtest 'trigger_cio_broadcast' => sub {
+    is BOM::Event::Actions::Common::trigger_cio_broadcast({}), 0, 'no campaign_id';
+    is BOM::Event::Actions::Common::trigger_cio_broadcast({campaign_id => 1}), 0, 'no user ids';
+
+    my $cio_mock = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
+    $cio_mock->redefine(trigger_broadcast_by_ids => sub { @_ });
+    my @res = BOM::Event::Actions::Common::trigger_cio_broadcast({
+        campaign_id => 1,
+        ids         => [1, 2],
+        xyz         => 'abc'
+    });
+    cmp_deeply(\@res, [ignore(), 1, [1, 2], {xyz => 'abc'}], 'trigger_broadcast_by_ids called correctly');
+};
+
 $client_mock->unmock_all;
 $status_mock->unmock_all;
 $countries_mock->unmock_all;
