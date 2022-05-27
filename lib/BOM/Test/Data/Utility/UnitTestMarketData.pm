@@ -35,8 +35,6 @@ use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::Asset;
 
-use BOM::Product::ContractFinder;
-
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 sub _initialize_symbol_dividend {

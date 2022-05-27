@@ -1,0 +1,19 @@
+# This file contains the repositories that required to run tests of current repo.
+---
+- regentmarkets/bom
+- regentmarkets/bom-config
+- regentmarkets/bom-cryptocurrency
+- regentmarkets/bom-market
+- regentmarkets/bom-platform
+- regentmarkets/bom-postgres
+- regentmarkets/bom-rpc
+- regentmarkets/bom-rules
+- regentmarkets/bom-transaction
+- regentmarkets/bom-user
+- regentmarkets/bom-postgres-authdb
+- regentmarkets/bom-postgres-chronicledb
+- regentmarkets/bom-postgres-clientdb
+- regentmarkets/bom-postgres-collectordb
+- regentmarkets/bom-postgres-cryptodb
+- regentmarkets/bom-postgres-feeddb
+- regentmarkets/bom-postgres-userdb
