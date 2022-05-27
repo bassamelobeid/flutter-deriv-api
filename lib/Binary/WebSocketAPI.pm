@@ -506,7 +506,7 @@ sub update_apps_blocked_from_operation_domain {
 Add (block) or remove (unblock) the app ids from APPS_BLOCKED_FROM_OPERATION_DOMAINS.
 Note: This is also a wrapper to update the global variable based on block or unblock request from Introspection command.
 
-Taking the following arguments
+Taking the following arguments and returns future.
 
 =over 4
 
@@ -523,32 +523,57 @@ Taking the following arguments
 sub add_remove_apps_blocked_from_opertion_domain {
     my ($operation, $app_id, $domain) = @_;
 
+    my $f = Future::Mojo->new;
     if ($operation eq 'add') {
         push $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$domain}->@*, $app_id;
     } elsif ($operation eq 'del') {
         $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$domain} = [grep { $_ != $app_id } $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$domain}->@*];
     }
 
-    set_to_redis_master('domain_based_apps::blocked',
-        Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS)));
+    set_to_redis_master(
+        'domain_based_apps::blocked',
+        Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS)),
+        sub {
+            my ($redis, $err) = @_;
+            if ($err) {
+                $f->fail($err);
+                $log->error("Error setting domain_based_apps::blocked redis value: $err");
+                return;
+            }
+            $f->done();
+            return;
+        });
+    return $f;
 }
 
 =head2 get_apps_blocked_from_operation_domain
 
-Get value stored in the global variable Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS and returns.
+Get value stored in the global variable Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS and returns future.
 
 =cut
 
 sub get_apps_blocked_from_operation_domain {
-    my $apps_blocked = get_from_redis_master('domain_based_apps::blocked');
-    update_apps_blocked_from_operation_domain($apps_blocked);
-
-    return \%Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS;
+    my $f = Future::Mojo->new;
+    get_from_redis_master(
+        'domain_based_apps::blocked',
+        sub {
+            my ($redis, $err, $apps_blocked) = @_;
+            $apps_blocked //= '{}';
+            if ($err) {
+                $log->error("Error reading domain_based_apps::blocked redis value: $err");
+                $f->fail($err);
+                return;
+            }
+            update_apps_blocked_from_operation_domain($apps_blocked);
+            $f->done(\%Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS);
+            return;
+        });
+    return $f;
 }
 
 =head2 get_from_redis_master
 
-    get_from_redis_master($key);
+    get_from_redis_master($key, $cb);
 
 Get key value from redis master
 
@@ -558,18 +583,20 @@ It takes the following argument
 
 =item * C<key> Key
 
+=item * C<cb> Callback
+
 =back
 
 =cut
 
 sub get_from_redis_master {
-    my ($key) = @_;
-    return $redis->get($key) // '{}';
+    my ($key, $cb) = @_;
+    $redis->get($key, $cb);
 }
 
 =head2 set_to_redis_master
 
-    set_to_redis_master($key, $value);
+    set_to_redis_master($key, $value, $cb);
 
 Set value to redis master
 
@@ -581,13 +608,18 @@ The following arguments are used
 
 =item * C<value> Value
 
+=item * C<cb> Callback
+
 =back
 
 =cut
 
 sub set_to_redis_master {
-    my ($key, $value) = @_;
-    $redis->set($key, $value);
+    my ($key, $value, $cb) = @_;
+    $redis->set(
+        $key => $value,
+        $cb
+    );
 }
 
 1;

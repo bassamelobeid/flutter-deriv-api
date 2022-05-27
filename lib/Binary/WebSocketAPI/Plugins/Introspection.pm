@@ -706,19 +706,36 @@ Returns the apps blocked from operation domain
 command block_app_in_domain => sub {
     my ($self, $app, $app_id, $env, $block_status) = @_;
     my $redis = ws_redis_master();
-    my $f     = Future::Mojo->new;
     if ($app_id && $env) {
+        my $operation;
         if ($block_status) {
-            Binary::WebSocketAPI::add_remove_apps_blocked_from_opertion_domain('add', $app_id, $env);
+            $operation = Binary::WebSocketAPI::add_remove_apps_blocked_from_opertion_domain('add', $app_id, $env);
         } else {
-            Binary::WebSocketAPI::add_remove_apps_blocked_from_opertion_domain('del', $app_id, $env);
+            $operation = Binary::WebSocketAPI::add_remove_apps_blocked_from_opertion_domain('del', $app_id, $env);
         }
+        return $operation->then(
+            sub {
+                return _get_apps_blocked_from_operation_domain();
+            });
+    } else {
+        return _get_apps_blocked_from_operation_domain();
     }
-    my $rslt = {blocked => Binary::WebSocketAPI::get_apps_blocked_from_operation_domain()};
-    $f->done($rslt);
-
-    return $f;
 };
+
+sub _get_apps_blocked_from_operation_domain {
+    return Binary::WebSocketAPI::get_apps_blocked_from_operation_domain()->then(
+        sub {
+            my $result = shift;
+            my $rslt   = {blocked => $result};
+            return Future::Mojo->done($rslt);
+        }
+    )->catch(
+        sub {
+            my $err = shift;
+            $log->errorf('Redis error when getting blocked apps - %s', $err);
+            return Future::Mojo->fail($err);
+        });
+}
 
 =head2 help
 
