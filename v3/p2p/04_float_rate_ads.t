@@ -99,7 +99,7 @@ ok(!$resp->{error}, 'no error for p2p_advert_list') or note explain $resp;
 $resp = $t->await::p2p_advert_update({
     p2p_advert_update => 1,
     id                => $ad->{id},
-    rate              => -1.01,
+    rate              => -1.00,
 });
 ok(!$resp->{error}, 'no error for p2p_advert_update (update floating rate)') or note explain $resp;
 
