@@ -57,8 +57,14 @@ subtest 'adverts' => sub {
         payment_method_ids => [keys %methods],
     );
 
-    cmp_deeply $advert->{payment_method_names}, ['Method 1', 'Method 2'], 'payment method names';
-    cmp_deeply $advert->{payment_method_details}, \%methods, 'payment method details';
+    cmp_deeply $advert->{payment_method_names}, ['Method 1', 'Method 2'], 'payment method names from advert create';
+    cmp_deeply $advert->{payment_method_details}, \%methods, 'payment method details from advert create';
+
+    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
+    my $ad_info = $client->p2p_advert_info(id => $advert->{id});
+    cmp_deeply $ad_info->{payment_method_names}, ['Method 1', 'Method 2'], 'payment method names when a method is disbled in country';
+    cmp_deeply $ad_info->{payment_method_details}, \%methods, 'payment method details when a method is disbled in country';
+    BOM::Test::Helper::P2P::create_payment_methods();    # reset
 
     is exception {
         %methods = $client->p2p_advertiser_payment_methods(
@@ -68,7 +74,7 @@ subtest 'adverts' => sub {
             )->%*
     }, undef, 'can disable methods';
 
-    my $ad_info = $client->p2p_advert_info(id => $advert->{id});
+    $ad_info = $client->p2p_advert_info(id => $advert->{id});
     cmp_deeply $ad_info->{payment_method_names}, ['Method 2'], 'payment method names';
     cmp_deeply $ad_info->{payment_method_details}, \%methods, 'payment method details';
 
@@ -144,10 +150,15 @@ subtest 'adverts' => sub {
             )
         },
         undef,
-        'can provide valid methods'
+        'can provide valid method names for buy ad'
     );
 
     cmp_deeply $advert->{payment_method_names}, ['Method 1', 'Method 2'], 'payment method for buy ad';
+
+    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
+    cmp_deeply $client->p2p_advert_info(id => $advert->{id})->{payment_method_names}, ['Method 1', 'Method 2'],
+        'payment method names when a method is disbled in country';
+    BOM::Test::Helper::P2P::create_payment_methods();    # reset
 
     cmp_deeply(
         exception {
@@ -218,7 +229,7 @@ subtest 'buy ads / sell orders' => sub {
     is(exception { $advert = $advertiser->p2p_advert_create(%ad_params, payment_method_names => ['method2', 'method1']) },
         undef, 'can create ad with valid names');
 
-    cmp_deeply $advert->{payment_method_names}, ['Method 1', 'Method 2'], 'payment_method_names returned from advert crate';
+    cmp_deeply $advert->{payment_method_names}, ['Method 1', 'Method 2'], 'payment_method_names returned from advert create';
 
     cmp_deeply(
         exception { $advertiser->p2p_advert_update(id => $advert->{id}, payment_method_names => []) },
@@ -287,6 +298,11 @@ subtest 'buy ads / sell orders' => sub {
     my $order_info = $advertiser->p2p_order_info(id => $order->{id});
     is $order_info->{payment_method}, 'method1', 'counterparty gets payment_method';
     cmp_deeply $order_info->{payment_method_details}, $pm_details, 'counterparty gets payment_method_details';
+
+    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
+    cmp_deeply $advertiser->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details,
+        'counterparty gets payment_method_details even if pm disabled in country';
+    BOM::Test::Helper::P2P::create_payment_methods();    # reset
 
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(update => {$methods_by_tag{m1} => {is_enabled => 0}}) },
@@ -408,6 +424,11 @@ subtest 'sell ads / buy orders' => sub {
     };
 
     cmp_deeply $order->{payment_method_details}, $pm_details, 'payment_method_details returned from order_create';
+
+    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details,
+        'buyer gets payment_method_details even if pm disabled in country';
+    BOM::Test::Helper::P2P::create_payment_methods();    # reset
 
     %advertiser_methods = $advertiser->p2p_advertiser_payment_methods(update => {$methods_by_tag{m3} => {is_enabled => 1}})->%*;
 

@@ -128,7 +128,20 @@ subtest 'create' => sub {
                         value        => 'f1 val',
                         display_name => 'Field 1',
                         type         => 'text',
-                        required     => bool(1)}}
+                        required     => bool(1)
+                    },
+                    field2 => {
+                        value        => '',          # missing fields are returned as empty
+                        display_name => 'Field 2',
+                        type         => 'text',
+                        required     => bool(0)
+                    },
+                    instructions => {
+                        display_name => 'Instructions',
+                        required     => 0,
+                        type         => 'memo',
+                        value        => ''
+                    }}
             },
             {
                 method       => 'method2',
@@ -146,7 +159,15 @@ subtest 'create' => sub {
                         value        => 'f4 val',
                         display_name => 'Field 4',
                         type         => 'text',
-                        required     => bool(1)}}}
+                        required     => bool(1)
+                    },
+                    instructions => {
+                        display_name => 'Instructions',
+                        required     => 0,
+                        type         => 'memo',
+                        value        => ''
+                    },
+                }}
         ),
         'Create multiple methods ok'
     );
@@ -261,16 +282,25 @@ subtest 'update' => sub {
                     value        => 'f2 val',
                     display_name => 'Field 2',
                     type         => 'text',
-                    required     => bool(0)}}
+                    required     => bool(0),
+                },
+                instructions => {
+                    display_name => 'Instructions',
+                    required     => 0,
+                    type         => 'memo',
+                    value        => ''
+                },
+            }
         },
         'update a field and add another'
     );
 
     $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
-    ok $client->p2p_advertiser_payment_methods(update => {$id => {is_enabled => 0}})->{$id}{is_enabled},
-        'update skipped when method disabled in country';
-    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'exclude'}}));
 
+    is $client->p2p_advertiser_payment_methods(update => {$id => {field2 => 'f2 new val'}})->{$id}{fields}{field2}{value}, 'f2 new val',
+        'can update method disabled in country';
+
+    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'exclude'}}));
 };
 
 subtest 'delete' => sub {
@@ -396,6 +426,12 @@ subtest 'Instructions field' => sub {
                     type         => 'text',
                     required     => bool(1)
                 },
+                field2 => {
+                    value        => '',
+                    display_name => 'Field 2',
+                    type         => 'text',
+                    required     => bool(0),
+                },
                 instructions => {
                     value        => 'my instructions',
                     display_name => 'Instructions',
@@ -419,6 +455,12 @@ subtest 'Instructions field' => sub {
                         display_name => 'Field 1',
                         type         => 'text',
                         required     => bool(1)
+                    },
+                    field2 => {
+                        value        => '',
+                        display_name => 'Field 2',
+                        type         => 'text',
+                        required     => bool(0),
                     },
                     instructions => {
                         value        => 'new instructions',

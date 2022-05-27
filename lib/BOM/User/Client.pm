@@ -2772,32 +2772,29 @@ sub p2p_order_create {
         $order_type        = 'sell';
         $amount_advertiser = $amount;
         $amount_client     = -$amount;
+        my @payment_method_ids = ($param{payment_method_ids} // [])->@*;
 
         die +{error_code => 'OrderCreateFailClientBalance'} if $amount > $self->balance_for_cashier('p2p');
-        die +{error_code => 'OrderPaymentInfoRequired'}
-            unless trim($param{payment_info})
-            or ($param{payment_method_ids} && $param{payment_method_ids}->@*);
+        die +{error_code => 'OrderPaymentInfoRequired'} unless trim($param{payment_info}) or @payment_method_ids;
         die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
 
-        if ($param{payment_method_ids} && $param{payment_method_ids}->@*) {
+        if ($advert->{payment_method_names}->@*) {
             my $methods = $self->_p2p_advertiser_payment_methods(advertiser_id => $client_info->{id});
-            die +{error_code => 'InvalidPaymentMethods'} unless all { exists $methods->{$_} } $param{payment_method_ids}->@*;
-            my @order_methods = map { $methods->{$_}{method} } grep { $methods->{$_}{is_enabled} } $param{payment_method_ids}->@*;
+            die +{error_code => 'InvalidPaymentMethods'} unless all { exists $methods->{$_} } @payment_method_ids;
+            my @order_methods = map { $methods->{$_}{method} } grep { $methods->{$_}{is_enabled} } @payment_method_ids;
             die +{error_code => 'ActivePaymentMethodRequired'} unless @order_methods;
 
-            if (defined $advert->{payment_method_names}) {
-                my $invalid_method = first {
-                    my $m = $_;
-                    none { $m eq $_ } $advert->{payment_method_names}->@*
-                }
-                @order_methods;
+            my $invalid_method = first {
+                my $m = $_;
+                none { $m eq $_ } $advert->{payment_method_names}->@*
+            }
+            @order_methods;
 
-                if ($invalid_method) {
-                    my $method_defs = $self->p2p_payment_methods;
-                    die +{
-                        error_code     => 'PaymentMethodNotInAd',
-                        message_params => [$method_defs->{$invalid_method}{display_name}]};
-                }
+            if ($invalid_method) {
+                my $method_defs = $self->p2p_payment_methods(all => 1);
+                die +{
+                    error_code     => 'PaymentMethodNotInAd',
+                    message_params => [$method_defs->{$invalid_method} ? $method_defs->{$invalid_method}{display_name} : $invalid_method]};
             }
         }
 
@@ -3945,7 +3942,6 @@ sub _validate_advert_payment_method_ids {
         return;
     }
 
-    my $method_defs  = $self->p2p_payment_methods;
     my $methods      = $self->_p2p_advertiser_payment_methods(advertiser_id => $param{advertiser_id});
     my @method_names = map { $methods->{$_}{method} } grep { exists $methods->{$_} and $methods->{$_}{is_enabled} } $param{payment_method_ids}->@*;
 
@@ -3957,8 +3953,10 @@ sub _validate_advert_payment_method_ids {
         my $orders = $self->_p2p_orders(
             advert_id => $param{id},
             status    => P2P_ORDER_STATUS->{active});
+
         my @used_methods = map { ($_->{advert_payment_method_names} // [])->@* } @$orders;
         if (my ($removed_method) = array_minus(@used_methods, @method_names)) {
+            my $method_defs = $self->p2p_payment_methods(all => 1);
 
             my @payment_methods_display_name_array;
             foreach (@used_methods) {
@@ -3966,6 +3964,7 @@ sub _validate_advert_payment_method_ids {
             }
 
             my $payment_methods_display_name_joined = join(', ', sort @payment_methods_display_name_array);
+
             die +{
                 error_code     => 'PaymentMethodRemoveActiveOrders',
                 message_params => [$payment_methods_display_name_joined]};
@@ -3990,6 +3989,7 @@ sub _validate_advert_payment_method_names {
     die +{error_code => 'AdvertPaymentMethodNamesNotAllowed'} if $param{type} eq 'sell';
 
     my $method_defs = $self->p2p_payment_methods;
+
     if (my $invalid_method = first { not exists $method_defs->{$_} } $param{payment_method_names}->@*) {
         die +{
             error_code     => 'InvalidPaymentMethod',
@@ -4030,20 +4030,23 @@ Format advertiser payment methods for websocket response.
 =cut
 
 sub _p2p_advertiser_payment_method_details {
-    my ($self, $methods, $defs) = @_;
+    my ($self, $methods) = @_;
 
-    $defs //= $self->p2p_payment_methods;
+    my $defs = $self->p2p_payment_methods(all => 1);
 
     for my $id (keys %$methods) {
         my $method_def = $defs->{$methods->{$id}{method}};
         $methods->{$id}{display_name} = $method_def->{display_name};
         $methods->{$id}{type}         = $method_def->{type};
-        for my $field (keys $methods->{$id}{fields}->%*) {
-            my $field_def = $method_def->{fields}{$field};
-            $methods->{$id}{fields}{$field} = {value => $methods->{$id}{fields}{$field}};
-            $methods->{$id}{fields}{$field}{$_} = $field_def->{$_} for qw/display_name type required/;
+
+        for my $field (keys $method_def->{fields}->%*) {
+            $methods->{$id}{fields}{$field} = {
+                $method_def->{fields}{$field}->%*,
+                value => $methods->{$id}{fields}{$field} // '',
+            };
         }
     }
+
     return $methods;
 }
 
@@ -4465,7 +4468,7 @@ sub _advert_details {
         }
 
         if ($advert->{payment_method_names} and $advert->{payment_method_names}->@*) {
-            $payment_method_defs //= $self->p2p_payment_methods;
+            $payment_method_defs //= $self->p2p_payment_methods(all => 1);
             $result->{payment_method_names} = [
                 sort map { $payment_method_defs->{$_}{display_name} }
                 grep     { exists $payment_method_defs->{$_} } $advert->{payment_method_names}->@*
@@ -4597,7 +4600,7 @@ sub _order_details {
         };
 
         if (not exists $order->{payment_method_details} and $order->{payment_method}) {
-            $payment_method_defs //= $self->p2p_payment_methods;
+            $payment_method_defs //= $self->p2p_payment_methods(all => 1);
             $result->{payment_method_names} =
                 [map { $payment_method_defs->{$_}{display_name} } grep { exists $payment_method_defs->{$_} } split ',', $order->{payment_method}];
         }
@@ -5120,10 +5123,18 @@ The payment_method_countries config (json) is set in backoffice. Each method has
 
 Returns hashref compatible with websocket schema.
 
+Takes the following arguments:
+
+=over 4
+
+=item * all: if true, methods are not filtered by client's residence
+
+=back
+
 =cut
 
 sub p2p_payment_methods {
-    my $self = shift;
+    my ($self, %param) = @_;
 
     my $methods        = BOM::Config::p2p_payment_methods();
     my $country_config = $json->decode(BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries);
@@ -5135,8 +5146,8 @@ sub p2p_payment_methods {
         my $mode      = $config->{mode}            // 'include';
         my $countries = $config->{countries}       // [];
 
-        next if $mode eq 'include' and none { $_ eq $residence } @$countries;
-        next if $mode eq 'exclude' and any { $_ eq $residence } @$countries;
+        next if not($param{all}) and $mode eq 'include' and none { $_ eq $residence } @$countries;
+        next if not($param{all}) and $mode eq 'exclude' and any { $_ eq $residence } @$countries;
 
         my $method_def = $methods->{$method};
         my %fields     = map {
@@ -5190,18 +5201,17 @@ sub p2p_advertiser_payment_methods {
     my $advertiser = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser;
 
-    my $method_defs = $self->p2p_payment_methods;
-    my $existing    = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
+    my $existing = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
 
     delete $param{p2p_advertiser_payment_methods};
-    return $self->_p2p_advertiser_payment_method_details($existing, $method_defs) unless %param;
+    return $self->_p2p_advertiser_payment_method_details($existing) unless %param;
 
     die +{error_code => 'PaymentMethodsDisabled'}
         unless BOM::Config::Runtime->instance->app_config->payments->p2p->payment_methods_enabled;
 
-    $existing = $self->_p2p_advertiser_payment_method_delete($existing, $param{delete})               if $param{delete};
-    $existing = $self->_p2p_advertiser_payment_method_update($method_defs, $existing, $param{update}) if $param{update};
-    $self->_p2p_advertiser_payment_method_create($method_defs, $existing, $param{create}) if $param{create};
+    $existing = $self->_p2p_advertiser_payment_method_delete($existing, $param{delete}) if $param{delete};
+    $existing = $self->_p2p_advertiser_payment_method_update($existing, $param{update}) if $param{update};
+    $self->_p2p_advertiser_payment_method_create($existing, $param{create}) if $param{create};
 
     BOM::Platform::Event::Emitter::emit(
         p2p_adverts_updated => {
@@ -5209,7 +5219,7 @@ sub p2p_advertiser_payment_methods {
         }) if $param{delete} or $param{update};
 
     my $update = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
-    return $self->_p2p_advertiser_payment_method_details($update, $method_defs);
+    return $self->_p2p_advertiser_payment_method_details($update);
 }
 
 =head2 _p2p_advertiser_payment_method_delete
@@ -5255,8 +5265,6 @@ Takes the following parameters:
 
 =over 4
 
-=item * method_defs: payment method definitions returned from p2p_payment_methods()
-
 =item * existing: hashref of existing methods
 
 =item * updates: hashref of items to update
@@ -5268,7 +5276,9 @@ Returns $existing with updated items.
 =cut
 
 sub _p2p_advertiser_payment_method_update {
-    my ($self, $method_defs, $existing, $updates) = @_;
+    my ($self, $existing, $updates) = @_;
+
+    my $method_defs = $self->p2p_payment_methods(all => 1);    # pm can be updated after being disabled in country
 
     my (@disabled_ids, @updated_ids);
     for my $id (keys %$updates) {
@@ -5276,24 +5286,25 @@ sub _p2p_advertiser_payment_method_update {
         die +{error_code => 'PaymentMethodNotFound'}
             unless exists $existing->{$id};
 
-        my $method     = $existing->{$id}{method};
-        my $method_def = $method_defs->{$method} or return;    # skip the update if method is disabled for country
+        my $method = $existing->{$id}{method};
 
-        for my $item_field (grep { $_ !~ /^(method|is_enabled)$/ } keys $updates->{$id}->%*) {
+        if (my $method_def = $method_defs->{$method}) {
+            for my $item_field (grep { $_ !~ /^(method|is_enabled)$/ } keys $updates->{$id}->%*) {
 
-            my $field_def = $method_def->{fields}{$item_field};
+                my $field_def = $method_def->{fields}{$item_field};
 
-            die +{
-                error_code     => 'InvalidPaymentMethodField',
-                message_params => [$item_field, $method_def->{display_name}]}
-                unless $field_def;
+                die +{
+                    error_code     => 'InvalidPaymentMethodField',
+                    message_params => [$item_field, $method_def->{display_name}]}
+                    unless $field_def;
 
-            die +{
-                error_code     => 'MissingPaymentMethodField',
-                message_params => [$field_def->{display_name}, $method_defs->{$method}{display_name}]}
-                if $field_def->{required} and not(trim($updates->{$id}{$item_field}));
+                die +{
+                    error_code     => 'MissingPaymentMethodField',
+                    message_params => [$field_def->{display_name}, $method_defs->{$method}{display_name}]}
+                    if $field_def->{required} and not(trim($updates->{$id}{$item_field}));
 
-            $existing->{$id}{fields}{$item_field} = $updates->{$id}{$item_field};
+                $existing->{$id}{fields}{$item_field} = $updates->{$id}{$item_field};
+            }
         }
 
         for my $pm_id (keys %$existing) {
@@ -5307,7 +5318,7 @@ sub _p2p_advertiser_payment_method_update {
 
             die +{
                 error_code     => 'DuplicatePaymentMethod',
-                message_params => [$method_def->{display_name}]};
+                message_params => [$method_defs->{$method} ? $method_defs->{$method}{display_name} : $method]};
         }
 
         push(@disabled_ids, $id) if exists $updates->{$id}{is_enabled} and (!$updates->{$id}{is_enabled}) and $existing->{$id}{is_enabled};
@@ -5332,8 +5343,6 @@ Takes the following parameters:
 
 =over 4
 
-=item * method_defs: payment method definitions returned from p2p_payment_methods()
-
 =item * existing: hashref of existing methods
 
 =item * updates: hashref of items to create
@@ -5345,7 +5354,9 @@ Returns undef.
 =cut
 
 sub _p2p_advertiser_payment_method_create {
-    my ($self, $method_defs, $existing, $new) = @_;
+    my ($self, $existing, $new) = @_;
+
+    my $method_defs = $self->p2p_payment_methods;
 
     for my $item (@$new) {
         my $method = $item->{method};
