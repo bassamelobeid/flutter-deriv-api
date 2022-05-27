@@ -634,19 +634,34 @@ if ($input{whattodo} eq 'save_edd_status') {
             comment          => $input{edd_comment},
             reason           => $input{edd_reason});
 
-        my $withdrawal_locked_reason = "Pending EDD docs/info for withdrawal request";
+        my $unwelcome_reason = "Pending EDD docs/info for withdrawal request";
+        my $disabled_reason  = "Failed to submit EDD docs/info for withdrawal request";
 
         my @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } $user_clients->@*;
 
         foreach my $client_to_update (@clients_to_update) {
-            # trigger withdrawal_locked when EDD status = 'failed', 'in_progress' or 'pending'
-            # remove withdrawal_locked when EDD status = 'passed', 'n/a'
-            if ($client_to_update->status->reason('withdrawal_locked') eq $withdrawal_locked_reason
-                and ($edd_status eq 'passed' or $edd_status eq 'n/a'))
-            {
-                $client_to_update->status->clear_withdrawal_locked;
-            } elsif (any { $_ eq $edd_status } qw(failed in_progress pending)) {
-                $client_to_update->status->setnx('withdrawal_locked', BOM::Backoffice::Auth0::get_staffname(), $withdrawal_locked_reason);
+            # trigger unwlecome when EDD status = 'in_progress' or 'pending'
+            # remove unwlecome when EDD status = 'passed', 'n/a'
+            # trigger disable when EDD status = 'failed'
+
+            if ($edd_status eq 'passed' or $edd_status eq 'n/a') {
+                if ($client_to_update->status->reason('unwelcome') eq $unwelcome_reason) {
+                    $client_to_update->status->clear_unwelcome();
+                }
+                if ($client_to_update->status->reason('disabled') eq $disabled_reason) {
+                    $client_to_update->status->clear_disabled();
+                }
+
+            } elsif (any { $_ eq $edd_status } qw(in_progress pending)) {
+                $client_to_update->status->setnx('unwelcome', BOM::Backoffice::Auth0::get_staffname(), $unwelcome_reason);
+                if ($client_to_update->status->reason('disabled') eq $disabled_reason) {
+                    $client_to_update->status->clear_disabled();
+                }
+            } elsif (any { $_ eq $edd_status } qw(failed)) {
+                $client_to_update->status->setnx('disabled', BOM::Backoffice::Auth0::get_staffname(), $disabled_reason);
+                if ($client_to_update->status->reason('unwelcome') eq $unwelcome_reason) {
+                    $client_to_update->status->clear_unwelcome();
+                }
             }
         }
     } catch ($e) {
