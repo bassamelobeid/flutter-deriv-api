@@ -25,6 +25,8 @@ use List::Util qw(any);
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
+use BOM::Config::CurrencyConfig;
+use BOM::Config::P2P;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(parse_mt5_group);
@@ -340,6 +342,38 @@ sub p2p_on_advert_view {
 
     $p2p_redis->set($key, encode_json_utf8($state), 'EX', P2P_ADVERT_STATE_EXPIRY);
     return $updates;
+}
+
+=head2 p2p_exchange_rate
+
+Gets P2P rate from the most of recent of feed or backoffice manual quote for the provided country.
+Returns a hashref of quote details or empty hashref if no quote.
+
+=cut
+
+sub p2p_exchange_rate {
+    my $country = shift;
+
+    my $config   = BOM::Config::P2P::advert_config()->{$country};
+    my $currency = BOM::Config::CurrencyConfig::local_currency_for_country($country);
+    my $quote    = ExchangeRates::CurrencyConverter::usd_rate($currency);
+
+    my @quotes;
+    push @quotes,
+        {
+        epoch  => $config->{manual_quote_epoch},
+        quote  => $config->{manual_quote},
+        source => 'manual'
+        } if $config->{manual_quote};
+    push @quotes,
+        {
+        epoch  => $quote->{epoch},
+        quote  => 1 / $quote->{quote},
+        source => 'feed'
+        } if $quote;
+    @quotes = sort { $b->{epoch} <=> $a->{epoch} } @quotes;
+
+    return $quotes[0] // {};
 }
 
 1;

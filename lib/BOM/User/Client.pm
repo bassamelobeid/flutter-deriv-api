@@ -2476,6 +2476,9 @@ sub p2p_advert_create {
 
     $self->_validate_advert(%param);
 
+    my $market_rate = BOM::User::Utility::p2p_exchange_rate($self->residence)->{quote};
+    die +{error_code => 'AdvertFloatRateNotAllowed'} if $param{rate_type} eq 'float' and not $market_rate;
+
     my ($id) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
@@ -2492,8 +2495,7 @@ sub p2p_advert_create {
         });
 
     # to get all the fields
-    my $market_rate = $self->_p2p_exchange_rate;
-    my $advert      = $self->_p2p_adverts(
+    my $advert = $self->_p2p_adverts(
         id          => $id,
         market_rate => $market_rate
     )->[0];
@@ -2727,7 +2729,7 @@ sub p2p_order_create {
         message_params => [$limit_per_day_per_client]}
         if ($day_order_count // 0) >= $limit_per_day_per_client;
 
-    my $market_rate = $self->_p2p_exchange_rate;
+    my $market_rate = BOM::User::Utility::p2p_exchange_rate($self->residence)->{quote};
 
     my $advert = $self->_p2p_adverts(
         id                     => $advert_id,
@@ -2759,15 +2761,8 @@ sub p2p_order_create {
         error_code     => 'OrderMaximumTempExceeded',
         message_params => [$limit_remaining, $self->currency]} if $amount > $limit_remaining;
 
-    if ($advert->{rate_type} eq 'float') {
-        die +{error_code => 'OrderCreateFailRateRequired'} unless defined $param{rate};
-
-        my $allowed_slippage = $p2p_config->float_rate_order_slippage / 2;
-        my $diff             = ($param{rate} - $advert->{effective_rate}) / $advert->{effective_rate};
-        die +{error_code => 'OrderCreateFailRateSlippage'} if abs($diff * 100) > $allowed_slippage;
-    } else {
-        die +{error_code => 'OrderCreateFailRateChanged'} if defined $param{rate} and $param{rate} != $advert->{rate};
-    }
+    die +{error_code => 'OrderCreateFailRateRequired'} if $advert->{rate_type} eq 'float' and not defined($param{rate});
+    die +{error_code => 'OrderCreateFailRateChanged'}  if defined $param{rate}            and $param{rate} != $advert->{effective_rate};
 
     my $advertiser = BOM::User::Client->new({loginid => $advertiser_info->{client_loginid}});
     my ($order_type, $amount_advertiser, $amount_client);
@@ -2876,6 +2871,7 @@ sub p2p_order_create {
     my $order = $self->db->dbic->run(
         fixup => sub {
             my $dbh = shift;
+
             return $dbh->selectrow_hashref(
                 'SELECT * FROM p2p.order_create_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)', undef,
                 $advert_id,                                                                                $self->loginid,
@@ -3619,7 +3615,7 @@ sub _p2p_adverts {
     $param{reversible_limit}    = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
     $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
     $param{advertiser_name} =~ s/([%_])/\\$1/g if $param{advertiser_name};
-    $param{market_rate} //= $self->_p2p_exchange_rate;
+    $param{market_rate} //= BOM::User::Utility::p2p_exchange_rate($self->residence)->{quote};
 
     if ($param{filter_rate_type}) {
         my $config = BOM::Config::P2P::advert_config()->{$self->residence} or die +{error_code => 'RestrictedCountry'};
@@ -4049,27 +4045,6 @@ sub _p2p_advertiser_payment_method_details {
         }
     }
     return $methods;
-}
-
-=head2 _p2p_exchange_rate
-
-Gets P2P rate from the most of recent of feed or backoffice manual quote.
-Assumes the client will only view ads for their own country and local currency.
-
-=cut
-
-sub _p2p_exchange_rate {
-    my ($self) = @_;
-
-    my $config = BOM::Config::P2P::advert_config()->{$self->residence};
-    my $quote  = ExchangeRates::CurrencyConverter::usd_rate($self->local_currency);
-
-    my @quotes;
-    push @quotes, [$config->{manual_quote_epoch}, $config->{manual_quote}] if $config->{manual_quote};
-    push @quotes, [$quote->{epoch},               1 / $quote->{quote}]     if $quote;
-    @quotes = sort { $b->[0] <=> $a->[0] } @quotes;
-
-    return $quotes[0]->[1];
 }
 
 =head2 _p2p_order_payment_method_details
