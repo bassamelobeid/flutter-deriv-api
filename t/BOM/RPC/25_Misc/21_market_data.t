@@ -56,7 +56,7 @@ subtest 'exchange rates' => sub {
     if (exists $result->{rates}) {
         ok(!exists $result->{rates}->{$base}, "Base currency not included in rates");
     }
-    cmp_ok($result->{rates}->{LTC}, '==', 0.00833333, 'correct rate for LTC');
+    cmp_ok($result->{rates}->{LTC}, '==', 1 / 120, 'correct rate for LTC');
 };
 
 subtest 'economic_calendar' => sub {

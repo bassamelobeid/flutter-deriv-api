@@ -187,14 +187,12 @@ our %ERROR_MAP = do {
         AdvertFloatRateNotAllowed         => localize('Floating rate adverts are not available at this time.'),
         FloatRateTooBig                   => localize('The allowed range for floating rate is -[_1]% to +[_1]%.'),
         FloatRatePrecision                => localize('Floating rate cannot be provided with more than 2 decimal places of precision.'),
-        OrderCreateFailRateSlippage       =>
-            localize("We're unable to create your order because the market rate has moved too much. Please try creating your order again."),
-        OrderCreateFailRateRequired => localize('Please provide a rate for this order.'),
-        OrderCreateFailRateChanged  => localize('The rate of the advert has changed. Please try creating your order again.'),
-        OrderReviewNotComplete      => localize('This order can only be reviewed after it has been successfully completed.'),
-        OrderReviewStatusInvalid    => localize('This order cannot be reviewed. It was not successfully completed.'),
-        OrderReviewExists           => localize('You have already reviewed this order.'),
-        OrderReviewPeriodExpired    =>
+        OrderCreateFailRateRequired       => localize('Please provide a rate for this order.'),
+        OrderCreateFailRateChanged        => localize('The rate of the advert has changed. Please try creating your order again.'),
+        OrderReviewNotComplete            => localize('This order can only be reviewed after it has been successfully completed.'),
+        OrderReviewStatusInvalid          => localize('This order cannot be reviewed. It was not successfully completed.'),
+        OrderReviewExists                 => localize('You have already reviewed this order.'),
+        OrderReviewPeriodExpired          =>
             localize("It's not possible to give a review now. Reviews can only be placed within [_1] hours of successfully completing the order."),
     );
 };

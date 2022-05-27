@@ -13,8 +13,6 @@ This package is a collection of utility functions that implement remote procedur
 use strict;
 use warnings;
 
-use Format::Util::Numbers qw(formatnumber);
-use Scalar::Util qw(looks_like_number);
 use List::Util qw(uniq);
 use List::Util qw(any);
 use Date::Utility;
@@ -77,12 +75,12 @@ rpc exchange_rates => sub {
     my %rates_hash;
     if ($base_currency and $target_currency) {
         ## no critic (RequireCheckingReturnValueOfEval)
-        eval { $rates_hash{$target_currency} = formatnumber('amount', $target_currency, convert_currency(1, $base_currency, $target_currency)); };
+        eval { $rates_hash{$target_currency} = convert_currency(1, $base_currency, $target_currency) };
     } else {
         foreach my $currency (uniq(BOM::Config::CurrencyConfig::local_currency_list(), LandingCompany::Registry::all_currencies())) {
             next if $currency eq $base_currency;
             ## no critic (RequireCheckingReturnValueOfEval)
-            eval { $rates_hash{$currency} = formatnumber('amount', $currency, convert_currency(1, $base_currency, $currency)); };
+            eval { $rates_hash{$currency} = convert_currency(1, $base_currency, $currency) };
         }
     }
 

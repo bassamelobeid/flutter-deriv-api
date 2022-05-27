@@ -337,6 +337,7 @@ rpc website_status => sub {
     $app_config->check_for_update;
     my $tnc_config  = $app_config->cgi->terms_conditions_versions;
     my $tnc_version = decode_json($tnc_config)->{request()->brand->name};
+    my $country     = $params->{residence} // $params->{country_code};
 
     my $result = {
         terms_conditions_version => $tnc_version // '',
@@ -351,8 +352,9 @@ rpc website_status => sub {
         },
     };
 
-    if (my $p2p_advert_config = BOM::Config::P2P::advert_config()->{$params->{residence} // $params->{country_code} // ''}) {
-        my $p2p_config = $app_config->payments->p2p;
+    if (my $p2p_advert_config = BOM::Config::P2P::advert_config()->{$country // ''}) {
+        my $p2p_config    = $app_config->payments->p2p;
+        my $exchange_rate = BOM::User::Utility::p2p_exchange_rate($country);
 
         $result->{p2p_config} = {
             $p2p_config->archive_ads_days ? (adverts_archive_period => $p2p_config->archive_ads_days) : (),
@@ -373,7 +375,8 @@ rpc website_status => sub {
             fixed_rate_adverts      => $p2p_advert_config->{fixed_ads},
             float_rate_adverts      => $p2p_advert_config->{float_ads},
             float_rate_offset_limit => $p2p_advert_config->{max_rate_range} / 2,
-            $p2p_advert_config->{deactivate_fixed} ? (fixed_rate_adverts_end_date => $p2p_advert_config->{deactivate_fixed}) : (),
+            $p2p_advert_config->{deactivate_fixed}       ? (fixed_rate_adverts_end_date => $p2p_advert_config->{deactivate_fixed}) : (),
+            ($exchange_rate->{source} // '') eq 'manual' ? (override_exchange_rate      => $exchange_rate->{quote})                : (),
         };
     }
 
