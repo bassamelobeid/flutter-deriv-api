@@ -118,18 +118,23 @@ rpc authorize => sub {
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         $token_type = 'oauth_token';
 
-        my $oauth = BOM::Database::Model::OAuth->new;
-        $app_id = $oauth->get_app_id_by_token($params->{token}) // '';
+        my $oauth                  = BOM::Database::Model::OAuth->new;
+        my $token_extracted_app_id = $oauth->get_app_id_by_token($params->{token}) // '';
 
         # App ID 4 comes from Backoffice, when client account is impersonated
-        if ($app_id eq '4') {
+        if ($token_extracted_app_id eq '4') {
             $user->add_login_history(
                 environment => request()->login_env($params),
                 successful  => 't',
                 action      => 'login',
-                app_id      => $app_id,
+                app_id      => $token_extracted_app_id,
                 token       => $params->{token});
         } else {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InvalidToken',
+                    message_to_client => BOM::Platform::Context::localize("Token is not valid for current app ID.")}
+            ) unless valid_shared_token($oauth, $app_id, $token_extracted_app_id);
+
             BOM::RPC::v3::Utility::check_ip_country(
                 client_residence => $client->{residence},
                 client_ip        => $params->{client_ip},
@@ -303,6 +308,38 @@ sub _create_error {
         code              => $code,
         message_to_client => $message
     });
+}
+
+=head2 valid_shared_token
+
+Validating sharing OAuth token between third party apps
+
+=over 4
+
+=item * C<$oauth> - Instance of C<BOM::Database::Model::OAuth>.
+
+=item * C<$app_id> - The app_id of the App requesting authorization.
+
+=item * C<$token_extracted_app_id> - The app_id the token was created for.
+
+=back
+
+Returns 0 if not authorized, 1 in case of successful validation.
+
+=cut
+
+sub valid_shared_token {
+    my ($oauth, $app_id, $token_extracted_app_id) = @_;
+
+    return 1 unless BOM::Config::Runtime->instance->app_config->system->suspend->access_token_sharing;
+
+    return 1 if $app_id == $token_extracted_app_id;
+
+    return 0 unless $oauth->is_official_app($app_id);
+
+    return 0 unless $oauth->is_official_app($token_extracted_app_id);
+
+    return 1;
 }
 
 1;

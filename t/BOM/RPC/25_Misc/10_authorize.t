@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::Most;
 use Test::Mojo;
+use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -240,6 +241,65 @@ subtest $method => sub {
     $c->call_ok($method, $params)->has_error->error_message_is("Account is disabled.", "duplicated account");
 
     delete $params->{args};
+
+    subtest 'authorize for third party apps' => sub {
+        my $mock_oauth_model = Test::MockModule->new('BOM::Database::Model::OAuth');
+        my @official_app_ids = (1, 2);
+        $mock_oauth_model->mock(
+            is_official_app => sub {
+                return (grep { $_ == $_[1] } @official_app_ids) ? 1 : 0;
+            });
+
+        my $app1 = $oauth->create_app({
+            name         => 'Test App',
+            user_id      => 1,
+            scopes       => ['read', 'admin', 'trade', 'payments'],
+            redirect_uri => 'https://www.example.com/',
+        });
+
+        my $app2 = $oauth->create_app({
+            name         => 'Test App 2',
+            user_id      => 1,
+            scopes       => ['read', 'admin', 'trade', 'payments'],
+            redirect_uri => 'https://www.example.com/',
+        });
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->access_token_sharing(0);
+        my ($unofficial_app_token1) = $oauth->store_access_token_only($app1->{app_id}, $test_client->loginid);
+        $params->{token}                          = $unofficial_app_token1;
+        $params->{source}                         = $app2->{app_id};
+        $expected_result->{stash}->{valid_source} = $app2->{app_id};
+        $expected_result->{stash}->{token}        = $unofficial_app_token1;
+        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'Third party app can share oAuth token while flag is off');
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->access_token_sharing(1);
+        my ($official_app_token) = $oauth->store_access_token_only($official_app_ids[0], $test_client->loginid);
+        $params->{token}  = $official_app_token;
+        $params->{source} = $app1->{app_id};
+        $c->call_ok($method, $params)->has_error->error_message_is("Token is not valid for current app ID.",
+            "Official app oAuth token can't be used to authorize third party app");
+
+        my ($unofficial_app_token2) = $oauth->store_access_token_only($app2->{app_id}, $test_client->loginid);
+        $params->{token} = $unofficial_app_token2;
+        $c->call_ok($method, $params)->has_error->error_message_is("Token is not valid for current app ID.",
+            "Third party app oAuth token can't be used by another third party app");
+
+        $params->{source}                         = $app2->{app_id};
+        $expected_result->{stash}->{valid_source} = $app2->{app_id};
+        $expected_result->{stash}->{token}        = $unofficial_app_token2;
+        $c->call_ok($method, $params)
+            ->has_no_error->result_is_deeply($expected_result, 'Third party app can only be authorize by oAuth token created');
+
+        $params->{source}                         = $official_app_ids[1];
+        $params->{token}                          = $official_app_token;
+        $expected_result->{stash}->{valid_source} = $official_app_ids[1];
+        $expected_result->{stash}->{token}        = $official_app_token;
+        $c->call_ok($method, $params)
+            ->has_no_error->result_is_deeply($expected_result, 'Third party app can only be authorize by oAuth token created');
+
+        delete $params->{source};
+        $mock_oauth_model->unmock_all;
+    };
 
     subtest 'authorize with linked wallet' => sub {
         # create wallet
