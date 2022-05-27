@@ -1275,6 +1275,11 @@ system:
           isa: ArrayRef
           default: ['smile_identity']
           global: 1
+        access_token_sharing:
+          description: "Suspend sharing OAuth token between third party apps"
+          isa: Bool
+          default: 0
+          global: 1
     services:
       description: "Enable integrations with internal microservices"
       isa: section
