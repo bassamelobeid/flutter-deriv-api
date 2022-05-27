@@ -222,9 +222,9 @@ if ($p2p_settings) {
             <a href="~ . request()->url_for('backoffice/p2p_dynamic_settings.cgi') . qq~" class="btn btn--primary">P2P dynamic settings</a>
         </div>
         <div class="card__content">
-            <h3>Floating Rate Adverts</h3>
+            <h3>Advert Rates</h3>
             <a href="~
-        . request()->url_for('backoffice/p2p_float_rate_ads_manage.cgi') . qq~" class="btn btn--primary">Floating Rate Adverts management</a>
+        . request()->url_for('backoffice/p2p_advert_rates_manage.cgi') . qq~" class="btn btn--primary">Advert Rates management</a>
         </div>
         <div class="card__content">
             <h3>Advert Payment Methods</h3>

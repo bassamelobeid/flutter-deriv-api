@@ -87,7 +87,7 @@ my $permissions = {
     'p2p_advertiser_manage.cgi'         => ['CS'],                     # additional check in page for P2PWrite for specific functions
     'p2p_dynamic_settings.cgi'          => ['IT'],                     # page requires IT+Quants; additional check in page for Quants
     'p2p_payment_method_manage.cgi'     => ['IT'],                     # page requires IT+Quants; additional check in page for Quants
-    'p2p_float_rate_ads_manage.cgi'     => ['IT'],                     # page requires IT+Quants; additional check in page for Quants
+    'p2p_advert_rates_manage.cgi'       => ['IT'],                     # page requires IT+Quants; additional check in page for Quants
     'crypto_fraudulent_addresses.cgi'   => ['Compliance', 'Crypto'],
 
     'f_setting_website_status.cgi' => ['CSWrite'],

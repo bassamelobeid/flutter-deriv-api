@@ -160,23 +160,23 @@ There must one email with 'off' sending_state and one with 'automatic'.
 sub get_campaigns {
     my ($self, $filter_campaign) = @_;
 
-    my $campaigns;
+    my ($campaigns, $broadcasts);
     try {
-        $campaigns = $self->call_api('GET', 'campaigns')->{campaigns};
+        $campaigns  = $self->call_api('GET', 'campaigns')->{campaigns};
+        $broadcasts = $self->call_api('GET', 'broadcasts')->{broadcasts};
     } catch ($e) {
         $log->errorf('Failed to get campaigns: %s', $e);
         return undef;
     }
 
     my @result;
-    for my $campaign (@$campaigns) {
+    for my $campaign (@$campaigns, @$broadcasts) {
         my $name = $campaign->{name};
 
         next if $filter_campaign and $name ne $filter_campaign;
         next unless $campaign->{actions}->@* == 2;
 
-        my $actions = $self->get_actions($campaign->{id}) or next;
-
+        my $actions  = $self->get_actions($campaign) or next;
         my $template = first { ($_->{sending_state} // '') eq 'off' } @$actions;
         my $live     = first { ($_->{sending_state} // '') eq 'automatic' } @$actions;
         next unless $live and $template;
@@ -193,6 +193,7 @@ sub get_campaigns {
             {
             name       => $name,
             id         => $campaign->{id},
+            type       => $campaign->{type},
             template   => $template,
             live       => $live,
             updateable => (
@@ -212,10 +213,12 @@ Gets all campaign actions from Customer.io.
 =cut
 
 sub get_actions {
-    my ($self, $campaign_id) = @_;
+    my ($self, $campaign) = @_;
+
+    my $url = join '/', $campaign->{type} eq 'triggered_broadcast' ? 'broadcasts' : 'campaigns', $campaign->{id}, 'actions';
 
     try {
-        return $self->call_api('GET', 'campaigns/' . $campaign_id . '/actions')->{actions};
+        return $self->call_api('GET', $url)->{actions};
     } catch ($e) {
         $log->errorf('Failed to get campaign actions: %s', $e);
         return undef;
@@ -289,10 +292,11 @@ Updates the 'live' action of a campaign in Customer.io.
 sub update_campaign_action {
     my ($self, $campaign, $body, $subject) = @_;
 
+    my $url = join '/', $campaign->{type} eq 'triggered_broadcast' ? 'broadcasts' : 'campaigns', $campaign->{id}, 'actions', $campaign->{live}{id};
+
     try {
         return $self->call_api(
-            'PUT',
-            'campaigns/' . $campaign->{id} . '/actions/' . $campaign->{live}{id},
+            'PUT', $url,
             {
                 body    => $body,
                 subject => $subject

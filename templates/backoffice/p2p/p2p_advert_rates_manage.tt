@@ -1,13 +1,20 @@
 <style>
      #settings_summary { display: none }
 </style>
+
+[% IF notices.size %]
+    <p><b>The following actions will occur on the next cron run [% next_cron %]:</b></p><ul>
+    [% FOR notice IN notices %]<li>[% notice %]</li>[% END %]
+    </ul><hr>
+[% END %]
+
 <table class="small alternate sortable">
     <thead>
         <tr><th>Country</th><th>Float Rate Ads</th><th>Range override</th><th>Latest quote</th><th>Manual quote (from USD)</th><th>Fixed Rate Ads</th><th colspan=2>Deactivate fixed ads on</th></tr>
     </thead>
 [% FOR country IN rows %]
     <tr>
-        <form action="[% request.url_for('backoffice/p2p_float_rate_ads_manage.cgi') %]" method="post">
+        <form action="[% request.url_for('backoffice/p2p_advert_rates_manage.cgi') %]" method="post">
         <input type="hidden" name="revision" value="[% revision %]"/>
         <input type="hidden" name="country" value="[% country.code %]"/>            
         <td><b>[% country.name %]</b></td>

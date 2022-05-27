@@ -58,6 +58,8 @@ sub save_settings {
     my $settings_in_group = $args->{settings_in_group};
 
     my $message = "";
+    my $success = 0;
+
     if ($submitted) {
         my $app_config = BOM::Config::Runtime->instance->app_config;
         # pass in the writer before setting any config
@@ -138,6 +140,7 @@ sub save_settings {
                     BOM::Backoffice::QuantsAuditLog::log($staff, "updatedynamicsettingpage", $log_content);
                     $app_config->set($values_to_set);
                     $message .= '<p class="notify center">Saved global settings to environment.</p>';
+                    $success = 1;
                 } catch ($e) {
                     $message .= "<p class='notify notify--warning center'>Could not save global settings to environment: $e</p>";
                 }
@@ -151,7 +154,8 @@ sub save_settings {
 
         print $message;
     }
-    return;
+
+    return $success;
 }
 
 sub generate_settings_branch {
