@@ -469,6 +469,11 @@ payments:
             description: 'Total allowed slippage from market rate when placing orders on floating rate ads. E.g. 1.0 means -0.5% to +0.5%.'
             default: 1
             global: 1
+        email_campaign_ids:
+          description: "IDs of Customer.io email Broadcast campaigns triggered by events."
+          isa: json_string
+          default: '{ "float_rate_notice": "210", "fixed_rate_disabled": "211", "float_rate_disabled": "212" }'
+          global: 1
         review_period:
             isa: Num
             description: 'Period (in hours) after an order is completed during which users can create a review.'
