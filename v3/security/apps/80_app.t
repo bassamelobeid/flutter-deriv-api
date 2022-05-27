@@ -243,7 +243,7 @@ my ($access_token) = $oauth->store_access_token_only($test_appid, $cr_1);
 
 $t->finish_ok;
 
-$t = build_wsapi_test();
+$t = build_wsapi_test({app_id => $test_appid});
 $t = $t->send_ok({json => {authorize => $access_token}})->message_ok;
 $t = $t->send_ok({
         json => {
@@ -281,7 +281,8 @@ is $res->{error}->{code}, 'InvalidToken', 'not valid after revoke';
 $t->finish_ok;
 
 $t = build_wsapi_test({app_id => $app1->{app_id}});
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+($access_token) = $oauth->store_access_token_only($test_appid, $cr_1);
+$t = $t->send_ok({json => {authorize => $access_token}})->message_ok;
 $t = $t->send_ok({
         json => {
             app_get => $app1->{app_id},
@@ -303,7 +304,7 @@ ok $oauth->confirm_scope($app_no_admin_id, $cr_1), 'confirm scope';
 
 $t->finish_ok;
 
-$t = build_wsapi_test();
+$t = build_wsapi_test({app_id => $app_no_admin_id});
 $t = $t->send_ok({json => {authorize => $access_token}})->message_ok;
 $t = $t->send_ok({
         json => {

@@ -13,7 +13,6 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
 
-my $t    = build_wsapi_test();
 my $cr_1 = create_test_user()->loginid;
 my $json = JSON::MaybeXS->new;
 # cleanup
@@ -31,7 +30,7 @@ my $app = $oauth->create_app({
     user_id => 999
 });
 my $app_id = $app->{app_id};
-
+my $t    = build_wsapi_test({app_id => $app_id});
 my ($token) = $oauth->store_access_token_only($app_id, $cr_1);
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
