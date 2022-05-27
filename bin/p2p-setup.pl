@@ -358,7 +358,6 @@ if ($create_order) {
         account_currency => 'USD',
         local_currency   => 'ZAR',
         amount           => 3000,
-        rate             => 14500,
         type             => 'buy',
         expiry           => 2 * 60 * 60,
         min_order_amount => 10,
@@ -366,6 +365,15 @@ if ($create_order) {
         payment_method   => 'bank_transfer',
         description      => 'Please contact via whatsapp 1234',
         country          => 'za',
+        $float_rate
+        ? (
+            rate      => +0.1,
+            rate_type => 'float'
+            )
+        : (
+            rate      => 14500,
+            rate_type => 'fixed'
+        ),
     );
 
     # Sell order
