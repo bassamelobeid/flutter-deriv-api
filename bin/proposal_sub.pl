@@ -250,8 +250,9 @@ method run_tests() {
     }
     foreach        => [(1 .. $args{number_of_connections})],
         concurrent => $args{number_of_connections};
-    Future->wait_all($main_loop, $test_length_timer)->get();
-
+    say "before wait any";
+    Future->wait_any($main_loop, $test_length_timer)->get();
+    say "wait any get...................";
     return 1;
 
 }
