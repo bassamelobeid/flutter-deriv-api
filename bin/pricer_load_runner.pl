@@ -93,6 +93,7 @@ GetOptions(
     's|subscriptions=i' => \my $initial_subscriptions,
     'a|app_id=i'        => \my $app_id,
     'n|hostname=s'      => \my $hostname,
+    
     'e|mail_to=s'       => \my $mail_to,
     'm|markets=s'       => \my $markets,
     'i|iterations=i'    => \my $iterations,
@@ -108,7 +109,7 @@ pod2usage({
 
 # Set Defaults
 $check_time            = $check_time            // 120;
-$initial_subscriptions = $initial_subscriptions // 10;
+$initial_subscriptions = $initial_subscriptions // 20000;
 $app_id                = $app_id                // 1003;
 our $| = 1;
 if (!$hostname) {
@@ -180,7 +181,7 @@ sub start_subscription{
     $pid = undef;
     my $pid_file = path('/tmp/proposal_sub.pid');
     $pid_file->remove();
-    my $whole_command = "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market&";
+    my $whole_command = "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market > /tmp/proposal_sub.log&";
     say "start command '$whole_command'";
     open(my $fh, "-|", $whole_command)
         or die $!;
