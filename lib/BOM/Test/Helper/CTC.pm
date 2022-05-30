@@ -15,8 +15,10 @@ use BOM::CTC::Currency;
 use BOM::Config::CurrencyConfig;
 use BOM::CTC::Database;
 use Syntax::Keyword::Try;
+use BOM::Config::Redis;
+use BOM::CTC::Daemon;
 
-our @EXPORT_OK = qw( wait_miner deploy_erc20_test_contract set_pending );
+our @EXPORT_OK = qw( wait_miner deploy_erc20_test_contract set_pending deploy_batch_withdrawal_test_contract top_up_eth_batch_withdrawal_contract);
 
 my $mock_cashier_validation = Test::MockModule->new('BOM::Config::CurrencyConfig');
 $mock_cashier_validation->mock(
@@ -153,6 +155,85 @@ sub deploy_erc20_test_contract {
     $currency->contract($contract);
 
     return $contract->contract_address;
+}
+
+sub deploy_batch_withdrawal_test_contract {
+    my $currency = BOM::CTC::Currency->new(currency_code => 'ETH');
+    my $path     = "/home/git/regentmarkets/bom-test/resources/batch_withdrawal_bytecode";
+
+    return undef unless -e $path;
+
+    my $bytecode = path($path)->slurp();
+    $bytecode =~ s/[\x0D\x0A]+//g;
+    my $withdrawal_daemon = BOM::CTC::Daemon->new(
+        daemon        => 'WithdrawalDaemon',
+        currency_code => 'ETH',
+    );
+    my $decoded_abi = decode_json($withdrawal_daemon->_batch_withdrawal_abi);
+
+    my $contract = $currency->rpc_client->contract({
+        contract_abi => encode_json($decoded_abi),
+        from         => $currency->account_config->{account}->{address},
+        # The default contract gas is lower that what we need to deploy this contract
+        # so we need manually specify the maximum amount of gas needed to deploy the
+        # contract, this not means that we will use this entire gas, but the estimation
+        # of the node generally it's bigger than what it will really use.
+        # the number 4_000_000 we get from the tests, being enough to deploy this contract.
+        gas => 4000000,
+    });
+
+    # 0 here means that we will unlock this account until geth be restarted
+    $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address},
+        $currency->account_config->{account}->{passphrase}, 0);
+
+    # the number 35 here is the time in seconds that we will wait to the contract be
+    # deployed, for the tests since we are using a private node this works fine, this
+    # will be removed on the future when we make the ethereum client async.
+    my $response = $contract->invoke_deploy($bytecode)->get_contract_address(35);
+    $contract->contract_address($response->get->response);
+    # here we need to set the contract address into Redis, since
+    # we will use this contract in the tests
+    $currency->set_batch_withdrawal_contract_address($contract->contract_address);
+
+    return $contract->contract_address;
+}
+
+=head2 top_up_batch_withdrawal_contract
+
+top-up batch withdrawal so that
+
+=over
+
+=item * C<address> - blockchain address
+
+=item * C<currency_code> - currency code
+
+=item * C<amount> - amount transacted
+
+=item * C<transaction> - blockchain transaction hash
+
+=back
+
+=cut
+
+sub top_up_eth_batch_withdrawal_contract {
+    my ($amount)    = @_;
+    my $currency    = BOM::CTC::Currency->new(currency_code => 'ETH');
+    my $is_unlocked = $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address},
+        $currency->account_config->{account}->{passphrase}, 0);
+    my $base_fee_calc = $currency->get_EIP1559_feecap();
+
+    # Build transaction params
+    my $params = {
+        from                 => $currency->account_config->{account}->{address},
+        to                   => $currency->get_batch_withdrawal_contract_address(),
+        value                => $currency->get_blockchain_amount($amount)->as_hex(),
+        maxFeePerGas         => $base_fee_calc->{max_fee}->as_hex(),
+        maxPriorityFeePerGas => $base_fee_calc->{max_priority}->as_hex()};
+
+    my $res = $currency->rpc_client->eth_sendTransaction([$params]);
+    wait_miner($res);
+    return undef;
 }
 
 1;
