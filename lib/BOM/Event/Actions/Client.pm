@@ -65,6 +65,7 @@ use BOM::User::Onfido;
 use BOM::User::PaymentRecord;
 use BOM::Rules::Engine;
 use BOM::Config::Payments::PaymentMethods;
+use BOM::Platform::Client::AntiFraud;
 use Locale::Country qw/code2country/;
 
 # this one shoud come after BOM::Platform::Email
@@ -105,6 +106,8 @@ use constant ONFIDO_UPLOAD_TIMEOUT_SECONDS                     => 30;
 use constant SR_CHECK_TIMEOUT                                  => 5;
 use constant FORGED_DOCUMENT_EMAIL_LOCK                        => 'FORGED::EMAIL::LOCK::';
 use constant TTL_FORGED_DOCUMENT_EMAIL_LOCK                    => 600;
+use constant PAYMENT_ACCOUNT_LIMIT_REACHED_TTL                 => 86400;                                                    # one day
+use constant PAYMENT_ACCOUNT_LIMIT_REACHED_KEY                 => 'PAYMENT_ACCOUNT_LIMIT_REACHED';
 
 # Redis TTLs
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;                                                          # 10 days in seconds
@@ -2314,30 +2317,24 @@ async sub payment_deposit {
 
     if ($high_risk_settings) {
         my $high_risk_pm = $pm_config->high_risk_group($payment_type);
-        my $record       = BOM::User::PaymentRecord->new(
-            user_id      => $client->binary_user_id,
-            payment_type => $high_risk_pm
-        );
-        my ($limit, $days) = @{$high_risk_settings}{qw/limit days/};
-        $record->add_payment(
-            account_identifier => $account_identifier,
-            payment_method     => $payment_method,
-            payment_processor  => $payment_processor,
+        my $record       = BOM::User::PaymentRecord->new(user_id => $client->binary_user_id);
+        my %payment      = (
+            id => $account_identifier,
+            pm => $payment_method,
+            pp => $payment_processor,
+            pt => $payment_type,
         );
 
-        my $total_payment_accounts = $record->get_distinct_payment_accounts_for_time_period(period => $days);
-        my $payment_accounts_limit = $client->payment_accounts_limit($limit);
+        $record->add_payment(%payment);
 
-        if ($total_payment_accounts >= $payment_accounts_limit && !$record->is_flagged('reported')) {
-            on_user_payment_accounts_limit_reached(
-                loginid      => $client->loginid,
-                limit        => $payment_accounts_limit,
-                payment_type => $high_risk_pm,
-            );
+        my $antifraud = BOM::Platform::Client::AntiFraud->new(client => $client);
 
-            $record->set_flag(
-                name   => 'reported',
-                expire => 24 * 60 * 60
+        if ($antifraud->df_total_payments_by_payment_type($payment_type)) {
+            await on_user_payment_accounts_limit_reached(
+                loginid        => $client->loginid,
+                limit          => $client->payment_accounts_limit($high_risk_settings->{limit}),
+                payment_type   => $high_risk_pm,
+                binary_user_id => $client->binary_user_id,
             );
         }
     }
@@ -2365,8 +2362,18 @@ Send an email to x-fraud@binary.com warn about the limit that has been reached f
 
 =cut
 
-sub on_user_payment_accounts_limit_reached {
+async sub on_user_payment_accounts_limit_reached {
     my %args = @_;
+
+    my $key = join '::', +PAYMENT_ACCOUNT_LIMIT_REACHED_KEY, $args{binary_user_id}, $args{payment_type};
+
+    return undef if await _redis_replicated_write()->get($key);
+
+    my $record = BOM::User::PaymentRecord->new(user_id => $args{binary_user_id});
+
+    return undef if $record->is_flagged('reported');
+
+    await _redis_replicated_write()->setex($key, +PAYMENT_ACCOUNT_LIMIT_REACHED_TTL, 1);
 
     send_email({
             from    => '<no-reply@deriv.com>',
