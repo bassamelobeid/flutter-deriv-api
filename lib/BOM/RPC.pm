@@ -176,6 +176,12 @@ sub wrap_rpc_sub {
             #otherwise die again, let outer catch handle it.
             if (ref $error eq 'HASH' and ref $error->{error} eq 'HASH') {
                 $result = $error;
+            } elsif (blessed($error) && $error->isa('BOM::Product::Exception')) {
+                $result = BOM::RPC::v3::Utility::create_error({
+                    code              => $error->error_code,
+                    message_to_client => localize($error->message_to_client),
+                    ($error->details ? (details => $error->details) : ()),
+                });
             } else {
                 # replacing possible objects in $params with strings to avoid error in encode_json function
                 my $params = {$original_args[0] ? %{$original_args[0]} : ()};
