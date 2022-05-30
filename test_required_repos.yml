@@ -1,0 +1,3 @@
+# This file contains the repositories that required to run tests of current repo.
+---
+- regentmarkets/bom-test
