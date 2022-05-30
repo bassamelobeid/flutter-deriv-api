@@ -11,4 +11,8 @@
 - regentmarkets/bom-test
 - regentmarkets/bom-transaction
 - regentmarkets/bom-user
+# following will be used by only translation.
 - binary-com/translations-websockets-api
+- regentmarkets/bom-paymentapi
+- regentmarkets/bom-pricing
+- regentmarkets/bom-rpc
