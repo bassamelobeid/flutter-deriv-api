@@ -112,7 +112,9 @@ async sub verify_identity {
 
     return undef if $provider eq 'onfido';
 
-    die $log->errorf('Could not trigger IDV, the function for provider %s not found.', $provider) unless exists TRIGGER_MAP->{$provider};
+    my $provider_handler = _is_microservice_available($provider) ? 'microservice' : $provider;
+
+    die $log->errorf('Could not trigger IDV, the function for provider %s not found.', $provider) unless exists TRIGGER_MAP->{$provider_handler};
 
     try {
         $log->debugf('Start triggering identity verification service (via %s) for document %s associated by loginID %s',
@@ -122,7 +124,7 @@ async sub verify_identity {
 
         my $request_start = [Time::HiRes::gettimeofday];
 
-        my @result = await TRIGGER_MAP->{_is_microservice_available($provider) ? 'microservice' : $provider}(
+        my @result = await TRIGGER_MAP->{$provider_handler}(
             $client,
             $document,
             sub {
@@ -149,7 +151,6 @@ async sub verify_identity {
             });
 
         my ($status, $response_hash, $message) = @result;
-
         my $provider_request_body  = $response_hash->{request_body}  // {};
         my $provider_response_body = $response_hash->{response_body} // {};
 
@@ -390,8 +391,7 @@ async sub _trigger_through_microservice {
     my $url = "$api_base_url/v1/idv";
 
     try {
-        $response = (await _http()->POST($url, $req_body, (content_type => 'application/json')))->content;
-
+        $response         = (await _http()->POST($url, $req_body, (content_type => 'application/json')))->content;
         $decoded_response = eval { decode_json_utf8 $response } // {};
 
         $status         = $decoded_response->{status};
