@@ -14,6 +14,7 @@ subtest 'is_mute_provider' => sub {
 
     is BOM::Platform::Client::IdentityVerification::is_mute_provider('smile_identity'), 0, 'Small identity is not mute';
 
+    is BOM::Platform::Client::IdentityVerification::is_mute_provider('derivative_wealth'), 0, 'Derivative wealth is not mute';
 };
 
 subtest 'transform_response' => sub {
@@ -125,6 +126,69 @@ subtest 'transform_response' => sub {
                 portal_uri      => undef,
             },
             comment => 'Empty Zaig input is handled gracefully',
+        },
+        {
+            provider => 'derivative_wealth',
+            input    => {},
+            result   => {
+                full_name       => undef,
+                date_of_birth   => undef,
+                expiration_date => undef,
+                portal_uri      => undef,
+            },
+            comment => 'Empty Derivative Wealth input is handled gracefully',
+        },
+        {
+            provider => 'derivative_wealth',
+            input    => {surname => 'test'},
+            result   => {
+                full_name       => undef,
+                date_of_birth   => undef,
+                expiration_date => undef,
+                portal_uri      => undef,
+            },
+            comment => 'Empty Derivative Wealth input is handled gracefully',
+        },
+        {
+            provider => 'derivative_wealth',
+            input    => {
+                firstName => 'some',
+                surname   => 'guy'
+            },
+            result => {
+                full_name       => 'some guy',
+                date_of_birth   => undef,
+                expiration_date => undef,
+                portal_uri      => undef,
+            },
+            comment => 'Derivative Wealth full name handled correctly',
+        },
+        {
+            provider => 'derivative_wealth',
+            input    => {
+                firstName => 'test',
+            },
+            result => {
+                full_name       => 'test',
+                date_of_birth   => undef,
+                expiration_date => undef,
+                portal_uri      => undef,
+            },
+            comment => 'Derivative Wealth full name handled correctly',
+        },
+        {
+            provider => 'derivative_wealth',
+            input    => {
+                firstName   => 'test',
+                dateOfBirth => '2000-10-10'
+            },
+            result => {
+                full_name       => 'test',
+                date_of_birth   => '2000-10-10',
+                expiration_date => undef,
+                portal_uri      => undef,
+            },
+            comment => 'Derivative Wealth full name handled correctly',
         },
     );
 

@@ -118,4 +118,37 @@ sub _transform_zaig_response {
     };
 }
 
+=head2 _transform_derivative_wealth_response
+
+The Derivative Wealth API's response transformator, it would make the
+results consistent for parent handler subroutine.
+
+No portal URI for this provider.
+
+=cut
+
+sub _transform_derivative_wealth_response {
+    my ($response) = @_;
+
+    my $first_name = $response->{firstName};
+    my $last_name  = $response->{surname};
+    my $dob        = $response->{dateOfBirth};
+    my $full_name;
+
+    if ($first_name) {
+        $full_name = $first_name;
+
+        if ($last_name) {
+            $full_name .= " $last_name";
+        }
+    }
+
+    return {
+        full_name       => $full_name,
+        date_of_birth   => $dob,
+        expiration_date => undef,        # All documents are lifetime valid
+        portal_uri      => undef,        # No portal uri yet
+    };
+}
+
 1
