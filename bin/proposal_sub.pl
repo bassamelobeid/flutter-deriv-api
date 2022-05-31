@@ -8,7 +8,7 @@ no indirect;
 
 use Pod::Usage;
 use Getopt::Long;
-use Log::Any::Adapter qw(Stderr), log_level => 'debug';
+use Log::Any::Adapter qw(Stderr), log_level => 'info';
 use Path::Tiny;
 our $| = 1;
 =head1 NAME
@@ -720,10 +720,7 @@ method subscribe($connection, $connection_number) {
     $log->debug("Subscribing with \n" . $json->encode($params));
     my $subscription;
     try {
-        my $source = $connection->api->subscribe("proposal" => $params);
-
-        $log->debugf("source in sub.pl is %s", "$source");
-         $subscription = $source->each(
+        $subscription = $connection->api->subscribe("proposal" => $params)->each(
             sub {
                 my ($response) = @_;
                 say "in response\n";
