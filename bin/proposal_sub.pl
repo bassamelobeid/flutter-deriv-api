@@ -10,7 +10,7 @@ use Pod::Usage;
 use Getopt::Long;
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
 use Path::Tiny;
-our $| = 1;
+
 =head1 NAME
 
 proposal_sub.pl  - Load testing script for proposals
@@ -233,7 +233,7 @@ method run_tests() {
     if (!@$active_symbols) { die "No Active Symbols Available" }
 
     $contracts_for = $self->get_contracts_for($main_connection, $active_symbols);
-    
+
     # Will cause script to exit when test_duration is reached.
     my $test_length_timer = $self->test_length_timer($args{test_duration});
 
@@ -328,6 +328,7 @@ will attempt to authorize if a token is passed via the -t parameter to the scrip
 =item - $app_id:   the application ID to use in requests. 
 
 =item - $token: 
+
 
 =back
 
@@ -716,14 +717,13 @@ method subscribe($connection, $connection_number) {
         $retry_count++;
     }
     die "Cannot get valid params for $contract_type, $symbol after retry $retry_count times\n" unless $params;
-    $params = {amount => 10,basis => "stake",contract_type => "PUTE",currency => "USD",date_start => 1653965924,duration => 2,duration_unit => "d",product_type => "basic",proposal => 1,req_id => 3,subscribe => 1,symbol => "frxUSDMXN"};
     $log->debug("Subscribing with \n" . $json->encode($params));
     my $subscription;
     try {
         $subscription = $connection->api->subscribe("proposal" => $params)->each(
             sub {
                 my ($response) = @_;
-                say "in response\n";
+
                 say " current subscriptions " . keys(%subs);
                 $sub = $response->body->id;
                 say 'Symbol ' . $symbol;
@@ -745,7 +745,6 @@ method subscribe($connection, $connection_number) {
             }
         )->completed()->on_fail(
             sub {
-                say "in on_fail\n";
                 $log->warn("Failed to start subscription with params \n" . $json->encode($params) . shift->body->message);
 
                 #retry to subscribe again with new params.
