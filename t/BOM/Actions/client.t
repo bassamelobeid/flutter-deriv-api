@@ -3509,13 +3509,16 @@ subtest 'crypto_withdrawal_rejected_email' => sub {
     undef @track_args;
 
     BOM::Event::Actions::Client::crypto_withdrawal_rejected_email({
-            client_loginid => $client->loginid,
-            reject_reason  => 'highest_deposit_method_is_not_crypto',
-            amount         => '0.09',
-            currency_code  => 'BTC',
-            live_chat_url  => 'https://deriv.com/en/?is_livechat_open=true',
-            meta_data      => 'Perfect Money',
-            fiat_account   => 'USD'
+            client_loginid         => $client->loginid,
+            reject_reason          => 'highest_deposit_method_is_not_crypto',
+            amount                 => '0.09',
+            currency_code          => 'BTC',
+            live_chat_url          => 'https://deriv.com/en/?is_livechat_open=true',
+            cashier_transfer_url   => 'https://app.deriv.com/cashier/account-transfer?lang=en',
+            cashier_p2p_url        => 'https://app.deriv.com/cashier/p2p?lang=en',
+            cashier_withdrawal_url => 'https://app.deriv.com/cashier/withdrawal?lang=en',
+            meta_data              => 'Perfect Money',
+            fiat_account           => 'USD'
         })->get;
 
     my ($customer, %args) = @track_args;
@@ -3526,16 +3529,19 @@ subtest 'crypto_withdrawal_rejected_email' => sub {
     cmp_deeply(
         $args{properties},
         {
-            "lang"          => "EN",
-            "brand"         => "deriv",
-            "title"         => "We were unable to process your withdrawal",
-            "amount"        => 0.09,
-            "loginid"       => $client->loginid,
-            "meta_data"     => "Perfect Money",
-            "currency_code" => "BTC",
-            "live_chat_url" => "https://deriv.com/en/?is_livechat_open=true",
-            "reject_reason" => "highest_deposit_method_is_not_crypto",
-            "fiat_account"  => "USD"
+            "lang"                   => "EN",
+            "brand"                  => "deriv",
+            "title"                  => "We were unable to process your withdrawal",
+            "amount"                 => 0.09,
+            "loginid"                => $client->loginid,
+            "meta_data"              => "Perfect Money",
+            "currency_code"          => "BTC",
+            "live_chat_url"          => 'https://deriv.com/en/?is_livechat_open=true',
+            "cashier_transfer_url"   => 'https://app.deriv.com/cashier/account-transfer?lang=en',
+            "cashier_p2p_url"        => 'https://app.deriv.com/cashier/p2p?lang=en',
+            "cashier_withdrawal_url" => 'https://app.deriv.com/cashier/withdrawal?lang=en',
+            "reject_reason"          => "highest_deposit_method_is_not_crypto",
+            "fiat_account"           => "USD"
         },
         'event properties are ok'
     );

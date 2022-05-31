@@ -2812,17 +2812,37 @@ Handles sending event to trigger email from customer io and send required event 
 =cut
 
 sub crypto_withdrawal_rejected_email {
-
     my ($params) = @_;
+
+    my $prefrd_lang;
+    try {
+        my $user_dbic = BOM::Database::UserDB::rose_db()->dbic;
+        $prefrd_lang = $user_dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT preferred_language FROM users.get_user_by_loginid(?)', undef, $params->{client_loginid});
+            });
+        $prefrd_lang = $prefrd_lang->{preferred_language} || '';
+    } catch ($e) {
+        $log->warnf('Failed to fetch user preferred language. Error::', $e);
+    }
+    my $brand      = Brands->new_from_app_id($params->{app_id});
+    my $url_params = {
+        app_id => $params->{app_id},
+        $prefrd_lang ? (language => $prefrd_lang) : (),
+    };
+
     return BOM::Event::Services::Track::crypto_withdrawal_rejected_email({
-            loginid       => $params->{client_loginid},
-            reject_reason => $params->{reject_reason},
-            amount        => $params->{amount},
-            currency_code => $params->{currency_code},
-            title         => localize('We were unable to process your withdrawal'),
-            live_chat_url => request->brand->live_chat_url,
-            meta_data     => $params->{meta_data},
-            fiat_account  => $params->{fiat_account}});
+            loginid                => $params->{client_loginid},
+            reject_reason          => $params->{reject_reason},
+            amount                 => $params->{amount},
+            currency_code          => $params->{currency_code},
+            title                  => localize('We were unable to process your withdrawal'),
+            live_chat_url          => $brand->live_chat_url($url_params),
+            cashier_transfer_url   => $brand->cashier_transfer_url($url_params),
+            cashier_p2p_url        => $brand->cashier_p2p_url($url_params),
+            cashier_withdrawal_url => $brand->cashier_withdrawal_url($url_params),
+            meta_data              => $params->{meta_data},
+            fiat_account           => $params->{fiat_account}});
 }
 
 =head2 _save_request_context
