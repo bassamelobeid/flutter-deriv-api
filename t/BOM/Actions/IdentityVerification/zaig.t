@@ -27,7 +27,7 @@ my $track_mock = Test::MockModule->new('BOM::Event::Services::Track');
 $track_mock->mock(
     'track_event',
     sub {
-        return 1;
+        return Future->done(1);
     });
 my $idv_event_handler = \&BOM::Event::Actions::Client::IdentityVerification::verify_identity;
 

@@ -14,6 +14,7 @@ use Brands;
 use List::Util qw(first any uniq);
 use Storable qw(dclone);
 use Format::Util::Numbers qw(formatnumber);
+use Future::AsyncAwait;
 
 use BOM::User;
 use BOM::User::Client;
@@ -947,7 +948,7 @@ Takes the following named parameters:
 
 =cut
 
-sub track_event {
+async sub track_event {
     my %args = @_;
 
     my $client = $args{client} // ($args{loginid} ? BOM::User::Client->get_client_instance($args{loginid}) : undef);
@@ -955,7 +956,7 @@ sub track_event {
         unless $client
         or $args{anonymous};
 
-    return Future->done unless _validate_event($args{event}, $args{brand});
+    return unless _validate_event($args{event}, $args{brand});
 
     my %customer_args = (user_id => $client ? $client->binary_user_id : BINARY_CUSTOMER);
     $customer_args{traits} = $args{traits} // _create_traits($client) if $args{is_identify_required};
@@ -965,7 +966,10 @@ sub track_event {
 
     $log->debugf('Tracked %s for user %s', $args{event}, $customer_args{user_id});
 
-    return Future->needs_all(
+    # Schedule the _send_track_request or identify request to be invoked as soon as the current round of IO operations is complete.
+    await $loop->later;
+
+    return await Future->needs_all(
         _send_track_request(
             $customer,
             {

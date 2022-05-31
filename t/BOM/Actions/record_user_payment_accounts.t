@@ -16,6 +16,12 @@ use BOM::User::PaymentRecord;
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 
+my $mock_segment = Test::MockModule->new('WebService::Async::Segment::Customer');
+$mock_segment->redefine(
+    'track' => sub {
+        return Future->done(1);
+    });
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => 'test1@bin.com',

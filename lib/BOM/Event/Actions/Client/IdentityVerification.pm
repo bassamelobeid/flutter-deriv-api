@@ -159,7 +159,7 @@ async sub verify_identity {
         # Some of providers like Zaig and IDV microservice might return an array of messages.
         my @messages = ref $message eq 'ARRAY' ? $message->@* : ($message // ());
 
-        my $refuted_document_handler = sub {
+        my $refuted_document_handler = async sub {
             my ($errors) = @_;
 
             push @messages,
@@ -180,7 +180,7 @@ async sub verify_identity {
                 response_body   => encode_json_utf8($provider_response_body),
             });
 
-            BOM::Event::Services::Track::track_event(
+            await BOM::Event::Services::Track::track_event(
                 event      => 'identity_verification_rejected',
                 loginid    => $client->loginid,
                 properties => {
@@ -206,7 +206,7 @@ async sub verify_identity {
             });
         };
 
-        my $rule_engine_handler = sub {
+        my $rule_engine_handler = async sub {
             my $rule_engine = BOM::Rules::Engine->new(
                 client          => $client,
                 residence       => $client->residence,
@@ -223,20 +223,20 @@ async sub verify_identity {
             unless ($rules_result->has_failure) {
                 $verified_document_handler->();
             } else {
-                $refuted_document_handler->($rules_result->errors);
+                await $refuted_document_handler->($rules_result->errors);
             }
         };
 
         if ($status eq RESULT_STATUS->{pass}) {
-            $rule_engine_handler->();
+            await $rule_engine_handler->();
         } elsif ($status eq RESULT_STATUS->{verify}) {
             if (any { $provider eq $_ } SELFISH_PROVIDERS->@*) {
                 $verified_document_handler->();
             } else {
-                $rule_engine_handler->();
+                await $rule_engine_handler->();
             }
         } elsif ($status eq RESULT_STATUS->{reject}) {
-            $refuted_document_handler->(_messages_to_hashref(@messages));
+            await $refuted_document_handler->(_messages_to_hashref(@messages));
         } else {
             DataDog::DogStatsd::Helper::stats_inc(
                 'event.identity_verification.failure',
@@ -391,6 +391,9 @@ async sub _trigger_through_microservice {
     my $url = "$api_base_url/v1/idv";
 
     try {
+        # Schedule the next HTTP POST request to be invoked as soon as the current round of IO operations is complete.
+        await $loop->later;
+
         $response         = (await _http()->POST($url, $req_body, (content_type => 'application/json')))->content;
         $decoded_response = eval { decode_json_utf8 $response } // {};
 
@@ -490,6 +493,8 @@ async sub _trigger_smile_identity {
     $log->tracef("SmileIdentitiy verify: POST %s %s", $url, $req_body);
 
     try {
+        # Schedule the next HTTP POST request to be invoked as soon as the current round of IO operations is complete.
+        await $loop->later;
         $response = (await _http()->POST($url, $req_body, (content_type => 'application/json')))->content;
 
         $decoded_response = _shrink_smile_identity(eval { decode_json_utf8 $response });
@@ -591,7 +596,9 @@ async sub _trigger_zaig {
     $log->tracef("Zaig verify: POST %s %s", $submit_url, $submit_req_body);
 
     try {
+        # Schedule the next HTTP POST request to be invoked as soon as the current round of IO operations is complete.
         # Make the POST request, we are not interested in the response just yet.
+        await $loop->later;
         await _http()->POST(
             $submit_url,
             $submit_req_body,
@@ -634,7 +641,9 @@ async sub _trigger_zaig {
     }
 
     try {
+        # Schedule the next HTTP GET request to be invoked as soon as the current round of IO operations is complete.
         # Make a GET response to pull the actual data
+        await $loop->later;
         $response = (
             await _http()->GET(
                 $detail_url,

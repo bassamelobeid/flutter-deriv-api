@@ -1920,7 +1920,10 @@ async sub _get_document_s3 {
     my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
     my $url       = $s3_client->get_s3_url($document_entry->{file_name});
 
-    my $file = await _http()->GET($url, connection => 'close');
+    # Schedule the next HTTP call to be invoked as soon as the current round of IO operations is complete.
+    await $loop->later;
+
+    my $file = await _http()->GET($url, (connection => 'close'));
 
     return $file->decoded_content;
 }
@@ -2589,7 +2592,11 @@ async sub check_email_for_fraud {
 
         my $cfg = BOM::Config::Services->config('fraud_prevention');
 
-        my $url    = join q{} => ('http://', $cfg->{host}, ':', $cfg->{port}, '/check_email');
+        my $url = join q{} => ('http://', $cfg->{host}, ':', $cfg->{port}, '/check_email');
+
+        # Schedule the next HTTP call to be invoked as soon as the current round of IO operations is complete.
+        await $loop->later;
+
         my $result = await _http()->POST(
             $url, encode_json_utf8({email => $client->email}),
             content_type => 'application/json',

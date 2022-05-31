@@ -246,7 +246,7 @@ subtest 'segment tracking' => sub {
     );
 
     # Call order updated event
-    ok BOM::Event::Actions::P2P::order_updated($update_expected->{p2p_order_updated}), 'Order updated event was successful';
+    ok BOM::Event::Actions::P2P::order_updated($update_expected->{p2p_order_updated})->get, 'Order updated event was successful';
 
     # Check whether _track_p2p_order_event has the correct arguments
     is $track_args->{order_event}, 'timeout_refund', 'The order event is correct';

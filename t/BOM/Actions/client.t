@@ -40,20 +40,19 @@ my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
 my (@identify_args, @track_args);
-my $segment_response = Future->done(1);
-my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
+my $mock_segment = Test::MockModule->new('WebService::Async::Segment::Customer');
 $mock_segment->redefine(
     'identify' => sub {
         @identify_args = @_;
-        return $segment_response;
+        return Future->done(1);
     },
     'track' => sub {
         @track_args = @_;
-        return $segment_response;
+        return Future->done(1);
     });
 
 my @emit_args;
-my $mock_emitter = new Test::MockModule('BOM::Platform::Event::Emitter');
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_emitter->mock('emit', sub { push @emit_args, @_ });
 
 my @enabled_brands = ('deriv', 'binary');
@@ -123,7 +122,7 @@ is($msg, undef, 'No email for non CR account');
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-BOM::Event::Actions::Client::authenticated_with_scans({loginid => $test_client_cr->loginid});
+BOM::Event::Actions::Client::authenticated_with_scans({loginid => $test_client_cr->loginid})->get;
 
 $msg = mailbox_search(subject => qr/Your address and identity have been verified successfully/);
 
@@ -410,8 +409,7 @@ subtest 'upload document' => sub {
                 }};
 
             my $handler = BOM::Event::Process->new(category => 'track')->actions->{reset_password_request};
-            ok $handler->($args);
-            my $result = $handler->($args)->get;
+            my $result  = $handler->($args)->get;
             ok $result, 'Success result';
             is scalar @track_args, 7, 'Track event is triggered';
         };
@@ -438,8 +436,8 @@ subtest 'upload document' => sub {
                 }};
 
             my $handler = BOM::Event::Process->new(category => 'track')->actions->{reset_password_confirmation};
-            ok $handler->($args);
-            my $result = $handler->($args)->get;
+            my $result  = $handler->($args)->get;
+
             ok $result, 'Success result';
             is scalar @track_args, 7, 'Track event is triggered';
         };
@@ -1452,7 +1450,6 @@ subtest 'account closure track' => sub {
 
     my $loginid = $test_client->loginid;
 
-    $segment_response = Future->done(1);
     my $call_args = {
         closing_reason    => 'There is no reason',
         loginid           => $loginid,
@@ -1535,7 +1532,7 @@ subtest 'transfer between accounts event' => sub {
         }};
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{transfer_between_accounts};
-    ok $action_handler->($args), 'transfer_between_accounts triggered successfully';
+    ok $action_handler->($args)->get, 'transfer_between_accounts triggered successfully';
     my ($customer, %args) = @track_args;
     is scalar(@identify_args), 0, 'identify is not called';
 
@@ -1575,7 +1572,7 @@ subtest 'transfer between accounts event' => sub {
     # Calling with `payment_agent_transfer` gateway should contain PaymentAgent fields
     $args->{properties}->{gateway_code} = 'payment_agent_transfer';
 
-    ok $action_handler->($args), 'transfer_between_accounts triggered successfully';
+    ok $action_handler->($args)->get, 'transfer_between_accounts triggered successfully';
     ($customer, %args) = @track_args;
     is scalar(@identify_args), 0, 'identify is not called';
 
@@ -1628,7 +1625,6 @@ subtest 'api token create' => sub {
 
     my $loginid = $test_client->loginid;
 
-    $segment_response = Future->done(1);
     my $call_args = {
         loginid => $loginid,
         name    => [$loginid],
@@ -1684,7 +1680,6 @@ subtest 'api token delete' => sub {
 
     my $loginid = $test_client->loginid;
 
-    $segment_response = Future->done(1);
     my $call_args = {
         loginid => $loginid,
         name    => [$loginid],
@@ -2089,10 +2084,10 @@ subtest 'client becomes transfers_blocked when deposits from QIWI' => sub {
     ok !$sibling->status->transfers_blocked, 'sibling account is not transfers_blocked before QIWI deposit';
 
     BOM::Event::Actions::Client::payment_deposit({
-        loginid           => $test_client->loginid,
-        is_first_deposit  => 0,
-        payment_processor => 'Qiwi',
-    });
+            loginid           => $test_client->loginid,
+            is_first_deposit  => 0,
+            payment_processor => 'Qiwi',
+        })->get;
 
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
     $sibling     = BOM::User::Client->new({loginid => $sibling->loginid});
@@ -2112,14 +2107,15 @@ subtest 'card deposits' => sub {
         payment_processor => 'xyz',
     };
 
-    BOM::Event::Actions::Client::payment_deposit($event_args);
+    BOM::Event::Actions::Client::payment_deposit($event_args)->get;
 
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
     ok !$test_client->status->personal_details_locked, 'personal details are not locked - non-card payment method was used';
 
     $event_args->{payment_type} = 'CreditCard';
 
-    BOM::Event::Actions::Client::payment_deposit($event_args);
+    BOM::Event::Actions::Client::payment_deposit($event_args)->get;
+
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
 
     ok $test_client->status->personal_details_locked, 'personal details are locked when a card payment method is used';
@@ -2387,7 +2383,7 @@ subtest 'withdrawal_limit_reached' => sub {
 
     throws_ok(
         sub {
-            $handler->();
+            $handler->()->get;
         },
         qr/\bClient login ID was not given\b/,
         'Expected exception thrown, clientid was not given'
@@ -2395,7 +2391,7 @@ subtest 'withdrawal_limit_reached' => sub {
 
     throws_ok(
         sub {
-            $handler->({loginid => 'CR0'});
+            $handler->({loginid => 'CR0'})->get;
         },
         qr/\bCould not instantiate client for login ID CR0\b/,
         'Expected exception thrown, clientid was not found'
@@ -2833,8 +2829,7 @@ subtest 'request_change_email' => sub {
         }};
 
     my $handler = BOM::Event::Process::->new(category => 'track')->actions->{request_change_email};
-    ok $handler->($args), 'OK args';
-    my $result = $handler->($args)->get;
+    my $result  = $handler->($args)->get;
     ok $result, 'OK result';
     is scalar @track_args, 7, 'OK event';
     my ($customer, %args) = @track_args;
@@ -2863,8 +2858,7 @@ subtest 'verify_change_email' => sub {
         }};
 
     my $handler = BOM::Event::Process::->new(category => 'track')->actions->{verify_change_email};
-    ok $handler->($args), 'OK args';
-    my $result = $handler->($args)->get;
+    my $result  = $handler->($args)->get;
     ok $result, 'OK result';
     my ($customer, %args) = @track_args;
     is $args{event}, 'verify_change_email', "event event name";
@@ -2893,8 +2887,7 @@ subtest 'confirm_change_email' => sub {
         }};
 
     my $handler = BOM::Event::Process::->new(category => 'track')->actions->{confirm_change_email};
-    ok $handler->($args), 'OK args';
-    my $result = $handler->($args)->get;
+    my $result  = $handler->($args)->get;
     ok $result, 'OK result';
     my ($customer, %args) = @track_args;
     is $args{event}, 'confirm_change_email', "event name";
@@ -2985,8 +2978,7 @@ subtest 'new account opening' => sub {
     };
 
     my $handler = BOM::Event::Process::->new(category => 'track')->actions->{account_opening_new};
-    ok $handler->($param);
-    my $result = $handler->($param)->get;
+    my $result  = $handler->($param)->get;
     ok $result, 'Success result';
     my ($customer, %args) = @track_args;
     is $args{event}, 'account_opening_new', "got account_opening_new";
@@ -3573,8 +3565,7 @@ subtest 'account_verification_for_pending_payout event' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{account_verification_for_pending_payout};
-    ok $handler->($args);
-    my $result = $handler->($args)->get;
+    my $result  = $handler->($args)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
     my ($customer, %returned_args) = @track_args;
@@ -3657,8 +3648,7 @@ subtest 'request payment withdraw' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{request_payment_withdraw};
-    ok $handler->($args);
-    my $result = $handler->($args)->get;
+    my $result  = $handler->($args)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
     my ($customer, %args) = @track_args;
@@ -3692,7 +3682,6 @@ subtest 'verify email closed account other' => sub {
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_email_closed_account_other};
 
-    ok $handler->($args);
     my $result = $handler->($args)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
@@ -3727,7 +3716,6 @@ subtest 'verify email closed account reset password' => sub {
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_email_closed_account_reset_password};
 
-    ok $handler->($args);
     my $result = $handler->($args)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
@@ -3761,8 +3749,7 @@ subtest 'verify email closed account opening' => sub {
         }};
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_email_closed_account_account_opening};
-    ok $handler->($args);
-    my $result = $handler->($args)->get;
+    my $result  = $handler->($args)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
 };

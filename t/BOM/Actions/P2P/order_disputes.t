@@ -170,10 +170,10 @@ subtest 'Dispute resolution' => sub {
                 @track_event_args = ();
                 @segment_args     = ();
                 BOM::Event::Actions::P2P::order_updated({
-                    client_loginid => $client->loginid,
-                    order_id       => $order->{id},
-                    order_event    => $event,
-                });
+                        client_loginid => $client->loginid,
+                        order_id       => $order->{id},
+                        order_event    => $event,
+                    })->get;
 
                 # Get fresh order data
                 $order = $advertiser->p2p_order_info(id => $order->{id});
