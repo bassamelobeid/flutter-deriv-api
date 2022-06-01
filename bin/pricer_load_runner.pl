@@ -109,7 +109,7 @@ pod2usage({
 
 # Set Defaults
 $check_time            = $check_time            // 120;
-$initial_subscriptions = $initial_subscriptions // 20000;
+$initial_subscriptions = $initial_subscriptions // 10;
 $app_id                = $app_id                // 1003;
 our $| = 1;
 if (!$hostname) {
