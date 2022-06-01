@@ -10,9 +10,11 @@ use Test::Vars;
 use Test::Strict;
 use Test::PerlTidy;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
-use BOM::Test::CheckJsonMaybeXS;
 use Test::Builder qw();
+use Test::Pod::CoverageChange;
+use BOM::Test::CheckJsonMaybeXS;
 use YAML::XS qw(LoadFile);
+
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
@@ -34,6 +36,9 @@ sub check_syntax_on_diff {
         check_syntax(\@check_files, \@skipped_files, 'syntax_diff');
         check_tidy(\@check_files, \@skipped_files);
         check_yaml(@check_files);
+        
+        check_pod_coverage();
+
     } else {
         pass "no change detected, skip tests";
     }
@@ -181,5 +186,14 @@ sub is_skipped_file {
     return unless @$skipped_files;
     return grep { $check_file =~ /$_/ } @$skipped_files;
 }
+
+sub check_pod_coverage {
+
+    Test::Pod::CoverageChange::pod_coverage_syntax_ok(
+    allowed_naked_packages => $allowed_naked_packages,
+    ignored_packages       => $ignored_packages
+    ）
+}
+
 
 1;
