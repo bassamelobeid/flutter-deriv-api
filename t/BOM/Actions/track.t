@@ -59,15 +59,15 @@ $mock_segment->redefine(
     });
 
 my @enabled_brands = ('deriv');
-my $mock_brands    = Test::MockModule->new('Brands');
-$mock_brands->mock(
-    'is_track_enabled' => sub {
-        my $self = shift;
-        return (grep { $_ eq $self->name } @enabled_brands);
-    });
-my $mock_app = Test::MockModule->new('Brands::App');
+my $mock_app       = Test::MockModule->new('Brands::App');
 $mock_app->mock(
     'is_whitelisted' => sub {
+        my $self = shift;
+        return (grep { $_ eq $self->brand_name } @enabled_brands);
+    });
+my $mock_brands = Test::MockModule->new('Brands');
+$mock_brands->mock(
+    'is_track_enabled' => sub {
         my $self = shift;
         return (grep { $_ eq $self->name } @enabled_brands);
     });
@@ -705,12 +705,15 @@ sub test_segment_customer {
 }
 
 $mock_brands->unmock_all;
+$mock_app->unmock_all;
 
 subtest 'brand/offical app id validation' => sub {
-    my $deriv           = Brands->new(name => 'deriv');
-    my $binary          = Brands->new(name => 'binary');
-    my ($deriv_app_id)  = $deriv->whitelist_apps->%*;
-    my ($binary_app_id) = $binary->whitelist_apps->%*;
+    my $deriv  = Brands->new(name => 'deriv');
+    my $binary = Brands->new(name => 'binary');
+    # We can randomly pick any id if there's no overlapping ID for this purpose.
+    # But, we have overlapping MT5 & DerivX in both binary and deriv config.
+    my $deriv_app_id  = 19111;    # deriv bot
+    my $binary_app_id = 1169;     # binary bot
 
     ok BOM::Event::Services::Track::_validate_event('dummy', $deriv,  $deriv_app_id),  'Whitelisted app id and brand';
     ok BOM::Event::Services::Track::_validate_event('dummy', $deriv,  $binary_app_id), 'Restricted app id or brand';

@@ -43,14 +43,15 @@ $mock_segment->redefine(
 
 my @enabled_brands = ('deriv', 'binary');
 my $mock_brands    = Test::MockModule->new('Brands');
-$mock_brands->mock(
-    'is_track_enabled' => sub {
-        my $self = shift;
-        return (grep { $_ eq $self->name } @enabled_brands);
-    });
-my $mock_app = Test::MockModule->new('Brands::App');
+my $mock_app       = Test::MockModule->new('Brands::App');
+
 $mock_app->mock(
     'is_whitelisted' => sub {
+        my $self = shift;
+        return (grep { $_ eq $self->brand_name } @enabled_brands);
+    });
+$mock_brands->mock(
+    'is_track_enabled' => sub {
         my $self = shift;
         return (grep { $_ eq $self->name } @enabled_brands);
     });
