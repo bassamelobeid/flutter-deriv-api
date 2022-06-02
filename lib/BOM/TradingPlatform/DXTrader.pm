@@ -310,7 +310,6 @@ sub get_accounts {
 
     my @local_accounts  = $self->local_accounts or return [];
     my @account_servers = $self->account_servers;
-    $self->server_check(@account_servers) if $args{force};
 
     my @accounts;
     for my $server (@account_servers) {
@@ -326,12 +325,23 @@ sub get_accounts {
 
     my @result;
     for my $local_account (@local_accounts) {
-        if (my $account = first { $_->{account_code} eq $local_account->{attributes}{account_code} } @accounts) {
-            $account->{account_id} = $local_account->{loginid};
-            $account->{login}      = $local_account->{attributes}{login};
+        next if $args{type} and $args{type} ne $local_account->{account_type};
+        my $account;
+        $account->{account_id} = $local_account->{loginid};
+        $account->{login}      = $local_account->{attributes}{login};
+        if (my $dxaccount = first { $_->{account_code} eq $local_account->{attributes}{account_code} } @accounts) {
+            $account->{enabled} = 1;
+            $account = {%$account, %$dxaccount};
+            push @result, $self->account_details($account);
+        } else {
+            $account->{account_type} = $local_account->{account_type};
+            $account->{enabled}      = 0;
+            $account->{market_type}  = $local_account->{attributes}{market_type};
+            $account->{currency}     = $local_account->{currency};
             push @result, $self->account_details($account);
         }
     }
+
     return \@result;
 }
 
@@ -886,19 +896,27 @@ Format account details for websocket response.
 sub account_details {
     my ($self, $account) = @_;
 
-    my $category    = first { $_->{category} eq 'Trading' } $account->{categories}->@*;
-    my $market_type = $category->{value} eq 'Financials Only' ? 'financial' : 'synthetic';
+    my $category    = {};
+    my $market_type = '';
+    if (exists($account->{categories})) {
+        $category    = first { $_->{category} eq 'Trading' } $account->{categories}->@*;
+        $market_type = ($category->{value} eq 'Financials Only' ? 'financial' : 'synthetic') if $category and exists($category->{value});
+    }
+    $market_type             = $account->{market_type} if !exists($category->{value});
+    $account->{account_type} = ($account->{account_type} eq 'LIVE' ? 'real' : 'demo') unless any { $account->{account_type} eq $_ } qw(real demo);
+    $account->{enabled}      = 1 if !exists($account->{enabled});
 
     return {
-        login                 => $account->{login},
-        account_id            => $account->{account_id},
-        account_type          => $account->{account_type} eq 'LIVE' ? 'real' : 'demo',
-        balance               => financialrounding('amount', $account->{currency}, $account->{balance}),
-        currency              => $account->{currency},
-        display_balance       => formatnumber('amount', $account->{currency}, $account->{balance}),
+        login        => $account->{login},
+        account_id   => $account->{account_id},
+        account_type => $account->{account_type},
+        enabled      => $account->{enabled},
+        $account->{enabled} ? (balance => financialrounding('amount', $account->{currency}, $account->{balance})) : (),
+        currency => $account->{currency},
+        $account->{enabled} ? (display_balance => formatnumber('amount', $account->{currency}, $account->{balance})) : (),
         platform              => PLATFORM_ID,
         market_type           => $market_type,
-        landing_company_short => 'svg',                                                                    #todo
+        landing_company_short => 'svg',          #todo
     };
 }
 

@@ -75,6 +75,7 @@ cmp_deeply(
     {
         account_id            => 'DXD1000',
         account_type          => 'demo',
+        enabled               => 1,
         balance               => num(10000),
         currency              => 'USD',
         display_balance       => '10000.00',
@@ -131,6 +132,7 @@ cmp_deeply(
     {
         account_id            => 'DXR1001',
         account_type          => 'real',
+        enabled               => 1,
         balance               => num(0),
         currency              => 'USD',
         display_balance       => '0.00',
@@ -187,19 +189,42 @@ cmp_deeply(
 
 cmp_deeply($dxtrader->get_accounts, bag($account1, $account2), 'account list');
 
+my $suspend_account1 = {
+    account_id            => 'DXD1000',
+    account_type          => 'demo',
+    enabled               => 0,
+    currency              => 'USD',
+    login                 => $account1->{login},
+    platform              => 'dxtrade',
+    market_type           => 'synthetic',
+    landing_company_short => 'svg',
+};
+
+my $suspend_account2 = {
+    account_id            => 'DXR1001',
+    account_type          => 'real',
+    enabled               => 0,
+    currency              => 'USD',
+    login                 => $account2->{login},
+    platform              => 'dxtrade',
+    market_type           => 'synthetic',
+    landing_company_short => 'svg',
+};
+
 $dxconfig->suspend->all(1);
-cmp_deeply($dxtrader->get_accounts,                           [],                            'no accounts returned when dx all suspended');
-cmp_deeply(exception { $dxtrader->get_accounts(force => 1) }, {error_code => 'DXSuspended'}, 'correct error with force param');
+cmp_deeply(
+    $dxtrader->get_accounts,
+    bag($suspend_account1, $suspend_account2),
+    'User DB accounts returned instead from DerivX Server when dx all suspended'
+);
 $dxconfig->suspend->all(0);
 
 $dxconfig->suspend->demo(1);
-cmp_deeply($dxtrader->get_accounts, [$account2], 'only real account returned when dx demo suspended');
-cmp_deeply(exception { $dxtrader->get_accounts(force => 1) }, {error_code => 'DXServerSuspended'}, 'correct error with force param');
+cmp_deeply($dxtrader->get_accounts, bag($account2, $suspend_account1), 'only real with enabled=1 and demo with enabled=0 when dx demo suspended');
 $dxconfig->suspend->demo(0);
 
 $dxconfig->suspend->real(1);
-cmp_deeply($dxtrader->get_accounts, [$account1], 'only demo account returned when dx real suspended');
-cmp_deeply(exception { $dxtrader->get_accounts(force => 1) }, {error_code => 'DXServerSuspended'}, 'correct error with force param');
+cmp_deeply($dxtrader->get_accounts, bag($account1, $suspend_account2), 'only demo with enabled=1 and real with enabled=0 when dx real suspended');
 $dxconfig->suspend->real(0);
 
 cmp_deeply($dxtrader->get_accounts(type => 'demo'), [$account1], 'only demo account returned for type=demo');
@@ -217,6 +242,7 @@ cmp_deeply(
     {
         account_id            => 'DXR1002',
         account_type          => 'real',
+        enabled               => 1,
         balance               => num(0),
         currency              => 'USD',
         display_balance       => '0.00',
@@ -248,6 +274,7 @@ cmp_deeply(
     {
         account_id            => 'DXD1621',
         account_type          => 'demo',
+        enabled               => 1,
         balance               => num(10000),
         currency              => 'USD',
         display_balance       => '10000.00',
