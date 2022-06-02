@@ -106,11 +106,41 @@ subtest 'dxtrader accounts' => sub {
     cmp_deeply($list, [$acc], 'account list returns created account',);
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(1);
-    $c->call_ok('trading_platform_accounts', $params)->has_no_system_error->has_error->error_code_is('DXServerSuspended', 'server suspended');
+    my $acc_demo_suspend = $c->call_ok('trading_platform_accounts', $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply(
+        $acc_demo_suspend,
+        [{
+                'account_id'            => $acc->{account_id},
+                'login'                 => $acc->{login},
+                'currency'              => 'USD',
+                'platform'              => 'dxtrade',
+                'account_type'          => 'demo',
+                'landing_company_short' => 'svg',
+                'market_type'           => 'financial',
+                'enabled'               => 0,
+            }
+        ],
+        'Suspended demo server return result with enabled=0'
+    );
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
-    $c->call_ok('trading_platform_accounts', $params)->has_no_system_error->has_error->error_code_is('DXSuspended', 'all suspended');
+    my $acc_all_suspend = $c->call_ok('trading_platform_accounts', $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply(
+        $acc_all_suspend,
+        [{
+                'account_id'            => $acc->{account_id},
+                'login'                 => $acc->{login},
+                'landing_company_short' => 'svg',
+                'currency'              => 'USD',
+                'platform'              => 'dxtrade',
+                'account_type'          => 'demo',
+                'enabled'               => 0,
+                'market_type'           => 'financial'
+            }
+        ],
+        'Suspended all server return result with enabled=0'
+    );
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
@@ -584,6 +614,7 @@ subtest 'new account rules failure scenarios' => sub {
         account_id            => re('^DX.*$'),
         currency              => 'USD',
         account_type          => 'real',
+        enabled               => 1,
         },
         'DXtrader account successfully created';
 

@@ -1236,15 +1236,17 @@ rpc transfer_between_accounts => sub {
         my @dxtrade_accounts = $dxtrade->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
 
         for my $dxtrade_account (@dxtrade_accounts) {
-            push @available_siblings_for_transfer,
-                {
-                loginid      => $dxtrade_account->{account_id},
-                balance      => $dxtrade_account->{display_balance},
-                account_type => 'dxtrade',
-                market_type  => $dxtrade_account->{market_type},
-                currency     => $dxtrade_account->{currency},
-                demo_account => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
-                };
+            if (exists($dxtrade_account->{enabled}) and $dxtrade_account->{enabled}) {
+                push @available_siblings_for_transfer,
+                    {
+                    loginid      => $dxtrade_account->{account_id},
+                    balance      => $dxtrade_account->{display_balance},
+                    account_type => 'dxtrade',
+                    market_type  => $dxtrade_account->{market_type},
+                    currency     => $dxtrade_account->{currency},
+                    demo_account => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
+                    };
+            }
         }
 
         return {
