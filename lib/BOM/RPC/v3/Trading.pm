@@ -19,6 +19,7 @@ use BOM::RPC::v3::MT5::Errors;
 use BOM::RPC::v3::MT5::Account;
 use BOM::User;
 use BOM::User::Password;
+use BOM::Product::Listing;
 use List::Util qw(first none);
 
 requires_auth('trading', 'wallet');
@@ -88,6 +89,39 @@ my %ERROR_MAP = do {
         PlatformPasswordChangeSuspended => localize("We're unable to reset your trading password due to system maintenance. Please try again later."),
     );
 };
+
+=head2 trading_platform_product_listing
+
+Returns product offerings for the given input. If no input is provided, it returns product listing for all platform and countries.
+
+=over 4
+
+=item * platform - a string to represent trading platform. (E.g. binary_bot)
+
+=item * residence - a 2-letter country code.
+
+=back
+
+=cut
+
+rpc trading_platform_product_listing => auth => [],
+    sub {
+    my $params = shift;
+
+    my $client     = $params->{client};
+    my $args       = $params->{args};
+    my $brand_name = request()->brand->name;
+
+    my $resp;
+    try {
+        my $country_code = $args->{country_code} ? $args->{country_code} : $client ? $client->residence : undef;
+        $resp = BOM::Product::Listing->new(brand_name => $brand_name)->by_country($args->{country_code}, $args->{app_id});
+    } catch ($e) {
+        handle_error($e);
+    }
+
+    return $resp;
+    };
 
 =head2 trading_platform_new_account
 

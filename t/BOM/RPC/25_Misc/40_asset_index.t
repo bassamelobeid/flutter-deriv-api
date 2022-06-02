@@ -66,8 +66,8 @@ my $first_entry_cr_mf_test2 = [
 
 sub _test_asset_index {
     my ($params, $count, $first_entry) = @_;
-
     return sub {
+
         my $result = $c->call_ok('asset_index', $params)->has_no_system_error->has_no_error->result;
         is(0 + @$result,    $count,            'correct number of entries');
         is($result->[0][0], $first_entry->[0], 'First entry item 1 is asset code');
@@ -92,7 +92,13 @@ subtest "asset_index logged in - with arg" => _test_asset_index({
 # Result should be Deriv (SVG) LLC
 # Trades everything except, so should be 113 entries and first entry should
 #   be frxAUDJPY with 5 contract types.
-subtest "asset_index logged out - no arg" => _test_asset_index({language => 'EN'}, $entry_count_cr, $first_entry_cr_mf_test2);
+subtest "asset_index logged out - no arg" => _test_asset_index({
+        language => 'EN',
+        source   => 5
+    },
+    $entry_count_cr,
+    $first_entry_cr_mf_test2
+);
 
 # Result should be for Deriv (Europe) Limited
 # Only trades volatilities, so should be 7 entries and first entry should
