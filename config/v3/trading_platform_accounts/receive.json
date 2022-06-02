@@ -31,7 +31,10 @@
                     },
                     "balance": {
                         "description": "Balance of the Trading account.",
-                        "type": "number"
+                        "type": [
+                            "null",
+                            "number"
+                        ]
                     },
                     "currency": {
                         "description": "Currency of the Trading account.",
@@ -39,7 +42,14 @@
                     },
                     "display_balance": {
                         "description": "Account balance, formatted to appropriate decimal places.",
-                        "type": "string"
+                        "type": [
+                            "null",
+                            "string"
+                        ]
+                    },
+                    "enabled": {
+                        "description": "Account enabled status",
+                        "type": "integer"
                     },
                     "landing_company_short": {
                         "description": "Landing company shortcode of the Trading account.",
