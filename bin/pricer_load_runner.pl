@@ -176,27 +176,6 @@ my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
 my $pid;
 
-sub start_subscription {
-    my $subscriptions = shift;
-    $pid = undef;
-    my $pid_file = path('/tmp/proposal_sub.pid');
-    $pid_file->remove();
-    my $whole_command = "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market > /tmp/proposal_sub.log&";
-    say "start command '$whole_command'";
-    open(my $fh, "-|", $whole_command)
-        or die $!;
-    for (1 .. 10) {
-        if ($pid_file->exists) {
-            $pid = $pid_file->slurp();
-            last;
-        }
-        sleep 1;
-    }
-    die "proposal_sub process not started successfully" unless $pid;
-    say 'pid ' . $pid;
-    close $fh;
-
-}
 start_subscription($initial_subscriptions);
 # Kill the sub script if Ctrl-C is pressed.
 $SIG{'INT'} = sub {
@@ -469,4 +448,25 @@ Returns integer value of buffer amount
 sub get_overflow_buffer_amount {
     my $check_time_amount = @_;
     return int($check_time_amount / 60);
+}
+
+sub start_subscription {
+    my $subscriptions = shift;
+    $pid = undef;
+    my $pid_file = path('/tmp/proposal_sub.pid');
+    $pid_file->remove();
+    my $whole_command = "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market > /tmp/proposal_sub.log&";
+    say "start command '$whole_command'";
+    open(my $fh, "-|", $whole_command)
+        or die $!;
+    for (1 .. 10) {
+        if ($pid_file->exists) {
+            $pid = $pid_file->slurp();
+            last;
+        }
+        sleep 1;
+    }
+    die "proposal_sub process not started successfully" unless $pid;
+    say 'pid ' . $pid;
+    close $fh;
 }
