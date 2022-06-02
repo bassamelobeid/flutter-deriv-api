@@ -179,7 +179,7 @@ my $pid;
 start_subscription($initial_subscriptions);
 # Kill the sub script if Ctrl-C is pressed.
 $SIG{'INT'} = sub {
-    exit;    #this will end up running the END block
+    exit;                      #this will end up running the END block
 };
 
 #Catch on Die , kill subscript if running
