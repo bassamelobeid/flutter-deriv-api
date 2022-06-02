@@ -115,7 +115,7 @@ sub main {
         markets                 => \@markets_to_use,
         token                   => $token,
     );
-    path('/tmp/proposal_sub.pid')->spew($$); 
+    path('/tmp/proposal_sub.pid')->spew($$);
     $load_tester->run_tests();
 }
 

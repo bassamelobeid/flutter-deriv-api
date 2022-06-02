@@ -87,19 +87,18 @@ This will be the average result of all the iterations for each market.
 
 =cut
 
-
 GetOptions(
     't|time=i'          => \my $check_time,
     's|subscriptions=i' => \my $initial_subscriptions,
     'a|app_id=i'        => \my $app_id,
     'n|hostname=s'      => \my $hostname,
-    
-    'e|mail_to=s'       => \my $mail_to,
-    'm|markets=s'       => \my $markets,
-    'i|iterations=i'    => \my $iterations,
-    'r|datadog'         => \my $report,
-    'h|help'            => \my $help,
-    'd|debug'           => \my $debug,
+
+    'e|mail_to=s'    => \my $mail_to,
+    'm|markets=s'    => \my $markets,
+    'i|iterations=i' => \my $iterations,
+    'r|datadog'      => \my $report,
+    'h|help'         => \my $help,
+    'd|debug'        => \my $debug,
 );
 
 pod2usage({
@@ -176,7 +175,8 @@ my $market = shift @markets_to_use;
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
 my $pid;
-sub start_subscription{
+
+sub start_subscription {
     my $subscriptions = shift;
     $pid = undef;
     my $pid_file = path('/tmp/proposal_sub.pid');
@@ -185,8 +185,8 @@ sub start_subscription{
     say "start command '$whole_command'";
     open(my $fh, "-|", $whole_command)
         or die $!;
-    for(1..10){
-        if($pid_file->exists){
+    for (1 .. 10) {
+        if ($pid_file->exists) {
             $pid = $pid_file->slurp();
             last;
         }
@@ -196,7 +196,6 @@ sub start_subscription{
     say 'pid ' . $pid;
     close $fh;
 
-   
 }
 start_subscription($initial_subscriptions);
 # Kill the sub script if Ctrl-C is pressed.
@@ -274,13 +273,12 @@ $timer = IO::Async::Timer::Periodic->new(
 );
 $timer->start;
 my $timer_print_datetime;
-if($debug){
+if ($debug) {
     my $timer_print_datetime = IO::Async::Timer::Periodic->new(
         interval => 10,
-        on_tick => sub {
+        on_tick  => sub {
             say Date::Utility->new()->datetime;
-        }
-    );
+        });
     $timer_print_datetime->start;
     $loop->add($timer_print_datetime);
 }
