@@ -180,7 +180,7 @@ sub asset_index {
     $landing_company_name //= 'virtual';
 
     my $app_id        = $params->{valid_source} // $params->{source};
-    my $app_offerings = request()->brand->get_app($app_id)->offerings();
+    my $app_offerings = request()->brand->get_app($app_id)->offerings;
 
     return generate_asset_index($country_code, $landing_company_name, $language, $app_offerings);
 }
