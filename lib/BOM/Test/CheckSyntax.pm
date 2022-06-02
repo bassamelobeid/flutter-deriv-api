@@ -1,7 +1,7 @@
 package BOM::Test::CheckSyntax;
 
-use strict;
-use warnings;
+use strict
+;use warnings;
 
 use Exporter 'import';
 use Test::More;
@@ -11,7 +11,10 @@ use Test::Strict;
 use Test::PerlTidy;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
 use Test::Builder qw();
-use Test::Pod::CoverageChange;
+use Pod::Coverage;                                                              
+use Pod::Checker;                                                               
+use Test::Pod::Coverage;                                                        
+ 
 use BOM::Test::CheckJsonMaybeXS;
 use YAML::XS qw(LoadFile);
 
@@ -27,17 +30,17 @@ It only check updated files compare to master branch.
 
 sub check_syntax_on_diff {
     my @skipped_files = @_;
-    my @check_files   = `git diff --name-only master`;
+    my @updated_file   = `git diff --name-only master`;
 
-    if (scalar @check_files) {
+    if (scalar @updated_file) {
         pass "file change detected";
-        diag($_) for @check_files;
+        diag($_) for @updated_file;
 
-        check_syntax(\@check_files, \@skipped_files, 'syntax_diff');
-        check_tidy(\@check_files, \@skipped_files);
-        check_yaml(@check_files);
+        check_syntax(\@updated_file, \@skipped_files, 'syntax_diff');
+        check_tidy(\@updated_file, \@skipped_files);
+        check_yaml(@updated_file);
         
-        check_pod_coverage();
+        check_pod_coverage(@updated_file);
 
     } else {
         pass "no change detected, skip tests";
@@ -53,13 +56,13 @@ the test should be same check_syntax_on_diff, but apply to all files.
 
 sub check_syntax_all {
     my @skipped_files = @_;
-    my @check_files   = `find lib bin -type f`;
-    check_syntax(\@check_files, \@skipped_files);
+    my @updated_file   = `find lib bin -type f`;
+    check_syntax(\@updated_file, \@skipped_files);
 
-    @check_files = `find lib bin t -type f`;
-    check_tidy(\@check_files, \@skipped_files);
-    @check_files = `find . -name "*.yml" -o -name "*.yaml"`;
-    check_yaml(@check_files);
+    @updated_file = `find lib bin t -type f`;
+    check_tidy(\@updated_file, \@skipped_files);
+    @updated_file = `find . -name "*.yml" -o -name "*.yaml"`;
+    check_yaml(@updated_file);
 }
 
 =head1 check_syntax
@@ -70,7 +73,7 @@ Parameters:
 
 =over
 
-=item * check_files - array ref of files that need to be check.
+=item * updated_file - array ref of files that need to be check.
 
 =item * skipped_files - array ref of files that will skip syntax check.
 
@@ -81,10 +84,10 @@ Parameters:
 =cut
 
 sub check_syntax {
-    my ($check_files, $skipped_files, $syntax_diff) = @_;
+    my ($updated_file, $skipped_files, $syntax_diff) = @_;
 
     diag("start checking syntax...");
-    foreach my $file (@$check_files) {
+    foreach my $file (@$updated_file) {
         chomp $file;
 
         next unless (-f $file and $file =~ /[.]p[lm]\z/);
@@ -116,11 +119,11 @@ Check is_file_tidy for perl files
 =cut
 
 sub check_tidy {
-    my ($check_files, $skipped_files) = @_;
+    my ($updated_file, $skipped_files) = @_;
     my $test = Test::Builder->new;
 
     diag("start checking tidy...");
-    foreach my $file (@$check_files) {
+    foreach my $file (@$updated_file) {
         chomp $file;
         next unless -f $file;
         next if $skip_tidy && is_skipped_file($file, $skipped_files);
@@ -138,9 +141,9 @@ check yaml files format
 =cut
 
 sub check_yaml {
-    my (@check_files) = @_;
+    my (@updated_file) = @_;
     diag("start checking yaml...");
-    foreach my $file (@check_files) {
+    foreach my $file (@updated_file) {
         chomp $file;
         next unless -f $file;
         if ($file =~ /\.(yml|yaml)$/ and not $file =~ /invalid\.yml$/) {
@@ -188,12 +191,43 @@ sub is_skipped_file {
 }
 
 sub check_pod_coverage {
+  my @updated_file =@_;
+  foreach my $file (@updated_file){
 
-    Test::Pod::CoverageChange::pod_coverage_syntax_ok(
-    allowed_naked_packages => $allowed_naked_packages,
-    ignored_packages       => $ignored_packages
-    ）
+        chomp $file;
+        next unless (-f $file and $file =~ /[.]pm\z/);    
+  my $podchecker = podchecker($file);
+  ok !$podchecker, "pod syntax check for $file";
+  diag($podchecker) if $podchecker;
+
+  my ($module)=Test::Pod::Coverage::all_modules($file);
+    my $pc = Pod::Coverage->new(package => $module);
+    my @naked_sub=$pc->naked;
+    if (@naked_sub){
+        foreach my $sub (get_updated_subs($file)){
+            my ($naked_sub) = grep { $sub eq $_} @naked_sub;
+            ok !$naked_sub , "pod for $module::$naked_sub";
+            diag("Please add pod for $naked_sub!!!") if $naked_sub;
+        }
+
+    }
+}
 }
 
+
+sub get_updated_subs {
+    my ($updated_file) = @_;
+    my @changed_lines   = `git diff $updated_file`;
+    my @updated_subs;
+    for (@changed_lines){
+        # get the changed function, sample:
+        # @@ -182,4 +187,13 @@ sub is_skipped_file {
+        push(@updated_subs, $1) if /@@ sub\s(\w+)\s/;
+        # get the new function, sample:
+        # +sub get_updated_subs {
+        push(@updated_subs, $1) if /\+sub\s(\w+)\s/;
+    }
+    return @updated_subs;
+}
 
 1;
