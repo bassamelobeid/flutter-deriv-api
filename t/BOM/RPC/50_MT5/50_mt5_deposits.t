@@ -225,6 +225,45 @@ subtest 'deposit' => sub {
 
 };
 
+subtest 'deposit_exceeded_balance' => sub {
+    # User needs some real money now
+    cmp_ok $test_client->default_account->balance, '==', 820, "balance before a failed MT5 deposit";
+
+    my $loginid = $test_client->loginid;
+
+    my $method = "mt5_deposit";
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_binary => $loginid,
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
+            amount      => 1000,
+        },
+    };
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
+    $c->call_ok($method, $params)->has_error('Failed MT5 Deposit')->error_code_is('MT5DepositError')
+        ->error_message_like(qr/The maximum amount you may transfer is: 820.00./, 'Balance exceeded');
+    is($c->result->{binary_transaction_id}, undef, 'result does not have a transaction ID');
+    subtest record_mt5_transfer_deposit => sub {
+        my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
+        is($mt5_transfer->{mt5_amount}, undef, 'No amount recorded');
+    };
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
+
+    cmp_ok $test_client->default_account->balance, '==', 820, "Correct balance after a failed MT5 deposit";
+
+    $demo_account_mock->unmock_all();
+
+};
+
 subtest 'demo account can not be tagged as an agent' => sub {
     my $method            = 'mt5_new_account';
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');

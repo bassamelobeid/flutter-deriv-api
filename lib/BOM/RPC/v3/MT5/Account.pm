@@ -1683,15 +1683,17 @@ async_rpc "mt5_deposit",
 
             my $fm_client = BOM::User::Client->get_client_instance($fm_loginid, 'write');
 
+            # Checks if balance is exceeded
+            return create_error_future(
+                $error_code,
+                {
+                    message => localize("The maximum amount you may transfer is: [_1].", $fm_client->default_account->balance),
+                }) if $amount > $fm_client->default_account->balance;
+
             # From the point of view of our system, we're withdrawing
             # money to deposit into MT5
-            if ($fm_client->is_virtual) {
-                return create_error_future(
-                    $error_code,
-                    {
-                        message => localize("The maximum amount you may transfer is: [_1].", $fm_client->default_account->balance),
-                    }) if $amount > $fm_client->default_account->balance;
-            } else {
+            if (!$fm_client->is_virtual) {
+
                 my $rule_engine = BOM::Rules::Engine->new(client => $fm_client);
 
                 try {
