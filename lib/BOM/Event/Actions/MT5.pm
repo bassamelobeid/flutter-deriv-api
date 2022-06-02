@@ -239,7 +239,7 @@ sub new_mt5_signup {
     $data->{client_first_name} = $client->first_name;
     # Frontend-ish label (Synthetic, Financial, Financial STP)
     my $type_label = $group_details->{market_type};
-    $type_label .= '_stp' if $group_details->{sub_account_type} eq 'stp';
+    $type_label .= ' STP' if $group_details->{sub_account_type} eq 'stp';
     $data->{type_label}     = ucfirst $type_label;                     # Frontend-ish label (Synthetic, Financial, Financial STP)
     $data->{mt5_integer_id} = $id =~ s/${\BOM::User->MT5_REGEX}//r;    # This one is just the numeric ID
 
