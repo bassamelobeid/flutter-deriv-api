@@ -363,4 +363,398 @@ subtest 'server by country' => sub {
     is_deeply($result, $expected, 'output expected for real synthetic server on Indonesia');
 };
 
+subtest 'available_groups' => sub {
+    my $mt5_config = BOM::Config::MT5->new;
+    # we should test the:
+    # - filtering logic
+    # - total group per landing company
+    my @test_cases = ({
+            filter  => {server_type => 'real'},
+            count   => 40,
+            comment => 'real groups'
+        },
+        {
+            filter  => {server_type => 'demo'},
+            count   => 15,
+            comment => 'demo groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'svg'
+            },
+            count   => 25,
+            comment => 'real svg groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'svg',
+                market_type => 'financial'
+            },
+            count   => 5,
+            comment => 'real svg financial groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'svg',
+                market_type => 'synthetic'
+            },
+            count   => 20,
+            comment => 'real svg synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'svg'
+            },
+            count   => 4,
+            comment => 'demo svg groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'svg',
+                market_type => 'financial'
+            },
+            count   => 2,
+            comment => 'demo svg financial groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'svg',
+                market_type => 'synthetic'
+            },
+            count   => 2,
+            comment => 'demo svg synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'malta'
+            },
+            count   => 0,
+            comment => 'real malta groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'malta',
+                market_type => 'financial'
+            },
+            count   => 0,
+            comment => 'real malta financial groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'malta',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'real malta synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'malta'
+            },
+            count   => 0,
+            comment => 'demo malta groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'malta',
+                market_type => 'financial'
+            },
+            count   => 0,
+            comment => 'demo malta financial groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'malta',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'demo malta synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'maltainvest'
+            },
+            allow_multiple_subgroups => 1,
+            count                    => 15,
+            comment                  => 'real maltainvest groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'maltainvest',
+                market_type => 'financial'
+            },
+            allow_multiple_subgroups => 1,
+            count                    => 15,
+            comment                  => 'real maltainvest financial groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'maltainvest',
+                market_type => 'synthetic'
+            },
+            allow_multiple_subgroups => 1,
+            count                    => 0,
+            comment                  => 'real maltainvest synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'maltainvest'
+            },
+            allow_multiple_subgroups => 1,
+            count                    => 5,
+            comment                  => 'demo maltainvest groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'maltainvest',
+                market_type => 'financial'
+            },
+            allow_multiple_subgroups => 1,
+            count                    => 5,
+            comment                  => 'demo maltainvest financial groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'maltainvest',
+                market_type => 'synthetic'
+            },
+            allow_multiple_subgroups => 1,
+            count                    => 0,
+            comment                  => 'demo maltainvest synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'iom'
+            },
+            count   => 0,
+            comment => 'real iom groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'iom',
+                market_type => 'financial'
+            },
+            count   => 0,
+            comment => 'real iom financial groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'iom',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'real iom synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'iom'
+            },
+            count   => 0,
+            comment => 'demo iom groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'iom',
+                market_type => 'financial'
+            },
+            count   => 0,
+            comment => 'demo iom financial groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'iom',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'demo iom synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'bvi'
+            },
+            count   => 5,
+            comment => 'real bvi groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'bvi',
+                market_type => 'financial'
+            },
+            count   => 5,
+            comment => 'real bvi financial groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'bvi',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'real bvi synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'bvi'
+            },
+            count   => 2,
+            comment => 'demo bvi groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'bvi',
+                market_type => 'financial'
+            },
+            count   => 2,
+            comment => 'demo bvi financial groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'bvi',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'demo bvi synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'vanuatu'
+            },
+            allow_multiple_subgroups => 1,
+            count                    => 5,
+            comment                  => 'real vanuatu groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'vanuatu',
+                market_type => 'financial'
+            },
+            allow_multiple_subgroups => 1,
+            count                    => 5,
+            comment                  => 'real vanuatu financial groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'vanuatu',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'real vanuatu synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'vanuatu'
+            },
+            count   => 2,
+            comment => 'demo vanuatu groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'vanuatu',
+                market_type => 'financial'
+            },
+            count   => 2,
+            comment => 'demo vanuatu financial groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'vanuatu',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'demo vanuatu synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'labuan'
+            },
+            count   => 5,
+            comment => 'real labuan groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'labuan',
+                market_type => 'financial'
+            },
+            count   => 5,
+            comment => 'real labuan financial groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'labuan',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'real labuan synthetic groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'labuan'
+            },
+            count   => 2,
+            comment => 'demo labuan groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'labuan',
+                market_type => 'financial'
+            },
+            count   => 2,
+            comment => 'demo labuan financial groups'
+        },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'labuan',
+                market_type => 'synthetic'
+            },
+            count   => 0,
+            comment => 'demo labuan synthetic groups'
+        },
+    );
+
+    foreach my $test (@test_cases) {
+        is $mt5_config->available_groups($test->{filter}, $test->{allow_multiple_subgroups}), $test->{count}, $test->{comment};
+    }
+};
+
 done_testing();

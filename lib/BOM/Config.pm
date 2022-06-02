@@ -240,6 +240,12 @@ sub mt5_server_routing {
     return $config;
 }
 
+=head2 mt5_account_types
+
+Config for MT5 groups definition
+
+=cut
+
 sub mt5_account_types {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_account_types.yml');
     return $config;

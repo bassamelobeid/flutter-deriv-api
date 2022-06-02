@@ -208,7 +208,7 @@ sub servers {
 
     foreach my $group_type (sort keys %$mt5_config) {
         next if $self->{group_type} and $self->{group_type} ne $group_type;
-        next if $group_type eq 'request_timeout';
+        next if $group_type eq 'request_timeout' or $group_type eq 'mt5_http_proxy_url';
 
         foreach my $server_type (sort keys %{$mt5_config->{$group_type}}) {
             push @servers,
@@ -338,6 +338,38 @@ sub symmetrical_servers {
     }
 
     return \%servers;
+}
+
+=head2 available_groups
+
+Get available group based on parameters
+
+=over 4
+
+=item * server_type - real or demo
+
+=item * server_key - trade server key. E.g. p01_ts01
+
+=item * market_type - synthetic or financial
+
+=item * company - E.g. svg
+
+=item * sub_group - std (standard) or sf (swap free) etc
+
+=item * allow_multiplier_subgroup - boolean
+
+=back
+
+=cut
+
+sub available_groups {
+    my ($self, $params, $allow_multiple_subgroup) = @_;
+
+    my $allow_multi = $allow_multiple_subgroup ? '(-|_)' : '_';
+    $params->{$_} //= '\w+' foreach qw(server_type server_key market_type company sub_group);
+    $params->{sub_group} .= $allow_multi;
+    return grep { $_ =~ /^$params->{server_type}\\$params->{server_key}\\$params->{market_type}\\$params->{company}_$params->{sub_group}/ }
+        sort { $a cmp $b } keys $self->groups_config->%*;
 }
 
 1;
