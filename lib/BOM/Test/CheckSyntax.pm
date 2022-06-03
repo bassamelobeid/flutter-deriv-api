@@ -204,8 +204,8 @@ sub check_pod_coverage {
         my @naked_sub = $pc->naked;
         use Data::Dumper;
         $Data::Dumper::Maxdepth = 2;
-        diag(Dumper(\@naked_sub) . 'get_updated_subs' . Dumper(get_updated_subs($file)));
         my @updated_subs      = get_updated_subs($file);
+        diag('naked_sub:'.Dumper(\@naked_sub) .'updated_subs:'. Dumper(\@updated_subs));
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
         ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
         diag('Please add pod document for the following subrutine:');
@@ -215,7 +215,7 @@ sub check_pod_coverage {
 
 sub get_updated_subs {
     my ($check_files) = @_;
-    my @changed_lines = `git diff $check_files`;
+    my @changed_lines = `git diff master $check_files`;
     my @updated_subs;
     for (@changed_lines) {
         # get the changed function, sample:
