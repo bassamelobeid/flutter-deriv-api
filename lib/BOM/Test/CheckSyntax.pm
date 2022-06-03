@@ -21,7 +21,7 @@ use YAML::XS qw(LoadFile);
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
-=head1 check_syntax_on_diff
+=head2 check_syntax_on_diff
 
 Gather common syntax tests which used ammon bom-xxx repos.
 It only check updated files compare to master branch.
@@ -47,7 +47,7 @@ sub check_syntax_on_diff {
     }
 }
 
-=head1 check_syntax_all
+=head2 check_syntax_all
 
 run all the common syntax related check on perl and ymal files.
 the test should be same check_syntax_on_diff, but apply to all files.
@@ -57,6 +57,8 @@ the test should be same check_syntax_on_diff, but apply to all files.
 sub check_syntax_all {
     my @skipped_files = @_;
     my @check_files   = `find lib bin -type f`;
+    check_pod_coverage(@check_files);
+    return 1;
     check_syntax(\@check_files, \@skipped_files);
 
     @check_files = `find lib bin t -type f`;
@@ -65,7 +67,7 @@ sub check_syntax_all {
     check_yaml(@check_files);
 }
 
-=head1 check_syntax
+=head2 check_syntax
 
 check syntax for perl files
 
@@ -112,7 +114,7 @@ sub check_syntax {
     }
 }
 
-=head1 check_tidy
+=head2 check_tidy
 
 Check is_file_tidy for perl files
 
@@ -135,7 +137,7 @@ sub check_tidy {
     }
 }
 
-=head1 check_yaml
+=head2 check_yaml
 
 check yaml files format
 
@@ -153,7 +155,7 @@ sub check_yaml {
     }
 }
 
-=head1 check_bom_dependency
+=head2 check_bom_dependency
 
 Check BOM module dependency under currnet lib.
 Test fail when new dependency detected.
@@ -193,6 +195,8 @@ sub _is_skipped_file {
 
 sub check_pod_coverage {
     my @check_files = @_;
+    diag("start checking pod for perl module...");
+
     foreach my $file (@check_files) {
         chomp $file;
         next unless (-f $file and $file =~ /[.]pm\z/);
