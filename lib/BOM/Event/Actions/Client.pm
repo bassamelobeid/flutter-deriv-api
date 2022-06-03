@@ -3476,7 +3476,7 @@ It can be called with the following parameters:
 
 =over
 
-=item * C<args> - Free-form dictionary of event properties.
+=item * C<properties> - Free-form dictionary of event properties.
 
 =back
 
@@ -3600,6 +3600,49 @@ sub verify_email_closed_account_reset_password {
         loginid    => $args->{loginid},
         properties => $args->{properties},
     );
+}
+
+=head2 pa_transfer_confirm
+
+It is triggered for each B<pa_transfer_confirm> event emitted, delivering it to Segment.
+
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub pa_transfer_confirm {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::pa_transfer_confirm($args);
+}
+
+=head2 pa_withdraw_confirm
+
+It is triggered for each B<pa_withdraw_confirm> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub pa_withdraw_confirm {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::pa_withdraw_confirm($args);
 }
 
 1;

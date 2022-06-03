@@ -107,6 +107,8 @@ my $action_mapping = {
         verify_email_closed_account_other           => \&BOM::Event::Actions::Client::verify_email_closed_account_other,
         verify_email_closed_account_account_opening => \&BOM::Event::Actions::Client::verify_email_closed_account_account_opening,
         verify_email_closed_account_reset_password  => \&BOM::Event::Actions::Client::verify_email_closed_account_reset_password,
+        pa_transfer_confirm                         => \&BOM::Event::Actions::Client::pa_transfer_confirm,
+        pa_withdraw_confirm                         => \&BOM::Event::Actions::Client::pa_withdraw_confirm,
         trigger_cio_broadcast                       => \&BOM::Event::Actions::Common::trigger_cio_broadcast,
     },
     track => {

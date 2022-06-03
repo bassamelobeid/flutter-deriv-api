@@ -134,7 +134,7 @@ subtest 'process - generic jobs' => sub {
                 account_opening_existing request_payment_withdraw
                 verify_email_closed_account_other verify_email_closed_account_reset_password
                 verify_email_closed_account_account_opening account_verification_for_pending_payout
-                trigger_cio_broadcast/
+                pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast/
         ),
         'Correct number of actions that can be emitted'
     );

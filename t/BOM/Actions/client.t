@@ -2995,6 +2995,135 @@ subtest 'new account opening' => sub {
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
+my $pa_test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$pa_test_client->set_default_account('USD');
+$pa_test_client->payment_agent({
+    payment_agent_name    => "Joe",
+    email                 => 'joe@example.com',
+    information           => 'Test Info',
+    summary               => 'Test Summary',
+    commission_deposit    => 0,
+    commission_withdrawal => 0,
+    currency_code         => 'USD',
+    status                => 'authorized',
+});
+$pa_test_client->save;
+$pa_test_client->get_payment_agent->set_countries(['id']);
+
+subtest 'pa transfer confirm' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $param = {
+        'loginid'           => $test_client->loginid,
+        'pa_email'          => $pa_test_client->email,
+        'pa_last_name'      => 'pItT',
+        'website_name'      => undef,
+        'client_loginid'    => 'CR10005',
+        'client_last_name'  => 'pItT',
+        'title'             => 'We\'ve completed a transfer',
+        'pa_first_name'     => 'bRaD',
+        'client_salutation' => 'MR',
+        'client_first_name' => 'bRaD',
+        'pa_loginid'        => 'CR10004',
+        'name'              => 'bRaD',
+        'client_name'       => 'bRaD pItT',
+        'pa_salutation'     => 'MR',
+        'amount'            => 10,
+        'pa_name'           => 'Xoe',
+        'currency'          => 'USD'
+    };
+
+    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{pa_transfer_confirm};
+    my $result  = $handler->($param)->get;
+    ok $result, 'Success result';
+
+    my ($customer, %r_args) = @track_args;
+
+    is $r_args{event}, 'pa_transfer_confirm', "Event=pa_transfer_confirm";
+
+    cmp_deeply $r_args{properties},
+        {
+        amount         => '10',
+        brand          => 'deriv',
+        client_loginid => 'CR10005',
+        currency       => 'USD',
+        lang           => 'ID',
+        loginid        => $test_client->loginid,
+        name           => 'bRaD',
+        pa_email       => $pa_test_client->email,
+        pa_first_name  => 'bRaD',
+        pa_last_name   => 'pItT',
+        pa_loginid     => 'CR10004',
+        },
+        'event properties are ok';
+
+    is $r_args{properties}->{loginid}, $test_client->loginid, "got correct customer loginid";
+};
+
+subtest 'pa withdraw confirm' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $param = {
+        'loginid'           => $test_client->loginid,
+        'email'             => $test_client->email,
+        'pa_last_name'      => 'pItT',
+        'website_name'      => undef,
+        'client_loginid'    => 'CR00007',
+        'client_last_name'  => 'pItT',
+        'title'             => 'We\'ve completed a transfer',
+        'pa_first_name'     => 'bRaD',
+        'client_salutation' => 'MR',
+        'client_first_name' => 'bRaD',
+        'pa_loginid'        => $pa_test_client->loginid,
+        'name'              => 'bRaD',
+        'client_name'       => 'bRaD pItT',
+        'pa_salutation'     => 'MR',
+        'amount'            => 10,
+        'pa_name'           => 'Xoe',
+        'currency'          => 'USD'
+    };
+
+    my $handler = BOM::Event::Process::->new(category => 'generic')->actions->{pa_withdraw_confirm};
+    my $result  = $handler->($param)->get;
+    ok $result, 'Success result';
+
+    my ($customer, %r_args) = @track_args;
+
+    is $r_args{event}, 'pa_withdraw_confirm', "Event=pa_withdraw_confirm";
+    cmp_deeply $r_args{properties},
+        {
+        email          => $test_client->email,
+        amount         => '10',
+        brand          => 'deriv',
+        client_loginid => 'CR00007',
+        client_name    => 'bRaD pItT',
+        currency       => 'USD',
+        lang           => 'ID',
+        loginid        => $test_client->loginid,
+        pa_loginid     => $pa_test_client->loginid,
+        },
+        'event properties are ok';
+
+    is $r_args{properties}->{loginid}, $test_client->loginid, "got correct customer loginid";
+};
+
 subtest 'underage_account_closed' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -3755,4 +3884,3 @@ subtest 'verify email closed account opening' => sub {
 };
 
 done_testing();
-

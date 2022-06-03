@@ -144,6 +144,8 @@ my %EVENT_PROPERTIES = (
     verify_email_closed_account_account_opening => [qw(loginid email type live_chat_url)],
     account_verification_for_pending_payout     => [qw(date email)],
     authenticated_with_scans                    => [qw(first_name email contact_url live_chat_url)],
+    pa_transfer_confirm                         => [qw(pa_loginid pa_email pa_first_name pa_last_name client_loginid name amount currency)],
+    pa_withdraw_confirm                         => [qw(pa_loginid client_loginid email client_name amount currency)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -175,6 +177,8 @@ my @COMMON_EVENT_METHODS = qw(
     request_change_email
     reset_password_confirmation
     authenticated_with_scans
+    pa_transfer_confirm
+    pa_withdraw_confirm
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1329,71 +1333,23 @@ It is triggered for each B<reset_password_confirmation> event emitted, deliverin
 
 It is triggered for each B<authenticated_with_scans> event emitted, delivering it to Segment.
 
-=over
-
-=item * C<event> - The event name
-
-=item * C<client> - required. When Client instance
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
 =head2 crypto_withdrawal_email
 
 It is triggered for each B<crypto_withdrawal_email> event emitted, delivering it to Rudderstack.
-
-=over 4
-
-=item * C<properties> - required. Event properties which contains:
-
-=over 5
-
-=item - C<loginid> - required. Login id of the client.
-
-=item - C<amount> - required. Amount of transaction
-
-=item - C<currency> - required. Currency type
-
-=item - C<transaction_hash> - required. Transaction hash
-
-=item - C<transaction_url> - required. Transaction url
-
-=item - C<live_chat_url> - required. Live-chat url
-
-=item - C<title> - required. Title
-
-=back
-
-=back
 
 =head2 crypto_withdrawal_rejected_email
 
 Send rudderstack event when a crypto payout is rejected
 
-=over 4
+=head2 pa_withdraw_confirm
 
-=item - C<properties> - Event properties which contains:
+It is triggered for each B<pa_withdraw_confirm> event emitted, delivering it to Segment.
+It can be called with the following parameters:
 
-=over 4
+=head2 pa_transfer_confirm
 
-=item * C<loginid> - Client login id
-
-=item * C<title> - title
-
-=item * C<reject_reason>   - Reject reason
-
-=item * C<amount>   - withdrawal amount
-
-=item * C<currency_code>   - withdrawal currency
-
-=item * C<meta_data> - extra meta datas
-
-=back
-
-=back
+It is triggered for each B<pa_transfer_confirm> event emitted, delivering it to Segment.
+It can be called with the following parameters:
 
 =cut
 
