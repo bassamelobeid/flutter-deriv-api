@@ -123,14 +123,14 @@ sub check_tidy {
     my $test = Test::Builder->new;
 
     diag("start checking tidy...");
-    $Test::PerlTidy::MUTE=1;
+    $Test::PerlTidy::MUTE = 1;
     foreach my $file (@$updated_file) {
         chomp $file;
         next unless -f $file;
         next if $skip_tidy && is_skipped_file($file, $skipped_files);
         # tidy check for all perl files
         if ($file =~ /[.](?:pl|pm|t|cgi)\z/) {
- $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
+            $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
         }
     }
 }
@@ -202,13 +202,14 @@ sub check_pod_coverage {
         my ($module)  = Test::Pod::Coverage::all_modules($file);
         my $pc        = Pod::Coverage->new(package => $module);
         my @naked_sub = $pc->naked;
-        use Data::Dumper; $Data::Dumper::Maxdepth=2;
-        diag(Dumper(\@naked_sub). 'get_updated_subs'.Dumper(get_updated_subs($file)));
-        my @updated_subs=get_updated_subs($file);
-        my @naked_updated_sub=intersect(@naked_sub, @updated_subs);
-              ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
-              diag('Please add pod document for the following subrutine:');
-diag($_) for @naked_updated_sub;
+        use Data::Dumper;
+        $Data::Dumper::Maxdepth = 2;
+        diag(Dumper(\@naked_sub) . 'get_updated_subs' . Dumper(get_updated_subs($file)));
+        my @updated_subs      = get_updated_subs($file);
+        my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
+        ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
+        diag('Please add pod document for the following subrutine:');
+        diag($_) for @naked_updated_sub;
     }
 }
 
