@@ -44,37 +44,36 @@ subtest 'Test YAML return correct structure for aes_keys.yml' => sub {
     my $expected_aes_config = {
         client_secret_answer => {
             default_keynum => 1,
-            1 => ''
+            1              => ''
         },
         client_secret_iv => {
             default_keynum => 1,
-            1 => ''        
+            1              => ''
         },
         email_verification_token => {
             default_keynum => 1,
-            1 => ''
+            1              => ''
         },
         password_counter => {
             default_keynum => 1,
-            1 => ''
+            1              => ''
         },
         password_remote => {
             default_keynum => 1,
-            1 => ''
+            1              => ''
         },
         payment_agent => {
             default_keynum => 1,
-            1 => ''
+            1              => ''
         },
         feeds => {
             default_keynum => 1,
-            1 => ''
+            1              => ''
         },
         web_secret => {
             default_keynum => 1,
-            1 => ''
-        }
-    };
+            1              => ''
+        }};
     my $config        = BOM::Config::aes_keys();
     my @received_keys = ();
     _get_all_paths(
