@@ -91,7 +91,7 @@ sub check_syntax {
         chomp $file;
 
         next unless (-f $file and $file =~ /[.]p[lm]\z/);
-        next if is_skipped_file($file, $skipped_files);
+        next if _is_skipped_file($file, $skipped_files);
 
         diag("syntax check on $file:");
         if ($file =~ /^lib\/.+[.]pm\z/) {
