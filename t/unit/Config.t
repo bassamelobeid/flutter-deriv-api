@@ -19,17 +19,21 @@ subtest 'Test YAML return correct structure' => sub {
     };
     my $config        = BOM::Config::node();
     my @received_keys = ();
-    _get_all_paths($expected_node_config, sub {
-        my $k1 = shift;
-        my $k2 = shift // "";
-        push @received_keys, "$k1|$k2";
-    });
+    _get_all_paths(
+        $expected_node_config,
+        sub {
+            my $k1 = shift;
+            my $k2 = shift // "";
+            push @received_keys, "$k1|$k2";
+        });
     my @expected_keys = ();
-    _get_all_paths($expected_node_config, sub {
-        my $k1 = shift;
-        my $k2 = shift // "";
-        push @expected_keys, "$k1|$k2";
-    });
+    _get_all_paths(
+        $expected_node_config,
+        sub {
+            my $k1 = shift;
+            my $k2 = shift // "";
+            push @expected_keys, "$k1|$k2";
+        });
 
     cmp_deeply(\@received_keys, \@expected_keys, 'BOM::Config::node returns correct structure');
 
@@ -52,8 +56,7 @@ sub _get_all_paths {
         push(@newargs, $k);
         if (ref($v) eq 'HASH') {
             _get_all_paths($v, $code, \@newargs);
-        }
-        else {
+        } else {
             $code->(@newargs);
         }
     }
