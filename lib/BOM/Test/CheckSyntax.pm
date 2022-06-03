@@ -30,17 +30,17 @@ It only check updated files compare to master branch.
 
 sub check_syntax_on_diff {
     my @skipped_files = @_;
-    my @updated_file  = `git diff --name-only master`;
+    my @check_files  = `git diff --name-only master`;
 
-    if (scalar @updated_file) {
+    if (scalar @check_files) {
         pass "file change detected";
-        diag($_) for @updated_file;
+        diag($_) for @check_files;
 
-        check_syntax(\@updated_file, \@skipped_files, 'syntax_diff');
-        check_tidy(\@updated_file, \@skipped_files);
-        check_yaml(@updated_file);
+        check_syntax(\@check_files, \@skipped_files, 'syntax_diff');
+        check_tidy(\@check_files, \@skipped_files);
+        check_yaml(@check_files);
 
-        check_pod_coverage(@updated_file);
+        check_pod_coverage(@check_files);
 
     } else {
         pass "no change detected, skip tests";
@@ -56,13 +56,13 @@ the test should be same check_syntax_on_diff, but apply to all files.
 
 sub check_syntax_all {
     my @skipped_files = @_;
-    my @updated_file  = `find lib bin -type f`;
-    check_syntax(\@updated_file, \@skipped_files);
+    my @check_files  = `find lib bin -type f`;
+    check_syntax(\@check_files, \@skipped_files);
 
-    @updated_file = `find lib bin t -type f`;
-    check_tidy(\@updated_file, \@skipped_files);
-    @updated_file = `find . -name "*.yml" -o -name "*.yaml"`;
-    check_yaml(@updated_file);
+    @check_files = `find lib bin t -type f`;
+    check_tidy(\@check_files, \@skipped_files);
+    @check_files = `find . -name "*.yml" -o -name "*.yaml"`;
+    check_yaml(@check_files);
 }
 
 =head1 check_syntax
@@ -73,7 +73,7 @@ Parameters:
 
 =over
 
-=item * updated_file - array ref of files that need to be check.
+=item * check_files - array ref of files that need to be check.
 
 =item * skipped_files - array ref of files that will skip syntax check.
 
@@ -84,10 +84,10 @@ Parameters:
 =cut
 
 sub check_syntax {
-    my ($updated_file, $skipped_files, $syntax_diff) = @_;
+    my ($check_files, $skipped_files, $syntax_diff) = @_;
 
     diag("start checking syntax...");
-    foreach my $file (@$updated_file) {
+    foreach my $file (@$check_files) {
         chomp $file;
 
         next unless (-f $file and $file =~ /[.]p[lm]\z/);
@@ -119,12 +119,12 @@ Check is_file_tidy for perl files
 =cut
 
 sub check_tidy {
-    my ($updated_file, $skipped_files) = @_;
+    my ($check_files, $skipped_files) = @_;
     my $test = Test::Builder->new;
 
     diag("start checking tidy...");
     $Test::PerlTidy::MUTE = 1;
-    foreach my $file (@$updated_file) {
+    foreach my $file (@$check_files) {
         chomp $file;
         next unless -f $file;
         next if $skip_tidy && is_skipped_file($file, $skipped_files);
@@ -142,9 +142,9 @@ check yaml files format
 =cut
 
 sub check_yaml {
-    my (@updated_file) = @_;
+    my (@check_files) = @_;
     diag("start checking yaml...");
-    foreach my $file (@updated_file) {
+    foreach my $file (@check_files) {
         chomp $file;
         next unless -f $file;
         if ($file =~ /\.(yml|yaml)$/ and not $file =~ /invalid\.yml$/) {
@@ -192,8 +192,8 @@ sub is_skipped_file {
 }
 
 sub check_pod_coverage {
-    my @updated_file = @_;
-    foreach my $file (@updated_file) {
+    my @check_files = @_;
+    foreach my $file (@check_files) {
         chomp $file;
         next unless (-f $file and $file =~ /[.]pm\z/);
         my $podchecker = podchecker($file);
@@ -214,8 +214,8 @@ sub check_pod_coverage {
 }
 
 sub get_updated_subs {
-    my ($updated_file) = @_;
-    my @changed_lines = `git diff $updated_file`;
+    my ($check_files) = @_;
+    my @changed_lines = `git diff $check_files`;
     my @updated_subs;
     for (@changed_lines) {
         # get the changed function, sample:
