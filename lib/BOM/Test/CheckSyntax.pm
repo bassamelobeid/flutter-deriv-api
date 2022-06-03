@@ -14,7 +14,7 @@ use Test::Builder qw();
 use Pod::Coverage;
 use Pod::Checker;
 use Test::Pod::Coverage;
-
+use Array::Utils qw(intersect);
 use BOM::Test::CheckJsonMaybeXS;
 use YAML::XS qw(LoadFile);
 
@@ -196,21 +196,17 @@ sub check_pod_coverage {
         chomp $file;
         next unless (-f $file and $file =~ /[.]pm\z/);
         my $podchecker = podchecker($file);
-        ok !$podchecker, "pod syntax check for $file";
+        ok !$podchecker, "check pod syntax for $file";
         # diag($podchecker) if $podchecker;
 
         my ($module)  = Test::Pod::Coverage::all_modules($file);
         my $pc        = Pod::Coverage->new(package => $module);
         my @naked_sub = $pc->naked;
         use Data::Dumper; $Data::Dumper::Maxdepth=2;
-        diag(Dumper(\@naked_sub));
-        if (@naked_sub) {
-            foreach my $sub (get_updated_subs($file)) {
-                my ($naked_sub) = grep { $sub eq $_ } @naked_sub;
-                ok !$naked_sub, "pod for $module->$naked_sub";
-                diag("Please add pod for $naked_sub!!!") if $naked_sub;
-            }
-        }
+        diag(Dumper(\@naked_sub). 'get_updated_subs'.Dumper(get_updated_subs($file)));
+        my @naked_updated_sub=intersect(@naked_sub, get_updated_subs($file));
+              ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
+diag($_) for @naked_updated_sub;
     }
 }
 
