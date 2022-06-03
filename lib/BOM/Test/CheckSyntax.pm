@@ -127,7 +127,7 @@ sub check_tidy {
     foreach my $file (@$check_files) {
         chomp $file;
         next unless -f $file;
-        next if $skip_tidy && is_skipped_file($file, $skipped_files);
+        next if $skip_tidy && _is_skipped_file($file, $skipped_files);
         # tidy check for all perl files
         if ($file =~ /[.](?:pl|pm|t|cgi)\z/) {
             $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
@@ -185,7 +185,7 @@ sub check_bom_dependency {
     }
 }
 
-sub is_skipped_file {
+sub _is_skipped_file {
     my ($check_file, $skipped_files) = @_;
     return unless @$skipped_files;
     return grep { $check_file =~ /$_/ } @$skipped_files;
@@ -204,7 +204,7 @@ sub check_pod_coverage {
         my @naked_sub = $pc->naked;
         use Data::Dumper;
         $Data::Dumper::Maxdepth = 2;
-        my @updated_subs = get_updated_subs($file);
+        my @updated_subs = _get_updated_subs($file);
         diag('naked_sub:' . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
         ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
@@ -213,7 +213,7 @@ sub check_pod_coverage {
     }
 }
 
-sub get_updated_subs {
+sub _get_updated_subs {
     my ($check_files) = @_;
     my @changed_lines = `git diff master $check_files`;
     my @updated_subs;
