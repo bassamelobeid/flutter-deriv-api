@@ -737,16 +737,14 @@ rpc paymentagent_transfer => sub {
 
     my $name  = $client_to->first_name;
     my $title = localize("We've completed a transfer");
-    send_email({
-        to                    => $client_to->email,
-        subject               => localize('Acknowledgement of Money Transfer'),
-        template_name         => 'pa_transfer_confirm',
-        template_args         => _template_args($website_name, $client_to, $client_fm, $amount, $currency, $name, $title),
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        use_event             => 1,
-        template_loginid      => $loginid_to
-    });
+
+    BOM::Platform::Event::Emitter::emit(
+        'pa_transfer_confirm',
+        {
+            loginid => $client_to->loginid,
+            _template_args($website_name, $client_to, $client_fm, $amount, $currency, $name, $title)->%*,
+            language => $params->{language},
+        });
 
     return {
         status              => 1,
@@ -1072,16 +1070,14 @@ rpc paymentagent_withdraw => sub {
 
     my $name  = $pa_client->first_name;
     my $title = localize("You have received funds");
-    send_email({
-        to                    => $paymentagent->email,
-        subject               => localize('You have received funds'),
-        template_name         => 'pa_withdraw_confirm',
-        template_args         => _template_args($website_name, $client, $pa_client, $amount, $currency, $name, $title),
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        use_event             => 1,
-        template_loginid      => $pa_client->loginid,
-    });
+
+    BOM::Platform::Event::Emitter::emit(
+        'pa_withdraw_confirm',
+        {
+            loginid => $client->loginid,
+            _template_args($website_name, $client, $pa_client, $amount, $currency, $name, $title)->%*,
+            language => $params->{language},
+        });
 
     return {
         status            => 1,
@@ -1867,6 +1863,7 @@ sub _template_args {
     my $client_name = $client->first_name . ' ' . $client->last_name;
 
     return {
+        email             => encode_entities($client->email),
         website_name      => $website_name,
         amount            => $amount,
         currency          => $currency,
@@ -1878,6 +1875,7 @@ sub _template_args {
         client_first_name => encode_entities($client->first_name),
         client_last_name  => encode_entities($client->last_name),
         pa_loginid        => $pa_client->loginid,
+        pa_email          => encode_entities($pa_client->email),
         pa_name           => encode_entities($pa_client->payment_agent->payment_agent_name),
         pa_salutation     => encode_entities($pa_client->salutation),
         pa_first_name     => encode_entities($pa_client->first_name),

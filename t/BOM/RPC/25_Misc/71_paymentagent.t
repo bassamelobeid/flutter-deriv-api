@@ -180,6 +180,13 @@ $mock_cashier->mock(
         die "Wrong paymentagent function called at line $line: this is the transfer section!\n";
     });
 
+my @emitted_args;
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_emitter->mock(
+    emit => sub {
+        @emitted_args = @_;
+    });
+
 my $loop = 0;
 for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 

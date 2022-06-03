@@ -108,6 +108,13 @@ my $third_pa_loginid = $pa_client->loginid;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
+my @emitted_args;
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_emitter->mock(
+    emit => sub {
+        @emitted_args = @_;
+    });
+
 subtest 'paymentagent_list RPC call' => sub {
 # start test
     my $params = {
@@ -368,10 +375,37 @@ subtest 'suspend countries' => sub {
             paymentagent_transfer => 1,
             transfer_to           => $af_client->loginid,
             currency              => "USD",
-            amount                => 10
+            amount                => 10,
+            dry_run               => 0,
         },
     };
+    undef @emitted_args;
     $c->call_ok('paymentagent_transfer', $transfer_params)->has_no_error;
+    is $emitted_args[0], 'pa_transfer_confirm', 'Event=pa_transfer_confirm';
+    is_deeply $emitted_args[1],
+        {
+        email             => $af_client->email,
+        language          => 'EN',
+        loginid           => $af_client->loginid,
+        amount            => 10,
+        client_first_name => 'bRaD',
+        client_last_name  => 'pItT',
+        client_loginid    => $af_client->loginid,
+        client_name       => 'bRaD pItT',
+        client_salutation => 'MR',
+        currency          => 'USD',
+        name              => 'bRaD',
+        pa_email          => $af_client->email,
+        pa_first_name     => 'bRaD',
+        pa_last_name      => 'pItT',
+        pa_loginid        => 'CR10004',
+        pa_name           => 'Xoe',
+        pa_salutation     => 'MR',
+        title             => "We've completed a transfer",
+        website_name      => undef,
+        },
+        'event args are correct';
+
     BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries(['af']);
 
     delete $params->{token};
