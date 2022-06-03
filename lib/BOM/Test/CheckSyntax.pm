@@ -30,7 +30,7 @@ It only check updated files compare to master branch.
 
 sub check_syntax_on_diff {
     my @skipped_files = @_;
-    my @check_files  = `git diff --name-only master`;
+    my @check_files   = `git diff --name-only master`;
 
     if (scalar @check_files) {
         pass "file change detected";
@@ -56,7 +56,7 @@ the test should be same check_syntax_on_diff, but apply to all files.
 
 sub check_syntax_all {
     my @skipped_files = @_;
-    my @check_files  = `find lib bin -type f`;
+    my @check_files   = `find lib bin -type f`;
     check_syntax(\@check_files, \@skipped_files);
 
     @check_files = `find lib bin t -type f`;
@@ -204,8 +204,8 @@ sub check_pod_coverage {
         my @naked_sub = $pc->naked;
         use Data::Dumper;
         $Data::Dumper::Maxdepth = 2;
-        my @updated_subs      = get_updated_subs($file);
-        diag('naked_sub:'.Dumper(\@naked_sub) .'updated_subs:'. Dumper(\@updated_subs));
+        my @updated_subs = get_updated_subs($file);
+        diag('naked_sub:' . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
         ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
         diag('Please add pod document for the following subrutine:');
@@ -220,10 +220,10 @@ sub get_updated_subs {
     for (@changed_lines) {
         # get the changed function, sample:
         # @@ -182,4 +187,13 @@ sub is_skipped_file {
-        push(@updated_subs, $1) if /@@ sub\s(\w+)\s/;
+        push(@updated_subs, $1) if /^[^#]+@@ sub\s(\w+)\s/;
         # get the new function, sample:
         # +sub get_updated_subs {
-        push(@updated_subs, $1) if /\+sub\s(\w+)\s/;
+        push(@updated_subs, $1) if /^\+sub\s(\w+)\s/;
     }
     return @updated_subs;
 }
