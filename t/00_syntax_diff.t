@@ -20,10 +20,6 @@ my @skip_files = qw(
     lib/BOM/Test/Data/Utility/UnitTestMarketData.pm
 );
 
-use Test::Pod::Coverage;
-my @modules=Test::Pod::Coverage::all_modules;
-use Data::Dumper;
-note Dumper(@modules);
-ok 1, 1;
+check_syntax_on_diff(@skip_files);
 
 done_testing();
