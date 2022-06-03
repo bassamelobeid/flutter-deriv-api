@@ -193,23 +193,23 @@ sub is_skipped_file {
 sub check_pod_coverage {
     my @updated_file = @_;
     foreach my $file (@updated_file) {
-
         chomp $file;
         next unless (-f $file and $file =~ /[.]pm\z/);
         my $podchecker = podchecker($file);
         ok !$podchecker, "pod syntax check for $file";
-        diag($podchecker) if $podchecker;
+        # diag($podchecker) if $podchecker;
 
         my ($module)  = Test::Pod::Coverage::all_modules($file);
         my $pc        = Pod::Coverage->new(package => $module);
         my @naked_sub = $pc->naked;
+        use Data::Dumper; $Data::Dumper::Maxdepth=2;
+        diag(Dumper(\@naked_sub));
         if (@naked_sub) {
             foreach my $sub (get_updated_subs($file)) {
                 my ($naked_sub) = grep { $sub eq $_ } @naked_sub;
-                ok !$naked_sub, "pod for $module::$naked_sub";
+                ok !$naked_sub, "pod for $module->$naked_sub";
                 diag("Please add pod for $naked_sub!!!") if $naked_sub;
             }
-
         }
     }
 }
