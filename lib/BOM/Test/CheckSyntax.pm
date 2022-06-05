@@ -203,33 +203,37 @@ sub check_pod_coverage {
         my $podchecker = podchecker($file);
         ok !$podchecker, "check pod syntax for $file";
 
-        my ($module)  = Test::Pod::Coverage::all_modules($file);
-        my $pc        = Pod::Coverage->new(package => $module);
+        my ($module) = Test::Pod::Coverage::all_modules($file);
+        my $pc = Pod::Coverage->new(package => $module);
+        warn $pc->why_unrated if $pc->why_unrated;
         my @naked_sub = $pc->naked;
         use Data::Dumper;
-        $Data::Dumper::Maxdepth = 2;
+        $Data::Dumper::Maxdepth = 1;
         my @updated_subs = _get_updated_subs($file);
-        diag('naked_sub:' . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
+        diag("$module naked_sub:" . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
         ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
-        diag('Please add pod document for the following subrutine:');
-        diag($_) for @naked_updated_sub;
+
+        if (scalar @naked_updated_sub) {
+            diag('Please add pod document for the following subrutine:');
+            diag($_) for @naked_updated_sub;
+        }
     }
 }
 
 sub _get_updated_subs {
     my ($check_files) = @_;
     my @changed_lines = `git diff master $check_files`;
-    my @updated_subs;
+    my %updated_subs;
     for (@changed_lines) {
         # get the changed function, sample:
         # @@ -182,4 +187,13 @@ sub is_skipped_file {
-        push(@updated_subs, $1) if /^[^#]+@@ sub\s(\w+)\s/;
+        $updated_subs{$1} = 1 if /^[^#]+@@ sub\s(\w+)\s/;
         # get the new function, sample:
         # +sub get_updated_subs {
-        push(@updated_subs, $1) if /^\+sub\s(\w+)\s/;
+        $updated_subs{$1} = 1 if /^\+[^#]*?asub\s(\w+)\s/;
     }
-    return @updated_subs;
+    return keys %updated_subs;
 }
 
 1;
