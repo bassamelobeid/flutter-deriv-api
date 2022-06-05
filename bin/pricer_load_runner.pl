@@ -174,7 +174,7 @@ my $market = shift @markets_to_use;
 
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
-my $pid;
+my $process;
 
 start_subscription($initial_subscriptions);
 # Kill the sub script if Ctrl-C is pressed.
@@ -184,9 +184,8 @@ $SIG{'INT'} = sub {
 
 #Catch on Die , kill subscript if running
 END {
-    `kill $pid` if $pid;
+    $process->kill(5) if $process && $process->is_running;
     say Date::Utility->new->datetime . " exiting";
-    exit;
 }
 
 # Main logic, triggers at checktime seconds and checks the results from Datadog.   If the queue has overflowed
@@ -204,8 +203,7 @@ $timer = IO::Async::Timer::Periodic->new(
     on_tick => sub {
         my ($overflow_amount, $max_queue_size) = check_stats();
         # We have completed a cycle so kill off the current load test
-        `kill $pid` if $pid;
-        $pid = undef;
+        $process->kill(5) if $process && $process->is_running;
         if ($overflow_amount == 0 || $start == 1) {
 
             #this will catch it if we start with our subscription number too high and overflow straight away.
@@ -452,21 +450,21 @@ sub get_overflow_buffer_amount {
 
 sub start_subscription {
     my $subscriptions = shift;
-    $pid = undef;
-    my $pid_file = path('/tmp/proposal_sub.pid');
-    $pid_file->remove();
-    my $whole_command = "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market > /tmp/proposal_sub.log&";
-    say "start command '$whole_command'";
-    open(my $fh, "-|", $whole_command)
-        or die $!;
-    for (1 .. 10) {
-        if ($pid_file->exists) {
-            $pid = $pid_file->slurp();
-            last;
+
+    my $whole_command = [$command, '-s', $subscriptions, '-a', $app_id, '-c', 5, '-r', $check_time, '-m', $market];
+    say "start command '@$whole_command'";
+    $process = $loop->open_process(command => $whole_command,
+        stderr => {
+            on_read => sub {
+                my ($stream, $buffref, $eof) = @_;
+                # TODO proces error message here
+                # FIXME will print 2 lines when one error appear
+                say "STDERR of process: $$buffref";
+                return 0;
+            }
+        },
+        on_finish => sub {
+
         }
-        sleep 1;
-    }
-    die "proposal_sub process not started successfully" unless $pid;
-    say 'pid ' . $pid;
-    close $fh;
+    );
 }
