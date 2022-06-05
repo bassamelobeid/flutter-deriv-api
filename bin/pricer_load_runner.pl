@@ -184,7 +184,7 @@ $SIG{'INT'} = sub {
 
 #Catch on Die , kill subscript if running
 END {
-    $process->kill(5) if $process && $process->is_running;
+    $process->kill(15) if $process && $process->is_running;
     say Date::Utility->new->datetime . " exiting";
 }
 
@@ -203,7 +203,7 @@ $timer = IO::Async::Timer::Periodic->new(
     on_tick => sub {
         my ($overflow_amount, $max_queue_size) = check_stats();
         # We have completed a cycle so kill off the current load test
-        $process->kill(5) if $process && $process->is_running;
+        $process->kill(15) if $process && $process->is_running;
         if ($overflow_amount == 0 || $start == 1) {
 
             #this will catch it if we start with our subscription number too high and overflow straight away.
@@ -454,12 +454,14 @@ sub start_subscription {
     my $whole_command = [$command, '-s', $subscriptions, '-a', $app_id, '-c', 5, '-r', $check_time, '-m', $market];
     say "start command '@$whole_command'";
     $process = $loop->open_process(command => $whole_command,
+        stdout => {on_read => sub{}},
         stderr => {
             on_read => sub {
                 my ($stream, $buffref, $eof) = @_;
                 # TODO proces error message here
-                # FIXME will print 2 lines when one error appear
-                say "STDERR of process: $$buffref";
+                while( $$buffref =~ s/^(.*\n)// ){
+                    print "STDERR of process: $1";
+                }
                 return 0;
             }
         },
