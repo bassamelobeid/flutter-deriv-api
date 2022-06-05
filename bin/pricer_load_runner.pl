@@ -384,7 +384,7 @@ sub email_result {
             $body .= "- " . $overflow_data->{$market}->{$run}->{overflowed_queue_size} . "\n";
         }
     }
-    $body .= "
+    $body .= "Please switch to Loadtesting organizaion on DD and click the following link:
     Datadog link = https://app.datadoghq.com/dashboard/27a-7ws-tk3/pricer-daily-load-testing?from_ts=$dashboard_start_time&live=false&to_ts=$dashboard_end_time; 
     ";
     my $email_stuffer = Email::Stuffer->from('loadtest@binary.com')->to(@$mails_to)->subject('Load Test Results')->text_body($body);
