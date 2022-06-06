@@ -453,13 +453,16 @@ sub start_subscription {
 
     my $whole_command = [$command, '-s', $subscriptions, '-a', $app_id, '-c', 5, '-r', $check_time, '-m', $market];
     say "start command '@$whole_command'";
-    $process = $loop->open_process(command => $whole_command,
-        stdout => {on_read => sub{}},
+    $process = $loop->open_process(
+        command => $whole_command,
+        stdout  => {
+            on_read => sub { }
+        },
         stderr => {
             on_read => sub {
                 my ($stream, $buffref, $eof) = @_;
                 # TODO proces error message here
-                while( $$buffref =~ s/^(.*\n)// ){
+                while ($$buffref =~ s/^(.*\n)//) {
                     print "STDERR of process: $1";
                 }
                 return 0;
@@ -467,6 +470,5 @@ sub start_subscription {
         },
         on_finish => sub {
 
-        }
-    );
+        });
 }
