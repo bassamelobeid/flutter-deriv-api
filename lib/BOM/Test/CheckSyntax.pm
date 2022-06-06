@@ -12,7 +12,7 @@ use Test::PerlTidy;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
 use Test::Builder qw();
 use Pod::Coverage;
-use Pod::Checker;
+use Pod::Checker qw(podchecker);
 use Test::Pod::Coverage;
 use Array::Utils qw(intersect);
 use BOM::Test::CheckJsonMaybeXS;
@@ -30,7 +30,11 @@ It only check updated files compare to master branch.
 
 sub check_syntax_on_diff {
     my @skipped_files = @_;
-    my @check_files   = `git diff --name-only master`;
+    # update master before compare diff
+    my $result=`git fetch --no-tags --depth 1 origin master`;
+    warn $result if  $result;
+
+    my @check_files   = `git diff --name-only origin/master`;
 
     if (scalar @check_files) {
         pass "file change detected";
@@ -49,8 +53,7 @@ sub check_syntax_on_diff {
 
 =head2 check_syntax_all
 
-run all the common syntax related check on perl and ymal files.
-the test should be same check_syntax_on_diff, but apply to all files.
+Run the syntax check same as check_syntax_on_diff, but apply to all files.
 
 =cut
 
@@ -139,7 +142,7 @@ sub check_tidy {
 
 =head2 check_yaml
 
-check yaml files format
+check yaml files syntax
 
 =cut
 
@@ -193,6 +196,13 @@ sub _is_skipped_file {
     return grep { $check_file =~ /$_/ } @$skipped_files;
 }
 
+=head2 check_pod_coverage
+
+Check BOM module dependency under currnet lib.
+Test fail when new dependency detected.
+
+=cut
+
 sub check_pod_coverage {
     my @check_files = @_;
     diag("start checking pod for perl module...");
@@ -207,10 +217,12 @@ sub check_pod_coverage {
         my $pc = Pod::Coverage->new(package => $module);
         warn $pc->why_unrated if $pc->why_unrated;
         my @naked_sub = $pc->naked;
-        use Data::Dumper;
-        $Data::Dumper::Maxdepth = 1;
+        
         my @updated_subs = get_updated_subs($file);
+
+        use Data::Dumper; $Data::Dumper::Maxdepth = 1;
         diag("$module naked_sub:" . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
+
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
         ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
 
@@ -221,24 +233,29 @@ sub check_pod_coverage {
     }
 }
 
+=head2 get_updated_subs
+
+Get updated or new subrutines for the giving perl file.
+Based on results of git diff master
+
+=cut
+
 sub get_updated_subs {
     my ($check_files) = @_;
-    my @changed_lines = `git diff master $check_files`;
+    my @changed_lines = `git diff origin/master $check_files`;
     my %updated_subs;
     for (@changed_lines) {
+        # filter the comments [^#] or deleted line [^-]
         if (/^[^#]+@@ sub\s(\w+)\s/) {
             # get the changed function, sample:
             # @@ -182,4 +187,13 @@ sub is_skipped_file {
-
             $updated_subs{$1} = 1;
         } elsif (/^\+[^#]*?sub\s(\w+)\s/) {
             # get the new function, sample:
             # +sub async newsub {
             $updated_subs{$1} = 1;
         } elsif (/^[^-#]*?sub\s(\w+)\s/) {
-            # filter the comments or deleted line
-            # if your updated lines near the sub name it shows as original
-            # sub newsub {
+            # if the updated lines near the sub name it shows as original
             $updated_subs{$1} = 1;
         }
 
