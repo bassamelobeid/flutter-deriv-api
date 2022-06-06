@@ -226,22 +226,22 @@ sub get_updated_subs {
     my @changed_lines = `git diff master $check_files`;
     my %updated_subs;
     for (@changed_lines) {
-        if（ /^[^#]+@@ sub\s(\w+)\s/ ）{
-        # get the changed function, sample:
-        # @@ -182,4 +187,13 @@ sub is_skipped_file {
+        if (/^[^#]+@@ sub\s(\w+)\s/) {
+            # get the changed function, sample:
+            # @@ -182,4 +187,13 @@ sub is_skipped_file {
 
-            $updated_subs{$1} = 1 ;
-            }elsif(/^\+[^#]*?sub\s(\w+)\s/){
-        # get the new function, sample:
-        # +sub async newsub {
-                $updated_subs{$1} = 1 if ;
-            }elsif(/^[^-#]*?sub\s(\w+)\s/){
-        # filter the comments or deleted line
-        # if your updated lines near the sub name it shows as original
-        # sub newsub {
-                $updated_subs{$1} = 1 if ;
-            }
-        
+            $updated_subs{$1} = 1;
+        } elsif (/^\+[^#]*?sub\s(\w+)\s/) {
+            # get the new function, sample:
+            # +sub async newsub {
+            $updated_subs{$1} = 1;
+        } elsif (/^[^-#]*?sub\s(\w+)\s/) {
+            # filter the comments or deleted line
+            # if your updated lines near the sub name it shows as original
+            # sub newsub {
+            $updated_subs{$1} = 1;
+        }
+
     }
     return keys %updated_subs;
 }
