@@ -220,11 +220,11 @@ sub check_pod_coverage {
 
         my @updated_subs      = get_updated_subs($file);
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
-        ok !@naked_updated_sub, "check pod coverage for updated subrutines of $module";
+        ok !@naked_updated_sub, "check pod coverage for updated subroutines of $module";
 
         diag("$module naked_sub:" . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
         if (scalar @naked_updated_sub) {
-            diag('Please add pod document for the following subrutines:');
+            diag('Please add pod document for the following subroutines:');
             diag($_) for @naked_updated_sub;
         }
     }
@@ -232,7 +232,7 @@ sub check_pod_coverage {
 
 =head2 get_updated_subs
 
-Get updated or new subrutines for the giving perl file.
+Get updated or new subroutines for the giving perl file.
 Based on results of git diff master
 
 =cut
