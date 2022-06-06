@@ -8,7 +8,8 @@ no indirect;
 
 use Pod::Usage;
 use Getopt::Long;
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
+use Log::Any::Adapter qw(DERIV), stderr => 1, log_level => 'info';
+use Log::Any qw($log);
 use Path::Tiny;
 
 =head1 NAME
@@ -76,7 +77,7 @@ $subscriptions = $subscriptions // 5;
 $forget_time   = $forget_time   // 0;
 $test_duration = $test_duration // 0;
 
-Log::Any::Adapter->set('Stderr', log_level => 'debug') if $debug;
+Log::Any::Adapter->set('DERIV', stderr => 1, log_level => 'debug') if $debug;
 
 my @markets_to_use;
 if ($markets) {
@@ -92,7 +93,7 @@ my %valid_markets = (
 
 for (@markets_to_use) {
     if (!defined($valid_markets{$_})) {
-        say 'Invalid Market Type: ' . $_;
+        $log->info('Invalid Market Type: ' . $_);
         pod2usage({
             -verbose  => 99,
             -sections => "NAME|SYNOPSIS|DESCRIPTION"
@@ -244,7 +245,7 @@ method run_tests() {
             $self->create_subscriptions($connection_number, $contracts_for);
         } catch ($e) {
 
-            warn 'Failed ' . $e;
+            $log->warn('Failed ' . $e);
             return Future->done;
         }
     }
@@ -276,7 +277,7 @@ Returns a L<Future>
 method test_length_timer($test_duration = 0) {
     my $test_run_length;
     if ($test_duration) {
-        $test_run_length = $loop->delay_future(after => $test_duration)->on_done(sub { say 'finished after ' . $test_duration; });
+        $test_run_length = $loop->delay_future(after => $test_duration)->on_done(sub { $log->info('finished after ' . $test_duration); });
     } else {
         $test_run_length = $loop->new_future;    # A Future that will never be done.
     }
@@ -307,7 +308,7 @@ async method create_subscriptions($connection_number, $contracts_for) {
         try {
             $self->subscribe($connection, $connection_number);
         } catch ($e) {
-            warn 'Creating a subscription Failed ' . $e;
+            $log->warn('Creating a subscription Failed ' . $e);
             return Future->done;
         }
     }
@@ -349,7 +350,7 @@ method create_connection($end_point, $app_id, $token) {
                 if ($token) {
                     return $connection->api->authorize(authorize => $token)->on_fail(
                         sub {
-                            warn 'Authorize Failed ' . shift->body->message;
+                            $log->warn('Authorize Failed ' . shift->body->message);
                             Future->done;
                         });
 
@@ -518,7 +519,7 @@ method get_active_symbols($connection, $markets_to_use) {
         product_type => 'basic',
     )->on_fail(
         sub {
-            warn 'Get Active Symbols Failed  Message: ' . shift->body->message;
+            $log->warn('Get Active Symbols Failed  Message: ' . shift->body->message);
         })->get;
 
     my %market_check = map { $_ => 1 } @$markets_to_use;
@@ -735,8 +736,7 @@ method subscribe($connection, $connection_number) {
                             say 'time forgettting ' . $sub . ' ' . $symbol;
                             $connection->api->forget(forget => $sub)->on_done(sub { delete $subs{$sub}; $subscription->done; })->on_fail(
                                 sub {
-                                    say " unable to forget $sub";
-                                    warn Dumper(@_);
+                                    $log->warnf(" unable to forget $sub: %s", \@_);
                                 });
                         })->retain;
 
