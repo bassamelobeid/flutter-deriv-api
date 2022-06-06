@@ -17,7 +17,6 @@ use Test::Pod::Coverage;
 use Array::Utils qw(intersect);
 use BOM::Test::CheckJsonMaybeXS;
 use YAML::XS qw(LoadFile);
-
 use Data::Dumper;
 $Data::Dumper::Maxdepth = 1;
 
@@ -54,9 +53,7 @@ sub check_syntax_on_diff {
         check_syntax(\@check_files, \@skipped_files, 'syntax_diff');
         check_tidy(\@check_files, \@skipped_files);
         check_yaml(@check_files);
-
         check_pod_coverage(@check_files);
-
     } else {
         pass "no change detected, skip tests";
     }
@@ -71,8 +68,6 @@ Run the syntax check same as check_syntax_on_diff, but apply to all files.
 sub check_syntax_all {
     my @skipped_files = @_;
     my @check_files   = `find lib bin -type f`;
-    check_pod_coverage(@check_files);
-    return 1;
     check_syntax(\@check_files, \@skipped_files);
 
     @check_files = `find lib bin t -type f`;
