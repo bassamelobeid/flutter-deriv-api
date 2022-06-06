@@ -745,7 +745,7 @@ method subscribe($connection, $connection_number) {
             }
         )->completed()->on_fail(
             sub {
-                $log->warn("Failed to start subscription with params \n" . $json->encode($params) . shift->body->message);
+                $log->warnf("Failed to start subscription: %s. with params\n%s" , $json->encode($params) , shift->body->message);
 
                 #retry to subscribe again with new params.
                 $self->subscribe($connection, $connection_number);
