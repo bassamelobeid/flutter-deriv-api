@@ -209,7 +209,7 @@ sub check_pod_coverage {
         my @naked_sub = $pc->naked;
         use Data::Dumper;
         $Data::Dumper::Maxdepth = 1;
-        my @updated_subs = _get_updated_subs($file);
+        my @updated_subs = get_updated_subs($file);
         diag("$module naked_sub:" . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
         ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
@@ -221,17 +221,27 @@ sub check_pod_coverage {
     }
 }
 
-sub _get_updated_subs {
+sub get_updated_subs {
     my ($check_files) = @_;
     my @changed_lines = `git diff master $check_files`;
     my %updated_subs;
     for (@changed_lines) {
+        if（ /^[^#]+@@ sub\s(\w+)\s/ ）{
         # get the changed function, sample:
         # @@ -182,4 +187,13 @@ sub is_skipped_file {
-        $updated_subs{$1} = 1 if /^[^#]+@@ sub\s(\w+)\s/;
+
+            $updated_subs{$1} = 1 ;
+            }elsif(/^\+[^#]*?sub\s(\w+)\s/){
         # get the new function, sample:
-        # +sub get_updated_subs {
-        $updated_subs{$1} = 1 if /^\+[^#]*?asub\s(\w+)\s/;
+        # +sub async newsub {
+                $updated_subs{$1} = 1 if ;
+            }elsif(/^[^-#]*?sub\s(\w+)\s/){
+        # filter the comments or deleted line
+        # if your updated lines near the sub name it shows as original
+        # sub newsub {
+                $updated_subs{$1} = 1 if ;
+            }
+        
     }
     return keys %updated_subs;
 }
