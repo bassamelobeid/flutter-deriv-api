@@ -17,6 +17,8 @@ use Sys::Hostname;
 use URI::QueryParam;
 use Data::Dumper;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
+use Date::Utility;
+use Path::Tiny;
 
 =head1 NAME
 
@@ -90,11 +92,13 @@ GetOptions(
     's|subscriptions=i' => \my $initial_subscriptions,
     'a|app_id=i'        => \my $app_id,
     'n|hostname=s'      => \my $hostname,
-    'e|mail_to=s'       => \my $mail_to,
-    'm|markets=s'       => \my $markets,
-    'i|iterations=i'    => \my $iterations,
-    'r|datadog'         => \my $report,
-    'h|help'            => \my $help,
+
+    'e|mail_to=s'    => \my $mail_to,
+    'm|markets=s'    => \my $markets,
+    'i|iterations=i' => \my $iterations,
+    'r|datadog'      => \my $report,
+    'h|help'         => \my $help,
+    'd|debug'        => \my $debug,
 );
 
 pod2usage({
@@ -106,7 +110,7 @@ pod2usage({
 $check_time            = $check_time            // 120;
 $initial_subscriptions = $initial_subscriptions // 10;
 $app_id                = $app_id                // 1003;
-
+our $| = 1;
 if (!$hostname) {
     $hostname = hostname();
 }
@@ -170,24 +174,18 @@ my $market = shift @markets_to_use;
 
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
-my $pid             = open(my $fh, "-|", "$command -s $initial_subscriptions -a $app_id -c 5 -r $check_time -m $market&")
-    or die $!;
+my $pid;
 
-# I guess because this runs a shell then the script that the PID is always 1 higher than
-# returned.  This may not be reliable but since this is just a test running script maybe
-# we can get away with it?
-$pid++;
-say 'pid ' . $pid;
-close $fh;
-
+start_subscription($initial_subscriptions);
 # Kill the sub script if Ctrl-C is pressed.
 $SIG{'INT'} = sub {
-    exit;    #this will end up running the END block
+    exit;                      #this will end up running the END block
 };
 
 #Catch on Die , kill subscript if running
 END {
     `kill $pid` if $pid;
+    say Date::Utility->new->datetime . " exiting";
     exit;
 }
 
@@ -205,7 +203,6 @@ $timer = IO::Async::Timer::Periodic->new(
 
     on_tick => sub {
         my ($overflow_amount, $max_queue_size) = check_stats();
-
         # We have completed a cycle so kill off the current load test
         `kill $pid` if $pid;
         $pid = undef;
@@ -222,9 +219,7 @@ $timer = IO::Async::Timer::Periodic->new(
                 $start = 0;
             }
             $new_market = 0;
-            $pid        = open(my $fh, "-|", "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market&")
-                or die $!;
-            $pid++;
+            start_subscription($subscriptions);
         } else {
             if ($number_of_runs < $iterations) {
                 say 'Run Number ' . $number_of_runs;
@@ -256,6 +251,16 @@ $timer = IO::Async::Timer::Periodic->new(
     },
 );
 $timer->start;
+my $timer_print_datetime;
+if ($debug) {
+    my $timer_print_datetime = IO::Async::Timer::Periodic->new(
+        interval => 10,
+        on_tick  => sub {
+            say Date::Utility->new()->datetime;
+        });
+    $timer_print_datetime->start;
+    $loop->add($timer_print_datetime);
+}
 $loop->add($http);
 $loop->add($timer);
 $loop->run();
@@ -443,4 +448,25 @@ Returns integer value of buffer amount
 sub get_overflow_buffer_amount {
     my $check_time_amount = @_;
     return int($check_time_amount / 60);
+}
+
+sub start_subscription {
+    my $subscriptions = shift;
+    $pid = undef;
+    my $pid_file = path('/tmp/proposal_sub.pid');
+    $pid_file->remove();
+    my $whole_command = "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market > /tmp/proposal_sub.log&";
+    say "start command '$whole_command'";
+    open(my $fh, "-|", $whole_command)
+        or die $!;
+    for (1 .. 10) {
+        if ($pid_file->exists) {
+            $pid = $pid_file->slurp();
+            last;
+        }
+        sleep 1;
+    }
+    die "proposal_sub process not started successfully" unless $pid;
+    say 'pid ' . $pid;
+    close $fh;
 }

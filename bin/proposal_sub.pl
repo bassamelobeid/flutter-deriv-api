@@ -9,6 +9,7 @@ no indirect;
 use Pod::Usage;
 use Getopt::Long;
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
+use Path::Tiny;
 
 =head1 NAME
 
@@ -114,7 +115,7 @@ sub main {
         markets                 => \@markets_to_use,
         token                   => $token,
     );
-
+    path('/tmp/proposal_sub.pid')->spew($$);
     $load_tester->run_tests();
 }
 
