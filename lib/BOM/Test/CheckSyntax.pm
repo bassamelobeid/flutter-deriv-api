@@ -41,7 +41,7 @@ Check the syntax for updated files compare to master branch.
 sub check_syntax_on_diff {
     my @skipped_files = @_;
     # update master before compare diff
-    my $result = `git fetch --no-tags --depth 1 origin master`;
+    my $result = `git fetch --no-tags origin master`;
     diag($result) if $result;
 
     my @check_files = `git diff --name-only origin/master`;
@@ -111,15 +111,10 @@ sub check_syntax {
             BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 
-        # syntax_ok test fail on current master, because it never run before.
-        # because there are no .pl under /lib, .pl is under /bin.
-        # so we only check when the .pl file changed or added.
-        # old code as below
-        #   for (sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib')) {
-        #        syntax_ok($_)      if $_ =~ /\.pl$/;
-        #   }
-        syntax_ok($file)                                      if $file =~ /[.]pl\z/ and $syntax_diff;
         is(system("$^X", "-c", $file), 0, "file compiles OK") if $file =~ /[.]pl\z/;
+        # syntax_ok test fail on lots of files, because it never run before.
+        # so we only check when the .pl file changed or added.
+        syntax_ok($file) if $file =~ /[.]pl\z/ and $syntax_diff;
     }
 }
 
