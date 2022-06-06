@@ -301,7 +301,7 @@ Returns a L<Future>
 =cut
 
 async method create_subscriptions($connection_number, $contracts_for) {
-    say 'Connection Number ' . $connection_number;
+    $log->info('Connection Number ' . $connection_number);
     my $connection =
         $self->create_connection($args{end_point}, $args{app_id}, $args{token});
     return fmap0 {
@@ -706,7 +706,7 @@ method subscribe($connection, $connection_number) {
         $active_symbols->[int(rand(scalar($active_symbols->@*)))];
     my @contract_types = qw(PUT CALL PUTE CALLE);
     my $contract_type  = $contract_types[int(rand(@contract_types))];
-    say 'Subscribing to ' . $symbol . ' using using connection number ' . $connection_number;
+    $log->info('Subscribing to ' . $symbol . ' using using connection number ' . $connection_number);
     my $params      = $self->get_params($contract_type, $symbol);
     my $retry_count = 0;
 
@@ -725,15 +725,15 @@ method subscribe($connection, $connection_number) {
             sub {
                 my ($response) = @_;
 
-                say " current subscriptions " . keys(%subs);
+                $log->info("current subscriptions " . keys(%subs));
                 $sub = $response->body->id;
-                say 'Symbol ' . $symbol;
+                $log->info('Symbol ' . $symbol);
                 $subs{$response->body->id} = $symbol;
                 if ($first && $args{forget_time}) {
 
                     $loop->delay_future(after => int(rand($args{forget_time})))->then(
                         sub {
-                            say 'time forgettting ' . $sub . ' ' . $symbol;
+                            $log->info('time forgettting ' . $sub . ' ' . $symbol);
                             $connection->api->forget(forget => $sub)->on_done(sub { delete $subs{$sub}; $subscription->done; })->on_fail(
                                 sub {
                                     $log->warnf(" unable to forget $sub: %s", \@_);
@@ -753,11 +753,11 @@ method subscribe($connection, $connection_number) {
             }
         )->on_done(
             sub {
-                say "done";
+                $log->info("done");
                 $self->subscribe($connection, $connection_number);
             });
     } catch ($e) {
-        warn $e
+        $log->warn($e);
     };
     return $future;
 }
