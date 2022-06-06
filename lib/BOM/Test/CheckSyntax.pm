@@ -18,6 +18,9 @@ use Array::Utils qw(intersect);
 use BOM::Test::CheckJsonMaybeXS;
 use YAML::XS qw(LoadFile);
 
+use Data::Dumper;
+$Data::Dumper::Maxdepth = 1;
+
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
@@ -39,10 +42,10 @@ Check the syntax for updated files compare to master branch.
 sub check_syntax_on_diff {
     my @skipped_files = @_;
     # update master before compare diff
-    my $result=`git fetch --no-tags --depth 1 origin master`;
+    my $result = `git fetch --no-tags --depth 1 origin master`;
     diag($result) if $result;
 
-    my @check_files   = `git diff --name-only origin/master`;
+    my @check_files = `git diff --name-only origin/master`;
 
     if (scalar @check_files) {
         pass "file change detected";
@@ -224,15 +227,12 @@ sub check_pod_coverage {
         my $pc = Pod::Coverage->new(package => $module);
         warn $pc->why_unrated if $pc->why_unrated;
         my @naked_sub = $pc->naked;
-        
-        my @updated_subs = get_updated_subs($file);
 
-        use Data::Dumper; $Data::Dumper::Maxdepth = 1;
-        diag("$module naked_sub:" . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
-
+        my @updated_subs      = get_updated_subs($file);
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
         ok !@naked_updated_sub, "check pod coverage for updated subrutines of $module";
 
+        diag("$module naked_sub:" . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
         if (scalar @naked_updated_sub) {
             diag('Please add pod document for the following subrutines:');
             diag($_) for @naked_updated_sub;
