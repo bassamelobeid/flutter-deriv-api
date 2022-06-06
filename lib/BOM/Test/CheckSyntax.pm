@@ -21,10 +21,18 @@ use YAML::XS qw(LoadFile);
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
+=head1 NAME
+
+BOM::Test::CheckSyntax
+
+=head1 DESCRIPTION
+
+Gather the common syntax tests for bom related repos.
+
+
 =head2 check_syntax_on_diff
 
-Gather common syntax tests which used ammon bom-xxx repos.
-It only check updated files compare to master branch.
+Check the syntax for updated files compare to master branch.
 
 =cut
 
@@ -32,7 +40,7 @@ sub check_syntax_on_diff {
     my @skipped_files = @_;
     # update master before compare diff
     my $result=`git fetch --no-tags --depth 1 origin master`;
-    warn $result if  $result;
+    diag($result) if $result;
 
     my @check_files   = `git diff --name-only origin/master`;
 
@@ -198,14 +206,13 @@ sub _is_skipped_file {
 
 =head2 check_pod_coverage
 
-Check BOM module dependency under currnet lib.
-Test fail when new dependency detected.
+check the pod coverage for the updated perl modules.
 
 =cut
 
 sub check_pod_coverage {
     my @check_files = @_;
-    diag("start checking pod for perl module...");
+    diag("start checking pod for perl modules...");
 
     foreach my $file (@check_files) {
         chomp $file;
@@ -224,10 +231,10 @@ sub check_pod_coverage {
         diag("$module naked_sub:" . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
 
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
-        ok !@naked_updated_sub, "check pod coverage for updated functoin of $module";
+        ok !@naked_updated_sub, "check pod coverage for updated subrutines of $module";
 
         if (scalar @naked_updated_sub) {
-            diag('Please add pod document for the following subrutine:');
+            diag('Please add pod document for the following subrutines:');
             diag($_) for @naked_updated_sub;
         }
     }
@@ -255,7 +262,7 @@ sub get_updated_subs {
             # +sub async newsub {
             $updated_subs{$1} = 1;
         } elsif (/^[^-#]*?sub\s(\w+)\s/) {
-            # if the updated lines near the sub name it shows as original
+            # if the updated lines near the sub name, it shows as original
             $updated_subs{$1} = 1;
         }
 
