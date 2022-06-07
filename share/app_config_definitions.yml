@@ -841,6 +841,15 @@ quants:
               isa: Num
               default: 100
               global: 1
+            lookback:
+              description: "The per-market scaling factor for all commissions. (percent of commission)"
+              isa: section
+              contains:
+                stake_percentage_commission:
+                  description: "The scaling factor for Turnover lookback commissions. (percent from Stake for Lookback to be paid to Affiliates. Our Expected Revenue from Lookback is roughly 2%, from Stake size on average. Hence assuming we are OK to pay 40% from our Expected Revenue, we will have the stake percentage as 0.8%.)"
+                  isa: Num 
+                  default: 0.008
+                  global: 1  
     multiplier_affiliate_commission:
       description: "Affiliate commission for multiplier contracts"
       isa: section
