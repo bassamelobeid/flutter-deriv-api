@@ -194,6 +194,7 @@ our %ERROR_MAP = do {
         OrderReviewExists                 => localize('You have already reviewed this order.'),
         OrderReviewPeriodExpired          =>
             localize("It's not possible to give a review now. Reviews can only be placed within [_1] hours of successfully completing the order."),
+        AdvertiserNotApprovedForBlock => localize("You can't block anyone because you haven't verified your identity yet."),
     );
 };
 
