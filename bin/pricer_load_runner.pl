@@ -175,7 +175,7 @@ my $market = shift @markets_to_use;
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
 my $process;
-
+my %error;
 start_subscription($initial_subscriptions);
 # Kill the sub script if Ctrl-C is pressed.
 $SIG{'INT'} = sub {
@@ -217,6 +217,13 @@ $timer = IO::Async::Timer::Periodic->new(
                 $start = 0;
             }
             $new_market = 0;
+            # if subscriptions too big, then there must something wrong
+            if($subscriptions > 20000){
+                my $err_msg = "subscriptions too big, something must be wrong. Please check errors";
+                email_result($run_recorder, \@mails_to, $smtp_transport, $err_msg);
+                $timer->stop;
+                $loop->stop;
+            }
             start_subscription($subscriptions);
         } else {
             if ($number_of_runs < $iterations) {
@@ -239,7 +246,7 @@ $timer = IO::Async::Timer::Periodic->new(
                     $subscriptions  = $initial_subscriptions;
                     $new_market     = 1;
                 } else {
-                    if (scalar(@mails_to)) { email_result($run_recorder, \@mails_to, $smtp_transport); }
+                    email_result($run_recorder, \@mails_to, $smtp_transport);
                     if ($report)           { report_result($run_recorder) }
                     $timer->stop;
                     $loop->stop;
@@ -359,9 +366,11 @@ Takes the following arguments as parameters
 
 =item - $overflow_data: An HashRef, each root level key is the market name and the value is an array of hashrefs,  run number as key, queue size when overflow occured as the value. 
 
-=item - $mails_to:  An Array ref of the email addresses to  send the result to.  
+=item - $mails_to:  An Array ref of the email addresses to  send the result to. If empty then no email sent.
 
-=item - $smtp_transport:  (optional)  A L<Email::Sender::Transport::SMTP> object to specify custom SMTP arguments. Otherwise it will use the default. 
+=item - $smtp_transport:  (optional)  A L<Email::Sender::Transport::SMTP> object to specify custom SMTP arguments. Otherwise it will use the default.
+
+=item - $err_msg: error message. Will be inserted into email body if not blank
 
 =back
 
@@ -370,13 +379,18 @@ Returns undef
 =cut
 
 sub email_result {
-    my ($overflow_data, $mails_to, $smtp_transport) = @_;
+    my ($overflow_data, $mails_to, $smtp_transport, $err_msg) = @_;
+    unless(scalar(@$mails_to)){
+        say 'email address empty, no emal sent';
+        return undef;
+    }
     say "emailing result";
 
     #Add a bit of buffer either side  so there is context to the graphs.
     my $dashboard_start_time = ($test_start_time - 300) * 1000;
     my $dashboard_end_time   = ($test_end_time + 300) * 1000;
-    my $body                 = "Here are the stats for the Load testing run \n";
+    my $body                 = $err_msg ? "$err_msg\n" : '';
+    $body                   .= "Here are the stats for the Load testing run \n";
     foreach my $market (keys(%$overflow_data)) {
         $body .= "market - $market\n Overflowed at \n";
         foreach my $run (keys($overflow_data->{$market}->%*)) {
@@ -387,6 +401,11 @@ sub email_result {
     $body .= "Please switch to Loadtesting organizaion on DD and click the following link:
     Datadog link = https://app.datadoghq.com/dashboard/27a-7ws-tk3/pricer-daily-load-testing?from_ts=$dashboard_start_time&live=false&to_ts=$dashboard_end_time; 
     ";
+
+    my @sorted_errors = sort {$error{$b} <=> $error{$a}} keys %error;
+    my $top10_index = $#sorted_errors < 9 ? $#sorted_errors : 9;
+    @sorted_errors = @sorted_errors[0..$top10_index];
+    $body .= "\nTop 10 errors:\n" . (map {join("\n","$_:$error{$_}")} @sorted_errors);
     my $email_stuffer = Email::Stuffer->from('loadtest@binary.com')->to(@$mails_to)->subject('Load Test Results')->text_body($body);
     if ($smtp_transport) {
         $email_stuffer->transport($smtp_transport);
@@ -461,9 +480,22 @@ sub start_subscription {
         stderr => {
             on_read => sub {
                 my ($stream, $buffref, $eof) = @_;
-                # TODO proces error message here
-                while ($$buffref =~ s/^(.*\n)//) {
-                    print "STDERR of process: $1";
+                while ($$buffref =~ s/^(.*)\n//) {
+                    my $msg = $1;
+                    print ">: $msg\n";
+                    if($msg =~ / W \[.*\] (.*)/){
+                        my $msg_txt = $1;
+                        # 'Trading is not available from' will include a timestamp
+                        if($msg_txt =~ /(Trading is not available)/){
+                            $error{$1}++;
+                        }
+                        elsif($msg_txt =~ /<(.*)>/){
+                            $error{$1}++;
+                        }
+                        else{
+                            $error{$msg_txt}++;
+                        }
+                    }
                 }
                 return 0;
             }
