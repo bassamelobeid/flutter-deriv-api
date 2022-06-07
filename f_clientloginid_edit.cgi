@@ -639,12 +639,16 @@ if ($input{whattodo} eq 'save_edd_status') {
 
         my @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } $user_clients->@*;
 
+        if ($input{edd_reason}) {
+            $unwelcome_reason .= " - [Compliance] : ** $input{edd_reason} **";
+            $disabled_reason  .= " - [Compliance] : ** $input{edd_reason} **";
+        }
         foreach my $client_to_update (@clients_to_update) {
             # trigger unwlecome when EDD status = 'in_progress' or 'pending'
-            # remove unwlecome when EDD status = 'passed', 'n/a'
+            # remove unwlecome when EDD status = 'passed', 'n/a', 'contacted'
             # trigger disable when EDD status = 'failed'
 
-            if ($edd_status eq 'passed' or $edd_status eq 'n/a') {
+            if ($edd_status eq 'passed' or $edd_status eq 'contacted' or $edd_status eq 'n/a') {
                 if ($client_to_update->status->reason('unwelcome') eq $unwelcome_reason) {
                     $client_to_update->status->clear_unwelcome();
                 }
@@ -1731,6 +1735,10 @@ sub print_edd_status_form {
     my $status_options = [{
             value => 'n/a',
             name  => 'Not applicable'
+        },
+        {
+            value => 'contacted',
+            name  => 'Contacted'
         },
         {
             value => 'passed',
