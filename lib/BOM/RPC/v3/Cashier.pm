@@ -1865,7 +1865,7 @@ sub _template_args {
     return {
         email             => encode_entities($client->email),
         website_name      => $website_name,
-        amount            => $amount,
+        amount            => formatnumber('amount', $currency, $amount),
         currency          => $currency,
         client_loginid    => $client->loginid,
         name              => $name,
