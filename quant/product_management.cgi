@@ -165,7 +165,7 @@ if ($r->param('update_limit')) {
     }
 
     # We put a mocked value inside the array, therefore our loop runs at least for once.
-    my @limit_dates_array = (1);
+    my @limit_dates_array = ('none');
     @limit_dates_array = split ', ', $limit_dates if $limit_dates;
 
     if (my $id = $r->param('client_loginid')) {
@@ -173,11 +173,14 @@ if ($r->param('update_limit')) {
         foreach my $limit_date (@limit_dates_array) {
             # A clone of origial %ref.
             my $ref_c = dclone(\%ref);
-            # Attaching days to the start and end time values.
-            my ($start_time, $end_time) = _concat_date_and_time(\%ref, $limit_date);
 
-            $ref_c->{start_time} = $start_time;
-            $ref_c->{end_time}   = $end_time;
+            if ($limit_date ne 'none') {
+                # Attaching days to the start and end time values.
+                my ($start_time, $end_time) = _concat_date_and_time(\%ref, $limit_date);
+
+                $ref_c->{start_time} = $start_time;
+                $ref_c->{end_time}   = $end_time;
+            }
 
             # Generating uniq_key.
             $uniq_key = substr(md5_hex(sort { $a cmp $b } values $ref_c->%*), 0, 16);
@@ -203,11 +206,14 @@ if ($r->param('update_limit')) {
         foreach my $limit_date (@limit_dates_array) {
             # A clone of origial %ref.
             my $ref_c = dclone(\%ref);
-            # Attaching days to the start and end time values.
-            my ($start_time, $end_time) = _concat_date_and_time(\%ref, $limit_date);
 
-            $ref_c->{start_time} = $start_time;
-            $ref_c->{end_time}   = $end_time;
+            if ($limit_date ne 'none') {
+                # Attaching days to the start and end time values.
+                my ($start_time, $end_time) = _concat_date_and_time(\%ref, $limit_date);
+
+                $ref_c->{start_time} = $start_time;
+                $ref_c->{end_time}   = $end_time;
+            }
 
             # Generating uniq_key.
             $uniq_key = substr(md5_hex(sort { $a cmp $b } values $ref_c->%*), 0, 16);

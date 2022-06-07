@@ -34,25 +34,27 @@ if (request()->param('save_limit')) {
         print $json->encode({error => "`start_time` should be less than `end_time`."});
         return;
     }
-    
+
     my @output_array;
-    my @limit_dates_array = (1);
+    my @limit_dates_array = ('none');
     @limit_dates_array = split ', ', $args{limit_dates} if $args{limit_dates};
 
     for my $limit_date (@limit_dates_array) {
         my $args_c = dclone(\%args);
 
-        $args_c->{start_time} = $limit_date . " " . $args{start_time};
-        $args_c->{end_time} = $limit_date . " " . $args{end_time};
+        if ($limit_date ne 'none') {
+            $args_c->{start_time} = $limit_date . " " . $args{start_time};
+            $args_c->{end_time}   = $limit_date . " " . $args{end_time};
 
-        unless (_is_limit_date_valid($limit_date, $args{start_time})) {
-            print $json->encode({error => "Date field is not in correct format or is behind the current time."});
-            return;
+            unless (_is_limit_date_valid($limit_date, $args{start_time})) {
+                print $json->encode({error => "Date field is not in correct format or is behind the current time."});
+                return;
+            }
         }
 
         my %email_args = ($args_c->%*, action => 'New');
         my $output     = BOM::Backoffice::QuantsConfigHelper::save_limit($args_c, $staff);
-        
+
         push @output_array, $output;
 
         if (!$output->{error}) {
@@ -281,7 +283,7 @@ sub _send_compliance_email {
 sub _is_limit_date_valid {
     my ($limit_date, $start_time) = @_;
 
-    try {   
+    try {
         my $timecheck = sprintf("%s %s", $limit_date, $start_time);
         return 0 unless Date::Utility->new(sprintf("%s %s", $limit_date, $start_time))->is_after(Date::Utility->new);
         return 1;
