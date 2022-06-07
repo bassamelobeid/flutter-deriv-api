@@ -201,6 +201,36 @@ subtest 'blocking' => sub {
     my ($other1, $other1_ad) = BOM::Test::Helper::P2P::create_advert();
     my ($other2, $other2_ad) = BOM::Test::Helper::P2P::create_advert();
 
+    my $advertiser_id = $me->p2p_advertiser_update(is_approved => 0)->{id};
+    delete $me->{_p2p_advertiser_cached};
+
+    cmp_deeply(
+        exception {
+            $me->p2p_advertiser_relations(add_blocked => [$other1->_p2p_advertiser_cached->{id}]),
+        },
+        {error_code => 'AdvertiserNotApprovedForBlock'},
+        'Cannot block when not approved'
+    );
+
+    my ($block_date) = $me->db->dbic->dbh->selectrow_array(
+        "UPDATE p2p.p2p_advertiser SET blocked_until=NOW() + INTERVAL '1 hour', is_approved = TRUE, is_listed = TRUE WHERE id = $advertiser_id RETURNING blocked_until"
+    );
+    delete $me->{_p2p_advertiser_cached};
+
+    cmp_deeply(
+        exception {
+            $me->p2p_advertiser_relations(add_blocked => [$other1->_p2p_advertiser_cached->{id}]),
+        },
+        {
+            error_code     => 'TemporaryBar',
+            message_params => [$block_date]
+        },
+        'Cannot block when temp banned'
+    );
+
+    $me->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET blocked_until=NULL WHERE id = $advertiser_id");
+    delete $me->{_p2p_advertiser_cached};
+
     undef $emitted_events;
     cmp_deeply(
         $me->p2p_advertiser_relations(add_blocked => [$other1->_p2p_advertiser_cached->{id}]),
@@ -235,6 +265,14 @@ subtest 'blocking' => sub {
         bag($other1_ad->{id}, $other2_ad->{id}),
         'blocked advertiser doesnt see blockers ad'
     );
+
+    delete $me->{_p2p_advertiser_cached};
+    is $me->p2p_advertiser_info->{blocked_by_count}, 0, 'blocker has 0 blocked_by_count';
+
+    delete $other1->{_p2p_advertiser_cached};
+    is $other1->p2p_advertiser_info->{blocked_by_count}, 1, 'blockee has 1 blocked_by_count';
+    is $other1->p2p_advertiser_update()->{blocked_by_count}, 1, 'blocked_by_count returned for empty advertiser update';
+    is $other1->p2p_advertiser_update(contact_info => 'xyz')->{blocked_by_count}, 1, 'blocked_by_count returned for actual advertiser update';
 
     cmp_deeply(
         [map { $_->{id} } $other2->p2p_advert_list(type => 'sell')->@*],

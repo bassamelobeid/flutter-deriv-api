@@ -2393,6 +2393,9 @@ sub p2p_advertiser_relations {
     if (%param) {
         $param{$_} //= [] for qw/add_favourites add_blocked remove_favourites remove_blocked/;
 
+        die +{error_code => 'AdvertiserNotApprovedForBlock'} if $param{add_blocked}->@* and not $advertiser_info->{is_approved};
+        my $bar_error = $self->_p2p_get_advertiser_bar_error($advertiser_info);
+        die $bar_error                                if $bar_error;
         die +{error_code => 'AdvertiserRelationSelf'} if any { $_ == $advertiser_info->{id} } ($param{add_favourites}->@*, $param{add_blocked}->@*);
 
         my $advertisers = $self->db->dbic->run(
@@ -3562,7 +3565,7 @@ Returns a list of advertisers filtered by id and/or loginid.
 sub _p2p_advertisers {
     my ($self, %param) = @_;
 
-    # take care not to vivivy $self->{_p2p_advertiser_cached}
+    # don't call $self->_p2p_advertiser_cached or we will have deep recursion
     my $self_id = $self->{_p2p_advertiser_cached} ? $self->{_p2p_advertiser_cached}{id} : undef;
 
     my $advertisers = $self->db->dbic->run(
@@ -4343,6 +4346,8 @@ sub _advertiser_details {
         $details->{basic_verification} = $self->status->age_verification ? 1 : 0;
         $details->{full_verification}  = $self->fully_authenticated      ? 1 : 0;
         $details->{cancels_remaining}  = $self->_p2p_advertiser_cancellations->{remaining};
+        $details->{blocked_by_count}   = $advertiser->{blocked_by_count}
+            // 0;    # only p2p.advertiser_create does not return it, but there it must be zero
 
         for my $limit (qw/daily_buy daily_sell daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/) {
             $details->{$limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{$limit})

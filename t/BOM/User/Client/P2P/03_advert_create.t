@@ -128,6 +128,7 @@ subtest 'advertiser Registration' => sub {
         rating_count          => 0,
         recommended_average   => undef,
         recommended_count     => undef,
+        blocked_by_count      => 0,
         %params
     };
 
@@ -137,7 +138,7 @@ subtest 'advertiser Registration' => sub {
     my $other_client = BOM::Test::Helper::P2P::create_advertiser();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
     delete $expected->@{
-        qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available cancels_remaining/
+        qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available cancels_remaining blocked_by_count/
     };
     $expected->{is_blocked}     = $expected->{is_favourite} = 0;
     $expected->{is_recommended} = undef;
