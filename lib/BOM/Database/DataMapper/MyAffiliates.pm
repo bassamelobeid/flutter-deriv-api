@@ -78,6 +78,29 @@ sub get_multiplier_commission {
         });
 }
 
+=item get_lookback_activity
+
+get clients' lookback contracts trading activity for particular date for myaffiliates reports.
+
+=cut
+
+sub get_lookback_activity {
+    my ($self, $args) = @_;
+    my $dbic = $self->db->dbic;
+
+    my $sql = q{
+        SELECT * FROM get_myaffiliate_clients_lookback_turnover_commission($1, $2, $3)
+    };
+
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($args->{date}, $args->{include_apps}, $args->{exclude_apps});
+
+            return $sth->fetchall_arrayref;
+        });
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
