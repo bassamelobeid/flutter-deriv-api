@@ -180,6 +180,10 @@
             <td>[% relations.blocked_advertisers.size || 0 %]</td>
         </tr>
         <tr>
+            <td>Blocked by other advertisers</td>
+            <td>[% advertiser.blocked_by_count %]</td>
+        </tr>
+        <tr>
             <td>Ratings</td>
             <td>[% rating %]</td>
         </tr>
