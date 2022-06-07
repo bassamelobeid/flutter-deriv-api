@@ -1292,9 +1292,14 @@ Returns 1 on success
 sub update_email {
     my ($self, $new_email) = @_;
 
+    $new_email = lc $new_email;
     $self->update_email_fields(email => $new_email);
     my $oauth   = BOM::Database::Model::OAuth->new;
-    my @clients = $self->clients;
+    my @clients = $self->clients(
+        include_self_closed => 1,
+        include_disabled    => 1,
+        include_duplicated  => 1,
+    );
     for my $client (@clients) {
         $client->email($new_email);
         $client->save;

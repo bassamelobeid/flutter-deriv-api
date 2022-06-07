@@ -1129,6 +1129,7 @@ subtest 'update user password' => sub {
 subtest 'update email' => sub {
     my $user_id = $user->{id};
 
+    $client_vr->status->set('disabled', 'system', 'testing');
     my @app_ids = create_apps($user->id);
     create_tokens($user, $client_vr, @app_ids);
 
@@ -1140,9 +1141,16 @@ subtest 'update email' => sub {
     is $user->update_email($new_email), 1, 'user email changed is OK';
     is $user->email, lc $new_email, 'user\'s email was updated';
 
+    for my $loginid (qw/CR10000 CR10001 CR10013/, $client_vr->loginid) {
+        my $client = BOM::User::Client->new({
+            loginid => $loginid,
+        });
+        is($client->email, lc $new_email, 'client email updated');
+    }
     $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
     is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly';
     ok !$oauth->has_other_login_sessions($client_vr->loginid), 'User access tokens are revoked';
+    $client_vr->status->clear_disabled;
 };
 
 subtest 'feature flag' => sub {
