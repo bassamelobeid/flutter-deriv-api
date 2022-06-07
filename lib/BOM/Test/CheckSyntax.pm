@@ -10,22 +10,41 @@ use Test::Vars;
 use Test::Strict;
 use Test::PerlTidy;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
-use BOM::Test::CheckJsonMaybeXS;
 use Test::Builder qw();
+use Pod::Coverage;
+use Pod::Checker qw(podchecker);
+use Test::Pod::Coverage;
+use Array::Utils qw(intersect);
+use BOM::Test::CheckJsonMaybeXS;
 use YAML::XS qw(LoadFile);
+use Data::Dumper;
+$Data::Dumper::Maxdepth = 1;
+
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
-=head1 check_syntax_on_diff
+=head1 NAME
 
-Gather common syntax tests which used ammon bom-xxx repos.
-It only check updated files compare to master branch.
+BOM::Test::CheckSyntax
+
+=head1 DESCRIPTION
+
+Gather the common syntax tests for bom related repos.
+
+
+=head2 check_syntax_on_diff
+
+Check the syntax for updated files compare to master branch.
 
 =cut
 
 sub check_syntax_on_diff {
     my @skipped_files = @_;
-    my @check_files   = `git diff --name-only master`;
+    # update master before compare diff
+    my $result = `git fetch --no-tags origin master`;
+    diag($result) if $result;
+
+    my @check_files = `git diff --name-only origin/master`;
 
     if (scalar @check_files) {
         pass "file change detected";
@@ -34,15 +53,15 @@ sub check_syntax_on_diff {
         check_syntax(\@check_files, \@skipped_files, 'syntax_diff');
         check_tidy(\@check_files, \@skipped_files);
         check_yaml(@check_files);
+        check_pod_coverage(@check_files);
     } else {
         pass "no change detected, skip tests";
     }
 }
 
-=head1 check_syntax_all
+=head2 check_syntax_all
 
-run all the common syntax related check on perl and ymal files.
-the test should be same check_syntax_on_diff, but apply to all files.
+Run the syntax check same as check_syntax_on_diff, but apply to all files.
 
 =cut
 
@@ -57,7 +76,7 @@ sub check_syntax_all {
     check_yaml(@check_files);
 }
 
-=head1 check_syntax
+=head2 check_syntax
 
 check syntax for perl files
 
@@ -83,7 +102,7 @@ sub check_syntax {
         chomp $file;
 
         next unless (-f $file and $file =~ /[.]p[lm]\z/);
-        next if is_skipped_file($file, $skipped_files);
+        next if _is_skipped_file($file, $skipped_files);
 
         diag("syntax check on $file:");
         if ($file =~ /^lib\/.+[.]pm\z/) {
@@ -92,19 +111,14 @@ sub check_syntax {
             BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 
-        # syntax_ok test fail on current master, because it never run before.
-        # because there are no .pl under /lib, .pl is under /bin.
-        # so we only check when the .pl file changed or added.
-        # old code as below
-        #   for (sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib')) {
-        #        syntax_ok($_)      if $_ =~ /\.pl$/;
-        #   }
-        syntax_ok($file)                                      if $file =~ /[.]pl\z/ and $syntax_diff;
         is(system("$^X", "-c", $file), 0, "file compiles OK") if $file =~ /[.]pl\z/;
+        # syntax_ok test fail on lots of files, because it never run before.
+        # so we only check when the .pl file changed or added.
+        syntax_ok($file) if $file =~ /[.]pl\z/ and $syntax_diff;
     }
 }
 
-=head1 check_tidy
+=head2 check_tidy
 
 Check is_file_tidy for perl files
 
@@ -115,10 +129,11 @@ sub check_tidy {
     my $test = Test::Builder->new;
 
     diag("start checking tidy...");
+    $Test::PerlTidy::MUTE = 1;
     foreach my $file (@$check_files) {
         chomp $file;
         next unless -f $file;
-        next if $skip_tidy && is_skipped_file($file, $skipped_files);
+        next if $skip_tidy && _is_skipped_file($file, $skipped_files);
         # tidy check for all perl files
         if ($file =~ /[.](?:pl|pm|t|cgi)\z/) {
             $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
@@ -126,9 +141,9 @@ sub check_tidy {
     }
 }
 
-=head1 check_yaml
+=head2 check_yaml
 
-check yaml files format
+check yaml files syntax
 
 =cut
 
@@ -144,7 +159,7 @@ sub check_yaml {
     }
 }
 
-=head1 check_bom_dependency
+=head2 check_bom_dependency
 
 Check BOM module dependency under currnet lib.
 Test fail when new dependency detected.
@@ -176,10 +191,73 @@ sub check_bom_dependency {
     }
 }
 
-sub is_skipped_file {
+sub _is_skipped_file {
     my ($check_file, $skipped_files) = @_;
     return unless @$skipped_files;
     return grep { $check_file =~ /$_/ } @$skipped_files;
+}
+
+=head2 check_pod_coverage
+
+check the pod coverage for the updated perl modules.
+
+=cut
+
+sub check_pod_coverage {
+    my @check_files = @_;
+    diag("start checking pod for perl modules...");
+
+    foreach my $file (@check_files) {
+        chomp $file;
+        next unless (-f $file and $file =~ /[.]pm\z/);
+        my $podchecker = podchecker($file);
+        ok !$podchecker, "check pod syntax for $file";
+
+        my ($module) = Test::Pod::Coverage::all_modules($file);
+        my $pc = Pod::Coverage->new(package => $module);
+        warn $pc->why_unrated if $pc->why_unrated;
+        my @naked_sub = $pc->naked;
+
+        my @updated_subs      = get_updated_subs($file);
+        my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
+        ok !@naked_updated_sub, "check pod coverage for updated subroutines of $module";
+
+        diag("$module naked_sub:" . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
+        if (scalar @naked_updated_sub) {
+            diag('Please add pod document for the following subroutines:');
+            diag($_) for @naked_updated_sub;
+        }
+    }
+}
+
+=head2 get_updated_subs
+
+Get updated or new subroutines for the giving perl file.
+Based on results of git diff master
+
+=cut
+
+sub get_updated_subs {
+    my ($check_files) = @_;
+    my @changed_lines = `git diff origin/master $check_files`;
+    my %updated_subs;
+    for (@changed_lines) {
+        # filter the comments [^#] or deleted line [^-]
+        if (/^[^#]+@@ sub\s(\w+)\s/) {
+            # get the changed function, sample:
+            # @@ -182,4 +187,13 @@ sub is_skipped_file {
+            $updated_subs{$1} = 1;
+        } elsif (/^\+[^#]*?sub\s(\w+)\s/) {
+            # get the new function, sample:
+            # +sub async newsub {
+            $updated_subs{$1} = 1;
+        } elsif (/^[^-#]*?sub\s(\w+)\s/) {
+            # if the updated lines near the sub name, it shows as original
+            $updated_subs{$1} = 1;
+        }
+
+    }
+    return keys %updated_subs;
 }
 
 1;
