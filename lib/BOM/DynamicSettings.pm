@@ -284,6 +284,7 @@ sub get_settings_by_group {
                 quants.commission.adjustment.per_market_scaling.indices
                 quants.commission.adjustment.per_market_scaling.commodities
                 quants.commission.adjustment.per_market_scaling.synthetic_index
+                quants.commission.adjustment.lookback.stake_percentage_commission
                 quants.markets.suspend_buy
                 quants.markets.suspend_trades
                 quants.markets.suspend_early_sellback
