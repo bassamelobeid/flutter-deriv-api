@@ -148,6 +148,8 @@ check yaml files syntax
 =cut
 
 sub check_yaml {
+
+
     my (@check_files) = @_;
     diag("start checking yaml...");
     foreach my $file (@check_files) {
@@ -238,15 +240,20 @@ Based on results of git diff master
 =cut
 
 sub get_updated_subs {
-    my ($check_files) = @_;
-    my @changed_lines = `git diff origin/master $check_files`;
+    my ($check_file) = @_;
+    my @changed_lines = `git diff origin/master $check_file`;
     my %updated_subs;
+    my $pm_subs = get_pm_subs($check_file);
     for (@changed_lines) {
         # filter the comments [^#] or deleted line [^-]
-        if (/^[^#]+@@ sub\s(\w+)\s/) {
+        if (/^[^-#]*?@@.+\s[+](\d+,\d+)\s+@@ sub\s(\w+)\s/) {
             # get the changed function, sample:
             # @@ -182,4 +187,13 @@ sub is_skipped_file {
-            $updated_subs{$1} = 1;
+            $updated_subs{$2} = 1;
+            if ($pm_subs->{$2}){
+                diag($1. Dumper($pm_subs->{$2}));
+            }
+
         } elsif (/^\+[^#]*?sub\s(\w+)\s/) {
             # get the new function, sample:
             # +sub async newsub {
@@ -258,6 +265,23 @@ sub get_updated_subs {
 
     }
     return keys %updated_subs;
+}
+
+sub get_pm_subs {
+use PPI;
+    my ($check_file) = @_;
+my %results;
+my $doc = PPI::Document->new($check_file);
+my $subs = $doc->find('PPI::Statement::Sub');
+
+foreach my $sub (@$subs) {
+    my @t = $sub->tokens;
+    $results{$sub->name}{start} = $t[0]->location->[0];
+    $results{$sub->name}{end} = $t[-1]->location->[0];
+}
+diag("get_pm_subs: $check_file".Dumper(\%results));
+return %results ? \%results : undef;
+
 }
 
 1;
