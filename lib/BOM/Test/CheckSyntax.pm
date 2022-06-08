@@ -148,6 +148,7 @@ check yaml files syntax
 =cut
 
 sub check_yaml {
+
     my (@check_files) = @_;
     diag("start checking yaml...");
     foreach my $file (@check_files) {
@@ -212,7 +213,8 @@ sub check_pod_coverage {
         next unless (-f $file and $file =~ /[.]pm\z/);
         my $podchecker = podchecker($file);
         ok !$podchecker, "check pod syntax for $file";
-
+        diag("Please help adding the NAME and DESCRIPTION sections in the pod if missing, and fix the pod syntax issue if there are warnings.")
+            if $podchecker;
         my ($module) = Test::Pod::Coverage::all_modules($file);
         my $pc = Pod::Coverage->new(package => $module);
         warn $pc->why_unrated if $pc->why_unrated;
@@ -220,12 +222,13 @@ sub check_pod_coverage {
 
         my @updated_subs      = get_updated_subs($file);
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
-        ok !@naked_updated_sub, "check pod coverage for updated subroutines of $module";
+        ok !@naked_updated_sub, "check pod coverage for $module";
 
-        diag("$module naked_sub:" . Dumper(\@naked_sub) . 'updated_subs:' . Dumper(\@updated_subs));
+        diag("$module naked_sub: " . Dumper(\@naked_sub) . 'updated_subs: ' . Dumper(\@updated_subs));
         if (scalar @naked_updated_sub) {
+            diag("The private subroutine start with '_' will be ignored.");
             diag('Please add pod document for the following subroutines:');
-            diag($_) for @naked_updated_sub;
+            diag(explain @naked_updated_sub);
         }
     }
 }
@@ -238,15 +241,22 @@ Based on results of git diff master
 =cut
 
 sub get_updated_subs {
-    my ($check_files) = @_;
-    my @changed_lines = `git diff origin/master $check_files`;
+    my ($check_file) = @_;
+    my @changed_lines = `git diff origin/master $check_file`;
     my %updated_subs;
+    my $pm_subs = get_pm_subs($check_file);
     for (@changed_lines) {
         # filter the comments [^#] or deleted line [^-]
-        if (/^[^#]+@@ sub\s(\w+)\s/) {
-            # get the changed function, sample:
-            # @@ -182,4 +187,13 @@ sub is_skipped_file {
-            $updated_subs{$1} = 1;
+        # get the changed function, sample:
+        # @@ -182,4 +187,13 @@ sub is_skipped_file {
+        if (/^[^-#]*?@@.+\s[+](\d+).+@@ .*?sub\s(\w+)\s/) {
+            if ($pm_subs->{$2}) {
+                diag("$2 change start $1 " . Dumper($pm_subs->{$2}));
+                # $1 is the number of change start, but with 2 lines extra context
+                # if the changed lines is greater than end, it means the sub is not really changed
+                next if ($1 + 2 >= $pm_subs->{$2}{end});
+            }
+            $updated_subs{$2} = 1;
         } elsif (/^\+[^#]*?sub\s(\w+)\s/) {
             # get the new function, sample:
             # +sub async newsub {
@@ -258,6 +268,29 @@ sub get_updated_subs {
 
     }
     return keys %updated_subs;
+}
+
+=head2 get_pm_subs
+
+Try to get all the subs of a perl file, and the start end line number of each sub.
+Currently it can NOT handle sub which defined with custom keywrod like "async sub foo {"
+
+=cut
+
+sub get_pm_subs {
+    my ($check_file) = @_;
+    my %results;
+    use PPI;
+    my $doc  = PPI::Document->new($check_file);
+    my $subs = $doc->find('PPI::Statement::Sub');
+
+    foreach my $sub (@$subs) {
+        my @t = $sub->tokens;
+        $results{$sub->name}{start} = $t[0]->location->[0];
+        $results{$sub->name}{end}   = $t[-1]->location->[0];
+    }
+    # diag("get_pm_subs: $check_file" . Dumper(\%results));
+    return %results ? \%results : undef;
 }
 
 1;
