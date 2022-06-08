@@ -60,7 +60,7 @@ $log->infof('%d payments to make for %s', 0 + @payment_lines, $broker);
 #            staff           => $staff,
 #            transactiontype => $trans_type
 #        }
-#    )->validate_batch_payment_control_code($dc_code, 0 + @payment_lines))
+#    )->validate_batch_payment_control_code($dc_code, \@payment_lines))
 #{
 #    die $error->get_mesg;
 #}

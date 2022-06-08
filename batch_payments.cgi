@@ -83,7 +83,7 @@ if ($confirm) {
     my $error = BOM::DualControl->new({
             staff           => $clerk,
             transactiontype => $transtype
-        })->validate_batch_payment_control_code($control_code, scalar @payment_lines);
+        })->validate_batch_payment_control_code($control_code, \@payment_lines);
     if ($error) {
         print encode_entities($error->get_mesg());
         code_exit_BO();

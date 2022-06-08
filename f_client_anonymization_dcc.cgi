@@ -49,7 +49,7 @@ if ($batch_file) {
     my $lines = $csv->getline_all($file);
     $code = BOM::DualControl->new({
             staff           => $clerk,
-            transactiontype => $input->{'transtype'}})->batch_anonymization_control_code(sha1_hex(join q{} => map { join q{} => $_->@* } $lines->@*));
+            transactiontype => $input->{'transtype'}})->batch_anonymization_control_code([ map { join "\0" => $_->@* } $lines->@* ]);
 }
 #Logging
 

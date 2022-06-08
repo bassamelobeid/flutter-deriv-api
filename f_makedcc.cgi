@@ -74,7 +74,7 @@ if ($input->{'dcctype'} eq 'file_content') {
 
     $code = BOM::DualControl->new({
             staff           => $staff,
-            transactiontype => $input->{'transtype'}})->batch_payment_control_code(scalar @lines);
+            transactiontype => $input->{'transtype'}})->batch_payment_control_code(\@lines);
 
     $message =
           "<b>The dual control code created by $staff for "

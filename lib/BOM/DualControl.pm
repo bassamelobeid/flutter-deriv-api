@@ -22,6 +22,8 @@ use Date::Utility;
 use Error::Base;
 use Cache::RedisDB;
 use Crypt::NamedKeys;
+use Digest::SHA qw(sha256_hex);
+use List::Util qw(any);
 
 use ExchangeRates::CurrencyConverter qw(in_usd);
 
@@ -62,6 +64,12 @@ sub client_control_code {
     return $code;
 }
 
+=head2 payment_control_code
+
+Generates payment DCC
+
+=cut
+
 sub payment_control_code {
     my ($self, $loginid, $currency, $amount) = @_;
 
@@ -73,11 +81,17 @@ sub payment_control_code {
     return $code;
 }
 
+=head2 batch_payment_control_code
+
+Generates batch payment DCC
+
+=cut
+
 sub batch_payment_control_code {
     my ($self, $lines) = @_;
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
-        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $lines, $self->_environment));
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, checksum_for_records($lines), $self->_environment));
 
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
@@ -95,6 +109,12 @@ sub client_anonymization_control_code {
     return $code;
 }
 
+=head2 payments_settings_code
+
+Generates payments settings DCC
+
+=cut
+
 sub payments_settings_code {
     my ($self) = @_;
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
@@ -105,11 +125,17 @@ sub payments_settings_code {
     return $code;
 }
 
+=head2 batch_anonymization_control_code
+
+Generates DCC code to batch anonymization
+
+=cut
+
 sub batch_anonymization_control_code {
     my ($self, $lines) = @_;
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
-        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $lines, $self->_environment));
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, checksum_for_records($lines), $self->_environment));
 
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
@@ -138,6 +164,12 @@ sub validate_client_control_code {
     return $error_status if $error_status;
     return;
 }
+
+=head2 validate_payment_control_code
+
+Validates payment DCC
+
+=cut
 
 sub validate_payment_control_code {
     my ($self, $incode, $loginid, $currency, $amount) = @_;
@@ -168,9 +200,16 @@ sub validate_payment_control_code {
     return;
 }
 
+=head2 validate_batch_payment_control_code
+
+Validates batch payment DCC
+
+=cut
+
 sub validate_batch_payment_control_code {
     my ($self, $incode, $lines) = @_;
 
+    die 'invalid lines provided' unless ref($lines) eq 'ARRAY';
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
@@ -183,13 +222,19 @@ sub validate_batch_payment_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_transaction_type($code);
     return $error_status if $error_status;
-    $error_status = $self->_validate_filelinescount($code, $lines);
+    $error_status = $self->_validate_filelines($code, $lines);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
 
     return;
 }
+
+=head2 validate_client_anonymization_control_code
+
+Validates Client anonymization DCC
+
+=cut
 
 sub validate_client_anonymization_control_code {
     my ($self, $incode, $loginid) = @_;
@@ -211,6 +256,12 @@ sub validate_client_anonymization_control_code {
     return undef;
 }
 
+=head2 validate_batch_anonymization_control_code
+
+Validates batch anonymizatio DCC
+
+=cut
+
 sub validate_batch_anonymization_control_code {
     my ($self, $incode, $lines) = @_;
 
@@ -225,7 +276,7 @@ sub validate_batch_anonymization_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_transaction_type($code);
     return $error_status if $error_status;
-    $error_status = $self->_validate_filelinescount($code, $lines);
+    $error_status = $self->_validate_filelines($code, $lines);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
@@ -381,11 +432,17 @@ sub _validate_payment_amount {
     return;
 }
 
-sub _validate_filelinescount {
+=head2 _validate_filelines
+
+Checks validity of the CSV file
+
+=cut
+
+sub _validate_filelines {
     my ($self, $code, $lines) = @_;
 
     my @arry = split("_##_", $code);
-    if ($lines ne $arry[3]) {
+    if (checksum_for_records($lines) ne $arry[3]) {
         return Error::Base->cuss(
             -type => 'DifferentFile',
             -mesg => 'File provided does not match with the file provided during code generation',
@@ -405,6 +462,30 @@ sub _validate_environment {
         );
     }
     return;
+}
+
+=head2 checksum_for_records
+
+Calculates SHA checksum for array of strings.
+
+=over 4
+
+=item * C<lines> - ref of array
+
+=back
+
+Returns string with checksum of Array.
+
+=cut
+
+sub checksum_for_records {
+    my $lines = shift;
+
+    die 'invalid lines provided' if ref($lines) ne 'ARRAY';
+
+    my $str = join "\0" => $lines->@*;
+
+    return sha256_hex($str);
 }
 
 no Moose;
