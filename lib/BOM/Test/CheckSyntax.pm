@@ -227,7 +227,7 @@ sub check_pod_coverage {
         if (scalar @naked_updated_sub) {
             diag("The private subroutine start with '_' will be ignored.");
             diag('Please add pod document for the following subroutines:');
-            diag(Dumper(\@naked_updated_sub));
+            diag(explain @naked_updated_sub);
         }
     }
 }
@@ -248,7 +248,7 @@ sub get_updated_subs {
         # filter the comments [^#] or deleted line [^-]
         # get the changed function, sample:
         # @@ -182,4 +187,13 @@ sub is_skipped_file {
-        if (/^[^-#]*?@@.+\s[+](\d+).+@@ sub\s(\w+)\s/) {
+        if (/^[^-#]*?@@.+\s[+](\d+).+@@ .*?sub\s(\w+)\s/) {
             if ($pm_subs->{$2}) {
                 diag("change start $1, $2 " . Dumper($pm_subs->{$2}));
                 # $1 is the number of change start, but with 2 lines extra context
@@ -288,7 +288,7 @@ sub get_pm_subs {
         $results{$sub->name}{start} = $t[0]->location->[0];
         $results{$sub->name}{end}   = $t[-1]->location->[0];
     }
-    diag("get_pm_subs: $check_file" . Dumper(\%results));
+    # diag("get_pm_subs: $check_file" . Dumper(\%results));
     return %results ? \%results : undef;
 }
 
