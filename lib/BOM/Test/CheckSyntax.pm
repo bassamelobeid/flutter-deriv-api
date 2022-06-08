@@ -213,7 +213,8 @@ sub check_pod_coverage {
         next unless (-f $file and $file =~ /[.]pm\z/);
         my $podchecker = podchecker($file);
         ok !$podchecker, "check pod syntax for $file";
-
+        diag("Please help adding the NAME and DESCRIPTION sections in the pod if missing, and fix the pod syntax issue if there are warnings.")
+            if $podchecker;
         my ($module) = Test::Pod::Coverage::all_modules($file);
         my $pc = Pod::Coverage->new(package => $module);
         warn $pc->why_unrated if $pc->why_unrated;
@@ -250,7 +251,7 @@ sub get_updated_subs {
         # @@ -182,4 +187,13 @@ sub is_skipped_file {
         if (/^[^-#]*?@@.+\s[+](\d+).+@@ .*?sub\s(\w+)\s/) {
             if ($pm_subs->{$2}) {
-                diag("change start $1, $2 " . Dumper($pm_subs->{$2}));
+                diag("$2 change start $1 " . Dumper($pm_subs->{$2}));
                 # $1 is the number of change start, but with 2 lines extra context
                 # if the changed lines is greater than end, it means the sub is not really changed
                 next if ($1 + 2 >= $pm_subs->{$2}{end});
