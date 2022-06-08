@@ -24,6 +24,7 @@ our $req_id = 999999;    # desparately trying to avoid conflicts
 
 sub wsapi_wait_for {
     my ($t, $wait_for, $action_sub, $params, $messages_without_accidens) = @_;
+    $params                    //= {};
     $messages_without_accidens //= 0;
 
     my $ioloop = IO::Async::Loop->new;
@@ -40,7 +41,7 @@ sub wsapi_wait_for {
             $f->cancel();
         },
     );
-dfsdf
+
     $f->on_ready(sub { shift->loop->unwatch_time($id) });
 
     $action_sub->();

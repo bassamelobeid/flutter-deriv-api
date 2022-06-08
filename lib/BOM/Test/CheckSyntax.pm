@@ -277,9 +277,9 @@ Currently it can NOT handle sub which defined with custom keywrod like "async su
 =cut
 
 sub get_pm_subs {
-    use PPI;
     my ($check_file) = @_;
     my %results;
+    use PPI;
     my $doc  = PPI::Document->new($check_file);
     my $subs = $doc->find('PPI::Statement::Sub');
 
