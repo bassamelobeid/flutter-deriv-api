@@ -246,13 +246,20 @@ sub get_updated_subs {
     my $pm_subs = get_pm_subs($check_file);
     for (@changed_lines) {
         # filter the comments [^#] or deleted line [^-]
-        if (/^[^-#]*?@@.+\s[+](\d+,\d+)\s+@@ sub\s(\w+)\s/) {
             # get the changed function, sample:
             # @@ -182,4 +187,13 @@ sub is_skipped_file {
-            $updated_subs{$2} = 1;
+        if (/^[^-#]*?@@.+\s[+](\d+).+@@ sub\s(\w+)\s/) {
+
             if ($pm_subs->{$2}){
-                diag($1. Dumper($pm_subs->{$2}));
+                                diag($1. Dumper($pm_subs->{$2}));
+
+            # $1 is the number of change start, but with 2 lines extra context
+            # if the changed lines is greater than end, it means the sub is not really changed
+                next if ($1 + 2  >= $pm_subs->{$2}{end})
             }
+
+            $updated_subs{$2} = 1;
+
 
         } elsif (/^\+[^#]*?sub\s(\w+)\s/) {
             # get the new function, sample:
