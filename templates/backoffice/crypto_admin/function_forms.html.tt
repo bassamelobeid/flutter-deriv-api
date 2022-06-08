@@ -167,9 +167,6 @@
         <select id="ddl_with_params" onchange="showForm(this.value)">
             <option disabled selected value>--- select an option ---</option>
             [% FOREACH form_name IN currency_forms.$form_type.sort %]
-                [% IF currency == 'LTC' && form_name == 'bump_btc_transaction' %]
-                    [% NEXT %]
-                [% END %]
                 <option value="[% form_name %]"[% IF previous_req == form_name %] selected="selected"[% END %]>[% all_forms.$form_name.title %]</option>
             [% END %]
         </select>
