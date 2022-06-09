@@ -228,7 +228,7 @@ sub check_pod_coverage {
         if (scalar @naked_updated_sub) {
             diag("The private subroutine start with '_' will be ignored.");
             diag('Please add pod document for the following subroutines:');
-            diag(explain @naked_updated_sub);
+            diag(explain(\@naked_updated_sub));
         }
     }
 }
@@ -283,7 +283,7 @@ sub get_pm_subs {
     use PPI;
     my $doc  = PPI::Document->new($check_file);
     my $subs = $doc->find('PPI::Statement::Sub');
-
+    return undef unless $subs;
     foreach my $sub (@$subs) {
         my @t = $sub->tokens;
         $results{$sub->name}{start} = $t[0]->location->[0];
