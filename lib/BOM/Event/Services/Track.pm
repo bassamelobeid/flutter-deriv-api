@@ -144,8 +144,8 @@ my %EVENT_PROPERTIES = (
     verify_email_closed_account_account_opening => [qw(loginid email type live_chat_url)],
     account_verification_for_pending_payout     => [qw(date email)],
     authenticated_with_scans                    => [qw(first_name email contact_url live_chat_url)],
-    pa_transfer_confirm                         => [qw(pa_loginid pa_email pa_first_name pa_last_name client_loginid name amount currency)],
-    pa_withdraw_confirm                         => [qw(pa_loginid client_loginid email client_name amount currency)],
+    pa_transfer_confirm                         => [qw(loginid email pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
+    pa_withdraw_confirm => [qw(loginid email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
