@@ -228,7 +228,7 @@ sub check_pod_coverage {
         if (scalar @naked_updated_sub) {
             diag("The private subroutine start with '_' will be ignored.");
             diag('Please add pod document for the following subroutines:');
-            diag(explain @naked_updated_sub);
+            diag(explain(\@naked_updated_sub));
         }
     }
 }
@@ -250,7 +250,7 @@ sub get_updated_subs {
         # get the changed function, sample:
         # @@ -182,4 +187,13 @@ sub is_skipped_file {
         if (/^[^-#]*?@@.+\s[+](\d+).+@@ .*?sub\s(\w+)\s/) {
-            if ($pm_subs->{$2}) {
+            if ($pm_subs && $pm_subs->{$2}) {
                 diag("$2 change start $1 " . Dumper($pm_subs->{$2}));
                 # $1 is the number of change start, but with 2 lines extra context
                 # if the changed lines is greater than end, it means the sub is not really changed
@@ -283,7 +283,7 @@ sub get_pm_subs {
     use PPI;
     my $doc  = PPI::Document->new($check_file);
     my $subs = $doc->find('PPI::Statement::Sub');
-
+    return undef unless $subs;
     foreach my $sub (@$subs) {
         my @t = $sub->tokens;
         $results{$sub->name}{start} = $t[0]->location->[0];
