@@ -735,15 +735,19 @@ rpc paymentagent_transfer => sub {
         payment_agent => 0,
     );
 
-    my $name  = $client_to->first_name;
-    my $title = localize("We've completed a transfer");
-
     BOM::Platform::Event::Emitter::emit(
         'pa_transfer_confirm',
         {
-            loginid => $client_to->loginid,
-            _template_args($website_name, $client_to, $client_fm, $amount, $currency, $name, $title)->%*,
-            language => $params->{language},
+            loginid       => $client_to->loginid,
+            email         => $client_to->email,
+            client_name   => $client_to->first_name . ' ' . $client_to->last_name,
+            pa_loginid    => $client_fm->loginid,
+            pa_first_name => $client_fm->first_name,
+            pa_last_name  => $client_fm->last_name,
+            pa_name       => $client_fm->payment_agent->payment_agent_name,
+            amount        => formatnumber('amount', $currency, $amount),
+            currency      => $currency,
+            language      => $params->{language},
         });
 
     return {
@@ -1068,15 +1072,20 @@ rpc paymentagent_withdraw => sub {
         payment_agent => 0,
     );
 
-    my $name  = $pa_client->first_name;
-    my $title = localize("You have received funds");
-
     BOM::Platform::Event::Emitter::emit(
         'pa_withdraw_confirm',
         {
-            loginid => $client->loginid,
-            _template_args($website_name, $client, $pa_client, $amount, $currency, $name, $title)->%*,
-            language => $params->{language},
+            loginid        => $pa_client->loginid,
+            email          => $pa_client->email,
+            client_name    => $client->first_name . ' ' . $client->last_name,
+            client_loginid => $client->loginid,
+            pa_first_name  => $pa_client->first_name,
+            pa_last_name   => $pa_client->last_name,
+            pa_name        => $pa_client->full_name,
+            pa_loginid     => $pa_client->loginid,
+            amount         => formatnumber('amount', $currency, $amount),
+            currency       => $currency,
+            language       => $params->{language},
         });
 
     return {
@@ -1855,32 +1864,6 @@ sub _check_facility_availability {
     }
 
     return undef;
-}
-
-sub _template_args {
-    my ($website_name, $client, $pa_client, $amount, $currency, $name, $title) = @_;
-
-    my $client_name = $client->first_name . ' ' . $client->last_name;
-
-    return {
-        email             => encode_entities($client->email),
-        website_name      => $website_name,
-        amount            => formatnumber('amount', $currency, $amount),
-        currency          => $currency,
-        client_loginid    => $client->loginid,
-        name              => $name,
-        title             => $title,
-        client_name       => encode_entities($client_name),
-        client_salutation => encode_entities($client->salutation),
-        client_first_name => encode_entities($client->first_name),
-        client_last_name  => encode_entities($client->last_name),
-        pa_loginid        => $pa_client->loginid,
-        pa_email          => encode_entities($pa_client->email),
-        pa_name           => encode_entities($pa_client->payment_agent->payment_agent_name),
-        pa_salutation     => encode_entities($pa_client->salutation),
-        pa_first_name     => encode_entities($pa_client->first_name),
-        pa_last_name      => encode_entities($pa_client->last_name),
-    };
 }
 
 rpc 'cashier_withdrawal_cancel', sub {
