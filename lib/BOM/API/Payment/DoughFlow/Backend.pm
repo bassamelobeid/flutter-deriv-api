@@ -19,6 +19,7 @@ use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Context::Request;
 use BOM::Platform::Utility qw(error_map);
+use BOM::Platform::Client::AntiFraud;
 use BOM::Rules::Engine;
 
 has 'type' => (
@@ -242,16 +243,35 @@ sub validate_as_payment {
                     method    => ''            # we do not expect payment_method to be sent for deposit_validate
                 })->@*;
 
+            my $msg;
+
             if ($doughflow_method and $doughflow_method->{deposit_poi_required}) {
                 $client->status->upsert('allow_document_upload', 'system', "Deposit attempted with method requiring POI ($processor)");
 
-                my $msg = localize(
+                $msg = localize(
                     "To use this method for deposits, we'll need to verify your identity. Click [_1] here[_2] to start the verification process, or choose another deposit method.",
                     '<a href="' . request()->brand->authentication_url({language => request()->language}) . '">',
                     '</a>'
                 );
-                die "$msg\n";
+            } elsif ($client->status->df_deposit_requires_poi) {
+                if (my $payment_type = $c->request_parameters->{payment_type}) {
+                    my $antifraud = BOM::Platform::Client::AntiFraud->new(client => $client);
+
+                    try {
+                        if ($antifraud->df_cumulative_total_by_payment_type($payment_type)) {
+                            $msg = localize(
+                                "You've hit the deposit limit, we'll need to verify your identity. Click [_1] here[_2] to start the verification process.",
+                                '<a href="' . request()->brand->authentication_url({language => request()->language}) . '">',
+                                '</a>'
+                            );
+                        }
+                    } catch ($e) {
+                        $log->warnf('Failed to check for deposit limits of the client %s: %s', $client->loginid, $e);
+                    }
+                }
             }
+
+            die "$msg\n" if $msg;
         }
     } catch ($err) {
         return $c->throw(403, _genrate_payment_error_message($err));
@@ -274,7 +294,7 @@ sub write_transaction_line {
     my $amount             = $c->request_parameters->{amount};
     my $payment_processor  = $c->request_parameters->{payment_processor} // '';
     my $payment_method     = $c->request_parameters->{payment_method};
-    my $payment_type       = $c->request_parameters->{payment_type}       // '';
+    my $payment_type       = $c->request_parameters->{payment_type};
     my $account_identifier = $c->request_parameters->{account_identifier} // '';
 
     my $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
@@ -356,6 +376,7 @@ sub write_transaction_line {
         ip_address        => $ip_address,
         payment_fee       => $fee,
         transaction_type  => $type_mapping{$c->type} // $c->type,
+        df_payment_type   => $payment_type,
     );
 
     # Write the payment transaction

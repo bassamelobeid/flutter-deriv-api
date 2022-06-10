@@ -127,6 +127,7 @@ subtest 'emit payment_deposit' => sub {
         loginid           => $loginid,
         trace_id          => 1235,
         payment_processor => 'QIWI',
+        payment_type      => 'DogeTypeThing',
     );
     is $req->code, 201, 'Correct created status code';
 
@@ -146,7 +147,7 @@ subtest 'emit payment_deposit' => sub {
         payment_fee        => '0',
         currency           => 'USD',
         payment_method     => 'VISA',
-        payment_type       => '',
+        payment_type       => 'DogeTypeThing',
         account_identifier => '',
         },
         'event args are correct';
