@@ -71,7 +71,7 @@ Returns a Data::Chronicle::Writer object.
 use strict;
 use warnings;
 
-use DBIx::Connector::Pg;
+use DBIx::Connector;
 use Date::Utility;
 use BOM::Config::Redis;
 
@@ -130,7 +130,7 @@ my $dbic;
 sub dbic {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return undef if not defined $ENV{PGSERVICEFILE} and not -e $ENV{HOME} . '/.pg_service.conf';
-    $dbic //= DBIx::Connector::Pg->new(
+    $dbic //= DBIx::Connector->new(
         _dbic_dsn(),
         # User and password are part of the DSN
         '', '',
