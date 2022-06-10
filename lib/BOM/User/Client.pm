@@ -2311,7 +2311,11 @@ sub p2p_advertiser_info {
     }
 
     return unless $advertiser;
-    return $self->_advertiser_details($advertiser);
+    my $details = $self->_advertiser_details($advertiser);
+
+    $details->{client_loginid} = $advertiser->{client_loginid} if $param{subscribe};    # will be removed in websocket
+
+    return $details;
 }
 
 =head2 p2p_advertiser_blocked
@@ -4335,8 +4339,6 @@ sub _advertiser_details {
     }
 
     # only advertiser themself can see these fields
-    # We will manualy clean up this field in websocket
-    # If you're adding any new field here please add it to websocket subscription clean up as well
     if ($self->loginid eq $loginid) {
 
         $details->{payment_info}       = $advertiser->{payment_info} // '';

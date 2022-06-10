@@ -198,4 +198,31 @@ subtest 'show real name' => sub {
 
 };
 
+subtest 'p2p_advertiser_info subscription' => sub {
+    my $advertiser1 = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser;
+
+    my $id2   = $advertiser1->_p2p_advertisers(loginid => $advertiser2->loginid)->[0]{id};
+    my $info1 = $advertiser1->p2p_advertiser_info;
+    my $info2 = $advertiser1->p2p_advertiser_info(id => $id2);
+
+    ok !exists $info1->{client_loginid}, 'loginid not in reponse for self when not subscribe';
+    ok !exists $info2->{client_loginid}, 'loginid not in reponse for other when not subscribe';
+
+    cmp_deeply(
+        $advertiser1->p2p_advertiser_info(subscribe => 1),
+        {%$info1, client_loginid => $advertiser1->loginid},
+        'loginid is added to repsonse when subscribe to self'
+    );
+
+    cmp_deeply(
+        $advertiser1->p2p_advertiser_info(
+            id        => $id2,
+            subscribe => 1
+        ),
+        {%$info2, client_loginid => $advertiser2->loginid},
+        'loginid is added to repsonse when subscribe to other'
+    );
+};
+
 done_testing;
