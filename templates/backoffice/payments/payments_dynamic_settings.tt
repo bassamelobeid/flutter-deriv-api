@@ -1,74 +1,75 @@
 [% IF message %]<p class="success">[% message %]</p><hr/>[% END %]
 [% IF error %]<p class="error">[% error %]</p><hr/>[% END %]
 
-    
-<div class="card">
-    <div class="card__label toggle"><a name="_make_dcc"></a>
-        MAKE DUAL CONTROL CODE
-    </div>
-    <div class="card__content">
-        <p>To update payments dynamic settings we require 2 staff members to authorize. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when changing the settings.</p>
+[% IF roles.payments %]    
+    <div class="card">
+        <div class="card__label toggle"><a name="_make_dcc"></a>
+            MAKE DUAL CONTROL CODE
+        </div>
+        <div class="card__content">
+            <p>To update payments dynamic settings we require 2 staff members to authorize. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when changing the settings.</p>
 
-        <form id='generateDCC' 
-            action="[% request.url_for('backoffice/payments_dynamic_settings_dcc.cgi') %]"
-            method='POST' 
-            class='bo_ajax_form' 
-            enctype='multipart/form-data'>
-                <input type='hidden' name='l' value='EN'>
-                <label>Transaction type:</label><select name='transtype'>
-                    <option value='Payments Settings'>Update payments dynamic settings</option>
-                </select><br><br>
-        
-            <br><br><input type='submit' class='btn btn--primary' value='Make Dual Control Code (by [% staff %])'>
-        </form>
+            <form id='generateDCC' 
+                action="[% request.url_for('backoffice/payments_dynamic_settings_dcc.cgi') %]"
+                method='POST' 
+                class='bo_ajax_form' 
+                enctype='multipart/form-data'>
+                    <input type='hidden' name='l' value='EN'>
+                    <label>Transaction type:</label><select name='transtype'>
+                        <option value='Payments Settings'>Update payments dynamic settings</option>
+                    </select><br><br>
+            
+                <br><br><input type='submit' class='btn btn--primary' value='Make Dual Control Code (by [% staff %])'>
+            </form>
+        </div>
     </div>
-</div>
 
-<div class="card">
-    <div class="card__label toggle"><a name="_payment_methods"></a>
-        PAYMENT LIMITS
-    </div>
-    <div class="card__content">
-        <h3>Payments Limit Configuration</h3>
+    <div class="card">
+        <div class="card__label toggle"><a name="_payment_methods"></a>
+            PAYMENT LIMITS
+        </div>
+        <div class="card__content">
+            <h3>Payments Limit Configuration</h3>
 
-        <form action="[% request.url_for('backoffice/payments_dynamic_settings.cgi?section=limits') %]" method="post">
-            <table class="small alternate">
-                <thead>
-                    <tr>
-                        <th>&nbsp;</th>
-                        <th>Name</th>
-                        <th>Limit</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    [% FOREACH name IN payment_limits.keys.sort %]
+            <form action="[% request.url_for('backoffice/payments_dynamic_settings.cgi?section=limits') %]" method="post">
+                <table class="small alternate">
+                    <thead>
                         <tr>
-                            <td>&nbsp;</td>
-                            <td><input type="text" name="limit[[% name %]][name]" value="[% name %]" /></td>
-                            <td><input type="text" name="limit[[% name %]][limit]" value="[% payment_limits.$name %]" /></td>
-                            <td>
-                                <button class="btn btn--secondary" value="[% name %]" name="update" onclick="return request_dcc()">Update</button>
-                                <button class="btn btn--secondary" value="[% name %]" name="delete" onclick="return request_confirm_and_dcc();">Delete</button>
-                            </td>
-                        </tr>     
-                    [% END %]
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td>Add a new entry</td>
-                        <td><input type="text" name="new_name" /></td>
-                        <td><input type="text" name="new_limit" /></td>
-                        <td><button class="btn btn--secondary" value="1" name="new" onclick="return request_dcc()">Add</button></td>
-                    </tr>
-                </tfoot>
-            </table>
-            <input type="hidden" name="dcc" id="dcc" />
-            <input type="hidden" value="Payments Settings" name="transtype" />
-            <input type="hidden" name="revision" value="[% revision %]"/>
-        </form>
+                            <th>&nbsp;</th>
+                            <th>Name</th>
+                            <th>Limit</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        [% FOREACH name IN payment_limits.keys.sort %]
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td><input type="text" name="limit[[% name %]][name]" value="[% name %]" /></td>
+                                <td><input type="text" name="limit[[% name %]][limit]" value="[% payment_limits.$name %]" /></td>
+                                <td>
+                                    <button class="btn btn--secondary" value="[% name %]" name="update" onclick="return request_dcc()">Update</button>
+                                    <button class="btn btn--secondary" value="[% name %]" name="delete" onclick="return request_confirm_and_dcc();">Delete</button>
+                                </td>
+                            </tr>     
+                        [% END %]
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>Add a new entry</td>
+                            <td><input type="text" name="new_name" /></td>
+                            <td><input type="text" name="new_limit" /></td>
+                            <td><button class="btn btn--secondary" value="1" name="new" onclick="return request_dcc()">Add</button></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <input type="hidden" name="dcc" id="dcc" />
+                <input type="hidden" value="Payments Settings" name="transtype" />
+                <input type="hidden" name="revision" value="[% revision %]"/>
+            </form>
+        </div>
     </div>
-</div>
+[% END %]
 
 <div class="card">
     <div class="card__label toggle"><a name="_payment_methods"></a>
@@ -120,7 +121,68 @@
     </div>
 </div>
 
+<div class="card">
+    <div class="card__label toggle"><a name="_countries"></a>
+        COUNTRIES CONFIG
+    </div>
+    <div class="card__content">
+        <h3>Deposit Limits to trigger POI</h3>
+
+        <form action="[% request.url_for('backoffice/payments_dynamic_settings.cgi?section=poi_deposit_limits_per_payment_type') %]" method="post">
+            <table class="small alternate">
+                <thead>
+                    <tr>
+                        <th>&nbsp;</th>
+                        <th>Country</th>
+                        <th>Payment Type</th>
+                        <th>Amount limit(USD)</th>
+                        <th>Days to lookback</th>
+                        <th>&nbsp;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    [% FOREACH country IN poi_deposit_limits_per_payment_type.keys.sort %]
+                        [% FOREACH type IN poi_deposit_limits_per_payment_type.$country.keys.sort %]
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td><input type="text" name="limit[[% country %]][[% type %]][country]" value="[% country %]" /></td>
+                                <td><input type="text" name="limit[[% country %]][[% type %]][type]" value="[% type %]" /></td>
+                                <td><input type="text" name="limit[[% country %]][[% type %]][limit]" value="[% poi_deposit_limits_per_payment_type.$country.$type.limit %]" /></td>
+                                <td><input type="text" name="limit[[% country %]][[% type %]][days]" value="[% poi_deposit_limits_per_payment_type.$country.$type.days %]" /></td>
+                                <td>                                   
+                                    <button class="btn btn--secondary" value="[% country %]" name="update" onclick="return tether_type('[% type %]');">Update</button>
+                                    <button class="btn btn--secondary" value="[% country %]" name="delete" onclick="return tether_type('[% type %]');">Delete</button>
+                                </td>
+                            </tr>     
+                        [% END %]
+                    [% END %]
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>Add a new entry</td>
+                        <td><input type="text" name="new_country" /></td>
+                        <td><input type="text" name="new_type" /></td>
+                        <td><input type="text" name="new_limit" /></td>
+                        <td><input type="text" name="new_days" /></td>
+                        <input type="hidden" name="update_type" id="update_type" />
+                        <input type="hidden" name="delete_type" id="delete_type" />
+                        <td><button class="btn btn--secondary" value="1" name="new">Add</button></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <input type="hidden" name="revision" value="[% revision %]"/>
+        </form>
+    </div>
+</div>
+
 <script>
+    function tether_type(type) {
+        document.getElementById('update_type').value = type; 
+        document.getElementById('delete_type').value = type; 
+
+        return true;
+    }
+
     function request_dcc() {
         const dcc = prompt('Please introduce the DCC to perform this operation');
 

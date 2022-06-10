@@ -795,6 +795,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
 
         foreach my $client_to_update (@clients_to_update) {
             if ($input{'age_verification'} eq 'yes') {
+                $client_to_update->status->clear_df_deposit_requires_poi;
                 $client_to_update->status->setnx('age_verification', $clerk, 'Age verified client from Backoffice.');
             } else {
                 $client_to_update->status->clear_age_verification;
