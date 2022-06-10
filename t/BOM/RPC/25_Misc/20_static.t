@@ -378,6 +378,7 @@ subtest 'p2p_config' => sub {
         maximum_order_amount        => 8,
         order_daily_limit           => 9,
         order_payment_period        => 10,
+        supported_currencies        => ["usd"],
         disabled                    => bool(0),
         payment_methods_enabled     => bool(1),
         fixed_rate_adverts          => 'disabled',

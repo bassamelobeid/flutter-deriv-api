@@ -16,7 +16,7 @@ use warnings;
 
 no indirect;
 
-use List::Util qw( min max any );
+use List::Util qw( min max any uniq);
 use List::UtilsBy qw(nsort_by);
 use Time::HiRes ();
 
@@ -367,6 +367,7 @@ rpc website_status => sub {
             maximum_order_amount        => $p2p_config->limits->maximum_order,
             adverts_active_limit        => $p2p_config->limits->maximum_ads_per_type,
             order_daily_limit           => $p2p_config->limits->count_per_day_per_client,
+            supported_currencies        => [sort(uniq($p2p_config->available_for_currencies->@*))],
             disabled                    => (
                 not $p2p_config->enabled
                     or $app_config->system->suspend->p2p
