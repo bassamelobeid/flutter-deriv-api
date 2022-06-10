@@ -48,6 +48,69 @@ subtest 'instantiate' => sub {
     is $btc_client->loginid, $btc_antifraud->client->loginid, 'Expected client';
 };
 
+subtest 'df cumulative total by payment type' => sub {
+    my $cumulative_total = {
+        CreditCard => 0,
+    };
+
+    my $df_mock = Test::MockModule->new('BOM::Database::DataMapper::Payment::DoughFlow');
+    $df_mock->mock(
+        'payment_type_cumulative_total',
+        sub {
+            my (undef, $args) = @_;
+
+            my $payment_type = $args->{payment_type};
+
+            return $cumulative_total->{$payment_type};
+        });
+
+    # note this test is based on the default configuration
+    # assume: za -> CreditCard -> limit: 500, days: 7
+
+    ok !$antifraud->df_cumulative_total_by_payment_type('CreditCard'), 'Cumulative total has not been breached';
+
+    $cumulative_total->{CreditCard} = 500;
+
+    ok !$antifraud->df_cumulative_total_by_payment_type('DogPay'), 'Cumulative total has not been breached (diff payment type)';
+
+    $cumulative_total->{DogPay} = 500;
+
+    ok !$antifraud->df_cumulative_total_by_payment_type('DogPay'), 'The is no config for this payment type';
+
+    $antifraud->client->residence('br');
+    $antifraud->client->save();
+
+    ok !$antifraud->df_cumulative_total_by_payment_type('CreditCard'), 'Cumulative total has not been breached (diff residence)';
+
+    $antifraud->client->residence('za');
+    $antifraud->client->save();
+
+    ok $antifraud->df_cumulative_total_by_payment_type('CreditCard'), 'Cumulative total has been breached';
+
+    subtest 'exchange rates' => sub {
+        $cumulative_total->{CreditCard} = 1;
+
+        populate_exchange_rates({BTC => 100});
+        ok !$btc_antifraud->df_cumulative_total_by_payment_type('CreditCard'), 'Cumulative total has not been breached';
+
+        populate_exchange_rates({BTC => 500});
+        ok !$btc_antifraud->df_cumulative_total_by_payment_type('DogPay'), 'Cumulative total has not been breached (diff payment type)';
+
+        $cumulative_total->{DogPay} = 100;
+        ok !$btc_antifraud->df_cumulative_total_by_payment_type('DogPay'), 'There is no config for this payment type';
+
+        $btc_antifraud->client->residence('br');
+        $btc_antifraud->client->save();
+
+        ok !$btc_antifraud->df_cumulative_total_by_payment_type('CreditCard'), 'Cumulative total has not been breached (diff residence)';
+
+        $btc_antifraud->client->residence('za');
+        $btc_antifraud->client->save();
+
+        ok $btc_antifraud->df_cumulative_total_by_payment_type('CreditCard'), 'Cumulative total has been breached';
+    };
+};
+
 subtest 'df total payments by identifier' => sub {
     my $conf_mock = Test::MockModule->new('BOM::Config::Payments::PaymentMethods');
     my $high_risk_settings;
