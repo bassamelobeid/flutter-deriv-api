@@ -137,6 +137,15 @@ sub email_verification {
                 },
             };
         },
+        self_tagging_affiliates => sub {
+            return {
+                template_args => {
+                    name  => $name,
+                    title => localize("Here's how to create your Deriv account"),
+                    %common_args,
+                },
+            };
+        },
         payment_withdraw => sub {
             my $is_paymentagent = $type eq 'paymentagent_withdraw' ? 1                        : 0;
             my $action          = $is_paymentagent                 ? 'payment_agent_withdraw' : $type;

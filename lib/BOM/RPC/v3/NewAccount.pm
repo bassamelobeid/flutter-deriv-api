@@ -2,7 +2,6 @@ package BOM::RPC::v3::NewAccount;
 
 use strict;
 use warnings;
-
 use Syntax::Keyword::Try;
 use List::MoreUtils qw(any);
 use List::Util qw(minstr);
@@ -11,7 +10,6 @@ use Email::Valid;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 use Log::Any qw($log);
-use WebService::MyAffiliates;
 use URI;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
@@ -30,6 +28,7 @@ use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
 use BOM::RPC::v3::Utility;
+use BOM::MyAffiliates;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
@@ -189,14 +188,7 @@ rpc "verify_email",
             });
     } elsif ($type eq 'account_opening') {
         if ($utm_medium eq 'affiliate' and $utm_campaign eq 'MyAffiliates' and $url_params->{affiliate_token}) {
-            my $config = BOM::Config::third_party()->{myaffiliates};
-            my $aff    = WebService::MyAffiliates->new(
-                user    => $config->{user},
-                pass    => $config->{pass},
-                host    => $config->{host},
-                timeout => 10
-            );
-
+            my $aff                  = BOM::MyAffiliates->new();
             my $myaffiliate_email    = '';
             my $received_aff_details = $aff->get_affiliate_details($url_params->{affiliate_token});
             if ($received_aff_details and $received_aff_details->{TOKEN}->{USER_ID} !~ m/Error/) {
@@ -205,31 +197,43 @@ rpc "verify_email",
                 $log->warnf("Could not fetch affiliate details from MyAffiliates. Please check credentials: %s", $aff->errstr);
             }
             if ($myaffiliate_email eq $email) {
-                my $data = $verification->{account_opening_existing}->();
+                my $data = $verification->{self_tagging_affiliates}->();
                 BOM::Platform::Event::Emitter::emit(
-                    'account_opening_existing',
+                    'self_tagging_affiliates',
                     {
-                        loginid    => $existing_user->get_default_client->loginid,
                         properties => {
-                            code               => $data->{template_args}->{code} // '',
-                            language           => $params->{language},
-                            login_url          => $data->{template_args}->{login_url}          // '',
-                            password_reset_url => $data->{template_args}->{password_reset_url} // '',
-                            live_chat_url      => $data->{template_args}->{live_chat_url}      // '',
-                            verification_url   => $data->{template_args}->{verification_url}   // '',
-                            email              => $data->{template_args}->{email}              // '',
+                            live_chat_url => $data->{template_args}->{live_chat_url} // '',
+                            email         => $data->{template_args}->{email}         // '',
                         },
                     });
             } else {
-                my $data = $verification->{account_opening_new}->();
-                BOM::Platform::Event::Emitter::emit(
-                    'account_opening_new',
-                    {
-                        verification_url => $data->{template_args}->{verification_url} // '',
-                        code             => $data->{template_args}->{code}             // '',
-                        email            => $email,
-                        live_chat_url    => $data->{template_args}->{live_chat_url} // '',
-                    });
+                unless ($existing_user) {
+                    my $data = $verification->{account_opening_new}->();
+                    BOM::Platform::Event::Emitter::emit(
+                        'account_opening_new',
+                        {
+                            verification_url => $data->{template_args}->{verification_url} // '',
+                            code             => $data->{template_args}->{code}             // '',
+                            email            => $email,
+                            live_chat_url    => $data->{template_args}->{live_chat_url} // '',
+                        });
+                } else {
+                    my $data = $verification->{account_opening_existing}->();
+                    BOM::Platform::Event::Emitter::emit(
+                        'account_opening_existing',
+                        {
+                            loginid    => $existing_user->get_default_client->loginid,
+                            properties => {
+                                code               => $data->{template_args}->{code} // '',
+                                language           => $params->{language},
+                                login_url          => $data->{template_args}->{login_url}          // '',
+                                password_reset_url => $data->{template_args}->{password_reset_url} // '',
+                                live_chat_url      => $data->{template_args}->{live_chat_url}      // '',
+                                verification_url   => $data->{template_args}->{verification_url}   // '',
+                                email              => $data->{template_args}->{email}              // '',
+                            },
+                        });
+                }
             }
         } else {
             unless ($existing_user) {

@@ -16,6 +16,7 @@ my @dependency = qw(
     BOM::Rules
     BOM::TradingPlatform
     BOM::Product
+    BOM::MyAffiliates
 );
 check_bom_dependency(@dependency);
 
