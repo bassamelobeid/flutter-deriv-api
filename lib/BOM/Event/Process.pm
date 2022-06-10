@@ -104,6 +104,7 @@ my $action_mapping = {
         account_verification_for_pending_payout     => \&BOM::Event::Services::Track::account_verification_for_pending_payout,
         account_opening_existing                    => \&BOM::Event::Actions::Client::account_opening_existing,
         request_payment_withdraw                    => \&BOM::Event::Actions::Client::request_payment_withdraw,
+        self_tagging_affiliates                     => \&BOM::Event::Actions::Client::self_tagging_affiliates,
         verify_email_closed_account_other           => \&BOM::Event::Actions::Client::verify_email_closed_account_other,
         verify_email_closed_account_account_opening => \&BOM::Event::Actions::Client::verify_email_closed_account_account_opening,
         verify_email_closed_account_reset_password  => \&BOM::Event::Actions::Client::verify_email_closed_account_reset_password,

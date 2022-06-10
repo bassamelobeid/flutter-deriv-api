@@ -138,6 +138,7 @@ my %EVENT_PROPERTIES = (
     underage_account_closed           => [qw(tnc_approval)],
     account_opening_new               => [qw(first_name verification_url code email live_chat_url)],
     account_opening_existing          => [qw(loginid email live_chat_url login_url password_reset_url)],
+    self_tagging_affiliates           => [qw(email live_chat_url)],
     request_payment_withdraw          => [qw(loginid email live_chat_url verification_url code paymentagent)],
     verify_email_closed_account_other => [qw(loginid email type live_chat_url)],
     verify_email_closed_account_reset_password  => [qw(loginid email type live_chat_url)],

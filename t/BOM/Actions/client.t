@@ -4011,4 +4011,27 @@ subtest 'verify email closed account opening' => sub {
     is scalar @track_args, 7, 'Track event is triggered';
 };
 
+subtest 'self tagging affiliates' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $args = {
+        properties => {
+            email         => 'Backend@binary.com',
+            live_chat_url => 'https://www.binary.com/en/contact.html?is_livechat_open=true',
+
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{self_tagging_affiliates};
+    my $result  = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+};
+
 done_testing();

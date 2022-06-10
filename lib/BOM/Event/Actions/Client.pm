@@ -3661,4 +3661,21 @@ sub pa_withdraw_confirm {
     return BOM::Event::Services::Track::pa_withdraw_confirm($args);
 }
 
+=head2 self_tagging_affiliates
+
+handler for self_tagging_affiliates event
+
+We will have anonymous since we wont have the login id available for this flow as this comes from a affiliate url where they try to login/open a account
+
+=cut
+
+sub self_tagging_affiliates {
+    my ($args) = @_;
+    return BOM::Event::Services::Track::track_event(
+        event      => 'self_tagging_affiliates',
+        anonymous  => 1,
+        properties => $args->{properties},
+    );
+}
+
 1;
