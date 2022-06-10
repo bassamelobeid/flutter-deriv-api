@@ -140,7 +140,7 @@ our %ERROR_MAP = do {
         AdvertiserNotApprovedForOrder =>
             localize("Before you can place an order, we need to verify your identity. Please complete your identity verification at Deriv.com."),
         OrderMaximumTempExceeded => localize("Maximum order amount at this time is [_1] [_2]. Please adjust the value or try after 00:00 GMT."),
-        OrderRefundInvalid       => localize("This order cannot be refunded or cancelled."),
+        OrderRefundInvalid       => localize("This order has already been cancelled."),
         OrderCreateFailAmount    => localize("An order cannot be created for this amount at this time. Please try adjusting the amount."),
 
         # TODO these messages needs to be checked with copywritter team
@@ -206,7 +206,6 @@ our %DB_ERRORS = (
     BI228 => 'OrderNotFound',
     BI229 => 'OrderConfirmCompleted',
     BI230 => 'OrderNotConfirmedPending',
-    BI231 => 'OrderNotFound',
     BI232 => 'AlreadyInProgress',
     BI233 => 'OrderNotFound',
     BI234 => 'OrderConfirmCompleted',
@@ -215,7 +214,6 @@ our %DB_ERRORS = (
     BI237 => 'InvalidOrderCurrency',
     BI238 => 'ClientDailyOrderLimitExceeded',
     BI240 => 'OrderCreateFailAmount',
-    BI242 => 'OrderRefundInvalid',
     BI243 => 'OrderCreateFailAmountAdvertiser',
 );
 
