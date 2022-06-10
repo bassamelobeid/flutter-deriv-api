@@ -303,7 +303,7 @@ Takes the following arguments
 
 =item - $promo_code String Id of promo code.
 
-=item - $dbic L<DBIx::Connector::Pg>
+=item - $dbic L<DBIx::Connector>
 
 =back
 
