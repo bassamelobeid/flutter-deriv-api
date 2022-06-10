@@ -36,7 +36,7 @@ my $allowed_naked_packages = {
     'Binary::WebSocketAPI::v3::Subscription::Pricer'                       => 4,
     'Binary::WebSocketAPI::v3::Subscription::Pricer::Proposal'             => 1,
     'Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract' => 1,
-    'Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser'              => 7,
+    'Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser'              => 6,
     'Binary::WebSocketAPI::v3::Subscription::P2P::Advert'                  => 7,
     'Binary::WebSocketAPI::v3::Subscription::P2P::Order'                   => 9,
 };

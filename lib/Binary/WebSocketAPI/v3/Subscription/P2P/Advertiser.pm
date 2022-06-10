@@ -21,20 +21,12 @@ with 'Binary::WebSocketAPI::v3::Subscription';
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
-has broker => (
-    is       => 'ro',
-    required => 1,
-    isa      => sub {
-        ;
-        die "brocker can only be a string which contains 2-4 chars: $_[0]" unless $_[0] =~ /^\w{2,4}$/;
-    });
-
 has loginid => (
     is       => 'ro',
     required => 1,
 );
 
-has advertiser_id => (
+has advertiser_loginid => (
     is       => 'ro',
     required => 1,
 );
@@ -45,14 +37,14 @@ sub subscription_manager {
 
 sub _build_channel {
     my $self = shift;
-    return join q{::} => map { uc($_) } ('P2P::ADVERTISER::NOTIFICATION', $self->broker);
+    return join q{::} => map { uc($_) } ('P2P::ADVERTISER::NOTIFICATION', $self->advertiser_loginid, $self->loginid);
 }
 
 # This method is used to find a subscription.
 # Class name + _unique_key will be a unique per context index of the subscription objects.
 sub _unique_key {
     my $self = shift;
-    return join q{::} => ($self->channel, $self->advertiser_id);
+    return $self->channel;
 }
 
 sub handle_message {
@@ -63,17 +55,6 @@ sub handle_message {
         $self->unregister;
         return;
     }
-
-    return if $self->advertiser_id ne $payload->{id};
-
-    if ($self->loginid ne $payload->{client_loginid}) {
-        delete @{$payload}{
-            qw(contact_info payment_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available
-                blocked_until cancels_remainin min_order_amount max_order_amount min_balance active_fixed_ads active_float_ads)
-        };
-    }
-
-    delete $payload->{client_loginid};
 
     my $args = $self->args;
     $c->send({
