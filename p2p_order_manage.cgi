@@ -57,15 +57,16 @@ Bar('P2P Order details/management');
 if ($input{action} and $p2p_write) {
     try {
         my $client = BOM::User::Client->new({loginid => $input{disputer}});
-        $client->p2p_resolve_order_dispute(
+        my $res    = $client->p2p_resolve_order_dispute(
             id     => $input{order_id},
             action => $input{action},
             fraud  => $input{fraud},
             staff  => BOM::Backoffice::Auth0::get_staffname(),
         );
+        die "DB error $res->{error} occurred. Please try again and contact backend if it keeps happening." if $res->{error};
     } catch ($e) {
-        my $error = ref $e eq 'ARRAY' ? join ', ', $e->@* : $e;
-        print '<p class="error">' . $error . '</p>';
+        $e = join ', ', $e->@* if ref $e eq 'ARRAY';
+        print '<p class="error">' . $e . '</p>';
     }
 }
 
