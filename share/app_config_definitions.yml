@@ -112,6 +112,15 @@ payments:
       isa: json_string
       default: '{}'
       global: 1
+    countries:
+      isa: section
+      description: Misc settings per country
+      contains:
+        poi_deposit_limits_per_payment_type:
+         description: A collection of doughflow payment type per country that will trigger POI request when the specified limit is breached in the period specified in hours
+         isa: json_string
+         default: '{"za":{"CreditCard":{"limit": 500, "days": 7}}}'
+         global: 1
     autoapproval:
       description: 'Payment autoapproval rules parameters'
       isa: section
