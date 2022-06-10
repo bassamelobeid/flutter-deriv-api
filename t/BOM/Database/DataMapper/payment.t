@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Test::Exception;
 use Test::Warnings;
 use Test::Deep;
@@ -274,19 +274,98 @@ subtest 'check account has duplicate payment' => sub {
     );
 };
 
+subtest 'cumulative total by payment type' => sub {
+    my $doughflow_datamapper;
+
+    lives_ok {
+        $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
+            client_loginid => $client->loginid,
+        });
+    }
+    'Expect to initialize the object';
+
+    my $cumulative_total = $doughflow_datamapper->payment_type_cumulative_total({
+        payment_type => 'DogeVault',
+        days         => 10,
+    });
+
+    is $cumulative_total, 0, 'zero total';
+
+    $client->payment_doughflow(
+        transaction_type  => 'deposit',
+        amount            => 50,
+        payment_fee       => 0,
+        trace_id          => 900009,
+        currency          => 'USD',
+        remark            => 'hey',
+        payment_method    => 'Test',
+        payment_processor => '$$$',
+        df_payment_type   => 'DogTypeThing'
+    );
+
+    $cumulative_total = $doughflow_datamapper->payment_type_cumulative_total({
+        payment_type => 'DogTypeThing',
+        days         => 10,
+    });
+
+    is $cumulative_total + 0, 50, '50 total';
+
+    $cumulative_total = $doughflow_datamapper->payment_type_cumulative_total({
+        payment_type => 'CatTypeThing',
+        days         => 10,
+    });
+
+    is $cumulative_total, 0, 'zero total';
+
+    $client->payment_doughflow(
+        transaction_type  => 'deposit',
+        amount            => 25.25,
+        payment_fee       => 0,
+        trace_id          => 900010,
+        currency          => 'USD',
+        remark            => 'hey you',
+        payment_method    => 'Test',
+        payment_processor => '$$$',
+        df_payment_type   => 'DogTypeThing'
+    );
+
+    $cumulative_total = $doughflow_datamapper->payment_type_cumulative_total({
+        payment_type => 'DogTypeThing',
+        days         => 10,
+    });
+
+    is $cumulative_total, 75.25, '75 and a quarter total';
+
+    $client->payment_doughflow(
+        transaction_type => 'deposit',
+        amount           => 5.50,
+        payment_fee      => 0,
+        trace_id         => 900010,
+        currency         => 'USD',
+        remark           => 'hey you',
+        df_payment_type  => 'CatTypeThing',
+    );
+
+    $cumulative_total = $doughflow_datamapper->payment_type_cumulative_total({
+        payment_type => 'CatTypeThing',
+        days         => 10,
+    });
+
+    is $cumulative_total + 0, 5.50, '5 and a half total';
+};
+
 subtest 'doughflow methods that may require POO' => sub {
     my $doughflow_datamapper;
     lives_ok {
         $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
-            client_loginid => 'CR9999',
-            currency_code  => 'USD'
+            client_loginid => $client->loginid,
         });
     }
     'Expect to initialize the object';
 
     my $poo_methods = $doughflow_datamapper->get_poo_required_methods();
 
-    cmp_deeply $poo_methods, [], 'Expeted POO df methods';
+    cmp_deeply $poo_methods, [], 'Expetced POO df methods';
 
     create_pm(
         $doughflow_datamapper->db->dbic,

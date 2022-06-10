@@ -119,6 +119,41 @@ sub get_doughflow_methods {
         });
 }
 
+=head2 payment_type_cumulative_total
+
+Computes the cumulative total in the last days specified by payment type.
+
+It expects the following named args:
+
+=over 4
+
+=item * C<payment_type> - the payment type we would like to group the records
+
+=item * C<days> - number of days to lookback into the records
+
+=back
+
+Returns the computed total as a numeric scalar.
+
+=cut
+
+sub payment_type_cumulative_total {
+    my $self = shift;
+    my $args = shift;
+
+    my $record = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectcol_arrayref('SELECT o_total FROM payment.doughflow_payment_type_cumulative_total(?, ?, ?)',
+                {}, $self->client_loginid, $args->@{qw/payment_type days/});
+        });
+
+    return 0 unless scalar $record->@*;
+
+    my ($total) = $record->@*;
+
+    return $total // 0;
+}
+
 =head2 get_poo_required_methods
 
 Returns a list of doughflow payment methods that requires POO
