@@ -53,7 +53,6 @@ sub check_syntax_on_diff {
         check_syntax(\@check_files, \@skipped_files, 'syntax_diff');
         check_tidy(\@check_files, \@skipped_files);
         check_yaml(@check_files);
-        check_pod_coverage(@check_files);
     } else {
         pass "no change detected, skip tests";
     }
