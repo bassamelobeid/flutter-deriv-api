@@ -357,6 +357,62 @@ sub process_response {
     return map { $_->[1] } @$results;
 }
 
+=head2 get_repo_message
+
+Collet HEAD info of every repos, and format them to a string.
+
+For every repo, check its HEAD, if there is a tag, then use that tag. Otherwise use the commit id in the retured string.
+
+Returns a string
+
+=cut
+
+sub get_repo_message{
+    my @root_paths = map {path("/home/git/$_")} qw(binary-com regentmarkets);
+    my %repo_info;
+    my @futures;
+    for my $root_path (@root_paths){
+        for my $repo ($root_path->children){
+            my $git_dir = $repo->child('.git');
+            next unless $repo->is_dir && $git_dir->exists;
+            my $command = "git --git-dir=$git_dir describe --tags --exact-match || git --git-dir=$git_dir rev-parse HEAD";
+            my $process = $loop->open_process(
+                command => $command,
+                stdout => {
+                    on_read => sub{
+                        my ($stream, $buffref, $eof) = @_;
+                        while($$buffref =~ s/^(.*)\n//){
+                            $repo_info{$repo->basename} = $1;
+                        }
+                        return 0;
+                    }
+                },
+                stderr => {
+                    on_read => sub {
+                        my ($stream, $buffref, $eof) = @_;
+                        while($$buffref =~ s/^(.*)\n//){
+                            my $msg = $1;
+                            if($msg =~ /no tag exactly matches|No names found/){
+                                next;
+                            }
+                            else{
+                                say "error when run command $command: $msg";
+                            }
+                        }
+                        return 0;
+                    }
+                },
+                on_finish => sub{}
+            );
+            push @futures, $process->finish_future;
+        }
+    }
+    my $future = Future->wait_all(@futures);
+    $future->on_ready(sub{$loop->stop});
+    $loop->run;
+    return "repo information: " . join(" ", map {"$_:$repo_info{$_}"} keys %repo_info);
+}
+
 =head2 email_result
 
 Description: Send the results 
@@ -406,6 +462,8 @@ sub email_result {
     my $top10_index = $#sorted_errors < 9 ? $#sorted_errors : 9;
     @sorted_errors = @sorted_errors[0..$top10_index];
     $body .= "\nTop 10 errors:\n" . (map {join("\n","$_:$error{$_}")} @sorted_errors);
+
+    $body .= get_repo_message();
     my $email_stuffer = Email::Stuffer->from('loadtest@binary.com')->to(@$mails_to)->subject('Load Test Results')->text_body($body);
     if ($smtp_transport) {
         $email_stuffer->transport($smtp_transport);
