@@ -462,10 +462,7 @@ sub email_result {
     my @sorted_errors = sort {$error{$b} <=> $error{$a}} keys %error;
     my $top10_index = $#sorted_errors < 9 ? $#sorted_errors : 9;
     @sorted_errors = @sorted_errors[0..$top10_index];
-   use Data::Dumper;
-  say "errors:" . Dumper(\%error);
- say "sorted_errors: " .  Dumper(\@sorted_errors); 
-    $body .= "\nTop 10 errors:\n" . (join("\n", map {"$_:$error{$_}"} @sorted_errors)) if %error;
+    $body .= "\nTop 10 errors:\n" . (join("\n", map {"$_:$error{$_}"} @sorted_errors)) . "\n" if %error;
 
     $body .= get_repo_message();
     my $email_stuffer = Email::Stuffer->from('loadtest@binary.com')->to(@$mails_to)->subject('Load Test Results')->text_body($body);
@@ -545,25 +542,26 @@ sub start_subscription {
                 while ($$buffref =~ s/^(.*)\n//) {
                     my $msg = $1;
                     print ">: $msg\n";
-                    if($msg =~ / W \[.*\] (.*)/){
-                        my $msg_txt = $1;
-                        # 'Trading is not available from' will include a timestamp
-                        if($msg_txt =~ /(Trading is not available)/){
-                            $error{$1}++;
-                        }
-                        elsif($msg_txt =~ /<(.*)>/){
-			   $msg_txt = $1;
-			   if($msg_txt =~ /(Creating a subscription Failed Cannot get valid params for)/){
-	                            $error{$1}++;
-			    }
-			    else{
-				    $error{$msg_txt}++;
-			    }
-                        }
-                        else{
-                            $error{$msg_txt}++;
-                        }
+                    next unless ($msg =~ / W \[.*\] (.*)/);
+                    my $msg_txt = $1;
+                    # 'Trading is not available from' will include a timestamp
+                    if($msg_txt =~ /(Trading is not available)/){
+                        $error{$1}++;
+                        next;
                     }
+                    if($msg_txt =~ /(Creating a subscription Failed Cannot get valid params for)/){
+                        $error{$1}++;
+                        next;
+                    }
+
+                    if($msg_txt =~ /<(.*)>/){
+                        $msg_txt = $1;
+                        $error{$1}++;
+                        next;
+                    }
+
+                    $error{$msg_txt}++;
+
                 }
                 return 0;
             }
