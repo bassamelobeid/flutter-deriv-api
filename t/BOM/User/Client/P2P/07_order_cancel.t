@@ -401,4 +401,26 @@ for my $test_case (@test_cases) {
     };
 }
 
+subtest 'race condition' => sub {
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+
+    my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert();
+    my ($client,     $order) = BOM::Test::Helper::P2P::create_order(advert_id => $ad->{id});
+    $client->p2p_order_cancel(id => $order->{id});
+    my $details = $client->_p2p_orders(id => $order->{id})->[0];
+
+    # Make perl code think that order is still pending
+    $details->{status} = 'pending';
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->mock('_p2p_orders' => sub { [$details] });
+
+    cmp_deeply(
+        exception { $client->p2p_order_cancel(id => $order->{id}) },
+        {error_code => 'OrderRefundInvalid'},
+        'Unrefundable order caught by db and correct eror returned'
+    );
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
 done_testing();

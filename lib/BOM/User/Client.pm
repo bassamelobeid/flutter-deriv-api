@@ -2225,7 +2225,7 @@ use constant {
         PP011 => "OpenOrdersDeleteAdvert",
         PP012 => "PaymentMethodRemoveActiveOrdersDB",
         PP013 => "DuplicatePaymentMethod",
-
+        PP016 => "OrderRefundInvalid",
     },
 };
 
@@ -3023,13 +3023,15 @@ sub p2p_order_cancel {
 
     my $txn_time = Date::Utility->new->datetime;
 
-    my $update = $self->db->dbic->run(
+    my $db_result = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?, ? ,?, ?)',
+            $_->selectrow_hashref('SELECT * FROM p2p.order_refund_v2(?, ?, ?, ?, ?, ?, ? ,?, ?)',
                 undef, $id, $escrow->loginid, $param{source}, $self->loginid, $is_refunded, $txn_time, $is_manual, $buyer_fault, $order->{advert_id});
         });
 
-    $self->_p2p_order_cancelled($update);
+    $self->_p2p_db_error_handler($db_result);
+
+    $self->_p2p_order_cancelled({%$order, %$db_result});
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
@@ -3038,7 +3040,7 @@ sub p2p_order_cancel {
             order_event    => 'cancelled',
         });
 
-    for my $order_loginid ($update->{client_loginid}, $update->{advertiser_loginid}) {
+    for my $order_loginid ($order->@{qw/client_loginid advertiser_loginid/}) {
         BOM::Platform::Event::Emitter::emit(
             p2p_advertiser_updated => {
                 client_loginid => $order_loginid,
@@ -3052,7 +3054,7 @@ sub p2p_order_cancel {
             advertiser_id => $order->{type} eq 'buy' ? $order->{client_id} : $order->{advertiser_id},
         });
 
-    return $update;
+    return $db_result;
 }
 
 =head2 p2p_order_review
@@ -3364,7 +3366,7 @@ sub p2p_resolve_order_dispute {
         my $buyer_fault = 1;    # this will negatively affect the buyer's completion rate
         $self->db->dbic->run(
             fixup => sub {
-                $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                $_->do('SELECT p2p.order_refund_v2(?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     undef, $id, $escrow->loginid, 4, $staff, 't', $txn_time, $is_manual, $buyer_fault, $order->{advert_id});
             });
 
