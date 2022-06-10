@@ -67,6 +67,7 @@ use BOM::Rules::Engine;
 use BOM::Config::Payments::PaymentMethods;
 use BOM::Platform::Client::AntiFraud;
 use Locale::Country qw/code2country/;
+use BOM::Platform::Client::AntiFraud;
 
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
@@ -2305,6 +2306,21 @@ async sub payment_deposit {
             status  => 'transfers_blocked',
             message => "Internal account transfers are blocked because of QIWI deposit into $loginid"
         });
+    }
+
+    if ($payment_type && !$client->status->age_verification) {
+        my $antifraud = BOM::Platform::Client::AntiFraud->new(client => $client);
+
+        try {
+            if ($antifraud->df_cumulative_total_by_payment_type($payment_type)) {
+                $client->status->setnx('allow_document_upload', 'system',
+                    "A deposit made with payment type $payment_type has crossed the cumulative limit");
+                $client->status->upsert('df_deposit_requires_poi', 'system',
+                    "DF deposits with payment type $payment_type locked until the client gets age verified");
+            }
+        } catch ($e) {
+            $log->warnf('Failed to check for deposit limits of the client %s: %s', $loginid, $e);
+        }
     }
 
     if ($payment_type eq 'CreditCard') {

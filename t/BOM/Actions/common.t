@@ -45,7 +45,6 @@ $status_mock->mock(
     sub {
         return $mocked_is_experian_validated;
     });
-
 $status_mock->mock(
     'upsert',
     sub {
@@ -84,10 +83,12 @@ subtest 'set_age_verification' => sub {
             email    => 'test1+mismatch@binary.com',
             provider => 'onfido',
             scenario => {
-                poa_status        => 'none',
-                poi_name_mismatch => 1,
+                df_deposit_requires_poi => 1,
+                poa_status              => 'none',
+                poi_name_mismatch       => 1,
             },
             side_effects => {
+                df_deposit_requires_poi         => 1,
                 age_verification                => 0,
                 poa_email                       => 0,
                 p2p_advertiser_approval_changed => 0,
@@ -142,6 +143,25 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
+            title    => 'Age verified - was df deposit locked',
+            email    => 'test1+df+locked@binary.com',
+            provider => 'dummy',
+            scenario => {
+                df_deposit_requires_poi            => 1,
+                poa_status                         => 'none',
+                poi_name_mismatch                  => 0,
+                is_experian_validated              => 0,
+                require_age_verified_for_synthetic => 1,
+            },
+            side_effects => {
+                df_deposit_requires_poi         => 0,
+                age_verification                => 1,
+                poa_email                       => 0,
+                p2p_advertiser_approval_changed => 1,
+                vr_age_verified                 => 1,
+            }
+        },
+        {
             title    => 'Age verified - landing company sync',
             email    => 'test1+lcsync@binary.com',
             provider => 'dummy',
@@ -155,6 +175,27 @@ subtest 'set_age_verification' => sub {
                 age_verification                => 1,
                 poa_email                       => 0,
                 p2p_advertiser_approval_changed => 1,
+                mlt_age_verified                => 1,
+            }
+        },
+        {
+            title    => 'Age verified - was df deposit locked + landing company sync',
+            email    => 'test1+df+locked+lcsync@binary.com',
+            provider => 'dummy',
+            scenario => {
+                df_deposit_requires_poi            => 1,
+                poa_status                         => 'none',
+                poi_name_mismatch                  => 0,
+                is_experian_validated              => 0,
+                require_age_verified_for_synthetic => 1,
+                allowed_lc_sync                    => [qw/malta/]
+            },
+            side_effects => {
+                df_deposit_requires_poi         => 0,
+                age_verification                => 1,
+                poa_email                       => 0,
+                p2p_advertiser_approval_changed => 1,
+                vr_age_verified                 => 1,
                 mlt_age_verified                => 1,
             }
         },
@@ -246,6 +287,13 @@ subtest 'set_age_verification' => sub {
                 email       => $email,
             });
 
+            # since we would like to test change in this status, better to don't mock it
+            if ($scenario->{df_deposit_requires_poi}) {
+                $client->status->set('df_deposit_requires_poi', 'test', 'test');
+                $client_mlt->status->set('df_deposit_requires_poi', 'test', 'test');
+                $vr->status->set('df_deposit_requires_poi', 'test', 'test');
+            }
+
             $user->add_client($vr);
             $user->add_client($client);
             $user->add_client($client_mlt);
@@ -260,6 +308,7 @@ subtest 'set_age_verification' => sub {
 
             my @mailbox = BOM::Test::Email::email_list();
             my $emails  = +{map { $_->{subject} => 1 } @mailbox};
+            $client->status->_build_all;
 
             if ($side_effects->{age_verification}) {
                 ok $client->status->age_verification, 'Age verified';
@@ -267,6 +316,17 @@ subtest 'set_age_verification' => sub {
             } else {
                 ok !$client->status->age_verification, 'Age status not verified';
                 ok !exists $emails->{'Your identity is verified'}, 'Verified notitication not sent';
+            }
+
+            if ($side_effects->{df_deposit_requires_poi}) {
+                ok $client->status->df_deposit_requires_poi,     'DF deposit lock is there';
+                ok $client_mlt->status->df_deposit_requires_poi, 'DF deposit lock is there';
+                ok $vr->status->df_deposit_requires_poi,         'DF deposit lock is there';
+            } else {
+                ok !$client->status->df_deposit_requires_poi,     'DF deposit lock is gone';
+                ok !$client_mlt->status->df_deposit_requires_poi, 'DF deposit lock is gone'
+                    if scalar @$mocked_allowed_landing_companies_for_age_verification_sync;
+                ok !$vr->status->df_deposit_requires_poi, 'DF deposit lock is gone';
             }
 
             if ($side_effects->{poa_email}) {

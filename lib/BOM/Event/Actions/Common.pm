@@ -69,6 +69,7 @@ sub set_age_verification {
         my $c = shift;
         $c->status->upsert($status_code, $staff, $reason) if $client->status->is_experian_validated;
         $c->status->setnx($status_code, $staff, $reason) unless $client->status->is_experian_validated;
+        $c->status->clear_df_deposit_requires_poi;
     };
 
     $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $status_code, $reason);

@@ -20,6 +20,7 @@ use BOM::Database::ClientDB;
 use BOM::User;
 use BOM::Test::Script::OnfidoMock;
 use BOM::Platform::Context qw(request);
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 use WebService::Async::Onfido;
 use BOM::Event::Actions::Client;
@@ -2953,6 +2954,128 @@ subtest 'crypto_withdrawal_email event' => sub {
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
+subtest 'deposit limits breached' => sub {
+    my $cumulative_total = 0;
+
+    my $df_mock = Test::MockModule->new('BOM::Database::DataMapper::Payment::DoughFlow');
+    $df_mock->mock(
+        'payment_type_cumulative_total',
+        sub {
+            return $cumulative_total;
+        });
+
+    # note this test is based on the default configuration
+    # assume: za -> CreditCard -> limit: 500, days: 7
+    $test_client->status->clear_allow_document_upload;
+    $test_client->status->clear_age_verification;
+
+    my $event_args = {
+        loginid          => $test_client->loginid,
+        is_first_deposit => 0,
+        payment_type     => 'EWallet',
+        transaction_id   => 123,
+        payment_id       => 456,
+        amount           => 100,
+    };
+
+    $cumulative_total = 100;
+
+    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+
+    ok !$test_client->status->allow_document_upload, 'allow_document_upload not triggered for ewallet deposit';
+
+    $event_args->{payment_type} = 'CreditCard';
+
+    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+
+    ok !$test_client->status->allow_document_upload, 'allow_document_upload not triggered for credit card deposit < 500';
+
+    ok !$test_client->status->df_deposit_requires_poi, 'df_deposit_requires_poi not triggered for credit card deposit < 500';
+
+    $event_args->{amount} = 500;
+
+    $cumulative_total = 500;
+
+    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+
+    ok !$test_client->status->allow_document_upload, 'allow_document_upload not triggered for credit card deposit >= 500 (but the country!)';
+
+    ok !$test_client->status->df_deposit_requires_poi, 'df_deposit_requires_poi not triggered for credit card deposit >= 500 (but the country!)';
+
+    $test_client->residence('za');
+    $test_client->save;
+
+    $test_client->status->set('age_verification', 'test', 'test');
+    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+    ok !$test_client->status->allow_document_upload,   'allow_document_upload not triggered for credit card deposit >= 500 (age verified)';
+    ok !$test_client->status->df_deposit_requires_poi, 'df_deposit_requires_poi not triggered for credit card deposit >= 500 (age verified)';
+
+    $test_client->status->clear_age_verification;
+    BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+
+    $test_client->status->_build_all;
+    ok $test_client->status->allow_document_upload,   'allow_document_upload triggered for credit card deposit >= 500';
+    ok $test_client->status->df_deposit_requires_poi, 'df_deposit_requires_poi triggered for credit card deposit >= 500';
+
+    # so far all the tests have been in USD
+    subtest 'exchange rate' => sub {
+        $test_sibling->residence('za');
+        $test_sibling->save;
+
+        $test_sibling->status->clear_df_deposit_requires_poi;
+        $test_sibling->status->clear_allow_document_upload;
+        $test_sibling->status->_build_all;
+        $event_args->{loginid} = $test_sibling->loginid;
+
+        populate_exchange_rates({LTC => 100});
+        $event_args->{currency} = 'LTC';
+        $event_args->{amount}   = 1;
+        $cumulative_total       = 1;
+
+        BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+
+        ok !$test_sibling->status->allow_document_upload,   'allow_document_upload not triggered yet';
+        ok !$test_sibling->status->df_deposit_requires_poi, 'df_deposit_requires_poi not triggered yet';
+
+        populate_exchange_rates({LTC => 70});
+        $event_args->{amount} = 2;
+        $cumulative_total = 3;
+
+        BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+
+        ok !$test_sibling->status->allow_document_upload,   'allow_document_upload not triggered yet';
+        ok !$test_sibling->status->df_deposit_requires_poi, 'df_deposit_requires_poi not triggered yet';
+
+        populate_exchange_rates({LTC => 125});
+        $event_args->{amount} = 1;
+        $cumulative_total = 4;
+
+        BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+
+        $test_sibling->status->_build_all;
+        ok $test_sibling->status->allow_document_upload,   'allow_document_upload triggered';
+        ok $test_sibling->status->df_deposit_requires_poi, 'df_deposit_requires_poi triggered';
+
+        subtest 'no exchange rate available' => sub {
+            my $cli_mock = Test::MockModule->new('BOM::Platform::Client::AntiFraud');
+            $cli_mock->mock(
+                'in_usd',
+                sub {
+                    die 'test';
+                });
+            my $loginid = $test_sibling->loginid;
+
+            $log->clear();
+            BOM::Event::Actions::Client::payment_deposit($event_args)->get();
+
+            $log->contains_ok(qr/Failed to check for deposit limits of the client $loginid: test/, 'expecte fail message logged');
+
+            $cli_mock->unmock_all;
+        }
+    };
+
+    $df_mock->unmock_all;
+};
 subtest 'new account opening' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
