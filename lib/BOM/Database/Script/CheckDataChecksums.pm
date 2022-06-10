@@ -20,7 +20,7 @@ verbose flag (to print `.` characters on output while running).
 
 =cut
 
-use DBIx::Connector::Pg;
+use DBIx::Connector;
 use Time::HiRes qw(sleep);
 use Log::Any qw($log);
 
@@ -42,7 +42,7 @@ sub run {
     my $start = time;
     my $chunk = 100;    # how many blocks at once 1block=8kbyte
 
-    my $dbic = DBIx::Connector::Pg->new(
+    my $dbic = DBIx::Connector->new(
         'dbi:Pg:',
         undef, undef,
         {

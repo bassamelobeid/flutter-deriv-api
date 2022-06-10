@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 
 use Mojo::Exception;
-use DBIx::Connector::Pg;
+use DBIx::Connector;
 use parent 'Rose::DB';
 
 # If you are seeing connections being attempted to this Rose::DB
@@ -148,7 +148,7 @@ sub dbi_connect {
     );
 
     if (not exists $self->{dbic}) {
-        $self->{dbic} = DBIx::Connector::Pg->new(@params);
+        $self->{dbic} = DBIx::Connector->new(@params);
         # fixup mode is a safe and quick mode. That's why we switch from DBI  to  DBIx::Connector.
         # So we set it as default mode
         # But if the sub block will affect the outer environment, please use 'ping' mode instead.

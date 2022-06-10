@@ -429,7 +429,7 @@ subtest 'refresh_token' => sub {
     is scalar $retreived_token_by_user_id->@*, 0, 'tokens revoked by user id correctly';
 
     subtest 'with retry' => sub {
-        my $db_mock = Test::MockModule->new('DBIx::Connector::Pg');
+        my $db_mock = Test::MockModule->new('DBIx::Connector');
         my $token;
         my $context;
         my $runs = 0;
