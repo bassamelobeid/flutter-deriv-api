@@ -7,6 +7,7 @@ use Test::More qw(no_plan);
 use Test::Exception;
 use Test::Output qw(:functions);
 use Test::Warn;
+use Test::Deep;
 use Format::Util::Numbers qw(roundcommon);
 
 use BOM::Database::DataMapper::Payment;
@@ -234,9 +235,55 @@ subtest 'payment transaction' => sub {
     $payment_expected->{payment_gateway_code} = 'doughflow';
     $initial_balance                          = 135;
     delete $args->{source};
+    $args->{df_payment_type} = 'CreditCard';
     $txn = $client->payment_doughflow(%$args);
     isa_ok $txn, 'BOM::User::Client::PaymentTransaction::Doughflow', 'Correct class for doughflow payment transaction object';
     verify_txn($txn, $account, $args, $initial_balance, $payment_expected);
+
+    my $doughflow_payment = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM payment.doughflow WHERE payment_type = ? ORDER BY payment_id DESC LIMIT 1', undef, 'CreditCard');
+        });
+
+    cmp_deeply $doughflow_payment,
+        {
+        created_by        => $txn->{staff_loginid},
+        payment_id        => $txn->{payment_id},
+        transaction_id    => undef,
+        ip_address        => undef,
+        payment_type      => 'CreditCard',
+        payment_method    => undef,
+        trace_id          => '0',
+        payment_processor => 'unspecified',
+        transaction_type  => 'deposit',
+        },
+        'expected df payment found (payment type=CreditCard)';
+
+    $initial_balance = 150;
+    delete $args->{df_payment_type};
+    $txn = $client->payment_doughflow(%$args);
+
+    isa_ok $txn, 'BOM::User::Client::PaymentTransaction::Doughflow', 'Correct class for doughflow payment transaction object';
+    verify_txn($txn, $account, $args, $initial_balance, $payment_expected);
+
+    $doughflow_payment = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM payment.doughflow WHERE payment_type IS NULL ORDER BY payment_id DESC LIMIT 1');
+        });
+
+    cmp_deeply $doughflow_payment,
+        {
+        created_by        => $txn->{staff_loginid},
+        payment_id        => $txn->{payment_id},
+        transaction_id    => undef,
+        ip_address        => undef,
+        payment_type      => undef,
+        payment_method    => undef,
+        trace_id          => '0',
+        payment_processor => 'unspecified',
+        transaction_type  => 'deposit',
+        },
+        'expected df payment found (no payment type)';
 };
 
 sub verify_txn {
