@@ -23,7 +23,10 @@ use Data::Dumper;
 use DateTime::Format::Pg;
 use Date::Utility;
 
-use constant P2P_ADVERTISER_BLOCK_ENDS_AT => 'P2P::ADVERTISER::BLOCK_ENDS_AT';
+use constant {
+    P2P_ADVERTISER_BLOCK_ENDS_AT => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
+    P2P_ONLINE_PERIOD            => 90,
+};
 
 my $cgi = CGI->new;
 
@@ -159,6 +162,10 @@ if ($output{advertiser}) {
     my $loginid = $output{advertiser}->{client_loginid};
     my $client  = BOM::User::Client->new({loginid => $loginid});
     $output{stats} = $client->_p2p_advertiser_stats($loginid, $output{days} * 24);
+
+    my $online_ts = $output{stats}->{last_online};
+    $output{advertiser}->{is_online}   = ($online_ts and $online_ts >= (time - P2P_ONLINE_PERIOD)) ? '&#128994;' : '&#9711;';
+    $output{advertiser}->{online_time} = $online_ts ? Date::Utility->new($online_ts)->db_timestamp : '>6 months';
 
     for (qw/cancel_time_avg release_time_avg/) {
         $output{stats}{$_} = int($output{stats}{$_} / 60) . 'm ' . ($output{stats}{$_} % 60) . 's' if defined $output{stats}{$_};

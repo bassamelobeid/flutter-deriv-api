@@ -13,9 +13,14 @@ BOM::Backoffice::Sysinit::init();
 use BOM::Database::ClientDB;
 use Date::Utility;
 use BOM::Config::P2P;
+use BOM::Config::Redis;
 use List::Util qw(max);
 
-use constant PAGE_LIMIT => 50;
+use constant {
+    PAGE_LIMIT           => 50,
+    P2P_USERS_ONLINE_KEY => 'P2P::USERS_ONLINE',
+    P2P_ONLINE_PERIOD    => 90,
+};
 
 my $cgi = CGI->new;
 
@@ -53,6 +58,15 @@ for my $field (qw(id created_time loginid nickname trade_band email residence pa
         sort_by    => $field,
         sort_order => ($input{sort_by} eq $field and $input{sort_order} eq 'asc') ? 'desc' : 'asc'
     };
+}
+
+if (@$results) {
+    my $redis = BOM::Config::Redis->redis_p2p();
+    for my $res (@$results) {
+        my $online_ts = $redis->zscore(P2P_USERS_ONLINE_KEY, $res->{loginid});
+        $res->{is_online}   = ($online_ts and $online_ts >= (time - P2P_ONLINE_PERIOD)) ? '&#128994;'                                  : '&#9711;';
+        $res->{online_time} = $online_ts                                                ? Date::Utility->new($online_ts)->db_timestamp : '>6 months';
+    }
 }
 
 $link_params{prev} = $input{offset}         ? {%input, offset => max(0, $input{offset} - PAGE_LIMIT)} : undef;

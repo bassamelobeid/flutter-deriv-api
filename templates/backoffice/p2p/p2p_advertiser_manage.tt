@@ -36,7 +36,9 @@
                     <option value="0" [% !advertiser.is_enabled && 'selected' %]>NO</option>
                 </select>
                 &nbsp;&nbsp;If NO, advertiser is completely banned from P2P Cashier.
-                <br/>Automatic ban after [% config.fraud_blocking.buy_count %] buy fraud cases in [% config.fraud_blocking.buy_period %] days or [% config.fraud_blocking.sell_count %] sell fraud cases in [% config.fraud_blocking.sell_period %] days.
+                <br/>Automatic ban after 
+                [% config.fraud_blocking.buy_count %] buy fraud cases[% IF config.fraud_blocking.buy_period > 0 %] in [% config.fraud_blocking.buy_period %] days[% END %] or 
+                [% config.fraud_blocking.sell_count %] sell fraud cases[% IF config.fraud_blocking.sell_period > 0 %] in [% config.fraud_blocking.sell_period %] days[% END %].
             </td>
         </tr>        
         <tr>
@@ -135,12 +137,12 @@
                 <br/>Minimum balance: [% advertiser.min_balance %]
             </td>
         </tr>
-         <tr>
+        <tr>
             <td>Today turnover</td>
             <td>Buy: [% advertiser.account_currency %] [% advertiser.daily_buy %]<br/>
             Sell: [% advertiser.account_currency %] [% advertiser.daily_sell %]</td>
         </tr>        
-         <tr>
+        <tr>
             <td>P2P available balance</td>
             <td>[% advertiser.account_currency %] [% p2p_balance %]</td>
         </tr>
@@ -151,7 +153,11 @@
         <tr>
             <td>Residence</td>
             <td>[% advertiser.residence %]</td>
-        </tr>          
+        </tr>
+        <tr>
+            <td>Online</td>
+            <td>[% advertiser.is_online | none %] [% advertiser.online_time %]</td>
+        </tr>        
     </table>
     <br/>
     <input type="hidden" name="update_id" value="[% advertiser.id %]"/>

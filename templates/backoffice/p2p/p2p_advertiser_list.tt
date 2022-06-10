@@ -53,6 +53,7 @@
         <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.nickname ) %]">Nickname[% sort_flag.nickname | none %]</a></th>
         <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.trade_band ) %]">Band[% sort_flag.trade_band | none %]</a></th>
         <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.email ) %]">Email[% sort_flag.email | none %]</a></th>
+        <th>Online</th>
         <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.pa_status ) %]">PA[% sort_flag.pa_status | none %]</a></th>
         <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.p2p_buy ) %]">P2P buy[% sort_flag.p2p_buy | none %]</a></th>
         <th><a href="[% request.url_for('backoffice/p2p_advertiser_list.cgi', link_params.p2p_sell ) %]">P2P sell[% sort_flag.p2p_sell | none %]</a></th>
@@ -68,6 +69,7 @@
             <td>[% result.nickname %]</td>
             <td>[% result.trade_band %]</td>
             <td>[% result.email %]</td>
+            <td>[% result.is_online | none %] [% result.online_time %]</td>
             <td>[% result.pa_status | ucfirst %]</td>
             <td>[% result.p2p_buy %]</td>
             <td>[% result.p2p_sell %]</td>
