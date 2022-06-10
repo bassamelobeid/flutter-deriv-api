@@ -76,14 +76,30 @@ sub change_password {
 
     my (@valid_logins, $res);
 
-    my @mt5_users_get = map { BOM::MT5::User::Async::get_user($_)->set_label($_) } @mt5_loginids;
+    my @mt5_users_get = map {
+        my $login = $_;
+
+        _check_same_password($login, $password, 'investor')->then(
+            sub {
+                BOM::MT5::User::Async::get_user($login);
+            }
+        )->set_label($login)
+    } @mt5_loginids;
+
     Future->wait_all(@mt5_users_get)->then(
         sub {
             for my $result (@_) {
-                push @valid_logins, $result->label if !$result->is_failed;
+                if ($result->is_done) {
+                    push @valid_logins, $result->label;
+                    next;
+                }
+
+                my $error_code = (ref $result->failure eq 'HASH') ? $result->failure->{code} // '' : '';
+
+                die $result->failure if $error_code eq 'SameAsInvestorPassword';
+
                 # NotFound error indicates an archived account which should be ignored
-                push $res->{failed_logins}->@*, $result->label
-                    if $result->is_failed and not(ref $result->failure eq 'HASH' and ($result->failure->{code} // '') eq 'NotFound');
+                push $res->{failed_logins}->@*, $result->label unless $error_code eq 'NotFound';
             }
         })->get;
 
@@ -149,14 +165,16 @@ sub change_investor_password {
 
     my $old_password = $args{old_password};
 
-    return (
-        $old_password
-        ? BOM::MT5::User::Async::password_check({
-                login    => $account_id,
-                password => $old_password,
-                type     => 'investor',
-            })
-        : Future->done
+    return _check_same_password($account_id, $new_password, 'main')->then(
+        sub {
+            return BOM::MT5::User::Async::password_check({
+                    login    => $account_id,
+                    password => $old_password,
+                    type     => 'investor',
+                }) if $old_password;
+
+            return Future->done;
+        }
     )->then(
         sub {
             BOM::MT5::User::Async::password_change({
@@ -164,6 +182,51 @@ sub change_investor_password {
                 new_password => $new_password,
                 type         => 'investor',
             });
+        });
+}
+
+=head2 _check_same_password
+
+Checks if the requested password is the same as an existing MT5 passwords.
+It fails if the password is correct (the same as the target password) and 
+succeeds only if the password is incorrect (isn't the same as the traget password).
+It takes the following args:
+
+=over 4
+
+=item * C<login> - an MT5 login or account ID.
+
+=item * C<password> - the password to check.
+
+=item * C<type> - the password type to check.
+
+=back
+
+=cut
+
+sub _check_same_password {
+    my ($login, $password, $type) = @_;
+
+    my $error_code = $type eq 'main' ? 'SameAsMainPassword' : 'SameAsInvestorPassword';
+
+    return BOM::MT5::User::Async::password_check({
+            login    => $login,
+            password => $password,
+            type     => $type,
+        }
+    )->then(
+        sub {
+            return Future->fail({code => $error_code});
+        }
+    )->else(
+        sub {
+            my ($error) = @_;
+
+            if (ref $error eq 'HASH' && $error->{code} && $error->{code} eq 'InvalidPassword') {
+                return Future->done();
+            }
+
+            return Future->fail(@_);
         });
 }
 
