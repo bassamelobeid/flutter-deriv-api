@@ -612,6 +612,12 @@ sub actions_config {
                 msg_group => 'p2p',
             },
         ],
+        [
+            'p2p_ping',
+            {
+                msg_group => 'p2p',
+            },
+        ],
         ['trading_platform_product_listing'],
         ['trading_platform_accounts'],
         ['trading_platform_new_account'],
