@@ -25,10 +25,12 @@ use JSON::MaybeUTF8 qw(:v1);
 use Brands;
 
 use constant {
-    CRON_INTERVAL_DAYS => 1,
-    ARCHIVE_KEY        => 'P2P::AD_ARCHIVAL_DATES',
-    ACTIVATION_KEY     => 'P2P::AD_ACTIVATION',
-    MAX_QUOTE_SECS     => 24 * 60 * 60,               # 1 day
+    CRON_INTERVAL_DAYS    => 1,
+    AD_ARCHIVE_KEY        => 'P2P::AD_ARCHIVAL_DATES',
+    AD_ACTIVATION_KEY     => 'P2P::AD_ACTIVATION',
+    P2P_USERS_ONLINE_KEY  => 'P2P::USERS_ONLINE',
+    MAX_QUOTE_SECS        => 24 * 60 * 60,               # 1 day
+    P2P_ONLINE_USER_PRUNE => 26 * 7 * 24 * 60 * 60,      # 26 weeks
 };
 
 =head1 Name
@@ -63,7 +65,7 @@ sub run {
     my $all_countries = $brand->countries_instance->countries_list;
     my $ad_config     = decode_json_utf8($app_config->payments->p2p->country_advert_config);
     my $campaigns     = decode_json_utf8($app_config->payments->p2p->email_campaign_ids);
-    my %bo_activation = $redis->hgetall(ACTIVATION_KEY)->@*;
+    my %bo_activation = $redis->hgetall(AD_ACTIVATION_KEY)->@*;
     my $now           = Date::Utility->new;
     my @advertiser_ids;                                                 # for advertisers who had updated ads
     my %archival_dates;
@@ -156,7 +158,7 @@ sub run {
                                         live_chat_url     => $brand->live_chat_url,
                                     }}) if @$user_ids;
 
-                            $redis->hdel(ACTIVATION_KEY, "$country:deactivate_fixed");
+                            $redis->hdel(AD_ACTIVATION_KEY, "$country:deactivate_fixed");
 
                         } catch ($e) {
                             $log->warnf('Error creating rate change notification for country %s: %s', $country, $e);
@@ -218,7 +220,7 @@ sub run {
                         }
                     }
 
-                    $redis->hdel(ACTIVATION_KEY, "$country:fixed_ads", "$country:float_ads");
+                    $redis->hdel(AD_ACTIVATION_KEY, "$country:fixed_ads", "$country:float_ads");
                 }
             }
 
@@ -228,10 +230,13 @@ sub run {
     }
 
     $redis->multi;
-    $redis->del(ARCHIVE_KEY);
-    $redis->hset(ARCHIVE_KEY, $_, $archival_dates{$_}) for keys %archival_dates;
-    $redis->expire(ARCHIVE_KEY, $archive_days * 24 * 60 * 60);
+    $redis->del(AD_ARCHIVE_KEY);
+    $redis->hset(AD_ARCHIVE_KEY, $_, $archival_dates{$_}) for keys %archival_dates;
+    $redis->expire(AD_ARCHIVE_KEY, $archive_days * 24 * 60 * 60);
     $redis->exec;
+
+    # delete very old user activity records
+    $redis->zremrangebyscore(P2P_USERS_ONLINE_KEY, '-Inf', time - P2P_ONLINE_USER_PRUNE);
 
     for my $advertiser_id (uniq @advertiser_ids) {
         BOM::Platform::Event::Emitter::emit(

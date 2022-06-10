@@ -9,6 +9,7 @@ use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 use BOM::User::Script::P2PDailyMaintenance;
 use Test::Warn;
 use Date::Utility;
@@ -163,6 +164,22 @@ subtest 'refresh advertiser completion rates' => sub {
 
     BOM::User::Script::P2PDailyMaintenance->new->run;
     cmp_ok $advertiser->p2p_advert_info(id => $advert->{id})->{advertiser_details}{total_completion_rate}, '==', 50, 'updated with older order';
+};
+
+subtest 'prune old online entries' => sub {
+    my $redis = BOM::Config::Redis->redis_p2p_write;
+    set_fixed_time(Date::Utility->new('2000-01-01')->epoch);
+    $redis->zadd('P2P::USERS_ONLINE', time, 'CR001');
+
+    set_fixed_time(Date::Utility->new('2000-06-30')->epoch);
+    BOM::User::Script::P2PDailyMaintenance->new->run;
+
+    ok $redis->zscore('P2P::USERS_ONLINE', 'CR001'), 'key still there after 5 months';
+
+    set_fixed_time(Date::Utility->new('2000-07-01')->epoch);
+    BOM::User::Script::P2PDailyMaintenance->new->run;
+
+    ok !$redis->zscore('P2P::USERS_ONLINE', 'CR001'), 'key deleted after 6 months';
 };
 
 done_testing;

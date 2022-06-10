@@ -2202,6 +2202,8 @@ use constant {
     P2P_STATS_REDIS_PREFIX       => 'P2P::ADVERTISER_STATS',
     P2P_STATS_TTL_IN_DAYS        => 120,                                # days after which to prune redis stats
     P2P_ARCHIVE_DATES_KEY        => 'P2P::AD_ARCHIVAL_DATES',
+    P2P_USERS_ONLINE_KEY         => 'P2P::USERS_ONLINE',
+    P2P_ONLINE_PERIOD            => 90,
 
     P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,                                # 2 hours
 
@@ -4330,6 +4332,8 @@ sub _advertiser_details {
         rating_count               => $advertiser->{rating_count} // 0,
         recommended_average        => defined $advertiser->{recommended_average} ? sprintf('%.1f', $advertiser->{recommended_average} * 100) : undef,
         recommended_count          => defined $advertiser->{recommended_average} ? $advertiser->{recommended_count}                          : undef,
+        is_online                  => ($stats{last_online} and $stats{last_online} >= (time - P2P_ONLINE_PERIOD)) ? 1                        : 0,
+        last_online_time           => $stats{last_online},
     };
 
     if ($advertiser->{show_name}) {
@@ -4765,6 +4769,7 @@ sub _p2p_advertiser_stats {
         advert_rates => $raw{ADVERT_RATES}->@* ? sprintf("%.2f", (List::Util::sum($raw{ADVERT_RATES}->@*) / $raw{ADVERT_RATES}->@*) * 100)
         : undef,
         partner_count => $redis->scard($key_prefix . 'ORDER_PARTNERS'),
+        last_online   => $redis->zscore(P2P_USERS_ONLINE_KEY, $loginid),
     };
 
     return $stats;

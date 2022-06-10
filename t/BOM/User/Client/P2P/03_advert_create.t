@@ -128,7 +128,11 @@ subtest 'advertiser Registration' => sub {
         rating_count          => 0,
         recommended_average   => undef,
         recommended_count     => undef,
+        is_online             => 0,
+        last_online_time      => undef,
         blocked_by_count      => 0,
+        is_online             => 0,
+        last_online_time      => undef,
         %params
     };
 

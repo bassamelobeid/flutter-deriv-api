@@ -6,8 +6,10 @@ use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
 use Test::Exception;
+use Test::MockTime qw(set_fixed_time restore_time);
 
 use BOM::User::Client;
+use BOM::Config::Redis;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
@@ -196,6 +198,38 @@ subtest 'show real name' => sub {
     is $details->{first_name}, undef, 'correct response for advertiser';
     is $details->{last_name},  undef, 'correct response for advertiser';
 
+};
+
+subtest 'online status' => sub {
+    my $redis = BOM::Config::Redis->redis_p2p_write;
+    set_fixed_time(1000);
+
+    my $client = BOM::Test::Helper::P2P::create_advertiser();
+    $redis->zadd('P2P::USERS_ONLINE', 910, $client->loginid);
+
+    cmp_deeply(
+        $client->p2p_advertiser_info,
+        superhashof({
+                is_online        => 1,
+                last_online_time => 910,
+            }
+        ),
+        'online at 90s'
+    );
+
+    $redis->zadd('P2P::USERS_ONLINE', 909, $client->loginid);
+
+    cmp_deeply(
+        $client->p2p_advertiser_info,
+        superhashof({
+                is_online        => 0,
+                last_online_time => 909,
+            }
+        ),
+        'offline at 91s'
+    );
+
+    restore_time();
 };
 
 subtest 'p2p_advertiser_info subscription' => sub {
