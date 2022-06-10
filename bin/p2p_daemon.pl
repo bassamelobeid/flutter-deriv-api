@@ -14,7 +14,8 @@ use Log::Any qw($log);
 use Syntax::Keyword::Try;
 use Date::Utility;
 use Path::Tiny qw(path);
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use List::Util qw(uniq);
 
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
@@ -39,7 +40,7 @@ Log::Any::Adapter->import(
 
 =head1 Name
 
-p2p_daemon - the daemon process operations which should happen at some particular.
+p2p_daemon - the daemon process operations which should happen continuously.
 
 =head1 Description
 
@@ -59,6 +60,9 @@ use constant {
     P2P_ORDER_EXPIRES_AT         => 'P2P::ORDER::EXPIRES_AT',
     P2P_ORDER_TIMEDOUT_AT        => 'P2P::ORDER::TIMEDOUT_AT',
     P2P_ADVERTISER_BLOCK_ENDS_AT => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
+    P2P_USERS_ONLINE             => 'P2P::USERS_ONLINE',
+    P2P_USERS_ONLINE_LATEST      => 'P2P::USERS_ONLINE_LATEST',
+    P2P_ONLINE_PERIOD            => 90,
 };
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -110,9 +114,11 @@ Fixed interval processing.
 =cut
 
 sub on_tick {
+    my $start_tv = [Time::HiRes::gettimeofday];
     $in_progress = $loop->new_future;
     $app_config->check_for_update;
     my $epoch_now = Date::Utility->new()->epoch;
+    my @advertisers_updated;
 
     # We'll raise LC tickets when dispute reaches a given threshold in hours.
     my $dispute_threshold = Date::Utility->new->minus_time_interval(($app_config->payments->p2p->disputed_timeout // 24) . 'h')->epoch;
@@ -145,17 +151,14 @@ sub on_tick {
     my @blocks_ending = $p2p_redis->exec->[0]->@*;
 
     for my $loginid (@blocks_ending) {
-        BOM::Platform::Event::Emitter::emit(
-            p2p_advertiser_updated => {
-                client_loginid => $loginid,
-            });
+        push @advertisers_updated, $loginid;
         $log->debugf('Block for %s has ended', $loginid);
     }
 
     # Expired orders
     my %expired         = $p2p_redis->zrangebyscore(P2P_ORDER_EXPIRES_AT, '-Inf', $epoch_now, 'WITHSCORES')->@*;
-    my %expired_updates = map { ($epoch_now + PROCESSING_RETRY) => $_ } keys %expired;
-    $p2p_redis->zadd(P2P_ORDER_EXPIRES_AT, %expired_updates) if %expired_updates;
+    my @expired_updates = map { ($epoch_now + PROCESSING_RETRY, $_) } keys %expired;
+    $p2p_redis->zadd(P2P_ORDER_EXPIRES_AT, @expired_updates) if @expired_updates;
 
     foreach my $payload (keys %expired) {
         # Payload is P2P_ORDER_ID|CLIENT_LOGINID
@@ -165,7 +168,6 @@ sub on_tick {
             p2p_order_expired => {
                 order_id       => $order_id,
                 client_loginid => $client_loginid,
-                expiry_started => [Time::HiRes::gettimeofday],
             });
         $log->debugf('Order %s for %s has expired', $order_id, $client_loginid);
     }
@@ -173,8 +175,8 @@ sub on_tick {
     # Timedout orders that reached configured days after timeout
     my $timeout_threshold = Date::Utility->new->minus_time_interval($app_config->payments->p2p->refund_timeout . 'd')->epoch;
     my %timedout          = $p2p_redis->zrangebyscore(P2P_ORDER_TIMEDOUT_AT, '-Inf', $timeout_threshold, 'WITHSCORES')->@*;
-    my %timedout_updates  = map { ($timeout_threshold + PROCESSING_RETRY) => $_ } keys %timedout;
-    $p2p_redis->zadd(P2P_ORDER_TIMEDOUT_AT, %timedout_updates) if %timedout_updates;
+    my @timedout_updates  = map { ($timeout_threshold + PROCESSING_RETRY, $_) } keys %timedout;
+    $p2p_redis->zadd(P2P_ORDER_TIMEDOUT_AT, @timedout_updates) if @timedout_updates;
 
     foreach my $payload (keys %timedout) {
         # Payload is P2P_ORDER_ID|CLIENT_LOGINID
@@ -188,6 +190,7 @@ sub on_tick {
         $log->debugf('Order %s for %s has reached timeout refund', $order_id, $client_loginid);
     }
 
+    # find active advert subscription channels
     $advert_subscriptions = {};
     my $channels = $p2p_redis->pubsub('channels', 'P2P::ADVERT::*');
     for my $channel (@$channels) {
@@ -197,7 +200,31 @@ sub on_tick {
         $advert_subscriptions->{$account_id}{advertiser_id} = $advertiser_id;
     }
 
+    # Publish events for advertisers who changed to online/offline
+    my @current  = $p2p_redis->zrangebyscore(P2P_USERS_ONLINE, $epoch_now - P2P_ONLINE_PERIOD, '+Inf')->@*;
+    my @previous = split /\|/, $p2p_redis->get(P2P_USERS_ONLINE_LATEST);
+    $p2p_redis->set(P2P_USERS_ONLINE_LATEST, join '|', @current);
+
+    # this seems the fastest way to get the difference (tried a few ways)
+    my (%new_online, %new_offline);
+    @new_online{@current}   = ();
+    @new_offline{@previous} = ();
+    delete @new_online{@previous};
+    delete @new_offline{@current};
+
+    $log->debugf('users new online: %s',  [keys %new_online])  if %new_online;
+    $log->debugf('users new offline: %s', [keys %new_offline]) if %new_offline;
+    push @advertisers_updated, keys %new_online, keys %new_offline;
+
+    for my $loginid (uniq @advertisers_updated) {
+        BOM::Platform::Event::Emitter::emit(
+            p2p_advertiser_updated => {
+                client_loginid => $loginid,
+            });
+    }
+
     $in_progress->done;
+    stats_timing('p2p.daemon.processing_time', 1000 * Time::HiRes::tv_interval($start_tv));
 }
 
 =head2 on_transaction
