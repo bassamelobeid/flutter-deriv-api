@@ -6,9 +6,11 @@ use Test::More;
 use Test::Mojo;
 use Test::Deep;
 use Test::MockModule;
+use Test::MockTime qw(set_absolute_time restore_time);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 use BOM::RPC::v3::P2P;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
@@ -950,6 +952,22 @@ subtest 'cancellation barring' => sub {
     my $res = $c->call_ok(p2p_order_create => $params)->has_no_system_error->result;
     is $res->{error}->{code}, 'TemporaryBar', 'The expected error code is TemporaryBar';
     $app_config->payments->p2p->cancellation_grace_period(10);
+};
+
+subtest 'p2p_ping and online tracking' => sub {
+    my $redis        = BOM::Config::Redis->redis_p2p;
+    my $client       = BOM::Test::Helper::P2P::create_advertiser;
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $redis->zrem('P2P::USERS_ONLINE', $client->loginid);
+
+    set_absolute_time(2000);
+    my $res = $c->call_ok(p2p_ping => {token => $client_token})->has_no_system_error->result;
+    is $res, 'pong', 'result is pong';
+    is $redis->zscore('P2P::USERS_ONLINE', $client->loginid), 2000, 'online time is set in redis';
+
+    set_absolute_time(2099);
+    $c->call_ok(p2p_advertiser_info => {token => $client_token});
+    is $redis->zscore('P2P::USERS_ONLINE', $client->loginid), 2099, 'online time is updated by other call';
 };
 
 done_testing();

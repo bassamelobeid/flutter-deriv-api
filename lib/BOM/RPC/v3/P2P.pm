@@ -24,6 +24,7 @@ use BOM::User::Client;
 use BOM::Platform::Context qw (localize request);
 use BOM::Config;
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 use BOM::User;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Rules::Engine;
@@ -275,6 +276,8 @@ sub p2p_rpc {
             );
 
             _check_client_access($client, $app_config);
+
+            BOM::Config::Redis->redis_p2p_write->zadd('P2P::USERS_ONLINE', time, $client->loginid);
 
             my $acc = $client->default_account;
 
@@ -870,5 +873,15 @@ sub _check_client_access {
 
     die +{error_code => 'PermissionDenied'} if $client->p2p_is_advertiser_blocked;
 }
+
+=head2 p2p_ping
+
+Implementation of p2p_ping endpoint.
+
+=cut
+
+p2p_rpc 'p2p_ping' => sub {
+    return 'pong';
+};
 
 1;
