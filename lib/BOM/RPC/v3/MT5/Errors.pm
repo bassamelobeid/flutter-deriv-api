@@ -55,6 +55,8 @@ my %category_message_mapping = do {
         InvalidMinAmount           => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
         InvalidMaxAmount           => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
         InvalidPassword            => localize('Forgot your password? Please reset your password.'),
+        SameAsMainPassword         => localize('The new password is the same as your main password. Please take a different password.'),
+        SameAsInvestorPassword     => localize('The new password is the same as your investor password. Please take a different password.'),
         IncorrectMT5PasswordFormat =>
             localize('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.'),
         MT5PasswordEmailLikenessError => localize('You cannot use your email address as your password.'),

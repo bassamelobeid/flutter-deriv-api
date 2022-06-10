@@ -710,7 +710,9 @@ sub change_investor_password {
     )->else(
         sub {
             my $error = shift;
-            die $error if $error->{code} and $error->{code} eq 'InvalidPassword';
+            if (ref $error eq 'HASH' && $error->{code}) {
+                die $error if $error->{code} =~ qr/^(InvalidPassword|SameAsMainPassword)$/;
+            }
 
             BOM::Platform::Event::Emitter::emit(
                 'trading_platform_investor_password_change_failed',
