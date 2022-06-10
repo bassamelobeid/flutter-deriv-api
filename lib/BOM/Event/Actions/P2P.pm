@@ -64,27 +64,49 @@ sub advertiser_created {
 
 An update to an advertiser - different name, for example - may
 be relevant to anyone with an active order.
+Will publish responses tailored for each subscriber client.
+
+Takes one of the following named parameters in a hashref:
+
+=over 4
+
+=item * client: client object
+
+=item * client_loginid: client loginid, only used if client is not passed
+
+=back
 
 =cut
 
 sub advertiser_updated {
     my $data = shift;
 
-    unless ($data->{client_loginid} or $data->{client}) {
-        $log->info('Fail to process advertiser_updated: Invalid event data', $data);
+    my $advertiser_loginid = $data->{client} ? $data->{client}->loginid : $data->{client_loginid};
+
+    unless ($advertiser_loginid) {
+        $log->infof('Fail to process advertiser_updated: Invalid event data: %s', $data);
         return 0;
     }
 
-    my $client = $data->{client} // BOM::User::Client->new({loginid => $data->{client_loginid}});
+    my $redis = BOM::Config::Redis->redis_p2p_write();
+    # channel format is P2P::ADVERTISER::NOTIFICATION::$advertiser_loginid::$subscriber_loginid
+    my $channels = $redis->pubsub('channels', "P2P::ADVERTISER::NOTIFICATION::${advertiser_loginid}::*");
+    my $advertiser;
 
-    my $details = $client->p2p_advertiser_info or return 0;
-    return 0 if $client->p2p_is_advertiser_blocked;
+    for my $channel (@$channels) {
+        my ($subscriber_loginid) = $channel =~ /::(\w+?)$/;
 
-    # will be removed in websocket
-    $details->{client_loginid} = $client->loginid;
-    my $redis     = BOM::Config::Redis->redis_p2p_write();
-    my $redis_key = _get_advertiser_channel_name($client);
-    $redis->publish($redis_key, encode_json_utf8($details));
+        my $subscriber_client =
+            ($data->{client} and $subscriber_loginid eq $advertiser_loginid)
+            ? $data->{client}
+            : BOM::User::Client->new({loginid => $subscriber_loginid});
+
+        next if $subscriber_client->p2p_is_advertiser_blocked;
+
+        $advertiser //= $subscriber_client->_p2p_advertisers(loginid => $advertiser_loginid)->[0] // return 0;
+        my $details = $subscriber_client->_advertiser_details($advertiser);
+        $redis->publish($channel, encode_json_utf8($details));
+    }
 
     return 1;
 }

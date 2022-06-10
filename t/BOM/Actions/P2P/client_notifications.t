@@ -32,9 +32,11 @@ my $expected_data = [
     {%{$client->p2p_order_info(id => $order->{id})},     client_loginid     => $client->loginid},
 ];
 
+my $advertiser_id = $advertiser->{_p2p_advertiser_cached}{id};
 delete $advertiser->{_p2p_advertiser_cached};    # delete cache
 
 my @data_for_notification_tests = ({
+        name  => 'order updated (no event)',
         event => 'p2p_order_created',
         data  => {
             client_loginid => $client->loginid,
@@ -44,6 +46,7 @@ my @data_for_notification_tests = ({
         expected => $expected_data,
     },
     {
+        name  => 'order updated (created)',
         event => 'p2p_order_updated',
         data  => {
             client_loginid => $client->loginid,
@@ -54,17 +57,27 @@ my @data_for_notification_tests = ({
         expected => $expected_data,
     },
     {
+        name  => 'advertiser updated (self)',
         event => 'p2p_advertiser_updated',
         data  => {
             client_loginid => $advertiser->loginid,
         },
-        channel  => join(q{::} => ('P2P::ADVERTISER::NOTIFICATION', uc($client->broker))),
-        expected => [+{$advertiser->p2p_advertiser_info->%*, client_loginid => $advertiser->loginid}],
+        channel  => join(q{::} => ('P2P::ADVERTISER::NOTIFICATION', $advertiser->loginid, $advertiser->loginid)),
+        expected => [$advertiser->p2p_advertiser_info],
+    },
+    {
+        name  => 'advertiser updated (other advertiser)',
+        event => 'p2p_advertiser_updated',
+        data  => {
+            client_loginid => $advertiser->loginid,
+        },
+        channel  => join(q{::} => ('P2P::ADVERTISER::NOTIFICATION', $advertiser->loginid, $client->loginid)),
+        expected => [$client->p2p_advertiser_info(id => $advertiser_id)],
     },
 );
 
 for my $test_data (@data_for_notification_tests) {
-    subtest 'Notification for ' . $test_data->{event} => sub {
+    subtest $test_data->{name} => sub {
         # Separate connection is needed, because BOM::User::Client will execute the same redis
         # which is not allowed when waiting for replies on the same connection
         my $connection_config = BOM::Config::redis_p2p_config()->{p2p}{read};
