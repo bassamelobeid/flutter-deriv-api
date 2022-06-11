@@ -218,7 +218,7 @@ $timer = IO::Async::Timer::Periodic->new(
             }
             $new_market = 0;
             # if subscriptions too big, then there must something wrong
-            if($subscriptions > 100){
+            if($subscriptions > 1000){
                 my $err_msg = "subscriptions too big, something must be wrong. Please check errors";
 		say $err_msg;
                 email_result($run_recorder, \@mails_to, $smtp_transport, $err_msg);
@@ -393,12 +393,8 @@ sub get_repo_message{
                         my ($stream, $buffref, $eof) = @_;
                         while($$buffref =~ s/^(.*)\n//){
                             my $msg = $1;
-                            if($msg =~ /no tag exactly matches|No names found/){
-                                next;
-                            }
-                            else{
-                                say "error when run command $command: $msg";
-                            }
+                            next if($msg =~ /no tag exactly matches|No names found/);
+                            say "error when run command $command: $msg";
                         }
                         return 0;
                     }
@@ -555,7 +551,6 @@ sub start_subscription {
                     }
 
                     if($msg_txt =~ /<(.*)>/){
-                        $msg_txt = $1;
                         $error{$1}++;
                         next;
                     }
