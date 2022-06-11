@@ -541,16 +541,9 @@ sub start_subscription {
                     next unless ($msg =~ / W \[.*\] (.*)/);
                     my $msg_txt = $1;
                     # 'Trading is not available from' will include a timestamp
-                    if($msg_txt =~ /(Trading is not available)/){
-                        $error{$1}++;
-                        next;
-                    }
-                    if($msg_txt =~ /(Creating a subscription Failed Cannot get valid params for)/){
-                        $error{$1}++;
-                        next;
-                    }
-
-                    if($msg_txt =~ /<(.*)>/){
+                    if($msg_txt =~ /(Trading is not available|Creating a subscription Failed Cannot get valid params)/ ||
+                       $msg_txt =~ /<(.*)>/
+                   ){
                         $error{$1}++;
                         next;
                     }
