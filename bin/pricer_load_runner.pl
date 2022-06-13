@@ -218,7 +218,7 @@ $timer = IO::Async::Timer::Periodic->new(
             }
             $new_market = 0;
             # if subscriptions too big, then there must something wrong
-            if ($subscriptions > 1000) {
+            if ($subscriptions > 10000) {
                 my $err_msg = "subscriptions too big, something must be wrong. Please check errors";
                 say $err_msg;
                 email_result($run_recorder, \@mails_to, $smtp_transport, $err_msg);
