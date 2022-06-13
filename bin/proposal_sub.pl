@@ -10,7 +10,7 @@ use Pod::Usage;
 use Getopt::Long;
 use Log::Any::Adapter qw(DERIV),
     stderr    => 1,
-    log_level => 'info';
+    log_level => 'warn';
 use Log::Any qw($log);
 use Path::Tiny;
 
