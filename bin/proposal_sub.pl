@@ -8,7 +8,9 @@ no indirect;
 
 use Pod::Usage;
 use Getopt::Long;
-use Log::Any::Adapter qw(DERIV), stderr => 1, log_level => 'info';
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 1,
+    log_level => 'info';
 use Log::Any qw($log);
 use Path::Tiny;
 
@@ -77,7 +79,11 @@ $subscriptions = $subscriptions // 5;
 $forget_time   = $forget_time   // 0;
 $test_duration = $test_duration // 0;
 
-Log::Any::Adapter->set('DERIV', stderr => 1, log_level => 'debug') if $debug;
+Log::Any::Adapter->set(
+    'DERIV',
+    stderr    => 1,
+    log_level => 'debug'
+) if $debug;
 
 my @markets_to_use;
 if ($markets) {

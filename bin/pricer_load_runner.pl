@@ -218,9 +218,9 @@ $timer = IO::Async::Timer::Periodic->new(
             }
             $new_market = 0;
             # if subscriptions too big, then there must something wrong
-            if($subscriptions > 1000){
+            if ($subscriptions > 1000) {
                 my $err_msg = "subscriptions too big, something must be wrong. Please check errors";
-		say $err_msg;
+                say $err_msg;
                 email_result($run_recorder, \@mails_to, $smtp_transport, $err_msg);
                 $timer->stop;
                 $loop->stop;
@@ -248,7 +248,7 @@ $timer = IO::Async::Timer::Periodic->new(
                     $new_market     = 1;
                 } else {
                     email_result($run_recorder, \@mails_to, $smtp_transport);
-                    if ($report)           { report_result($run_recorder) }
+                    if ($report) { report_result($run_recorder) }
                     $timer->stop;
                     $loop->stop;
                 }
@@ -368,21 +368,21 @@ Returns a string
 
 =cut
 
-sub get_repo_message{
-    my @root_paths = map {path("/home/git/$_")} qw(binary-com regentmarkets);
+sub get_repo_message {
+    my @root_paths = map { path("/home/git/$_") } qw(binary-com regentmarkets);
     my %repo_info;
     my @futures;
-    for my $root_path (@root_paths){
-        for my $repo ($root_path->children){
+    for my $root_path (@root_paths) {
+        for my $repo ($root_path->children) {
             my $git_dir = $repo->child('.git');
             next unless $repo->is_dir && $git_dir->exists;
             my $command = "git --git-dir=$git_dir describe --tags --exact-match || git --git-dir=$git_dir rev-parse HEAD";
             my $process = $loop->open_process(
                 command => $command,
-                stdout => {
-                    on_read => sub{
+                stdout  => {
+                    on_read => sub {
                         my ($stream, $buffref, $eof) = @_;
-                        while($$buffref =~ s/^(.*)\n//){
+                        while ($$buffref =~ s/^(.*)\n//) {
                             $repo_info{$repo->basename} = $1;
                         }
                         return 0;
@@ -391,23 +391,22 @@ sub get_repo_message{
                 stderr => {
                     on_read => sub {
                         my ($stream, $buffref, $eof) = @_;
-                        while($$buffref =~ s/^(.*)\n//){
+                        while ($$buffref =~ s/^(.*)\n//) {
                             my $msg = $1;
-                            next if($msg =~ /no tag exactly matches|No names found/);
+                            next if ($msg =~ /no tag exactly matches|No names found/);
                             say "error when run command $command: $msg";
                         }
                         return 0;
                     }
                 },
-                on_finish => sub{}
-            );
+                on_finish => sub { });
             push @futures, $process->finish_future;
         }
     }
     my $future = Future->wait_all(@futures);
-    $future->on_ready(sub{$loop->stop});
+    $future->on_ready(sub { $loop->stop });
     $loop->run;
-    return "repo information: " . join(" ", map {"$_:$repo_info{$_}"} keys %repo_info);
+    return "repo information: " . join(" ", map { "$_:$repo_info{$_}" } keys %repo_info);
 }
 
 =head2 email_result
@@ -433,7 +432,7 @@ Returns undef
 
 sub email_result {
     my ($overflow_data, $mails_to, $smtp_transport, $err_msg) = @_;
-    unless(scalar(@$mails_to)){
+    unless (scalar(@$mails_to)) {
         say 'email address empty, no emal sent';
         return undef;
     }
@@ -443,7 +442,7 @@ sub email_result {
     my $dashboard_start_time = ($test_start_time - 300) * 1000;
     my $dashboard_end_time   = ($test_end_time + 300) * 1000;
     my $body                 = $err_msg ? "$err_msg\n" : '';
-    $body                   .= "Here are the stats for the Load testing run \n";
+    $body .= "Here are the stats for the Load testing run \n";
     foreach my $market (keys(%$overflow_data)) {
         $body .= "market - $market\n Overflowed at \n";
         foreach my $run (keys($overflow_data->{$market}->%*)) {
@@ -455,10 +454,10 @@ sub email_result {
     Datadog link = https://app.datadoghq.com/dashboard/27a-7ws-tk3/pricer-daily-load-testing?from_ts=$dashboard_start_time&live=false&to_ts=$dashboard_end_time; 
     ";
 
-    my @sorted_errors = sort {$error{$b} <=> $error{$a}} keys %error;
-    my $top10_index = $#sorted_errors < 9 ? $#sorted_errors : 9;
-    @sorted_errors = @sorted_errors[0..$top10_index];
-    $body .= "\nTop 10 errors:\n" . (join("\n", map {"$_:$error{$_}"} @sorted_errors)) . "\n" if %error;
+    my @sorted_errors = sort { $error{$b} <=> $error{$a} } keys %error;
+    my $top10_index   = $#sorted_errors < 9 ? $#sorted_errors : 9;
+    @sorted_errors = @sorted_errors[0 .. $top10_index];
+    $body .= "\nTop 10 errors:\n" . (join("\n", map { "$_:$error{$_}" } @sorted_errors)) . "\n" if %error;
 
     $body .= get_repo_message();
     my $email_stuffer = Email::Stuffer->from('loadtest@binary.com')->to(@$mails_to)->subject('Load Test Results')->text_body($body);
@@ -541,16 +540,16 @@ sub start_subscription {
                     next unless ($msg =~ / W \[.*\] (.*)/);
                     my $msg_txt = $1;
                     # 'Trading is not available from' will include a timestamp
-                    if($msg_txt =~ /(Trading is not available)/){
+                    if ($msg_txt =~ /(Trading is not available)/) {
                         $error{$1}++;
                         next;
                     }
-                    if($msg_txt =~ /(Creating a subscription Failed Cannot get valid params for)/){
+                    if ($msg_txt =~ /(Creating a subscription Failed Cannot get valid params for)/) {
                         $error{$1}++;
                         next;
                     }
 
-                    if($msg_txt =~ /<(.*)>/){
+                    if ($msg_txt =~ /<(.*)>/) {
                         $error{$1}++;
                         next;
                     }
