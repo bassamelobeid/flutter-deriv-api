@@ -540,9 +540,9 @@ sub start_subscription {
                     next unless ($msg =~ / W \[.*\] (.*)/);
                     my $msg_txt = $1;
 
-                    if($msg_txt =~ /(Trading is not available|Creating a subscription Failed Cannot get valid params)/ ||
-                       $msg_txt =~ /<(.*)>/
-                   ){
+                    if (   $msg_txt =~ /(Trading is not available|Creating a subscription Failed Cannot get valid params)/
+                        || $msg_txt =~ /<(.*)>/)
+                    {
                         $error{$1}++;
                         next;
                     }
