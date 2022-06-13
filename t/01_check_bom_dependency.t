@@ -14,7 +14,7 @@ my @dependency = qw(
 
 check_bom_dependency(@dependency);
 
-my $result = `git grep BOM::Rules lib ':(exclude)lib/BOM/Platform/CryptoCashier'`;
-ok (!$result,  'BOM::Rules can only use in CryptoCashier') or diag($result);
+my $result = `git grep BOM::Rules -- lib ':(exclude)lib/BOM/Platform/CryptoCashier'`;
+ok(!$result, 'BOM::Rules can only use in CryptoCashier') or diag($result);
 
 done_testing();
