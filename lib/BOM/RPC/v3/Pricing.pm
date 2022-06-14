@@ -62,8 +62,6 @@ rpc get_bid => \&BOM::Pricing::v3::Contract::get_bid;
 
 rpc get_contract_details => \&BOM::Pricing::v3::Contract::get_contract_details;
 
-rpc contracts_for => \&BOM::Pricing::v3::Contract::contracts_for;
-
 rpc trading_times => \&BOM::Pricing::v3::MarketData::trading_times;
 
 rpc asset_index => \&BOM::Pricing::v3::MarketData::asset_index;
