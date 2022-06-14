@@ -46,13 +46,13 @@ subtest 'new real wallet  account' => sub {
 
     subtest 'new wallet account without currency' => sub {
         my $res = $t->await::new_account_wallet({%details, payment_method => 'Skrill'}, {timeout => 10});
-        is($res->{error}->{code},    'InputValidationFailed', 'Currency is mandatory');
+        is($res->{error}->{code},      'InputValidationFailed', 'Currency is mandatory');
         is($res->{new_account_wallet}, undef,                   'NO account created');
     };
 
     subtest 'new wallet account without payment method' => sub {
         my $res = $t->await::new_account_wallet({%details, currency => 'USD'}, {timeout => 10});
-        is($res->{error}->{code},    'InputValidationFailed', 'Payment method is mandatory');
+        is($res->{error}->{code},      'InputValidationFailed', 'Payment method is mandatory');
         is($res->{new_account_wallet}, undef,                   'NO account created');
     };
 
@@ -72,7 +72,6 @@ subtest 'new real wallet  account' => sub {
             my $loginid = $res->{new_account_wallet}->{client_id};
             like($loginid, qr/^DW\d+$/, "got DW client - $loginid");
 
-
             my $client = BOM::User::Client->new({loginid => $loginid});
             $client->address_state, 'MOW', 'State name is convered into state code';
         };
@@ -89,7 +88,7 @@ subtest 'new real wallet  account' => sub {
             my $loginid = $res->{new_account_wallet}->{client_id};
             like($loginid, qr/^DW\d+$/, "got DW client - $loginid");
         };
-    };
+    }
 
     subtest 'new wallet account is disabled for all countries at the moment' => sub {
         ok(BOM::Config::Runtime->instance->app_config->system->suspend->wallets, 'wallet service is disabled at the moment');

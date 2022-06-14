@@ -27,7 +27,7 @@ is_deeply $res->{residence_list}->[104], {
             },
             onfido => {
                 documents_supported  => {passport => {display_name => 'Passport'}},
-                is_country_supported => 1,
+                is_country_supported => 0,
             }}}};
 
 # test RU
@@ -79,7 +79,7 @@ is_deeply $res->{residence_list}->[104], {
             },
             onfido => {
                 documents_supported  => {passport => {display_name => 'Passport'}},
-                is_country_supported => 1,
+                is_country_supported => 0,
             }}}};
 
 $t->finish_ok;

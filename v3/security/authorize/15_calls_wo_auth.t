@@ -68,7 +68,7 @@ is_deeply $res->{residence_list}->[104], {
             },
             onfido => {
                 documents_supported  => {passport => {display_name => 'Passport'}},
-                is_country_supported => 1,
+                is_country_supported => 0,
             }}}};
 test_schema('residence_list', $res);
 
