@@ -35,7 +35,7 @@ subtest 'residence_list' => sub {
                         documents_supported  => {},
                     },
                     onfido => {
-                        is_country_supported => 1,
+                        is_country_supported => 0,
                         documents_supported  => {
                             driving_licence        => {display_name => 'Driving Licence'},
                             national_identity_card => {display_name => 'National Identity Card'},

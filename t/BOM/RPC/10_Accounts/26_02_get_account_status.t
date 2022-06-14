@@ -394,6 +394,135 @@ subtest 'Proof of Ownership' => sub {
     cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate';
 };
 
+subtest 'backtest for Onfido disabled country' => sub {
+    my $test_client_disabled_country = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'ir',
+    });
+    $test_client_disabled_country->email('testing.onfido+disabled+country@binary.com');
+    $test_client_disabled_country->set_default_account('USD');
+    $test_client_disabled_country->save;
+
+    my $user_disabled_country = BOM::User->create(
+        email    => 'testing.onfido+disabled+country@binary.com',
+        password => 'hey you'
+    );
+
+    $user_disabled_country->add_client($test_client_disabled_country);
+
+    my $token_disabled_country = $m->create_token($test_client_disabled_country->loginid, 'test token');
+
+    my $config_mock = Test::MockModule->new('BOM::Config::Onfido');
+    my $country_supported;
+    $config_mock->mock(
+        'is_country_supported',
+        sub {
+            return $country_supported;
+        });
+
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    my $onfido_document_sub_result;
+    my $onfido_check_result;
+
+    $onfido_mock->mock(
+        'get_latest_check',
+        sub {
+            return {
+                report_document_status     => 'complete',
+                report_document_sub_result => $onfido_document_sub_result,
+                user_check                 => {
+                    result => $onfido_check_result,
+                },
+            };
+        });
+
+    my $tests = [{
+            check_result      => 'consider',
+            docum_result      => 'rejected',
+            country_supported => 1,
+            expected          => {
+                status => 'rejected',
+            },
+            name => 'rejected status, supported country',
+        },
+        {
+            check_result      => 'consider',
+            docum_result      => 'suspected',
+            country_supported => 1,
+            expected          => {
+                status => 'suspected',
+            },
+            name => 'suspected status, supported country',
+        },
+        {
+            check_result      => 'clear',
+            docum_result      => undef,
+            country_supported => 1,
+            expected          => {
+                status => 'verified',
+            },
+            name => 'verified status, supported country',
+        },
+        {
+            check_result      => 'consider',
+            docum_result      => 'rejected',
+            country_supported => 0,
+            expected          => {
+                status => 'rejected',
+            },
+            name => 'rejected status, unsupported country',
+        },
+        {
+            check_result      => 'consider',
+            docum_result      => 'suspected',
+            country_supported => 0,
+            expected          => {
+                status => 'suspected',
+            },
+            name => 'suspected status, unsupported country',
+        },
+        {
+            check_result      => 'clear',
+            docum_result      => undef,
+            country_supported => 0,
+            expected          => {
+                status => 'verified',
+            },
+            name => 'verified status, unsupported country',
+        },
+        {
+            docum_result      => 'awaiting_applicant',
+            country_supported => 0,
+            expected          => {
+                status => 'none',
+            },
+            name => 'when it would have been pending, map it into `none` for unsupported country',
+        }];
+
+    for my $test ($tests->@*) {
+        ($onfido_document_sub_result, $onfido_check_result, $country_supported) = @$test{qw/docum_result check_result country_supported/};
+
+        subtest $test->{name} => sub {
+            my $result = $c->tcall('get_account_status', {token => $token_disabled_country});
+
+            cmp_deeply $result->{authentication}->{identity}->{services}->{onfido},
+                +{
+                submissions_left     => 3,
+                last_rejected        => [],
+                country_code         => 'IRN',
+                reported_properties  => {},
+                status               => 'none',
+                documents_supported  => ['Passport'],
+                is_country_supported => $country_supported,
+                $test->{expected}->%*,
+                },
+                'Expected onfido result';
+        };
+    }
+
+    $onfido_mock->unmock_all;
+};
+
 sub upload {
     my ($client, $doc) = @_;
 

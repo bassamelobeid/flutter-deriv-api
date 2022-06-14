@@ -492,7 +492,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -549,7 +549,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -623,7 +623,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -723,7 +723,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'expired',
                                     }}
                             },
                             ownership => {
@@ -995,7 +995,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -1083,7 +1083,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'expired',
                                     }}
                             },
                             ownership => {
@@ -1186,7 +1186,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'expired',
                                     }}
                             },
                             ownership => {
@@ -1313,7 +1313,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -1370,7 +1370,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -1820,7 +1820,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'expired',
                                     }}
                             },
                             ownership => {
@@ -1969,7 +1969,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -2036,7 +2036,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -2135,7 +2135,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'expired',
                                     }}
                             },
                             ownership => {
@@ -2211,7 +2211,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'verified',
                                     }}
                             },
                             ownership => {
@@ -2300,7 +2300,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'expired',
                                     }}
                             },
                             ownership => {
@@ -2379,7 +2379,7 @@ subtest 'get account status' => sub {
                                 status              => 'none',
                             },
                             manual => {
-                                status => 'none',
+                                status => 'expired',
                             }
                         },
                     },
@@ -2449,7 +2449,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'verified',
                                     }}
                             },
                             ownership => {
@@ -2521,7 +2521,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'expired',
                                     }}
                             },
                             document => {
@@ -2991,7 +2991,7 @@ subtest 'Experian validated account' => sub {
                                 status              => 'none',
                             },
                             manual => {
-                                status => 'none',
+                                status => 'verified',
                             }}
                     },
                     ownership => {
@@ -3062,7 +3062,7 @@ subtest 'Experian validated account' => sub {
                                 status              => 'none',
                             },
                             manual => {
-                                status => 'none',
+                                status => 'verified',
                             }}
                     },
                     ownership => {
@@ -3135,7 +3135,7 @@ subtest 'Experian validated account' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -3212,7 +3212,7 @@ subtest 'Experian validated account' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'verified',
                                     }}
                             },
                             ownership => {
