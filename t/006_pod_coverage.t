@@ -9,7 +9,6 @@ use Test::Pod::CoverageChange;
 # The number of naked (undocumented) subs should never be increased in this hashref.
 
 my $allowed_naked_packages = {
-    'BOM::Product::ContractFinder'                                => 4,
     'BOM::Product::Exception'                                     => 1,
     'BOM::Product::Types'                                         => 0,
     'BOM::Product::Categorizer'                                   => 7,

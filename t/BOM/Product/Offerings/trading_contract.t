@@ -1,0 +1,186 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Test::More;
+use Test::Exception;
+use Test::Fatal;
+use Test::FailWarnings;
+use Test::Deep;
+
+use Brands;
+use BOM::Product::Offerings::TradingContract qw(get_contracts);
+use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
+
+subtest 'general' => sub {
+    my $error = exception { get_contracts };
+    ok $error->isa('BOM::Product::Exception'), 'error is thrown';
+    is $error->error_code, 'OfferingsSymbolRequired', 'error code - OfferingsSymbolRequired';
+
+    $error = exception { get_contracts({symbol => 'R_100', landing_company_name => 'XZY'}) };
+    ok $error->isa('BOM::Product::Exception'), 'error is thrown';
+    is $error->error_code, 'OfferingsInvalidLandingCompany', 'error code - OfferingsInvalidLandingCompany';
+
+    $error = exception { get_contracts({symbol => 'XZY', landing_company_name => 'svg'}) };
+    ok $error->isa('BOM::Product::Exception'), 'error is thrown';
+    is $error->error_code, 'OfferingsInvalidSymbol', 'error code - OfferingsInvalidSymbol';
+
+};
+
+subtest 'by landing company' => sub {
+    my $args = {
+        symbol               => 'R_100',
+        landing_company_name => 'virtual',
+    };
+    subtest 'virtual' => sub {
+        my %expected = (
+            'asian'         => 1,
+            'callput'       => 13,
+            'callputequal'  => 7,
+            'digits'        => 5,
+            'endsinout'     => 3,
+            'highlowticks'  => 1,
+            'lookback'      => 2,
+            'multiplier'    => 1,
+            'reset'         => 3,
+            'runs'          => 1,
+            'staysinout'    => 3,
+            'touchnotouch'  => 5,
+            'callputspread' => 3,
+        );
+        lives_ok {
+            my $contracts = get_contracts($args);
+            my %count;
+            my %got = map { $_->{contract_category} => $count{$_->{contract_category}}++ } $contracts->@*;
+            is_deeply(\%got, \%expected, 'contracts received for virtual matched');
+        }
+        'can get contracts for virtual';
+    };
+
+    subtest 'svg' => sub {
+        $args->{landing_company_name} = 'svg';
+        my %expected = (
+            'asian'         => 1,
+            'callput'       => 13,
+            'callputequal'  => 7,
+            'digits'        => 5,
+            'endsinout'     => 3,
+            'highlowticks'  => 1,
+            'lookback'      => 2,
+            'multiplier'    => 1,
+            'reset'         => 3,
+            'runs'          => 1,
+            'staysinout'    => 3,
+            'touchnotouch'  => 5,
+            'callputspread' => 3,
+        );
+        lives_ok {
+            my $contracts = get_contracts($args);
+            my %count;
+            my %got = map { $_->{contract_category} => $count{$_->{contract_category}}++ } $contracts->@*;
+            is_deeply(\%got, \%expected, 'contracts received for svg matched');
+        }
+        'can get contracts fpr svg';
+    };
+
+    subtest 'maltainvest' => sub {
+        $args->{landing_company_name} = 'maltainvest';
+        my $error = exception { get_contracts($args) };
+        ok $error->isa('BOM::Product::Exception'), 'error is thrown';
+        is $error->error_code, 'OfferingsInvalidSymbol', 'error code - OfferingsInvalidSymbol because maltainvest has no volatility indices';
+
+        my %expected = (
+            'multiplier' => 1,
+        );
+        lives_ok {
+            $args->{symbol} = '1HZ200V';
+            my $contracts = get_contracts($args);
+            my %count;
+            my %got = map { $_->{contract_category} => $count{$_->{contract_category}}++ } $contracts->@*;
+            is_deeply(\%got, \%expected, 'contracts received for maltainvest matched');
+        }
+        'can get contracts fpr maltainvest';
+    };
+};
+
+subtest 'by app id' => sub {
+    # with virtual landing company
+    subtest 'deriv' => sub {
+        my $deriv = Brands->new(name => 'deriv');
+        my $args  = {
+            symbol => '1HZ100V',
+            brands => $deriv,
+        };
+
+        my %expected = (
+            11780 => 36,
+            1411  => 36,
+            16303 => 36,
+            16929 => 36,
+            19111 => 54,
+            19112 => 54,
+            22168 => 55,
+            23789 => 6,
+            27315 => 55,
+            29864 => 52,
+            30767 => 36,
+            30768 => 55
+        );
+        my $apps = $deriv->whitelist_apps;
+        foreach my $app_id (keys $apps->%*) {
+            next if $apps->{$app_id}->offerings eq 'none' or $apps->{$app_id}->offerings eq 'mt5';
+
+            $args->{app_id} = $app_id;
+            my $contracts = get_contracts($args);
+            is scalar($contracts->@*), $expected{$app_id}, "contracts for $app_id matched";
+        }
+    };
+    subtest 'binary' => sub {
+        my $binary = Brands->new(name => 'binary');
+        my $args   = {
+            symbol => '1HZ100V',
+            brands => $binary,
+        };
+
+        my %expected = (
+            1     => 55,
+            10    => 14,
+            1086  => 47,
+            1098  => 55,
+            11    => 47,
+            1169  => 52,
+            14473 => 55,
+            15284 => 55,
+            15437 => 47,
+            15438 => 52,
+            15481 => 52,
+            15488 => 14,
+        );
+        my $apps = $binary->whitelist_apps;
+        foreach my $app_id (keys $apps->%*) {
+            next if $apps->{$app_id}->offerings eq 'none' or $apps->{$app_id}->offerings eq 'mt5';
+
+            $args->{app_id} = $app_id;
+            my $contracts = get_contracts($args);
+            is scalar($contracts->@*), $expected{$app_id}, "contracts for $app_id matched";
+        }
+    };
+};
+
+subtest 'suspend trading' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    my $prev            = $app_config->quants->markets->suspend_buy;
+    my $disabled_market = 'forex';
+    $app_config->set({'quants.markets.suspend_buy' => [$disabled_market]});
+    my $res = exception { get_contracts({symbol => 'frxUSDJPY'}) };
+    $res->isa('BOM::Product::Exception');
+    is $res->error_code, 'OfferingsInvalidSymbol';
+    $app_config->set({'quants.markets.suspend_buy' => $prev});
+
+};
+
+done_testing();

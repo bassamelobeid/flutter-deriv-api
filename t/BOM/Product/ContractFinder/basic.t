@@ -6,7 +6,8 @@ use warnings;
 use Test::More;
 use Test::FailWarnings;
 use List::Util qw(all);
-use BOM::Product::ContractFinder;
+use BOM::Product::Offerings::TradingContract qw(get_contracts);
+use BOM::Product::ContractFinder::Basic;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
@@ -21,7 +22,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(frxUSDJPY frxAUDCAD frxXAUUSD frxXPDUSD frxEURUSD);
 
 subtest 'contract finder basic' => sub {
-    my $contracts                        = BOM::Product::ContractFinder->new->basic_contracts_for({symbol => 'frxUSDJPY'});
+    my $symbol    = 'frxUSDJPY';
+    my $contracts = BOM::Product::ContractFinder::Basic::decorate({
+        offerings             => get_contracts({symbol => $symbol}),
+        symbol                => $symbol,
+        landing_company_short => 'virtual'
+    });
     my %expected_forward_starting_params = (
         contract_category => 'callput',
         expiry_type       => 'intraday',

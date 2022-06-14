@@ -5,28 +5,33 @@ use warnings;
 
 use POSIX qw(floor);
 use Date::Utility;
-use Finance::Contract::Category;
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use Number::Closest::XS qw(find_closest_numbers_around);
-use YAML::XS qw(LoadFile);
+use Quant::Framework;
+use Cache::LRU;
 
+use BOM::MarketData qw(create_underlying);
 use BOM::Product::Contract::Strike;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 
+my $cache = Cache::LRU->new(size => 500);
+
 sub decorate {
     my $args = shift;
 
-    my ($underlying, $offerings, $now, $calendar, $lc_short) = @{$args}{'underlying', 'offerings', 'date', 'calendar', 'landing_company_short'};
+    my ($symbol, $offerings, $lc_short) = @{$args}{'symbol', 'offerings', 'landing_company_short'};
 
+    my $now                 = Date::Utility->new;
+    my $underlying          = create_underlying($symbol);
     my $exchange            = $underlying->exchange;
     my @inefficient_periods = @{$underlying->forward_inefficient_periods // []};
-    my $to_date             = $now->truncate_to_day->epoch;
+    my $calendar            = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
+    my $to_date             = $now->truncate_to_day;
     my @blackout_periods =
-        map { [Date::Utility->new($to_date + $_->{start})->time_hhmmss, Date::Utility->new($to_date + $_->{end})->time_hhmmss] } @inefficient_periods;
-    my $forward_starting_options;
+        map { [$to_date->plus_time_interval($_->{start})->time_hhmmss, $to_date->plus_time_interval($_->{end})->time_hhmmss] } @inefficient_periods;
 
     for my $o (@$offerings) {
         my $contract_category = $o->{contract_category};
@@ -34,15 +39,16 @@ sub decorate {
         my $contract_type     = $o->{contract_type};
 
         if ($o->{start_type} eq 'forward') {
-            if (defined $forward_starting_options) {
-                $o->{forward_starting_options} = $forward_starting_options;
+            my $key = join '::', ($symbol, $to_date->date);
+            if (my $options = $cache->get($key)) {
+                $o->{forward_starting_options} = $options;
             } else {
                 my @trade_dates;
                 for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
                     $date = $calendar->trade_date_after($exchange, $date) unless $calendar->trades_on($exchange, $date);
                     push @trade_dates, $date;
                 }
-                $forward_starting_options = [
+                $o->{forward_starting_options} = [
                     map { {
                             date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
                             open  => $_->{open},
@@ -51,7 +57,7 @@ sub decorate {
                         }
                         map { @{$calendar->trading_period($exchange, $_)} } @trade_dates
                 ];
-                $o->{forward_starting_options} = $forward_starting_options;
+                $cache->set($key, $o->{forward_starting_options});
             }
         }
 
@@ -124,7 +130,20 @@ sub decorate {
         }
     }
 
-    return $offerings;
+    my ($open, $close) = (0, 0);
+    if ($calendar->trades_on($exchange, $to_date)) {
+        $open  = $calendar->opening_on($exchange, $to_date)->epoch;
+        $close = $calendar->closing_on($exchange, $to_date)->epoch;
+    }
+
+    return {
+        available    => $offerings,
+        hit_count    => scalar(@$offerings),
+        spot         => $underlying->spot,
+        open         => $open,
+        close        => $close,
+        feed_license => $underlying->feed_license
+    };
 }
 
 sub _default_barrier {

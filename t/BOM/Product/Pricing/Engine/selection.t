@@ -11,7 +11,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use LandingCompany::Registry;
-use BOM::Product::ContractFinder;
+use BOM::Product::Offerings::TradingContract qw(get_contracts);
+use BOM::Product::ContractFinder::Basic;
 use BOM::Product::ContractFactory qw(produce_contract);
 use YAML::XS;
 use List::Util;
@@ -43,7 +44,15 @@ my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 subtest 'test everything' => sub {
     my $expected = YAML::XS::LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/Engine/selection_config.yml');
     foreach my $symbol (LandingCompany::Registry->by_name('svg')->basic_offerings($offerings_cfg)->values_for_key('underlying_symbol')) {
-        foreach my $ref (@{BOM::Product::ContractFinder->new->basic_contracts_for({symbol => $symbol})->{available}}) {
+        foreach my $ref (
+            @{
+                BOM::Product::ContractFinder::Basic::decorate({
+                        offerings             => get_contracts({symbol => $symbol}),
+                        symbol                => $symbol,
+                        landing_company_short => 'virtual'
+                    }
+                )->{available}})
+        {
             my (%barriers, %selected_tick);
             if ($ref->{contract_category} eq 'digits' and $ref->{contract_type} !~ /(?:odd|even)/i) {
                 %barriers = (barrier => 1);
