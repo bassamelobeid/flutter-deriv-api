@@ -1,6 +1,7 @@
 - country_code: AFG
   country_name: Afghanistan
   country_grouping: Asia
+  disabled: 1
   doc_types_list:
   - Passport
 - country_code: AGO
@@ -146,6 +147,7 @@
   - Driving Licence
 - country_code: BLR
   country_name: Belarus
+  disabled: 1
   country_grouping: Europe
   doc_types_list:
   - Driving Licence
@@ -236,6 +238,7 @@
 - country_code: CHN
   country_name: China
   country_grouping: Asia
+  disabled: 1
   doc_types_list:
   - Driving Licence
   - National Identity Card
@@ -257,6 +260,7 @@
 - country_code: COD
   country_name: Congo (The Democratic Republic of the)
   country_grouping: Africa
+  disabled: 1
   doc_types_list:
   - Passport
 - country_code: COG
@@ -604,11 +608,13 @@
 - country_code: IRN
   country_name: Iran (Islamic Republic of)
   country_grouping: Asia
+  disabled: 1
   doc_types_list:
   - Passport
 - country_code: IRQ
   country_name: Iraq
   country_grouping: Asia
+  disabled: 1
   doc_types_list:
   - Passport
 - country_code: ISL
@@ -727,6 +733,7 @@
   - Passport
 - country_code: LBY
   country_name: Libya
+  disabled: 1
   country_grouping: Africa
   doc_types_list:
   - Passport
@@ -1050,6 +1057,7 @@
 - country_code: PRK
   country_name: Korea, The Democratic People's Republic of
   country_grouping: Asia
+  disabled: 1
   doc_types_list:
   - Passport
 - country_code: PRT
@@ -1097,6 +1105,7 @@
 - country_code: RUS
   country_name: Russian Federation
   country_grouping: Europe
+  disabled: 1
   doc_types_list:
   - Driving Licence
   - National Identity Card (Internal Passport)
@@ -1231,6 +1240,7 @@
 - country_code: SYR
   country_name: Syrian Arab Republic
   country_grouping: Asia
+  disabled: 1
   doc_types_list:
   - Passport
 - country_code: TCA
