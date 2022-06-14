@@ -160,6 +160,11 @@ if ($input{kyc_email_checkbox}) {
 }
 
 if (defined $input{run_onfido_check}) {
+    unless (BOM::Config::Onfido::is_country_supported(uc($client->place_of_birth || $client->residence // ''))) {
+        print "<p class=\"notify notify--warning\">Onfido is not supported on this country.</p>";
+        code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+    }
+
     if (BOM::User::Onfido::pending_request($client->binary_user_id)) {
         print "<p class=\"notify notify--warning\">There is a pending Onfido request for this client.</p>";
         code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);

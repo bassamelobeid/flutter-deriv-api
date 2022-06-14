@@ -721,6 +721,7 @@ SQL
         proof_of_ownership_list                      => $client->proof_of_ownership->list(),
         disallow_residence_change                    => @countries_disallow_residence_change,
         onfido_pending_request                       => BOM::User::Onfido::pending_request($client->binary_user_id),
+        onfido_supported_country => BOM::Config::Onfido::is_country_supported(uc($client->place_of_birth || $client->residence // '')),
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
