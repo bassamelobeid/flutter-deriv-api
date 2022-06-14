@@ -18,6 +18,8 @@ use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Rules::Engine;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Platform::Utility qw(error_map);
+use BOM::Platform::Context qw(localize);
 
 my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_2, $mlt_client, $mf_client, $mx_client, $rule_engine) = ('CashierForwardError');
 
@@ -665,6 +667,100 @@ subtest 'uderlying action' => sub {
 
     $res = BOM::Platform::Client::CashierValidation::validate(%args, underlying_action => 'dummy');
     is $res, undef, 'Cashier validation passes for withdrawal by a PA with a dummy underlying action';
+};
+
+subtest 'validate_payment_error' => sub {
+
+    my $currency = 'BTC';
+    $cr_client_2->set_default_account($currency);
+
+    sub _cmp_deeply_validate_payment_error {
+        my ($error_code, $args, $test_name) = @_;
+
+        $args //= [];
+
+        cmp_deeply BOM::Platform::Client::CashierValidation::validate_payment_error($cr_client_2, $args->[0]),
+            $error_code
+            ? {
+            error => {
+                code              => $error_code,
+                message_to_client => localize(error_map->{$error_code}, $args->@*),
+            }}
+            : undef,
+            $test_name;
+    }
+
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    my $client_error;
+    $mocked_client->mock(validate_payment => sub { die $client_error });
+
+    my ($amount, $limit) = (0.5, 0.1);
+    my $params = [$amount, $currency, $limit];
+
+    $client_error = {
+        code   => 'WithdrawalLimit',
+        params => [$limit, $currency],
+    };
+    _cmp_deeply_validate_payment_error('CryptoWithdrawalLimitExceeded', $params, 'Returns error when withdrawal amount exceeds withdrawal limit.');
+
+    $client_error = {
+        code   => 'AmountExceedsBalance',
+        params => [$amount, $currency, $limit],
+    };
+    _cmp_deeply_validate_payment_error('CryptoWithdrawalBalanceExceeded', $params, 'Returns error when withdrawal amount exceeds client balance.');
+
+    $client_error = {
+        code              => 'UnhandledError',
+        message_to_client => "An error that is not handled here."
+    };
+    _cmp_deeply_validate_payment_error('CryptoWithdrawalError', $params, 'Returns the proper error for unknown error message.');
+
+    $mocked_client->mock(validate_payment => sub { undef });
+    _cmp_deeply_validate_payment_error(undef, $params, 'Returns undef when all validations passed.');
+
+    $mocked_client->unmock_all();
+};
+
+subtest 'check_crypto_deposit' => sub {
+
+    $cr_client_2->account('BTC');
+    $cr_client_2->residence('ID');
+    $cr_client_2->save();
+
+    my $mock_CashierValidation = Test::MockModule->new('BOM::Platform::Client::CashierValidation');
+    $mock_CashierValidation->mock(
+        get_restricted_countries => sub {
+            return ['BR'];
+        });
+    my $mock_auth = Test::MockModule->new("BOM::User::Client");
+    $mock_auth->mock(
+        fully_authenticated => sub {
+            return 0;
+        });
+
+    is BOM::Platform::Client::CashierValidation::check_crypto_deposit($cr_client_2), 0, "returns 0 when the client is not from a restricted country";
+
+    $mock_CashierValidation->mock(
+        get_restricted_countries => sub {
+            return [uc $cr_client_2->residence];
+        });
+    is BOM::Platform::Client::CashierValidation::check_crypto_deposit($cr_client_2), 1,
+        "returns 1 since the client is from a restricted country and perfomed no deposit";
+
+    my $mock_lc = Test::MockModule->new('LandingCompany');
+    $mock_lc->mock('skip_authentication', sub { 1 });
+    is BOM::Platform::Client::CashierValidation::check_crypto_deposit($cr_client_2), 0,
+        'returns zero when landing company skip_authentication flag set';
+    $mock_lc->unmock_all();
+
+    $cr_client_2->db->dbic->dbh->do("SELECT payment.add_payment_transaction("
+            . $cr_client_2->account->id
+            . ", 10, 'ctc', 'crypto_cashier', 'test', NULL, NULL, 'OK', '', NULL, 1, 1, NULL)");
+
+    is BOM::Platform::Client::CashierValidation::check_crypto_deposit($cr_client_2), 0, "deposits found, yay!";
+
+    $mock_CashierValidation->unmock_all();
+    $mock_auth->unmock_all();
 };
 
 subtest 'Cashier validation - Experimental currency' => sub {

@@ -24,9 +24,13 @@ use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 
 use BOM::Config::CurrencyConfig;
+use BOM::Platform::Utility qw(error_map create_error);
+use Log::Any qw( $log );
+use BOM::Platform::Event::Emitter;
+use BOM::Database::ClientDB;
+
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw( request localize );
-use BOM::Platform::Utility qw( error_map );
 use BOM::User::Client;
 
 # custom error codes to override the default error code CashierForwardError
@@ -388,6 +392,175 @@ sub _convert_rule_failure_to_cashier_error {
     }
 
     return 1;
+}
+
+=head2 validate_crypto_withdrawal_request
+
+Client-related validatation from a withdrwarl request
+
+Receives the following parameter:
+
+=over 4
+
+=item * C<$client> - Client object
+
+=item * C<$address> - Withdrawal address
+
+=item * C<$amount> - Withdrawal amount
+
+=item * C<$rule_engine> - Rule engine object
+
+=back
+
+Returns C<undef> in case of successful, otherwise a hashref for error details.
+
+=cut
+
+sub validate_crypto_withdrawal_request {
+    my ($client, $address, $amount, $rule_engine) = @_;
+
+    return create_error(
+        'CryptoMissingRequiredParameter',
+        details => {'field' => 'address'},
+    ) unless ($address);
+
+    return create_error(
+        'CryptoMissingRequiredParameter',
+        details => {'field' => 'amount'},
+    ) unless ($amount);
+
+    # validate withdrawal
+    my $error = validate_payment_error($client, $amount, $rule_engine);
+    return $error if $error;
+
+    return create_error('CryptoWithdrawalNotAuthenticated')
+        if check_crypto_deposit($client);
+
+    return;
+}
+
+=head2 validate_payment_error
+
+Checks if there is any error from C<BOM::User::Client::validate_payment>
+and return proper error message based on that.
+
+Receives the following parameter:
+
+=over 4
+
+=item * C<$client> - Client object
+
+=item * C<$amount> - Negative number for withdrawal amount
+
+=item * C<$rule_engine> - Rule engine object
+
+=back
+
+Returns C<undef> in case of successful, otherwise a hashref for error details.
+
+=cut
+
+sub validate_payment_error {
+    my ($client, $amount, $rule_engine) = @_;
+
+    my $currency_code = $client->default_account->currency_code;
+    my $cashier_validation_failure;
+
+    try {
+        $client->validate_payment(
+            currency     => $currency_code,
+            amount       => -1 * $amount,
+            payment_type => 'crypto_cashier',
+            rule_engine  => $rule_engine,
+        );
+    } catch ($e) {
+        $cashier_validation_failure = $e;
+    }
+
+    return undef unless $cashier_validation_failure;
+
+    if ($cashier_validation_failure->{code} eq 'WithdrawalLimit') {
+        my $limit = $cashier_validation_failure->{params}[0];
+        return create_error('CryptoWithdrawalLimitExceeded', message_params => [abs($amount), $currency_code, $limit]);
+    }
+
+    if ($cashier_validation_failure->{code} eq 'AmountExceedsBalance') {
+        my $balance = $cashier_validation_failure->{params}[2];
+        return create_error('CryptoWithdrawalBalanceExceeded', message_params => [abs($amount), $currency_code, $balance]);
+    }
+
+    if ($cashier_validation_failure->{code} eq 'WithdrawalLimitReached') {
+        my ($limit, $currency) = @{$cashier_validation_failure->{params}}[0, 1];
+        return create_error('CryptoWithdrawalMaxReached', message_params => [$limit, $currency]);
+    }
+
+    # In this case we are not handling the issue so we need
+    # to log it to identify what is happening.
+    $log->errorf("Unhandled payment validation error: %s", $cashier_validation_failure);
+    return create_error('CryptoWithdrawalError');
+}
+
+=head2 get_restricted_countries
+
+This sub will get the list of restricted countries set
+
+=cut
+
+sub get_restricted_countries {
+    return BOM::Config::Runtime->instance->app_config->payments->crypto->restricted_countries;
+}
+
+=head2 check_crypto_deposit
+
+This sub will check if the user has deposited through crypto if the client's residence is in C<restricted_countries>.
+
+=over 4
+
+=item * C<$client> - Client object
+
+=back
+
+Returns 0 in case of success, otherwise 1.
+
+=cut
+
+sub check_crypto_deposit {
+    my ($client) = @_;
+
+    my $restricted_countries = get_restricted_countries();
+    my $client_residence     = uc $client->residence;
+
+    # Perform this check only when the client is from restricted country
+    return 0 if none { uc $_ eq $client_residence } @$restricted_countries;
+
+    # since we don't run this check for authenticated clients, also skip if landing company has no KYC
+    return 0 if $client->landing_company->skip_authentication;
+
+    my $clientdb_dbic = BOM::Database::ClientDB->new({
+            client_loginid => $client->loginid,
+        })->db->dbic;
+
+    my $has_crypto_deposit = $clientdb_dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref(
+                "SELECT ctc_is_first_deposit AS is_first_deposit FROM payment.ctc_is_first_deposit(?)",
+                {Slice => {}},
+                [$client->user->bom_real_loginids]);
+        });
+
+    if ($has_crypto_deposit->{is_first_deposit} and not $client->fully_authenticated()) {
+
+        BOM::Platform::Event::Emitter::emit(
+            'crypto_withdrawal',
+            {
+                loginid => $client->loginid,
+                error   => 'no_crypto_deposit'
+            });
+
+        return 1;
+    }
+
+    return 0;
 }
 
 1;

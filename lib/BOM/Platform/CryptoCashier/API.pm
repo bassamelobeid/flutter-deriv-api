@@ -188,14 +188,6 @@ Or the result of withdrawal operation containing the following keys:
 sub withdraw {
     my ($self, $loginid, $address, $amount, $is_dry_run) = @_;
 
-    unless ($address && $amount) {
-        return create_error({
-            code              => 'CryptoMissingRequiredParameter',
-            message_to_client => localize('Missing or invalid required parameter.'),
-            details           => {field => !$address ? 'address' : 'amount'},
-        });
-    }
-
     my $result = $self->_request({
             method   => HTTP_METHODS->{POST},
             endpoint => API_ENDPOINTS->{WITHDRAW},

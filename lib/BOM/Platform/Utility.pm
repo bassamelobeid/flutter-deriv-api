@@ -11,7 +11,7 @@ use BOM::Platform::Context qw/localize/;
 use BOM::Config::Runtime;
 
 use base qw( Exporter );
-our @EXPORT_OK = qw(error_map);
+our @EXPORT_OK = qw(error_map create_error);
 
 =head1 NAME
 
@@ -244,6 +244,15 @@ sub error_map {
         TransferToOtherPA      => localize('You are not allowed to transfer to other payment agents.'),
         TransferToNonPaSibling => localize('You are not allowed to transfer to this account.'),
         ExperimentalCurrency   => localize("This currency is temporarily suspended. Please select another currency to proceed."),
+
+        # Crypto withdrawal
+        CryptoMissingRequiredParameter  => localize('Missing required parameter.'),
+        CryptoWithdrawalBalanceExceeded => localize('Withdrawal amount of [_1] [_2] exceeds your account balance of [_3] [_2].'),
+        CryptoWithdrawalError           => localize('Error validating your transaction, please try again in a few minutes.'),
+        CryptoWithdrawalLimitExceeded   => localize('Withdrawal amount of [_1] [_2] exceeds your account withdrawal limit of [_3] [_2].'),
+        CryptoWithdrawalMaxReached      =>
+            localize('You have reached the maximum withdrawal limit of [_1] [_2]. Please authenticate your account to make unlimited withdrawals.'),
+        CryptoWithdrawalNotAuthenticated => localize('Please authenticate your account to proceed with withdrawals.'),
     };
 }
 
@@ -417,6 +426,62 @@ sub rejected_identity_verification_reasons {
         'UNAVAILABLE_ISSUER' => localize("The verification status is not available, provider says: Issuer Unavailable."),
         'EXPIRED'            => localize("The document's validity has been expired."),
     };
+}
+
+=head2 create_error
+
+Creates the standard error structure.
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<$error_code> - A key from C<error_map> hash as string
+
+=item * C<%options> - List of possible options to be used in creating the error, containing the following keys:
+
+=over 4
+
+=item * C<message_params> - List of values for placeholders to pass to C<localize()>, should be arrayref if more than one value
+
+=item * C<details> - Hashref containing the details about this error in case C<details> provided in <options> parameter
+
+=back
+
+=back
+
+Returns error as hashref containing the following keys:
+
+=over 4
+
+=item * C<code> - The error code from C<error_map>
+
+=item * C<message> - The localized error message
+
+=item * C<details> - Hashref containing the exact C<details> passed in <options> parameter
+
+=back
+
+=cut
+
+sub create_error {
+    my ($error_code, %options) = @_;
+
+    my $message = error_map->{$error_code} || error_map->{UnknownError};
+
+    my @params;
+    if (my $message_params = $options{message_params}) {
+        @params = ref $message_params eq 'ARRAY' ? $message_params->@* : ($message_params);
+    }
+
+    $message = localize($message, @params);
+
+    return {
+        error => {
+            code              => $error_code,
+            message_to_client => $message,
+            $options{details} ? (details => $options{details}) : (),
+        }};
 }
 
 1;

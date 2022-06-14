@@ -210,14 +210,27 @@ sub _withdraw {
             return $c->_render_error(localize('Invalid session.'));
         }
 
-        my $amount            = $c->param('amount');
-        my $withdraw_response = $crypto_api->withdraw($client->loginid, $address, $amount, 0);
-        if ($withdraw_response->{error}) {
+        my $amount = $c->param('amount');
+
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
+        my $cashier_validation_error =
+            BOM::Platform::Client::CashierValidation::validate_crypto_withdrawal_request($client, $address, $amount, $rule_engine);
+
+        if ($cashier_validation_error) {
             $c->stash(
-                error   => $withdraw_response->{error}->{message_to_client},
+                error   => $cashier_validation_error->{error}->{message_to_client},
                 address => $address,
             );
+        } else {
+            my $withdraw_response = $crypto_api->withdraw($client->loginid, $address, $amount, 0);
+            if ($withdraw_response->{error}) {
+                $c->stash(
+                    error   => $withdraw_response->{error}->{message_to_client},
+                    address => $address,
+                );
+            }
         }
+
     }
 
     my $transaction_response = $crypto_api->transactions($client->loginid, 'withdrawal');
