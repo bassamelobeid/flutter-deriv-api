@@ -624,6 +624,8 @@ my $render_action;
 $render_action = $actions->{$view_action}->()
     if exists $actions->{$view_action} and not @errors;
 
+# No need to check if the `@batch_requests` is not empty here
+# since there is always at least one unconditional request for `currency_info`
 my $batch = BOM::Cryptocurrency::BatchAPI->new();
 $batch->add_request($_->%*) for @batch_requests;
 $batch->process();

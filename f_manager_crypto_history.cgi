@@ -108,13 +108,16 @@ my $render_client_info = sub {
             },
         }) || die $tt->error();
 
+    code_exit_BO(
+        "<p class='error'>Unable to display crypto transactions because the client's currency ($client_currency) is NOT a cryptocurrency.</p>",
+        'Error')
+        if $client_currency && !BOM::Config::CurrencyConfig::is_valid_crypto_currency($client_currency);
+
     BarEnd();
 };
 
 my $prepare_transaction = sub {
     my ($txn_type) = @_;
-
-    return undef if $client_currency && !BOM::Config::CurrencyConfig::is_valid_crypto_currency($client_currency);
 
     my $offset_param = "crypto_${txn_type}_offset";
     my $offset       = max(request()->param($offset_param) // 0, 0);
@@ -228,21 +231,23 @@ $render_client_info->();
 my @transaction_types = qw(deposit withdrawal);
 my %render_subs       = map { $_ => $prepare_transaction->($_) } @transaction_types;
 
-my $batch = BOM::Cryptocurrency::BatchAPI->new();
-$batch->add_request($_->%*) for @batch_requests;
-$batch->process();
+if (@batch_requests) {
+    my $batch = BOM::Cryptocurrency::BatchAPI->new();
+    $batch->add_request($_->%*) for @batch_requests;
+    $batch->process();
 
-my $response_bodies  = $batch->get_response_body();
-my %reprocess_result = ($response_bodies->{reprocess} ? (reprocess => $response_bodies->{reprocess}) : ());
+    my $response_bodies  = $batch->get_response_body();
+    my %reprocess_result = ($response_bodies->{reprocess} ? (reprocess => $response_bodies->{reprocess}) : ());
 
-$render_subs{$_}->(
-    $response_bodies->{$_ . '_list'}{transaction_list},
-    (
-          $_ eq 'deposit'
-        ? %reprocess_result
-        : (min_withdrawal => $response_bodies->{min_withdrawal}{minimum_amount})
-    ),
-) for @transaction_types;
+    $render_subs{$_}->(
+        $response_bodies->{$_ . '_list'}{transaction_list},
+        (
+              $_ eq 'deposit'
+            ? %reprocess_result
+            : (min_withdrawal => $response_bodies->{min_withdrawal}{minimum_amount})
+        ),
+    ) for @transaction_types;
+}
 
 code_exit_BO();
 
