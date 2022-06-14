@@ -4,7 +4,6 @@ use strict;
 use warnings;
 no indirect;
 
-use Brands;
 use Scalar::Util qw(blessed);
 use Syntax::Keyword::Try;
 use List::MoreUtils qw(none);
@@ -18,14 +17,12 @@ use BOM::User::Client;
 use Format::Util::Numbers qw/formatnumber roundcommon/;
 use Scalar::Util::Numeric qw(isint);
 
-use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Config::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Product::ContractFinder;
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
 use LandingCompany::Registry;
 use BOM::Pricing::v3::Utility;
@@ -533,78 +530,6 @@ sub get_contract_details {
     }
 
     return $response;
-}
-
-sub contracts_for {
-    my $params = shift;
-
-    my $args            = $params->{args};
-    my $symbol          = $args->{contracts_for};
-    my $currency        = $args->{currency} || 'USD';
-    my $landing_company = $args->{landing_company} // 'virtual';
-    my $product_type    = $args->{product_type};
-    my $country_code    = $params->{country_code} // '';
-
-    my $token_details = $params->{token_details};
-
-    if ($token_details and exists $token_details->{loginid}) {
-        my $client = BOM::User::Client->new({
-            loginid      => $token_details->{loginid},
-            db_operation => 'replica',
-        });
-        # override the details here since we already have a client.
-        $landing_company = $client->landing_company->short;
-        $country_code    = $client->residence;
-    }
-
-    $product_type //= LandingCompany::Registry->by_name($landing_company)->default_product_type;
-
-    #Preparing error handler;
-    my $get_invalid_symbol_error = sub {
-        BOM::Pricing::v3::Utility::create_error({
-                code              => 'InvalidSymbol',
-                message_to_client => BOM::Platform::Context::localize('There\'s no contract available for this symbol.')});
-    };
-
-    return $get_invalid_symbol_error->() unless $product_type;
-
-    my $invalid_currency = BOM::Platform::Client::CashierValidation::invalid_currency_error($currency);
-    return BOM::Pricing::v3::Utility::create_error($invalid_currency) if $invalid_currency;
-
-    my $app_id        = $params->{valid_source} // $params->{source};
-    my $app_offerings = request()->brand->get_app($app_id)->offerings();
-
-    my $finder = BOM::Product::ContractFinder->new;
-
-    my $contracts_for = $finder->basic_contracts_for({
-        symbol          => $symbol,
-        landing_company => $landing_company,
-        country_code    => $country_code,
-        app_offerings   => $app_offerings,
-    });
-
-    my $i = 0;
-    foreach my $contract (@{$contracts_for->{available}}) {
-        if (exists $contract->{payout_limit}) {
-            $contracts_for->{available}->[$i]->{payout_limit} = $contract->{payout_limit}->{$currency};
-        }
-
-        # localise contract *_display
-        if ($contracts_for->{available}->[$i]->{contract_category_display}) {
-            $contracts_for->{available}->[$i]->{contract_category_display} = localize($contracts_for->{available}->[$i]->{contract_category_display});
-        }
-
-        if ($contracts_for->{available}->[$i]->{contract_display}) {
-            $contracts_for->{available}->[$i]->{contract_display} = localize($contracts_for->{available}->[$i]->{contract_display});
-        }
-        $i++;
-    }
-
-    return $get_invalid_symbol_error->()
-        if !$contracts_for || $contracts_for->{hit_count} == 0;
-
-    $contracts_for->{'spot'} = create_underlying($symbol)->spot();
-    return $contracts_for;
 }
 
 sub _log_exception {

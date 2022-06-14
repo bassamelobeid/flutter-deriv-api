@@ -39,11 +39,6 @@ my $rpc_ct = BOM::Test::RPC::QueueClient->new();
 subtest "Request $method" => sub {
     my (%got_landing_company, $result);
 
-    $params[1]{args}{currency} = 'INVALID';
-    $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_error->error_code_is('InvalidCurrency', 'It should return correct error code if currency is invalid')
-        ->error_message_is('The provided currency INVALID is invalid.', 'It should return correct error message if currency is invalid');
-
     $params[1]{args}{currency} = 'USD';
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
 
