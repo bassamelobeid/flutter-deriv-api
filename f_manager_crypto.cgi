@@ -29,7 +29,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 use BOM::Config;
-use BOM::Cryptocurrency::Helper qw(render_message);
+use BOM::Cryptocurrency::Helper qw(render_message has_manual_credit);
 use BOM::DualControl;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
@@ -604,11 +604,20 @@ $actions->{run} = sub {
 };
 
 $actions->{reprocess_confirmation} = sub {
+
+    my $address = request()->param('address_to_reprocess');
+
+    return sub {
+        print render_message(0,
+            'Sorry, We have credit the client account manually for this address before, please contact crypto team for this case.');
+        }
+        if has_manual_credit($address, $currency, $broker);
+
     push @batch_requests, {    # Request reprocess
         id     => $view_action,
         action => 'deposit/reprocess',
         body   => {
-            address       => request()->param('address_to_reprocess'),
+            address       => $address,
             currency_code => $currency,
         },
     };

@@ -19,7 +19,7 @@ use BOM::Backoffice::Request qw( request );
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
 use BOM::Cryptocurrency::BatchAPI;
-use BOM::Cryptocurrency::Helper qw( render_message );
+use BOM::Cryptocurrency::Helper qw(render_message has_manual_credit);
 
 use constant CRYPTO_DEFAULT_TRANSACTION_COUNT => 50;
 
@@ -132,14 +132,24 @@ my $prepare_transaction = sub {
     my $reprocess_info;
     if ($txn_type eq 'deposit' && $action eq 'reprocess_address') {
         $reprocess_info->{trx_id} = request()->param('trx_id_to_reprocess');
-        push @batch_requests, {    # Request for reprocess
-            id     => 'reprocess',
-            action => 'deposit/reprocess',
-            body   => {
-                address       => request()->param('address_to_reprocess'),
-                currency_code => request()->param('trx_currency_to_reprocess'),
-            },
-        };
+        my $address  = request()->param('address_to_reprocess');
+        my $currency = request()->param('trx_currency_to_reprocess');
+
+        unless (has_manual_credit($address, $currency, $broker)) {
+
+            push @batch_requests, {    # Request for reprocess
+                id     => 'reprocess',
+                action => 'deposit/reprocess',
+                body   => {
+                    address       => $address,
+                    currency_code => $currency,
+                },
+            };
+        } else {
+
+            $reprocess_info->{manual_credit} = 1;
+        }
+
     } elsif ($txn_type eq 'withdrawal' && defined $client_currency) {
         push @batch_requests, {    # Request for minimum withdrawal
             id     => 'min_withdrawal',
@@ -184,9 +194,11 @@ my $prepare_transaction = sub {
             );
         }
 
-        if ($info{reprocess}) {
-            $reprocess_info->{result} = render_message(@{$info{reprocess}}{qw/ is_success message /});
-        }
+        $reprocess_info->{result} =
+            render_message(0, 'Sorry, We have credit the client account manually for this address before, please contact crypto team for this case.')
+            if ($reprocess_info->{manual_credit});
+
+        $reprocess_info->{result} = render_message(@{$info{reprocess}}{qw/ is_success message /}) if ($info{reprocess});
 
         my $make_pagination_url = sub {
             my ($offset_value) = @_;

@@ -6,10 +6,11 @@ no indirect;
 
 use BOM::Backoffice::Request;
 use ExchangeRates::CurrencyConverter qw(in_usd);
+use BOM::Database::ClientDB;
 
 use Exporter qw/import/;
 
-our @EXPORT_OK = qw(render_message render_currency_info);
+our @EXPORT_OK = qw(render_message render_currency_info has_manual_credit);
 
 =head2 render_message
 
@@ -67,6 +68,39 @@ sub render_currency_info {
             sweep_limit_min       => $sweep_limit_min,
             sweep_reserve_balance => $sweep_reserve_balance,
         }) || die BOM::Backoffice::Request::template()->error() . "\n";
+}
+
+=head2 has_manual_credit
+
+Check if we have credit the client account manually before or not for the passed address.
+
+=over 4
+
+=item * C<address> - The address to be prioritised
+
+=item * C<currency_code> - The currency code of the address
+
+=item * C<broker_code> - The client's broker code
+
+=back
+
+Returns 1 if has manual credit or undef otherwise
+
+=cut
+
+sub has_manual_credit {
+    my ($address, $currency_code, $broker_code) = @_;
+
+    my $clientdb_dbic = my $db = BOM::Database::ClientDB->new({broker_code => $broker_code})->db->dbic;
+
+    my $result = $clientdb_dbic->run(
+        ping => sub {
+            my $sth = $_->prepare('SELECT payment.ctc_check_address_manual_credit(?, ?)');
+            $sth->execute($address, $currency_code);
+            return $sth->fetchrow_hashref;
+        });
+
+    return $result->{ctc_check_address_manual_credit};
 }
 
 1;
