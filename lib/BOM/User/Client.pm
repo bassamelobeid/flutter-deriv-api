@@ -6704,17 +6704,15 @@ Returns,
 sub get_poi_status {
     my ($self) = @_;
 
-    # The Onfido lock must ensure `pending` status until our event stream queue is processed
-    return 'pending' if BOM::User::Onfido::pending_request($self->binary_user_id);
-
     my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
 
     my ($latest) = $self->latest_poi_by();
     $latest //= '';
 
-    my $status = 'none';
+    my $status;
     $status = $self->get_idv_status()    if $latest eq 'idv';
     $status = $self->get_onfido_status() if $latest eq 'onfido';
+    $status //= $self->get_manual_poi_status();
 
     return 'pending' if $status eq 'pending';
 
@@ -6802,11 +6800,8 @@ Returns,
 
 sub get_onfido_status {
     my ($self) = @_;
-    my $country_code = uc($self->place_of_birth || $self->residence // '');
 
-    return 'none' unless BOM::Config::Onfido::is_country_supported($country_code);
-
-    return 'pending' if BOM::User::Onfido::pending_request($self->binary_user_id);
+    return BOM::User::Onfido::maybe_pending($self) if BOM::User::Onfido::pending_request($self->binary_user_id);
 
     my $onfido = BOM::User::Onfido::get_latest_check($self);
     my ($check, $report_document_status, $report_document_sub_result) =
@@ -6815,7 +6810,7 @@ sub get_onfido_status {
     $report_document_status     //= '';
     $report_document_sub_result //= '';
 
-    return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
+    return BOM::User::Onfido::maybe_pending($self) if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
 
     # Note that `expired` would be indistinguishable from the manual `expired` status
     # but we will do some cheeky stuff to get a more accurate result. Basically,
@@ -6855,9 +6850,7 @@ sub get_manual_poi_status {
 
     my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
 
-    my $country_code = uc($self->place_of_birth || $self->residence // '');
-
-    return 'none' if BOM::Config::Onfido::is_country_supported($country_code);
+    return 'none' if $self->get_onfido_status() ne 'none' || $self->get_idv_status() ne 'none';
 
     return 'pending' if $self->documents->pending;
 
@@ -6976,19 +6969,9 @@ sub needs_poi_verification {
         return 1 if $is_required_auth && $status eq 'none';
 
         # Try to infer state from onfido results
-        my $country_code     = uc($self->place_of_birth || $self->residence // '');
-        my $onfido_supported = BOM::Config::Onfido::is_country_supported($country_code);
+        # TODO: these might be redundant now
 
-        if ($onfido_supported) {
-            my $onfido        = BOM::User::Onfido::get_latest_check($self);
-            my $poi_documents = $documents->{proof_of_identity}->{documents};
-            my ($user_applicant, $user_check, $report_document_sub_result) = @{$onfido}{qw/user_applicant user_check report_document_sub_result/};
-            $report_document_sub_result //= '';
-
-            return 1 if any { $_ eq $report_document_sub_result } qw/rejected suspected caution/;
-            return 1 if $is_required_auth and not $poi_documents and not $user_applicant;
-            return 1 if $is_required_auth and not $user_check;
-        }
+        return 1 if any { $_ eq $self->get_onfido_status() } qw/rejected suspected expired/;
     }
 
     # The age verification should be valid
@@ -7472,24 +7455,28 @@ sub poi_attempts {
     my ($self) = @_;
     my $attempts = [];
 
-    if (my $onfido_checks = BOM::User::Onfido::get_onfido_checks($self->binary_user_id, undef, 1)) {
-        for my $onfido_check ($onfido_checks->@*) {
-            my ($onfido_id, $onfido_result, $onfido_created_at) = @{$onfido_check}{qw/id result created_at/};
+    my $country_code = uc($self->place_of_birth || $self->residence // '');
 
-            $onfido_result //= '';
+    if (BOM::Config::Onfido::is_country_supported($country_code)) {
+        if (my $onfido_checks = BOM::User::Onfido::get_onfido_checks($self->binary_user_id, undef, 1)) {
+            for my $onfido_check ($onfido_checks->@*) {
+                my ($onfido_id, $onfido_result, $onfido_created_at) = @{$onfido_check}{qw/id result created_at/};
 
-            my $onfido_status = 'pending';
-            $onfido_status = 'rejected' if $onfido_result eq 'consider';
-            $onfido_status = 'verified' if $onfido_result eq 'clear';
+                $onfido_result //= '';
 
-            push $attempts->@*, {
-                id      => $onfido_id,
-                status  => $onfido_status,
-                service => 'onfido',
-                # the country for onfido is just this, not stored anywhere
-                country_code => $self->place_of_birth // $self->residence,
-                timestamp    => Date::Utility->new($onfido_created_at)->epoch,
-            };
+                my $onfido_status = 'pending';
+                $onfido_status = 'rejected' if $onfido_result eq 'consider';
+                $onfido_status = 'verified' if $onfido_result eq 'clear';
+
+                push $attempts->@*, {
+                    id      => $onfido_id,
+                    status  => $onfido_status,
+                    service => 'onfido',
+                    # the country for onfido is just this, not stored anywhere
+                    country_code => $self->place_of_birth // $self->residence,
+                    timestamp    => Date::Utility->new($onfido_created_at)->epoch,
+                };
+            }
         }
     }
 

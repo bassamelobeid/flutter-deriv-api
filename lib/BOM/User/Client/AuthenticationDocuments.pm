@@ -179,7 +179,7 @@ sub _build_uploaded {
             # If doc is in Needs Review and age_verification is true, then flag the category as pending
             # note that this is a `maybe pending` and can be cancelled some lines below outside the looping
             $documents{proof_of_identity}{is_pending} = 1
-                if $doc_status eq 'uploaded' && $category eq 'proof_of_identity' && $self->client->status->age_verification;
+                if $doc_status eq 'uploaded' && $category eq 'proof_of_identity';
 
             # only verified documents pass for expiration analysis
             next if $doc_status ne 'verified';
@@ -218,13 +218,14 @@ sub _build_uploaded {
         delete $documents{$category}->{is_expired};
     }
 
-    if (scalar(keys %documents) and exists $documents{proof_of_identity}) {
-        $documents{proof_of_identity}{is_pending} = 1 unless $self->client->status->age_verification;
-    }
+    if ($documents{proof_of_identity}) {
+        $documents{proof_of_identity}{is_pending} //= 0;
 
-    # Cancel the is_pending for an age_verified account that does not have verified expired docs
-    if ($documents{proof_of_identity}{is_pending}) {
-        $documents{proof_of_identity}{is_pending} = 0 if $self->client->status->age_verification and not $documents{proof_of_identity}{is_expired};
+        # Cancel the is_pending for an age_verified account that does not have verified expired docs
+        if ($documents{proof_of_identity}{is_pending}) {
+            $documents{proof_of_identity}{is_pending} = 0
+                if $self->client->status->age_verification and not $documents{proof_of_identity}{is_expired};
+        }
     }
 
     # set document status for authentication

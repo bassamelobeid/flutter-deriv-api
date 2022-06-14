@@ -394,14 +394,16 @@ Returns,
 =cut
 
 sub get_latest_check {
-    my $client                     = shift;
+    my $client = shift;
+
+    my $country_code               = uc($client->place_of_birth || $client->residence // '');
     my $report_document_sub_result = '';
     my $report_document_status     = '';
     my $user_check;
     my $user_applicant;
 
     try {
-        $user_applicant = get_all_user_onfido_applicant($client->binary_user_id);
+        $user_applicant = get_all_user_onfido_applicant($client->binary_user_id) if BOM::Config::Onfido::is_country_supported($country_code);
     } catch ($error) {
         $user_applicant = undef;
     }
@@ -637,7 +639,8 @@ Returns,
 =cut
 
 sub submissions_left {
-    my $client           = shift;
+    my $client = shift;
+
     my $redis            = BOM::Config::Redis::redis_events();
     my $request_per_user = $redis->get(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id) // 0;
     my $submissions_left = limit_per_user() - $request_per_user;
@@ -805,6 +808,34 @@ sub pending_request {
     my $redis = BOM::Config::Redis::redis_events();
 
     return $redis->get(ONFIDO_REQUEST_PENDING_PREFIX . $user_id);
+}
+
+=head2 maybe_pending
+
+Use this function to return the `pending` status for Onfido.
+
+Some scenarios may cancel the `pending` and would yield a `none` instead.
+
+It takes the following:
+
+=over 4
+
+=item * C<$client> - the instance of L<BOM::User::Client>
+
+=back
+
+Returns either C<pending> or C<none>
+
+=cut
+
+sub maybe_pending {
+    my ($client) = @_;
+
+    my $country_code = uc($client->place_of_birth || $client->residence // '');
+
+    return 'pending' if BOM::Config::Onfido::is_country_supported($country_code);
+
+    return 'none';
 }
 
 1;
