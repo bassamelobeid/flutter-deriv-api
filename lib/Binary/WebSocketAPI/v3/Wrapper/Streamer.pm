@@ -453,7 +453,7 @@ sub exchange_rates {
                 my ($rpc_response, $api_response, $req_storage) = @_;
                 return $api_response if $rpc_response->{error};
 
-                if ($req_storage->{args}{subcribe}) {
+                if ($req_storage->{args}{subscribe}) {
                     if ($req_storage->{id}) {
                         $api_response->{subscription}->{id} = $req_storage->{id};
                     } else {
