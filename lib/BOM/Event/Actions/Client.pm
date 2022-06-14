@@ -732,10 +732,9 @@ async sub client_verification {
 
                 # Update expiration_date and document_id of each document in DB
                 # Using corresponding values in Onfido response
-                @reports = grep { $_->result eq 'clear' } @reports;
-                foreach my $report (@reports) {
-                    next if ($report->{properties}->{document_type} eq 'live_photo');
+                @reports = grep { $_->{properties}->{document_type} ne 'live_photo' } @reports;
 
+                foreach my $report (@reports) {
                     # It seems that expiration date and document number of all documents in $report->{documents} list are similar
                     my ($expiration_date, $doc_numbers) = @{$report->{properties}}{qw(date_of_expiry document_numbers)};
 
@@ -749,12 +748,19 @@ async sub client_verification {
                             await $redis_events_write->del(ONFIDO_DOCUMENT_ID_PREFIX . $onfido_doc_id);
                             # There is a possibility that corresponding DB document of onfido document has been deleted (e.g. by BO user)
                             my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
+
                             if ($db_doc) {
-                                $db_doc->expiration_date($expiration_date);
-                                $db_doc->document_id($doc_numbers->[0]->{value});
+                                if ($report->result eq 'clear') {
+                                    $db_doc->expiration_date($expiration_date);
+                                    $db_doc->document_id($doc_numbers->[0]->{value});
+                                    $db_doc->status('verified');
+                                } else {
+                                    $db_doc->status('rejected');
+                                }
+
                                 if ($db_doc->save) {
-                                    $log->debugf('Expiration_date and document_id of document %s for client %s have been updated',
-                                        $db_doc->id, $loginid);
+                                    $log->debugf('%s document %s for client %s have been updated with Onfido info',
+                                        $db_doc->status, $db_doc->id, $loginid);
                                 }
                             }
                         }

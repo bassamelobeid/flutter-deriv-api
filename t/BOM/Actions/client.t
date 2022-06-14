@@ -88,7 +88,7 @@ my $test_user = BOM::User->create(
 );
 $test_user->add_client($test_client);
 $test_user->add_client($test_sibling);
-$test_client->place_of_birth('cn');
+$test_client->place_of_birth('co');
 $test_client->binary_user_id($test_user->id);
 $test_client->save;
 $test_sibling->binary_user_id($test_user->id);
@@ -653,6 +653,19 @@ subtest "client_verification" => sub {
     my $redis_r_write = $services->redis_replicated_write();
     my $keys          = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
 
+    my $redis_mock = Test::MockModule->new(ref($redis_r_write));
+    my $db_doc_id;
+    my $doc_key;
+    $redis_mock->mock(
+        'del',
+        sub {
+            my ($self, $key) = @_;
+            $doc_key   = $key;
+            $db_doc_id = $self->get($key)->get if $key =~ qr/^ONFIDO::DOCUMENT::ID::/;
+
+            return $redis_mock->original('del')->(@_);
+        });
+
     for my $key (@$keys) {
         $redis_r_write->del($key)->get;
     }
@@ -672,6 +685,9 @@ subtest "client_verification" => sub {
 
         $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
         is scalar @$keys, 0, 'Pending lock released';
+
+        my ($db_doc) = $test_client->find_client_authentication_document(query => [id => $db_doc_id]);
+        is $db_doc->status, 'verified', 'upload doc status is verified';
     }
     "client verification no exception";
     my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
@@ -686,6 +702,37 @@ subtest "client_verification" => sub {
             $_->selectrow_hashref('select * from users.get_onfido_reports(?::BIGINT, ?::TEXT)', undef, $test_client->user_id, $check->{id});
         });
     is($report_data->{check_id}, $check->{id}, 'report is correct');
+
+    lives_ok {
+        $redis_write->set($doc_key, $db_doc_id)->get;
+        $db_doc_id = undef;
+
+        my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+
+        $mocked_report->mock(
+            'result',
+            sub {
+                return 'consider';
+            });
+
+        BOM::Event::Actions::Client::client_verification({
+                check_url => $check->{href},
+            })->get;
+
+        my $keys = $redis_r_write->keys('*APPLICANT_CHECK_LOCK*')->get;
+        is scalar @$keys, 0, 'Lock released';
+
+        $keys = $redis_r_write->keys('ONFIDO::REQUEST::PENDING::PER::USER::*')->get;
+        is scalar @$keys, 0, 'Pending lock released';
+
+        my ($db_doc) = $test_client->find_client_authentication_document(query => [id => $db_doc_id]);
+        is $db_doc->status, 'rejected', 'upload doc status is rejected';
+
+        $mocked_report->unmock_all;
+    }
+    "client verification no exception, rejected result";
+
+    $redis_mock->unmock_all;
 
     subtest 'forged email' => sub {
         my $redis_write = $services->redis_events_write();
@@ -826,7 +873,7 @@ subtest 'client_verification after upload document himself' => sub {
         email_verified => 1,
     );
     $test_user2->add_client($test_client2);
-    $test_client2->place_of_birth('cn');
+    $test_client2->place_of_birth('br');
     $test_client2->binary_user_id($test_user2->id);
     $test_client2->save;
     my $redis_write = $services->redis_events_write();
