@@ -139,6 +139,13 @@ rpc "cashier", sub {
         if ($action eq 'deposit') {
             return $crypto_service->deposit($client->loginid);
         } elsif ($action eq 'withdraw') {
+
+            my $rule_engine = BOM::Rules::Engine->new(client => $client);
+            my $cashier_validation_error =
+                BOM::Platform::Client::CashierValidation::validate_crypto_withdrawal_request($client, $args->{address}, $args->{amount},
+                $rule_engine);
+
+            return $cashier_validation_error if ($cashier_validation_error);
             return $crypto_service->withdraw($client->loginid, $args->{address}, $args->{amount}, $is_dry_run);
         }
     }

@@ -11,6 +11,7 @@ use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);
 use BOM::Test::Helper::Utility qw(random_email_address);
+use BOM::Test::Helper::Client qw( top_up );
 use BOM::Test::RPC::QueueClient;
 use BOM::User;
 use LWP::UserAgent;
@@ -267,6 +268,9 @@ subtest 'Crypto cashier calls' => sub {
     my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
     $mock_utility->mock(is_verification_token_valid => sub { +{status => 1} });
 
+    my $mock_CashierValidation = Test::MockModule->new('BOM::Platform::Client::CashierValidation');
+    $mock_CashierValidation->mock(validate_crypto_withdrawal_request => sub { return; });
+
     for my $call_info ($calls->@*) {
         $api_response = {$call_info->{api_response}->%*};
         my $rpc_response = {($call_info->{rpc_response} // $api_response)->%*};
@@ -293,6 +297,7 @@ subtest 'Crypto cashier calls' => sub {
     }
 
     $mock_utility->unmock_all;
+    $mock_CashierValidation->unmock_all;
     $mocked_call->unmock_all;
 };
 
@@ -388,6 +393,83 @@ subtest 'api crypto_config' => sub {
     )->has_no_system_error->has_no_error->result_is_deeply($expected_result, "Correct response from redis for crypto api");
 
     $redis_write->del("cryptocurrency::crypto_config::$_") for @crypto_currency;
+
+};
+
+subtest 'Crypto withdrawal API initial validations' => sub {
+    my $new_email = random_email_address;
+
+    my $user = BOM::User->create(
+        email          => $new_email,
+        password       => BOM::User::Password::hashpw('test'),
+        email_verified => 1,
+    );
+
+    my $btc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $new_email,
+        residence   => 'BR'
+    });
+    $btc_client->account('BTC');
+    $user->add_client($btc_client);
+
+    top_up $btc_client, 'BTC', 10;
+
+    my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
+    $mock_utility->mock(is_verification_token_valid => sub { +{status => 1} });
+
+    my $args = {
+        cashier           => 'withdraw',
+        provider          => 'crypto',
+        type              => 'api',
+        address           => 'withdrawal_address',
+        amount            => 20,
+        verification_code => 'verification_code',
+    };
+
+    my $params = {
+        language => 'EN',
+        source   => 1,
+        args     => $args,
+        token    => BOM::Platform::Token::API->new->create_token($btc_client->loginid, 'test token')};
+
+    my $expected_api_error_response = {
+        error => {
+            code    => 'CryptoWithdrawalBalanceExceeded',
+            message => 'Withdrawal amount of ' . $args->{amount} . ' BTC exceeds your account balance of ' . $btc_client->account->balance . ' BTC.',
+        }};
+
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is($expected_api_error_response->{error}{code},
+        "Correct error code for withdrawal balance exceeds")
+        ->error_message_is($expected_api_error_response->{error}{message}, "Correct error message for withdrawal balance exceeds");
+
+    $args->{amount} = 2;
+
+    my $mock_CashierValidation = Test::MockModule->new('BOM::Platform::Client::CashierValidation');
+    $mock_CashierValidation->mock(
+        get_restricted_countries => sub {
+            return ['BR'];
+        });
+
+    my $mock_auth = Test::MockModule->new("BOM::User::Client");
+    $mock_auth->mock(
+        fully_authenticated => sub {
+            return 0;
+        });
+
+    $expected_api_error_response = {
+        error => {
+            code    => 'CryptoWithdrawalNotAuthenticated',
+            message => 'Please authenticate your account to proceed with withdrawals.',
+        }};
+
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is($expected_api_error_response->{error}{code},
+        "Correct error code for checking if it's client's first deposit")
+        ->error_message_is($expected_api_error_response->{error}{message}, "Correct error message for checking if it's client's first deposit");
+
+    $mock_auth->unmock_all();
+    $mock_utility->unmock_all();
+    $mock_CashierValidation->unmock_all();
 
 };
 
