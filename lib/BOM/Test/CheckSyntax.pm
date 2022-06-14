@@ -5,7 +5,6 @@ use warnings;
 
 use Exporter 'import';
 use Test::More;
-use Test::Exception;
 use Test::Vars;
 use Test::Strict;
 use Test::PerlTidy;
@@ -168,25 +167,22 @@ Test fail when new dependency detected.
 
 sub check_bom_dependency {
     my @dependency_allowed = @_;
-    # try to find package name of current repo itself
-    my @self_contain_pm = `find lib/BOM/* -maxdepth 0 -type d`;
-    @self_contain_pm = map { my $pm = $_; $pm =~ s/lib\/BOM\//BOM::/; $pm =~ s/\s//; $pm } @self_contain_pm;
-
+    my @self_contain_pm = get_self_name_space()
     # the git grep return like
     # lib/BOM/MyAffiliates.pm:   use BOM::Config;
-    # with pathspec lib it filter README and tests
+    # use pathspec "lib" to filter README and tests
     my $cmd = 'git grep -E "(use|require)\s+BOM::" lib';
     $cmd .= ' bin' if (-d 'bin');
     # also found pod of some pm has comments like
     # lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
 
     $cmd = join(' | grep -v ', $cmd, @dependency_allowed, @self_contain_pm);
-    diag("$cmd");
 
-    my $result = `$cmd`;
+    my $result = _run_command($cmd);
     ok !$result, "BOM dependency check";
     if ($result) {
         diag("new BOM module dependency detected!!!");
+        diag("please update runtime_required_repos.yml")
         diag($result);
     }
 }
@@ -291,5 +287,33 @@ sub get_pm_subs {
     # diag("get_pm_subs: $check_file" . Dumper(\%results));
     return %results ? \%results : undef;
 }
+
+sub get_self_name_space {
+    my ($repo_path) = @_;
+    my $cmd = "find lib/BOM/* -maxdepth 0";
+    $cmd = "cd $repo_path; " . $cmd if $repo_path;
+    my %self_contain_pm;
+    my @result = _run_command($cmd);
+    foreach my $pm (@result) {
+        $pm =~ s/lib\/BOM\//BOM::/;
+        $pm =~ s/[.]pm//;
+        $self_contain_pm{$pm} = 1;
+    }
+    return sort keys %self_contain_pm;
+}
+
+sub _run_command {
+    my @command = @_;
+    die "command cannot be empty!\n" unless @command;
+    my $cmd=$command[0];
+    if (@command > 1) {
+        $cmd= join(' ',@command);
+    }
+    diag("running $cmd");
+    my @result=qx/$cmd/;
+    @result = map {chomp; $_} @result;
+    return @result;
+}
+
 
 1;

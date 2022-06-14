@@ -3,6 +3,29 @@ use warnings;
 use Test::More;
 
 use BOM::Test::CheckSyntax;
+use Test::Exception;
+use Test::MockModule;
+my $mocked = Test::MockModule->new('BOM::Test::CheckSyntax');
+
+subtest 'run_command' => sub {
+throws_ok {BOM::Test::CheckSyntax::_run_command()} qr/command cannot be empty/;
+
+my @result=BOM::Test::CheckSyntax::_run_command("ls xxxx");
+ok !@result, 'empty result for wrong command';
+
+@result=BOM::Test::CheckSyntax::_run_command(qw/ls lib/);
+is_deeply \@result,[qw/await.pm BOM/],'get ls result';
+};
+
+subtest 'get_self_name_space' => sub {
+my @self_pm=BOM::Test::CheckSyntax::get_self_name_space();
+is_deeply \@self_pm,['BOM::Test'], 'check self name space for bom-test';
+
+$mocked->mock(_run_command  => sub { return qw(lib/BOM/MarketData.pm lib/BOM/DynamicSettings.pm lib/BOM/MarketData)});
+@self_pm=BOM::Test::CheckSyntax::get_self_name_space();
+is_deeply \@self_pm,[qw/BOM::DynamicSettings BOM::MarketData/], 'check self name space for mocked';
+$mocked->unmock;
+};
 
 my $file = 'lib/BOM/Test/Rudderstack/Webserver.pm';
 my $subs = BOM::Test::CheckSyntax::get_pm_subs($file);
