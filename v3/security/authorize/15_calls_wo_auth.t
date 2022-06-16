@@ -83,6 +83,16 @@ is_deeply $res->{states_list}->[0],
     };
 test_schema('states_list', $res);
 
+$res = $t->await::states_list({states_list => 'CW'});
+is $res->{msg_type}, 'states_list';
+ok $res->{states_list};
+is_deeply $res->{states_list}->[0],
+    {
+    value => '00',
+    text  => 'Curacao'
+    };
+test_schema('states_list', $res);
+
 populate_exchange_rates();
 
 ## website_status
