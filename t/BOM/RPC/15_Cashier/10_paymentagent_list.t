@@ -150,9 +150,6 @@ subtest 'paymentagent_list RPC call' => sub {
                 'paymentagent_loginid'      => $second_pa_loginid,
                 'max_withdrawal'            => 5,
                 'min_withdrawal'            => 0.002,
-                'url'                       => 'http://www.sample.com/',
-                'telephone'                 => '+12345678',
-                'supported_banks'           => '',
             },
             {
                 'phone_numbers'             => [{phone_number => '+12345678'}, {phone_number => '+76543'}],
@@ -168,9 +165,6 @@ subtest 'paymentagent_list RPC call' => sub {
                 'paymentagent_loginid'      => $first_pa_loginid,
                 'max_withdrawal'            => 2000,
                 'min_withdrawal'            => 10,
-                'url'                       => 'http://www.deriv.test/,http://www.example.com/',
-                'telephone'                 => '+12345678,+76543',
-                'supported_banks'           => 'Bank 1,Bank 2',
             },
             {
                 'phone_numbers'             => [{phone_number => '+12345678'}],
@@ -186,9 +180,6 @@ subtest 'paymentagent_list RPC call' => sub {
                 'paymentagent_loginid'      => $third_pa_loginid,
                 'max_withdrawal'            => 5,
                 'min_withdrawal'            => 0.002,
-                'url'                       => 'http://www.sample2.com/',
-                'telephone'                 => '+12345678',
-                'supported_banks'           => '',
             }]};
     $c->call_ok('paymentagent_list', $params)
         ->has_no_error->result_is_deeply($expected_result, 'If token is invalid, then the paymentagents are from broker "CR"');
@@ -217,9 +208,6 @@ subtest 'paymentagent_list RPC call' => sub {
                 'paymentagent_loginid'      => $second_pa_loginid,
                 'max_withdrawal'            => 5,
                 'min_withdrawal'            => 0.002,
-                'url'                       => 'http://www.sample.com/',
-                'telephone'                 => '+12345678',
-                'supported_banks'           => '',
             }]};
 
     $params->{args} = {
@@ -315,9 +303,6 @@ subtest 'suspend countries' => sub {
                 'paymentagent_loginid'      => $af_agent->loginid,
                 'max_withdrawal'            => 2000,
                 'min_withdrawal'            => 10,
-                'url'                       => 'http://www.sample.com/',
-                'telephone'                 => '+12345678',
-                'supported_banks'           => '',
             }
         ],
     };
@@ -343,9 +328,6 @@ subtest 'suspend countries' => sub {
                 'paymentagent_loginid'      => $af_agent->loginid,
                 'max_withdrawal'            => 2000,
                 'min_withdrawal'            => 10,
-                'url'                       => 'http://www.sample.com/',
-                'telephone'                 => '+12345678',
-                'supported_banks'           => '',
             }
         ],
     };

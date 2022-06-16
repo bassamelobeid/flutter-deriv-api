@@ -543,13 +543,8 @@ rpc "paymentagent_list",
             next;
         }
 
-        # extract the deprecated fields for backward compatibiity
-        my $detail_field   = $payment_agent->details_main_field();
-        my @url            = map { $_->{$detail_field->{urls}} } $payment_agent->urls->@*;
-        my @telephone      = map { $_->{$detail_field->{phone_numbers}} } $payment_agent->phone_numbers->@*;
-        my @supprted_banks = map { $_->{$detail_field->{supported_payment_methods}} } $payment_agent->supported_payment_methods->@*;
-
-        push @{$payment_agent_list}, {
+        push @{$payment_agent_list},
+            {
             'paymentagent_loginid'      => $loginid,
             'name'                      => $payment_agent->payment_agent_name,
             'summary'                   => $payment_agent->summary,
@@ -563,11 +558,7 @@ rpc "paymentagent_list",
             'supported_payment_methods' => $payment_agent->supported_payment_methods,
             'max_withdrawal'            => $payment_agent->max_withdrawal || $min_max->{maximum},
             'min_withdrawal'            => $payment_agent->min_withdrawal || $min_max->{minimum},
-            # deprecated fields (for backward compatibility)
-            'url'             => join(',', @url),
-            'telephone'       => join(',', @telephone),
-            'supported_banks' => join(',', @supprted_banks),
-        };
+            };
     }
     @$payment_agent_list = sort { lc($a->{name}) cmp lc($b->{name}) } @$payment_agent_list;
 
