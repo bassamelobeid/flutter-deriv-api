@@ -74,7 +74,7 @@ foreach my $symbol (keys %date_string) {
 }
 
 subtest 'realtime report generation' => sub {
-    plan tests => 11;
+    plan tests => 5;
 
     mailbox_clear();
 
@@ -139,23 +139,7 @@ subtest 'realtime report generation' => sub {
 
     my $short_code         = $fmbs[$contract_error_index]{short_code};
     my $mocked_transaction = Test::MockModule->new('BOM::Transaction');
-    my $called_count       = 0;
-    $mocked_transaction->mock(
-        'sell_expired_contracts' => sub {
-            $called_count++;
-            $mocked_transaction->mock(
-                'produce_contract',
-                sub {
-                    if ($_[0]->{shortcode} eq $short_code) {
-                        die "error";
-                    }
-                    $mocked_transaction->original('produce_contract')->(@_);
-                });
 
-            my $result = $mocked_transaction->original('sell_expired_contracts')->(@_);
-            $mocked_transaction->unmock('produce_contract');
-            return $result;
-        });
     #mock on_production to test email
     my $mocked_system = Test::MockModule->new('BOM::Config');
     $mocked_system->mock('on_production', sub { 1 });
@@ -173,7 +157,6 @@ subtest 'realtime report generation' => sub {
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
-    is($called_count, 1, 'BOM::Transaction::sell_expired_contracts called only once');
 
     my @msgs = mailbox_search(
         email   => 'x-trading-ops@deriv.com',
@@ -184,14 +167,6 @@ subtest 'realtime report generation' => sub {
     ok(@msgs, "find the email");
     my @errors = $msgs[0]{body};
     is(scalar @errors, 1, "number of contracts that have errors ");
-
-    my @is_sold = (1, 1, 0, 0, 0);
-    for my $index (0 .. $#fmbs) {
-        my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmbs[$index]{fmb_id}])->[0]
-            ->financial_market_bet_record;
-        my $is_sold = $fmb->is_sold // 0;
-        is($is_sold, $is_sold[$index], "fmb $fmbs[$index]{fmb_id} is_sold value should be $is_sold[$index]");
-    }
 
     done_testing;
 };
