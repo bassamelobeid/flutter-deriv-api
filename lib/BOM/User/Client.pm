@@ -68,6 +68,12 @@ use Carp qw(croak confess);
 
 use Log::Any qw($log);
 
+=head1 NAME
+
+BOM::User::Client
+
+=cut
+
 use constant {
     MT5_REGEX                           => qr/^MT[DR]?(?=\d+$)/,
     VIRTUAL_REGEX                       => qr/^VR/,
@@ -4971,7 +4977,7 @@ sub _p2p_order_cancelled {
 =head2 _p2p_advertiser_cancellations
 
 Returns a hashref containing:
-    
+
 =over 4
 
 =item *  C<remaining> - remaining cancellations allowed for a client
@@ -6643,6 +6649,7 @@ sub get_account_details {
     my ($self) = @_;
 
     my $exclude_until = $self->get_self_exclusion_until_date;
+    my $created_at    = $self->date_joined ? Date::Utility->new($self->date_joined)->epoch : undef;
 
     return {
         account_type         => $self->account_type,                                   # 'trading' or 'wallet'
@@ -6651,6 +6658,7 @@ sub get_account_details {
         landing_company_name => $self->landing_company->short,
         is_disabled          => $self->status->disabled ? 1 : 0,
         is_virtual           => $self->is_virtual       ? 1 : 0,
+        created_at           => $created_at,
         $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : (),
         $self->linked_accounts->%*
     };
