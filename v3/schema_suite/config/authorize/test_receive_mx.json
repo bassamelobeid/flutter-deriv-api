@@ -65,6 +65,9 @@
                      },
                      "wallet": {
                         "type": "object"
+                     },
+                     "created_at": {
+                        "type": "integer"
                      }
                   },
                   "type" : "object"

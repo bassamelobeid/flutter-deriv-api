@@ -29,8 +29,8 @@ my $app = $oauth->create_app({
     scopes  => ['read'],
     user_id => 999
 });
-my $app_id = $app->{app_id};
-my $t    = build_wsapi_test({app_id => $app_id});
+my $app_id  = $app->{app_id};
+my $t       = build_wsapi_test({app_id => $app_id});
 my ($token) = $oauth->store_access_token_only($app_id, $cr_1);
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
