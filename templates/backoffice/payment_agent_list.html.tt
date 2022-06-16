@@ -28,7 +28,7 @@ form {display: inline-block;}
         <th>Name</th>
         <th>Email</th>
         <th>Phone Number</th>
-        <th>URL</th>
+        <th>Website URL</th>
         <th>Max Withdrawal</th>
         <th>Min Withdrawal</th>
         <th>Is Listed</th>
@@ -36,7 +36,7 @@ form {display: inline-block;}
         <th>Summary</th>
         <th>Commission Deposit</th>
         <th>Commission Withdrawal</th>
-        <th>Supported Banks</th>
+        <th>Supported Payment Methods</th>
     </tr>
     <tbody>
         [% IF records.size == 0 AND selected_country != "" %]
@@ -55,8 +55,8 @@ form {display: inline-block;}
             </td>
             <td>[% records.$entry.payment_agent_name %]</td>
             <td>[% records.$entry.email %]</td>
-            <td>[% records.$entry.phone %]</td>
-            <td>[% records.$entry.url %]</td>
+            <td>[% records.$entry.phone_numbers %]</td>
+            <td>[% records.$entry.urls %]</td>
             <td>[% records.$entry.max_withdrawal %]</td>
             <td>[% records.$entry.min_withdrawal %]</td>
             <td>[% records.$entry.is_listed ? 'Yes' : 'No' %]</td>
@@ -64,7 +64,7 @@ form {display: inline-block;}
             <td>[% records.$entry.summary %]</td>
             <td>[% records.$entry.commission_deposit %]</td>
             <td>[% records.$entry.commission_withdrawal %]</td>
-            <td>[% records.$entry.supported_banks %]</td>
+            <td>[% records.$entry.supported_payment_methods %]</td>
         </tr>
     [% END %]
    </tbody>

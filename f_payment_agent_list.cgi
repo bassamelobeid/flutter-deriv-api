@@ -21,6 +21,13 @@ if ($action and $action eq 'submit') {
         broker_code  => $broker,
         currency     => $selected_currency,
     );
+
+    my $fields = BOM::User::Client::PaymentAgent::details_main_field;
+    for my $res (values %$result) {
+        for my $field (keys %$fields) {
+            $res->{$field} = join ', ', map { $_->{$fields->{$field}} } ($res->$field // [])->@*;
+        }
+    }
 }
 
 BrokerPresentation("Authorized Payment Agent List");
