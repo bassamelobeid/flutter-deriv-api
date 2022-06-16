@@ -111,7 +111,11 @@
                "wallet": {
                   "description": "Details of the Wallet account.",
                   "type": "object"
-               }
+               },
+               "created_at": {
+                  "description": "Creation time of the account as epoch.",
+                  "type": "integer"
+              }
             },
             "type" : "object",
             "additionalProperties" : false

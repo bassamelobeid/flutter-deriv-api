@@ -17,12 +17,14 @@ use LandingCompany::Registry;
 my $email       = 'dummy@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
+    date_joined => '2021-06-06 23:59:59'
 });
 $test_client->email($email);
 $test_client->save;
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
+    date_joined => '2021-06-06 23:59:59'
 });
 $test_client_disabled->email($email);
 $test_client_disabled->account('USD');
@@ -31,6 +33,7 @@ $test_client_disabled->save;
 
 my $self_excluded_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
+    date_joined => '2021-06-06 23:59:59'
 });
 $self_excluded_client->email($email);
 my $exclude_until = Date::Utility->new->epoch + 2 * 86400;
@@ -39,6 +42,7 @@ $self_excluded_client->save;
 
 my $test_client_duplicated = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
+    date_joined => '2021-06-06 23:59:59'
 });
 $test_client_duplicated->email($email);
 $test_client_duplicated->status->set('duplicate_account', 'system', 'reason');
@@ -59,6 +63,7 @@ my ($token) = $oauth->store_access_token_only(1, $test_client->loginid);
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
+    date_joined => '2021-06-06 23:59:59'
 });
 $test_client_vr->email($email);
 $test_client_vr->save;
@@ -73,6 +78,7 @@ my $c = BOM::Test::RPC::QueueClient->new();
 my $email_mx       = 'dummy_mx@binary.com';
 my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
+    date_joined => '2021-06-06 23:59:59'
 });
 $test_client_mx->email($email_mx);
 $test_client_mx->save;
@@ -87,6 +93,7 @@ my ($token_mx) = $oauth->store_access_token_only(1, $test_client_mx->loginid);
 my $email_mx_2       = 'dummy_mx_2@binary.com';
 my $test_client_mx_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
+    date_joined => '2021-06-06 23:59:59'
 });
 $test_client_mx_2->email($email_mx_2);
 $test_client_mx_2->save;
@@ -147,6 +154,7 @@ subtest $method => sub {
                 'loginid'              => $test_client->loginid,
                 'account_type'         => 'trading',
                 'trading'              => {},
+                'created_at'           => '1623023999',
             },
             {
                 'currency'             => '',
@@ -157,6 +165,7 @@ subtest $method => sub {
                 'loginid'              => $self_excluded_client->loginid,
                 'account_type'         => 'trading',
                 'trading'              => {},
+                'created_at'           => '1623023999',
             },
             {
                 'currency'             => 'USD',
@@ -166,6 +175,7 @@ subtest $method => sub {
                 'loginid'              => $test_client_disabled->loginid,
                 'account_type'         => 'trading',
                 'trading'              => {},
+                'created_at'           => '1623023999',
             },
             # Duplicated client must  not be returned
         ],
@@ -179,7 +189,7 @@ subtest $method => sub {
     is $result->{account_list}[2]->{loginid}, $test_client_disabled->loginid;
     is scalar(@{$result->{account_list}}), 3;
 
-    cmp_deeply($c->call_ok($method, $params)->has_no_error->result, $expected_result, 'result is correct');
+    cmp_deeply($result, $expected_result, 'result is correct');
 
     $test_client->account('USD');
     $test_client->save;
@@ -305,6 +315,7 @@ subtest $method => sub {
         # create wallet
         my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRDW',
+            date_joined => '2021-06-06 23:59:59'
         });
         $vr_wallet->email($email);
         $vr_wallet->set_default_account('USD');
@@ -366,6 +377,7 @@ subtest $method => sub {
                     'loginid'              => $test_client->loginid,
                     'account_type'         => 'trading',
                     'trading'              => {},
+                    'created_at'           => '1623023999'
                 },
                 {
                     'currency'             => 'USD',
@@ -386,7 +398,8 @@ subtest $method => sub {
                         payment_method => $vr_wallet->payment_method,
                         balance        => '10000.00',
                         currency       => 'USD'
-                    }
+                    },
+                    'created_at' => '1623023999'
                 },
                 {
                     'currency'             => 'USD',
@@ -407,7 +420,8 @@ subtest $method => sub {
                         balance    => '10000.00',
                         currency   => 'USD',
                         platform   => 'deriv'
-                    }
+                    },
+                    'created_at' => '1623023999'
                 },
                 {
                     'currency'             => '',
@@ -417,7 +431,8 @@ subtest $method => sub {
                     'landing_company_name' => $landing_company,
                     'loginid'              => $self_excluded_client->loginid,
                     'account_type'         => 'trading',
-                    'trading'              => {}
+                    'trading'              => {},
+                    'created_at'           => '1623023999'
                 },
                 {
                     'currency'             => 'USD',
@@ -426,7 +441,8 @@ subtest $method => sub {
                     'landing_company_name' => $landing_company,
                     'loginid'              => $test_client_disabled->loginid,
                     'account_type'         => 'trading',
-                    'trading'              => {}
+                    'trading'              => {},
+                    'created_at'           => '1623023999'
                 },
             ],
             'trading' => {
@@ -488,6 +504,7 @@ subtest $method => sub {
                     'loginid'              => $test_client->loginid,
                     'account_type'         => 'trading',
                     'trading'              => {},
+                    'created_at'           => '1623023999'
                 },
                 {
                     'currency'             => 'USD',
@@ -508,7 +525,8 @@ subtest $method => sub {
                         payment_method => $vr_wallet->payment_method,
                         balance        => '10000.00',
                         currency       => $vr_wallet->currency
-                    }
+                    },
+                    'created_at' => '1623023999'
                 },
                 {
                     'currency'             => 'USD',
@@ -529,7 +547,8 @@ subtest $method => sub {
                         balance    => '10000.00',
                         currency   => 'USD',
                         platform   => 'deriv'
-                    }
+                    },
+                    'created_at' => '1623023999'
                 },
                 {
                     'currency'             => '',
@@ -539,7 +558,8 @@ subtest $method => sub {
                     'landing_company_name' => $landing_company,
                     'loginid'              => $self_excluded_client->loginid,
                     'account_type'         => 'trading',
-                    'trading'              => {}
+                    'trading'              => {},
+                    'created_at'           => '1623023999'
                 },
                 {
                     'currency'             => 'USD',
@@ -548,7 +568,8 @@ subtest $method => sub {
                     'landing_company_name' => $landing_company,
                     'loginid'              => $test_client_disabled->loginid,
                     'account_type'         => 'trading',
-                    'trading'              => {}
+                    'trading'              => {},
+                    'created_at'           => '1623023999'
                 },
             ],
             'wallet' => {
