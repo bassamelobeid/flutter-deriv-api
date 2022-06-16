@@ -135,6 +135,20 @@ sub get_state_option {
             sort $country->all_full_names;
     }
 
+    # to avoid issues let's assume a stateless country has a default self-titled state
+
+    if (scalar @options == 1) {
+        my $countries_instance = request()->brand->countries_instance;
+        my $countries          = $countries_instance->countries;
+        my $country_name       = $countries->localized_code2country($country_code, request()->language);
+
+        push @options,
+            {
+            value => '00',
+            text  => $country_name,
+            };
+    }
+
     # Filter out some Netherlands territories
     @options = grep { $_->{value} !~ /\bSX|AW|BQ1|BQ2|BQ3|CW\b/ } @options if $country_code eq 'NL';
     # Filter out some France territories
