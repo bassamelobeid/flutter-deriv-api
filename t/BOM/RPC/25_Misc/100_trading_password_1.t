@@ -248,7 +248,8 @@ subtest 'password change with mt5 accounts' => sub {
         },
     };
 
-    $c->call_ok('mt5_password_check', $params)->has_error->error_code_is('InvalidPassword')->error_message_is('Invalid account password');
+    $c->call_ok('mt5_password_check', $params)->has_error->error_code_is('InvalidPassword')
+        ->error_message_is('Forgot your password? Please reset your password.');
 
     $params->{args}->{password} = $trading_password;
     is($c->call_ok('mt5_password_check', $params)->has_no_error->result, 1, 'mt5 account password was changed successfully');
@@ -445,7 +446,8 @@ subtest 'password reset with mt5 accounts' => sub {
     };
 
     # check that mt5 account password was also reset
-    $c->call_ok('mt5_password_check', $params)->has_error->error_code_is('InvalidPassword')->error_message_is('Invalid account password');
+    $c->call_ok('mt5_password_check', $params)->has_error->error_code_is('InvalidPassword')
+        ->error_message_is('Forgot your password? Please reset your password.');
 
     $params->{args}->{password} = $trading_password;
     is($c->call_ok('mt5_password_check', $params)->has_no_error->result, 1, 'mt5 account password was changed successfully');

@@ -395,8 +395,9 @@ subtest 'virtual deposit' => sub {
 
     $params->{args}->{from_binary} = $test_wallet_vr->loginid;
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    # note we don't have proper validation for virtual transfers, so for now this error is raised from the DB and processed by BOM::Transaction->format_error
     $c->call_ok($method, $params)->has_error('fail to deposit from an empty wallet')->error_code_is('MT5DepositError')
-        ->error_message_like(qr/The maximum amount you may transfer is/, 'Deposit from empty wallet fails.');
+        ->error_message_is('Your account balance is insufficient for this transaction.', 'Deposit from empty wallet fails.');
 
     top_up $test_wallet_vr, USD => 180;
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);

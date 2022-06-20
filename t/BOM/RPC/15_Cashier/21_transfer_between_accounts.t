@@ -1130,7 +1130,7 @@ subtest 'Transfer between virtual accounts' => sub {
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->result;
     is_deeply $result->{error},
         {
-        'message_to_client' => 'The maximum amount you may transfer is: 0.',
+        'message_to_client' => 'The sending account has insufficient funds for this transaction.',
         'code'              => 'TransferBetweenAccountsError'
         },
         'Correct error for insufficient balance';

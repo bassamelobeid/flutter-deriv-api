@@ -393,7 +393,8 @@ subtest 'validation' => sub {
 
     $params->{args}->{amount} = $limits->{USD}->{min};
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    like $result->{error}->{message_to_client}, qr/The maximum amount you may transfer is: USD 0.00/, 'Correct error message for an empty account';
+    is $result->{error}->{message_to_client}, 'This transaction cannot be done because your ' . $client_cr->loginid . ' account has zero balance.',
+        'Correct error message for an empty account';
 
     $client_cr->payment_free_gift(
         currency       => 'USD',
@@ -407,8 +408,9 @@ subtest 'validation' => sub {
 
     $params->{args}->{amount} = 10;
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code},                'TransferBetweenAccountsError',                       'Correct error code insufficient balance';
-    like $result->{error}->{message_to_client}, qr/The maximum amount you may transfer is: USD 0.00/, 'Correct error message for an empty account';
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code insufficient balance';
+    is $result->{error}->{message_to_client}, 'This transaction cannot be done because your ' . $client_cr->loginid . ' account has zero balance.',
+        'Correct error message for an empty account';
 
     $client_cr->payment_free_gift(
         currency       => 'USD',
@@ -875,7 +877,8 @@ subtest 'transfer_between_accounts' => sub {
         $params->{args}->{account_to} = $client_mf->loginid;
         $rpc_ct->call_ok('transfer_between_accounts', $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no money in account')
-            ->error_message_is('The maximum amount you may transfer is: EUR 0.00.', 'Correct error message for account with no money');
+            ->error_message_is('This transaction cannot be done because your ' . $client_mlt->loginid . ' account has zero balance.',
+            'Correct error message for account with no money');
 
         $params->{args}->{amount} = -1;
         $rpc_ct->call_ok('transfer_between_accounts', $params)
@@ -890,7 +893,8 @@ subtest 'transfer_between_accounts' => sub {
         $params->{args}->{amount} = 1;
         $rpc_ct->call_ok('transfer_between_accounts', $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
-            ->error_message_is('The maximum amount you may transfer is: EUR 0.00.', 'Correct error message for transfering invalid amount');
+            ->error_message_is('This transaction cannot be done because your ' . $client_mlt->loginid . ' account has zero balance.',
+            'Correct error message for transfering invalid amount');
     };
 
     subtest 'Transfer between mlt and mf' => sub {
@@ -1712,7 +1716,7 @@ subtest 'MT5' => sub {
         currency     => "USD",
         amount       => 180                                                            # this is the only deposit amount allowed by mock MT5
     };
-    # warn 1;
+
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('IncompatibleMt5ToMt5', 'MT5->MT5 transfer error code')
         ->error_message_is('Transfer between two MT5 accounts is not allowed.', 'MT5->MT5 transfer error message');
@@ -1732,7 +1736,7 @@ subtest 'MT5' => sub {
     #set withdrawal_locked status to make sure for Real  -> MT5 transfer is not allowed
     $test_client_btc->status->set('withdrawal_locked', 'system', 'test');
     ok $test_client_btc->status->withdrawal_locked, "Real BTC account is withdrawal_locked";
-    # warn 2.1;
+
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('WithdrawalLockedStatus', 'Correct error code')->error_message_like(
         qr/You cannot perform this action, as your account is withdrawal locked./,
@@ -1743,7 +1747,7 @@ subtest 'MT5' => sub {
     #set cashier_locked status to make sure for Real  -> MT5 transfer is not allowed
     $test_client_btc->status->set('cashier_locked', 'system', 'test');
     ok $test_client_btc->status->cashier_locked, "Real BTC account is cashier_locked";
-    # warn 3.3;
+
     $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('CashierLocked', 'Correct error code')
         ->error_message_like(
         qr/Your account cashier is locked. Please contact us for more information./,
@@ -1844,7 +1848,7 @@ subtest 'MT5' => sub {
     #set cashier locked status to make sure for MT5 -> Real transfer it is failed.
     $test_client->status->set('cashier_locked', 'system', 'test');
     ok $test_client->status->cashier_locked, "Real account is cashier_locked";
-    # warn 3.4;
+
     $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('CashierLocked', 'Correct error code')
         ->error_message_like(qr/Your account cashier is locked. Please contact us for more information./,
         'Correct error message returned because Real account is cashier_locked so no deposit/withdrawal allowed.');
@@ -1958,7 +1962,7 @@ subtest 'MT5' => sub {
 
         $rpc_ct->call_ok('transfer_between_accounts', $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'insufficient virtual balance transfer error code')
-            ->error_message_is('The maximum amount you may transfer is: 0.', 'insufficient virtual balance transfer error message');
+            ->error_message_is('Your account balance is insufficient for this transaction.', 'insufficient virtual balance transfer error message');
 
         $test_wallet_vr->payment_free_gift(
             currency => 'USD',

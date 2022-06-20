@@ -1574,12 +1574,6 @@ rpc transfer_between_accounts => sub {
     }
 
     my $err_msg = "from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]";
-
-    if ($client_from->is_virtual) {
-        return _transfer_between_accounts_error(localize("The maximum amount you may transfer is: [_1].", $client_from->default_account->balance))
-            if $amount > $client_from->default_account->balance;
-    }
-
     $rule_engine = BOM::Rules::Engine->new(client => [$client_from, $client_to]);
 
     unless ($client_from->is_virtual) {

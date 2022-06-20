@@ -146,12 +146,10 @@ sub format_error {
     }
 
     $options //= {};
-    my $message;
-    unless ($message = $options->{message}) {
-        $message = $category_message_mapping{$error_code} // $category_message_mapping{'General'};
-        my @params = ref $options->{params} eq 'ARRAY' ? @{$options->{params}} : ($options->{params});
-        $message = localize($message, @params);
-    }
+    my $message = $category_message_mapping{$error_code} // $options->{message} // $category_message_mapping{'General'};
+    my @params  = ref $options->{params} eq 'ARRAY' ? @{$options->{params}} : ($options->{params});
+    $message = localize($message, @params);
+
     $error_code = $options->{override_code} if $options->{override_code};
     $error_code = $options->{original_code} if any { ($options->{original_code} // '') eq $_ } OVERRIDE_ERROR_CODES->@*;
 

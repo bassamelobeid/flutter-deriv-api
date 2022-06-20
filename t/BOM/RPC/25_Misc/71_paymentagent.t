@@ -438,7 +438,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         $test = 'Transfer returns insufficient balance error even when dry_run is set';
         $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        like $res->{error}{message_to_client}, qr/exceeds client balance/, $test;
+        like $res->{error}{message_to_client}, qr/account has zero balance/, $test;
 
         $mock_account->redefine(balance => $testargs->{args}->{amount});
         $test = 'Transfer returns a status of 2 when dry_run is set (with mocked sufficient balance)';
@@ -505,7 +505,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         reset_transfer_testargs();
         $test = 'Transfer fails if amount exceeds client balance';
         $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        like($res->{error}{message_to_client}, qr/exceeds client balance/, $test);
+        like($res->{error}{message_to_client}, qr/account has zero balance/, $test);
 
         ##
         ## At this point in Cashier.pm, we call payment_account_transfer, so we need some funds
@@ -1122,7 +1122,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         my $balance = $Alice->default_account ? formatnumber('amount', $test_currency, $Alice_balance) : 0;
         ## Cashier.pm does some remapping to Payments.pm
-        like($res->{error}{message_to_client}, qr/Your account balance is $balance $test_currency/, $test);
+        like($res->{error}{message_to_client}, qr/account has zero balance/, $test);
         top_up $Alice, $test_currency => $MAX_DAILY_WITHDRAW_AMOUNT_WEEKDAY + 1;    ## Should work for all currencies
 
         $mock_account->mock('total_withdrawals', sub { return 54321 });
