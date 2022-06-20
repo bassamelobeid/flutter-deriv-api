@@ -76,6 +76,16 @@ sub change_password {
 
     my (@valid_logins, $res);
 
+    for (@mt5_loginids) {
+        my $group      = $self->get_group($_);
+        my $server_key = BOM::MT5::User::Async::get_trading_server_key({login => $_}, $group);
+
+        push $res->{failed_logins}->@*, $_ if $self->is_mt5_server_suspended($group, $server_key);
+    }
+
+    # We do not want to continue if one of the user trading server is suspended
+    return $res if $res->{failed_logins};
+
     my @mt5_users_get = map {
         my $login = $_;
 
@@ -102,13 +112,6 @@ sub change_password {
                 push $res->{failed_logins}->@*, $result->label unless $error_code eq 'NotFound';
             }
         })->get;
-
-    for (@valid_logins) {
-        my $group = $self->get_group($_);
-
-        my $server_key = BOM::MT5::User::Async::get_trading_server_key({login => $_}, $group);
-        die +{error_code => 'MT5Suspended'} if $self->is_mt5_server_suspended($group, $server_key);
-    }
 
     unless (@mt5_loginids) {
         $self->client->user->update_trading_password($password);
