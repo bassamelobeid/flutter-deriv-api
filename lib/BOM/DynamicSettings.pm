@@ -2,7 +2,6 @@ package BOM::DynamicSettings;
 
 use strict;
 use warnings;
-
 use Data::Compare;
 use Encode;
 use HTML::Entities;
@@ -96,6 +95,7 @@ sub save_settings {
                 . encode_entities($submitted_revision)
                 . ' New Revision '
                 . '</div>';
+
         } elsif ($submitted eq 'global') {
 
             my @settings = $app_config->dynamic_keys();

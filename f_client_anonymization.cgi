@@ -100,7 +100,8 @@ if ($transaction_type eq 'Anonymize client') {
         }
         my $dcc_error = BOM::DualControl->new({
                 staff           => $clerk,
-                transactiontype => $input->{transtype}})->validate_batch_anonymization_control_code($input->{DCcode}, [ map { join "\0" => $_->@* } $lines->@* ]);
+                transactiontype => $input->{transtype}}
+        )->validate_batch_anonymization_control_code($input->{DCcode}, [map { join "\0" => $_->@* } $lines->@*]);
         code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
     }
     if ($input->{transtype} eq 'Anonymize client') {

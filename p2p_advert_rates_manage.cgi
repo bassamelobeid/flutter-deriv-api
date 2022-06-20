@@ -16,7 +16,7 @@ use BOM::Config::Runtime;
 use BOM::Config::P2P;
 use BOM::Config::CurrencyConfig;
 use ExchangeRates::CurrencyConverter;
-use List::Util qw(any);
+use List::Util qw(any all none);
 use Scalar::Util qw(looks_like_number);
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
@@ -36,6 +36,7 @@ my $redis         = BOM::Config::Redis->redis_p2p_write;
 my $app_config    = BOM::Config::Runtime->instance->app_config();
 my $ad_config     = decode_json_utf8($app_config->payments->p2p->country_advert_config);
 my $p2p_countries = BOM::Config::P2P::available_countries();
+my $error         = "";
 
 if (request()->http_method eq 'POST' and request()->params->{save}) {
     if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}})) {
@@ -49,7 +50,20 @@ if (request()->http_method eq 'POST' and request()->params->{save}) {
             fixed_ads        => 'enabled',
             deactivate_fixed => ''
         );
+
+        # It is not possible to set both floating and fixed rates as enabled or disabled or list_only
+        # Basically we should always allow exactly one type of ad to be created
+        unless ($data->{float_ads} eq 'enabled' xor $data->{fixed_ads} eq 'enabled') {
+
+            if (all { $data->{$_} eq 'enabled' } qw/float_ads fixed_ads/) {
+                $error = 'It is not possible to set both floating and fixed rates as enabled for any country';
+            } else {
+                $error = 'It is mandatory to enable one of floating and fixed rates as enabled for each country.';
+            }
+            $data->{$_} = $ad_config->{$country}{$_} // $defaults{$_} for qw(float_ads fixed_ads);
+        }
         my %changes = map { $country . ':' . $_ => $data->{$_} }
+
             grep { $data->{$_} ne ($ad_config->{$country}->{$_} // $defaults{$_}) } qw(float_ads fixed_ads deactivate_fixed);
 
         $ad_config->{$country}{$_} = $data->{$_} for qw(float_ads fixed_ads deactivate_fixed);
@@ -62,16 +76,17 @@ if (request()->http_method eq 'POST' and request()->params->{save}) {
             $ad_config->{$country}{manual_quote_epoch} = time;
             $ad_config->{$country}{manual_quote_staff} = BOM::Backoffice::Auth0::get_staffname();
         }
-
-        code_exit_BO()
-            unless BOM::DynamicSettings::save_settings({
-                'settings' => {
-                    'payments.p2p.country_advert_config' => encode_json_utf8($ad_config),
-                    revision                             => $data->{revision}
-                },
-                'settings_in_group' => ['payments.p2p.country_advert_config'],
-                'save'              => 'global',
-            });
+        unless ($error) {
+            code_exit_BO()
+                unless BOM::DynamicSettings::save_settings({
+                    'settings' => {
+                        'payments.p2p.country_advert_config' => encode_json_utf8($ad_config),
+                        revision                             => $data->{revision}
+                    },
+                    'settings_in_group' => ['payments.p2p.country_advert_config'],
+                    'save'              => 'global',
+                });
+        }
 
         BOM::Config::Redis->redis_p2p_write->hset(ACTIVATION_KEY, %changes) if %changes;
     }
@@ -145,6 +160,7 @@ BOM::Backoffice::Request::template()->process(
         revision  => $app_config->global_revision(),
         next_cron => $next_cron->datetime,
         notices   => \@notices,
+        error     => $error,
     });
 
 code_exit_BO();

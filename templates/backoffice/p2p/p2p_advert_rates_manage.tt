@@ -2,6 +2,8 @@
      #settings_summary { display: none }
 </style>
 
+[% IF error %]<p class="error">[% error %]</p>[% END %]
+
 [% IF notices.size %]
     <p><b>The following actions will occur on the next cron run [% next_cron %]:</b></p><ul>
     [% FOR notice IN notices %]<li>[% notice %]</li>[% END %]
