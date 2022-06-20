@@ -182,6 +182,19 @@ subtest "withdraw vs Balance" => sub {
         'Withdraw more than balance';
 };
 
+subtest 'withdraw vs empty account' => sub {
+    plan tests => 1;
+    my $client = new_client('USD');
+
+    is_deeply exception { $client->validate_payment(%withdrawal, amount => -100.01) },
+        {
+        code              => 'NoBalance',
+        params            => [$client->loginid],
+        message_to_client => 'This transaction cannot be done because your ' . $client->loginid . ' account has zero balance.',
+        },
+        'Withdraw with empty account';
+};
+
 # Test for CR withdrawal limits
 subtest 'CR withdrawal' => sub {
     plan tests => 6;

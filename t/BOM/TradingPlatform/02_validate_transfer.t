@@ -184,14 +184,29 @@ subtest 'deposit' => sub {
         rule_engine => BOM::Rules::Engine->new(client => $client),
     );
 
+    my %args = (
+        action            => 'deposit',
+        amount            => 10,
+        platform_currency => 'USD',
+        account_type      => 'real',
+    );
+
     cmp_deeply(
         exception {
-            $dxtrader->validate_transfer(
-                action            => 'deposit',
-                amount            => 10,
-                platform_currency => 'USD',
-                account_type      => 'real',
-            )
+            $dxtrader->validate_transfer(%args)
+        },
+        {
+            error_code     => 'PlatformTransferError',
+            message_params => [re('account has zero balance')]
+        },
+        'zero balance'
+    );
+
+    BOM::Test::Helper::Client::top_up($client, $client->account->currency_code, 5);
+
+    cmp_deeply(
+        exception {
+            $dxtrader->validate_transfer(%args)
         },
         {
             error_code     => 'PlatformTransferError',
@@ -200,15 +215,10 @@ subtest 'deposit' => sub {
         'insufficient balance'
     );
 
-    BOM::Test::Helper::Client::top_up($client, $client->account->currency_code, 10);
+    BOM::Test::Helper::Client::top_up($client, $client->account->currency_code, 5);
 
     cmp_deeply(
-        $dxtrader->validate_transfer(
-            action            => 'deposit',
-            amount            => 10,
-            platform_currency => 'USD',
-            account_type      => 'real',
-        ),
+        $dxtrader->validate_transfer(%args),
         {
             recv_amount               => num(10),
             fee_calculated_by_percent => num(0),
@@ -222,12 +232,7 @@ subtest 'deposit' => sub {
 
     cmp_deeply(
         exception {
-            $dxtrader->validate_transfer(
-                action            => 'deposit',
-                amount            => 10,
-                platform_currency => 'EUR',
-                account_type      => 'real',
-            )
+            $dxtrader->validate_transfer(%args, platform_currency => 'EUR')
         },
         {error_code => 'PlatformTransferTemporarilyUnavailable'},
         'no exchange rate'
@@ -242,12 +247,7 @@ subtest 'deposit' => sub {
 
     cmp_deeply(
         exception {
-            $dxtrader->validate_transfer(
-                action            => 'deposit',
-                amount            => 10,
-                platform_currency => 'EUR',
-                account_type      => 'real',
-            )
+            $dxtrader->validate_transfer(%args, platform_currency => 'EUR')
         },
         {
             error_code     => 'InvalidMinAmount',
@@ -262,12 +262,7 @@ subtest 'deposit' => sub {
 
     cmp_deeply(
         exception {
-            $dxtrader->validate_transfer(
-                action            => 'deposit',
-                amount            => 10,
-                platform_currency => 'EUR',
-                account_type      => 'real',
-            )
+            $dxtrader->validate_transfer(%args, platform_currency => 'EUR')
         },
         {
             error_code     => 'InvalidMaxAmount',
@@ -279,12 +274,7 @@ subtest 'deposit' => sub {
     $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":100}}'});
 
     cmp_deeply(
-        $dxtrader->validate_transfer(
-            action            => 'deposit',
-            amount            => 10,
-            platform_currency => 'EUR',
-            account_type      => 'real',
-        ),
+        $dxtrader->validate_transfer(%args, platform_currency => 'EUR'),
         {
             recv_amount               => num(4),
             fee_calculated_by_percent => num(2),
