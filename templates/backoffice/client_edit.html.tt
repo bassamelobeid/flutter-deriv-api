@@ -647,6 +647,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                     <th>Uploaded At</th>
                     <th>Documents</th>
                     <th>Details</th>
+                    <th>Actions</th>
                 </tr>
                 [% FOR poo IN proof_of_ownership_list %]
                     <tr>
@@ -675,6 +676,18 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                                     <li> ► <b>[% key %]:</b> [% poo.payment_method_details.$key %]</li>
                                 [% END %]
                                 </ul>
+                            [% END %]
+                        </td>
+                        <td>
+                            [% IF poo.status != 'pending' %]
+                                <button class="btn btn--primary" name="verify_proof_of_ownership" value="[% poo.id %]">
+                                    Verify
+                                </button>
+                                <button class="btn btn--secondary" name="reject_proof_of_ownership" value="[% poo.id %]">
+                                    Reject
+                                </button>
+                            [% ELSE %]
+                                <i>Waiting for upload</i>
                             [% END %]
                         </td>
                     </tr>
@@ -1090,7 +1103,11 @@ function kyc_reason_changed() {
         const id = link.getAttribute('data-poo-doc-id');
         const doclink = document.querySelector('[data-document-id="' + id + '"]');
 
-        link.innerHTML = doclink.innerHTML;
-        link.href = doclink.getAttribute('href');
+        if (doclink) {
+            link.innerHTML = doclink.innerHTML;
+            link.href = doclink.getAttribute('href');
+        } else {
+            link.parentNode.removeChild(link); // doc is still uploading or some error occured on the upload process
+        }
     }); 
 </script>

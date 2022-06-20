@@ -309,6 +309,24 @@ if ($broker eq 'MF') {
     }
 }
 
+if ($input{reject_proof_of_ownership}) {
+    try {
+        $client->proof_of_ownership->reject({id => $input{reject_proof_of_ownership}});
+    } catch ($e) {
+        print qq[<p class="notify notify--warning">Could not reject Proof of Ownership: $e.</p>];
+        code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+    }
+}
+
+if ($input{verify_proof_of_ownership}) {
+    try {
+        $client->proof_of_ownership->verify({id => $input{verify_proof_of_ownership}});
+    } catch ($e) {
+        print qq[<p class="notify notify--warning">Could not verify Proof of Ownership: $e.</p>];
+        code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+    }
+}
+
 if ($input{request_poo}) {
     my $poo_payment_method            = trim($input{poo_payment_method})            // '';
     my $poo_payment_method_identifier = trim($input{poo_payment_method_identifier}) // '';
