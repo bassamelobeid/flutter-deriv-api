@@ -144,9 +144,9 @@ subtest 'Proof of ownership' => sub {
                 payment_method_identifier => '1234**9999',
             }
         ],
-        status => 'pending',
+        status => 'none',
         },
-        'expected result for pending poo';
+        'expected result for after adding a poo request';
     cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, ['ownership'], 'expected needs verification for pending poo';
 
     # start uploading
@@ -187,10 +187,47 @@ subtest 'Proof of ownership' => sub {
     cmp_deeply $res->{get_account_status}->{authentication}->{ownership},
         {
         requests => [],
-        status   => 'none',
+        status   => 'pending',
         },
-        'expected poo result for already uploaded poo';
-    cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [], 'expected needs verification for uploaded poo';
+        'expected poo result for uploaded poo';
+    cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [], 'does not need verification';
+
+    # reject
+
+    $t->await::authorize({authorize => $token});
+    $client->proof_of_ownership->reject($poo);
+    $client->proof_of_ownership->_clear_full_list();
+    $res = $t->await::get_account_status({get_account_status => 1});
+    test_schema('get_account_status', $res);
+    cmp_deeply $res->{get_account_status}->{authentication}->{ownership},
+        {
+        requests => [{
+                id                        => re('\d+'),
+                creation_time             => re('.+'),
+                payment_method            => 'VISA',
+                payment_method_identifier => '1234**9999',
+            }
+        ],
+        status => 'rejected',
+        },
+        'expected poo result for rejected poo';
+    cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [qw/ownership/], 'expected needs verification for uploaded poo';
+
+    # verify
+
+    $t->await::authorize({authorize => $token});
+    $client->proof_of_ownership->verify($poo);
+    $client->proof_of_ownership->_clear_full_list();
+    $res = $t->await::get_account_status({get_account_status => 1});
+    test_schema('get_account_status', $res);
+    cmp_deeply $res->{get_account_status}->{authentication}->{ownership},
+        {
+        requests => [],
+        status   => 'verified',
+        },
+        'expected poo result for verified poo';
+    cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [], 'verified poo does not need verification';
+
 };
 
 subtest 'Onfido status with pending flag' => sub {
