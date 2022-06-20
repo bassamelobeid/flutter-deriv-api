@@ -192,9 +192,8 @@ rpc "buy",
     try {
         if (my $err = $trx->buy) {
             $error = BOM::RPC::v3::Utility::create_error({
-                code              => $err->get_type,
-                message_to_client => $err->{-message_to_client},
-            });
+                    code              => $err->get_type,
+                    message_to_client => $err->{-message_to_client}});
         }
     } catch ($exception) {
         my $message_to_client;
