@@ -22,7 +22,7 @@ my $cache = Cache::LRU->new(size => 500);
 sub decorate {
     my $args = shift;
 
-    my ($symbol, $offerings, $lc_short) = @{$args}{'symbol', 'offerings', 'landing_company_short'};
+    my ($symbol, $offerings, $lc_short) = @{$args}{'symbol', 'offerings', 'landing_company_name'};
 
     my $now                 = Date::Utility->new;
     my $underlying          = create_underlying($symbol);
