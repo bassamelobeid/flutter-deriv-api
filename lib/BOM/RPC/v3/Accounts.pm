@@ -1087,7 +1087,7 @@ sub _get_authentication {
     # Each key from the authentication object will be filled up independently by an assembler method.
     # The `needs_verification` array can be filled with `identity` and/or `document`, there is a method for each one.
     my $documents = $client->documents->uploaded();
-    my $poo_list  = $client->proof_of_ownership->list({status => 'pending'});
+    my $poo_list  = $client->proof_of_ownership->full_list();
     my $args      = {
         client    => $client,
         documents => $documents,
@@ -1106,7 +1106,7 @@ sub _get_authentication {
     my %needs_verification_hash;
     $needs_verification_hash{identity}  = 1 if $client->needs_poi_verification($documents, $poi_status, $args{is_verification_required});
     $needs_verification_hash{document}  = 1 if $client->needs_poa_verification($documents, $poa_status, $args{is_verification_required});
-    $needs_verification_hash{ownership} = 1 if $client->proof_of_ownership->needs_verification();
+    $needs_verification_hash{ownership} = 1 if $client->proof_of_ownership->needs_verification($poo_list);
     # Craft the `needs_verification` array
     $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
     # Craft the `attempts` object
@@ -1124,7 +1124,7 @@ It takes the following named params:
 
 =item * C<client> - a L<BOM::User::Client> the client itself
 
-=item * C<poo_list> - the POO list that belongs to the client itself
+=item * C<poo_list> - the POO list that belongs to the client itself and needs to be fulfilled
 
 =back
 
@@ -1144,7 +1144,8 @@ sub _get_authentication_poo {
         requests => [
             map {
                 { %$_{qw/id payment_method payment_method_identifier creation_time/} }
-            } $poo_list->@*
+                }
+                grep { $_->{status} eq 'pending' || $_->{status} eq 'rejected'; } $poo_list->@*
         ],
     };
 }

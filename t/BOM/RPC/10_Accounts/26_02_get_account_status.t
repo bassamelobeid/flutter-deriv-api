@@ -350,7 +350,7 @@ subtest 'Proof of Ownership' => sub {
 
     cmp_deeply $result->{authentication}->{ownership},
         {
-        status   => 'pending',
+        status   => 'none',
         requests => [{
                 payment_method            => 'VISA',
                 payment_method_identifier => '99999',
@@ -386,12 +386,190 @@ subtest 'Proof of Ownership' => sub {
 
     cmp_deeply $result->{authentication}->{ownership},
         {
-        status   => 'none',
+        status   => 'pending',
         requests => [],
         },
         'Expected POO after fulfilling';
 
     cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate';
+
+    $client->proof_of_ownership->reject($poo);
+    $client->proof_of_ownership->_clear_full_list();
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'rejected',
+        requests => [{
+                payment_method            => 'VISA',
+                payment_method_identifier => '99999',
+                id                        => re('\d+'),
+                creation_time             => re('.+'),
+            }
+        ],
+        },
+        'Expected POO after rejecting';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Needs verification';
+
+    $file_id = upload(
+        $client,
+        {
+            document_id => 222,
+            checksum    => 'heyyou'
+        });
+
+    ok $file_id, 'There is a document uploaded';
+
+    $poo = $client->proof_of_ownership->fulfill({
+            id                     => $poo->{id},
+            payment_method_details => {
+                name    => 'EL CARPINCHO',
+                expdate => '12/28'
+            },
+            client_authentication_document_id => $file_id,
+        });
+
+    $client->proof_of_ownership->_clear_full_list();
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'pending',
+        requests => [],
+        },
+        'Expected POO after fulfilling again';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate (pending)';
+
+    $client->proof_of_ownership->verify($poo);
+    $client->proof_of_ownership->_clear_full_list();
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'verified',
+        requests => [],
+        },
+        'Expected POO after verifying';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [], 'Does not need verification';
+
+    # after some time new poo is requested
+    $poo = $client->proof_of_ownership->create({
+        payment_method            => 'VISA',
+        payment_method_identifier => '12345'
+    });
+
+    $client->proof_of_ownership->_clear_full_list();
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'none',
+        requests => [{
+                payment_method            => 'VISA',
+                payment_method_identifier => '12345',
+                id                        => re('\d+'),
+                creation_time             => re('.+'),
+            }
+        ],
+        },
+        'Expected POO result when pending POO';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'POO needed';
+
+    $file_id = upload(
+        $client,
+        {
+            document_id => 333,
+            checksum    => 'donotrepeat'
+        });
+
+    ok $file_id, 'There is a document uploaded';
+
+    $poo = $client->proof_of_ownership->fulfill({
+            id                     => $poo->{id},
+            payment_method_details => {
+                name    => 'LA CAPYBARA',
+                expdate => '12/12'
+            },
+            client_authentication_document_id => $file_id,
+        });
+
+    $client->proof_of_ownership->_clear_full_list();
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'pending',
+        requests => [],
+        },
+        'Expected POO after fulfilling again';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate (pending)';
+
+    $client->proof_of_ownership->reject($poo);
+    $client->proof_of_ownership->_clear_full_list();
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'rejected',
+        requests => [{
+                payment_method            => 'VISA',
+                payment_method_identifier => '12345',
+                id                        => re('\d+'),
+                creation_time             => re('.+'),
+            }
+        ],
+        },
+        'Expected POO after rejecting';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [qw/ownership/], 'Needs verification';
+
+    $file_id = upload(
+        $client,
+        {
+            document_id => 444,
+            checksum    => 'anotherone'
+        });
+
+    ok $file_id, 'There is a document uploaded';
+
+    $poo = $client->proof_of_ownership->fulfill({
+            id                     => $poo->{id},
+            payment_method_details => {
+                name    => 'LA CAPYBARA',
+                expdate => '12/13'
+            },
+            client_authentication_document_id => $file_id,
+        });
+
+    $client->proof_of_ownership->_clear_full_list();
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'pending',
+        requests => [],
+        },
+        'Expected POO after fulfilling again';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate (pending)';
+
+    $client->proof_of_ownership->verify($poo);
+    $client->proof_of_ownership->_clear_full_list();
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'verified',
+        requests => [],
+        },
+        'Expected POO after verifying';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [], 'Does not need verification';
 };
 
 subtest 'backtest for Onfido disabled country' => sub {
