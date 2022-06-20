@@ -565,8 +565,10 @@ Returns undef on success, dies on error.
 sub change_platform_passwords {
     my ($password, $type, $params) = @_;
 
-    my $client      = $params->{client};
-    my $brand       = request()->brand;
+    my $client     = $params->{client};
+    my $brand      = request()->brand;
+    my $brand_name = ($brand->name eq 'deriv' ? 'DMT5' : 'MT5');
+
     my $contact_url = $brand->contact_url({
             source   => $params->{source},
             language => $params->{language}});
@@ -588,8 +590,7 @@ sub change_platform_passwords {
 
     if ($failed_logins) {
 
-        $error_message =
-            localize("Due to a network issue, we couldn't update the password for some of your accounts. Please check your email for more details.");
+        $error_message = localize("Due to a network issue, we couldn't update your $brand_name password. Please check your email for more details");
 
         send_email({
                 to            => $client->email,

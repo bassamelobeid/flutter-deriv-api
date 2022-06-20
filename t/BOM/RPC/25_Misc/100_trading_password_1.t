@@ -269,8 +269,7 @@ subtest 'password change with mt5 accounts' => sub {
     $params->{args}->{new_password} = 'Xyz12345';
     $params->{args}->{platform}     = 'mt5';
     $c->call_ok($method, $params)
-        ->has_error->error_message_is(
-        "Due to a network issue, we couldn't update the password for some of your accounts. Please check your email for more details.",
+        ->has_error->error_message_is("Due to a network issue, we couldn't update your MT5 password. Please check your email for more details",
         'error message for single failed login');
 
     cmp_deeply(
@@ -305,8 +304,7 @@ subtest 'password change with mt5 accounts' => sub {
     $params->{args}->{new_password} = 'Hello1234!@';
 
     $c->call_ok($method, $params)
-        ->has_error->error_message_is(
-        "Due to a network issue, we couldn't update the password for some of your accounts. Please check your email for more details.",
+        ->has_error->error_message_is("Due to a network issue, we couldn't update your MT5 password. Please check your email for more details",
         'error message for multiple failed logins');
 
     cmp_deeply(
@@ -473,8 +471,7 @@ subtest 'password reset with mt5 accounts' => sub {
     # only able to change demo account which is in demo\p01_ts01\financial\svg_std_usd
     # password change fails for real account which is in suspended server real\p01_ts03\synthetic\svg_std_usd\01
     $c->call_ok($method, $params)->has_error->error_code_is('PlatformPasswordChangeError')
-        ->error_message_is(
-        'Due to a network issue, we couldn\'t update the password for some of your accounts. Please check your email for more details.');
+        ->error_message_is("Due to a network issue, we couldn't update your MT5 password. Please check your email for more details");
 
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 

@@ -100,8 +100,7 @@ subtest 'dxtrade' => sub {
     $params->{args}{old_password} = '1234Abcd';
     $params->{args}{new_password} = 'Abcd1234';
     $c->call_ok('trading_platform_password_change', $params)
-        ->has_error->error_message_is(
-        "Due to a network issue, we couldn't update the password for some of your accounts. Please check your email for more details.",
+        ->has_error->error_message_is("Due to a network issue, we couldn't update your MT5 password. Please check your email for more details",
         'error message for failed dx password change');
 
     ok BOM::User::Password::checkpw('1234Abcd', $client->user->dx_trading_password), 'dxtrade trading password was not changed';
