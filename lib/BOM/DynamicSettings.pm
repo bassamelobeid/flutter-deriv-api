@@ -45,11 +45,31 @@ use constant AUTHORISATIONS => {
     payment_agents   => ['IT'],
 };
 
-sub textify_obj {
+sub _textify_obj {
     my $type  = shift;
     my $value = shift;
     return ($type eq 'ArrayRef') ? join(',', @$value) : $value;
 }
+
+=head2 save_settings
+
+Store the given settings.
+
+It expects a HASHREF with the following attributes.
+
+=over 4
+
+=item * C<settings> - A HASHREF.
+
+=item * C<save> - A STRING with the submitted value.
+
+=item * C<settings_in_group> - A HASHREF.
+
+=back
+
+It returns C<1> if stored settings successfully or C<0> otherwise.
+
+=cut
 
 sub save_settings {
     my $args              = shift;
@@ -158,6 +178,12 @@ sub save_settings {
     return $success;
 }
 
+=head2 generate_settings_branch
+
+Builds dynamic settings structure to be used in templates.
+
+=cut
+
 sub generate_settings_branch {
     my $args              = shift;
     my $settings          = $args->{settings};
@@ -179,8 +205,8 @@ sub generate_settings_branch {
         my $value       = $app_config->get($ds);
         my $key_type    = $app_config->get_key_type($ds);
 
-        my $default_text = textify_obj($data_type, $default);
-        my $value_text   = textify_obj($data_type, $value);
+        my $default_text = _textify_obj($data_type, $default);
+        my $value_text   = _textify_obj($data_type, $value);
 
         #push it in right namespace
         my $space      = $categories;
@@ -213,7 +239,12 @@ sub generate_settings_branch {
     };
 }
 
-#Contains the grouping of chronicle variables for displaying it on the Backoffice.
+=head2 get_settings_by_group
+
+Contains the grouping of chronicle variables for displaying it on the Backoffice.
+
+=cut 
+
 sub get_settings_by_group {
     my $group          = shift;
     my $group_settings = {
@@ -266,7 +297,6 @@ sub get_settings_by_group {
                 system.mt5.suspend.real.p02_ts02.deposits
                 system.mt5.suspend.real.p02_ts02.withdrawals
                 system.suspend.payout_freezing_funds
-                system.suspend.doughflow_deriv_sportsbooks
                 system.suspend.universal_password
                 system.dxtrade.suspend.all
                 system.dxtrade.http_proxy.demo
