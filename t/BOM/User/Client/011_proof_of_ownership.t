@@ -14,8 +14,8 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 isa_ok $client->proof_of_ownership, 'BOM::User::Client::ProofOfOwnership', 'Expected reference to POO';
 
-my ($poo,     $args);
-my ($file_id, $file_id2);
+my ($poo, $args);
+my ($file_id, $file_id2, $file_id3);
 
 subtest 'Create POO' => sub {
     $args = {
@@ -268,11 +268,11 @@ subtest 'Full List' => sub {
         'Expected full list of POOs retrieved (after cache flush)';
 };
 
-subtest 'status and needs needs_verification' => sub {
+subtest 'status and needs_verification' => sub {
     is $client->proof_of_ownership->status, 'pending', 'Pending POO status';
-    ok $client->proof_of_ownership->needs_verification, 'POO needs verification';
+    ok !$client->proof_of_ownership->needs_verification, 'POO does not need verification (pending status)';
 
-    my $file_id3 = upload(
+    $file_id3 = upload(
         $client,
         {
             document_id => 890,
@@ -293,11 +293,123 @@ subtest 'status and needs needs_verification' => sub {
             client_authentication_document_id => $file_id3,
         });
 
-    is $client->proof_of_ownership->status, 'none', 'All the POOs have been uploaded';
-    ok !$client->proof_of_ownership->needs_verification, 'No need for POO verification';
+    is $client->proof_of_ownership->status, 'pending', 'All the POOs have been uploaded';
+    ok !$client->proof_of_ownership->needs_verification, 'Does not need POO (pending)';
 
     is $client->proof_of_ownership->status([]), 'none', 'None status with empty list provided';
-    is $client->proof_of_ownership->status([{status => 'pending'}]), 'pending', 'Pending status with pending item provided';
+    is $client->proof_of_ownership->status([{status => 'pending'}]), 'none', 'None status with pending item provided';
+    is $client->proof_of_ownership->status([{status => 'pending'}, {status => 'verified'}]),  'none',     'None, an upload is due';
+    is $client->proof_of_ownership->status([{status => 'uploaded'}, {status => 'verified'}]), 'pending',  'pending of review';
+    is $client->proof_of_ownership->status([{status => 'pending'}, {status => 'rejected'}]),  'rejected', 'Rejected';
+    is $client->proof_of_ownership->status([{status => 'rejected'}, {status => 'rejected'}]), 'rejected', 'all of them are rejected';
+    is $client->proof_of_ownership->status([{status => 'verified'}, {status => 'verified'}]), 'verified', 'all of them are verified';
+
+    is $client->proof_of_ownership->needs_verification([]), 0, 'Not needed';
+    is $client->proof_of_ownership->needs_verification([{status => 'pending'}]), 1, 'Needed';
+    is $client->proof_of_ownership->needs_verification([{status => 'pending'}, {status => 'verified'}]), 1, 'Needed';
+    is !$client->proof_of_ownership->needs_verification([{status => 'uploaded'}, {status => 'verified'}]), 1, 'Does not need POO (pending)';
+    is $client->proof_of_ownership->needs_verification([{status => 'pending'}, {status => 'rejected'}]),  1, 'Needed';
+    is $client->proof_of_ownership->needs_verification([{status => 'rejected'}, {status => 'rejected'}]), 1, 'Needed';
+    is $client->proof_of_ownership->needs_verification([{status => 'verified'}, {status => 'verified'}]), 0, 'Verified';
+};
+
+subtest 'verify and reject' => sub {
+    $poo = $client->proof_of_ownership->verify({
+        id => $poo->{id},
+    });
+
+    cmp_deeply $poo,
+        {
+        creation_time             => re('.+'),
+        status                    => 'verified',
+        uploaded_time             => re('.+'),
+        payment_method_details    => undef,
+        client_loginid            => $client->loginid,
+        id                        => re('\d+'),
+        payment_method            => 'Skrill',
+        payment_method_identifier => '999',
+        documents                 => [$file_id3],
+        payment_method_details    => {
+            name    => 'EL CARPINCHO',
+            expdate => '12/28'
+        },
+        },
+        'Expected updated POO';
+
+    my ($doc) = $client->find_client_authentication_document(query => [id => $file_id3]);
+
+    # flush the cache
+    $client->proof_of_ownership->_clear_full_list();
+    is $doc->status, 'verified', 'Document is verified too';
+    is $client->proof_of_ownership->status, 'pending', 'Pending POO status';
+    ok !$client->proof_of_ownership->needs_verification, 'POO does not need verification (pending status)';
+
+    my $file_id4 = upload(
+        $client,
+        {
+            document_id => 999,
+            checksum    => 'heyheyhey'
+        });
+
+    ok $file_id4, 'There is a document uploaded';
+
+    # flush the cache
+    $client->proof_of_ownership->_clear_full_list();
+
+    $poo = $client->proof_of_ownership->fulfill({
+            id                     => $poo->{id},
+            payment_method_details => {
+                name    => 'EL CARPINCHO',
+                expdate => '12/28'
+            },
+            client_authentication_document_id => $file_id4,
+        });
+    $poo = $client->proof_of_ownership->reject({
+        id => $poo->{id},
+    });
+
+    cmp_deeply $poo,
+        {
+        creation_time             => re('.+'),
+        status                    => 'rejected',
+        uploaded_time             => re('.+'),
+        payment_method_details    => undef,
+        client_loginid            => $client->loginid,
+        id                        => re('\d+'),
+        payment_method            => 'Skrill',
+        payment_method_identifier => '999',
+        documents                 => [$file_id3, $file_id4],
+        payment_method_details    => {
+            name    => 'EL CARPINCHO',
+            expdate => '12/28'
+        },
+        },
+        'Expected updated POO';
+
+    ($doc) = $client->find_client_authentication_document(query => [id => $file_id4]);
+    is $doc->status, 'rejected', 'new document got rejected status';
+
+    ($doc) = $client->find_client_authentication_document(query => [id => $file_id3]);
+    is $doc->status, 'verified', 'old document status still verified (must be manually amended by staff if needed)';
+
+    # flush the cache
+    $client->proof_of_ownership->_clear_full_list();
+    my $list = $client->proof_of_ownership->full_list();
+
+    is $client->proof_of_ownership->status, 'rejected', 'Rejected POO status';
+    ok $client->proof_of_ownership->needs_verification, 'POO needs verification';
+
+    $client->proof_of_ownership->reject($_) for $list->@*;
+    $client->proof_of_ownership->_clear_full_list();
+
+    is $client->proof_of_ownership->status, 'rejected', 'rejected POO status';
+    ok $client->proof_of_ownership->needs_verification, 'POO needs verification';
+
+    $client->proof_of_ownership->verify($_) for $list->@*;
+    $client->proof_of_ownership->_clear_full_list();
+
+    is $client->proof_of_ownership->status, 'verified', 'verified POO status';
+    ok !$client->proof_of_ownership->needs_verification, 'POO does not verification';
 };
 
 sub upload {

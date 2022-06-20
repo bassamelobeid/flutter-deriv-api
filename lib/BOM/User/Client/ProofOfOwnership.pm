@@ -5,7 +5,7 @@ use warnings;
 use Moo;
 
 use JSON::MaybeXS qw(encode_json decode_json);
-use List::Util qw(any);
+use List::Util qw(any all);
 
 =head1 NAME
 
@@ -183,19 +183,45 @@ sub _normalize {
 
 Returns a flag which determines whether the client requires POO verification.
 
+Is not needed when current status is: I<verified> or I<pending> or empty POO list.
+
+A list can be optionally passed to avoid DB hit.
+
 =cut
 
 sub needs_verification {
-    my ($self) = shift;
+    my ($self, $list) = @_;
 
-    return $self->status eq 'pending' ? 1 : 0;
+    $list //= $self->full_list();
+
+    my $status = $self->status($list);
+
+    return 0 unless @$list;
+
+    return 0 if $status eq 'pending';
+
+    return 0 if $status eq 'verified';
+
+    return 1;
 }
 
 =head2 status
 
 Get the current POO status of the client.
 
-Could be: I<pending> or I<none>
+Could be: I<pending>, I<none>, I<rejected> or I<verified>
+
+=over 4
+
+=item * I<pending>: the client has at least one POO pending of review
+
+=item * I<none>: nothing has been uploaded
+
+=item * I<verified>: all of the POOs were verified
+
+=item * I<rejected>: one of the POOs were rejected
+
+=back
 
 A list can be optionally passed to avoid DB hit.
 
@@ -206,9 +232,78 @@ sub status {
 
     $list //= $self->full_list();
 
-    return 'pending' if any { $_->{status} eq 'pending' } $list->@*;
+    return 'none' unless @$list;
+
+    return 'verified' if all { $_->{status} eq 'verified' } $list->@*;
+
+    return 'rejected' if any { $_->{status} eq 'rejected' } $list->@*;
+
+    # this might cause head scratching:
+    # the db poo `pending` status means the client has not yet uploaded
+    # the db poo `uploaded` status really means we are waiting for review (of the uploaded doc)
+    return 'pending' if any { $_->{status} eq 'uploaded' } $list->@*;
 
     return 'none';
+}
+
+=head2 verify
+
+Flags the given proof of owneship document as `verified`.
+
+It takes the folllowing arguments as hashref:
+
+=over 4
+
+=item * C<id> - (optional) a proof of ownership id
+
+=back
+
+Returns the updated POO record.
+
+=cut
+
+sub verify {
+    my ($self, $args) = @_;
+    my $id = $args->{id};
+
+    my $proof_of_ownership = $self->client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM betonmarkets.verify_proof_of_ownership(?, ?)', undef, $id, $self->client->loginid);
+        });
+
+    die sprintf("Cannot verify proof of ownership %d", $id) unless $proof_of_ownership;
+
+    return $self->_normalize($proof_of_ownership);
+}
+
+=head2 reject
+
+Flags the given proof of owneship document as `rejected`.
+
+It takes the folllowing arguments as hashref:
+
+=over 4
+
+=item * C<id> - (optional) a proof of ownership id
+
+=back
+
+Returns the updated POO record.
+
+=cut
+
+sub reject {
+    my ($self, $args) = @_;
+    my $id = $args->{id};
+
+    my $proof_of_ownership = $self->client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM betonmarkets.reject_proof_of_ownership(?, ?)', undef, $id, $self->client->loginid);
+        });
+
+    die sprintf("Cannot reject proof of ownership %d", $id) unless $proof_of_ownership;
+
+    return $self->_normalize($proof_of_ownership);
 }
 
 1;
