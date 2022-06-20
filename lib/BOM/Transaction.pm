@@ -1901,9 +1901,9 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -quiet             => 1,
             -type              => 'CompanyWideLimitExceeded',
             -mesg              => 'company-wide risk limit reached',
-            -message_to_client =>
-                BOM::Platform::Context::localize('No further trading is allowed on this contract type for the current trading session.'),
-        );
+            -message_to_client => BOM::Platform::Context::localize(
+                'No further trading is allowed on this contract type for the current trading session For more info, refer to our terms and conditions.'
+            ));
     },
     BI101 => Error::Base->cuss(
         -quiet             => 1,

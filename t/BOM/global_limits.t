@@ -130,8 +130,9 @@ subtest 'global potential loss' => sub {
     };
 
     ok $error, 'error is thrown';
-    is $error->{'-mesg'},              'company-wide risk limit reached';
-    is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
+    is $error->{'-mesg'}, 'company-wide risk limit reached';
+    is $error->{'-message_to_client'},
+        'No further trading is allowed on this contract type for the current trading session For more info, refer to our terms and conditions.';
 
     note("turn off global potential loss check");
     BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss(0);
@@ -209,8 +210,9 @@ subtest 'global potential loss' => sub {
     };
 
     ok $error, 'error is thrown';
-    is $error->{'-mesg'},              'company-wide risk limit reached';
-    is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
+    is $error->{'-mesg'}, 'company-wide risk limit reached';
+    is $error->{'-message_to_client'},
+        'No further trading is allowed on this contract type for the current trading session For more info, refer to our terms and conditions.';
 
     sleep(1);
     close_all_open_contracts('CR', 1);    # close with full payout
@@ -228,8 +230,9 @@ subtest 'global potential loss' => sub {
     };
 
     ok $error, 'error is thrown';
-    is $error->{'-mesg'},              'company-wide risk limit reached';
-    is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
+    is $error->{'-mesg'}, 'company-wide risk limit reached';
+    is $error->{'-message_to_client'},
+        'No further trading is allowed on this contract type for the current trading session For more info, refer to our terms and conditions.';
 
     $contract = produce_contract({%$args, underlying => 'frxUSDJPY'});
     $error    = do {
@@ -292,8 +295,9 @@ subtest 'global realized loss' => sub {
     };
 
     ok $error, 'error is thrown';
-    is $error->{'-mesg'},              'company-wide risk limit reached';
-    is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
+    is $error->{'-mesg'}, 'company-wide risk limit reached';
+    is $error->{'-message_to_client'},
+        'No further trading is allowed on this contract type for the current trading session For more info, refer to our terms and conditions.';
 
     note("turn off global realized loss check");
     BOM::Config::Runtime->instance->app_config->quants->enable_global_realized_loss(0);
@@ -371,8 +375,9 @@ subtest 'global realized loss' => sub {
         $txn->buy;
     };
     ok $error, 'error is thrown';
-    is $error->{'-mesg'},              'company-wide risk limit reached';
-    is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
+    is $error->{'-mesg'}, 'company-wide risk limit reached';
+    is $error->{'-message_to_client'},
+        'No further trading is allowed on this contract type for the current trading session For more info, refer to our terms and conditions.';
 
     sleep(1);
     close_all_open_contracts('CR');
@@ -401,8 +406,9 @@ subtest 'global realized loss' => sub {
     };
 
     ok $error, 'error is thrown';
-    is $error->{'-mesg'},              'company-wide risk limit reached';
-    is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
+    is $error->{'-mesg'}, 'company-wide risk limit reached';
+    is $error->{'-message_to_client'},
+        'No further trading is allowed on this contract type for the current trading session For more info, refer to our terms and conditions.';
 
     $contract = produce_contract({%$args, underlying => 'frxUSDJPY'});
     $error    = do {
@@ -427,8 +433,9 @@ subtest 'global realized loss' => sub {
     };
 
     ok $error, 'no error';
-    is $error->{'-mesg'},              'company-wide risk limit reached';
-    is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
+    is $error->{'-mesg'}, 'company-wide risk limit reached';
+    is $error->{'-message_to_client'},
+        'No further trading is allowed on this contract type for the current trading session For more info, refer to our terms and conditions.';
 
     BOM::Test::Helper::QuantsConfig::create_config({
         limit_type   => 'global_realized_loss',
