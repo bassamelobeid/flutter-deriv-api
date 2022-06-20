@@ -235,4 +235,17 @@ rule 'client.potential_fraud_age_verified' => {
     }
 };
 
+rule 'client.account_is_not_empty' => {
+    description => "Checks that the client's balance is greater than zero.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $account = $context->client($args)->account;
+
+        $self->fail('NoBalance', params => [$args->{loginid}]) unless $account and $account->balance > 0;
+
+        return 1;
+    },
+};
+
 1;

@@ -6,6 +6,7 @@ use Test::Fatal;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::Client;
 use BOM::Rules::Engine;
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -531,6 +532,24 @@ subtest $rule_name => sub {
 
     $client->status->clear_potential_fraud;
     $client->status->clear_age_verification;
+};
+
+$rule_name = 'client.account_is_not_empty';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'NoBalance',
+        rule       => $rule_name,
+        params     => [$client->loginid],
+        },
+        'correct error when currency is missing';
+
+    BOM::Test::Helper::Client::top_up($client, $client->currency, 10);
+
+    ok $rule_engine->apply_rules($rule_name, %args), 'Test passes when currency is set';
 };
 
 done_testing();

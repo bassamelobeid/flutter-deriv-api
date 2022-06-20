@@ -17,6 +17,8 @@ validate_payment:
           - deposit.total_balance_limits
           - deposit.periodical_balance_limits
         withdrawal:
+          - client.account_is_not_empty
+          - withdrawal.less_than_balance
           - withdrawal.less_than_balance
           - withdrawal.only_unfrozen_balance
           - withdrawal.landing_company_limits
