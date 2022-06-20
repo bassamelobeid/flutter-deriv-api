@@ -49,6 +49,8 @@ ok BOM::Config::onfido_supported_documents(),       'onfido_supported_documents'
 ok BOM::Config::redis_payment_config(),             'redis_payment_config';
 ok BOM::Config::paymentapi_config(),                'paymentapi_config';
 ok !BOM::Config::on_production(),                   'not on_production';
+ok BOM::Config::cashier_env(),                      'cashier_env';
+ok BOM::Config::cashier_config(),                   'cashier_config';
 ok BOM::Config::on_qa() || BOM::Config::on_ci(), 'on_qa or on_ci';
 
 done_testing();

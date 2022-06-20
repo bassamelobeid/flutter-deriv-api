@@ -1258,11 +1258,6 @@ system:
           isa: Bool
           default: 0
           global: 1
-        doughflow_deriv_sportsbooks:
-          description: "Suspend Deriv sportbooks"
-          isa: Bool
-          default: 1
-          global: 1
         universal_password:
           description: "Suspend syncing binary account password to MT5 account passwords"
           isa: Bool

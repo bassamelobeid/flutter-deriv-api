@@ -131,12 +131,51 @@ sub p2p_payment_methods {
     }
 }
 
+=head2 on_production
+
+Returns C<1> if the code is running in production environment. It returns
+C<0> otherwise.
+
+=cut
+
 sub on_production {
     return env() eq 'production';
 }
 
+=head2 on_qa
+
+Returns C<1> the code is running in one of the QA boxes. It retursn C<0> 
+otherwise.
+
+=cut 
+
 sub on_qa {
     return env() =~ /^qa/;
+}
+
+=head2 cashier_env
+
+Only useful in QA Box. For production check L<on_production>
+
+Returns the cashier environment. C<'Test'> or C<'Stage'>.
+
+=cut
+
+sub cashier_env {
+    my $cashier_env = third_party->{doughflow}->{environment} // 'Test';
+    return $cashier_env;
+}
+
+=head2 cashier_config
+
+Returns the configuraiton for the available cashier, as defiend in
+the L<cashier.yml> file.
+
+=cut
+
+sub cashier_config {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/cashier.yml');
+    return $config;
 }
 
 =head2 on_ci
