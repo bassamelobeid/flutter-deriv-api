@@ -191,6 +191,7 @@ sub error_map {
         DepositLimitExceeded => localize('Deposit exceeds [_1] limit [_2]. Aggregated deposit over period [_3]. Current amount [_4].'),    # test it
         AmountExceedsBalance => localize('Withdrawal amount ~[[_1] [_2]~] exceeds client balance ~[[_3] [_2]~].'),
         AmountExceedsUnfrozenBalance => localize('Withdrawal is [_2] [_1] but balance [_3] includes frozen bonus [_4].'),
+        NoBalance                    => localize('This transaction cannot be done because your [_1] account has zero balance.'),
         InvalidAccount               => localize('Invalid account.'),
         InvalidLandingCompany        => localize('Invalid landing company - [_1]'),
         WithdrawalLimitReached       => localize(
