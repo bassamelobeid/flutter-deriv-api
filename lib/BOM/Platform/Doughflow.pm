@@ -50,25 +50,13 @@ Returns a string with the Sportsbook name.
 sub get_sportsbook_by_short_code {
     my ($short_code, $currency) = @_;
 
+    my $sportsbook_name = get_sportsbook_name_for($short_code);
     if (not BOM::Config::on_production()) {
-        return 'test';
+        my $cashier_env = BOM::Config::cashier_env;
+        $sportsbook_name =~ s/^Deriv\b/$cashier_env/;
     }
 
-    return get_sportsbook_mapping_by_landing_company($short_code) . ' ' . $currency
-        if is_deriv_sportsbooks_enabled();
-
-    # TODO: remove this check once Doughflow's side is live
-    # for backward compatibility, we keep sportsbook prefixes as 'Binary'
-    my %mapping = (
-        svg         => 'Binary (CR) SA',
-        malta       => 'Binary (Europe) Ltd',
-        iom         => 'Binary (IOM) Ltd',
-        maltainvest => 'Binary Investments Ltd',
-        samoa       => 'Binary (CR) SA',           # Should be removed after switching Dwallet to SVG,
-        dsl         => 'Binary Services Ltd',
-    );
-
-    return $mapping{$short_code} . ' ' . $currency;
+    return $sportsbook_name . ' ' . $currency;
 }
 
 =head2 get_sportsbook
@@ -133,19 +121,7 @@ sub get_doughflow_language_code_for {
     return $code;
 }
 
-=head2 is_deriv_sportsbooks_enabled
-Returns true if doughflow Deriv sportsbooks are enabled, false otherwise
-=cut
-
-# TODO: remove this check once Doughflow's side is live
-sub is_deriv_sportsbooks_enabled {
-    my $self = shift;
-
-    # is doughflow Deriv sportsbook enabled?
-    return !BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks;
-}
-
-=head2 get_sportsbook_mapping_by_landing_company
+=head2 get_sportsbook_name_for
 
 Get doughflow sportsbook name for a landing company.
 
@@ -161,19 +137,12 @@ Returns a sportsbook name corresponding to the landing company
 
 =cut
 
-sub get_sportsbook_mapping_by_landing_company {
+sub get_sportsbook_name_for {
     my $landing_company_shortcode = shift;
 
-    my %mapping = (
-        svg         => 'Deriv (SVG) LLC',
-        malta       => 'Deriv (Europe) Ltd',
-        iom         => 'Deriv (MX) Ltd',
-        maltainvest => 'Deriv Investments Ltd',
-        samoa       => 'Deriv (SVG) LLC',
-        dsl         => 'Deriv Services Ltd',
-    );
+    my $mapping = BOM::Config::cashier_config()->{doughflow}->{sportsbooks_mapping};
 
-    return $mapping{$landing_company_shortcode} // '';
+    return $mapping->{$landing_company_shortcode} // '';
 }
 
 =head2 get_payment_methods

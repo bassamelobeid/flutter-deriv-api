@@ -11,25 +11,6 @@ use BOM::Platform::Doughflow qw(get_sportsbook get_payment_methods);
 use LandingCompany::Registry;
 
 my @doughflow_sportsbooks_mock = (
-    'Binary (CR) SA USD',
-    'Binary (CR) SA EUR',
-    'Binary (CR) SA AUD',
-    'Binary (CR) SA GBP',
-    'Binary (Europe) Ltd GBP',
-    'Binary (Europe) Ltd EUR',
-    'Binary (Europe) Ltd USD',
-    'Binary (IOM) Ltd GBP',
-    'Binary (IOM) Ltd USD',
-    'Binary Investments Ltd USD',
-    'Binary Investments Ltd EUR',
-    'Binary Investments Ltd GBP',
-    'Binary Services Ltd USD',
-    'Binary Services Ltd EUR',
-    'Binary Services Ltd GBP',
-    'Binary Services Ltd AUD',
-);
-
-my @doughflow_deriv_sportsbooks_mock = (
     'Deriv (SVG) LLC USD',
     'Deriv (SVG) LLC EUR',
     'Deriv (SVG) LLC AUD',
@@ -84,53 +65,23 @@ sub get_fiat_currencies {
     return grep { $currencies->{$_}->{type} eq 'fiat' } keys %{$currencies};
 }
 
-subtest 'doughflow_sportsbooks' => sub {
-    my %doughflow_sportsbooks = map { $_ => 1 } @doughflow_sportsbooks_mock;
-    my @all_broker_codes      = LandingCompany::Registry->all_broker_codes;
+my $config_mocked = Test::MockModule->new('BOM::Config');
+$config_mocked->mock('on_production', sub { return 1 });
+my %doughflow_sportsbooks = map { $_ => 1 } @doughflow_sportsbooks_mock;
+my @all_broker_codes      = LandingCompany::Registry->all_broker_codes;
 
-    my $config_mocked = Test::MockModule->new('BOM::Config');
-    $config_mocked->mock('on_production', sub { return 1 });
+for my $broker (@all_broker_codes) {
+    my $lc = LandingCompany::Registry->by_broker($broker);
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks(1);    # disable Deriv sportsbooks
+    next if $lc->short =~ /virtual|champion/;
 
-    for my $broker (@all_broker_codes) {
-        my $lc = LandingCompany::Registry->by_broker($broker);
-
-        next if $lc->short =~ /virtual|champion/;
-
-        my @currencies = get_fiat_currencies($lc->legal_allowed_currencies);
-        for my $currency (@currencies) {
-            my $sportsbook = get_sportsbook($broker, $currency);
-            ok exists $doughflow_sportsbooks{$sportsbook}, "'$sportsbook' exists in Doughflow sportsbooks";
-        }
+    my @currencies = get_fiat_currencies($lc->legal_allowed_currencies);
+    for my $currency (@currencies) {
+        my $sportsbook = get_sportsbook($broker, $currency);
+        ok exists $doughflow_sportsbooks{$sportsbook}, "'$sportsbook' exists in Doughflow sportsbooks";
     }
-
-    $config_mocked->unmock('on_production');
-};
-
-subtest 'doughflow_deriv_sportsbooks' => sub {
-    my %doughflow_sportsbooks = map { $_ => 1 } @doughflow_deriv_sportsbooks_mock;
-    my @all_broker_codes      = LandingCompany::Registry->all_broker_codes;
-
-    my $config_mocked = Test::MockModule->new('BOM::Config');
-    $config_mocked->mock('on_production', sub { return 1 });
-
-    BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks(0);    # enable Deriv sportsbooks
-
-    for my $broker (@all_broker_codes) {
-        my $lc = LandingCompany::Registry->by_broker($broker);
-
-        next if $lc->short =~ /virtual|champion/;
-
-        my @currencies = get_fiat_currencies($lc->legal_allowed_currencies);
-        for my $currency (@currencies) {
-            my $sportsbook = get_sportsbook($broker, $currency);
-            ok exists $doughflow_sportsbooks{$sportsbook}, "'$sportsbook' exists in Doughflow sportsbooks";
-        }
-    }
-
-    $config_mocked->unmock('on_production');
-};
+}
+$config_mocked->unmock('on_production');
 
 subtest 'doughflow deriv sportsbook landing company consistency' => sub {
     my @all_broker_codes = LandingCompany::Registry->all_broker_codes;
@@ -140,7 +91,7 @@ subtest 'doughflow deriv sportsbook landing company consistency' => sub {
 
         next if $lc->short =~ /virtual|champion|samoa/;
 
-        my $sportsbook = BOM::Platform::Doughflow::get_sportsbook_mapping_by_landing_company($lc->short);
+        my $sportsbook = BOM::Platform::Doughflow::get_sportsbook_name_for($lc->short);
         next unless $sportsbook;
 
         my ($sportsbook_first_two_words) = $sportsbook =~ /^([A-Za-z]*\s\(*[A-Za-z]*\)*)/;
@@ -172,6 +123,9 @@ subtest 'get_payment_methods' => sub {
     my $country = 'br';
     @params   = ();
     $dd_trace = {};
+
+    my $config_mocked = Test::MockModule->new('BOM::Config');
+    $config_mocked->mock('on_production', sub { return 1 });
 
     my $payment_methods = get_payment_methods($country, $brand);
 
@@ -354,6 +308,7 @@ subtest 'get_payment_methods' => sub {
         is(ref $payment_method->{supported_currencies}, 'ARRAY', 'supported_currencies is an array ref.');
         is(ref $payment_method->{withdraw_limits},      'HASH',  'withdraw_limits is an hash ref.');
     }
+    $config_mocked->unmock('on_production');
 };
 
 done_testing;
