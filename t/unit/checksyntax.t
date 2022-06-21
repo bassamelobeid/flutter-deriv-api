@@ -14,7 +14,7 @@ subtest 'run_command' => sub {
     ok !@result, 'empty result for wrong command';
 
     @result = BOM::Test::CheckSyntax::_run_command(qw/ls -U lib/);
-    is_deeply \@result, [qw/await.pm BOM/], 'get ls result';
+    is_deeply \@result, [qw/BOM await.pm/], 'get ls result';
 };
 
 subtest 'get_self_name_space' => sub {
