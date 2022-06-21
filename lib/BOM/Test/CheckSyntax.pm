@@ -32,7 +32,6 @@ $Data::Dumper::Maxdepth = 1;
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
-
 =head2 check_syntax_on_diff
 
 Run serial syntax tests for updated files compare to master branch.
@@ -276,7 +275,6 @@ Based on results of git diff master
 Returns list of updated sub names
 
 =cut
-
 
 sub _get_updated_subs {
     my ($check_file) = @_;
