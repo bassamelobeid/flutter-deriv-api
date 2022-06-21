@@ -18,11 +18,10 @@ subtest 'run_command' => sub {
 };
 
 subtest 'get_self_name_space' => sub {
-    my @self_pm = BOM::Test::CheckSyntax::get_self_name_space();
+    my @self_pm = BOM::Test::CheckSyntax::_get_self_name_space();
     is_deeply \@self_pm, ['BOM::Test'], 'check self name space for bom-test';
-
     $mocked->mock(_run_command => sub { return qw(lib/BOM/MarketData.pm lib/BOM/DynamicSettings.pm lib/BOM/MarketData) });
-    @self_pm = BOM::Test::CheckSyntax::get_self_name_space();
+    @self_pm = BOM::Test::CheckSyntax::_get_self_name_space();
     is_deeply \@self_pm, [qw/BOM::DynamicSettings BOM::MarketData/], 'check self name space for mocked';
     $mocked->unmock;
 };
@@ -30,11 +29,11 @@ subtest 'get_self_name_space' => sub {
 subtest 'get_pm_subs' => sub {
 
     my $file = 'lib/BOM/Test/Rudderstack/Webserver.pm';
-    my $subs = BOM::Test::CheckSyntax::get_pm_subs($file);
+    my $subs = BOM::Test::CheckSyntax::_get_pm_subs($file);
     ok !$subs, "cannot find subs for $file";
 
     $file = 'lib/await.pm';
-    $subs = BOM::Test::CheckSyntax::get_pm_subs($file);
+    $subs = BOM::Test::CheckSyntax::_get_pm_subs($file);
     my $expcted_subs = {
         'wsapi_wait_for' => {
             'end'   => 63,
@@ -49,8 +48,7 @@ subtest 'get_pm_subs' => sub {
             'start' => 96
         }};
     is_deeply($subs, $expcted_subs, "check subs for $file");
+};
 
-    }
-
-    done_testing();
+done_testing();
 
