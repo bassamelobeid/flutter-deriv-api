@@ -167,11 +167,8 @@ Test fail when new dependency detected.
 
 sub check_bom_dependency {
     my @dependency_allowed = @_;
-    my @self_contain_pm = get_self_name_space()
-    # the git grep return like
-    # lib/BOM/MyAffiliates.pm:   use BOM::Config;
-    # use pathspec "lib" to filter README and tests
-    my $cmd = 'git grep -E "(use|require)\s+BOM::" lib';
+    my @self_contain_pm    = get_self_name_space();
+    my $cmd                = 'git grep -E "(use|require)\s+BOM::" lib';
     $cmd .= ' bin' if (-d 'bin');
     # also found pod of some pm has comments like
     # lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
@@ -182,8 +179,7 @@ sub check_bom_dependency {
     ok !$result, "BOM dependency check";
     if ($result) {
         diag("new BOM module dependency detected!!!");
-        diag("please update runtime_required_repos.yml")
-        diag($result);
+        diag("you may need update runtime_required_repos.yml");
     }
 }
 
@@ -299,21 +295,21 @@ sub get_self_name_space {
         $pm =~ s/[.]pm//;
         $self_contain_pm{$pm} = 1;
     }
-    return sort keys %self_contain_pm;
+    @result = sort keys %self_contain_pm;
+    return @result;
 }
 
 sub _run_command {
     my @command = @_;
     die "command cannot be empty!\n" unless @command;
-    my $cmd=$command[0];
+    my $cmd = $command[0];
     if (@command > 1) {
-        $cmd= join(' ',@command);
+        $cmd = join(' ', @command);
     }
     diag("running $cmd");
-    my @result=qx/$cmd/;
-    @result = map {chomp; $_} @result;
+    my @result = qx/$cmd/;
+    @result = map { chomp; $_ } @result;
     return @result;
 }
-
 
 1;
