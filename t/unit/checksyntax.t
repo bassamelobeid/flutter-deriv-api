@@ -13,7 +13,7 @@ subtest 'run_command' => sub {
     my @result = BOM::Test::CheckSyntax::_run_command("ls xxxx");
     ok !@result, 'empty result for wrong command';
 
-    @result = BOM::Test::CheckSyntax::_run_command(qw/ls lib/);
+    @result = BOM::Test::CheckSyntax::_run_command(qw/ls -U lib/);
     is_deeply \@result, [qw/await.pm BOM/], 'get ls result';
 };
 
