@@ -3,6 +3,16 @@ package BOM::Test::CheckSyntax;
 use strict;
 use warnings;
 
+=head1 NAME
+
+BOM::Test::CheckSyntax
+
+=head1 DESCRIPTION
+
+Run the common syntax tests for bom repos.
+
+=cut
+
 use Exporter 'import';
 use Test::More;
 use Test::Vars;
@@ -22,28 +32,26 @@ $Data::Dumper::Maxdepth = 1;
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
-=head1 NAME
-
-BOM::Test::CheckSyntax
-
-=head1 DESCRIPTION
-
-Gather the common syntax tests for bom related repos.
-
 
 =head2 check_syntax_on_diff
 
-Check the syntax for updated files compare to master branch.
+Run serial syntax tests for updated files compare to master branch.
+
+=over 4
+
+=item * skipped_files - file list that skip the syntax check.
+
+=back
 
 =cut
 
 sub check_syntax_on_diff {
     my @skipped_files = @_;
     # update master before compare diff
-    my $result = `git fetch --no-tags origin master`;
+    my $result = _run_command("git fetch --no-tags origin master");
     diag($result) if $result;
 
-    my @check_files = `git diff --name-only origin/master`;
+    my @check_files = _run_command("git diff --name-only origin/master");
 
     if (scalar @check_files) {
         pass "file change detected";
@@ -59,24 +67,34 @@ sub check_syntax_on_diff {
 
 =head2 check_syntax_all
 
-Run the syntax check same as check_syntax_on_diff, but apply to all files.
+Run the syntax tests same as check_syntax_on_diff, but apply to all files.
+
+=over 4
+
+=item * skipped_files - file list that skip the syntax check.
+
+=back
 
 =cut
 
 sub check_syntax_all {
     my @skipped_files = @_;
-    my @check_files   = `find lib bin -type f`;
+    my @check_files   = _run_command("find lib bin -type f");
     check_syntax(\@check_files, \@skipped_files);
 
-    @check_files = `find lib bin t -type f`;
+    @check_files = _run_command("find lib bin t -type f");
     check_tidy(\@check_files, \@skipped_files);
-    @check_files = `find . -name "*.yml" -o -name "*.yaml"`;
+    @check_files = _run_command('find . -name "*.yml" -o -name "*.yaml"');
     check_yaml(@check_files);
 }
 
 =head2 check_syntax
 
-check syntax for perl files
+Run serial syntax tests for perl files, which included:
+Test::Perl::Critic
+Test::Vars
+Test::Strict
+BOM::Test::CheckJsonMaybeXS;
 
 Parameters:
 
@@ -86,7 +104,7 @@ Parameters:
 
 =item * skipped_files - array ref of files that will skip syntax check.
 
-=item * syntax_diff - flag to decide if is test for changed files.
+=item * syntax_diff - flag to indicate test for changed files.
 
 =back
 
@@ -118,7 +136,15 @@ sub check_syntax {
 
 =head2 check_tidy
 
-Check is_file_tidy for perl files
+Check Test::PerlTidy for perl files
+
+=over
+
+=item * check_files - array ref of files that need to be check.
+
+=item * skipped_files - array ref of files that will skip tidy check.
+
+=back
 
 =cut
 
@@ -141,7 +167,13 @@ sub check_tidy {
 
 =head2 check_yaml
 
-check yaml files syntax
+check yaml files can load YAML::XS successfully.
+
+=over
+
+=item * check_files - array of files that need to be check.
+
+=back
 
 =cut
 
@@ -160,14 +192,20 @@ sub check_yaml {
 
 =head2 check_bom_dependency
 
-Check BOM module dependency under currnet lib.
+Check BOM module dependency under lib.
 Test fail when new dependency detected.
+
+=over
+
+=item * dependency_allowed - array of BOM modules that already used in lib.
+
+=back
 
 =cut
 
 sub check_bom_dependency {
     my @dependency_allowed = @_;
-    my @self_contain_pm    = get_self_name_space();
+    my @self_contain_pm    = _get_self_name_space();
     my $cmd                = 'git grep -E "(use|require)\s+BOM::" lib';
     $cmd .= ' bin' if (-d 'bin');
     # also found pod of some pm has comments like
@@ -183,15 +221,15 @@ sub check_bom_dependency {
     }
 }
 
-sub _is_skipped_file {
-    my ($check_file, $skipped_files) = @_;
-    return unless @$skipped_files;
-    return grep { $check_file =~ /$_/ } @$skipped_files;
-}
-
 =head2 check_pod_coverage
 
 check the pod coverage for the updated perl modules.
+
+=over
+
+=item * check_files - file list that need to be check.
+
+=back
 
 =cut
 
@@ -224,18 +262,27 @@ sub check_pod_coverage {
     }
 }
 
-=head2 get_updated_subs
+=head2 _get_updated_subs
 
 Get updated or new subroutines for the giving perl file.
 Based on results of git diff master
 
+=over
+
+=item * check_file - perl file that need to be check.
+
+=back
+
+Returns list of updated sub names
+
 =cut
 
-sub get_updated_subs {
+
+sub _get_updated_subs {
     my ($check_file) = @_;
-    my @changed_lines = `git diff origin/master $check_file`;
+    my @changed_lines = _run_command("git diff origin/master $check_file");
     my %updated_subs;
-    my $pm_subs = get_pm_subs($check_file);
+    my $pm_subs = _get_pm_subs($check_file);
     for (@changed_lines) {
         # filter the comments [^#] or deleted line [^-]
         # get the changed function, sample:
@@ -261,14 +308,7 @@ sub get_updated_subs {
     return keys %updated_subs;
 }
 
-=head2 get_pm_subs
-
-Try to get all the subs of a perl file, and the start end line number of each sub.
-Currently it can NOT handle sub which defined with custom keywrod like "async sub foo {"
-
-=cut
-
-sub get_pm_subs {
+sub _get_pm_subs {
     my ($check_file) = @_;
     my %results;
     use PPI;
@@ -284,7 +324,7 @@ sub get_pm_subs {
     return %results ? \%results : undef;
 }
 
-sub get_self_name_space {
+sub _get_self_name_space {
     my ($repo_path) = @_;
     my $cmd = "find lib/BOM/* -maxdepth 0";
     $cmd = "cd $repo_path; " . $cmd if $repo_path;
@@ -297,6 +337,12 @@ sub get_self_name_space {
     }
     @result = sort keys %self_contain_pm;
     return @result;
+}
+
+sub _is_skipped_file {
+    my ($check_file, $skipped_files) = @_;
+    return unless @$skipped_files;
+    return grep { $check_file =~ /$_/ } @$skipped_files;
 }
 
 sub _run_command {
