@@ -15,6 +15,7 @@ Run the common syntax tests for bom repos.
 
 use Exporter 'import';
 use Test::More;
+use Test::Exception;
 use Test::Vars;
 use Test::Strict;
 use Test::PerlTidy;
