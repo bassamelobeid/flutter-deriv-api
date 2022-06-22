@@ -618,4 +618,45 @@ sub get_crypto_payout_auto_update_global_status {
     return 0;
 }
 
+=head2 is_enabled_address_daemon
+
+Returns whether crypto addresses daemon is enabled or not.
+
+=cut
+
+sub is_enabled_address_daemon {
+    return app_config()->payments->crypto->address_daemon->enabled;
+}
+
+=head2 get_crypto_address_pool_threshold
+
+Gets the address pool threshold of each currencies
+
+=over 4
+
+=item * C<currency> - Currency code (optional)
+
+=back
+
+If no currency passed, returns default
+
+If currency is passed and passed currency does not exist, returns default
+
+If currency is passed and passed currency exist, returns the threshold of that currency
+
+=cut
+
+sub get_crypto_address_pool_threshold {
+
+    my $currency = shift;
+
+    my $currency_wise_address_pool_threshold =
+        JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.address_daemon.address_pool_threshold'));
+
+    my $setting = $currency ? $currency : 'default';
+
+    return $currency_wise_address_pool_threshold->{$setting} // $currency_wise_address_pool_threshold->{default};
+
+}
+
 1;

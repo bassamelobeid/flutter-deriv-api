@@ -527,6 +527,20 @@ payments:
           isa: json_string
           default: '{"default":50,"BTC":0.003,"LTC":1,"ETH":0.1,"IDK":700}'
           global: 1
+        address_daemon:
+          description: "Daemon for reserving addresses to the address_pool for later assigning to clients"
+          isa: section
+          contains:
+            enabled:
+              description: "Flag to enable address reserving daemon"
+              isa: Bool
+              default: 0
+              global: 1
+            address_pool_threshold:
+              description: "Minimum number of addresses to be kept in the address pool for each currencies"
+              isa: json_string
+              default: '{"default":500,"BTC":800,"LTC":300,"ETH":1000,"TRX":10}'
+              global: 1
         internal_sweep:
           description: 'Internal sweep related config'
           isa: section

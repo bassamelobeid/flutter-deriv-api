@@ -519,6 +519,26 @@ subtest 'get_crypto_payout_auto_update_global_status' => sub {
 
 };
 
+subtest 'get_crypto_address_pool_threshold' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+
+    #gets the original config to revert after running the test
+    my $threshold_original = $app_config->get('payments.crypto.address_daemon.address_pool_threshold');
+
+    # Change the config
+    # Change the config
+    $app_config->set({
+        'payments.crypto.address_daemon.address_pool_threshold' => '{"default":50, "BTC":200, "ETH": 100}',
+    });
+
+    is_deeply BOM::Config::CurrencyConfig::get_crypto_address_pool_threshold('BTC'), 200, 'Correct config for the passed currency';
+    is_deeply BOM::Config::CurrencyConfig::get_crypto_address_pool_threshold('LTC'), 50,  'Default config when passed currency not found';
+    is_deeply BOM::Config::CurrencyConfig::get_crypto_address_pool_threshold(), 50, 'Default config when no currency passed';
+
+    # Revert the changes
+    $app_config->set({'payments.crypto.address_daemon.address_pool_threshold' => $threshold_original});
+};
+
 $mock_app_config->unmock_all();
 
 done_testing();
