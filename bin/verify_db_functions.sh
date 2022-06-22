@@ -24,16 +24,14 @@ cd /dev/shm/"$prg"
 
 trap "rm -rf '/dev/shm/$prg/$repo'" EXIT
 
-git clone -q --depth 1 git@github.com:regentmarkets/"$repo".git
-cd "$repo"
-tag="$(git ls-remote origin  refs/tags/V* |
+tag="$(git ls-remote git@github.com:regentmarkets/"$repo".git refs/tags/V* |
        sed -E '/\^\{\}$/d; s/^.*refs\/tags\///' |
        LC_ALL=C sort -k 1.2 -g |
        tail -1)"
 
 echo "${html:+<p>}Checking out $tag${html:+</p>}"
-git fetch -q --depth 1 origin "$tag"
-git checkout -q "$tag"
+git clone --depth 1 --branch "$tag" git@github.com:regentmarkets/"$repo".git 2>/dev/null
+cd "$repo"
 
 for i in "${db[@]}"; do
     echo "${html:+<h2>}Testing $i${html:+</h2><pre style='width:180em'><code>}"
