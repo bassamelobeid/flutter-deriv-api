@@ -8,7 +8,10 @@ no indirect;
 
 use Pod::Usage;
 use Getopt::Long;
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 1,
+    log_level => 'warn';
+use Log::Any qw($log);
 use Path::Tiny;
 
 =head1 NAME
@@ -76,7 +79,11 @@ $subscriptions = $subscriptions // 5;
 $forget_time   = $forget_time   // 0;
 $test_duration = $test_duration // 0;
 
-Log::Any::Adapter->set('Stderr', log_level => 'debug') if $debug;
+Log::Any::Adapter->set(
+    'DERIV',
+    stderr    => 1,
+    log_level => 'debug'
+) if $debug;
 
 my @markets_to_use;
 if ($markets) {
@@ -92,7 +99,7 @@ my %valid_markets = (
 
 for (@markets_to_use) {
     if (!defined($valid_markets{$_})) {
-        say 'Invalid Market Type: ' . $_;
+        $log->info('Invalid Market Type: ' . $_);
         pod2usage({
             -verbose  => 99,
             -sections => "NAME|SYNOPSIS|DESCRIPTION"
@@ -244,7 +251,7 @@ method run_tests() {
             $self->create_subscriptions($connection_number, $contracts_for);
         } catch ($e) {
 
-            warn 'Failed ' . $e;
+            $log->warn('Failed ' . $e);
             return Future->done;
         }
     }
@@ -276,7 +283,7 @@ Returns a L<Future>
 method test_length_timer($test_duration = 0) {
     my $test_run_length;
     if ($test_duration) {
-        $test_run_length = $loop->delay_future(after => $test_duration)->on_done(sub { say 'finished after ' . $test_duration; });
+        $test_run_length = $loop->delay_future(after => $test_duration)->on_done(sub { $log->info('finished after ' . $test_duration); });
     } else {
         $test_run_length = $loop->new_future;    # A Future that will never be done.
     }
@@ -300,14 +307,14 @@ Returns a L<Future>
 =cut
 
 async method create_subscriptions($connection_number, $contracts_for) {
-    say 'Connection Number ' . $connection_number;
+    $log->info('Connection Number ' . $connection_number);
     my $connection =
         $self->create_connection($args{end_point}, $args{app_id}, $args{token});
     return fmap0 {
         try {
             $self->subscribe($connection, $connection_number);
         } catch ($e) {
-            warn 'Creating a subscription Failed ' . $e;
+            $log->warn('Creating a subscription Failed ' . $e);
             return Future->done;
         }
     }
@@ -349,7 +356,7 @@ method create_connection($end_point, $app_id, $token) {
                 if ($token) {
                     return $connection->api->authorize(authorize => $token)->on_fail(
                         sub {
-                            warn 'Authorize Failed ' . shift->body->message;
+                            $log->warn('Authorize Failed ' . shift->body->message);
                             Future->done;
                         });
 
@@ -518,7 +525,7 @@ method get_active_symbols($connection, $markets_to_use) {
         product_type => 'basic',
     )->on_fail(
         sub {
-            warn 'Get Active Symbols Failed  Message: ' . shift->body->message;
+            $log->warn('Get Active Symbols Failed  Message: ' . shift->body->message);
         })->get;
 
     my %market_check = map { $_ => 1 } @$markets_to_use;
@@ -705,7 +712,7 @@ method subscribe($connection, $connection_number) {
         $active_symbols->[int(rand(scalar($active_symbols->@*)))];
     my @contract_types = qw(PUT CALL PUTE CALLE);
     my $contract_type  = $contract_types[int(rand(@contract_types))];
-    say 'Subscribing to ' . $symbol . ' using using connection number ' . $connection_number;
+    $log->info('Subscribing to ' . $symbol . ' using using connection number ' . $connection_number);
     my $params      = $self->get_params($contract_type, $symbol);
     my $retry_count = 0;
 
@@ -724,19 +731,18 @@ method subscribe($connection, $connection_number) {
             sub {
                 my ($response) = @_;
 
-                say " current subscriptions " . keys(%subs);
+                $log->info("current subscriptions " . keys(%subs));
                 $sub = $response->body->id;
-                say 'Symbol ' . $symbol;
+                $log->info('Symbol ' . $symbol);
                 $subs{$response->body->id} = $symbol;
                 if ($first && $args{forget_time}) {
 
                     $loop->delay_future(after => int(rand($args{forget_time})))->then(
                         sub {
-                            say 'time forgettting ' . $sub . ' ' . $symbol;
+                            $log->info('time forgettting ' . $sub . ' ' . $symbol);
                             $connection->api->forget(forget => $sub)->on_done(sub { delete $subs{$sub}; $subscription->done; })->on_fail(
                                 sub {
-                                    say " unable to forget $sub";
-                                    warn Dumper(@_);
+                                    $log->warnf(" unable to forget $sub: %s", \@_);
                                 });
                         })->retain;
 
@@ -745,7 +751,7 @@ method subscribe($connection, $connection_number) {
             }
         )->completed()->on_fail(
             sub {
-                $log->warn("Failed to start subscription with params \n" . $json->encode($params) . shift->body->message);
+                $log->warnf("Failed to start subscription: <%s> with params\n%s", shift->body->message, $json->encode($params));
 
                 #retry to subscribe again with new params.
                 $self->subscribe($connection, $connection_number);
@@ -753,11 +759,11 @@ method subscribe($connection, $connection_number) {
             }
         )->on_done(
             sub {
-                say "done";
+                $log->info("done");
                 $self->subscribe($connection, $connection_number);
             });
     } catch ($e) {
-        warn $e
+        $log->warn($e);
     };
     return $future;
 }

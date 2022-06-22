@@ -174,8 +174,8 @@ my $market = shift @markets_to_use;
 
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
-my $pid;
-
+my $process;
+my %error;
 start_subscription($initial_subscriptions);
 # Kill the sub script if Ctrl-C is pressed.
 $SIG{'INT'} = sub {
@@ -184,9 +184,8 @@ $SIG{'INT'} = sub {
 
 #Catch on Die , kill subscript if running
 END {
-    `kill $pid` if $pid;
+    $process->kill(15) if $process && $process->is_running;
     say Date::Utility->new->datetime . " exiting";
-    exit;
 }
 
 # Main logic, triggers at checktime seconds and checks the results from Datadog.   If the queue has overflowed
@@ -204,8 +203,7 @@ $timer = IO::Async::Timer::Periodic->new(
     on_tick => sub {
         my ($overflow_amount, $max_queue_size) = check_stats();
         # We have completed a cycle so kill off the current load test
-        `kill $pid` if $pid;
-        $pid = undef;
+        $process->kill(15) if $process && $process->is_running;
         if ($overflow_amount == 0 || $start == 1) {
 
             #this will catch it if we start with our subscription number too high and overflow straight away.
@@ -219,6 +217,14 @@ $timer = IO::Async::Timer::Periodic->new(
                 $start = 0;
             }
             $new_market = 0;
+            # if subscriptions too big, then there must something wrong
+            if ($subscriptions > 1000) {
+                my $err_msg = "subscriptions too big, something must be wrong. Please check errors";
+                say $err_msg;
+                email_result($run_recorder, \@mails_to, $smtp_transport, $err_msg);
+                $timer->stop;
+                $loop->stop;
+            }
             start_subscription($subscriptions);
         } else {
             if ($number_of_runs < $iterations) {
@@ -241,8 +247,8 @@ $timer = IO::Async::Timer::Periodic->new(
                     $subscriptions  = $initial_subscriptions;
                     $new_market     = 1;
                 } else {
-                    if (scalar(@mails_to)) { email_result($run_recorder, \@mails_to, $smtp_transport); }
-                    if ($report)           { report_result($run_recorder) }
+                    email_result($run_recorder, \@mails_to, $smtp_transport);
+                    if ($report) { report_result($run_recorder) }
                     $timer->stop;
                     $loop->stop;
                 }
@@ -352,6 +358,57 @@ sub process_response {
     return map { $_->[1] } @$results;
 }
 
+=head2 get_repo_message
+
+Collet HEAD info of every repos, and format them to a string.
+
+For every repo, check its HEAD, if there is a tag, then use that tag. Otherwise use the commit id in the retured string.
+
+Returns a string
+
+=cut
+
+sub get_repo_message {
+    my @root_paths = map { path("/home/git/$_") } qw(binary-com regentmarkets);
+    my %repo_info;
+    my @futures;
+    for my $root_path (@root_paths) {
+        for my $repo ($root_path->children) {
+            my $git_dir = $repo->child('.git');
+            next unless $repo->is_dir && $git_dir->exists;
+            my $command = "git --git-dir=$git_dir describe --tags --exact-match || git --git-dir=$git_dir rev-parse HEAD";
+            my $process = $loop->open_process(
+                command => $command,
+                stdout  => {
+                    on_read => sub {
+                        my ($stream, $buffref, $eof) = @_;
+                        while ($$buffref =~ s/^(.*)\n//) {
+                            $repo_info{$repo->basename} = $1;
+                        }
+                        return 0;
+                    }
+                },
+                stderr => {
+                    on_read => sub {
+                        my ($stream, $buffref, $eof) = @_;
+                        while ($$buffref =~ s/^(.*)\n//) {
+                            my $msg = $1;
+                            next if ($msg =~ /no tag exactly matches|No names found/);
+                            say "error when run command $command: $msg";
+                        }
+                        return 0;
+                    }
+                },
+                on_finish => sub { });
+            push @futures, $process->finish_future;
+        }
+    }
+    my $future = Future->wait_all(@futures);
+    $future->on_ready(sub { $loop->stop });
+    $loop->run;
+    return "repo information: " . join(" ", map { "$_:$repo_info{$_}" } keys %repo_info);
+}
+
 =head2 email_result
 
 Description: Send the results 
@@ -361,9 +418,11 @@ Takes the following arguments as parameters
 
 =item - $overflow_data: An HashRef, each root level key is the market name and the value is an array of hashrefs,  run number as key, queue size when overflow occured as the value. 
 
-=item - $mails_to:  An Array ref of the email addresses to  send the result to.  
+=item - $mails_to:  An Array ref of the email addresses to  send the result to. If empty then no email sent.
 
-=item - $smtp_transport:  (optional)  A L<Email::Sender::Transport::SMTP> object to specify custom SMTP arguments. Otherwise it will use the default. 
+=item - $smtp_transport:  (optional)  A L<Email::Sender::Transport::SMTP> object to specify custom SMTP arguments. Otherwise it will use the default.
+
+=item - $err_msg: error message. Will be inserted into email body if not blank
 
 =back
 
@@ -372,13 +431,18 @@ Returns undef
 =cut
 
 sub email_result {
-    my ($overflow_data, $mails_to, $smtp_transport) = @_;
+    my ($overflow_data, $mails_to, $smtp_transport, $err_msg) = @_;
+    unless (scalar(@$mails_to)) {
+        say 'email address empty, no emal sent';
+        return undef;
+    }
     say "emailing result";
 
     #Add a bit of buffer either side  so there is context to the graphs.
     my $dashboard_start_time = ($test_start_time - 300) * 1000;
     my $dashboard_end_time   = ($test_end_time + 300) * 1000;
-    my $body                 = "Here are the stats for the Load testing run \n";
+    my $body                 = $err_msg ? "$err_msg\n" : '';
+    $body .= "Here are the stats for the Load testing run \n";
     foreach my $market (keys(%$overflow_data)) {
         $body .= "market - $market\n Overflowed at \n";
         foreach my $run (keys($overflow_data->{$market}->%*)) {
@@ -386,9 +450,16 @@ sub email_result {
             $body .= "- " . $overflow_data->{$market}->{$run}->{overflowed_queue_size} . "\n";
         }
     }
-    $body .= "
+    $body .= "Please switch to Loadtesting organizaion on DD and click the following link:
     Datadog link = https://app.datadoghq.com/dashboard/27a-7ws-tk3/pricer-daily-load-testing?from_ts=$dashboard_start_time&live=false&to_ts=$dashboard_end_time; 
     ";
+
+    my @sorted_errors = sort { $error{$b} <=> $error{$a} } keys %error;
+    my $top10_index   = $#sorted_errors < 9 ? $#sorted_errors : 9;
+    @sorted_errors = @sorted_errors[0 .. $top10_index];
+    $body .= "\nTop 10 errors:\n" . (join("\n", map { "$_:$error{$_}" } @sorted_errors)) . "\n" if %error;
+
+    $body .= get_repo_message();
     my $email_stuffer = Email::Stuffer->from('loadtest@binary.com')->to(@$mails_to)->subject('Load Test Results')->text_body($body);
     if ($smtp_transport) {
         $email_stuffer->transport($smtp_transport);
@@ -452,21 +523,37 @@ sub get_overflow_buffer_amount {
 
 sub start_subscription {
     my $subscriptions = shift;
-    $pid = undef;
-    my $pid_file = path('/tmp/proposal_sub.pid');
-    $pid_file->remove();
-    my $whole_command = "$command -s $subscriptions -a $app_id -c 5 -r $check_time -m $market > /tmp/proposal_sub.log&";
-    say "start command '$whole_command'";
-    open(my $fh, "-|", $whole_command)
-        or die $!;
-    for (1 .. 10) {
-        if ($pid_file->exists) {
-            $pid = $pid_file->slurp();
-            last;
-        }
-        sleep 1;
-    }
-    die "proposal_sub process not started successfully" unless $pid;
-    say 'pid ' . $pid;
-    close $fh;
+
+    my $whole_command = [$command, '-s', $subscriptions, '-a', $app_id, '-c', 5, '-r', $check_time, '-m', $market];
+    say "start command '@$whole_command'";
+    $process = $loop->open_process(
+        command => $whole_command,
+        stdout  => {
+            on_read => sub { }
+        },
+        stderr => {
+            on_read => sub {
+                my ($stream, $buffref, $eof) = @_;
+                while ($$buffref =~ s/^(.*)\n//) {
+                    my $msg = $1;
+                    print ">: $msg\n";
+                    next unless ($msg =~ / W \[.*\] (.*)/);
+                    my $msg_txt = $1;
+
+                    if (   $msg_txt =~ /(Trading is not available|Creating a subscription Failed Cannot get valid params)/
+                        || $msg_txt =~ /<(.*)>/)
+                    {
+                        $error{$1}++;
+                        next;
+                    }
+
+                    $error{$msg_txt}++;
+
+                }
+                return 0;
+            }
+        },
+        on_finish => sub {
+
+        });
 }
