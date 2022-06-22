@@ -301,15 +301,18 @@ async sub _insert_into_db {
         unless ($currency) {
             # It seems it we may have added a new symbol to product offerings. Reload symbols map and try again.
             await $self->_load_symbols_map();
-            $currency = $self->{_symbols_map}->{$deal->underlying_symbol}
-                // $log->errorf("quoted currency is undefined for %s", $deal->underlying_symbol);
+            $currency = $self->{_symbols_map}->{$deal->underlying_symbol};
         }
 
-        ($deal_id) = await $self->{dbic}->query(
-            q{SELECT * FROM transaction.add_new_deal($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)},
-            $deal->deal_id, $self->{provider}, $deal->loginid, $deal->account_type, $deal->underlying_symbol,
-            $deal->volume,  $deal->spread,     $deal->price,   $currency,           $deal->transaction_time
-        )->single;
+        if ($currency) {
+            ($deal_id) = await $self->{dbic}->query(
+                q{SELECT * FROM transaction.add_new_deal($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)},
+                $deal->deal_id, $self->{provider}, $deal->loginid, $deal->account_type, $deal->underlying_symbol,
+                $deal->volume,  $deal->spread,     $deal->price,   $currency,           $deal->transaction_time
+            )->single;
+        } else {
+            $log->errorf("quoted currency is undefined for %s", $deal->underlying_symbol);
+        }
     } catch ($e) {
         # database error could return a Postgres::Error object.
         my $error_message = ref $e ? $e->message : $e;
