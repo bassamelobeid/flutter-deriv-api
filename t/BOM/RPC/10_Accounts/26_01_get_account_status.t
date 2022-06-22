@@ -3302,7 +3302,7 @@ subtest 'Experian validated account' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'none',
+                                    status => 'verified',
                                 }}
                         },
                         ownership => {
@@ -3388,7 +3388,7 @@ subtest 'Experian validated account' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'verified',
                                     }}
                             },
                             ownership => {
@@ -3490,7 +3490,7 @@ subtest 'Experian validated account' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'none',
+                                        status => 'expired',
                                     }}
                             },
                             ownership => {
