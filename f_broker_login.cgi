@@ -389,16 +389,24 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
         <div class="card__label toggle">
             Website customization & shutdown
         </div>
-        <div class="card__content">
-            <h3>Dynamic settings</h3>
-            <form action="~ . request()->url_for('backoffice/f_dynamic_settings.cgi') . qq~" method="get">
-                <label>Group: </label>
-                $group_select
-                <input type=hidden name=broker value=FOG>
-                <input type=hidden name=page value=global>
-                <input type=hidden name=l value=EN>
-                <input type="submit" class="btn btn--primary" value="Dynamic settings">
-            </form>
+        <div class="card__content grid2col border">
+            <div class="card__content">
+                <h3>Deriv Dynamic settings</h3>
+                <form action="~ . request()->url_for('backoffice/f_dynamic_settings.cgi') . qq~" method="get">
+                    <label>Group: </label>
+                    $group_select
+                    <input type=hidden name=broker value=FOG>
+                    <input type=hidden name=page value=global>
+                    <input type=hidden name=l value=EN>
+                    <input type="submit" class="btn btn--primary" value="Dynamic settings">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Crypto Casheir Dynamic settings</h3>
+                <form action="~ . request()->url_for('backoffice/crypto_dynamic_settings.cgi') . qq~" method="get">
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
         </div>
     </div>~;
 }

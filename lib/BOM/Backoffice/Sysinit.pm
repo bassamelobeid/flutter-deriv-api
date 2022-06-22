@@ -20,6 +20,16 @@ use BOM::Backoffice::Request::Base;
 use BOM::Config::Chronicle;
 use BOM::Config;
 
+=head1 NAME
+
+BOM::Backoffice::Sysinit
+
+=head1 DESCRIPTION
+
+A module manages the requests and the permissions of the pages.
+
+=cut
+
 my $permissions = {
     'f_broker_login.cgi'   => ['ALL'],
     'login.cgi'            => ['ALL'],
@@ -103,6 +113,7 @@ my $permissions = {
     'f_dailyturnoverreport.cgi'   => ['Accounts', 'Quants', 'IT', 'Marketing'],
     'f_quant_query.cgi'           => ['Quants',   'CS'],
     'f_dynamic_settings.cgi'      => ['Quants',   'IT'],    # it has extra internal logic inside
+    'crypto_dynamic_settings.cgi' => ['IT'],
 
     'f_save.cgi'                                                              => ['QuantsWrite'],
     'f_upload_holidays.cgi'                                                   => ['QuantsWrite'],
