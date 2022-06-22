@@ -87,8 +87,8 @@ sub download_redis {
     my $timestamp = Date::Utility->new;
 
     if ($flush_before_import) {
-        # Remove chronicle keys related to app_settings
-        my @keys = map { @{$writer->cache_writer->scan_all(MATCH => "$_*")} } ('app_settings');
+        # Remove chronicle keys related to app_settings and cryptocashier_settings
+        my @keys = map { @{$writer->cache_writer->scan_all(MATCH => "$_*")} } ('app_settings', 'cryptocashier_settings');
         map { $writer->cache_writer->del($_) } @keys;
     }
 
