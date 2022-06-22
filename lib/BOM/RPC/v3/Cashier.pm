@@ -43,7 +43,6 @@ use BOM::Platform::Client::CashierValidation;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::RPC::v3::MT5::Account;
 use BOM::Platform::CryptoCashier::API;
-use BOM::Platform::CryptoCashier::Config;
 use BOM::RPC::v3::Trading;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Database::Model::HandoffToken;
@@ -64,6 +63,7 @@ use constant {
     MAX_DESCRIPTION_LENGTH        => 250,
     HANDOFF_TOKEN_TTL             => 5 * 60,
     TRANSFER_OVERRIDE_ERROR_CODES => [qw(FinancialAssessmentRequired)],
+    CRYPTO_CONFIG_RPC_REDIS       => "rpc::cryptocurrency::crypto_config",
 };
 
 my $payment_limits = BOM::Config::payment_limits;
@@ -1922,7 +1922,23 @@ rpc 'crypto_config',
         });
     }
 
-    return BOM::Platform::CryptoCashier::Config::crypto_config($currency_code);
+    # Retrieve from redis
+    my $result;
+    my $redis_read = BOM::Config::Redis::redis_replicated_read();
+
+    $result = $currency_code ? $redis_read->get(CRYPTO_CONFIG_RPC_REDIS . "::" . $currency_code) : $redis_read->get(CRYPTO_CONFIG_RPC_REDIS);
+    return decode_json($result) if $result;
+
+    my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
+    $result = $crypto_service->crypto_config($currency_code);
+
+    unless ($result->{error}) {
+        my $redis_write = BOM::Config::Redis::redis_replicated_write();
+        $currency_code
+            ? $redis_write->setex(CRYPTO_CONFIG_RPC_REDIS . "::" . $currency_code, 5, encode_json($result))
+            : $redis_write->setex(CRYPTO_CONFIG_RPC_REDIS,                         5, encode_json($result));
+    }
+    return $result;
     };
 
 1;

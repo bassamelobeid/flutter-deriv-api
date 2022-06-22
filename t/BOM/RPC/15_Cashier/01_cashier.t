@@ -18,7 +18,7 @@ use LWP::UserAgent;
 require Test::NoWarnings;
 
 use BOM::Config::Redis;
-use JSON::MaybeXS qw(encode_json);
+use JSON::MaybeXS qw(encode_json decode_json);
 use Format::Util::Numbers qw/financialrounding/;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 populate_exchange_rates();
@@ -343,37 +343,44 @@ subtest 'validate_amount' => sub {
 };
 
 subtest 'api crypto_config' => sub {
+    my $invalid_currency = "abcd";
+    $rpc_ct->call_ok(
+        'crypto_config',
+        {
+            language => 'EN',
+            args     => {
+                crypto_config => 1,
+                currency_code => $invalid_currency
+            }}
+    )->has_no_system_error->has_error->error_code_is("CryptoInvalidCurrency", "Correct error code when invalid currency code is provided")
+        ->error_message_is("The provided currency $invalid_currency is not a valid cryptocurrency.",
+        "Correct error message when invalid currency code is provided");
 
-    #should get response from bom config
-    my $result = $rpc_ct->call_ok(
+    my $redis_read = BOM::Config::Redis::redis_replicated_read();
+
+    my $redis_result = $redis_read->get("rpc::cryptocurrency::crypto_config::");
+    is undef, $redis_result, "should not have cache result prior any call to api.";
+
+    $mocked_call->mock('get', sub { return {_content => 'customer too old'} });
+
+    my $api_response = {
+        crypto_config => {
+            currencies_config => {
+                BTC => {minimum_withdrawal => 0.00084364},
+                ETH => {minimum_withdrawal => 0.23},
+            },
+        },
+    };
+    my $http_response = HTTP::Response->new(200);
+    $mocked_call->mock(get => sub { $http_response->content(encode_json_utf8($api_response)); $http_response; });
+
+    my $result_api = $rpc_ct->call_ok(
         'crypto_config',
         {
             language => 'EN',
             args     => {crypto_config => 1}})->has_no_system_error->has_no_error->result;
 
-    my @all_crypto_currencies = LandingCompany::Registry::all_crypto_currencies();
-    my @crypto_currency       = grep { !BOM::Config::CurrencyConfig::is_crypto_currency_suspended($_) } @all_crypto_currencies;
-
-    #testing response from bom config as response is not set in redis yet.
-    cmp_ok(
-        0 + financialrounding(
-            'amount', $_,
-            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($_), 'USD', $_)
-        ),
-        '==',
-        $result->{currencies_config}->{$_}->{minimum_withdrawal},
-        "API:crypto_config => Minimum withdrawal in USD is correct for $_"
-    ) for @crypto_currency;
-
-    #testing response from redis
-    my $redis_write = BOM::Config::Redis::redis_replicated_write();
-    my $expected_result;
-
-    for my $currency_code (@crypto_currency) {
-        my $random_number = rand();
-        $expected_result->{currencies_config}{$currency_code}{minimum_withdrawal} = $random_number;
-        $redis_write->set("cryptocurrency::crypto_config::$currency_code", $random_number);
-    }
+    $redis_result = decode_json($redis_read->get("rpc::cryptocurrency::crypto_config"));
 
     my $common_expected_result = {
         stash => {
@@ -382,18 +389,54 @@ subtest 'api crypto_config' => sub {
             source_bypass_verification => 0,
         },
     };
-    $expected_result = {$common_expected_result->%*, $expected_result->%*};
+    my $expected_result = {$common_expected_result->%*, $redis_result->%*};
+    cmp_deeply $result_api, $expected_result, 'Result matches with redis result as expected.';
 
-    #this call should response from redis as above we have set already redis key/val.
-    $rpc_ct->call_ok(
+    $api_response = {
+        crypto_config => {
+            currencies_config => {
+                BTC => {minimum_withdrawal => 0.00084364},
+            },
+        },
+    };
+
+    $result_api = $rpc_ct->call_ok(
         'crypto_config',
         {
             language => 'EN',
-            args     => {crypto_config => 1}}
-    )->has_no_system_error->has_no_error->result_is_deeply($expected_result, "Correct response from redis for crypto api");
+            args     => {
+                crypto_config => 1,
+                currency_code => "BTC",
+            }})->has_no_system_error->has_no_error->result;
 
-    $redis_write->del("cryptocurrency::crypto_config::$_") for @crypto_currency;
+    $redis_result = decode_json($redis_read->get("rpc::cryptocurrency::crypto_config::BTC"));
 
+    $expected_result = {$common_expected_result->%*, $redis_result->%*};
+    cmp_deeply $result_api, $expected_result, 'Result matches with redis result as expected when currency code is passed.';
+
+    my $redis_write = BOM::Config::Redis::redis_replicated_write();
+    $redis_write->del("rpc::cryptocurrency::crypto_config");
+
+    $api_response = {
+        crypto_config => {
+            currencies_config => {},
+        },
+    };
+
+    $result_api = $rpc_ct->call_ok(
+        'crypto_config',
+        {
+            language => 'EN',
+            args     => {
+                crypto_config => 1,
+            },
+        })->has_no_system_error->has_no_error->result;
+
+    $redis_result    = decode_json($redis_read->get("rpc::cryptocurrency::crypto_config"));
+    $expected_result = {$common_expected_result->%*, $redis_result->%*};
+    cmp_deeply $result_api, $expected_result, 'Correct result when empty hash is returned from crypto api for crypto configs.';
+
+    $mocked_call->unmock_all;
 };
 
 subtest 'Crypto withdrawal API initial validations' => sub {
