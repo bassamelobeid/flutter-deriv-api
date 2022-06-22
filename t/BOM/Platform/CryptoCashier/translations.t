@@ -14,8 +14,7 @@ use BOM::Config::Runtime;
 use BOM::User::Client;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
-my $mock_crypto_api    = Test::MockModule->new('BOM::Platform::CryptoCashier::API');
-my $mock_crypto_config = Test::MockModule->new('BOM::Platform::CryptoCashier::Config');
+my $mock_crypto_api = Test::MockModule->new('BOM::Platform::CryptoCashier::API');
 
 $mock_crypto_api->mock(
     deposit => sub {
@@ -31,9 +30,6 @@ $mock_crypto_api->mock(
             crypto => [],
         };
     },
-);
-
-$mock_crypto_config->mock(
     crypto_config => sub {
         return {
             currencies_config => {
@@ -110,7 +106,6 @@ subtest "handshake" => sub {
 };
 
 $mock_crypto_api->unmock_all();
-$mock_crypto_config->unmock_all();
 
 done_testing;
 

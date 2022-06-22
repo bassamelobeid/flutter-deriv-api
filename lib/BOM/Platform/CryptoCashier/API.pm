@@ -33,6 +33,7 @@ use constant API_ENDPOINTS => {
     TRANSACTIONS    => 'transactions',
     WITHDRAW        => 'withdraw',
     WITHDRAW_CANCEL => 'withdraw_cancel',
+    CRYPTO_CONFIG   => 'crypto_config',
 };
 
 use constant HTTP_METHODS => {
@@ -313,6 +314,40 @@ sub transactions {
                 loginid          => $loginid,
                 transaction_type => $transaction_type,
             }});
+
+    return $result;
+}
+
+=head2 crypto_config
+
+Retrieves crypto config for all the available currencies. If a currency code is passed then only retrieve config for passed currency code.
+
+Receives the following parameters:
+
+=over 4
+
+=item * C<currency_code> - string (optional) Currency code to retrieve the config of
+
+=back
+
+Returns hashrefs with the following keys:
+
+=over 4
+
+=item * C<crypto_config> -hashref , contains the key valus as per https://api.deriv.com/api-explorer/#crypto_config
+
+=back
+
+=cut
+
+sub crypto_config {
+    my ($self, $currency_code) = @_;
+
+    my $result = $self->_request({
+        method       => HTTP_METHODS->{GET},
+        endpoint     => API_ENDPOINTS->{CRYPTO_CONFIG},
+        query_params => {($currency_code ? (currency_code => $currency_code) : ())},
+    });
 
     return $result;
 }

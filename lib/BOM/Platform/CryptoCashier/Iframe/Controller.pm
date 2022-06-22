@@ -9,7 +9,6 @@ use Date::Utility;
 use BOM::User::Client;
 use BOM::Platform::Context qw( localize );
 use BOM::Platform::Client::CashierValidation;
-use BOM::Platform::CryptoCashier::Config;
 use BOM::Platform::CryptoCashier::API;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::HandoffToken;
@@ -241,7 +240,7 @@ sub _withdraw {
     my @transactions = map { format_transaction_date($_) } $trxs->@*;
 
     my $min_withdrawal;
-    my $crypto_config = BOM::Platform::CryptoCashier::Config::crypto_config($currency_code);
+    my $crypto_config = $crypto_api->crypto_config($currency_code);
     $min_withdrawal = $crypto_config->{currencies_config}{$currency_code}{minimum_withdrawal} if $crypto_config->{currencies_config}{$currency_code};
 
     return $c->render(
