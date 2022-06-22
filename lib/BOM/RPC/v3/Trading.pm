@@ -590,7 +590,8 @@ sub change_platform_passwords {
 
     if ($failed_logins) {
 
-        $error_message = localize("Due to a network issue, we couldn't update your $brand_name password. Please check your email for more details");
+        $error_message =
+            localize("Due to a network issue, we couldn't update your [_1] password. Please check your email for more details", $brand_name);
 
         send_email({
                 to            => $client->email,
