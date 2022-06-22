@@ -424,6 +424,8 @@ sub get_settings_by_group {
                 payments.crypto.withdrawal.min_usd
                 payments.crypto.auto_update.approve
                 payments.crypto.auto_update.reject
+                payments.crypto.address_daemon.enabled
+                payments.crypto.address_daemon.address_pool_threshold
                 payments.sweep.reserve_balance
                 payments.sweep.min_transfer
                 payments.sweep.max_transfer
