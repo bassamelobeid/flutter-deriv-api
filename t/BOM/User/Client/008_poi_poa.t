@@ -466,6 +466,111 @@ subtest 'get_poi_status' => sub {
             $mocked_client->unmock_all;
             $pending_request = 0;
         };
+
+        subtest 'POI status - IDV rejected first, then manual uploads' => sub {
+            my $idv = 'none';
+            $mocked_client->mock(
+                'get_idv_status',
+                sub {
+                    return $idv;
+                });
+
+            $uploaded = {};
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+
+            is $test_client_cr->get_poi_status,        'none', 'poi status = none';
+            is $test_client_cr->get_idv_status,        'none', 'idv status = none';
+            is $test_client_cr->get_manual_poi_status, 'none', 'manual status = none';
+
+            $idv = 'rejected';
+
+            is $test_client_cr->get_poi_status,        'rejected', 'poi status = rejected';
+            is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
+            is $test_client_cr->get_manual_poi_status, 'none',     'manual status = none';
+
+            $uploaded = {
+                proof_of_identity => {
+                    is_pending => 1,
+                    documents  => {
+                        asdf => {},
+                    },
+                },
+            };
+
+            is $test_client_cr->get_poi_status,        'pending',  'poi status = pending';
+            is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
+            is $test_client_cr->get_manual_poi_status, 'pending',  'manual status = pending';
+
+            $uploaded = {
+                proof_of_identity => {
+                    is_pending => 0,
+                    documents  => {
+                        asdf => {},
+                    },
+                },
+            };
+
+            is $test_client_cr->get_poi_status,        'rejected', 'poi status = rejected';
+            is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
+            is $test_client_cr->get_manual_poi_status, 'rejected', 'manual status = rejected';
+
+            $uploaded = {
+                proof_of_identity => {
+                    is_pending => 0,
+                    documents  => {
+                        asdf => {},
+                    },
+                },
+            };
+
+            $test_client_cr->status->setnx('age_verification', 'test', 'test');
+            is $test_client_cr->get_poi_status,        'verified', 'poi status = verified';
+            is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
+            is $test_client_cr->get_manual_poi_status, 'verified', 'manual status = verified';
+
+            $uploaded = {
+                proof_of_identity => {
+                    is_expired => 1,
+                    documents  => {
+                        asdf => {},
+                    },
+                },
+            };
+
+            is $test_client_cr->get_poi_status,        'expired',  'poi status = expired';
+            is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
+            is $test_client_cr->get_manual_poi_status, 'expired',  'manual status = expired';
+
+            $uploaded = {
+                proof_of_identity => {
+                    is_expired => 1,
+                    is_pending => 1,
+                    documents  => {
+                        asdf => {},
+                        test => {},
+                    },
+                },
+            };
+
+            is $test_client_cr->get_poi_status,        'pending',  'poi status = pending';
+            is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
+            is $test_client_cr->get_manual_poi_status, 'pending',  'manual status = pending';
+
+            $uploaded = {
+                proof_of_identity => {
+                    is_expired => 0,
+                    is_pending => 0,
+                    documents  => {
+                        asdf => {},
+                        test => {},
+                    },
+                },
+            };
+
+            is $test_client_cr->get_poi_status,        'verified', 'poi status = verified';
+            is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
+            is $test_client_cr->get_manual_poi_status, 'verified', 'manual status = verified';
+        }
     };
 
     subtest 'Regulated account' => sub {
@@ -2016,6 +2121,7 @@ subtest 'Manual POI status' => sub {
 
     my ($is_expired, $is_pending);
     my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    my $docs;
     $mocked_documents->mock(
         'uploaded',
         sub {
@@ -2023,7 +2129,7 @@ subtest 'Manual POI status' => sub {
                 proof_of_identity => {
                     is_expired => $is_expired,
                     is_pending => $is_pending,
-                    documents  => {},
+                    documents  => $docs,
                 },
             };
         });
@@ -2043,6 +2149,9 @@ subtest 'Manual POI status' => sub {
             onfido     => 'none',
             idv        => 'none',
             status     => 'pending',
+            docs       => {
+                test => {},
+            }
         },
         {
             is_expired                        => 1,
@@ -2050,29 +2159,108 @@ subtest 'Manual POI status' => sub {
             idv                               => 'none',
             status                            => 'expired',
             is_document_expiry_check_required => 1,
+            docs                              => {
+                test => {},
+            }
         },
         {
             age_verification => 1,
             onfido           => 'none',
             idv              => 'none',
             status           => 'verified',
-        },
-        {
-            status => 'none',
-            onfido => 'pending',
-            idv    => 'none',
+            docs             => {
+                test => {},
+            }
         },
         {
             status => 'none',
             onfido => 'none',
             idv    => 'pending',
-        }];
+            docs   => {}
+        },
+        {
+            is_pending => 1,
+            status     => 'pending',
+            onfido     => 'none',
+            idv        => 'rejected',
+            docs       => {
+                test => {},
+            }
+        },
+        {
+            is_pending => 1,
+            status     => 'pending',
+            onfido     => 'none',
+            idv        => 'expired',
+            docs       => {
+                test => {},
+            }
+        },
+        {
+            is_pending => 1,
+            status     => 'pending',
+            onfido     => 'none',
+            idv        => 'verified',
+            docs       => {
+                test => {},
+            }
+        },
+        {
+            is_pending => 0,
+            status     => 'rejected',
+            onfido     => 'none',
+            idv        => 'rejected',
+            docs       => {
+                test => {},
+            }
+        },
+        {
+            is_pending       => 0,
+            status           => 'verified',
+            age_verification => 1,
+            onfido           => 'none',
+            idv              => 'rejected',
+            docs             => {
+                test => {},
+            }
+        },
+        {
+            is_expired       => 1,
+            status           => 'expired',
+            age_verification => 1,
+            onfido           => 'none',
+            idv              => 'rejected',
+            docs             => {
+                test => {},
+            }
+        },
+        {
+            is_pending       => 1,
+            status           => 'pending',
+            age_verification => 1,
+            onfido           => 'none',
+            idv              => 'rejected',
+            docs             => {
+                test => {},
+            }
+        },
+        {
+            is_pending       => 0,
+            status           => 'verified',
+            age_verification => 1,
+            onfido           => 'none',
+            idv              => 'rejected',
+            docs             => {
+                test => {},
+            }
+        },
+    ];
 
     for my $test ($tests->@*) {
         my $status;
 
-        ($is_expired, $is_pending, $age_verification, $status, $is_document_expiry_check_required, $onfido, $idv) =
-            @{$test}{qw/is_expired is_pending age_verification status is_document_expiry_check_required onfido idv/};
+        ($is_expired, $is_pending, $age_verification, $status, $is_document_expiry_check_required, $onfido, $idv, $docs) =
+            @{$test}{qw/is_expired is_pending age_verification status is_document_expiry_check_required onfido idv docs/};
 
         is $test_client->get_manual_poi_status, $status, "Got the expected status=$status";
     }

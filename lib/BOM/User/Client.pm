@@ -6712,38 +6712,31 @@ Returns,
 sub get_poi_status {
     my ($self) = @_;
 
-    my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
+    my $manual = $self->get_manual_poi_status();
+    my $idv    = $self->get_idv_status();
+    my $onfido = $self->get_onfido_status();
+    my %status = map { $_ => 1 } ($manual, $idv, $onfido);
 
-    my ($latest) = $self->latest_poi_by();
-    $latest //= '';
-
-    my $status;
-    $status = $self->get_idv_status()    if $latest eq 'idv';
-    $status = $self->get_onfido_status() if $latest eq 'onfido';
-    $status //= $self->get_manual_poi_status();
-
-    return 'pending' if $status eq 'pending';
+    return 'pending' if $status{pending};
 
     if (!$self->ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
-        return 'pending' if $self->documents->pending;
-
-        if ($is_poi_expired) {
-            return 'rejected' if $status eq 'rejected';
+        if ($status{expired}) {
+            # IDV does not have 2nd attempt
+            return 'rejected' if $onfido eq 'rejected';
+            return 'rejected' if $manual eq 'rejected';
             return 'expired';
         }
 
         return 'verified';
     }
 
-    return 'suspected' if $status eq 'suspected';
+    return 'suspected' if $status{suspected};
 
     return 'rejected' if $self->status->poi_name_mismatch;
 
-    return 'rejected' if $status eq 'rejected';
+    return 'rejected' if $status{rejected};
 
-    return 'pending' if $self->documents->pending;
-
-    return 'expired' if $is_poi_expired or $status eq 'expired';
+    return 'expired' if $status{expired};
 
     return 'none';
 }
@@ -6856,9 +6849,8 @@ Returns,
 sub get_manual_poi_status {
     my ($self) = @_;
 
-    my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
-
-    return 'none' if $self->get_onfido_status() ne 'none' || $self->get_idv_status() ne 'none';
+    my $poi_documents  = $self->documents->uploaded->{proof_of_identity};
+    my $is_poi_expired = $poi_documents->{is_expired};
 
     return 'pending' if $self->documents->pending;
 
@@ -6866,7 +6858,9 @@ sub get_manual_poi_status {
 
     return 'verified' if $self->status->age_verification;
 
-    return 'none';
+    return 'none' unless scalar keys $poi_documents->{documents}->%*;
+
+    return 'rejected';    # if docs are not pending, not age verified, what else could it be?
 }
 
 =head2 needs_poa_verification
