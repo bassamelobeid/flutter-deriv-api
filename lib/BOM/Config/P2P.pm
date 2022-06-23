@@ -3,15 +3,21 @@ package BOM::Config::P2P;
 use strict;
 use warnings;
 
+=head1 NAME
+
+C<BOM::Config::P2P>
+
+=head1 DESCRIPTION
+
+P2P runtime configuration derived from multiple sources.
+
+=cut
+
 use BOM::Config;
 use BOM::Config::Runtime;
 use LandingCompany::Registry;
 use JSON::MaybeUTF8 qw(:v1);
 use List::Util qw(any);
-
-=head1 DESCRIPTION
-
-P2P runtime configuration derived from multiple sources.
 
 =head2 available_countries
 
@@ -43,7 +49,7 @@ sub available_countries {
 
 =head2 advert_config
 
-Floating and fixed rate advert configuration for all P2P countries.
+Return a hashref of floating and fixed rate advert configuration for all P2P countries.
 
 =cut
 

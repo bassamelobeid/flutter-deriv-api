@@ -1,19 +1,24 @@
 package BOM::Config::CurrencyConfig;
 
+use strict;
+use warnings;
+use feature 'state';
+no indirect;
+
 =head1 NAME
 
-BOM::Config::CurrencyConfig
+C<BOM::Config::CurrencyConfig> - Currency Configuration
+
+=head1 SYNOPSIS
+
+   use BOM::Config::CurrencyConfig;
+   my $config = BOM::Config::CurrencyConfig::app_config();
 
 =head1 DESCRIPTION
 
 A repository of dynamic configurations set on currencies, like their minimum/maximum limits.
 
 =cut
-
-use strict;
-use warnings;
-use feature 'state';
-no indirect;
 
 use JSON::MaybeUTF8;
 use Log::Any qw($log);
@@ -36,18 +41,23 @@ our @EXPORT_OK = qw(MAX_TRANSFER_FEE);
 
 my $_app_config;
 
-#lazy loading $_app_config
+=head2 app_config
+
+Get the app config
+
+Example:
+
+    my $config = BOM::Config::CurrencyConfig::app_config();
+
+Returns a lazily loaded L<BOM::Config::Runtime> instance.
+
+=cut
+
 sub app_config {
     $_app_config = BOM::Config::Runtime->instance->app_config() unless $_app_config;
     $_app_config->check_for_update();
     return $_app_config;
 }
-
-=head2 currency_for_country
-
-Method returns currency code for requested country code.
-
-=cut
 
 #We're loading mapping at startup time to avoid interation with my SQLlite at runtime.
 
@@ -83,6 +93,25 @@ our %LOCAL_CURRENCY_FOR_COUNTRY = do {
     } Locale::Country::all_country_codes(), 'an';    # Because an not avaible on Locale::Country::all_country_codes() then we append it.
 };
 
+=head2 local_currency_for_country
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<$country_code> - A two letter ISO country code
+
+=back
+
+Example:
+
+    my $currency = BOM::Config::Chronicle::local_currency_for_country('my');
+
+Returns a three letter ISO currency code as a string for the country
+and config database.
+
+=cut
+
 sub local_currency_for_country {
     my ($country_code) = @_;
     return $LOCAL_CURRENCY_FOR_COUNTRY{lc($country_code)};
@@ -90,7 +119,13 @@ sub local_currency_for_country {
 
 =head2 local_currency_list
 
-List of unique local currency in the world.
+Get a list of currencies
+
+Example:
+
+    my $currency = BOM::Config::Chronicle::local_currency_list('my');
+
+Returns an array of unique local currencies in the world.
 
 =cut
 
@@ -147,6 +182,8 @@ These values are extracted from app_config->payment.transfer_between_accounts.mi
 
 =back
 
+Returns a hashref of transfer limits by currency.
+
 =cut
 
 sub transfer_between_accounts_limits {
@@ -194,6 +231,8 @@ These values are extracted from app_config->payment.transfer_between_accounts.mi
 
 =back
 
+Returns C<$platform_transfer_limits> for MT5 for the requester brand.
+
 =cut
 
 sub mt5_transfer_limits {
@@ -210,6 +249,8 @@ Returns the default config when C<brand> is undefined or we didn't find any conf
 =item * C<brand> - The brand name (e.g. derivcrypto, binary, ....) (optional)
 
 =back
+
+Returns C<$platform_transfer_limits_by_brand> for MT5.
 
 =cut
 
@@ -269,6 +310,8 @@ Returns the default config when C<brand> is undefined or we didn't find any conf
 
 =back
 
+Returns a hashref of currency limits for the brand.
+
 =cut
 
 sub get_platform_transfer_limit_by_brand {
@@ -293,6 +336,10 @@ sub get_platform_transfer_limit_by_brand {
 }
 
 =head2 transfer_between_accounts_fees
+
+Example:
+
+    my $currency = BOM::Config::Chronicle::transfer_between_accounts_fees();
 
 Transfer fees are returned as a hashref for all supported currency pairs; e.g. {'USD' => {'BTC' => 1,'EUR' => 0.5, ...}, ... }.
 These values are extracted from payment.transfer_between_accounts.fees.by_currency, if not available it defaults to
@@ -435,7 +482,9 @@ sub get_suspended_crypto_currencies {
 =head2 is_crypto_currency_suspended
 
 To check if the given crypto currency is suspended in the crypto cashier.
-Dies when the C<currency> is not provided or not a valid crypto currency.
+Dies when the C<$currency> is not provided or not a valid crypto currency.
+
+Takes the following argument(s)
 
 =over 4
 
@@ -463,9 +512,11 @@ sub is_crypto_currency_suspended {
 To check if the specified action for the given crypto currency is suspended
 in the crypto cashier.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =item * C<action> - Action name. Can be one of C<cryptocurrencies_deposit> or C<cryptocurrencies_withdrawal>
 
@@ -487,9 +538,11 @@ sub _is_crypto_currency_action_suspended {
 
 To check if deposit for the given crypto currency is suspended in the crypto cashier.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =back
 
@@ -507,9 +560,11 @@ sub is_crypto_currency_deposit_suspended {
 
 To check if withdrawal for the given crypto currency is suspended in the crypto cashier.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =back
 
@@ -527,9 +582,11 @@ sub is_crypto_currency_withdrawal_suspended {
 
 To check if the currency is experimental.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =back
 
@@ -547,9 +604,11 @@ sub is_experimental_currency {
 
 Gets the new_address_threshold of each currencies
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<c$urrency> - Currency code
 
 =back
 
@@ -572,9 +631,11 @@ sub get_crypto_new_address_threshold {
 
 To get the minimum withdrawal amount for currency.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =back
 
@@ -594,9 +655,11 @@ sub get_crypto_withdrawal_min_usd {
 
 Get the global status of crypto auto approve or auto reject from backoffice dynamic settings
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<action> - required - Action to check  - approve or reject
+=item * C<$action> - required - Action to check  - approve or reject
 
 =back
 

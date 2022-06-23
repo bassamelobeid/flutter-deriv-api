@@ -1,12 +1,14 @@
 package BOM::Config::QuantsConfig;
 
-use Moose;
-
 =head1 NAME
 
-BOM::Config::QuantsConfig - A class to handle dynamic quants config
+C<BOM::Config::QuantsConfig>
 
-=head1 USAGE
+=head1 DESCRIPTION
+
+A class to handle dynamic quants config.
+
+=head1 SYNOPSIS
 
     use BOM::Config::QuantsConfig;
     use Date::Utility;
@@ -21,6 +23,8 @@ BOM::Config::QuantsConfig - A class to handle dynamic quants config
     $qc->save('test', +{test => 1});
 
 =cut
+
+use Moose;
 
 use Date::Utility;
 use LandingCompany::Registry;
@@ -54,7 +58,9 @@ has [qw(recorded_date for_date)] => (
 
 save config into quants_config namespace.
 
-->save_config('commission', {contract_type => 'CALL,PUT', commission => 0.2})
+Example:
+
+    $obj->save_config('commission', {contract_type => 'CALL,PUT', commission => 0.2});
 
 =cut
 
@@ -172,7 +178,9 @@ sub _cleanup {
 
 Retrieves config based on contract_type and underlying_symbol matching
 
-->get_config('commision', {underlying_symbol => 'frxUSDJPY'})
+Example:
+
+    $obj->get_config('commision', {underlying_symbol => 'frxUSDJPY'});
 
 =cut
 
@@ -191,7 +199,9 @@ sub get_config {
 
 Get config for multiplier options for a specific landing company and underlying symbol.
 
-->get_multiplier_config('maltainvest', 'frxUSDJPY');
+Example:
+
+    $obj->get_multiplier_config('maltainvest', 'frxUSDJPY');
 
 Returns a hash reference.
 
@@ -224,7 +234,7 @@ sub get_multiplier_config {
 
 =head2 get_multiplier_config_default
 
-Returns the default multiplier config defined in yaml.
+Returns the C<$default_multiplier_config> defined in yaml.
 
 =cut
 
@@ -280,9 +290,11 @@ sub _process_commission {
 
 =head2 delete_config
 
-Deletes config base on config_type and name
+Deletes config base on config_type and name.
 
-->delete_config('commission', 'test 1')
+Example:
+
+    $obj->delete_config('commission', 'test 1');
 
 =cut
 
@@ -318,9 +330,11 @@ sub _validate {
 
 =head2 custom_deal_cancellation
 
-custom_deal_cancellation will return the custom deal cancellation set on backoffice
+C</custom_deal_cancellation> will return the custom deal cancellation set on backoffice.
 
-->custom_deal_cancellation(underlying_symbol, landing_company_short, date_pricing)
+Example:
+
+    $obj->custom_deal_cancellation(underlying_symbol, landing_company_short, date_pricing);
 
 =cut
 
@@ -343,9 +357,11 @@ sub custom_deal_cancellation {
 
 =head2 get_mt5_symbols_mapping
 
-get_mt5_symbols_mapping will return the mapped mt5 symbol with deriv symbol
+C</get_mt5_symbols_mapping> will return the mapped mt5 symbol with deriv symbol.
 
-->get_mt5_symbols_mapping
+Example:
+
+    $obj->get_mt5_symbols_mapping;
 
 =cut
 
@@ -355,9 +371,11 @@ sub get_mt5_symbols_mapping {
 
 =head2 get_dividend_scheduler_yml
 
-get_dividend_scheduler_yml will return the symbols that will be used for dividend scheduler
+C</get_dividend_scheduler_yml> will return the symbols that will be used for dividend scheduler.
 
-->get_dividend_scheduler_yml
+Example:
+
+    $obj->get_dividend_scheduler_yml;
 
 =cut
 
@@ -367,9 +385,11 @@ sub get_dividend_scheduler_yml {
 
 =head2 default_barrier_multipler_yml
 
-default_barrier_multipler_yml will return the default barrier multiplier that will be used for barrier calculation
+C</default_barrier_multipler_yml> will return the default barrier multiplier that will be used for barrier calculation.
 
-->default_barrier_multipler_yml
+Example:
+
+    $obj->default_barrier_multipler_yml;
 
 =cut
 

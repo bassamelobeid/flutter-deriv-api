@@ -1,8 +1,11 @@
 package BOM::Config::Chronicle;
 
+use strict;
+use warnings;
+
 =head1 NAME
 
-BOM::Config::Chronicle - Provides efficient data storage for volatile and time-based data
+C<BOM::Config::Chronicle> - Provides efficient data storage for volatile and time-based data
 
 =head1 DESCRIPTION
 
@@ -68,9 +71,6 @@ Returns a Data::Chronicle::Writer object.
 
 =cut
 
-use strict;
-use warnings;
-
 use DBIx::Connector;
 use Date::Utility;
 use BOM::Config::Redis;
@@ -78,6 +78,25 @@ use BOM::Config::Redis;
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
 use BOM::Config::AuditedChronicleWriter;
+
+=head2 get_chronicle_writer
+
+Get chronicle writer
+
+Example:
+
+    my $writer = BOM::Config::Chronicle::get_chronicle_writer();
+    $chronicle_writer->set(
+                'interest_rates',
+                $symbol,
+                {...},
+                Date::Utility->new(),
+            );
+
+Returns a L<Data::Chronicle::Writer> object that can write to the redis cache
+and config database.
+
+=cut
 
 sub get_chronicle_writer {
     return Data::Chronicle::Writer->new(
@@ -87,7 +106,28 @@ sub get_chronicle_writer {
     );
 }
 
-# Same as get_chronicle_writer but this one will add a "staff" field to the json stored in chronicle
+=head2 get_audited_chronicle_writer
+
+Get audited chronicle writer
+
+Takes the following argument(s) as parameters:
+
+=over 4
+
+=item * C<staff> - The type of audit survey done when writer was called
+
+=back
+
+Example:
+
+    my $writer = BOM::Config::Chronicle::get_audited_chronicle_writer('P2P Daily Maintenance');
+
+Returns a L<BOM::Config::AuditedChronicleWriter> object that can write to the redis cache
+and config database
+
+Same as L</get_chronicle_writer>, but this one will add a C<staff> field to the data stored in chronicle
+
+=cut
 
 sub get_audited_chronicle_writer {
     my ($staff) = @_;
@@ -102,8 +142,31 @@ sub get_audited_chronicle_writer {
     );
 }
 
+=head2 get_chronicle_reader
+
+Get chronicle writer
+
+Takes the following argument(s):
+
+=over 4
+
+=item * C<$for_date> - The date used from which historical data needs to be fetched
+
+=back
+
+Example:
+
+    my $reader = BOM::Config::Chronicle::get_chronicle_reader();
+
+Returns a L<Data::Chronicle::Reader> object that can read from the redis cache
+and config database.
+
+if C<$for_date> is specified, then this chronicle_reader will be used for historical
+data fetching, so it needs a database connection.
+
+=cut
+
 sub get_chronicle_reader {
-    #if for_date is specified, then this chronicle_reader will be used for historical data fetching, so it needs a database connection
     my $for_date = shift;
     my $redis    = BOM::Config::Redis::redis_replicated_read();
 
@@ -120,12 +183,31 @@ sub get_chronicle_reader {
     );
 }
 
-# According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
-# The assumption is that we have Redis for all data which is important for continutation of our services
-# We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
-# And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
-# But by re-running population scripts
 my $dbic;
+
+=head2 dbic
+
+Get the PostgresSQL Database connection instance for config database.
+
+Example:
+
+    my $dbic = BOM::Config::Chronicle::dbic();
+    my $rows = $dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT * FROM get_app_settings_history(?, ?, ?)", {Slice => {}}, $setting, $limit + 1, $offset);
+        });
+
+Returns a L<DBIx::Connector> singleton that provides connection instance
+based on pg_service.conf credentials.
+Returns L<undef> if no configuration is provided.
+
+According to discussions made, we are supposed to support "Redis only" installation where there is no Pg.
+The assumption is that we have Redis for all data which is important for continutation of our services
+We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
+And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
+But by re-running population scripts
+
+=cut
 
 sub dbic {
     # Silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
@@ -141,6 +223,18 @@ sub dbic {
     $dbic->mode('fixup');
     return $dbic;
 }
+
+=head2 clear_connections
+
+clears C<$dbic> object
+
+Example:
+
+    BOM::Config::Chronicle::clear_connections();
+
+uninitializes the database connection instance.
+
+=cut
 
 sub clear_connections {
     $dbic = undef;

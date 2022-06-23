@@ -1,8 +1,11 @@
 package BOM::Config::RedisTransactionLimits;
 
+use strict;
+use warnings;
+
 =head1 NAME
 
-BOM::Config::RedisTransactionLimits
+C<BOM::Config::RedisTransactionLimits>
 
 =head1 DESCRIPTION
 
@@ -14,14 +17,12 @@ yml structure is different from other Redis yml config files.
 
 In QA environment it is all pointed to the same local Redis server at port 6329.
 
-Please note:
-Don't cache returned object for a long term. All needed caching is done inside
+=head1 WARNING
+
+Don't cache returned object for a long time. All necessary caching is done
 here, so better always call needed function to get working connection.
 
 =cut
-
-use strict;
-use warnings;
 
 use RedisDB;
 use Syntax::Keyword::Try;
@@ -70,6 +71,21 @@ sub _get_redis_transaction_server {
 
     return $connections->{$redis_key};
 }
+
+=head1 redis_limits_write
+
+Gets a write connection to redis based on C<$redis_limit_settings> or the C<$company_limits>.
+for the landing company.
+
+Takes the following argument(s):
+
+=over 4
+
+=item * C<$landing_company> - The landing company shortcode as a string
+
+=back
+
+=cut
 
 sub redis_limits_write {
     my ($landing_company) = @_;

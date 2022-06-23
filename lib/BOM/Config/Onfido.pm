@@ -1,18 +1,18 @@
 package BOM::Config::Onfido;
 
-=head1 NAME
-
-BOM::Config::Onfido
-
-=head1 DESCRIPTION
-
-A repository that consists data related to Onfido.
-
-=cut
-
 use strict;
 use warnings;
 use feature "state";
+
+=head1 NAME
+
+C<BOM::Config::Onfido>
+
+=head1 DESCRIPTION
+
+A module that consists methods to get config data related to Onfido.
+
+=cut
 
 use JSON::MaybeUTF8 qw(:v1);
 use Locale::Codes::Country qw(country_code2code);
@@ -32,7 +32,19 @@ sub supported_documents_list {
 
 =head2 supported_documents_for_country
 
-Returns the supported_documents_list for the country
+Takes the following argument(s) as parameters:
+
+=over 4
+
+=item * C<$country_code> - The ISO code of the country
+
+=back
+
+Example:
+
+    my $supported_docs_my = BOM::Config::Onfido::support_documents_for_country('my');
+
+Returns the supported_documents_list for the country.
 
 =cut
 

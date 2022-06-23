@@ -3,10 +3,41 @@ package BOM::Config::Quants;
 use strict;
 use warnings;
 
+=head1 NAME
+
+C<BOM::Config::Quants>
+
+=head1 DESCRIPTION
+
+This module exports methods to get our quants and trading configuration.
+
+=cut
+
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(market_pricing_limits minimum_payout_limit maximum_payout_limit minimum_stake_limit maximum_stake_limit);
+
+=head2 market_pricing_limits
+
+Takes the following argument(s):
+
+=over 4
+
+=item * C<$currencies> - An arrayref of currency codes
+
+=item * C<$lc> - The landing company shortcode as a string
+
+=item * C<$markets> - An arrayref of market types
+
+=item * C<$contract_categories> - An arrayref of contract categories
+
+=back
+
+Returns the hashref of market pricing limits for desired market, landing company,
+contract category and currency combination.
+
+=cut
 
 sub market_pricing_limits {
     my ($currencies, $lc, $markets, $contract_categories) = @_;
@@ -46,11 +77,53 @@ sub market_pricing_limits {
     return $limits;
 }
 
+=head2 minimum_payout_limit
+
+Takes the following argument(s):
+
+=over 4
+
+=item * C<$currency> - ISO currency code as a string
+
+=item * C<$lc> - The landing company shortcode as a string
+
+=item * C<$market> - Market type as a string
+
+=item * C<$contract_category> - The contract category as a string
+
+=back
+
+Returns the minimum payout limit for the desired currency, landing company,
+market and contract category combination.
+
+=cut
+
 sub minimum_payout_limit {
     my ($currency, $lc, $market, $contract_category) = @_;
 
     return _get_amount_limit('min_payout', $currency, $lc, $market, $contract_category);
 }
+
+=head2 maximum_payout_limit
+
+Takes the following argument(s):
+
+=over 4
+
+=item * C<$currency> - ISO currency code as a string
+
+=item * C<$lc> - The landing company shortcode as a string
+
+=item * C<$market> - Market type as a string
+
+=item * C<$contract_category> - The contract category as a string
+
+=back
+
+Returns the maximum payout limit for the desired currency, landing company,
+market and contract category combination.
+
+=cut
 
 sub maximum_payout_limit {
     my ($currency, $lc, $market, $contract_category) = @_;
@@ -58,11 +131,53 @@ sub maximum_payout_limit {
     return _get_amount_limit('max_payout', $currency, $lc, $market, $contract_category);
 }
 
+=head2 minimum_stake_limit
+
+Takes the following argument(s):
+
+=over 4
+
+=item * C<$currency> - ISO currency code as a string
+
+=item * C<$lc> - The landing company shortcode as a string
+
+=item * C<$market> - Market type as a string
+
+=item * C<$contract_category> - The contract category as a string
+
+=back
+
+Returns the minimum stake limit for the desired currency, landing company,
+market and contract category combination.
+
+=cut
+
 sub minimum_stake_limit {
     my ($currency, $lc, $market, $contract_category) = @_;
 
     return _get_amount_limit('min_stake', $currency, $lc, $market, $contract_category);
 }
+
+=head2 maximum_stake_limit
+
+Takes the following argument(s):
+
+=over 4
+
+=item * C<$currency> - ISO currency code as a string
+
+=item * C<$lc> - The landing company shortcode as a string
+
+=item * C<$market> - Market type as a string
+
+=item * C<$contract_category> - The contract category as a string
+
+=back
+
+Returns the maximum payout limit for the desired currency, landing company,
+market and contract category combination.
+
+=cut
 
 sub maximum_stake_limit {
     my ($currency, $lc, $market, $contract_category) = @_;
