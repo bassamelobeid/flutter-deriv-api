@@ -82,27 +82,17 @@ sub notify_crypto_withdrawal_rejected {
     my $req   = BOM::Platform::Context::Request->new(brand_name => $brand->name);
     BOM::Platform::Context::request($req);
 
-    my $email_subject = localize('Your withdrawal request has been declined');
-    my $email_data    = {
-        name           => $client->first_name,
-        title          => localize('We were unable to process your withdrawal'),
-        reason         => $reason,
-        client_loginid => $client->loginid,
-        brand_name     => ucfirst $brand->name,
-        other_reason   => $other_reason,
-    };
-
-    send_email({
-        to                    => $client->email,
-        subject               => $email_subject,
-        template_name         => 'withdrawal_reject',
-        template_args         => $email_data,
-        template_loginid      => $client->loginid,
-        email_content_is_html => 1,
-        use_email_template    => 1,
-        use_event             => 1,
-        language              => $client->user->preferred_language
-    });
+    BOM::Platform::Event::Emitter::emit(
+        'withdrawal_rejected',
+        {
+            loginid    => $client->loginid,
+            properties => {
+                loginid    => $client->loginid,
+                first_name => $client->first_name,
+                reason     => $reason,
+                brand      => ucfirst $brand->name,
+                remark     => $other_reason,
+            }});
 }
 
 my $broker = request()->broker_code;
