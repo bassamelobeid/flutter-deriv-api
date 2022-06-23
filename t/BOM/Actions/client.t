@@ -40,8 +40,10 @@ my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
+
 my (@identify_args, @track_args);
 my $mock_segment = Test::MockModule->new('WebService::Async::Segment::Customer');
+
 $mock_segment->redefine(
     'identify' => sub {
         @identify_args = @_;
@@ -1459,25 +1461,23 @@ subtest 'account closure' => sub {
         loginids_failed   => [],
         email_consent     => 0
     };
+    undef @emit_args;
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{account_closure};
     my $result         = $action_handler->($call_args);
-    ok $result, 'Success result';
 
-    is_deeply $email_args,
+    ok $result, 'Success result';
+    is_deeply \@emit_args,
+        [
+        'account_deactivated',
         {
-        to                    => $test_client->email,
-        subject               => 'Your account is deactivated',
-        template_name         => 'account_closure',
-        email_content_is_html => 1,
-        use_email_template    => 1,
-        use_event             => 1,
-        template_args         => {
-            name  => $test_client->first_name,
-            title => 'Your account has been closed',
-        }
-        },
-        'correct email is sent';
+            loginid    => $loginid,
+            properties => {
+                name  => $test_client->first_name,
+                brand => 'deriv'
+            }}
+        ],
+        'account_deactivated event is emitted';
 
     $mock_client->unmock_all;
 };
@@ -2297,7 +2297,6 @@ subtest 'Overwrite Experian reason' => sub {
 subtest 'account_reactivated' => sub {
     my @email_args;
     my $mock_event = Test::MockModule->new('BOM::Event::Actions::Client');
-    $mock_event->redefine('send_email', sub { push @email_args, shift; });
 
     my $needs_verification = 0;
     my $mock_client        = Test::MockModule->new('BOM::User::Client');
@@ -2313,33 +2312,21 @@ subtest 'account_reactivated' => sub {
     };
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{account_reactivated};
 
-    mailbox_clear();
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
 
-    request(
-        BOM::Platform::Context::Request->new(
-            brand_name => 'deriv',
-            language   => 'EN',
-            app_id     => $app_id,
-        ));
     my $brand = request->brand;
+    undef @emit_args;
 
     is exception { $handler->($call_args) }, undef, 'Event processed successfully';
-    my $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
-    ok $msg, 'Email to client is found';
-    like $msg->{body},    qr/Check your personal details/, 'Email contains link to profile page';
-    unlike $msg->{body},  qr/Upload your documents/,       'No link to POI page';
-    is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
-
     $needs_verification = 1;
     mailbox_clear();
 
     is exception { $handler->($call_args) }, undef, 'Event processed successfully';
-    $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
-    ok $msg, 'Email to client is found';
-    unlike $msg->{body},  qr/Check your personal details/, 'Email contains link to profile page';
-    like $msg->{body},    qr/Upload your documents/,       'No link to POI page';
-    is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
-
     $msg = mailbox_search(
         subject => qr/has been reactivated/,
     );
@@ -2347,6 +2334,7 @@ subtest 'account_reactivated' => sub {
 
     $social_responsibility = 'required';
     mailbox_clear();
+
     is exception { $handler->($call_args) }, undef, 'Event processed successfully';
     $msg = mailbox_search(subject => qr/has been reactivated/);
     ok $msg, 'Email to SR team is found';
@@ -2360,13 +2348,14 @@ subtest 'account_reactivated for track worker' => sub {
     request(
         BOM::Platform::Context::Request->new(
             brand_name => 'deriv',
-            language   => 'EN',
+            language   => 'ES',
             app_id     => $app_id,
         ));
     my $brand = request->brand;
 
     my $handler = BOM::Event::Process->new(category => 'track')->actions->{account_reactivated};
     undef @track_args;
+    undef @emit_args;
 
     my $call_args = {
         loginid => $test_client->loginid,
@@ -2381,13 +2370,15 @@ subtest 'account_reactivated for track worker' => sub {
             context    => ignore(),
             event      => 'account_reactivated',
             properties => {
+                first_name       => $test_client->first_name,
                 loginid          => $test_client->loginid,
                 brand            => 'deriv',
                 profile_url      => $brand->profile_url,
-                resp_trading_url => $brand->responsible_trading_url,
-                live_chat_url    => $brand->live_chat_url,
+                resp_trading_url => $brand->responsible_trading_url({language => uc(request->language // 'es')}),
+                live_chat_url    => $brand->live_chat_url({language => uc(request->language // 'es')}),
                 needs_poi        => bool(0),
-                lang             => 'EN',
+                lang             => 'ES',
+                new_campaign     => 1,
             }
         },
         'track event params'

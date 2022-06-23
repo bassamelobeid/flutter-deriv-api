@@ -235,7 +235,8 @@ subtest 'process - tracking jobs' => sub {
                 trading_platform_password_reset_request trading_platform_investor_password_reset_request
                 trading_platform_password_changed trading_platform_password_change_failed
                 trading_platform_investor_password_changed trading_platform_investor_password_change_failed
-                underage_account_closed account_with_false_info_locked self_exclude signup/
+                underage_account_closed account_with_false_info_locked self_exclude signup
+                withdrawal_rejected account_deactivated /
         ),
         'Correct number of actions that can be emitted'
     );

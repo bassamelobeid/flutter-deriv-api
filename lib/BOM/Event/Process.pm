@@ -156,6 +156,8 @@ my $action_mapping = {
         multiplier_hit_type                              => \&BOM::Event::Services::Track::multiplier_hit_type,
         multiplier_near_expire_notification              => \&BOM::Event::Services::Track::multiplier_near_expire_notification,
         multiplier_near_dc_notification                  => \&BOM::Event::Services::Track::multiplier_near_dc_notification,
+        withdrawal_rejected                              => \&BOM::Event::Services::Track::withdrawal_rejected,
+        account_deactivated                              => \&BOM::Event::Services::Track::account_deactivated,
     },
 };
 

@@ -1,6 +1,6 @@
 package BOM::Event::Services::Track;
-
 use strict;
+
 use warnings;
 use feature 'state';
 use utf8;
@@ -51,7 +51,7 @@ my %EVENT_PROPERTIES = (
             is_to_account_pa gateway_code remark time id)
     ],
     account_closure     => [qw(closing_reason loginids_disabled loginids_failed email_consent)],
-    account_reactivated => [qw(needs_poi profile_url resp_trading_url live_chat_url)],
+    account_reactivated => [qw(first_name needs_poi profile_url resp_trading_url live_chat_url new_campaign)],
     app_registered      => [qw(name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_updated         => [qw(name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_deleted         => [qw(app_id)],
@@ -146,7 +146,9 @@ my %EVENT_PROPERTIES = (
     account_verification_for_pending_payout     => [qw(date email)],
     authenticated_with_scans                    => [qw(first_name email contact_url live_chat_url)],
     pa_transfer_confirm                         => [qw(loginid email pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
-    pa_withdraw_confirm => [qw(loginid email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
+    pa_withdraw_confirm => [qw(email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
+    withdrawal_rejected => [qw(first_name reason remark)],
+    account_deactivated => [qw(name brand)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -180,6 +182,8 @@ my @COMMON_EVENT_METHODS = qw(
     authenticated_with_scans
     pa_transfer_confirm
     pa_withdraw_confirm
+    withdrawal_rejected
+    account_deactivated
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1350,7 +1354,18 @@ It can be called with the following parameters:
 =head2 pa_transfer_confirm
 
 It is triggered for each B<pa_transfer_confirm> event emitted, delivering it to Segment.
-It can be called with the following parameters:
+
+=head2 account_deactivated
+
+It is triggered for each B<account_deactivated> event emitted, delivering it to Segment.
+
+=head2 withdrawal_rejected
+
+It is triggered for each B<withdrawal_rejected> event emitted, delivering it to Segment.
+
+=head2 poi_authentication_requested
+
+It is triggered for each B<poi_authentication_requested> event emitted, delivering it to Segment.
 
 =cut
 
