@@ -275,6 +275,20 @@ rpc "verify_email",
                     code              => 'Permission Denied',
                     message_to_client => localize('You can not perform a withdrawal while impersonating an account')});
         }
+        if ($type eq 'paymentagent_withdraw') {
+            my $rule_engine = BOM::Rules::Engine->new(client => $client);
+            try {
+                $rule_engine->apply_rules(
+                    [qw/client.is_not_virtual paymentagent.paymentagent_withdrawal_allowed/],
+                    loginid                    => $client->loginid,
+                    source_bypass_verification => 0,
+                );
+            } catch ($rules_error) {
+
+                return BOM::RPC::v3::Utility::rule_engine_error($rules_error);
+
+            }
+        }
         my $data = $verification->{payment_withdraw}->();
         BOM::Platform::Event::Emitter::emit(
             'request_payment_withdraw',
@@ -289,6 +303,7 @@ rpc "verify_email",
                     language         => $params->{language},
                 },
             });
+
     } elsif ($existing_user and $type eq 'trading_platform_password_reset') {
         my $verification = $verification->{trading_platform_password_reset}->();
         request_email($email, $verification);

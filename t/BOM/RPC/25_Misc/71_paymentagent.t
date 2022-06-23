@@ -18,6 +18,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 use BOM::Test::Helper::Client qw( top_up );
 use ExchangeRates::CurrencyConverter qw( convert_currency );
 use Format::Util::Numbers qw( formatnumber );
+use BOM::Config::Runtime;
 
 my ($Alice, $Alice_id, $Bob, $Bob_id, $test, $test_currency, $test_amount, $amount_boost, $dry_run, $testargs, $res);
 

@@ -975,12 +975,11 @@ rpc paymentagent_withdraw => sub {
     try {
         $rule_engine->verify_action(
             'paymentagent_withdraw',
-            loginid_client => $client_loginid,
-            loginid_pa     => $paymentagent_loginid,
-            amount         => $amount,
-            currency       => $currency,
-            dry_run        => $args->{dry_run} // 0,
-
+            loginid_client             => $client_loginid,
+            loginid_pa                 => $paymentagent_loginid,
+            amount                     => $amount,
+            currency                   => $currency,
+            dry_run                    => $args->{dry_run} // 0,
             source_bypass_verification => $source_bypass_verification,
         );
     } catch ($e) {
