@@ -6,18 +6,18 @@
 %>
 <div id="container" class="reactivate-account">
     <div>
-        <h2 class="reactivate-title"><%= l('Would you like to reactivate your account?') %></h2>
+        <h2 class="reactivate-title"><%= l('Want to start trading on Deriv again?') %></h2>
         <p class="reactivate-description">
-            <%if ($financial_reasons) { %>
-                <%== l('You deactivated your account due to financial reasons.') %>
-            <% } %>
-            <%== l('By reactivating your account, you agree that we will not be responsible for any losses you incur while trading. Please read our [_1]responsible trading[_2] page for more information.', '<a target="_blank" href="' . sprintf("https://www.%s/%sresponsible-trading", $website_domain, lc($language)) . '">' , '</a>') %>
+    <%if ($financial_reasons) { %>
+	    <%== l('You closed your account due to financial reasons.') %>
+	    <% } %>
+            <%== l('By hitting "Start trading" below, you agree that we will not be responsible for any losses you incur while trading. Please read our [_1]Responsible trading[_2] page for more information.', '<a target="_blank" href="' . sprintf("https://www.%s/%sresponsible-trading", $website_domain, lc($language)) . '">' , '</a>') %>
         </p>
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
             <div>
                 <button id="btnCancel" class="tertiary" style="margin-left:5px; margin-right:5px" name="cancel_reactivate" value="<%= l('Cancel') %>" type="submit"><%= l('Cancel') %></button>
-                <button id="btnGrant" class="secondary" style="margin-left:5px; margin-right:5px" name="confirm_reactivate" value="<%= l('Reactivate') %>" type="submit"><%= l('Reactivate') %></button>
+                <button id="btnGrant" class="secondary" style="margin-left:5px; margin-right:5px" name="confirm_reactivate" value="<%= l('Start trading') %>" type="submit"><%= l('Start trading') %></button>
             </div>
         </form>
     </div>

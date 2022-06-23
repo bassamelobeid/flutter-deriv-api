@@ -138,7 +138,7 @@ subtest 'login fails if activation is cancelled' => sub {
     );
     $t->text_like(
         'p.reactivate-description',
-        qr/^\s*By reactivating your account, you agree that we will not be responsible for any losses you incur while trading./,
+        qr/^\s*By hitting "Start trading" below, you agree that we will not be responsible for any losses you incur while trading./,
         "correct reactivation message when account is closed for non-financial reasons"
     );
     ok $t->tx->res->dom->at('button[name=cancel_reactivate]'),  'cancel button';
@@ -181,7 +181,7 @@ subtest 'login succeeds for self-closed accounts' => sub {
     );
     $t->text_like(
         'p.reactivate-description',
-        qr/^\s*By reactivating your account, you agree that we will not be responsible for any losses you incur while trading./,
+        qr/^\s*By hitting "Start trading" below, you agree that we will not be responsible for any losses you incur while trading./,
         "correct reactivation message when account is closed for non-financial reasons"
     );
     ok $t->tx->res->dom->at('button[name=cancel_reactivate]'),  'cancel button';
@@ -214,7 +214,7 @@ subtest 'reactivation - closed for financial concerns' => sub {
 
     $t->text_like(
         'p.reactivate-description',
-        qr/^\s*You deactivated your account due to financial reasons.\s*By reactivating your account, you agree that we will not be responsible for any losses you incur while trading./,
+        qr/^\s*You closed your account due to financial reasons.\s*By hitting "Start trading" below, you agree that we will not be responsible for any losses you incur while trading./,
         "correct reactivation message when account is closed for financial reasons"
     );
     ok $t->tx->res->dom->at('button[name=cancel_reactivate]'),  'cancel button';
