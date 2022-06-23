@@ -216,48 +216,78 @@ sub log_call_timing_sent {
 
 my %rate_limit_map = (
     # Real Actions
-    ping_real                   => '',
-    time_real                   => '',
-    portfolio_real              => 'websocket_call_expensive',
-    statement_real              => 'websocket_call_expensive',
-    profit_table_real           => 'websocket_call_expensive',
-    proposal_real               => 'websocket_real_pricing',
-    proposal_open_contract_real => 'websocket_real_pricing',
-    verify_email_real           => 'websocket_call_email',
-    request_report_real         => 'websocket_call_email',
-    buy_real                    => 'websocket_real_pricing',
-    sell_real                   => 'websocket_real_pricing',
-    reality_check_real          => 'websocket_call_expensive',
-    account_statistics_real     => 'websocket_call_expensive',
-    account_security_real       => 'websocket_call_expensive',
-    reset_password_real         => 'websocket_call_password',
+    ping_real                      => '',
+    time_real                      => '',
+    portfolio_real                 => 'websocket_call_expensive',
+    statement_real                 => 'websocket_call_expensive',
+    profit_table_real              => 'websocket_call_expensive',
+    proposal_real                  => 'websocket_real_pricing',
+    proposal_open_contract_real    => 'websocket_real_pricing',
+    verify_email_real              => 'websocket_call_email',
+    request_report_real            => 'websocket_call_email',
+    buy_real                       => 'websocket_real_pricing',
+    sell_real                      => 'websocket_real_pricing',
+    reality_check_real             => 'websocket_call_expensive',
+    account_statistics_real        => 'websocket_call_expensive',
+    account_security_real          => 'websocket_call_expensive',
+    reset_password_real            => 'websocket_call_password',
+    balance_real                   => 'trading_platform',
+    statement_real                 => 'trading_platform',
+    get_account_status_real        => 'trading_platform',
+    set_self_exclusion_real        => 'trading_platform',
+    set_account_currency_real      => 'trading_platform',
+    get_limits_real                => 'trading_platform',
+    transfer_between_accounts_real => 'trading_platform',
+    account_closure_real           => 'trading_platform',
+    trading_servers_real           => 'trading_platform',
 
     # Virtual Actions
-    ping_virtual                   => '',
-    time_virtual                   => '',
-    portfolio_virtual              => 'websocket_call_expensive',
-    statement_virtual              => 'websocket_call_expensive',
-    profit_table_virtual           => 'websocket_call_expensive',
-    proposal_virtual               => 'websocket_call_pricing',
-    proposal_open_contract_virtual => 'websocket_call_pricing',
-    verify_email_virtual           => 'websocket_call_email',
-    request_report_virtual         => 'websocket_call_email',
-    buy_virtual                    => 'virtual_buy_transaction',
-    sell_virtual                   => 'virtual_sell_transaction',
-    account_statistics_virtual     => 'websocket_call_expensive',
-    account_security_virtual       => 'websocket_call_expensive',
-    reset_password_virtual         => 'websocket_call_password',
+    ping_virtual                      => '',
+    time_virtual                      => '',
+    portfolio_virtual                 => 'websocket_call_expensive',
+    statement_virtual                 => 'websocket_call_expensive',
+    profit_table_virtual              => 'websocket_call_expensive',
+    proposal_virtual                  => 'websocket_call_pricing',
+    proposal_open_contract_virtual    => 'websocket_call_pricing',
+    verify_email_virtual              => 'websocket_call_email',
+    request_report_virtual            => 'websocket_call_email',
+    buy_virtual                       => 'virtual_buy_transaction',
+    sell_virtual                      => 'virtual_sell_transaction',
+    account_statistics_virtual        => 'websocket_call_expensive',
+    account_security_virtual          => 'websocket_call_expensive',
+    reset_password_virtual            => 'websocket_call_password',
+    balance_virtual                   => 'trading_platform',
+    statement_virtual                 => 'trading_platform',
+    get_account_status_virtual        => 'trading_platform',
+    set_self_exclusion_virtual        => 'trading_platform',
+    set_account_currency_virtual      => 'trading_platform',
+    get_limits_virtual                => 'trading_platform',
+    transfer_between_accounts_virtual => 'trading_platform',
+    account_closure_virtual           => 'trading_platform',
+    trading_servers_virtual           => 'trading_platform',
 );
 
+=head2 reached_limit_check
+
+Checks if the call rate limit was hit or not for the calling connection 
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=item * C<call_name> string - name of the API call 
+
+=item * C<is_real> - True if the connection is for real account
+
+=back
+
+Returns Future object. Future object will be done if succeed, fail otherwise.
+
+=cut
+
 sub reached_limit_check {
-    my ($c, $category, $is_real) = @_;
-    my $limiting_service = $rate_limit_map{
-        $category . '_'
-            . (
-            ($is_real)
-            ? 'real'
-            : 'virtual'
-            )} // 'websocket_call';
+    my ($c, $call_name, $is_real) = @_;
+    my $limiting_service = get_limiting_service($call_name, $is_real);
     if ($limiting_service) {
         my $f = $c->check_limits($limiting_service);
         $f->on_fail(
@@ -268,6 +298,30 @@ sub reached_limit_check {
         return $f;
     }
     return Future->done;
+}
+
+=head2 get_limiting_service
+
+Takes the API call name and returns which rate limiting category it falls under
+
+=over 4
+
+=item * C<call_name> string - name of the API call 
+
+=item * C<is_real> - True if the connection is for real account
+
+=back
+
+Returns rate limiting category in string format.
+
+=cut
+
+sub get_limiting_service {
+    my ($call_name, $is_real) = @_;
+
+    return 'trading_platform' if ($call_name =~ /^(?:mt5|trading_platform)/);
+
+    return $rate_limit_map{$call_name . '_' . (($is_real) ? 'real' : 'virtual')} // 'websocket_call';
 }
 
 # Set JSON Schema default values for fields which are missing and have default.
