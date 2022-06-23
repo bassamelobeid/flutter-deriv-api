@@ -300,6 +300,7 @@ sub mt5_accounts_lookup {
                             || $allowed_error_codes{$resp->{error}{message_to_client}}))
                     || $allowed_error_codes{$resp})
                 {
+                    log_stats($login, $resp);
                     return Future->done(undef);
                 } else {
                     $log->errorf("mt5_accounts_lookup Exception: %s", $resp);
@@ -324,6 +325,41 @@ sub mt5_accounts_lookup {
             my @result = map { $_->result } @futures_result;
             return Future->done(@result);
         });
+}
+
+=head2 log_stats
+
+Adds DD metrics related to 'mt5_accounts_lookup' allowed error codes
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<login> login of the user
+
+=item * C<resp> response containing the allowed error code info
+
+=back
+
+=cut
+
+sub log_stats {
+
+    my ($login, $resp) = @_;
+
+    my $error_code    = $resp;
+    my $error_message = $resp;
+
+    if (ref $resp eq 'HASH') {
+        $error_code    = $resp->{error}{code};
+        $error_message = $resp->{error}{message_to_client};
+    }
+
+    # 'NotFound' error occurs if a user has at least one archived MT5 account. Since it is very common for users to have multiple archived
+    # MT5 accounts and since this error is not critical, we will be excluding it from DD
+    unless ($error_code eq 'NotFound') {
+        stats_inc("mt5.accounts.lookup.error.code", {tags => ["login:$login", "error_code:$error_code", "error_messsage:$error_message"]});
+    }
 }
 
 # limit number of requests to once per minute
