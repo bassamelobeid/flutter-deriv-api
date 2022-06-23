@@ -252,6 +252,7 @@ sub get_settings_by_group {
                 system.suspend.trading
                 system.suspend.payments
                 system.suspend.payment_agents
+                system.suspend.payment_agent_withdrawal_automation
                 system.suspend.cashier
                 system.suspend.new_accounts
                 system.suspend.expensive_api_calls

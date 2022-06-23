@@ -34,8 +34,8 @@ if ($input{create}) {
         validate($db, %input);
         my $result = $db->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_create(?, ?, ?, ?, ?)',
-                    undef, @input{qw/payment_processor payment_method reversible deposit_poi_required poo_required/});
+                $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_create(?, ?, ?, ?, ?, ?)',
+                    undef, @input{qw/payment_processor payment_method reversible deposit_poi_required poo_required withdrawal_supported/});
             });
         $success = format_details($result) . ' method has been created';
     } catch ($e) {
@@ -56,8 +56,9 @@ if ($input{update_confirm}) {
         validate($db, %input);
         my $result = $db->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_update(?, ?, ?, ?, ?, ?)',
-                    undef, @input{qw/update_confirm payment_processor payment_method reversible deposit_poi_required poo_required/});
+                $_->selectrow_hashref('SELECT * FROM payment.doughflow_method_update(?, ?, ?, ?, ?, ?, ?)',
+                    undef,
+                    @input{qw/update_confirm payment_processor payment_method reversible deposit_poi_required poo_required withdrawal_supported/});
             });
         die "method may have been removed\n" unless $result;
         $success = format_details($result) . ' method has been updated';
