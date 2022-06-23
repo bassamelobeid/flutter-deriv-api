@@ -38,6 +38,9 @@ websocket_call_password:
 websocket_real_pricing:
     1m: 40
     1h: 80
+trading_platform:
+    1m: 25
+    1h: 1000
 RATE_LIMITS_END
 my $limits_file = path($tmp_dir, 'limits.yaml');
 $limits_file->spew($rate_limits);
@@ -232,6 +235,21 @@ subtest "get error code (reset_pass)" => sub {
     }
     my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'RateLimit';
+};
+
+subtest "limits for trading_platform category(MT5 and DerivX)" => sub {
+    my @futures;
+    # 5 * 5 = 25, as in limits.yml
+    for (1 .. 5) {
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'mt5_get_settings',             1);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'mt5_login_list',               1);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'trading_platform_new_account', 1);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'trading_platform_accounts',    1);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'trading_platform_deposit',     1);
+    }
+    lives_ok { Future->needs_all(@futures)->get } "no limits hit";
+
+    dies_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'mt5_login_list', 1)->get } "limit hit";
 };
 
 subtest "expiration of limits" => sub {
