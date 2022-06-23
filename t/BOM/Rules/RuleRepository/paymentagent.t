@@ -458,4 +458,70 @@ subtest "rule $rule_name" => sub {
     $mock_config->unmock_all;
 };
 
+$rule_name = 'paymentagent.paymentagent_withdrawal_allowed';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
+
+    my %args       = (loginid => $client->loginid);
+    my $mock_class = Test::MockModule->new('BOM::User::Client');
+
+    # testing legacy code
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(1);
+
+    $client->status->set('pa_withdrawal_explicitly_allowed', 'sarah', 'enable withdrawal through payment agent');
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule passes if pa_withdrawal_explicitly_allowed';
+
+    $client->status->clear_pa_withdrawal_explicitly_allowed;
+
+    $mock_class->redefine(allow_paymentagent_withdrawal_legacy => undef);
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule passes if allow_paymentagent_withdrawal_legacy passes';
+
+    $mock_class->redefine(allow_paymentagent_withdrawal_legacy => 1);
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'PaymentagentWithdrawalNotAllowed',
+        rule       => $rule_name
+        },
+        'Correct error when allow_paymentagent_withdrawal_legacy returns an error';
+
+    $args{source_bypass_verification} = 1;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule passes if client verifications are bypassed';
+    $args{source_bypass_verification} = 0;
+
+    ## new automation
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(0);
+
+    $client->status->set('pa_withdrawal_explicitly_allowed', 'sarah', 'enable withdrawal through payment agent');
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule passes if pa_withdrawal_explicitly_allowed';
+
+    $client->status->clear_pa_withdrawal_explicitly_allowed;
+
+    $mock_class->redefine(allow_paymentagent_withdrawal => undef);
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule passes if allow_paymentagent_withdrawal passes';
+
+    $mock_class->redefine(allow_paymentagent_withdrawal => 'PaymentAgentWithdrawSameMethod');
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'PaymentAgentWithdrawSameMethod',
+        rule       => $rule_name
+        },
+        'Correct error when allow_paymentagent_withdrawal returns an error';
+
+    $mock_class->redefine(allow_paymentagent_withdrawal => undef);
+    $args{source_bypass_verification} = 1;
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rule passes if client verifications are bypassed';
+
+    $mock_class->unmock_all;
+};
+
 done_testing();

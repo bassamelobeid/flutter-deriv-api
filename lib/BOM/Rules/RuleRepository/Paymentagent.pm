@@ -23,6 +23,7 @@ use BOM::Config::PaymentAgent;
 use BOM::Database::ClientDB;
 use BOM::User::Client::PaymentAgent;
 use BOM::Config;
+use BOM::Config::Runtime;
 
 # Some actions are mapped to services restricted for payment agents in BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES.
 # If a service is allowed for a payment agent, it's mapping actions will be allowed as well.
@@ -203,6 +204,32 @@ rule 'paymentagent.amount_is_within_pa_limits' => {
 
         $self->fail('PaymentAgentNotWithinLimits', params => [$min, $max]) if ($amount < $min || $amount > $max);
 
+        return 1;
+    },
+};
+
+rule 'paymentagent.paymentagent_withdrawal_allowed' => {
+    description => "Checks if client is allowed to perform payment agent withdrawal.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $client = $context->client($args);
+
+        my $pa_automation_flag = BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation;
+
+        if ($pa_automation_flag == 1) {
+
+            $self->fail('PaymentagentWithdrawalNotAllowed')
+                unless $args->{source_bypass_verification}
+                or not $client->allow_paymentagent_withdrawal_legacy;
+
+        } else {
+
+            my $allow_paymentagent_withdrawal = $client->allow_paymentagent_withdrawal;
+
+            $self->fail($allow_paymentagent_withdrawal)
+                unless $args->{source_bypass_verification} or not $allow_paymentagent_withdrawal;
+        }
         return 1;
     },
 };
