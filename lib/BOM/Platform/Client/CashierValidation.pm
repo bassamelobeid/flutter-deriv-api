@@ -44,6 +44,12 @@ use constant OVERRIDE_ERROR_CODES => qw(
     ASK_SELF_EXCLUSION_MAX_TURNOVER_SET
     ASK_FIX_DETAILS
     FinancialAssessmentRequired
+    PaymentAgentWithdrawSameMethod
+    PaymentAgentJustification
+    PaymentAgentJustificationAdded
+    PaymentAgentUseOtherMethod
+    PaymentAgentZeroDeposits
+    PaymentAgentVirtualClient
 );
 
 # error codes that should not pushed to status
@@ -133,7 +139,8 @@ sub validate {
         currency    => $currency,
         is_internal => $is_internal ? 1 : 0,
         # Keep the rule engine from stopping on failure
-        rule_engine_context => {stop_on_failure => 0});
+        rule_engine_context => {stop_on_failure => 0},
+    );
 
     $failed_rules = $rules_result->failed_rules;
 

@@ -219,6 +219,17 @@ sub error_map {
             localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount [_1] [_2] for today.'),
         PaymentAgentDailyCountExceeded =>
             localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.'),
+        PaymentAgentWithdrawSameMethod => localize("To continue withdrawals, please select the same payment method you used to deposit."),
+        PaymentAgentJustification      => localize(
+            "To continue withdrawals via payment agents, please get in touch with us via LiveChat and explain the reason for the withdrawal."),
+        PaymentAgentJustificationAdded => localize(
+            "We're processing your request to withdraw funds via a payment agent. You'll get to know the status of your request via email within 24 hours."
+        ),
+        PaymentAgentUseOtherMethod => localize(
+            "Please use an e-wallet that you have used for deposits previously or create a new e-wallet if you don't have one. Ensure the e-wallet supports withdrawal. See the list of e-wallets that support withdrawals here: https://deriv.com/payment-methods"
+        ),
+        PaymentAgentZeroDeposits  => localize("Withdrawals are not possible because there are no funds in this account yet."),
+        PaymentAgentVirtualClient => localize("Withdrawals are not possible on your demo account. You can only withdraw from a real account."),
 
         # payment agent transfer
         PermissionDenied          => 'Permission denied.',
