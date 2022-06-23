@@ -24,7 +24,7 @@ use Format::Util::Numbers qw(roundcommon financialrounding formatnumber);
 use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
 use JSON::MaybeXS;
 use Encode;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
@@ -7546,6 +7546,40 @@ sub has_forged_documents {
     return 0;
 }
 
+=head2 get_sum_trades
+
+gets the sum of trades directly form database
+
+=cut
+
+sub get_sum_trades {
+    my ($self, $from_time) = @_;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref(
+                "select sum(buy_price) sum_trade from betonmarkets.get_client_sold_contracts_v3(?, ?, ?, ?, ?, ?);",
+                {Slice => {}},
+                $self->account->id, $from_time, 'tomorrow', '', 0, 0
+            );
+        })->{sum_trade} // 0;
+}
+
+=head2 get_summary_of_deposits
+
+gets the summary of deposits
+
+=cut
+
+sub get_summary_of_deposits {
+    my ($self, $from_time) = @_;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT * FROM payment.summary_of_deposits(?,?)", {Slice => {}}, $self->account->id, $from_time);
+        });
+}
+
 =head2 today_payment_agent_withdrawal_sum_count
 
 Gets the total amount and count of the payment  agent  withdrawal performed by a client in the current day.
@@ -7570,6 +7604,118 @@ sub today_payment_agent_withdrawal_sum_count {
             $_->selectrow_array("select result->>'amount', result->>'count'  from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)",
                 undef, $self->loginid);
         });
+}
+
+=head2 allow_paymentagent_withdrawal_legacy
+to check client can withdrawal through payment agent. return undef (allow) or 1 (denied)
+- if explicit flag is set it means cs/payments team have verified to allow
+payment agent withdrawal
+- if flag is not set then we fallback to check for doughflow or bank wire
+payments, if those does not exists then allow
+=cut
+
+sub allow_paymentagent_withdrawal_legacy {
+    my $self = shift;
+
+    return undef if $self->status->pa_withdrawal_explicitly_allowed;
+
+    # Check if siblings have any transaction through doughflow/bankwire
+    my @all_loginids = $self->user->bom_real_loginids;
+
+    return undef
+        unless any {
+        BOM::Database::DataMapper::Payment->new({'client_loginid' => $_})
+            ->get_client_payment_count_by({payment_gateway_code => ['doughflow', 'bank_wire']})
+    }
+    @all_loginids;
+
+    return 1;
+}
+
+=head2 allow_paymentagent_withdrawal
+- if explicit flag is set it means cs/payments team have verified to allow
+payment agent withdrawal
+- if flag is not set then we follow the process below to grant permission or not
+- returns an error if PAwithdrawal is NOT allowed
+- returns undef if it is allowed
+=cut
+
+sub allow_paymentagent_withdrawal {
+    my $self = shift;
+
+    return undef if $self->status->pa_withdrawal_explicitly_allowed;
+
+    # we need to get trades and deposits from last 6 months in the format of 'yyyymmmddd 00:00:00'
+    # This has been configed in reversible_deposits_lookback = 180 days (6 months)
+    my $days         = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
+    my $amount_limit = BOM::Config::Runtime->instance->app_config->payments->pa_sum_deposits_limit;
+    my $from_time    = Date::Utility->new()->minus_time_interval($days . 'd')->truncate_to_day->datetime_yyyymmdd_hhmmss;
+
+    my $start = Time::HiRes::time;
+
+    my $summary_of_deposits = $self->get_summary_of_deposits($from_time);
+
+    my $elapsed = Time::HiRes::time - $start;
+    stats_timing('bom_rpc.allow_payment_agent_withdraw.timing', $elapsed);
+
+    return "PaymentAgentZeroDeposits" unless $self->account->balance;
+
+    my $sum_deposits = $summary_of_deposits->{sum_deposits};
+
+    return undef unless $sum_deposits;    # according to the query if this is undef it means client has only pa deposits
+
+    $sum_deposits = convert_currency($sum_deposits, $self->currency, 'USD');
+
+    my $sum_of_trades = convert_currency($self->get_sum_trades($from_time), $self->currency, 'USD');
+
+    my $traded_half_of_deposits = $sum_of_trades >= $sum_deposits / 2;
+
+    if ($summary_of_deposits->{has_visa}) {
+
+        return $self->apply_reversible_deposit_conditions($self);
+
+    } elsif ($summary_of_deposits->{has_mastercard}) {
+
+        return "PaymentAgentUseOtherMethod";
+
+    } elsif ($summary_of_deposits->{has_reversible}) {    #the same as VISA (most restricted condition)
+
+        return $self->apply_reversible_deposit_conditions($self);
+
+    } elsif ($summary_of_deposits->{has_zingpay}) {
+
+        return "PaymentAgentWithdrawSameMethod";
+
+    } elsif ($summary_of_deposits->{has_irreversible_withdrawal_true} || $summary_of_deposits->{has_p2p}) {
+
+        return "PaymentAgentWithdrawSameMethod" unless $sum_deposits < $amount_limit;
+        return "PaymentAgentJustification"      unless $traded_half_of_deposits;
+
+    } elsif ($summary_of_deposits->{has_irreversible_withdrawal_false}) {
+
+        return "PaymentAgentJustification" unless $traded_half_of_deposits;
+
+    } elsif ($summary_of_deposits->{has_crypto}) {
+
+        return "PaymentAgentWithdrawSameMethod" unless $traded_half_of_deposits;
+
+    }
+
+    return undef;
+}
+
+=head2 apply_reversible_deposit_conditions
+
+applies the conditions related to visa/reversible deposits
+
+=cut
+
+sub apply_reversible_deposit_conditions {
+    my $self                  = shift;
+    my $cft_blocked_countries = BOM::Config::cft_blocked_countries();
+
+    return "PaymentAgentUseOtherMethod" if $cft_blocked_countries->{lc $self->residence};
+    return "PaymentAgentWithdrawSameMethod";
 }
 
 1;
