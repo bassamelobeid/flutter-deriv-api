@@ -911,36 +911,6 @@ sub check_client_professional {
     return undef;
 }
 
-=head2 allow_paymentagent_withdrawal
-
-to check client can withdrawal through payment agent. return 1 (allow) or 0 (denied)
-
-- if explicit flag is set it means cs/payments team have verified to allow
-payment agent withdrawal
-
-- if flag is not set then we fallback to check for doughflow or bank wire
-payments, if those does not exists then allow
-
-=cut
-
-sub allow_paymentagent_withdrawal {
-    my ($self, $client) = (shift, shift);
-
-    return 1 if $client->status->pa_withdrawal_explicitly_allowed;
-
-    # Check if siblings have any transaction through doughflow/bankwire
-    my @all_loginids = $client->user->bom_real_loginids;
-
-    return 1
-        unless any {
-        BOM::Database::DataMapper::Payment->new({'client_loginid' => $_})
-            ->get_client_payment_count_by({payment_gateway_code => ['doughflow', 'bank_wire']})
-    }
-    @all_loginids;
-
-    return 0;
-}
-
 =head2 synthetic_age_verification_check
 
 If client residence has require_age_verified_for_synthetic flag,

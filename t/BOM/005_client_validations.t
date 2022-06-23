@@ -5,11 +5,14 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::MockModule;
 
 use Date::Utility;
 use BOM::User::Client;
+use BOM::Transaction;
 use BOM::Transaction::Validation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Config::Runtime;
 
 my $rose_client = BOM::User::Client->new({loginid => 'CR2002'});
 my $loginid     = $rose_client->loginid;
@@ -30,15 +33,17 @@ my $user = BOM::User->create(
 my $client;
 lives_ok { $client = BOM::User::Client->new({loginid => $loginid}) } 'Can create client object.';
 
+my $pa        = BOM::User::Client::PaymentAgent->new({loginid => 'CR0020'});
+my $pa_client = $pa->client;
+
+$user->add_client($client);
+
 $client->payment_legacy_payment(
     currency     => 'USD',
     amount       => 1,
     remark       => 'here is money',
     payment_type => 'ewallet',
 );
-
-$user->add_client($client);
-my $validation_obj = BOM::Transaction::Validation->new({clients => [$client]});
 
 my $sibling_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code        => 'CR',
@@ -49,19 +54,18 @@ my $sibling_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $sibling_client->account('BTC');
 
-my $sibling_validation_obj = BOM::Transaction::Validation->new({clients => [$sibling_client]});
-
 subtest 'no doughflow payment for client - no flag set - payment agent withdrawal allowed' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, 1, 'no doughflow payment no flag set, allow payment agent withdrawal';
+    BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(1);
+    my $allow_withdraw = $client->allow_paymentagent_withdrawal_legacy;
+    is $allow_withdraw, undef, 'no doughflow payment no flag set, allow payment agent withdrawal';
 };
 
 Test::Exception::lives_ok {
     $client->status->set('pa_withdrawal_explicitly_allowed', 'shuwnyuan', 'enable withdrawal through payment agent')
 };
 subtest 'no doughflow payment exists - withdrawal flag set - payment agent withdrawal allowed' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, 1, 'no doughflow payment exists,withdrawal allow flag set,so allow';
+    my $allow_withdraw = $client->allow_paymentagent_withdrawal_legacy;
+    is $allow_withdraw, undef, 'no doughflow payment exists,withdrawal allow flag set,so allow';
 };
 
 $client->payment_doughflow(
@@ -71,22 +75,26 @@ $client->payment_doughflow(
     payment_type => 'external_cashier',
 );
 subtest 'doughflow payment exists for client - flag set - allow for payment agent withdrawal' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, 1, 'doughflow payment exist,flag set, allow for payment agent withdrawal';
+    my $allow_withdraw = $client->allow_paymentagent_withdrawal_legacy;
+    is $allow_withdraw, undef, 'doughflow payment exist,flag set, allow for payment agent withdrawal';
 };
 Test::Exception::lives_ok { $client->status->clear_pa_withdrawal_explicitly_allowed };
 subtest 'doughflow payment exists for client - no flag set - dont allow for payment agent withdrawal' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, 0, 'doughflow payment exist,no flag set, dont allow for payment agent withdrawal';
+    BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(1);
+    my $allow_withdraw = $client->allow_paymentagent_withdrawal_legacy;
+    is $allow_withdraw, 1, 'doughflow payment exist,no flag set, dont allow for payment agent withdrawal';
 };
 
 subtest 'doughflow payment exists for sibling - no flag set - dont allow for payment agent withdrawal' => sub {
-    my $allow_withdraw = $sibling_validation_obj->allow_paymentagent_withdrawal($sibling_client);
-    is $allow_withdraw, 0, 'doughflow payment exist,no flag set, dont allow for payment agent withdrawal';
+    BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(1);
+    my $allow_withdraw = $sibling_client->allow_paymentagent_withdrawal_legacy;
+    is $allow_withdraw, 1, 'doughflow payment exist,no flag set, dont allow for payment agent withdrawal';
 };
 
 my $reason = "test to set unwelcome login";
 my $clerk  = 'shuwnyuan';
+
+my $validation_obj = BOM::Transaction::Validation->new({clients => [$client]});
 
 #make sure unwelcome, disabled, no_trading, and no_withdrawal_or_trading client cannot trade
 $client->status->set('unwelcome', $clerk, $reason);
@@ -147,11 +155,10 @@ $client_details->{broker_code} = 'CR';
 $client_new = $user->create_client(%$client_details);
 $client_new->set_default_account('USD');
 
-$validation_obj = BOM::Transaction::Validation->new({clients => [$client_new]});
-
 subtest 'no bank_wire payment for client - no flag set - payment agent withdrawal allowed' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client_new);
-    is $allow_withdraw, 1, 'no bank_wire payment no flag set, allow payment agent withdrawal';
+    BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(1);
+    my $allow_withdraw = $client_new->allow_paymentagent_withdrawal_legacy;
+    is $allow_withdraw, undef, 'no bank_wire payment no flag set, allow payment agent withdrawal';
 };
 
 $client_new->payment_bank_wire(
@@ -161,8 +168,9 @@ $client_new->payment_bank_wire(
 );
 
 subtest 'bank_wire payment exists for client - no flag set - dont allow for payment agent withdrawal' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, 0, 'bank_wire payment exist,no flag set, dont allow for payment agent withdrawal';
+    BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(1);
+    my $allow_withdraw = $client->allow_paymentagent_withdrawal_legacy;
+    is $allow_withdraw, 1, 'bank_wire payment exist,no flag set, dont allow for payment agent withdrawal';
 };
 
 done_testing();
