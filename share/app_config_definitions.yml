@@ -68,6 +68,11 @@ payments:
           default: '{"CreditCard": {"limit":5,"days":90,"siblings":[]}}'
           description: High risk payment method settings
           global: 1
+    pa_sum_deposits_limit:
+      description: 'payment agent sum deposits threshold limit.'
+      isa: Num
+      global: 1
+      default: 200
     payment_agent_residence_check_exclusion:
       description: 'Email(s) of payment agents who are allowed to perform inter-country transfers and withdrawals.'
       default: []
@@ -1196,6 +1201,11 @@ system:
           description: "Suspend all payment agents in the selected countries"
           isa: ArrayRef
           default: []
+          global: 1
+        payment_agent_withdrawal_automation:
+          description: "Suspend the payment agent withdrawal automation"
+          isa: Bool
+          default: 1
           global: 1
         cryptocashier:
           description: "Suspend crypto cashier only"
