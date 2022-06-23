@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use BOM::Config;
 use BOM::Config::Redis;
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
@@ -33,7 +34,10 @@ my @brokers = map { $_->{broker_codes}->@* } grep { $_->{p2p_available} } values
 my %users;
 
 for my $broker (@brokers) {
-    my $db = BOM::Database::ClientDB->new({broker_code => $broker})->db->dbic;
+    my $db = BOM::Database::ClientDB->new({
+            broker_code  => $broker,
+            db_operation => 'replica'
+        })->db->dbic;
 
     my $data = $db->run(
         fixup => sub {
@@ -49,29 +53,36 @@ for my $broker (@brokers) {
     $users{$_->{binary_user_id}} = $_->{client_loginid} for @$data;
 }
 
-my $user_db = BOM::Database::UserDB::rose_db()->dbic;
+my $user_db = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
 my $redis   = BOM::Config::Redis->redis_p2p_write();
 
-my $logins = $user_db->run(
-    fixup => sub {
-        $_->selectall_arrayref(
-            "SELECT binary_user_id AS id, EXTRACT('epoch' FROM MAX(history_date)) AS epoch 
-             FROM users.login_history 
-             WHERE binary_user_id = ANY (?)
-             AND app_id = ANY (?)
-             AND history_date > NOW() - '6 month'::INTERVAL
-             AND successful 
-             GROUP BY binary_user_id",
-            {Slice => {}},
-            [keys %users], \@apps
-        );
+my @all_userids = keys %users;
+my $updates     = 0;
 
-    });
+while (my @chunk = splice(@all_userids, 0, 100)) {
+    $log->debug('processing batch of 100');
 
-$log->debugf('got app login times for %i advertisers', scalar(@$logins));
-my $updates = 0;
-for my $login (@$logins) {
-    # unfortunately our redis version does not the support LT flag for zadd
-    $updates += $redis->zadd('P2P::USERS_ONLINE', 'NX', $login->{epoch}, $users{$login->{id}});
+    my $logins = $user_db->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                "SELECT binary_user_id AS id, EXTRACT('epoch' FROM MAX(history_date)) AS epoch 
+                 FROM users.login_history 
+                 WHERE binary_user_id = ANY (?)
+                 AND app_id = ANY (?)
+                 AND history_date > NOW() - '6 month'::INTERVAL
+                 AND successful 
+                 GROUP BY binary_user_id",
+                {Slice => {}},
+                \@chunk, \@apps
+            );
+        });
+
+    $log->debugf('got app login times for %i advertisers', scalar(@$logins));
+
+    for my $login (@$logins) {
+        # unfortunately our redis version does not the support LT flag for zadd
+        $updates += $redis->zadd('P2P::USERS_ONLINE', 'NX', $login->{epoch}, $users{$login->{id}});
+    }
 }
+
 $log->debugf('%i times updated in redis', $updates);
