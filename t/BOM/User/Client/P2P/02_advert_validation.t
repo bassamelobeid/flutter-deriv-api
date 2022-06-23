@@ -304,23 +304,27 @@ subtest $method => sub {
             'No error creating floating ad when floating ads enabled in country'
         );
 
-        cmp_deeply(
-            exception {
-                $advertiser->$method(%params, rate => 1.234);
-            },
-            {
-                error_code => 'FloatRatePrecision',
-            },
-            'Error when too much precision in rate'
-        );
+        for (1.231, -1.231, 1.661, 1.681, 0.001, -0.001, -0.9999999, -0.00009) {
+            cmp_deeply(
+                exception {
+                    $advertiser->$method(%params, rate => $_);
+                },
+                {
+                    error_code => 'FloatRatePrecision',
+                },
+                "Float rate of $_ too precise"
+            );
+        }
 
-        is(
-            exception {
-                $advertiser->$method(%params, rate => 1.230000);
-            },
-            undef,
-            'Trailing zeros ignored'
-        );
+        for (1.230000, -1.230000, 1.66, 1.6600, 1.68, 1.6800, 0.000, 0, -0) {
+            is(
+                exception {
+                    $advertiser->$method(%params, rate => $_);
+                },
+                undef,
+                "Float rate of $_ is ok"
+            );
+        }
 
         $config->float_rate_global_max_range(10);
 

@@ -2777,7 +2777,10 @@ sub p2p_order_create {
         message_params => [$limit_remaining, $self->currency]} if $amount > $limit_remaining;
 
     die +{error_code => 'OrderCreateFailRateRequired'} if $advert->{rate_type} eq 'float' and not defined($param{rate});
-    die +{error_code => 'OrderCreateFailRateChanged'}  if defined $param{rate}            and $param{rate} != $advert->{effective_rate};
+
+    die +{error_code => 'OrderCreateFailRateChanged'}
+        if defined $param{rate}
+        and sprintf('%.' . P2P_RATE_PRECISION . 'f', $param{rate}) != sprintf('%.' . P2P_RATE_PRECISION . 'f', $advert->{effective_rate});
 
     my $advertiser = BOM::User::Client->new({loginid => $advertiser_info->{client_loginid}});
     my ($order_type, $amount_advertiser, $amount_client);
@@ -3773,10 +3776,11 @@ sub _validate_advert_rates {
             or ($active_changed and $config->{float_ads} eq 'disabled');
 
         # too much precision
-        # extreme values like 0.02999999999999999889 will still pass this check, but we will round it to 0.03 in response
-        if (sprintf('%.02f', $param{rate}) != $param{rate}) {
-            die +{error_code => 'FloatRatePrecision'};
+        if (my ($decimals) = $param{rate} =~ /\.(\d+)$/) {
+            die +{error_code => 'FloatRatePrecision'} if length($decimals) > 2;
         }
+
+        die +{error_code => 'FloatRatePrecision'} if $param{rate} =~ /e-/;
 
         # within country specific range
         my $range = $config->{max_rate_range} / 2;
@@ -3908,7 +3912,12 @@ sub _validate_advert_duplicates {
 
     # duplicate rate, type and currency pair
     if (defined $param{rate}) {
-        die +{error_code => 'DuplicateAdvert'} if any { $_->{rate} == $param{rate} and $_->{rate_type} eq $param{rate_type} } @active_ads_same_type;
+        die +{error_code => 'DuplicateAdvert'}
+            if any {
+            sprintf('%.' . P2P_RATE_PRECISION . 'f', $_->{rate}) == sprintf('%.' . P2P_RATE_PRECISION . 'f', $param{rate})
+                and $_->{rate_type} eq $param{rate_type}
+        }
+        @active_ads_same_type;
     }
 
     # cannot have an ad with overlapping min/max amounts and same type + currencies
