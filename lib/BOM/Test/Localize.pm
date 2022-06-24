@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use Test::Most;
 use Test::MockModule;
-use Test::Warnings;
 use base qw( Exporter );
 use Data::Dumper;
 
