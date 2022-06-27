@@ -107,7 +107,7 @@ version: 2
 workflows:
   build-workflow:
     jobs:
-    - syntax_unit:
+    - core_syntax_diff:
         context: perl
   daily:
     jobs:
