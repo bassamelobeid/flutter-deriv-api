@@ -1,17 +1,18 @@
 package BOM::Config::Onfido;
 
+use strict;
+use warnings;
+use feature "state";
+
 =head1 NAME
 
-BOM::Config::Onfido
+C<BOM::Config::Onfido>
 
 =head1 DESCRIPTION
 
-A repository that consists data related to Onfido.
+A module that consists methods to get config data related to Onfido.
 
 =cut
-
-use strict;
-use warnings;
 
 use JSON::MaybeUTF8 qw(:v1);
 use Locale::Codes::Country qw(country_code2code);
@@ -31,7 +32,19 @@ sub supported_documents_list {
 
 =head2 supported_documents_for_country
 
-Returns the supported_documents_list for the country
+Takes the following argument(s) as parameters:
+
+=over 4
+
+=item * C<$country_code> - The ISO code of the country
+
+=back
+
+Example:
+
+    my $supported_docs_my = BOM::Config::Onfido::support_documents_for_country('my');
+
+Returns the supported_documents_list for the country.
 
 =cut
 
@@ -41,9 +54,9 @@ sub supported_documents_for_country {
     $country_code = uc(country_code2code($country_code, 'alpha-2', 'alpha-3') // '');
     return [] unless $country_code;
 
-    my %country_details = _get_country_details();
+    my $country_details = _get_country_details();
 
-    return $country_details{$country_code}->{doc_types_list} // [];
+    return $country_details->{$country_code}->{doc_types_list} // [];
 }
 
 =head2 is_country_supported
@@ -55,11 +68,29 @@ Returns 1 if country is supported and 0 if it is not supported
 sub is_country_supported {
     my $country_code = shift;
 
+    return 0 if is_disabled_country($country_code);
+
     $country_code = uc(country_code2code($country_code, 'alpha-2', 'alpha-3') // '');
 
-    my %country_details = _get_country_details();
+    my $country_details = _get_country_details();
 
-    return $country_details{$country_code}->{doc_types_list} ? 1 : 0;
+    return $country_details->{$country_code}->{doc_types_list} ? 1 : 0;
+}
+
+=head2 is_disabled_country
+
+Returns 1 if the country is disabled, 0 otherwise.
+
+=cut
+
+sub is_disabled_country {
+    my $country_code = shift;
+
+    $country_code = uc(country_code2code($country_code, 'alpha-2', 'alpha-3') // '');
+
+    my $country_details = _get_country_details();
+
+    return $country_details->{$country_code}->{disabled} ? 1 : 0;
 }
 
 =head2 _get_country_details
@@ -69,8 +100,8 @@ Changes the format into hash
 =cut
 
 sub _get_country_details {
-
-    return map { $_->{country_code} => $_ } @{supported_documents_list()};
+    state $country_details = +{map { $_->{country_code} => $_ } @{supported_documents_list()}};
+    return $country_details;
 }
 
 1;

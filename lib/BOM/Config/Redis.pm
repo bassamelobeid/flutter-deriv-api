@@ -1,8 +1,11 @@
 package BOM::Config::Redis;
 
+use strict;
+use warnings;
+
 =head1 NAME
 
-BOM::Config::Redis - Provides read/write pair of redis client
+C<BOM::Config::Redis> - Provides read/write pair of redis client.
 
 =head1 DESCRIPTION
 
@@ -18,9 +21,6 @@ caching is done inside this module.  Better to always call needed
 function to get working connection.
 
 =cut
-
-use strict;
-use warnings;
 
 use Carp;
 use YAML::XS;

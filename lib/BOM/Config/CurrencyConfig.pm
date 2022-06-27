@@ -1,19 +1,24 @@
 package BOM::Config::CurrencyConfig;
 
+use strict;
+use warnings;
+use feature 'state';
+no indirect;
+
 =head1 NAME
 
-BOM::Config::CurrencyConfig
+C<BOM::Config::CurrencyConfig> - Currency Configuration
+
+=head1 SYNOPSIS
+
+   use BOM::Config::CurrencyConfig;
+   my $config = BOM::Config::CurrencyConfig::app_config();
 
 =head1 DESCRIPTION
 
 A repository of dynamic configurations set on currencies, like their minimum/maximum limits.
 
 =cut
-
-use strict;
-use warnings;
-use feature 'state';
-no indirect;
 
 use JSON::MaybeUTF8;
 use Log::Any qw($log);
@@ -36,18 +41,23 @@ our @EXPORT_OK = qw(MAX_TRANSFER_FEE);
 
 my $_app_config;
 
-#lazy loading $_app_config
+=head2 app_config
+
+Get the app config
+
+Example:
+
+    my $config = BOM::Config::CurrencyConfig::app_config();
+
+Returns a lazily loaded L<BOM::Config::Runtime> instance.
+
+=cut
+
 sub app_config {
     $_app_config = BOM::Config::Runtime->instance->app_config() unless $_app_config;
     $_app_config->check_for_update();
     return $_app_config;
 }
-
-=head2 currency_for_country
-
-Method returns currency code for requested country code.
-
-=cut
 
 #We're loading mapping at startup time to avoid interation with my SQLlite at runtime.
 
@@ -83,6 +93,25 @@ our %LOCAL_CURRENCY_FOR_COUNTRY = do {
     } Locale::Country::all_country_codes(), 'an';    # Because an not avaible on Locale::Country::all_country_codes() then we append it.
 };
 
+=head2 local_currency_for_country
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<$country_code> - A two letter ISO country code
+
+=back
+
+Example:
+
+    my $currency = BOM::Config::Chronicle::local_currency_for_country('my');
+
+Returns a three letter ISO currency code as a string for the country
+and config database.
+
+=cut
+
 sub local_currency_for_country {
     my ($country_code) = @_;
     return $LOCAL_CURRENCY_FOR_COUNTRY{lc($country_code)};
@@ -90,7 +119,13 @@ sub local_currency_for_country {
 
 =head2 local_currency_list
 
-List of unique local currency in the world.
+Get a list of currencies
+
+Example:
+
+    my $currency = BOM::Config::Chronicle::local_currency_list('my');
+
+Returns an array of unique local currencies in the world.
 
 =cut
 
@@ -147,6 +182,8 @@ These values are extracted from app_config->payment.transfer_between_accounts.mi
 
 =back
 
+Returns a hashref of transfer limits by currency.
+
 =cut
 
 sub transfer_between_accounts_limits {
@@ -194,6 +231,8 @@ These values are extracted from app_config->payment.transfer_between_accounts.mi
 
 =back
 
+Returns C<$platform_transfer_limits> for MT5 for the requester brand.
+
 =cut
 
 sub mt5_transfer_limits {
@@ -210,6 +249,8 @@ Returns the default config when C<brand> is undefined or we didn't find any conf
 =item * C<brand> - The brand name (e.g. derivcrypto, binary, ....) (optional)
 
 =back
+
+Returns C<$platform_transfer_limits_by_brand> for MT5.
 
 =cut
 
@@ -269,6 +310,8 @@ Returns the default config when C<brand> is undefined or we didn't find any conf
 
 =back
 
+Returns a hashref of currency limits for the brand.
+
 =cut
 
 sub get_platform_transfer_limit_by_brand {
@@ -293,6 +336,10 @@ sub get_platform_transfer_limit_by_brand {
 }
 
 =head2 transfer_between_accounts_fees
+
+Example:
+
+    my $currency = BOM::Config::Chronicle::transfer_between_accounts_fees();
 
 Transfer fees are returned as a hashref for all supported currency pairs; e.g. {'USD' => {'BTC' => 1,'EUR' => 0.5, ...}, ... }.
 These values are extracted from payment.transfer_between_accounts.fees.by_currency, if not available it defaults to
@@ -435,7 +482,9 @@ sub get_suspended_crypto_currencies {
 =head2 is_crypto_currency_suspended
 
 To check if the given crypto currency is suspended in the crypto cashier.
-Dies when the C<currency> is not provided or not a valid crypto currency.
+Dies when the C<$currency> is not provided or not a valid crypto currency.
+
+Takes the following argument(s)
 
 =over 4
 
@@ -463,9 +512,11 @@ sub is_crypto_currency_suspended {
 To check if the specified action for the given crypto currency is suspended
 in the crypto cashier.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =item * C<action> - Action name. Can be one of C<cryptocurrencies_deposit> or C<cryptocurrencies_withdrawal>
 
@@ -483,39 +534,15 @@ sub _is_crypto_currency_action_suspended {
     return any { $currency eq $_ } app_config()->system->suspend->$action->@*;
 }
 
-=head2 _is_crypto_currency_action_stopped
-
-To check if the specified action for the given crypto currency is stopped
-in the crypto cashier.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=item * C<action> - Action name. Can be one of C<cryptocurrencies_deposit> or C<cryptocurrencies_withdrawal>
-
-=back
-
-Return true if the C<currency> is currently stopped for the C<action>. It will also
-return true in case the C<currency> is suspended.
-
-=cut
-
-sub _is_crypto_currency_action_stopped {
-    my ($currency, $action) = @_;
-
-    return 1 if is_crypto_currency_suspended($currency);
-
-    return any { $currency eq $_ } app_config()->system->stop->$action->@*;
-}
-
 =head2 is_crypto_currency_deposit_suspended
 
 To check if deposit for the given crypto currency is suspended in the crypto cashier.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =back
 
@@ -529,33 +556,15 @@ sub is_crypto_currency_deposit_suspended {
     return _is_crypto_currency_action_suspended($currency, 'cryptocurrencies_deposit');
 }
 
-=head2 is_crypto_currency_deposit_stopped
-
-To check if deposit for the given crypto currency is stopped in the crypto cashier.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Return true if the currency is currently stopped for deposit, or if the currency is suspended.
-
-=cut
-
-sub is_crypto_currency_deposit_stopped {
-    my $currency = shift;
-
-    return _is_crypto_currency_action_stopped($currency, 'cryptocurrencies_deposit');
-}
-
 =head2 is_crypto_currency_withdrawal_suspended
 
 To check if withdrawal for the given crypto currency is suspended in the crypto cashier.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =back
 
@@ -569,33 +578,15 @@ sub is_crypto_currency_withdrawal_suspended {
     return _is_crypto_currency_action_suspended($currency, 'cryptocurrencies_withdrawal');
 }
 
-=head2 is_crypto_currency_withdrawal_stopped
-
-To check if withdrawal for the given crypto currency is stopped in the crypto cashier.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Return true if the currency is currently stopped for withdrawal, or if the currency is suspended.
-
-=cut
-
-sub is_crypto_currency_withdrawal_stopped {
-    my $currency = shift;
-
-    return _is_crypto_currency_action_stopped($currency, 'cryptocurrencies_withdrawal');
-}
-
 =head2 is_experimental_currency
 
 To check if the currency is experimental.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =back
 
@@ -609,167 +600,15 @@ sub is_experimental_currency {
     return any { $currency eq $_ } app_config()->system->suspend->experimental_currencies->@*;
 }
 
-=head2 get_crypto_withdrawal_fee_limit
-
-To get the fee limit for the withdrawal.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns the C<fee_limit_usd> for the withdrawal of the currency.
-
-=cut
-
-sub get_crypto_withdrawal_fee_limit {
-    my $currency = shift;
-
-    my $fee_limit_usd = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.fee_limit_usd'));
-
-    return $fee_limit_usd->{$currency};
-}
-
-=head2 get_currency_wait_before_bump
-
-To get time amount to wait before fee bump for currency.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns the amount of time to wait before bumping fee for a transaction for each currency.
-
-=cut
-
-sub get_currency_wait_before_bump {
-    my $currency = shift;
-
-    my $fee_bump_wait_time = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.fee_bump_wait_time'));
-
-    return $fee_bump_wait_time->{$currency};
-}
-
-=head2 get_minimum_safe_amount
-
-To get the minimum safe amount for the currency.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns the C<minimum_safe_amount> for the currency.
-
-=cut
-
-sub get_minimum_safe_amount {
-    my $currency = shift;
-
-    my $minimum_safe_amount = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.minimum_safe_amount'));
-
-    return $minimum_safe_amount->{$currency};
-}
-
-=head2 get_sweep_reserve_balance
-
-To get the reserve balance for sweep.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns the C<sweep_reserve_balance> for the currency.
-
-=cut
-
-sub get_sweep_reserve_balance {
-    my $currency = shift;
-
-    my $sweep_reserve_balance = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.sweep.reserve_balance'));
-
-    return $sweep_reserve_balance->{$currency};
-}
-
-=head2 get_sweep_min_transfer
-
-To get the minimum transfer limit for sweep.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns the C<sweep_min_transfer> for the currency.
-
-=cut
-
-sub get_sweep_min_transfer {
-    my $currency = shift;
-
-    my $sweep_min_transfer = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.sweep.min_transfer'));
-
-    return $sweep_min_transfer->{$currency};
-}
-
-=head2 get_sweep_max_transfer
-
-To get the maximum transfer limit for sweep.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns the C<sweep_max_transfer> for the currency.
-
-=cut
-
-sub get_sweep_max_transfer {
-    my $currency = shift;
-
-    my $sweep_max_transfer = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.sweep.max_transfer'));
-
-    return $sweep_max_transfer->{$currency};
-}
-
-=head2 get_sweep_max_fee_percentage
-
-To get the maximum fee percentage limit for sweep.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns the C<sweep_max_percentage_fee> for the currency.
-
-=cut
-
-sub get_sweep_max_fee_percentage {
-    my $currency = shift;
-
-    my $sweep_max_fee_percentage = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.sweep.max_fee_percentage'));
-
-    return $sweep_max_fee_percentage->{$currency};
-}
-
 =head2 get_crypto_new_address_threshold
 
 Gets the new_address_threshold of each currencies
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<c$urrency> - Currency code
 
 =back
 
@@ -788,125 +627,15 @@ sub get_crypto_new_address_threshold {
 
 }
 
-=head2 get_currency_internal_sweep_config
-
-Gets the sweep config for each cryptocurrency
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns hashref containing sweep configs for the currency
-
-=cut
-
-sub get_currency_internal_sweep_config {
-    my $currency = shift;
-
-    my $internal_sweep_config = {
-        amounts           => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.internal_sweep.amounts')),
-        fee_rate_percent  => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.internal_sweep.fee_rate_percent')),
-        fee_limit_percent => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.internal_sweep.fee_limit_percent')),
-    };
-
-    return {
-        amounts           => $internal_sweep_config->{amounts}->{$currency}           // [],
-        fee_rate_percent  => $internal_sweep_config->{fee_rate_percent}->{$currency}  // 100,    # 100%
-        fee_limit_percent => $internal_sweep_config->{fee_limit_percent}->{$currency} // 1,      # 1%
-    };
-
-}
-
-=head2 get_gas_limit_incremental_percentage
-
-To get the gas_limit incremental percentage.
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns the C<gas_limit_incremental_percentage> for the currency.
-
-=cut
-
-sub get_gas_limit_incremental_percentage {
-    my $currency = shift;
-
-    my $gas_limit_incremental_percentage = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.gas_limit_incremental_percentage'));
-
-    return $gas_limit_incremental_percentage->{$currency};
-}
-
-=head2 get_crypto_batch_withdrawal_min_transfer
-
-We are perfoming the withdrawal requests in batchs for BTC and LTC
-So this function returns the minimum amount to perform the transaction
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-=cut
-
-sub get_crypto_batch_withdrawal_min_transfer {
-    my $currency = shift;
-
-    my $min_transfer = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.min_transfer'));
-
-    return $min_transfer->{$currency};
-}
-
-=head2 get_crypto_batch_withdrawal_fee_config
-
-We are perfoming the withdrawal requests in batchs for BTC and LTC
-And the fee limit will be a percentage value from the total withdrawal amount
-like 1% of the total amount
-And the fee limit value will be incresed based on the count of the withdrawal requests
-like 0.1% for each 75 withdrawal requests
-
-=over 4
-
-=item * C<currency> - Currency code
-
-=back
-
-Returns the fee config as hash reference
-
-=cut
-
-sub get_crypto_batch_withdrawal_fee_config {
-    my $currency = shift;
-
-    my $fee_config = {
-        min_limit                  => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.fee_config.min_limit')),
-        max_limit                  => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.fee_config.max_limit')),
-        requests_count_to_increase =>
-            JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.fee_config.requests_count_to_increase')),
-        increase_value_per_requests_count =>
-            JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.fee_config.increase_value_per_requests_count')),
-    };
-
-    return {
-        min_fee_limit                     => $fee_config->{min_limit}->{$currency} / 100,
-        max_fee_limit                     => $fee_config->{max_limit}->{$currency} / 100,
-        requests_count_to_increase        => $fee_config->{requests_count_to_increase}->{$currency},
-        increase_value_per_requests_count => $fee_config->{increase_value_per_requests_count}->{$currency} / 100,
-    };
-}
-
 =head2 get_crypto_withdrawal_min_usd
 
 To get the minimum withdrawal amount for currency.
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<currency> - Currency code
+=item * C<$currency> - Currency code
 
 =back
 
@@ -926,9 +655,11 @@ sub get_crypto_withdrawal_min_usd {
 
 Get the global status of crypto auto approve or auto reject from backoffice dynamic settings
 
+Takes the following argument(s)
+
 =over 4
 
-=item * C<action> - required - Action to check  - approve or reject
+=item * C<$action> - required - Action to check  - approve or reject
 
 =back
 
@@ -948,6 +679,47 @@ sub get_crypto_payout_auto_update_global_status {
     }
 
     return 0;
+}
+
+=head2 is_enabled_address_daemon
+
+Returns whether crypto addresses daemon is enabled or not.
+
+=cut
+
+sub is_enabled_address_daemon {
+    return app_config()->payments->crypto->address_daemon->enabled;
+}
+
+=head2 get_crypto_address_pool_threshold
+
+Gets the address pool threshold of each currencies
+
+=over 4
+
+=item * C<currency> - Currency code (optional)
+
+=back
+
+If no currency passed, returns default
+
+If currency is passed and passed currency does not exist, returns default
+
+If currency is passed and passed currency exist, returns the threshold of that currency
+
+=cut
+
+sub get_crypto_address_pool_threshold {
+
+    my $currency = shift;
+
+    my $currency_wise_address_pool_threshold =
+        JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.address_daemon.address_pool_threshold'));
+
+    my $setting = $currency ? $currency : 'default';
+
+    return $currency_wise_address_pool_threshold->{$setting} // $currency_wise_address_pool_threshold->{default};
+
 }
 
 1;

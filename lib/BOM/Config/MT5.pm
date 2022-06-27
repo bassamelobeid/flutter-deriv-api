@@ -1,19 +1,19 @@
 package BOM::Config::MT5;
 
+use strict;
+use warnings;
+
 =head1 NAME
 
-BOM::Config::MT5
+C<BOM::Config::MT5>
 
 =head1 DESCRIPTION
 
-This module has helper functions to return mt5 routing and server config
+This module has helper functions to return mt5 routing and server config.
 
 It does not exports these functions by default.
 
 =cut
-
-use strict;
-use warnings;
 
 use Syntax::Keyword::Try;
 use List::Util qw(any);
@@ -24,6 +24,8 @@ use BOM::Config;
 =head2 new
 
 Create a new object of MT5 config
+
+Example:
 
     # by group
     BOM::Config::MT5->new(group => 'real\p01_ts01\synthetic\svg_std_usd')
@@ -56,11 +58,13 @@ sub new {
 
 =head2 server_geolocation
 
-    $obj->server_geolocation();
-
 Get the geolocation details for the mt5 server
 
-Returns a hash containing geolocation details containing the following keys:
+Example:
+
+    $obj->server_geolocation();
+
+Takes the following argument(s)
 
 =over 4
 
@@ -71,6 +75,8 @@ Returns a hash containing geolocation details containing the following keys:
 =item * sequence; sequence number of server in the region
 
 =back
+
+Returns a hash containing geolocation details containing the following keys:
 
 =cut
 
@@ -83,11 +89,13 @@ sub server_geolocation {
 
 =head2 server_environment
 
+Example:
+
     $obj->server_environment();
 
 Get the environment for the mt5 server. i.e. Deriv-Server
 
-Returns a string 
+Returns the environment as a string.
 
 =cut
 
@@ -100,9 +108,13 @@ sub server_environment {
 
 =head2 server_by_id
 
+Get the server details of the mt5 server for the corresponding mt5.
+
+Example:
+
     $obj->server_by_id();
 
-Get the server details of the mt5 server for the corresponding mt5
+Returns a hashref with details of the server as created by L</create_server_structure>.
 
 =cut
 
@@ -126,13 +138,15 @@ sub server_by_id {
 
 =head2 server_by_country
 
-# To get all trade servers for Indonesia
-->server_by_country('id');
+Example:
 
-# To get all real trade servers for Indonesia
-->server_by_country('id', {group_type => 'real'});
+    # To get all trade servers for Indonesia
+    $self->server_by_country('id');
 
-Returns a hash reference.
+    # To get all real trade servers for Indonesia
+    $self->server_by_country('id', {group_type => 'real'});
+
+Returns a hash reference with server info for particular group / country.
 
 =cut
 
@@ -308,7 +322,9 @@ sub groups_config {
 
 =head2 symmetrical_servers
 
-    $obj->symmetrical_servers()
+Example:
+
+    $obj->symmetrical_servers();
 
 Return all the servers within the same region of the instance, including the instance.
 

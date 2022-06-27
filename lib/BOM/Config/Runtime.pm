@@ -3,6 +3,17 @@ package BOM::Config::Runtime;
 use Moose;
 use feature 'state';
 
+=head1 NAME
+
+C<BOM::Config::Runtime>
+
+=head1 DESCRIPTION
+
+This module is used to handle the app config instance ensuring singleton
+behaviour.
+
+=cut
+
 use App::Config::Chronicle;
 use BOM::Config::Chronicle;
 use BOM::Config;
@@ -19,6 +30,20 @@ BEGIN {
     $instance = __PACKAGE__->new;
 }
 
+=head1 instance
+
+Ensures that the same instance of L<BOM::Config::Runtime> is returned.
+
+Example:
+
+    my $runtime = BOM::Config::Runtime->instance;
+    # same as above.
+    my $another_runtime = BOM::Config::Runtime->instance;
+
+Returns a L<BOM::Config::Runtime> object.
+
+=cut
+
 sub instance {
     my ($class, $new) = @_;
     $instance = $new if (defined $new);
@@ -34,6 +59,26 @@ sub _build_app_config {
         setting_name     => BOM::Config->brand->name,
     );
 }
+
+=head1 get_offerings_config
+
+Get details of offerings based on action type.
+
+Takes the following argument(s):
+
+=over 4
+
+=item * C<$runtime> - an instance of L<BOM::Config::Runtime>
+
+=item * C<$action> - The type of action (as a string. Can be only `buy` / `sell`
+
+=item * C<$exclude_suspended> - Flag to determine whether to exclude suspended offerings or not
+
+=back
+
+Returns a hashref of offerings configuration for the given action type.
+
+=cut
 
 sub get_offerings_config {
     my ($runtime, $action, $exclude_suspend) = @_;

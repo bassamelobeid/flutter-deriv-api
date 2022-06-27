@@ -1,18 +1,18 @@
 package BOM::Config::Compliance;
 
-=head1 NAME
-
-BOM::Config::Compliance
-
-=head1 DESCRIPTION
-
-This module implements methods to easily load and save global compliance-related settings
-
-=cut
-
 use strict;
 use warnings;
 no indirect;
+
+=head1 NAME
+
+C<BOM::Config::Compliance>
+
+=head1 DESCRIPTION
+
+This module implements methods to easily load and save global compliance-related settings.
+
+=cut
 
 use Format::Util::Numbers qw(financialrounding);
 use List::Util qw(any uniq);
@@ -36,6 +36,10 @@ use constant RISK_LEVELS => qw/standard high/;
 =head2 new
 
 Class constructor.
+
+Example:
+
+    my $compliance_comfig = BOM::Config::Compliance->new();
 
 Returns an object of type L<BOM::Config::Compliance>.
 
@@ -66,9 +70,7 @@ Get the risk thresholds along with the app_config revision. It takes the followi
 
 =over 4
 
-=item * type - risk type: I<aml> or I<mt5>
-
-=item * high - list of countries with high risk level.
+=item * C<$type> - risk type: I<aml> or I<mt5>
 
 =back
 
@@ -101,11 +103,11 @@ Takes the risk thresholds (AML or MT5) and validates their values. It works with
 
 =over 4
 
-=item * data - A rish thresholds by broker code, represented as a hash
+=item * C<%values> - risk thresholds by broker code, represented as a hash
 
 =back
 
-It returns the same thresholds in a hash-ref with finnacial rounding applied.
+It returns the same thresholds in a hash-ref with financial rounding applied.
 
 =cut
 
@@ -151,7 +153,12 @@ sub _countries {
 
 =head2 get_jurisdiction_risk_rating
 
-Gets list of countries categorized by their landing company name, along with the app-config revision number. 
+Gets list of countries categorized by their landing company name, along with the app-config revision number.
+
+Example:
+
+    my $compliance_comfig = BOM::Config::Compliance->new();
+    my $result            = $compliance_config->get_jurisdiction_risk_rating();
 
 Returns a hashref with the following structure:
 

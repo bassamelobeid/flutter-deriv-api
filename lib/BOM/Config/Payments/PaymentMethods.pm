@@ -3,13 +3,38 @@ package BOM::Config::Payments::PaymentMethods;
 use strict;
 use warnings;
 
+=head1 NAME
+
+C<BOM::Config::Payments::PaymentMethods>
+
+=head1 SYNOPSIS
+
+   use BOM::Config::Payments::PaymentMethods;
+
+   my $pm_config          = BOM::Config::Payments::PaymentMethods->new();
+   my $payment_type       = 'CreditCard';
+   my $high_risk_settings = $pm_config->high_risk($payment_type);
+
+=head1 DESCRIPTION
+
+Provides class level subroutines to access the configs for Payment Methods.
+
+=cut
+
 use BOM::Config::Runtime;
 use JSON::MaybeUTF8;
 use Moose;
 
 =head2 new
 
-Construct method. Make sure the app config is updated.
+Constructor method
+
+Example:
+
+    my $pm_config = BOM::Config::Payments::PaymentMethods->new();
+
+Returns a L<BOM::Config::Payments::PaymentMethods> object and also makes sure
+the app config is up to date.
 
 =cut
 
@@ -23,7 +48,17 @@ sub new {
 
 =head2 high_risk
 
-Returns the high risk settings for the given payment method or C<undef> if 
+Get high risk settings.
+
+Takes the following argument(s) as named parameters:
+
+=over 4
+
+=item * C<$pm> - The payment method (String)
+
+=back
+
+Returns the hashref of high risk settings for the given payment method or C<undef> if 
 the payment method is not high risk.
 
 =cut
@@ -35,6 +70,16 @@ sub high_risk {
 }
 
 =head2 high_risk_group
+
+Get high risk group.
+
+Takes the following argument(s) as named parameters:
+
+=over 4
+
+=item * C<$pm> - The payment method (String)
+
+=back
 
 Returns the high risk group for the given payment method or C<undef> if 
 the payment method is not high risk.

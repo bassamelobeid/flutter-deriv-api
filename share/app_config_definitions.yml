@@ -68,6 +68,11 @@ payments:
           default: '{"CreditCard": {"limit":5,"days":90,"siblings":[]}}'
           description: High risk payment method settings
           global: 1
+    pa_sum_deposits_limit:
+      description: 'payment agent sum deposits threshold limit.'
+      isa: Num
+      global: 1
+      default: 200
     payment_agent_residence_check_exclusion:
       description: 'Email(s) of payment agents who are allowed to perform inter-country transfers and withdrawals.'
       default: []
@@ -112,6 +117,15 @@ payments:
       isa: json_string
       default: '{}'
       global: 1
+    countries:
+      isa: section
+      description: Misc settings per country
+      contains:
+        poi_deposit_limits_per_payment_type:
+         description: A collection of doughflow payment type per country that will trigger POI request when the specified limit is breached in the period specified in hours
+         isa: json_string
+         default: '{"za":{"CreditCard":{"limit": 500, "days": 7}}}'
+         global: 1
     autoapproval:
       description: 'Payment autoapproval rules parameters'
       isa: section
@@ -518,6 +532,20 @@ payments:
           isa: json_string
           default: '{"default":50,"BTC":0.003,"LTC":1,"ETH":0.1,"IDK":700}'
           global: 1
+        address_daemon:
+          description: "Daemon for reserving addresses to the address_pool for later assigning to clients"
+          isa: section
+          contains:
+            enabled:
+              description: "Flag to enable address reserving daemon"
+              isa: Bool
+              default: 0
+              global: 1
+            address_pool_threshold:
+              description: "Minimum number of addresses to be kept in the address pool for each currencies"
+              isa: json_string
+              default: '{"default":500,"BTC":800,"LTC":300,"ETH":1000,"TRX":10}'
+              global: 1
         internal_sweep:
           description: 'Internal sweep related config'
           isa: section
@@ -841,6 +869,15 @@ quants:
               isa: Num
               default: 100
               global: 1
+            lookback:
+              description: "The per-market scaling factor for all commissions. (percent of commission)"
+              isa: section
+              contains:
+                stake_percentage_commission:
+                  description: "The scaling factor for Turnover lookback commissions. (percent from Stake for Lookback to be paid to Affiliates. Our Expected Revenue from Lookback is roughly 2%, from Stake size on average. Hence assuming we are OK to pay 40% from our Expected Revenue, we will have the stake percentage as 0.8%.)"
+                  isa: Num 
+                  default: 0.008
+                  global: 1  
     multiplier_affiliate_commission:
       description: "Affiliate commission for multiplier contracts"
       isa: section
@@ -1165,6 +1202,11 @@ system:
           isa: ArrayRef
           default: []
           global: 1
+        payment_agent_withdrawal_automation:
+          description: "Suspend the payment agent withdrawal automation"
+          isa: Bool
+          default: 1
+          global: 1
         cryptocashier:
           description: "Suspend crypto cashier only"
           isa: Bool
@@ -1239,11 +1281,6 @@ system:
           description: "Suspend peer-to-peer cashier - this will override payments.p2p.enabled"
           isa: Bool
           default: 0
-          global: 1
-        doughflow_deriv_sportsbooks:
-          description: "Suspend Deriv sportbooks"
-          isa: Bool
-          default: 1
           global: 1
         universal_password:
           description: "Suspend syncing binary account password to MT5 account passwords"

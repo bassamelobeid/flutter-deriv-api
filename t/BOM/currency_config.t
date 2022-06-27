@@ -439,8 +439,6 @@ subtest 'Check Types of Suspension' => sub {
         ok BOM::Config::CurrencyConfig::is_crypto_currency_suspended('BTC'),            'Crypto Currency BTC is suspended';
         ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended('BTC'),    'Deposit for cryptocurrency is suspended';
         ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended('BTC'), 'Withdrawal for cryptocurrency is suspended';
-        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC'),      'Deposit for cryptocurrency is stopped';
-        ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC'),   'Withdrawal for cryptocurrency is stopped';
         $app_config->system->suspend->cryptocurrencies("");
     };
 
@@ -460,31 +458,15 @@ subtest 'Check Types of Suspension' => sub {
         $app_config->system->suspend->cryptocurrencies_withdrawal([]);
     };
 
-    subtest 'Only when cryptocurrency deposit is stopped' => sub {
-        $app_config->system->stop->cryptocurrencies_deposit(['BTC']);
-        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC'), 'Deposit for cryptocurrency is stopped';
-        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC')), 'Withdrawal for cryptocurrency is not stopped';
-        $app_config->system->stop->cryptocurrencies_deposit([]);
-    };
-
-    subtest 'Only when cryptocurrency withdrawal is stopped' => sub {
-        $app_config->system->stop->cryptocurrencies_withdrawal(['BTC']);
-        ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC'), 'Withdrawal for cryptocurrency is stopped';
-        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC')), 'Deposit for cryptocurrency is not stopped';
-        $app_config->system->stop->cryptocurrencies_withdrawal([]);
-    };
-
     subtest 'Only when cryptocurrency is suspended' => sub {
         $app_config->system->suspend->cryptocurrencies('BTC');
-        ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC'), 'Withdrawal for cryptocurrency is stopped';
-        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC'),    'Deposit for cryptocurrency is stopped';
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_suspended('BTC'), 'Crypto Currency BTC is suspended';
         $app_config->system->suspend->cryptocurrencies('');
     };
 
     subtest 'Only when cryptocurrency is suspended' => sub {
         $app_config->system->suspend->cryptocurrencies('ETH');
-        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC')), 'Withdrawal for cryptocurrency is stopped';
-        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC')),    'Deposit for cryptocurrency is stopped';
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_suspended('ETH'), 'Crypto Currency ETH is suspended';
         $app_config->system->suspend->cryptocurrencies('');
     };
 
@@ -500,8 +482,6 @@ subtest 'currency config' => sub {
     my $offerings_config = BOM::Config::Runtime->instance->get_offerings_config('sell');
     is $offerings_config->{action}, 'sell', 'get_offerings_config for sell';
     is BOM::Config::CurrencyConfig::local_currency_for_country('ca'),        'CAD',   'local_currency_for_country';
-    is BOM::Config::CurrencyConfig::get_crypto_withdrawal_fee_limit('BTC'),  '10',    'get_crypto_withdrawal_fee_limit';
-    is BOM::Config::CurrencyConfig::get_currency_wait_before_bump('BTC'),    '43200', 'get_currency_wait_before_bump';
     is BOM::Config::CurrencyConfig::get_crypto_new_address_threshold('BTC'), '0.003', 'get_crypto_new_address_threshold';
 };
 
@@ -518,41 +498,6 @@ subtest 'rare currencies config' => sub {
 
 subtest 'undefined currency' => sub {
     is BOM::Config::CurrencyConfig::local_currency_for_country('wrong'), undef, 'undefined_currency_check';
-};
-
-subtest 'get_currency_internal_sweep_config' => sub {
-    my $app_config                 = BOM::Config::Runtime->instance->app_config();
-    my $amounts_original           = $app_config->payments->crypto->internal_sweep->amounts();
-    my $fee_rate_percent_original  = $app_config->payments->crypto->internal_sweep->fee_rate_percent();
-    my $fee_limit_percent_original = $app_config->payments->crypto->internal_sweep->fee_limit_percent();
-
-    # Change the config
-    $app_config->set({
-        'payments.crypto.internal_sweep.amounts'           => '{"LTC":[1]}',
-        'payments.crypto.internal_sweep.fee_rate_percent'  => '{"LTC":80}',
-        'payments.crypto.internal_sweep.fee_limit_percent' => '{"LTC":2}',
-    });
-
-    my $expected_btc_config = {
-        amounts           => [],
-        fee_rate_percent  => 100,
-        fee_limit_percent => 1
-    };
-    my $expected_ltc_config = {
-        amounts           => [1],
-        fee_rate_percent  => 80,
-        fee_limit_percent => 2
-    };
-
-    is_deeply BOM::Config::CurrencyConfig::get_currency_internal_sweep_config('BTC'), $expected_btc_config, 'Correct default config';
-    is_deeply BOM::Config::CurrencyConfig::get_currency_internal_sweep_config('LTC'), $expected_ltc_config, 'Correct currecny config';
-
-    # Revert the chages
-    $app_config->set({
-        'payments.crypto.internal_sweep.amounts'           => $amounts_original,
-        'payments.crypto.internal_sweep.fee_rate_percent'  => $fee_rate_percent_original,
-        'payments.crypto.internal_sweep.fee_limit_percent' => $fee_limit_percent_original,
-    });
 };
 
 subtest 'get_crypto_payout_auto_update_global_status' => sub {
@@ -572,6 +517,26 @@ subtest 'get_crypto_payout_auto_update_global_status' => sub {
     $apps_config->payments->crypto->auto_update->reject(1);
     is(BOM::Config::CurrencyConfig::get_crypto_payout_auto_update_global_status('reject'), 1, 'should return true when auto reject is enabled');
 
+};
+
+subtest 'get_crypto_address_pool_threshold' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+
+    #gets the original config to revert after running the test
+    my $threshold_original = $app_config->get('payments.crypto.address_daemon.address_pool_threshold');
+
+    # Change the config
+    # Change the config
+    $app_config->set({
+        'payments.crypto.address_daemon.address_pool_threshold' => '{"default":50, "BTC":200, "ETH": 100}',
+    });
+
+    is_deeply BOM::Config::CurrencyConfig::get_crypto_address_pool_threshold('BTC'), 200, 'Correct config for the passed currency';
+    is_deeply BOM::Config::CurrencyConfig::get_crypto_address_pool_threshold('LTC'), 50,  'Default config when passed currency not found';
+    is_deeply BOM::Config::CurrencyConfig::get_crypto_address_pool_threshold(), 50, 'Default config when no currency passed';
+
+    # Revert the changes
+    $app_config->set({'payments.crypto.address_daemon.address_pool_threshold' => $threshold_original});
 };
 
 $mock_app_config->unmock_all();

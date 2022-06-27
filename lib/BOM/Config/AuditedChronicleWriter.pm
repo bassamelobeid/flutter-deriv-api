@@ -1,20 +1,20 @@
 package BOM::Config::AuditedChronicleWriter;
 
-use Data::Chronicle::Writer;
-use JSON::MaybeXS;
-use Moose;
-
-extends "Data::Chronicle::Writer";
-
 =head1 NAME
 
-BOM::Config::AuditedChronicleWriter - A sublcass of Data::Chronicle::Writer to inject staff name data
+BOM::Config::AuditedChronicleWriter - A sublcass of Data::Chronicle::Writer to inject staff name data.
 
 =head1 DESCRIPTION
 
 Can be used by dynamic settings writer, will add the given staff name to the json stored in chrnicle db.
 
 =cut
+
+use Data::Chronicle::Writer;
+use JSON::MaybeXS;
+use Moose;
+
+extends "Data::Chronicle::Writer";
 
 has 'staff' => (
     isa => 'Str',
