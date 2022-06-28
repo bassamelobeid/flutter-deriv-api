@@ -49,6 +49,7 @@ subtest 'Default band' => sub {
         contact_info     => 'test'
     );
     order($ad->{id}, 30);
+
     # current limit is USD 100 = EUR 50
     my $err = exception {
         order($ad->{id}, 30);

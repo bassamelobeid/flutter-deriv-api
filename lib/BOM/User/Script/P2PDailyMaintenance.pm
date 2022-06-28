@@ -58,16 +58,17 @@ Script entry point.
 sub run {
     $log->debug("P2PDailyMaintenance running");
 
-    my $brand         = Brands->new(name => 'deriv');                   # todo: replace with BOM::Config->brand when it is changed to Deriv
-    my $redis         = BOM::Config::Redis->redis_p2p_write();
-    my $app_config    = BOM::Config::Runtime->instance->app_config;
-    my $archive_days  = $app_config->payments->p2p->archive_ads_days;
-    my $all_countries = $brand->countries_instance->countries_list;
-    my $ad_config     = decode_json_utf8($app_config->payments->p2p->country_advert_config);
-    my $campaigns     = decode_json_utf8($app_config->payments->p2p->email_campaign_ids);
-    my %bo_activation = $redis->hgetall(AD_ACTIVATION_KEY)->@*;
-    my $now           = Date::Utility->new;
-    my @advertiser_ids;                                                 # for advertisers who had updated ads
+    my $brand             = Brands->new(name => 'deriv');                   # todo: replace with BOM::Config->brand when it is changed to Deriv
+    my $redis             = BOM::Config::Redis->redis_p2p_write();
+    my $app_config        = BOM::Config::Runtime->instance->app_config;
+    my $archive_days      = $app_config->payments->p2p->archive_ads_days;
+    my $all_countries     = $brand->countries_instance->countries_list;
+    my $ad_config         = decode_json_utf8($app_config->payments->p2p->country_advert_config);
+    my $campaigns         = decode_json_utf8($app_config->payments->p2p->email_campaign_ids);
+    my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
+    my %bo_activation     = $redis->hgetall(AD_ACTIVATION_KEY)->@*;
+    my $now               = Date::Utility->new;
+    my @advertiser_ids;                                                     # for advertisers who had updated ads
     my %archival_dates;
     my %brokers;
 
@@ -117,116 +118,133 @@ sub run {
                 }
             }
 
+        } catch ($e) {
+            $log->warnf('Error archiving ads for broker %s: %s', $broker, $e);
+        }
+
+        try {
+
             # 2. refresh advertiser completion rate
             $db->run(
                 fixup => sub {
                     $_->do('SELECT p2p.advertiser_completion_refresh(?)', undef, CRON_INTERVAL_DAYS);
                 });
 
-            # 3. deactivate fixed/float rate ads
-            for my $country (sort keys %$ad_config) {
-                next unless $all_countries->{$country}{financial_company} eq $lc or $all_countries->{$country}{gaming_company} eq $lc;
+        } catch ($e) {
+            $log->warnf('Error refreshing advertiser completion rates for broker %s: %s', $broker, $e);
+        }
 
-                my %ads_to_deactivate;
-                my $config = $ad_config->{$country};
+        # 3. deactivate fixed/float rate ads
+        for my $country (sort keys %$ad_config) {
+            next unless $all_countries->{$country}{financial_company} eq $lc or $all_countries->{$country}{gaming_company} eq $lc;
 
-                if ($config->{fixed_ads} ne 'disabled' and $config->{deactivate_fixed}) {
-                    my $deactivation_date = Date::Utility->new($config->{deactivate_fixed});
+            my %ads_to_deactivate;
+            my $config = $ad_config->{$country};
 
-                    if ($deactivation_date->is_after($now) and $bo_activation{"$country:deactivate_fixed"}) {
+            if ($config->{fixed_ads} ne 'disabled' and $config->{deactivate_fixed}) {
+                my $deactivation_date = Date::Utility->new($config->{deactivate_fixed});
 
-                        try {
-                            my $campaign_id = $campaigns->{float_rate_notice} or die "float_rate_notice email campaign ID is undefined\n";
+                if ($deactivation_date->is_after($now) and $bo_activation{"$country:deactivate_fixed"}) {
 
-                            my $user_ids = $db->run(
-                                fixup => sub {
-                                    $_->selectcol_arrayref('SELECT binary_user_id FROM p2p.deactivate_ad_rate_types(?, ?, ?)',
-                                        undef, ['fixed'], $country, 1);    # dry run
-                                });
+                    try {
+                        my $campaign_id = $campaigns->{float_rate_notice} or die "float_rate_notice email campaign ID is undefined\n";
 
-                            my @notification_users = uniq(@$user_ids);
-                            $log->debugf('creating rate change notification for %i users in country %s', scalar(@notification_users), $country);
+                        my $user_ids = $db->run(
+                            fixup => sub {
+                                $_->selectcol_arrayref('SELECT binary_user_id FROM p2p.deactivate_ad_rate_types(?, ?, ?)',
+                                    undef, ['fixed'], $country, 1);    # dry run
+                            });
 
-                            BOM::Platform::Event::Emitter::emit(
-                                'trigger_cio_broadcast' => {
-                                    campaign_id       => $campaign_id,
-                                    ids               => \@notification_users,
-                                    id_ignore_missing => 1,
-                                    data              => {
-                                        deactivation_date => $deactivation_date->date,
-                                        local_currency    => BOM::Config::CurrencyConfig::local_currency_for_country($country),
-                                        live_chat_url     => $brand->live_chat_url,
-                                    }}) if @$user_ids;
+                        my @notification_users = uniq(@$user_ids);
+                        $log->debugf('creating rate change notification for %i users in country %s', scalar(@notification_users), $country);
 
-                            $redis->hdel(AD_ACTIVATION_KEY, "$country:deactivate_fixed");
+                        BOM::Platform::Event::Emitter::emit(
+                            'trigger_cio_broadcast' => {
+                                campaign_id       => $campaign_id,
+                                ids               => \@notification_users,
+                                id_ignore_missing => 1,
+                                data              => {
+                                    deactivation_date => $deactivation_date->date,
+                                    local_currency    => BOM::Config::CurrencyConfig::local_currency_for_country($country),
+                                    live_chat_url     => $brand->live_chat_url,
+                                }}) if @$user_ids;
 
-                        } catch ($e) {
-                            $log->warnf('Error creating rate change notification for country %s: %s', $country, $e);
-                        }
-                    }
+                        $redis->hdel(AD_ACTIVATION_KEY, "$country:deactivate_fixed");
 
-                    if ($deactivation_date->is_before($now)) {
-                        $log->debugf('disabling fixed rates in country %s because deactivation date is set to %s', $country,
-                            $deactivation_date->date);
-                        $app_config->chronicle_writer(BOM::Config::Chronicle::get_audited_chronicle_writer('P2P Daily Maintenance'));
-                        $config->{fixed_ads} = 'disabled';
-                        $app_config->set({'payments.p2p.country_advert_config' => encode_json_utf8($ad_config)});
-                        $ads_to_deactivate{fixed} = 1;
+                    } catch ($e) {
+                        $log->warnf('Error creating rate change notification for country %s: %s', $country, $e);
                     }
                 }
 
-                $ads_to_deactivate{fixed} = 1 if ($bo_activation{"$country:fixed_ads"} // '') eq 'disabled';
-                $ads_to_deactivate{float} = 1 if ($bo_activation{"$country:float_ads"} // '') eq 'disabled';
-
-                if (%ads_to_deactivate) {
-                    $log->debugf('disabling %s ads in country %s', [keys %ads_to_deactivate], $country);
-
-                    my $ads;
-                    try {
-                        $ads = $db->run(
-                            fixup => sub {
-                                $_->selectall_hashref(
-                                    'SELECT binary_user_id, rate_type, advertiser_id FROM p2p.deactivate_ad_rate_types(?, ?, ?)',
-                                    ['rate_type', 'binary_user_id'],
-                                    undef,    [keys %ads_to_deactivate],
-                                    $country, 0                            # no dry run
-                                );
-                            });
-
-                    } catch ($e) {
-                        $log->warnf('Error deactivating %s ads for country %s: %s', [keys %ads_to_deactivate], $country, $e);
-                        next;
-                    }
-
-                    for my $type ('fixed', 'float') {
-                        if ($ads->{$type}) {
-                            my $key = $type . '_rate_disabled';
-
-                            if (my $campaign_id = $campaigns->{$key}) {
-                                BOM::Platform::Event::Emitter::emit(
-                                    'trigger_cio_broadcast' => {
-                                        campaign_id       => $campaign_id,
-                                        ids               => [keys $ads->{$type}->%*],
-                                        id_ignore_missing => 1,
-                                        data              => {
-                                            local_currency => BOM::Config::CurrencyConfig::local_currency_for_country($country),
-                                            live_chat_url  => $brand->live_chat_url,
-                                        }});
-                            } else {
-                                $log->warnf('%s email campaign ID is undefined', $key);
-                            }
-
-                            push @advertiser_ids, map { $_->{advertiser_id} } values $ads->{$type}->%*;
-                        }
-                    }
-
-                    $redis->hdel(AD_ACTIVATION_KEY, "$country:fixed_ads", "$country:float_ads");
+                if ($deactivation_date->is_before($now)) {
+                    $log->debugf('disabling fixed rates in country %s because deactivation date is set to %s', $country, $deactivation_date->date);
+                    $app_config->chronicle_writer(BOM::Config::Chronicle::get_audited_chronicle_writer('P2P Daily Maintenance'));
+                    $config->{fixed_ads} = 'disabled';
+                    $app_config->set({'payments.p2p.country_advert_config' => encode_json_utf8($ad_config)});
+                    $ads_to_deactivate{fixed} = 1;
                 }
             }
 
-        } catch ($e) {
-            $log->errorf('Error processing broker %s: %s', $broker, $e);
+            $ads_to_deactivate{fixed} = 1 if ($bo_activation{"$country:fixed_ads"} // '') eq 'disabled';
+            $ads_to_deactivate{float} = 1 if ($bo_activation{"$country:float_ads"} // '') eq 'disabled';
+
+            if (%ads_to_deactivate) {
+                $log->debugf('disabling %s ads in country %s', [keys %ads_to_deactivate], $country);
+
+                my $ads;
+                try {
+                    $ads = $db->run(
+                        fixup => sub {
+                            $_->selectall_hashref(
+                                'SELECT binary_user_id, rate_type, advertiser_id FROM p2p.deactivate_ad_rate_types(?, ?, ?)',
+                                ['rate_type', 'binary_user_id'],
+                                undef,    [keys %ads_to_deactivate],
+                                $country, 0                            # no dry run
+                            );
+                        });
+
+                } catch ($e) {
+                    $log->warnf('Error deactivating %s ads for country %s: %s', [keys %ads_to_deactivate], $country, $e);
+                    next;
+                }
+
+                for my $type ('fixed', 'float') {
+                    if ($ads->{$type}) {
+                        my $key = $type . '_rate_disabled';
+
+                        if (my $campaign_id = $campaigns->{$key}) {
+                            BOM::Platform::Event::Emitter::emit(
+                                'trigger_cio_broadcast' => {
+                                    campaign_id       => $campaign_id,
+                                    ids               => [keys $ads->{$type}->%*],
+                                    id_ignore_missing => 1,
+                                    data              => {
+                                        local_currency => BOM::Config::CurrencyConfig::local_currency_for_country($country),
+                                        live_chat_url  => $brand->live_chat_url,
+                                    }});
+                        } else {
+                            $log->warnf('%s email campaign ID is undefined', $key);
+                        }
+
+                        push @advertiser_ids, map { $_->{advertiser_id} } values $ads->{$type}->%*;
+                    }
+                }
+
+                $redis->hdel(AD_ACTIVATION_KEY, "$country:fixed_ads", "$country:float_ads");
+            }
         }
+
+        try {
+            if (my $limit = $withdrawal_limits->{$lc}) {
+                $db->run(
+                    fixup => sub {
+                        $_->do('SELECT p2p.populate_withdrawal_limits(?, NULL, ?)', undef, $limit->{lifetime_limit}, CRON_INTERVAL_DAYS);
+                    });
+            }
+        } catch ($e) {
+            $log->errorf('Error populating withdrawal limits for broker %s: %s', $broker, $e);
+        }
+
     }
 
     $redis->multi;

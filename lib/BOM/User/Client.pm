@@ -436,6 +436,7 @@ sub set_authentication {
             $cli->save;
         }
     }
+
     $self->update_status_after_auth_fa();
     return $self->get_authentication($method);
 }
@@ -2276,12 +2277,14 @@ sub p2p_advertiser_create {
     # sb call can take a while, so we must check again
     die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertiser_cached;
 
+    my $lc_withdrawal_limit = BOM::Config::payment_limits()->{withdrawal_limits}{$self->landing_company->short}{lifetime_limit};
+
     my $advertiser = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,             $id,    $self->loginid, $name, @param{qw/default_advert_description payment_info contact_info/},
-                $sb_user->user_id, $token, $expiry
+                $sb_user->user_id, $token, $expiry,        $lc_withdrawal_limit
             );
         });
 
@@ -2289,6 +2292,7 @@ sub p2p_advertiser_create {
         $self->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
     }
 
+    $self->_p2p_convert_advertiser_limits($advertiser);
     my $details = $self->_advertiser_details($advertiser);
 
     BOM::Platform::Event::Emitter::emit(
@@ -2385,6 +2389,7 @@ sub p2p_advertiser_update {
             advertiser_id => $advertiser_info->{id},
         });
 
+    $self->_p2p_convert_advertiser_limits($update);
     return $self->_advertiser_details($update);
 }
 
@@ -3592,11 +3597,7 @@ sub _p2p_advertisers {
             );
         });
 
-    for my $adv (@$advertisers) {
-        for my $limit (qw/daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/) {
-            $adv->{$limit} = convert_currency($adv->{$limit}, $adv->{limit_currency}, $adv->{account_currency}) if defined $adv->{$limit};
-        }
-    }
+    $self->_p2p_convert_advertiser_limits($_) for @$advertisers;
     return $advertisers;
 }
 
@@ -3611,6 +3612,23 @@ In tests you will need to delete this every time you update an advertiser and ca
 sub _p2p_advertiser_cached {
     my $self = shift;
     return $self->{_p2p_advertiser_cached} //= $self->_p2p_advertisers(loginid => $self->loginid)->[0];
+}
+
+=head2 _p2p_convert_advertiser_limits
+
+Converts limits to advertier's account currency. Values are changed in-place.
+
+=cut
+
+sub _p2p_convert_advertiser_limits {
+    my ($self, $advertiser) = @_;
+
+    for my $amt (qw/daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/) {
+        next unless defined $advertiser->{$amt};
+        $advertiser->{$amt} = convert_currency($advertiser->{$amt}, $advertiser->{limit_currency}, $advertiser->{account_currency});
+    }
+
+    return $advertiser;
 }
 
 =head2 _p2p_adverts
@@ -4358,21 +4376,29 @@ sub _advertiser_details {
     # only advertiser themself can see these fields
     if ($self->loginid eq $loginid) {
 
-        $details->{payment_info}       = $advertiser->{payment_info} // '';
-        $details->{contact_info}       = $advertiser->{contact_info} // '';
-        $details->{chat_user_id}       = $advertiser->{chat_user_id};
-        $details->{chat_token}         = $advertiser->{chat_token} // '';
-        $details->{show_name}          = $advertiser->{show_name};
-        $details->{balance_available}  = $self->balance_for_cashier('p2p');
+        $details->{payment_info}      = $advertiser->{payment_info} // '';
+        $details->{contact_info}      = $advertiser->{contact_info} // '';
+        $details->{chat_user_id}      = $advertiser->{chat_user_id};
+        $details->{chat_token}        = $advertiser->{chat_token} // '';
+        $details->{show_name}         = $advertiser->{show_name};
+        $details->{balance_available} = $self->balance_for_cashier('p2p');
+        $details->{withdrawal_limit} =
+            defined $advertiser->{withdrawal_limit}
+            ? financialrounding('amount', $advertiser->{account_currency}, $advertiser->{withdrawal_limit})
+            : undef;
         $details->{basic_verification} = $self->status->age_verification ? 1 : 0;
         $details->{full_verification}  = $self->fully_authenticated      ? 1 : 0;
         $details->{cancels_remaining}  = $self->_p2p_advertiser_cancellations->{remaining};
         $details->{blocked_by_count}   = $advertiser->{blocked_by_count}
             // 0;    # only p2p.advertiser_create does not return it, but there it must be zero
 
-        for my $limit (qw/daily_buy daily_sell daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/) {
-            $details->{$limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{$limit})
-                if defined $advertiser->{$limit};
+        for my $amt (qw/daily_buy daily_sell/) {
+            # advertiser_create does not return these fields, but they must be zero
+            $details->{$amt} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{$amt} // 0);
+        }
+
+        for my $limit (qw/daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/) {
+            $details->{$limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{$limit}) if defined $advertiser->{$limit};
         }
 
         if ($advertiser->{blocked_until}) {
@@ -6393,6 +6419,14 @@ sub update_status_after_auth_fa {
     if ($config->{require_age_verified_for_synthetic} and $self->status->age_verification and $self->user->bom_virtual_loginid) {
         my $vr_acc = BOM::User::Client->new({loginid => $self->user->bom_virtual_loginid});
         $vr_acc->status->setnx('age_verification', 'system', $msg // '');
+    }
+
+    if (my $p2p_advertiser = $self->_p2p_advertiser_cached) {
+        my $limit = BOM::Config::payment_limits()->{withdrawal_limits}{$self->landing_company->short};
+        $self->db->dbic->run(
+            fixup => sub {
+                $_->do('SELECT p2p.populate_withdrawal_limits(?, ?, NULL)', undef, $limit->{lifetime_limit}, $p2p_advertiser->{id});
+            }) if $limit;
     }
 }
 

@@ -119,6 +119,7 @@ subtest 'advertiser Registration' => sub {
         sell_orders_amount    => num(0),
         show_name             => 0,
         balance_available     => num(0),
+        withdrawal_limit      => num(10000),
         cancels_remaining     => 3,
         buy_time_avg          => undef,
         partner_count         => 0,
@@ -142,7 +143,7 @@ subtest 'advertiser Registration' => sub {
     my $other_client = BOM::Test::Helper::P2P::create_advertiser();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
     delete $expected->@{
-        qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available cancels_remaining blocked_by_count/
+        qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available cancels_remaining blocked_by_count withdrawal_limit/
     };
     $expected->{is_blocked}     = $expected->{is_favourite} = 0;
     $expected->{is_recommended} = undef;
