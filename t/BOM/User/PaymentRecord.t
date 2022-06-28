@@ -445,6 +445,29 @@ subtest 'deprecated' => sub {
         payment_type => 'Capy'
         ),
         1, '1 record found';
+
+    subtest 'do not update the counter if there is a legacy clash for pt=CreditCard' => sub {
+        ok $pr->add_payment(
+            id      => 2000,
+            user_id => $pr->{user_id},
+            pt      => 'Capy',
+        );
+        ok !$pr->add_payment(
+            id      => 2000,
+            user_id => $pr->{user_id},
+            pt      => 'CreditCard',
+        );
+        ok $pr->add_payment(
+            id      => 2000,
+            user_id => $pr->{user_id},
+            pt      => 'Bara',
+        );
+        ok !$pr->add_payment(
+            id      => 1000,
+            user_id => $pr->{user_id},
+            pt      => 'CreditCard',
+        );
+    };
 };
 
 subtest 'BOM::User::PaymentRecord::set_flag/is_flagged' => sub {
@@ -465,6 +488,286 @@ subtest 'BOM::User::PaymentRecord::set_flag/is_flagged' => sub {
         );
         is($record->is_flagged('dummy'), 1, 'is_flagged returns 1');
     };
+};
+
+subtest '5 differents credit cards' => sub {
+    $pr = BOM::User::PaymentRecord->new(user_id => 2000);
+
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x01'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x02'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x03'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x04'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x05'
+    );
+
+    my $payments = $pr->get_raw_payments(10);
+
+    cmp_deeply $payments,
+        [
+        'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
+        'bara|capy|CreditCard|0x05'
+        ],
+        'expected payments';
+
+    my $filtered = $pr->filter_payments({pt => 'CreditCard'}, $payments);
+    cmp_deeply $filtered,
+        [
+        'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
+        'bara|capy|CreditCard|0x05'
+        ],
+        'expected payments';
+
+    my $grouped = $pr->group_by_id($filtered);
+
+    cmp_bag $grouped,
+        [
+        'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
+        'bara|capy|CreditCard|0x05',
+        ],
+        'expected grouped payments';
+};
+
+subtest '5 differents credit cards (some CC repeated)' => sub {
+    $pr = BOM::User::PaymentRecord->new(user_id => 2000);
+
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x01'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x02'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x05'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x04'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x05'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x03'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x02'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x01'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x01'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x01'
+    );
+
+    my $payments = $pr->get_raw_payments(10);
+
+    cmp_deeply $payments,
+        [
+        'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
+        'bara|capy|CreditCard|0x05'
+        ],
+        'expected payments';
+
+    my $filtered = $pr->filter_payments({pt => 'CreditCard'}, $payments);
+    cmp_deeply $filtered,
+        [
+        'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
+        'bara|capy|CreditCard|0x05'
+        ],
+        'expected payments';
+
+    my $grouped = $pr->group_by_id($filtered);
+
+    cmp_bag $grouped,
+        [
+        'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
+        'bara|capy|CreditCard|0x05',
+        ],
+        'expected grouped payments';
+};
+subtest '5 differents credit cards (different pm/pp)' => sub {
+    $pr = BOM::User::PaymentRecord->new(user_id => 3000);
+
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x01'
+    );
+    ok $pr->add_payment(
+        pm => 'kapy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x01'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'tara',
+        pt => 'CreditCard',
+        id => '0x01'
+    );
+
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x02'
+    );
+    ok $pr->add_payment(
+        pm => 'kapy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x02'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'tara',
+        pt => 'CreditCard',
+        id => '0x02'
+    );
+
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x03'
+    );
+    ok $pr->add_payment(
+        pm => 'kapy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x03'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'tara',
+        pt => 'CreditCard',
+        id => '0x03'
+    );
+
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x04'
+    );
+    ok $pr->add_payment(
+        pm => 'kapy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x04'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'tara',
+        pt => 'CreditCard',
+        id => '0x04'
+    );
+
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x05'
+    );
+    ok $pr->add_payment(
+        pm => 'kapy',
+        pp => 'bara',
+        pt => 'CreditCard',
+        id => '0x05'
+    );
+    ok $pr->add_payment(
+        pm => 'capy',
+        pp => 'tara',
+        pt => 'CreditCard',
+        id => '0x05'
+    );
+
+    my $payments = $pr->get_raw_payments(10);
+
+    cmp_deeply $payments,
+        [
+        'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
+        'bara|capy|CreditCard|0x05', 'bara|kapy|CreditCard|0x01', 'bara|kapy|CreditCard|0x02', 'bara|kapy|CreditCard|0x03',
+        'bara|kapy|CreditCard|0x04', 'bara|kapy|CreditCard|0x05', 'tara|capy|CreditCard|0x01', 'tara|capy|CreditCard|0x02',
+        'tara|capy|CreditCard|0x03', 'tara|capy|CreditCard|0x04', 'tara|capy|CreditCard|0x05'
+        ],
+        'expected payments';
+
+    my $filtered = $pr->filter_payments({pt => 'CreditCard'}, $payments);
+    cmp_deeply $filtered,
+        [
+        'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
+        'bara|capy|CreditCard|0x05', 'bara|kapy|CreditCard|0x01', 'bara|kapy|CreditCard|0x02', 'bara|kapy|CreditCard|0x03',
+        'bara|kapy|CreditCard|0x04', 'bara|kapy|CreditCard|0x05', 'tara|capy|CreditCard|0x01', 'tara|capy|CreditCard|0x02',
+        'tara|capy|CreditCard|0x03', 'tara|capy|CreditCard|0x04', 'tara|capy|CreditCard|0x05'
+        ],
+        'expected payments';
+
+    my $grouped = $pr->group_by_id($filtered);
+
+    cmp_bag $grouped,
+        [
+        'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
+        'bara|capy|CreditCard|0x05',
+        ],
+        'expected grouped payments';
 };
 
 sub add_legacy_payment : method {

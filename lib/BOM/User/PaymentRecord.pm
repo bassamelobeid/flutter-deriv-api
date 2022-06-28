@@ -6,6 +6,7 @@ use warnings;
 use BOM::Config::Redis;
 use Date::Utility;
 use List::Util qw/first max/;
+use Digest::SHA qw/sha256_hex/;
 
 use constant LIFETIME_IN_DAYS           => 90;
 use constant SECONDS_IN_A_DAY           => 86400;
@@ -18,6 +19,10 @@ use constant PAYMENT_KEY_USER_ID_PREFIX => 'UID';
 # pp: payment processor, pm: payment method, pt: payment type, id: payment method identifier
 use constant PAYMENT_SERIALIZE_FIELDS => [qw/pp pm pt id/];
 use constant PAYMENT_UNDEF_SYMBOL     => '^';
+
+# drop these after legacy key expiration
+use constant LEGACY_PAYMENT_KEY_PREFIX => 'PAYMENT_RECORD';
+use constant TEMP_PAYMENT_KEY_PREFIX   => 'TEMP_PAYMENT_RECORD';
 
 =head2 new
 
@@ -86,6 +91,39 @@ sub add_payment : method {
     my $storage_key = $self->storage_key();
 
     my $redis = _get_redis();
+
+    # to avoid clashes with the old implementation we will use a temporary
+    # hyperloglog with the current element, merge with the user's hyperloglog and
+    # check the cardinality.
+    my $pt = $args{pt} // '';
+    my $id = $args{id} // '';
+
+    if ($pt eq 'CreditCard') {
+        if ($id ne '') {
+            $redis->pfadd(TEMP_PAYMENT_KEY_PREFIX . $self->{user_id}, sha256_hex($args{id}));
+            $redis->pfmerge(
+                TEMP_PAYMENT_KEY_PREFIX . $self->{user_id},
+                @{
+                    _get_keys_for_time_period(
+                        payment_type => 'CreditCard',
+                        user_id      => $self->{user_id},
+                        period       => LIFETIME_IN_DAYS
+                    )});
+
+            my $current = $self->get_distinct_payment_accounts_for_time_period(
+                period       => LIFETIME_IN_DAYS,
+                payment_type => 'CreditCard'
+            );
+
+            my $addition = $redis->pfcount(TEMP_PAYMENT_KEY_PREFIX . $self->{user_id});
+            $redis->del(TEMP_PAYMENT_KEY_PREFIX . $self->{user_id});
+
+            if ($current == $addition) {
+                return 0;
+            }
+        }
+    }
+
     $redis->multi;
     $redis->zadd($storage_key, time, $payload);
     # we set the expiry of the whole key
@@ -252,6 +290,37 @@ sub filter_payments {
     return [grep { $_ =~ /^$regex_str/ } $resultset->@*];
 }
 
+=head2 group_by_id
+
+Given a resultset, groups them by id.
+
+It takes:
+
+=over 4
+
+=item C<$resulset> - the payments string arrayref.
+
+=back
+
+Returns a subset of C<$resultset> with grouped payments by id.
+
+=cut
+
+sub group_by_id {
+    my ($self, $resultset) = @_;
+
+    my $group = {};
+
+    for my $payload ($resultset->@*) {
+        my $payment = $self->from_payload($payload);
+        my $id      = $payment->{id};
+        next if exists $group->{$id};
+        $group->{$id} = $payload;
+    }
+
+    return [values $group->%*];
+}
+
 =head2 trimmer
 
 Trims all the payment records zset into its LIFETIME_IN_DAYS boundary.
@@ -376,7 +445,7 @@ sub _build_storage_key {
     my $days_behind = $args{days_behind} // 0;
 
     my @key_parts = (
-        PAYMENT_KEY_PREFIX, PAYMENT_KEY_USER_ID_PREFIX, $user_id, $payment_type,
+        LEGACY_PAYMENT_KEY_PREFIX, PAYMENT_KEY_USER_ID_PREFIX, $user_id, $payment_type,
         Date::Utility->new->minus_time_interval($days_behind . 'd')->date_yyyymmdd
     );
 
