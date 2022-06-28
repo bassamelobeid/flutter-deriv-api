@@ -36,6 +36,7 @@ use BOM::User;
 use BOM::Rules::Engine;
 use LandingCompany::Wallet;
 use BOM::RPC::v3::MT5::Account;
+use BOM::RPC::v3::Services::CellxpertService;
 
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
@@ -264,6 +265,8 @@ rpc "verify_email",
                     });
             }
         }
+    } elsif ($type eq 'partner_account_opening') {
+        return BOM::RPC::v3::Services::CellxpertService::verify_email($email, $verification);
     } elsif ($client and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
         # TODO: the following should be replaced by $rule_engine->validate_action($type )
         # We should just wait until rhe rule engine integration of PA-withdrawal and cashier withdrawal actions.
@@ -1230,22 +1233,26 @@ Will return the following data:
 
 =cut
 
-rpc "affiliate_account_add", sub {
+rpc "affiliate_account_add",
+    auth => [],
+    sub {
     my $params = shift;
-
     my ($client, $args) = @{$params}{qw/client args/};
-
     $log->tracef("Invoked affiliate_account_add for:\n%s \n%s", $client, $args);
 
-    my $broker       = 'AFF';
-    my $company      = LandingCompany::Registry->by_broker($broker);
-    my $company_name = $company->name;
+    my ($verification_code, $first_name, $last_name, $non_pep_declaration, $tnc_accepted, $password) =
+        @{$args}{qw/verification_code first_name last_name non_pep_declaration tnc_accepted password/};
 
-    return BOM::RPC::v3::Utility::create_error({
-        code              => 'PermissionDenied',
-        message_to_client => "This API is a work in progress. $broker account will be created for landing company: $company_name."
-    });
-};
+    my $email = BOM::Platform::Token->new({token => $verification_code})->email;
+    unless ($email) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'TokenError',
+            message_to_client => 'Can not get email from token',
+        });
+    }
+    return BOM::RPC::v3::Services::CellxpertService::affiliate_account_add($email, $first_name, $last_name, $non_pep_declaration, $tnc_accepted,
+        $password);
+    };
 
 =head2 _compute_affiliate_token
 
@@ -1294,4 +1301,3 @@ sub _compute_affiliate_token {
 }
 
 1;
-

@@ -80,6 +80,20 @@ $mt5_mock->mock(
         return $mt5_mock->original('create_user')->(@_);
     });
 
+my $platform_token_mock = Test::MockModule->new('BOM::Platform::Token');
+$platform_token_mock->mock(
+    'email',
+    sub {
+        return 'mock@email.com';
+    });
+
+my $mock_cellxpert_server = Test::MockModule->new('WebService::Async::Cellxpert');
+$mock_cellxpert_server->mock(
+    'register_affiliate',
+    sub {
+        return Future->done(1);
+    });
+
 subtest 'Initialization' => sub {
     lives_ok {
         $rpc_ct = BOM::Test::RPC::QueueClient->new();
@@ -117,19 +131,14 @@ subtest 'new affiliate account' => sub {
         password              => "S3creTp4ssw0rd",
         phone                 => "+72443598863",
         tnc_accepted          => 1,
-        username              => "johndoe"
+        username              => "johndoe",
+        verification_code     => "132435"
     };
 
-    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_error()->result;
+    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->result;
 
-    is $result->{error}->{code}, 'InvalidToken', 'Authorization is needed';
+    is $result->{affiliate_id}, 1;
 
-    $params->{token} = $auth_token;
-    $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_error()->result;
-
-    is $result->{error}->{code}, 'PermissionDenied', 'API is WIP';
-    is $result->{error}->{message_to_client}, 'This API is a work in progress. AFF account will be created for landing company: Deriv Services Ltd.',
-        'Proper WIP message displayed';
 };
 
 done_testing();
