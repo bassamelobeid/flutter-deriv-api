@@ -256,10 +256,13 @@ Example usage:
 
 =cut
 
-sub p2p_rpc {
-    my ($method, $code) = @_;
-    return rpc $method => category => 'p2p',
-        sub {
+sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
+    my $code   = pop;
+    my $method = shift;
+    my %opts   = @_;
+    $opts{category} = 'p2p';
+
+    return rpc $method => %opts => sub {
         my $params = shift;
 
         try {
@@ -341,7 +344,7 @@ sub p2p_rpc {
                 });
             }
         }
-        };
+    };
 }
 
 =head2 p2p_advertiser_create
@@ -427,14 +430,14 @@ Returns a hashref containing the following information:
 
 =cut
 
-p2p_rpc p2p_advertiser_info => sub {
+p2p_rpc p2p_advertiser_info => readonly => 1 => sub {
     my (%args) = @_;
 
     my $client = $args{client};
     return $client->p2p_advertiser_info($args{params}{args}->%*) // die +{error_code => 'AdvertiserNotFound'};
 };
 
-p2p_rpc p2p_advertiser_adverts => sub {
+p2p_rpc p2p_advertiser_adverts => readonly => 1 => sub {
     my (%args) = @_;
 
     my $client = $args{client};
@@ -449,7 +452,7 @@ Returns available payment methods for current client's country.
 
 =cut
 
-p2p_rpc p2p_payment_methods => sub {
+p2p_rpc p2p_payment_methods => readonly => 1 => sub {
     my (%args) = @_;
 
     my $client = $args{client};
@@ -552,7 +555,7 @@ Returns a hashref containing the following keys:
 
 =cut
 
-p2p_rpc p2p_advert_info => sub {
+p2p_rpc p2p_advert_info => readonly => 1 => sub {
     my (%args) = @_;
 
     my %params = $args{params}{args}->%* or die +{error_code => 'AdvertInfoMissingParam'};
@@ -600,7 +603,7 @@ Returns available adverts as an arrayref containing hashrefs with the following 
 
 =cut
 
-p2p_rpc p2p_advert_list => sub {
+p2p_rpc p2p_advert_list => readonly => 1 => sub {
     my %args = @_;
 
     my $client = $args{client};
@@ -663,7 +666,7 @@ if the current client owns that advert)
 
 =cut
 
-p2p_rpc p2p_order_list => sub {
+p2p_rpc p2p_order_list => readonly => 1 => sub {
     my %args = @_;
 
     my $client = $args{client};
@@ -684,7 +687,7 @@ Takes the following named parameters:
 
 =cut
 
-p2p_rpc p2p_order_info => sub {
+p2p_rpc p2p_order_info => readonly => 1 => sub {
     my %args = @_;
 
     my ($client, $params) = @args{qw/client params/};
@@ -880,7 +883,7 @@ Implementation of p2p_ping endpoint.
 
 =cut
 
-p2p_rpc 'p2p_ping' => sub {
+p2p_rpc p2p_ping => readonly => 1 => sub {
     return 'pong';
 };
 
