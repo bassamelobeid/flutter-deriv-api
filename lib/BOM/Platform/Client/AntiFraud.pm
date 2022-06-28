@@ -118,7 +118,9 @@ sub df_total_payments_by_payment_type {
 
     my $filtered = $record->filter_payments({pt => $pt}, $payments);
 
-    my $total_payment_accounts = scalar $filtered->@*;
+    my $grouped = $record->group_by_id($filtered);
+
+    my $total_payment_accounts = scalar $grouped->@*;
     my $payment_accounts_limit = $self->client->payment_accounts_limit($limit);
 
     # TODO: we must take this down when the deprecated redis keys expire

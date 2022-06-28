@@ -150,16 +150,16 @@ subtest 'df total payments by identifier' => sub {
         };
 
         $raw_payments = [
-            'Test|Capy|Bara|0x01|1|USD',  'Test|Capy|Bara|0x01|1|EUR', 'Asdf|Capy|Bara|0x01|2|USD',  'Test|Asdf|Bara|0x01|3|USD',
-            'Test|Capy|Asdf|0x01|5|USD',  'Test|Capy|Asdf|0x01|8|USD', 'Test|Capy|Bara|0x02|13|USD', 'Test|Capy|Bara|0x03|21|USD',
-            'Test|Capy|Bara|0x01|34|USD', 'Test|Capy|Bara|0x01|55|USD',
+            'Test|Capy|Bara|0x01', 'Test|Capy|Bara|0x01', 'Asdf|Capy|Bara|0x01', 'Test|Asdf|Bara|0x01',
+            'Test|Capy|Asdf|0x01', 'Test|Capy|Asdf|0x01', 'Test|Capy|Bara|0x02', 'Test|Capy|Bara|0x03',
+            'Test|Capy|Bara|0x01', 'Test|Capy|Bara|0x01',
         ];
 
         ok !$antifraud->df_total_payments_by_payment_type('Bara'), 'Limit not yet breached';
 
         $high_risk_settings = {
             days  => 10,
-            limit => 8,
+            limit => 2,
         };
 
         ok $antifraud->df_total_payments_by_payment_type('Bara'), 'Limit breached';
@@ -173,7 +173,7 @@ subtest 'df total payments by identifier' => sub {
 
         $high_risk_settings = {
             days  => 10,
-            limit => 2,
+            limit => 1,
         };
 
         ok $antifraud->df_total_payments_by_payment_type('Asdf'), 'Limit breached';
@@ -231,7 +231,7 @@ subtest 'df total payments by identifier' => sub {
 
         ok !$antifraud->df_total_payments_by_payment_type('Bara'), 'Limit not breached';
 
-        $raw_payments = ['Test|Capy|Bara|0x01|1|USD',];
+        $raw_payments = ['Test|Capy|Bara|0x01',];
 
         ok $antifraud->df_total_payments_by_payment_type('Bara'), 'Limit breached';
     };
