@@ -4,17 +4,11 @@
     "description": "Register a new affiliate",
     "hidden": 1,
     "type": "object",
-    "auth_required": 1,
-    "auth_scopes": [
-        "admin"
-    ],
+    "auth_required": 0,
+    "auth_scopes": [],
     "additionalProperties": false,
     "required": [
         "affiliate_account_add",
-        "address_city",
-        "address_line_1",
-        "address_postcode",
-        "address_state",
         "country",
         "first_name",
         "last_name",
@@ -22,7 +16,7 @@
         "password",
         "phone",
         "tnc_accepted",
-        "username"
+        "verification_code"
     ],
     "properties": {
         "affiliate_account_add": {
@@ -97,10 +91,10 @@
                 1
             ]
         },
-        "username": {
-            "description": "Desired username for the affiliate account. Within 2-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
+        "verification_code": {
+            "description": "Email verification code (received from a `verify_email` call, which must be done first).",
             "type": "string",
-            "pattern": "^(?!.*\\s{2,})[\\p{L}\\s'.-]{2,50}$"
+            "pattern": "^\\w{8,128}$"
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",

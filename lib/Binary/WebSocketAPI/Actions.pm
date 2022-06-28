@@ -411,7 +411,7 @@ sub actions_config {
         [
             'affiliate_account_add',
             {
-                stash_params => [qw/ server_name client_ip user_agent /],
+                stash_params => [qw/ token server_name client_ip user_agent /],
                 msg_group    => 'account',
             }
         ],
