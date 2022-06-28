@@ -23,10 +23,10 @@ my @doughflow_sportsbooks_mock = (
     'Deriv Investments Ltd USD',
     'Deriv Investments Ltd EUR',
     'Deriv Investments Ltd GBP',
-    'Deriv Services Ltd USD',
-    'Deriv Services Ltd EUR',
-    'Deriv Services Ltd GBP',
-    'Deriv Services Ltd AUD',
+    'Deriv (DSL) Ltd USD',
+    'Deriv (DSL) Ltd EUR',
+    'Deriv (DSL) Ltd GBP',
+    'Deriv (DSL) Ltd AUD',
 );
 
 sub _test_data {
@@ -83,13 +83,13 @@ for my $broker (@all_broker_codes) {
 }
 $config_mocked->unmock('on_production');
 
-subtest 'doughflow deriv sportsbook landing company consistency' => sub {
+subtest 'doughflow deriv sportsbook landing company consistency except for DSL' => sub {
     my @all_broker_codes = LandingCompany::Registry->all_broker_codes;
 
     for my $broker (@all_broker_codes) {
         my $lc = LandingCompany::Registry->by_broker($broker);
 
-        next if $lc->short =~ /virtual|champion|samoa/;
+        next if $lc->short =~ /virtual|champion|samoa|dsl/;
 
         my $sportsbook = BOM::Platform::Doughflow::get_sportsbook_name_for($lc->short);
         next unless $sportsbook;
