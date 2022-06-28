@@ -165,6 +165,9 @@ subtest 'set_authentication_and_status' => sub {
     $client_cr1->set_authentication_and_status('ID_ONLINE', 'Sarah Aziziyan');
     ok !$client_mf2->get_authentication('ID_ONLINE'), "Client has not ID_ONLINE";
 
+    $client_cr1->set_authentication_and_status('IDV', 'Testing');
+    is $client_cr1->get_authentication('IDV')->{status}, 'pass', 'Expected status';
+    ok !$client_mf2->get_authentication('IDV'), "Client has not IDV";
 };
 
 subtest 'set_staff_name' => sub {

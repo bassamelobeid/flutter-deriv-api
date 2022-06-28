@@ -43,7 +43,7 @@ subtest 'initialization' => sub {
 };
 
 subtest "Client load and saving." => sub {
-    plan tests => 43;
+    plan tests => 45;
     # create client object
     lives_ok { $client = BOM::User::Client->new({'loginid' => $login_id}); }
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => $login_id})'";
@@ -77,6 +77,11 @@ subtest "Client load and saving." => sub {
     lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR0007'}); }
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => CR0007})'";
     is($client->fully_authenticated(), 1, "CR0007 - fully authenticated");
+
+    lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR0008'}); }
+    "Can create client object 'BOM::User::Client::get_instance({'loginid' => CR0008})'";
+    $client->set_authentication('IDV', {status => 'pass'});
+    is($client->fully_authenticated(), 1, "CR0008 - fully authenticated");
 
     my $client_details = {
         'loginid'            => 'CR5089',

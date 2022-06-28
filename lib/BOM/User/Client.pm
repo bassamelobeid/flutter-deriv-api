@@ -518,6 +518,10 @@ sub set_authentication_and_status {
     # Remove existing status to make the auth methods mutually exclusive
     $_->delete for @{$self->client_authentication_method};
 
+    if ($client_authentication eq 'IDV') {
+        $self->set_authentication('IDV', {status => 'pass'}, $staff);
+    }
+
     if ($client_authentication eq 'ID_NOTARIZED') {
         $self->set_authentication('ID_NOTARIZED', {status => 'pass'}, $staff);
     }
@@ -754,7 +758,7 @@ MF - POI + POA + Selfie in Onfido
 sub fully_authenticated {
     my $self = shift;
 
-    for my $method (qw/ID_DOCUMENT ID_NOTARIZED ID_ONLINE/) {
+    for my $method (qw/ID_DOCUMENT ID_NOTARIZED ID_ONLINE IDV/) {
         my $auth = $self->get_authentication($method);
         return 1 if $auth and $auth->status eq 'pass';
     }
@@ -764,6 +768,10 @@ sub fully_authenticated {
 
 sub authentication_status {
     my ($self) = @_;
+
+    my $idv = $self->get_authentication('IDV');
+
+    return 'idv' if $idv and $idv->status eq 'pass';
 
     my $online = $self->get_authentication('ID_ONLINE');
 
