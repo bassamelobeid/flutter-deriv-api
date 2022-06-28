@@ -167,6 +167,12 @@ subtest 'verify identity by derivative_wealth through microservice is passed and
             first_name => 'Juan',
             last_name  => 'Deez',
             birthdate  => '1989-01-30',
+        },
+        address => {
+            line_1    => $client->address_line_1,
+            line_2    => $client->address_line_2,
+            postcode  => $client->address_postcode,
+            residence => $client->residence,
         }
         },
         'request body is correct';

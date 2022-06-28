@@ -194,6 +194,11 @@ async sub verify_identity {
         my $verified_document_handler = sub {
             $client->status->clear_poi_name_mismatch;
 
+            if (any { $_ eq 'ADDRESS_VERIFIED' } @messages) {
+                $client->set_authentication('IDV', {status => 'pass'});
+                $client->status->clear_unwelcome;
+            }
+
             BOM::Event::Actions::Common::set_age_verification($client, $provider);
 
             $idv_model->update_document_check({
@@ -378,6 +383,12 @@ async sub _trigger_through_microservice {
             first_name => $client->first_name,
             last_name  => $client->last_name,
             birthdate  => $client->date_of_birth,
+        },
+        address => {
+            line_1    => $client->address_line_1,
+            line_2    => $client->address_line_2,
+            postcode  => $client->address_postcode,
+            residence => $client->residence,
         }};
 
     my $response         = undef;
