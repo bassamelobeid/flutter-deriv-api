@@ -84,6 +84,11 @@ my %error_to_status_mapping = (
     SystemMaintenanceWithdrawalOutage => 'system_maintenance',
 );
 
+# error codes passed through for crypto_cashier
+use constant CRYPTO_PASSTHROUGH_ERROR_CODES => qw(
+    PACommisionWithdrawalLimit
+);
+
 =head2 validate
 
 Validates various checks related to cashier including
@@ -486,19 +491,25 @@ sub validate_payment_error {
 
     return undef unless $cashier_validation_failure;
 
-    if ($cashier_validation_failure->{code} eq 'WithdrawalLimit') {
+    my $error_code = $cashier_validation_failure->{code};
+
+    if ($error_code eq 'WithdrawalLimit') {
         my $limit = $cashier_validation_failure->{params}[0];
         return create_error('CryptoWithdrawalLimitExceeded', message_params => [abs($amount), $currency_code, $limit]);
     }
 
-    if ($cashier_validation_failure->{code} eq 'AmountExceedsBalance') {
+    if ($error_code eq 'AmountExceedsBalance') {
         my $balance = $cashier_validation_failure->{params}[2];
         return create_error('CryptoWithdrawalBalanceExceeded', message_params => [abs($amount), $currency_code, $balance]);
     }
 
-    if ($cashier_validation_failure->{code} eq 'WithdrawalLimitReached') {
+    if ($error_code eq 'WithdrawalLimitReached') {
         my ($limit, $currency) = @{$cashier_validation_failure->{params}}[0, 1];
         return create_error('CryptoWithdrawalMaxReached', message_params => [$limit, $currency]);
+    }
+
+    if (any { $_ eq $error_code } CRYPTO_PASSTHROUGH_ERROR_CODES) {
+        return create_error($error_code, message_params => $cashier_validation_failure->{params});
     }
 
     # In this case we are not handling the issue so we need
