@@ -13,7 +13,7 @@ This modules declares rules and regulations applied on paymentagents and clients
 use strict;
 use warnings;
 
-use List::Util qw(none any first);
+use List::Util qw(none any first sum max);
 use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
 use Format::Util::Numbers qw(financialrounding);
 use Date::Utility;
@@ -35,6 +35,8 @@ use constant PA_ACTION_MAPPING => {
     withdraw                  => 'cashier_withdraw',
     cashier_withdrawal        => 'cashier_withdraw',
     payment_withdraw          => 'cashier_withdraw',
+    doughflow_withdrawal      => 'cashier_withdraw',
+    crypto_cashier_withdrawal => 'cashier_withdraw',
     transfer_between_accounts => 'transfer_to_non_pa_sibling',
     mt5_deposit               => 'trading_platform_deposit',
     mt5_transfer              => 'trading_platform_deposit',
@@ -109,6 +111,28 @@ rule 'paymentagent.action_is_allowed' => {
         return 1 unless $pa && ($pa->status // '') eq 'authorized';
 
         my $service = PA_ACTION_MAPPING->{$action} // $action;
+        return 1 unless any { $_ eq $service } BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES->@*;
+        return 1 if any     { $_ eq $service } ($pa->services_allowed // [])->@*;
+
+        if ($service eq 'cashier_withdraw') {
+            my %payment_types = (
+                mt5_transfer     => 'commission',
+                affiliate_reward => 'commission',
+                arbitrary_markup => 'commission',
+                external_cashier => 'payout',
+                crypto_cashier   => 'payout',
+            );
+
+            my @payment_totals = $pa_client->payment_type_totals(payment_types => [keys %payment_types])->@*;
+            my $commission     = sum map { $_->{deposits} } grep    { $payment_types{$_->{payment_type}} eq 'commission' } @payment_totals;
+            my $payout         = sum map { $_->{withdrawals} } grep { $payment_types{$_->{payment_type}} eq 'payout' } @payment_totals;
+            my $limit          = ($commission // 0) - ($payout // 0);
+
+            return 1 if $limit > 0 && abs($args->{amount} // 0) <= $limit;
+            $self->fail('PACommisionWithdrawalLimit',
+                params => [$pa_client->currency, financialrounding('amount', $pa_client->currency, max($limit, 0))])
+                if $commission;
+        }
 
         my %error_mapping = (
             transfer_to_pa             => 'TransferToOtherPA',
@@ -118,12 +142,7 @@ rule 'paymentagent.action_is_allowed' => {
             mt5_deposit                => 'TransferToNonPaSibling',
         );
 
-        return 1 unless any { $_ eq $service } BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES->@*;
-
-        my $services_allowed = $pa->services_allowed // [];
-        $self->fail($error_mapping{$service} // 'ServiceNotAllowedForPA') unless any { $_ eq $service } (@$services_allowed);
-
-        return 1;
+        $self->fail($error_mapping{$service} // 'ServiceNotAllowedForPA');
     },
 };
 
