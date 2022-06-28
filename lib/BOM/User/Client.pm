@@ -5547,6 +5547,7 @@ sub validate_payment {
             is_p2p_restricted   => (any { $payment_type eq $_ } @p2p_restricted) ? 1 : 0,
             brand               => request->brand(),
             payment_type        => $payment_type,
+            underlying_action   => $payment_type . '_' . $action_type,
             rule_engine_context => {
                 client_list     => [$self],
                 stop_on_failure => 1,
@@ -7725,6 +7726,42 @@ sub apply_reversible_deposit_conditions {
 
     return "PaymentAgentUseOtherMethod" if $cft_blocked_countries->{lc $self->residence};
     return "PaymentAgentWithdrawSameMethod";
+}
+
+=head2 payment_type_totals
+
+Returns totals of withdrawals and deposits per payment type.
+
+Takes the following arguments as named parameters:
+
+=over
+
+=item * C<payment_types> - arrayref, defaults to all
+
+=item * C<days> - days to look back, defaults to lifetime
+
+=back
+
+=cut
+
+sub payment_type_totals {
+    my ($self, %param) = @_;
+
+    die 'Client has no account' unless $self->account;
+
+    my $old_db = $self->get_db;
+    $self->set_db('replica') unless 'replica' eq $old_db;
+
+    my $result = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                'SELECT * FROM payment.client_payment_type_totals(?, ?, ?)',
+                {Slice => {}},
+                , $self->account->id, $param{payment_types}, $param{days});
+        });
+
+    $self->set_db($old_db) unless 'replica' eq $old_db;
+    return $result;
 }
 
 1;
