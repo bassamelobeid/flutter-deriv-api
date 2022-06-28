@@ -22,17 +22,13 @@ subtest 'Test YAML return correct structure for node.yml' => sub {
     _get_all_paths(
         $config,
         sub {
-            my $k1 = shift;
-            my $k2 = shift // "";
-            push @received_keys, "$k1|$k2";
+            push @received_keys, join("|", @_);
         });
     my @expected_keys = ();
     _get_all_paths(
         $expected_node_config,
         sub {
-            my $k1 = shift;
-            my $k2 = shift // "";
-            push @expected_keys, "$k1|$k2";
+            push @received_keys, join("|", @_);
         });
 
     cmp_bag(\@received_keys, \@expected_keys, 'BOM::Config::node returns correct structure');
@@ -79,17 +75,13 @@ subtest 'Test YAML return correct structure for aes_keys.yml' => sub {
     _get_all_paths(
         $config,
         sub {
-            my $k1 = shift;
-            my $k2 = shift // "";
-            push @received_keys, "$k1|$k2";
+            push @received_keys, join("|", @_);
         });
     my @expected_keys = ();
     _get_all_paths(
         $expected_aes_config,
         sub {
-            my $k1 = shift;
-            my $k2 = shift // "";
-            push @expected_keys, "$k1|$k2";
+            push @received_keys, join("|", @_);
         });
 
     cmp_bag(\@received_keys, \@expected_keys, 'BOM::Config::aes_keys returns correct structure');
