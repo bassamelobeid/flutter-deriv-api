@@ -150,8 +150,10 @@ if ($output{advertiser}) {
         $output{advertiser}->{barred} = Date::Utility->new($blocked_until)->is_after(Date::Utility->new);
     }
 
-    $output{advertiser}->{$_} = financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{$_})
-        for (qw/daily_buy daily_sell/);
+    for (qw/daily_buy daily_sell withdrawal_limit/) {
+        $output{advertiser}->{$_} = financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{$_})
+            if defined $output{advertiser}->{$_};
+    }
 
     $output{advertiser}->{$_} =
         defined $output{advertiser}->{$_}

@@ -146,6 +146,10 @@
             <td>P2P available balance</td>
             <td>[% advertiser.account_currency %] [% p2p_balance %]</td>
         </tr>
+         <tr>
+            <td>Withdrawal limit</td>
+            <td>[% IF advertiser.withdrawal_limit.length %][% advertiser.account_currency %] [% advertiser.withdrawal_limit %] (calculated daily)[% ELSE %]none[% END %]</td>
+        </tr>        
         <tr>
             <td>Sendbird ID</td>
             <td>[% advertiser.chat_user_id %]</td>
