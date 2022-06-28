@@ -28,6 +28,7 @@ my %details = (
     address_postcode      => "QXCQJW",
     address_state         => "Tombouctou",
     country               => "ml",
+    data_of_birth         => "1992-01-02",
     first_name            => "John",
     last_name             => "Doe",
     non_pep_declaration   => 1,
@@ -40,29 +41,18 @@ my %details = (
 my $lc = LandingCompany::Registry->by_broker('AFF');
 
 subtest 'new affiliate account' => sub {
-    my $res = $t->await::affiliate_account_add(\%details, {timeout => 10});
-
-    test_schema('affiliate_account_add', $res);
-
-    is $res->{error}->{code}, 'AuthorizationRequired', 'This endpoint requires authorization';
-
     # create VR acc
     my ($vr_client, $user) = create_vr_account({
         email           => 'test@binary.com',
         client_password => 'abc123',
         residence       => 'au',
     });
-    # authorize
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({authorize => $token});
 
-    $res = $t->await::affiliate_account_add(\%details, {timeout => 10});
-    cmp_deeply $res->{affiliate_account_add}, undef;
-    cmp_deeply $res->{error},
-        {
-        code    => 'PermissionDenied',
-        message => 'This API is a work in progress. AFF account will be created for landing company: Deriv Services Ltd.'
-        };
+    my $res = $t->await::affiliate_account_add(\%details, {timeout => 10});
+    test_schema('affiliate_account_add', $res);
+    is $res->{msg_type}, "affiliate_account_add";
+    delete($res->{echo_req}->{req_id});
+    cmp_deeply $res->{echo_req}, \%details;
 };
 
 sub create_vr_account {
