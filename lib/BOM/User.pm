@@ -394,9 +394,8 @@ Returns client objects array
 
 sub clients {
     my ($self, %args) = @_;
-    my $include_duplicated = $args{include_duplicated} // 0;
 
-    my @clients = @{$self->get_clients_in_sorted_order(include_duplicated => $include_duplicated)};
+    my @clients = @{$self->get_clients_in_sorted_order(%args)};
 
     # return all clients (disabled and self-closed clients included)
     return @clients if $args{include_disabled};
@@ -597,10 +596,9 @@ Return an ARRAY reference that is a list of clients in following order
 
 sub get_clients_in_sorted_order {
     my ($self, %args) = @_;
-    my $include_duplicated = $args{include_duplicated} // 0;
-    my $account_lists      = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
-    my @allowed_statuses   = qw(enabled virtual self_excluded disabled);
-    push @allowed_statuses, 'duplicated' if ($include_duplicated);
+    my $account_lists    = $self->accounts_by_category([$self->bom_loginids], %args);
+    my @allowed_statuses = qw(enabled virtual self_excluded disabled);
+    push @allowed_statuses, 'duplicated' if ($args{include_duplicated});
 
     return [map { @$_ } @{$account_lists}{@allowed_statuses}];
 }
@@ -629,7 +627,7 @@ sub accounts_by_category {
             next;
         }
 
-        my $cl = $self->get_client_using_replica($loginid);
+        my $cl = BOM::User::Client->get_client_instance($loginid, $args{db_operation} // 'write');
         next unless $cl;
 
         next if ($cl->status->is_login_disallowed and not $args{include_duplicated});
@@ -694,12 +692,11 @@ Returns An array of L<BOM::User::Client> s
 
 sub get_default_client {
     my ($self, %args) = @_;
-    my $include_duplicated = $args{include_duplicated} // 0;
 
     return $self->{_default_client_include_disabled} if exists($self->{_default_client_include_disabled}) && $args{include_disabled};
     return $self->{_default_client_without_disabled} if exists($self->{_default_client_without_disabled}) && !$args{include_disabled};
 
-    my $client_lists = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
+    my $client_lists = $self->accounts_by_category([$self->bom_loginids], %args);
     my %tmp;
     foreach my $k (keys %$client_lists) {
         $tmp{$k} = pop(@{$client_lists->{$k}});

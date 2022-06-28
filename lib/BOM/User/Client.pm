@@ -1540,7 +1540,6 @@ sub user_id {
 sub status {
     my $self = shift;
     if (not $self->{status}) {
-        $self->set_db('write') unless $self->get_db eq 'write';
         $self->{status} = BOM::User::Client::Status->new({
             client_loginid => $self->loginid,
             dbic           => $self->db->dbic
@@ -1554,7 +1553,6 @@ sub documents {
     my $self = shift;
 
     return $self->{documents} //= do {
-        $self->set_db('write') unless $self->get_db eq 'write';
         $self->{documents} = BOM::User::Client::AuthenticationDocuments->new({
             client => $self,
         });
