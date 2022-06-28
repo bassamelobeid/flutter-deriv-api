@@ -786,9 +786,19 @@ sub get_dxtrade_server_list {
 
     my ($client, $account_type) = @args{qw/client account_type/};
     my @active_servers = BOM::TradingPlatform::DXTrader->new(client => $client)->active_servers;
-    my $countries      = request()->brand->countries_instance;
+    my $brand          = request()->brand;
+    my $countries      = $brand->countries_instance;
+    local $log->context->{brand_name}       = $brand->name;
+    local $log->context->{app_id}           = $brand->app_id;
+    local $log->context->{client_residence} = $client->residence;
 
-    my @market_types = grep { $countries->dx_company_for_country(country => $client->residence, account_type => $_) ne 'none' } qw/gaming financial/;
+    my @market_types = grep {
+        local $log->context->{account_type} = $_;
+        $countries->dx_company_for_country(
+            country      => $client->residence,
+            account_type => $_
+            ) ne 'none'
+    } qw/gaming financial/;
 
     return Future->done([]) unless @market_types;
 
