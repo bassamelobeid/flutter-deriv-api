@@ -5,7 +5,7 @@ use warnings;
 
 use BOM::Config::Redis;
 use Date::Utility;
-use List::Util qw/first max/;
+use List::Util  qw/first max/;
 use Digest::SHA qw/sha256_hex/;
 
 use constant LIFETIME_IN_DAYS           => 90;
@@ -314,7 +314,7 @@ sub group_by_id {
     for my $payload ($resultset->@*) {
         my $payment = $self->from_payload($payload);
         my $id      = $payment->{id};
-        next if defined $id and exists $group->{$id};
+        next                     if defined $id and exists $group->{$id};
         $group->{$id} = $payload if defined $id;
     }
 

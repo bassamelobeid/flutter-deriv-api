@@ -12,10 +12,10 @@ use warnings;
 use BOM::Database::UserDB;
 use Syntax::Keyword::Try;
 use Date::Utility;
-use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use Locale::Codes::Country qw(country_code2code);
+use JSON::MaybeUTF8            qw(decode_json_utf8 encode_json_utf8);
+use Locale::Codes::Country     qw(country_code2code);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use List::Util qw(first uniq);
+use List::Util                 qw(first uniq);
 use BOM::Config::Redis;
 use BOM::Platform::Event::Emitter;
 use Log::Any qw($log);
@@ -40,7 +40,7 @@ sub store_onfido_applicant {
             fixup => sub {
                 $_->do(
                     'select users.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
-                    undef,            $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
+                    undef, $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
                     $applicant->href, $user_id,
                 );
             });
@@ -423,7 +423,7 @@ sub get_latest_check {
                     # manually so facial similarity is not accurate as client
                     # use to provide selfie while holding identity card
                     my $report_document = first { ($_->{api_name} // '') eq 'document' }
-                    sort { Date::Utility->new($a->{created_at})->is_before(Date::Utility->new($b->{created_at})) ? 1 : 0 } values %$user_reports;
+                        sort { Date::Utility->new($a->{created_at})->is_before(Date::Utility->new($b->{created_at})) ? 1 : 0 } values %$user_reports;
                     $report_document_sub_result = $report_document->{sub_result} // '';
                 }
             }

@@ -6,12 +6,12 @@ use warnings;
 use BOM::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Context qw (request);
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email   qw(send_email);
 use BOM::Config;
 use BOM::Config::Redis;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use List::Util qw/none all any/;
+use List::Util      qw/none all any/;
 
 use feature "state";
 
@@ -212,10 +212,7 @@ sub is_section_complete {
     my $fa      = shift;
     my $section = shift;
 
-    return 0 + all {
-        $fa->{$_} && defined $config->{$section}->{$_}->{possible_answer}->{$fa->{$_}}
-    }
-    @{_financial_assessment_keys(1)->{$section}};
+    return 0 + all { $fa->{$_} && defined $config->{$section}->{$_}->{possible_answer}->{$fa->{$_}} } @{_financial_assessment_keys(1)->{$section}};
 }
 
 sub decode_fa {

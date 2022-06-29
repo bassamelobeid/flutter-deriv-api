@@ -20,7 +20,7 @@ use Email::Stuffer;
 use YAML::XS qw(LoadFile);
 use WebService::SendBird;
 use JSON::MaybeUTF8 qw(:v1);
-use List::Util qw(any);
+use List::Util      qw(any);
 
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
@@ -334,8 +334,8 @@ sub p2p_on_advert_view {
             for my $field (keys $new_state->{$id}{$loginid}->%*) {
                 my $val = $new_state->{$id}{$loginid}{$field};
                 $val                            = join(',', sort @$val) if ref $val eq 'ARRAY';
-                $state->{$id}{$field}           = $val if any { $_ eq $field } ($fields{common}->@*, $fields{advertiser_common}->@*);
-                $state->{$id}{$field}{$loginid} = $val if any { $_ eq $field } ($fields{client}->@*, $fields{advertiser_client}->@*);
+                $state->{$id}{$field}           = $val                  if any { $_ eq $field } ($fields{common}->@*, $fields{advertiser_common}->@*);
+                $state->{$id}{$field}{$loginid} = $val                  if any { $_ eq $field } ($fields{client}->@*, $fields{advertiser_client}->@*);
             }
         }
     }

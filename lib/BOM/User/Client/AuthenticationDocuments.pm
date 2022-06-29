@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Moo;
 
-use List::Util qw(first any min max);
+use List::Util   qw(first any min max);
 use Array::Utils qw(intersect);
 use Path::Tiny;
 use YAML::XS;
