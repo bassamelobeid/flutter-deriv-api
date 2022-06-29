@@ -6,8 +6,7 @@ use Array::Utils qw(array_minus);
 use Scalar::Util qw(refaddr);
 use BOM::Config;
 
-my $test_parameters = [
-    {
+my $test_parameters = [{
         name => 'node.yml',
         args => {
             expected_config => {
@@ -20,8 +19,8 @@ my $test_parameters = [
                 feed_server        => {fqdn => '0.0.0.0'},
                 local_redis_master => ''
             },
-            config => \&BOM::Config::node,
-            array_test => ["node:roles","node:tags"] #Optional key. Tests specifed path for array ref values.
+            config     => \&BOM::Config::node,
+            array_test => ["node:roles", "node:tags"]    #Optional key. Tests specifed path for array ref values.
         }
     },
     {
@@ -70,9 +69,9 @@ my $test_parameters = [
         args => {
             expected_config => {
                 auth0 => {
-                    client_id => '',
+                    client_id     => '',
                     client_secret => '',
-                    api_uri => ''
+                    api_uri       => ''
                 },
                 duosecurity => {
                     ikey => '',
@@ -80,58 +79,58 @@ my $test_parameters = [
                     akey => ''
                 },
                 doughflow => {
-                    binary => '',
-                    deriv => '',
-                    champion => '',
-                    passcode => '',
+                    binary      => '',
+                    deriv       => '',
+                    champion    => '',
+                    passcode    => '',
                     environment => ''
                 },
                 myaffiliates => {
-                    user => '',
-                    pass => '',
-                    host => '',
-                    aws_access_key_id => '',
+                    user                  => '',
+                    pass                  => '',
+                    host                  => '',
+                    aws_access_key_id     => '',
                     aws_secret_access_key => '',
-                    aws_bucket => '',
-                    aws_region => ''
+                    aws_bucket            => '',
+                    aws_region            => ''
                 },
                 oneall => {
                     binary => {
-                        public_key => '',
+                        public_key  => '',
                         private_key => ''
                     },
                     deriv => {
-                        public_key => '',
+                        public_key  => '',
                         private_key => ''
                     }
                 },
                 proveid => {
-                    username => '',
-                    password => '',
+                    username     => '',
+                    password     => '',
                     pdf_username => '',
                     pdf_password => '',
-                    public_key => '',
-                    private_key => '',
-                    api_uri => '',
-                    api_proxy => '',
+                    public_key   => '',
+                    private_key  => '',
+                    api_uri      => '',
+                    api_proxy    => '',
                     experian_url => '',
-                    uat => {
-                        username => '',
-                        password => '',
-                        public_key => '',
+                    uat          => {
+                        username    => '',
+                        password    => '',
+                        public_key  => '',
                         private_key => ''
                     }
                 },
                 bloomberg => {
                     sftp_allowed => '',
-                    user => '',
-                    password => '',
-                    aws => {
+                    user         => '',
+                    password     => '',
+                    aws          => {
                         upload_allowed => '',
-                        path => '',
-                        bucket => '',
-                        profile => '',
-                        log => ''
+                        path           => '',
+                        bucket         => '',
+                        profile        => '',
+                        log            => ''
                     }
                 },
                 qa_duosecurity => {
@@ -139,76 +138,61 @@ my $test_parameters = [
                     skey => ''
                 },
                 gamstop => {
-                    api_uri => '',
+                    api_uri   => '',
                     batch_uri => '',
-                    config => {
-                        iom => {
-                            api_key => ''
-                        },
-                        malta => {
-                            api_key => ''
-                        }
-                    }
+                    config    => {
+                        iom   => {api_key => ''},
+                        malta => {api_key => ''}}
                 },
-                elevio => {
-                    account_secret => ''
-                },
+                elevio     => {account_secret => ''},
                 customerio => {
-                    site_id => '',
-                    api_key => '',
+                    site_id   => '',
+                    api_key   => '',
                     api_token => '',
-                    api_uri => ''
+                    api_uri   => ''
                 },
                 onfido => {
                     authorization_token => '',
-                    webhook_token => ''
+                    webhook_token       => ''
                 },
                 smartystreets => {
-                    auth_id => '',
-                    token => '',
+                    auth_id  => '',
+                    token    => '',
                     licenses => {
                         basic => '',
-                        plus => ''
+                        plus  => ''
                     },
-                    countries => {
-                        plus => []
-                    }
+                    countries => {plus => []}
                 },
                 segment => {
                     write_key => '',
-                    base_uri => ''
+                    base_uri  => ''
                 },
                 rudderstack => {
                     write_key => '',
-                    base_uri => ''
+                    base_uri  => ''
                 },
                 sendbird => {
-                    app_id => '',
+                    app_id    => '',
                     api_token => ''
                 },
-                eu_sanctions => {
-                    token => ''
-                },
-                banxa => {
-                    api_url => '',
-                    api_key => '',
+                eu_sanctions => {token => ''},
+                banxa        => {
+                    api_url    => '',
+                    api_key    => '',
                     api_secret => ''
                 },
                 wyre => {
-                    api_url => '',
+                    api_url        => '',
                     api_account_id => '',
-                    api_secret => ''
+                    api_secret     => ''
                 },
-                acquired => {
-                    company_hashcode => ''
-                },
-                isignthis => {
-                    notification_token => 'some env'
-                },
+                acquired       => {company_hashcode   => ''},
+                isignthis      => {notification_token => 'some env'},
                 smile_identity => {
-                    api_url => '',
+                    api_url    => '',
                     partner_id => '',
-                    api_key => ''
+                    api_key    => ''
                 },
                 zaig => {
                     api_url => '',
@@ -221,20 +205,31 @@ my $test_parameters = [
                 risk_screen => {
                     api_url => '',
                     api_key => '',
-                    port => ''
+                    port    => ''
                 },
-                cellxperts => {
-                    base_uri => 'some env'
-                }
+                cellxperts => {base_uri => 'some env'}
             },
-            config => \&BOM::Config::third_party,
+            config     => \&BOM::Config::third_party,
             array_test => ["smartystreets:countries:plus"]
         }
+    },
+    {
+        name => 'randsrv.yml',
+        args => {
+            expected_config => {
+                rand_server => {
+                    fqdn => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::randsrv
+        }
     }
-];
+    ];
 
-for my $test_parameter (@$test_parameters){
-    subtest "Test YAML return correct structure for $test_parameter->{name}", \&yaml_structure_validator , $test_parameter->{args};
+for my $test_parameter (@$test_parameters) {
+    subtest "Test YAML return correct structure for $test_parameter->{name}", \&yaml_structure_validator, $test_parameter->{args};
 }
 
 subtest 'Config stores state' => sub {
@@ -244,10 +239,10 @@ subtest 'Config stores state' => sub {
 };
 
 sub yaml_structure_validator {
-    my $args  = shift;
+    my $args            = shift;
     my $expected_config = $args->{expected_config};
-    my $config = $args->{config}->();
-    my @received_keys = ();
+    my $config          = $args->{config}->();
+    my @received_keys   = ();
     _get_all_paths(
         $config,
         sub {
@@ -260,24 +255,22 @@ sub yaml_structure_validator {
             push @expected_keys, join("|", @_);
         });
     my @differences_keys = array_minus(@expected_keys, @received_keys);
-    is(scalar @differences_keys,0,'BOM::Config::node returns correct structure');
-    yaml_array_sub_structure_validator($config,$args->{array_test}) if exists($args->{array_test}) ;
+    is(scalar @differences_keys, 0, 'BOM::Config::node returns correct structure');
+    yaml_array_sub_structure_validator($config, $args->{array_test}) if exists($args->{array_test});
 }
 
 sub yaml_array_sub_structure_validator {
-    my $config = shift;
+    my $config      = shift;
     my $array_paths = shift;
-    for my $path (@$array_paths){
-        my @keys = split(':', $path );
-        my $val = $config;
-        for my $key(@keys){
+    for my $path (@$array_paths) {
+        my @keys = split(':', $path);
+        my $val  = $config;
+        for my $key (@keys) {
             $val = $val->{$key};
         }
-        is(ref $val , 'ARRAY',$keys[-1]." is an array");
+        is(ref $val, 'ARRAY', $keys[-1] . " is an array");
     }
 }
-
-
 
 sub _get_all_paths {
     my ($hashref, $code, $args) = @_;
