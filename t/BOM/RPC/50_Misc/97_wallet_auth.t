@@ -10,15 +10,14 @@ use BOM::RPC::Registry;
 use Struct::Dumb;
 
 struct
-    def               => [qw(name code auth is_async is_readonly caller)],
+    def               => [qw(name code auth is_async caller)],
     named_constructor => 1;
 my %params = (
-    name        => 'dummy',
-    code        => sub { 'success' },
-    auth        => undef,
-    is_async    => 0,
-    is_readonly => 0,
-    caller      => 'dummy',
+    name     => 'dummy',
+    code     => sub { 'success' },
+    auth     => undef,
+    is_async => 0,
+    caller   => 'dummy',
 );
 my $def = def(%params);
 

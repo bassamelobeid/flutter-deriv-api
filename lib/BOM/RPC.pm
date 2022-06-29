@@ -127,8 +127,6 @@ sub wrap_rpc_sub {
         }
 
         if ($def->auth and $def->auth->@*) {
-            my $db_operation = $def->is_readonly ? 'replica' : 'write';
-
             if (my $client = $params->{client}) {
                 # If there is a $client object but is not a Valid BOM::User::Client we return an error
                 unless (blessed $client && $client->isa('BOM::User::Client')) {
@@ -136,14 +134,13 @@ sub wrap_rpc_sub {
                             code              => 'InvalidRequest',
                             message_to_client => localize("Invalid request.")});
                 }
-                $client->set_db($db_operation);
             } else {
                 # If there is no $client, we continue with our auth check
                 my $token_details = $params->{token_details};
                 return BOM::RPC::v3::Utility::invalid_token_error()
                     unless $token_details and exists $token_details->{loginid};
 
-                my $client = BOM::User::Client->get_client_instance($token_details->{loginid}, $db_operation);
+                my $client = BOM::User::Client->get_client_instance($token_details->{loginid});
 
                 if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
                     return $auth_error;
