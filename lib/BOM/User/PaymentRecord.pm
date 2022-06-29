@@ -314,8 +314,9 @@ sub group_by_id {
     for my $payload ($resultset->@*) {
         my $payment = $self->from_payload($payload);
         my $id      = $payment->{id};
-        next                     if defined $id and exists $group->{$id};
-        $group->{$id} = $payload if defined $id;
+        next if defined $id;
+        next if exists $group->{$id};
+        $group->{$id} = $payload;
     }
 
     return [values $group->%*];
