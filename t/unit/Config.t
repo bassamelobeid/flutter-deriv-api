@@ -264,7 +264,7 @@ sub yaml_structure_validator {
     yaml_array_sub_structure_validator($config,$args->{array_test}) if exists($args->{array_test}) ;
 }
 
-sub yaml_array_sub_structure_validator{
+sub yaml_array_sub_structure_validator {
     my $config = shift;
     my $array_paths = shift;
     for my $path (@$array_paths){
