@@ -259,6 +259,81 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::currency_pairs_backoffice
         }
+    },
+    {
+        name => 'paymentagent_config.yml',
+        args => {
+            expected_config => {
+                payment_limits => {
+                    fiat => {
+                        minimum => '',
+                        maximum => ''
+                    },
+                    crypto => {
+                        minimum => '',
+                        maximum => ''
+                    }
+                },
+                currency_specific_limits => {
+                    BUSD => {
+                        minimum => '',
+                        maximum => ''
+                    },
+                    DAI => {
+                        minimum => '',
+                        maximum => ''
+                    },
+                    EURS => {
+                        minimum => '',
+                        maximum => ''
+                    },
+                    PAX => {
+                        minimum => '',
+                        maximum => ''
+                    },
+                    TUSD => {
+                        minimum => '',
+                        maximum => ''
+                    },
+                    USDC => {
+                        minimum => '',
+                        maximum => ''
+                    },
+                    USDK => {
+                        minimum => '',
+                        maximum => ''
+                    },
+                    UST => {
+                        minimum => '',
+                        maximum => ''
+                    },
+                    eUSDT => {
+                        minimum => '',
+                        maximum => ''
+                    }
+                },
+                minimum_topup_balance => {
+                    DEFAULT => ''
+                },
+                transaction_limits => {
+                    transfer => {
+                        transactions_per_day => '',
+                        amount_in_usd_per_day => ''
+                    },
+                    withdraw => {
+                        weekday => {
+                            transactions_per_day => '',
+                            amount_in_usd_per_day => ''
+                        },
+                        weekend => {
+                            transactions_per_day => '',
+                            amount_in_usd_per_day => ''
+                        }
+                    }
+                }
+            },
+            config => \&BOM::Config::payment_agent
+        }
     }
     ];
 
