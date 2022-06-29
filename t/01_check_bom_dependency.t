@@ -15,8 +15,6 @@ my @dependency = qw(
     BOM::MyAffiliates
     BOM::OAuth
     BOM::MT5
-    BOM::DualControl
-    BOM::StaffPages
     BOM::Rules
 );
 
