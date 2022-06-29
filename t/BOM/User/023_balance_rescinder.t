@@ -5,7 +5,7 @@ use Test::MockModule;
 use Test::Deep;
 
 use BOM::User::Script::BalanceRescinder;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Helper::Client qw(top_up);
 use BOM::Test::Email;
 use LandingCompany::Registry;
@@ -61,20 +61,18 @@ $mock->mock(
     sub {
         my ($amount, undef, $currency) = @_;
 
-        return $amount * ($fake_rates->{$currency} // BOM::User::Script::BalanceRescinder::FIAT_BALANCE_LIMIT);
+        return $amount * ($fake_rates->{$currency} // 1);
     });
 
-my $registry = LandingCompany::Registry->new;
-# DC throws an exception
-my @broker_codes = grep { $_ ne 'DC' } $registry->all_real_broker_codes();
-
+my @broker_codes = LandingCompany::Registry->all_real_broker_codes();
 for my $broker_code (@broker_codes) {
     subtest "Testing $broker_code" => sub {
+        BOM::Test::Data::Utility::UnitTestDatabase->instance->prepare_unit_test_database;    # clear out clients from last broker
         my $rescinder = BOM::User::Script::BalanceRescinder->new(broker_code => $broker_code);
         isa_ok($rescinder, 'BOM::User::Script::BalanceRescinder');
         is($rescinder->broker_code, $broker_code, 'Correct broker code');
 
-        my $currencies = $rescinder->currencies;
+        my $currencies = $rescinder->currencies(1);
 
         for my $curr (keys $currencies->%*) {
             my $type   = $rescinder->landing_company->legal_allowed_currencies->{$curr}->{type};
@@ -85,7 +83,7 @@ for my $broker_code (@broker_codes) {
         }
 
         # Create the accounts
-        my $expected_to_rescind = [];
+        my %expected_to_rescind;
 
         for my $cli_settings ($clients->@*) {
             next unless grep { $_ eq $cli_settings->{currency} } keys $rescinder->landing_company->legal_allowed_currencies->%*;
@@ -93,52 +91,57 @@ for my $broker_code (@broker_codes) {
                 broker_code => $broker_code,
             });
             $cli->set_default_account($cli_settings->{currency});
+            # there is no way to fake the time of statuses :(
             $cli->status->set('disabled', 'test', 'test') if $cli_settings->{disabled};
             top_up($cli, $cli_settings->{currency}, $cli_settings->{balance}, 'test_account');
             ok $cli->default_account->balance - $cli_settings->{balance} == 0, 'Expected balance after top up';
-            push $expected_to_rescind->@*, $cli->loginid if $cli_settings->{rescind};
+            $expected_to_rescind{$cli->loginid} = $cli_settings->{balance} if $cli_settings->{rescind};
         }
 
-        # we are asking for disabled accounts from 30 days in the past, this won't hit any recently created account
-        my $accounts_to_rescind = [grep { $_ =~ /^$broker_code/ } keys $rescinder->accounts(30, $currencies)->%*];
-        cmp_deeply $accounts_to_rescind, [], 'None of the accounts were disabled for more than 30 days';
+        # we are asking for disabled accounts from 30 days in the past, this won't hit any recently created account.
+        my $res = $rescinder->process_accounts(
+            desc     => 'test',
+            days     => 30,
+            amount   => 1,
+            statuses => ['disabled']);
+        is $res, undef, 'None of the accounts were disabled for more than 30 days';
 
         # we will fetch disabled accounts from 1 day in the future (-1) so all the accounts are within range
-        $accounts_to_rescind = [grep { $_ =~ /^$broker_code/ } keys $rescinder->accounts(-1, $currencies)->%*];
-        cmp_deeply $accounts_to_rescind, bag($expected_to_rescind->@*), 'We got the expected accounts to rescind';
+        $res = $rescinder->process_accounts(
+            desc     => 'test',
+            days     => -1,
+            amount   => 1,
+            statuses => ['disabled']);
 
-        my $expected_summary = {};
+        my %rescinded = map { $_->{client_loginid} => $_ } @$res;
+        cmp_deeply [keys %rescinded], bag(keys %expected_to_rescind), 'We got the expected accounts to rescind';
 
-        for my $rescind (values $rescinder->accounts(-1, $currencies)->%*) {
-            $expected_summary->{$rescind->{client_loginid}} = {
-                currency => $rescind->{currency_code},
-                amount   => $rescind->{balance},
-            };
-
-            ok $rescinder->rescind($rescind->{client_loginid}, $rescind->{currency_code}, $rescind->{balance}), 'Balance successfully rescinded';
-
-            my $cli = BOM::User::Client->new({loginid => $rescind->{client_loginid}});
+        for my $loginid (keys %expected_to_rescind) {
+            my $cli = BOM::User::Client->new({loginid => $loginid});
             ok $cli->default_account->balance == 0, 'Expected 0 balance after rescind';
-        }
 
-        cmp_deeply $rescinder->summary, $expected_summary, 'Expected summary after rescind';
-
-        if (scalar keys $expected_summary->%*) {
-            mailbox_clear();
-            $rescinder->sendmail;
-
-            my $email = mailbox_search(subject => qr/Automatically rescinded balances on $broker_code/);
-            ok $email, 'Email sent';
+            is $rescinded{$loginid}->{currency_code},    $cli->currency, 'currency in summary';
+            cmp_ok $rescinded{$loginid}->{balance},      '==', $expected_to_rescind{$loginid}, 'balance in summary';
+            cmp_deeply $rescinded{$loginid}->{statuses}, ['disabled'], 'statuses in summary';
+            is $rescinded{$loginid}->{error},            undef, 'error is undef in summary';
         }
 
         mailbox_clear();
-        $rescinder->summary({});
-        $rescinder->sendmail;
-
+        $rescinder->sendmail({'test' => $res});
         my $email = mailbox_search(subject => qr/Automatically rescinded balances on $broker_code/);
+        ok $email, 'Email sent';
+
+        mailbox_clear();
+        $rescinder->sendmail({'test' => undef});
+        $email = mailbox_search(subject => qr/Automatically rescinded balances on $broker_code/);
         ok !$email, 'No summary, no email';
 
-        ok !$rescinder->rescind('CR0', 'USD', 0.99), 'Cannot rescind inexistent client';
+        is $rescinder->rescind(
+            client_loginid => 'CR0',
+            currency_code  => 'USD',
+            balance        => 0.99
+            ),
+            'No client', 'Cannot rescind inexistent client';
     };
 }
 

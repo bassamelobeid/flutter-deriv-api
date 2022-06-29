@@ -14,6 +14,7 @@ use Test::MockModule;
 use Path::Tiny;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Utility qw(random_email_address);
 use BOM::User;
@@ -25,6 +26,8 @@ use BOM::Test::Script::DevExperts;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
+
+my $oauth = BOM::Database::Model::OAuth->new;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
@@ -69,6 +72,34 @@ lives_ok {
     $user->add_client($client_vr);
 }
 'create user with loginid';
+
+sub create_apps {
+    my $user_id = shift;
+
+    my @app_ids;
+    for (0 .. 2) {
+        my $app = $oauth->create_app({
+            name         => "Test App$_",
+            user_id      => $user_id,
+            scopes       => ['read', 'trade', 'admin'],
+            redirect_uri => "https://www.example$_.com/"
+        });
+
+        push @app_ids, $app->{app_id};
+    }
+
+    return @app_ids;
+}
+
+sub create_tokens {
+    my ($user, $client, @app_ids) = @_;
+
+    $oauth->store_access_token_only(1, $client->loginid);
+
+    foreach (@app_ids) {
+        $oauth->generate_refresh_token($user->id, $_, 29, 60 * 60 * 24);
+    }
+}
 
 subtest 'test attributes' => sub {
     throws_ok { BOM::User->create } qr/email and password are mandatory/, 'new without args';
@@ -644,18 +675,67 @@ subtest 'test update email' => sub {
 };
 
 subtest 'test update totp' => sub {
-    my $old_secret_key = $user->secret_key;
     ok(!defined($user->is_totp_enabled), 'is_totp_enabled is not defined');
     ok(!defined($user->secret_key),      'secret_key is not defined');
-    my $new_secret_key = 'test';
-    lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => $new_secret_key) } 'do update';
-    my $new_user = BOM::User->new(id => $user->id);
-    is_deeply($new_user, $user, 'get same object after updated');
-    is($user->secret_key,      $new_secret_key, 'secret_key updated');
-    is($user->is_totp_enabled, 1,               'is_totp_enabled was updated');
-    lives_ok { $new_user->update_totp_fields(secret_key => $old_secret_key, is_totp_enabled => 0) } 'update back to old email';
-    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
-    is($user->is_totp_enabled, 0, 'is_totp_enabled is false now');
+
+    my @app_ids = create_apps($user->id);
+
+    subtest 'enable 2FA' => sub {
+        my $new_secret_key = 'test enable';
+        create_tokens($user, $client_vr, @app_ids);
+
+        ok $oauth->has_other_login_sessions($client_vr->loginid), 'There are open login sessions';
+        my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user->id);
+        is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
+
+        # tokens are revoked when 2FA is enabled
+        lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => $new_secret_key) } 'do update';
+        is($user->secret_key,      $new_secret_key, 'secret_key updated');
+        is($user->is_totp_enabled, 1,               'is_totp_enabled was updated');
+        ok !$oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are revoked';
+        is scalar $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 0, 'refresh tokens have been revoked correctly';
+
+        create_tokens($user, $client_vr, @app_ids);
+
+        # secret key is not updated if enable again - tokens are not revoked
+        lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => 'xyz') } 'do reenable and update';
+        is($user->secret_key, $new_secret_key, 'secret_key is not changed becuase 2FA was already enabled');
+        ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are not revoked';
+        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 'refresh tokens are not revoked';
+
+        lives_ok { $user->update_totp_fields(secret_key => 'xyz') } 'update  secret key when 2FA is enabled';
+        is($user->secret_key, $new_secret_key, 'secret_key is not changed becuase 2FA was enabled');
+        ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are not revoked';
+        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 'refresh tokens are not revoked';
+    };
+
+    subtest 'disable 2FA' => sub {
+        my $new_secret_key = 'test disable';
+        create_tokens($user, $client_vr, @app_ids);
+
+        # tokens are revoked when 2FA is enabled
+        lives_ok { $user->update_totp_fields(is_totp_enabled => 0, secret_key => $new_secret_key) } 'disable and set secret at the same time';
+        is($user->secret_key,      $new_secret_key, 'secret_key updated');
+        is($user->is_totp_enabled, 0,               'is_totp_enabled was updated');
+        ok !$oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are revoked';
+        is scalar $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 0, 'refresh tokens have been revoked correctly';
+
+        create_tokens($user, $client_vr, @app_ids);
+
+        # secret key is not updated if enable again - tokens are not revoked
+        lives_ok { $user->update_totp_fields(is_totp_enabled => 0, secret_key => 'xyz') } 'do reenable and update';
+        is($user->secret_key, 'xyz', 'secret_key is changed becuase 2FA was disabled');
+        ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are not revoked';
+        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 'refresh tokens are not revoked';
+
+        lives_ok { $user->update_totp_fields(secret_key => $new_secret_key) } 'update  secret key when 2FA is enabled';
+        is($user->secret_key, $new_secret_key, 'secret_key changed becuase 2FA was disabled');
+        ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are not revoked';
+        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 'refresh tokens are not revoked';
+    };
+
+    $oauth->revoke_tokens_by_loginid($_->loginid) for ($user->clients);
+    $oauth->revoke_refresh_tokens_by_user_id($user->id);
 };
 
 subtest 'test update password' => sub {
@@ -663,7 +743,6 @@ subtest 'test update password' => sub {
     my $new_password = 'test';
     lives_ok { $user->update_password($new_password) } 'do update';
     my $new_user = BOM::User->new(id => $user->id);
-    is_deeply($new_user, $user, 'get same object after updated');
     is($user->password, $new_password, 'password updated');
     lives_ok { $new_user->update_password($old_password) } 'update back to old password';
     lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
@@ -800,12 +879,14 @@ subtest 'create_client' => sub {
         broker_code => 'VRDW',
     });
     is $wallet_client_vr->is_wallet,    1,        'is wallet client instance';
+    is $wallet_client_vr->is_affiliate, 0,        'is wallet client instance';
     is $wallet_client_vr->account_type, 'wallet', 'Correct accouont type';
 
     my $trading_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
     is $trading_client_vr->is_wallet,    0,         'is trading client instance';
+    is $trading_client_vr->is_affiliate, 0,         'is trading client instance';
     is $trading_client_vr->account_type, 'trading', 'Correct accouont type';
 };
 
@@ -1028,31 +1109,13 @@ subtest 'update trading password' => sub {
 };
 
 subtest 'update user password' => sub {
-    my $oauth   = BOM::Database::Model::OAuth->new;
     my $user_id = $user->{id};
-    my @app_ids;
 
-    for (0 .. 2) {
-        my $app = $oauth->create_app({
-            name         => "Test App$_",
-            user_id      => $user_id,
-            scopes       => ['read', 'trade', 'admin'],
-            redirect_uri => "https://www.example$_.com/"
-        });
+    my @app_ids = create_apps($user->id);
+    create_tokens($user, $client_vr, @app_ids);
 
-        push @app_ids, $app->{app_id};
-    }
-
-    my $create_new_refresh_token = sub {
-        my ($user_id, $app_id) = @_;
-        $oauth->generate_refresh_token($user_id, $app_id, 29, 60 * 60 * 24);
-    };
-
-    foreach (@app_ids) {
-        $create_new_refresh_token->($user_id, $_);
-    }
-
-    my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
+    ok $oauth->has_other_login_sessions($client_vr->loginid), 'There are open login sessions';
+    my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user->id);
     is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
 
     my $hash_pw = BOM::User::Password::hashpw('Ijkl6789');
@@ -1060,6 +1123,34 @@ subtest 'update user password' => sub {
 
     $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
     is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly';
+    ok !$oauth->has_other_login_sessions($client_vr->loginid), 'User access tokens are revoked';
+};
+
+subtest 'update email' => sub {
+    my $user_id = $user->{id};
+
+    $client_vr->status->set('disabled', 'system', 'testing');
+    my @app_ids = create_apps($user->id);
+    create_tokens($user, $client_vr, @app_ids);
+
+    ok $oauth->has_other_login_sessions($client_vr->loginid), 'There are open login sessions';
+    my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user->id);
+    is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
+
+    my $new_email = 'AN_email@anywhere.com';
+    is $user->update_email($new_email), 1, 'user email changed is OK';
+    is $user->email, lc $new_email, 'user\'s email was updated';
+
+    for my $loginid (qw/CR10000 CR10001 CR10013/, $client_vr->loginid) {
+        my $client = BOM::User::Client->new({
+            loginid => $loginid,
+        });
+        is($client->email, lc $new_email, 'client email updated');
+    }
+    $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
+    is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly';
+    ok !$oauth->has_other_login_sessions($client_vr->loginid), 'User access tokens are revoked';
+    $client_vr->status->clear_disabled;
 };
 
 subtest 'feature flag' => sub {
@@ -1077,6 +1168,48 @@ subtest 'feature flag' => sub {
     foreach my $flag (keys %$feature_flag) {
         is $feature_flag->{$flag}, $user_flags->{$flag}, "flag $flag has been set correctly";
     }
+};
+
+subtest 'unlink social' => sub {
+    lives_ok { $user->update_has_social_signup(1) } 'update has_social_signup';
+    is $user->unlink_social, 1, 'user unlinked is OK';
+    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
+    lives_ok { $user->update_has_social_signup(0) } 'reset has_social_signup';
+};
+
+subtest 'Populate users table on signup' => sub {
+
+    my @randstr = ("A" .. "Z", "a" .. "z");
+    my $randstr;
+    $randstr .= $randstr[rand @randstr] for 1 .. 9;
+
+    my @randnum = ("0" .. "9");
+    my $randnum;
+    $randnum .= $randnum[rand @randnum] for 1 .. 9;
+
+    my $loginid = 'MTD' . $randnum;
+    $email = "test_http_${randstr}_${randnum}_\@testing.com";
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email,
+    });
+
+    $user = BOM::User->create(
+        email          => $test_client->email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+
+    $user->add_loginid($loginid, 'mt5', 'demo', 'USD', {test => 'test'});
+
+    my $mt5_logins = $user->loginid_details;
+
+    is $mt5_logins->{$loginid}->{loginid},      $loginid, "Got correct 'loginid' value";
+    is $mt5_logins->{$loginid}->{platform},     "mt5",  "Got correct 'platform' value";
+    is $mt5_logins->{$loginid}->{account_type}, "demo", "Got correct 'account_type' value";
+    is $mt5_logins->{$loginid}->{currency},     "USD",  "Got correct 'currency' value";
+    cmp_deeply $mt5_logins->{$loginid}->{attributes}, {test => 'test'}, "Got correct 'attributes' value";
 };
 
 done_testing();

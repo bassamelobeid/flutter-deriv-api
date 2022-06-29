@@ -43,9 +43,7 @@ $user->add_client($pa_client);
 # make him a payment agent
 my $object_pa = $pa_client->payment_agent({
     payment_agent_name    => 'Joe',
-    url                   => 'http://www.example.com/',
     email                 => 'joe@example.com',
-    phone                 => '+12345678',
     information           => 'Test Info',
     summary               => 'Test Summary',
     commission_deposit    => 0,
@@ -79,8 +77,8 @@ my $payment_agent_1 = BOM::User::Client::PaymentAgent->get_payment_agents(
     is_listed    => 't',
 );
 ok($payment_agent_1->{'CR10001'});
-ok($payment_agent_1->{'CR10001'}->{'currency_code'} eq 'USD');
-ok($payment_agent_1->{'CR10001'}->{'is_listed'} == 1);
+ok($payment_agent_1->{'CR10001'}->currency_code eq 'USD');
+ok($payment_agent_1->{'CR10001'}->is_listed == 1);
 
 my $payment_agent_2 = BOM::User::Client::PaymentAgent->get_payment_agents(
     country_code => 'id',
@@ -96,17 +94,17 @@ my $payment_agent_3 = BOM::User::Client::PaymentAgent->get_payment_agents(
     currency     => 'USD',
 );
 
-is($payment_agent_3->{'CR10001'}->{'client_loginid'}, 'CR10001', 'agent is allowed two coutries so getting result even for country pk');
-ok($payment_agent_3->{'CR10001'}->{'currency_code'} eq 'USD');
-ok($payment_agent_3->{'CR10001'}->{'is_listed'} == 1);
+is($payment_agent_3->{'CR10001'}->client_loginid, 'CR10001', 'agent is allowed two coutries so getting result even for country pk');
+ok($payment_agent_3->{'CR10001'}->currency_code eq 'USD');
+ok($payment_agent_3->{'CR10001'}->is_listed == 1);
 
 my $payment_agent_4 = BOM::User::Client::PaymentAgent->get_payment_agents(
     country_code => 'id',
     broker_code  => 'CR',
 );
 ok($payment_agent_4->{'CR10001'});
-ok($payment_agent_4->{'CR10001'}->{'currency_code'} eq 'USD');
-ok($payment_agent_4->{'CR10001'}->{'is_listed'} == 1);
+ok($payment_agent_4->{'CR10001'}->currency_code eq 'USD');
+ok($payment_agent_4->{'CR10001'}->is_listed == 1);
 
 # Add new payment agent with is_listed = false
 my $pa_client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -120,9 +118,7 @@ $user->add_client($pa_client_2);
 # make him a payment agent
 my $object_pa2 = $pa_client_2->payment_agent({
     payment_agent_name    => 'Joe 2',
-    url                   => 'http://www.example.com/',
     email                 => 'joe@example.com',
-    phone                 => '+12345678',
     information           => 'Test Info',
     summary               => 'Test Summary',
     commission_deposit    => 0,
@@ -149,8 +145,8 @@ my $payment_agent_6 = BOM::User::Client::PaymentAgent->get_payment_agents(
     is_listed    => 'f',
 );
 ok($payment_agent_6->{'CR10002'});
-ok($payment_agent_6->{'CR10002'}->{'currency_code'} eq 'USD');
-ok($payment_agent_6->{'CR10002'}->{'is_listed'} == 0);
+ok($payment_agent_6->{'CR10002'}->currency_code eq 'USD');
+ok($payment_agent_6->{'CR10002'}->is_listed == 0);
 
 my $payment_agent_7 = BOM::User::Client::PaymentAgent->get_payment_agents(
     country_code => 'id',
@@ -158,16 +154,16 @@ my $payment_agent_7 = BOM::User::Client::PaymentAgent->get_payment_agents(
     currency     => 'USD',
 );
 ok($payment_agent_7->{'CR10002'}, 'Agent returned because is_listed is not supplied');
-ok($payment_agent_7->{'CR10002'}->{'currency_code'} eq 'USD');
-ok($payment_agent_7->{'CR10002'}->{'is_listed'} == 0);
+ok($payment_agent_7->{'CR10002'}->currency_code eq 'USD');
+ok($payment_agent_7->{'CR10002'}->is_listed == 0);
 
 my $payment_agent_8 = BOM::User::Client::PaymentAgent->get_payment_agents(
     country_code => 'id',
     broker_code  => 'CR',
 );
 ok($payment_agent_8->{'CR10002'}, 'Agent returned because is_listed is not supplied');
-ok($payment_agent_8->{'CR10002'}->{'currency_code'} eq 'USD');
-ok($payment_agent_8->{'CR10002'}->{'is_listed'} == 0);
+ok($payment_agent_8->{'CR10002'}->currency_code eq 'USD');
+ok($payment_agent_8->{'CR10002'}->is_listed == 0);
 
 dies_ok { BOM::User::Client::PaymentAgent->get_payment_agents() };
 
@@ -182,9 +178,7 @@ $user->add_client($pa_client_3);
 # make him a payment agent
 $pa_client_3->payment_agent({
     payment_agent_name    => 'Joe 3',
-    url                   => 'http://www.example.com/',
     email                 => 'joe@example.com',
-    phone                 => '+12345678',
     information           => 'Test Info',
     summary               => 'Test Summary',
     commission_deposit    => 0,
@@ -199,6 +193,24 @@ is($pa_client_3->get_payment_agent->set_countries(['id', 'us']), undef, 'Suspend
 BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
 is($pa_client_3->get_payment_agent->set_countries(['id', 'any_country']), undef, 'Invalid country could not be added');
 is($pa_client_3->get_payment_agent->set_countries(['id', 'at']),          undef, 'Countries from same landing company as payment agent is allowed');
+
+subtest 'linked details' => sub {
+    my %test_data = (
+        urls                      => [{url          => 'https://wwww.pa.com'}, {url          => 'https://wwww.nowhere.com'}],
+        phone_numbers             => [{phone_number => '+12345678'},           {phone_number => '+87654321'}],
+        supported_payment_methods => [],
+    );
+
+    my $pa = $pa_client->get_payment_agent;
+    for my $field (sort keys %test_data) {
+        $pa->$field($test_data{$field});
+        $pa->save;
+        delete $pa->{$field};
+
+        # reload from db
+        cmp_deeply $pa->$field, bag($test_data{$field}->@*), "$field is correctly retrieved";
+    }
+};
 
 subtest 'get payment agents by name' => sub {
     my $pa     = $test_client->set_payment_agent();
@@ -250,20 +262,21 @@ subtest 'validate payment agent details' => sub {
         'code'    => 'RequiredFieldMissing',
         'details' => {
             fields => bag(
-                'payment_agent_name', 'url', 'information', 'supported_banks',
+                'payment_agent_name', 'urls', 'information', 'supported_payment_methods',
                 'commission_deposit', 'commission_withdrawal', 'code_of_conduct_approval'
             )}
         },
         'Payment required fileds are returned';
 
     my %args = (
-        'payment_agent_name'       => 'Nobody',
-        'information'              => 'Request for pa application',
-        'url'                      => 'http://abcd.com',
-        'commission_withdrawal'    => 4,
-        'commission_deposit'       => 5,
-        'supported_banks'          => 'Visa,bank_transfer',
-        'code_of_conduct_approval' => 0,
+        'payment_agent_name'        => 'Nobody',
+        'information'               => 'Request for pa application',
+        'phone_numbers'             => [{phone_number => $client1->phone}],
+        'urls'                      => [{url          => 'http://abcd.com'}],
+        'commission_withdrawal'     => 4,
+        'commission_deposit'        => 5,
+        'supported_payment_methods' => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
+        'code_of_conduct_approval'  => 0,
     );
 
     is_deeply exception { $pa->validate_payment_agent_details(%args) },
@@ -277,7 +290,7 @@ subtest 'validate payment agent details' => sub {
 
     $args{code_of_conduct_approval} = 1;
 
-    for my $name (qw/payment_agent_name information supported_banks/) {
+    for my $name (qw/payment_agent_name information/) {
         for my $value ('_ -+,.', '_', '+', ',', '.') {
             is_deeply exception { $pa->validate_payment_agent_details(%args, $name => $value) },
                 {
@@ -286,6 +299,41 @@ subtest 'validate payment agent details' => sub {
                 },
                 "Expected failure for field: $name, value: <$value>";
         }
+    }
+
+    for my $name (qw/urls supported_payment_methods phone_numbers/) {
+        for my $value ([], '') {
+            is_deeply exception { $pa->validate_payment_agent_details(%args, $name => $value) },
+                {
+                'code'    => 'RequiredFieldMissing',
+                'details' => {fields => [$name]}
+                },
+                "Expected failure for field: $name, empty value: <$value>";
+        }
+
+        is_deeply exception { $pa->validate_payment_agent_details(%args, $name => 'abcd') },
+            {
+            'code'    => 'InvalidArrayValue',
+            'details' => {fields => [$name]}
+            },
+            "Expected failure for field: $name, scalar value";
+
+        my $element_attriblute = $pa->details_main_field->{$name};
+        is_deeply exception { $pa->validate_payment_agent_details(%args, $name => [{$element_attriblute => '  '}, {$element_attriblute => 'abcd'}]) },
+            {
+            'code'    => 'InvalidStringValue',
+            'details' => {fields => [$name]}
+            },
+            "Expected failure for field: $name, empty string in array";
+
+        next if $name eq 'phone_numbers';
+
+        is_deeply exception { $pa->validate_payment_agent_details(%args, $name => [{$element_attriblute => '<>!@#$433'}]) },
+            {
+            'code'    => 'InvalidStringValue',
+            'details' => {fields => [$name]}
+            },
+            "Expected failure for field: $name, no alphabetic character";
     }
 
     for my $name (qw/commission_withdrawal commission_deposit/) {
@@ -317,55 +365,83 @@ subtest 'validate payment agent details' => sub {
 
     }
 
-    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
+    subtest 'Services allowed' => sub {
+        $args{services_allowed} = 'scalar value';
+        like exception { $pa->validate_payment_agent_details(%args) }, qr/ServicesAllowedInvalidType/,
+            'Scalar values are not accepatable for allowed_services';
+
+        $args{services_allowed} = ['invalid name'];
+        like exception { $pa->validate_payment_agent_details(%args) }, qr/ServicesAllowedInvalidName/, 'Serivce name should be valid';
+
+        $args{services_allowed} = ['p2p'];
+        like exception { $pa->validate_payment_agent_details(%args) }, qr/ServicesAllowedComments/, 'Serivce comment cannot be empty';
+
+        my $result;
+        $args{services_allowed}          = undef;
+        $args{services_allowed_comments} = 'This comment will be removed - no allowed services';
+        is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
+        is $result->{services_allowed},          undef, 'Services are removed from output';
+        is $result->{services_allowed_comments}, undef, 'Services comments are removed from output';
+
+        $args{services_allowed}          = [];
+        $args{services_allowed_comments} = 'This comment will be cleared - empty services';
+        is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
+        is_deeply $result->{services_allowed}, [], 'Services are empty - but not removed';
+        is $result->{services_allowed_comments}, '', 'Services comments are cleared with empty services';
+
+        $args{services_allowed}          = ['p2p', 'cashier_withdraw'];
+        $args{services_allowed_comments} = 'This PA is a sweetheart';
+        is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
+        is_deeply $result->{services_allowed},   $args{services_allowed},          'Services are there';
+        is $result->{services_allowed_comments}, $args{services_allowed_comments}, 'Services comments are there';
+    };
 
     set_fixed_time(1000);
-    my $result = $pa->validate_payment_agent_details(%args);
-    is_deeply $result,
-        {
+    $args{services_allowed} = undef;
+
+    my $min_max         = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
+    my $expected_result = {
         'payment_agent_name'            => 'Nobody',
         'email'                         => $client1->email,
-        'phone'                         => $client1->phone,
+        'phone_numbers'                 => [{phone_number => $client1->phone}],
         'summary'                       => '',
         'information'                   => 'Request for pa application',
         'currency_code'                 => 'USD',
         'target_country'                => $client1->residence,
-        'url'                           => 'http://abcd.com',
+        'urls'                          => [{url => 'http://abcd.com'}],
         'max_withdrawal'                => $min_max->{maximum},
         'min_withdrawal'                => $min_max->{minimum},
         'commission_deposit'            => 5,
         'commission_withdrawal'         => 4,
         'status'                        => undef,
         'is_listed'                     => 0,
-        'supported_banks'               => 'Visa,bank_transfer',
+        'supported_payment_methods'     => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '',
-        'code_of_conduct_approval_time' => 1000,
-        },
-        'Expected default values are returned - coc approval is set to current time';
+        'code_of_conduct_approval_time' => 1000
+    };
 
-    $result = $pa->validate_payment_agent_details(
-        %args,
-        payment_agent_name => " Nobody  ",
-        supported_banks    => 'Visa ,  bank_transfer'
-    );
+    my $result = $pa->validate_payment_agent_details(%args);
+    is_deeply $result, $expected_result, 'Expected default values are returned - coc approval is set to current time';
+
+    $result = $pa->validate_payment_agent_details(%args, payment_agent_name => " Nobody  ");
     is_deeply $result,
         {
         'payment_agent_name'            => 'Nobody',
         'email'                         => $client1->email,
-        'phone'                         => $client1->phone,
+        'phone_numbers'                 => [{phone_number => $client1->phone}],
         'summary'                       => '',
         'information'                   => 'Request for pa application',
         'currency_code'                 => 'USD',
         'target_country'                => $client1->residence,
-        'url'                           => 'http://abcd.com',
+        'urls'                          => [{url => 'http://abcd.com'}],
         'max_withdrawal'                => $min_max->{maximum},
         'min_withdrawal'                => $min_max->{minimum},
         'commission_deposit'            => 5,
         'commission_withdrawal'         => 4,
         'status'                        => undef,
         'is_listed'                     => 0,
-        'supported_banks'               => 'Visa,bank_transfer',
+        'supported_payment_methods'     => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '',
         'code_of_conduct_approval_time' => 1000,
@@ -386,12 +462,12 @@ subtest 'validate payment agent details' => sub {
     %args = (
         'payment_agent_name'            => 'Nobody',
         'email'                         => 'abcd@binary.com',
-        'phone'                         => '1234',
+        'phone_numbers'                 => [{phone_number => '1234'}],
         'summary'                       => 'I am a test pa',
         'information'                   => 'Request for pa application',
         'currency_code'                 => 'EUR',
         'target_country'                => 'de',
-        'url'                           => 'http://abcd.com',
+        'urls'                          => [{url => 'http://abcd.com'}],
         'commission_withdrawal'         => 4,
         'commission_deposit'            => 5,
         'max_withdrawal'                => 100,
@@ -400,10 +476,12 @@ subtest 'validate payment agent details' => sub {
         'min_withdrawal'                => 10,
         'status'                        => 'authorized',
         'is_listed'                     => 1,
-        'supported_banks'               => 'Visa,bank_transfer',
+        'supported_payment_methods'     => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '123abcd',
         'code_of_conduct_approval_time' => 1000,
+        'services_allowed'              => ['p2p'],
+        'services_allowed_comments'     => 'This PA is my sweetheart',
     );
 
     @args{qw(payment_agent_name min_withdrawal max_withdrawal)} = ('test name', -1, -1);
@@ -445,6 +523,8 @@ subtest 'validate payment agent details' => sub {
     lives_ok { $object_pa->validate_payment_agent_details(%args, payment_agent_name => $object_pa2->payment_agent_name) }
     'No error if pa name is the same as one of sibling PAs';
 
+    lives_ok { $pa->validate_payment_agent_details(%args) } 'PA arguments are valid';
+
     subtest 'Code of conduct approval time' => sub {
         $result = $pa->validate_payment_agent_details(%args);
         is_deeply($result, \%args, 'Non-empty args are not changed');
@@ -485,12 +565,10 @@ subtest 'validate payment agent details' => sub {
 
         $result = $pa->validate_payment_agent_details(%args);
         is_deeply($result, {%args, code_of_conduct_approval_time => 1000}, 'COC approval time is set to current time if is not already approved');
-
         $existing_pa->code_of_conduct_approval(0);
         $existing_pa->save;
         $result = $pa->validate_payment_agent_details(%args);
         is_deeply($result, {%args, code_of_conduct_approval_time => 1000}, 'COC approval time is not changed if it is already approved');
-
     };
 
     restore_time();
@@ -520,26 +598,27 @@ subtest 'copy payment agent details and related' => sub {
     my $args1 = {
         'payment_agent_name'            => 'Copy PA 1',
         'email'                         => 'pa1@binary.com',
-        'phone'                         => '1111',
+        'phone_numbers'                 => [{phone_number => '1111'}],
         'summary'                       => 'I am a test pa 1',
         'information'                   => 'Request for pa application 1',
         'currency_code'                 => 'USD',
         'target_country'                => 'af,ch',
-        'url'                           => 'http://aaaa.com',
+        'urls'                          => [{url => 'http://aaaa.com'}],
         'min_withdrawal'                => 10,
         'max_withdrawal'                => 100,
         'commission_deposit'            => 1,
         'commission_withdrawal'         => 3,
         'status'                        => 'authorized',
         'is_listed'                     => 1,
-        'supported_banks'               => 'Visa,bank_transfer',
+        'supported_payment_methods'     => [{payment_method => 'Visa'}],
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '1111aaaa',
         'code_of_conduct_approval_time' => '2020-01-01T00:00:00',
-        'risk_level'                    => 'low',
+        'risk_level'                    => 'low'
     };
-    $client1->payment_agent($args1);
-    $client1->save;
+    my $pa1 = $client1->set_payment_agent();
+    $pa1->$_($args1->{$_}) for keys %$args1;
+    $pa1->save;
     ok $client1->get_payment_agent->set_countries([qw/af ch/]), 'Countries are set';
 
     my @pa_list = $client1->get_payment_agent->sibling_payment_agents;
@@ -549,26 +628,27 @@ subtest 'copy payment agent details and related' => sub {
     my $args2 = {
         'payment_agent_name'            => 'Copy PA 2',
         'email'                         => 'pa2@binary.com',
-        'phone'                         => '2222',
+        'phone_numbers'                 => [{phone_number => '22222'}],
         'summary'                       => 'I am a test pa 2',
         'information'                   => 'Request for pa application 2',
         'currency_code'                 => 'BTC',
         'target_country'                => 'id,in',
-        'url'                           => 'http://bbbbb.com',
+        'urls'                          => [{url => 'http://bbbbbb.com'}],
         'min_withdrawal'                => 0.00001,
         'max_withdrawal'                => 0.1,
         'commission_deposit'            => 4,
         'commission_withdrawal'         => 5,
         'status'                        => undef,
         'is_listed'                     => 0,
-        'supported_banks'               => 'Master card',
+        'supported_payment_methods'     => [{payment_method => 'Bank note'}],
         'code_of_conduct_approval'      => 0,
         'affiliate_id'                  => '2222bbbbb',
         'code_of_conduct_approval_time' => '2021-02-02',
-        'risk_level'                    => 'low',
+        'risk_level'                    => 'low'
     };
-    $client2->payment_agent($args2);
-    $client2->save;
+    my $pa2 = $client2->set_payment_agent();
+    $pa2->$_($args2->{$_}) for keys %$args2;
+    $pa2->save;
     $client2->get_payment_agent->set_countries([qw/id in/]);
 
     # copy to siblings
@@ -582,7 +662,7 @@ subtest 'copy payment agent details and related' => sub {
     populate_exchange_rates({BTC => 10000});
     $pa_1->copy_details_to($client2->get_payment_agent);
 
-    my $pa_2 = $client2->payment_agent;
+    my $pa_2 = $client2->get_payment_agent;
     is_deeply { $pa_2->%{keys %$args1} },
         {
         %$args1,
@@ -605,6 +685,34 @@ subtest 'copy payment agent details and related' => sub {
         min_withdrawal => '10.00',
         max_withdrawal => '100.00'
         };
+};
+
+subtest 'services allowed' => sub {
+    my $pa = $pa_client->get_payment_agent;
+
+    my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+
+    for my $status (undef, 'applied') {
+        $mock_pa->redefine(status => $status);
+
+        ok $pa->service_is_allowed('dummy service'), 'unknown service is allowed for unauthorized PA';
+        for my $service (BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES->@*) {
+            ok $pa->service_is_allowed($service), "Restricted service $service is allowed for unauthorized PA";
+        }
+    }
+
+    $mock_pa->redefine(status => 'authorized');
+    for my $service (BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES->@*) {
+        ok $pa->service_is_allowed('dummy service'), 'unknown service is allowed for authorized PA';
+
+        ok !$pa->service_is_allowed($service), "Restricted service $service is blocked for authorized PA";
+
+        $mock_pa->redefine(services_allowed => [$service]);
+        ok $pa->service_is_allowed($service), "$service is allowed for authorized PA if it's added to the list";
+
+        $mock_pa->unmock('services_allowed');
+    }
+
 };
 
 done_testing();

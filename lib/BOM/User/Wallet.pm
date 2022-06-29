@@ -49,7 +49,7 @@ sub landing_company {
 
     die 'Broker code ' . $self->broker_code . ' is not a wallet' unless $config;
 
-    return LandingCompany::Registry::get($config->{landing_company});
+    return LandingCompany::Registry->by_name($config->{landing_company});
 }
 
 =head2 is_wallet
@@ -59,6 +59,14 @@ Returns whether this client instance is a wallet.
 =cut
 
 sub is_wallet { 1 }
+
+=head2 is_affiliate
+
+Returns whether this client instance is an affiliate.
+
+=cut
+
+sub is_affiliate { 0 }
 
 =head2 can_trade
 

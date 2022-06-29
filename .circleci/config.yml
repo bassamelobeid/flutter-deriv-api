@@ -1,3 +1,4 @@
+---
 alias:
 - &1
   add_ssh_keys:
@@ -29,11 +30,11 @@ alias:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 - &redis6
   image: redis:6
-  name: "redis-v6"
+  name: redis-v6
 - &debian-ci
   auth:
-      password: $DOCKERHUB_PASSWORD
-      username: circle4regentmarkets
+    password: $DOCKERHUB_PASSWORD
+    username: circle4regentmarkets
   image: regentmarkets/debian-ci:stable
   user: nobody
 default: &6
@@ -43,7 +44,23 @@ default: &6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-user
 jobs:
-  syntax:
+  syntax_unit:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make syntax
+        name: Code structure and syntax
+    - run:
+        command: make unit
+        name: unit tests
+    - store_test_results:
+        path: /var/tmp/test-output
+  core_syntax_diff:
     <<: *6
     steps:
     - *1
@@ -54,7 +71,13 @@ jobs:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make syntax
+          make test
+        name: core tests
+    - run:
+        command: make unit
+        name: unit tests
+    - run:
+        command: make syntax_diff
         name: Code structure and syntax
     - store_test_results:
         path: /var/tmp/test-output
@@ -96,19 +119,19 @@ jobs:
     - run:
         <<: *5
         command: make cover
-        name: code coverage tests  
+        name: code coverage tests
 version: 2
 workflows:
   build-workflow:
-    jobs: &7
-    - syntax:
+    jobs:
+    - core_syntax_diff:
+        context: perl
+  daily:
+    jobs:
+    - syntax_unit:
         context: perl
     - core:
         context: perl
-    - unit:
-        context: perl
-  daily:
-    jobs: *7
     triggers:
     - schedule:
         cron: 30 20 * * *
@@ -122,7 +145,7 @@ workflows:
         context: perl
     triggers:
     - schedule:
-        cron: "30 5 * * 6"
+        cron: 30 5 * * 6
         filters:
           branches:
             only:

@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Fatal;
 use Test::MockModule;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 
@@ -9,10 +10,13 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 use BOM::Test::Helper::FinancialAssessment;
 
+use BOM::User;
 use BOM::User::Client;
 use BOM::User::Script::AMLClientsUpdate;
 use BOM::User::Password;
 use BOM::User::FinancialAssessment qw(update_financial_assessment);
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+populate_exchange_rates();
 
 my $email    = 'abc' . rand . '@binary.com';
 my $hash_pwd = BOM::User::Password::hashpw('test');
@@ -57,10 +61,8 @@ $user->add_client($client_cr);
 $user->add_client($client_cr2);
 
 my $res;
-my $c_no_args = BOM::User::Script::AMLClientsUpdate->new();
 
-my %args = (landing_companies => ['CR']);
-my $c    = BOM::User::Script::AMLClientsUpdate->new(%args);
+my $c = BOM::User::Script::AMLClientsUpdate->new();
 
 my @emitted_args;
 my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -69,9 +71,6 @@ $mocked_emitter->redefine(
         @emitted_args = @_;
     });
 
-subtest 'class arguments validation' => sub {
-    is($c_no_args, undef, 'arguments must be provided to intialize');
-};
 subtest 'low aml risk client CR company' => sub {
     my $landing_company = 'CR';
     $client_cr->aml_risk_classification('high');
@@ -110,13 +109,9 @@ subtest 'aml risk becomes high CR landing company' => sub {
     ok !$client_cr2->status->withdrawal_locked, "sibling account is not withdrawal_locked";
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
 
-    test_event($result, $landing_company);
-
     $expected_db_rows = [];
     $result           = $c->update_aml_high_risk_clients_status($landing_company);
     is @$result, 0, 'No result after withdrawal locked';
-
-    test_event($result, $landing_company);
 
     $client_cr->status->clear_withdrawal_locked();
     $client_cr->status->clear_allow_document_upload();
@@ -136,8 +131,6 @@ subtest 'aml risk becomes high CR landing company' => sub {
     ok $client_cr->status->allow_document_upload,  "client is allow_document_upload";
     ok $client_cr2->status->withdrawal_locked,     "sibling account is withdrawal_locked";
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
-
-    test_event($result, $landing_company);
 
     clear_clients($client_cr, $client_cr2);
 };
@@ -206,6 +199,7 @@ subtest 'filter by authentication and financial_assessment' => sub {
 };
 
 subtest 'withdrawal lock auto removal after authentication and FA' => sub {
+    $_->aml_risk_classification('high') for ($client_cr, $client_cr2);
     my $mocked_client    = Test::MockModule->new('BOM::User::Client');
     my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
     my @called_for_clients;
@@ -219,11 +213,10 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     $client_cr->status->set('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
     $client_cr2->status->setnx('withdrawal_locked',     'system', 'Pending authentication or FA');
     $client_cr2->status->setnx('allow_document_upload', 'system', 'Pending authentication or FA');
-
     # financial assessment complete, unauthenticated
     my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
     update_financial_assessment($user, $data);
-    $client_cr->save;
+    undef $client_cr->{financial_assessment};    # let it be reloaded from database
     ok $client_cr->is_financial_assessment_complete, 'financial_assessment completed';
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
     ok $client_cr->status->withdrawal_locked,     'client is still withdrawal-locked (not authenticated yet)';
@@ -236,7 +229,14 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     ok $client_cr->fully_authenticated, 'client is authenticated';
     is @called_for_clients, 1, 'update_status_after_auth_fa is called for authentication';
     undef @called_for_clients;
+
+    for ($client_cr, $client_cr2) {
+        $_->financial_assessment({data => '{}'});
+        $_->save;
+    }
     update_financial_assessment($user, {});
+    undef $client_cr->{financial_assessment};
+    is $client_cr->is_financial_assessment_complete, 0, 'FA is not complete';
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
     ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-locked (fa is incomplete)';
     ok !$client_cr->status->allow_document_upload, 'client has not allow_document_upload, (authenticated)';
@@ -312,24 +312,101 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     $mocked_documents->unmock_all;
 };
 
-sub test_event {
-    my ($result, $landing_company) = @_;
+subtest 'AML risk update' => sub {
+    my $user_cr = BOM::User->create(
+        email    => 'aml_risk_update_cr@deriv.com',
+        password => 'password',
+    );
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $user_cr->email,
+        binary_user_id => $user_cr->id
+    });
+    $client_cr->set_default_account('EUR');
+    $client_cr->save;
+    $user_cr->add_client($client_cr);
 
-    undef @emitted_args;
-    my $res = $c->emit_aml_status_change_event($landing_company, $result);
-    ok($res, "aml status change event emitted");
+    my $user_mf = BOM::User->create(
+        email    => 'aml_risk_update_mf@deriv.com',
+        password => 'password',
+    );
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        email          => $user_mf->email,
+        binary_user_id => $user_mf->id
+    });
+    $client_mf->set_default_account('EUR');
+    $client_mf->save;
 
-    is_deeply \@emitted_args,
-        [
-        'aml_client_status_update',
-        {
-            template_args => {
-                landing_company     => $landing_company,
-                aml_updated_clients => $result,
-            }
+    $user_mf->add_client($client_mf);
+
+    my @emails;
+    my $mock_script = Test::MockModule->new('BOM::User::Script::AMLClientsUpdate');
+    $mock_script->redefine(send_email => sub { my $args = shift; push @emails, $args });
+
+    my %mock_data = map { $_->binary_user_id => [$_->loginid] } ($client_cr, $client_mf);
+    my $mock_user = Test::MockModule->new('BOM::User');
+    $mock_user->redefine(loginids => sub { return $mock_data{shift->id}->@* });
+
+    is exception { $c->aml_risk_update() }, undef, 'AML risk update is executed without any error';
+    $client_cr->load;
+    is $client_cr->aml_risk_classification, 'low', 'Risk classification is low: no deposits yet';
+    is scalar @emails, 0, 'No email is sent';
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    my %thresholds = (
+        CR => {
+            yearly_standard => 10,
+            yearly_high     => 20
         },
-        ],
-        'Correct event is emitted with correct args';
+        MF => {
+            yearly_standard => 10,
+            yearly_high     => 20
+        });
+    $app_config->compliance->aml_risk_thresholds(encode_json_utf8(\%thresholds));
+
+    BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 9);
+    update_payment_dates($client_cr);
+    $c->aml_risk_update();
+    $client_cr->load;
+    is $client_cr->aml_risk_classification, 'low', 'Risk classification is low: balance less than threshold';
+    is scalar @emails, 0, 'No email is sent';
+
+    BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 1);
+    update_payment_dates($client_cr);
+    $c->aml_risk_update();
+    $client_cr->load;
+    is $client_cr->aml_risk_classification, 'standard', 'Risk classification changed to standard: balance crossed the standard threshold';
+    is scalar @emails, 0, 'No email is sent for standard risk level';
+
+    BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 10);
+    update_payment_dates($client_cr);
+    $c->aml_risk_update();
+    $client_cr->load;
+    is $client_cr->aml_risk_classification, 'high', 'Risk classification changed to high: balance crossed the high threshold';
+    is scalar @emails, 1, 'An email is sent for the high risk client';
+
+    my $mail    = $emails[0];
+    my $user_id = $user_cr->id;
+    like $mail->{subject}, qr/Daily AML risk update/, 'email subject is correct';
+    my $loginid = $client_cr->loginid;
+    ok $mail->{message}->[0] =~ qr/$loginid/, 'loginids is found in email content';
+    ok $mail->{message}->[0] !~ qr/MF\d/, 'No MF loginid found in email content';
+
+    $mock_script->unmock_all;
+    $mock_user->unmock_all;
+};
+
+sub update_payment_dates {
+    my $client = shift;
+
+    # payments of the corrent day are ignored by update_aml_risk function;
+    # so we've got to move them at least one day back.
+
+    my $yesterday = Date::Utility->new->minus_time_interval('1d');
+
+    $client->dbh->do('UPDATE payment.payment SET payment_time = ? WHERE account_id = ?', undef, $yesterday->date_yyyymmdd, $client->account->id);
 }
 
 sub clear_clients {

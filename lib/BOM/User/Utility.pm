@@ -25,6 +25,8 @@ use List::Util qw(any);
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
+use BOM::Config::CurrencyConfig;
+use BOM::Config::P2P;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(parse_mt5_group);
@@ -267,12 +269,14 @@ Returns $data with unchanged ads removed.
 sub p2p_on_advert_view {
     my ($advertiser_id, $data) = @_;
 
-    # client specific fields will be stored in redis as field/loginid
+    # client specific fields will be stored in redis as field/loginid. advertiser_ fields are ones that are within advertiser_details in the ad structure.
     my %fields = (
-        common            => [qw(payment_method is_active max_order_amount_limit max_order_amount_limit_display)],
-        client            => [qw(is_visible remaining_amount remaining_amount_display)],
-        advertiser_common => [qw(total_completion_rate)],
-        advertiser_client => [qw(is_favourite is_blocked)],
+        common => [
+            qw(payment_method payment_method_names is_active local_currency rate min_order_amount_limit max_order_amount_limit rate_offset effective_rate)
+        ],
+        client            => [qw(is_visible payment_info contact_info active_orders amount remaining_amount min_order_amount max_order_amount)],
+        advertiser_common => [qw(total_completion_rate rating_average recommended_average)],
+        advertiser_client => [qw(is_favourite is_blocked is_recommended)],
     );
 
     my $p2p_redis    = BOM::Config::Redis->redis_p2p_write();
@@ -327,13 +331,49 @@ sub p2p_on_advert_view {
 
     for my $id (keys %$new_state) {
         for my $loginid (keys $new_state->{$id}->%*) {
-            $state->{$id}{$_} = $new_state->{$id}{$loginid}{$_} for ($fields{common}->@*, $fields{advertiser_common}->@*);
-            $state->{$id}{$_}{$loginid} = $new_state->{$id}{$loginid}{$_} for ($fields{client}->@*, $fields{advertiser_client}->@*);
+            for my $field (keys $new_state->{$id}{$loginid}->%*) {
+                my $val = $new_state->{$id}{$loginid}{$field};
+                $val                            = join(',', sort @$val) if ref $val eq 'ARRAY';
+                $state->{$id}{$field}           = $val if any { $_ eq $field } ($fields{common}->@*, $fields{advertiser_common}->@*);
+                $state->{$id}{$field}{$loginid} = $val if any { $_ eq $field } ($fields{client}->@*, $fields{advertiser_client}->@*);
+            }
         }
     }
 
     $p2p_redis->set($key, encode_json_utf8($state), 'EX', P2P_ADVERT_STATE_EXPIRY);
     return $updates;
+}
+
+=head2 p2p_exchange_rate
+
+Gets P2P rate from the most of recent of feed or backoffice manual quote for the provided country.
+Returns a hashref of quote details or empty hashref if no quote.
+
+=cut
+
+sub p2p_exchange_rate {
+    my $country = shift;
+
+    my $config   = BOM::Config::P2P::advert_config()->{$country};
+    my $currency = BOM::Config::CurrencyConfig::local_currency_for_country($country);
+    my $quote    = ExchangeRates::CurrencyConverter::usd_rate($currency);
+
+    my @quotes;
+    push @quotes,
+        {
+        epoch  => $config->{manual_quote_epoch},
+        quote  => $config->{manual_quote},
+        source => 'manual'
+        } if $config->{manual_quote};
+    push @quotes,
+        {
+        epoch  => $quote->{epoch},
+        quote  => 1 / $quote->{quote},
+        source => 'feed'
+        } if $quote;
+    @quotes = sort { $b->{epoch} <=> $a->{epoch} } @quotes;
+
+    return $quotes[0] // {};
 }
 
 1;

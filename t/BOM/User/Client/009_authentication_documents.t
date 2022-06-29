@@ -6,6 +6,7 @@ use Test::Deep qw{!all};
 use Test::MockModule;
 use Scalar::Util qw/looks_like_number/;
 use BOM::User::Client;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 use List::Util qw/all uniq/;
 use Array::Utils qw(intersect array_minus unique);
@@ -108,11 +109,11 @@ my $categories = [{
         documents_uploaded   => 'other',
         deprecated           => [],
         date_expiration      => [],
-        preferred            => [qw/ip_mismatch_confirmation power_of_attorney code_of_conduct others/],
-        date_issuance        => [qw/ip_mismatch_confirmation power_of_attorney code_of_conduct/],
+        preferred            => [qw/ip_mismatch_confirmation power_of_attorney code_of_conduct others affiliate_reputation_check/],
+        date_issuance        => [qw/ip_mismatch_confirmation power_of_attorney code_of_conduct affiliate_reputation_check/],
         date_none            => [qw/others/],
         maybe_lifetime       => [],
-        two_sided            => [qw/ip_mismatch_confirmation power_of_attorney code_of_conduct others/],
+        two_sided            => [qw/ip_mismatch_confirmation power_of_attorney code_of_conduct others affiliate_reputation_check/],
         photo                => [],
         numberless           => [],
         onfido               => [],
@@ -342,7 +343,7 @@ subtest 'Preferred types' => sub {
             coi business_poa article_of_association memorandum authorisation_letter declarations business_documents_others
             power_of_attorney code_of_conduct others
             amlglobalcheck nimc_slip
-            tax_photo_id pan_card ip_mismatch_confirmation
+            tax_photo_id pan_card ip_mismatch_confirmation affiliate_reputation_check
             /
     ];
 
@@ -377,6 +378,7 @@ subtest 'Issuance document types' => sub {
             employment_contract
             amlglobalcheck
             ip_mismatch_confirmation
+            affiliate_reputation_check
             /
     ];
 

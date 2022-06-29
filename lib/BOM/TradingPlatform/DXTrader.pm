@@ -13,24 +13,12 @@ use Array::Utils qw(array_minus);
 use Format::Util::Numbers qw(financialrounding formatnumber);
 use Digest::SHA1 qw(sha1_hex);
 use BOM::Platform::Context qw(request);
-use WebService::MyAffiliates;
+use BOM::Platform::Event::Emitter;
 use BOM::Config;
-use BOM::Database::CommissionDB;
-
+use Log::Any qw($log);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use BOM::Config::Redis;
 use Time::HiRes qw(gettimeofday tv_interval);
-
-use Log::Any '$dxapi_log',
-    category  => 'dxapi_log',
-    log_level => 'info';
-use Log::Any::Adapter;
-
-try {
-    Log::Any::Adapter->set({category => 'dxapi_log'}, 'File', '/var/lib/binary/devexperts_api_errors.log');
-} catch {
-    Log::Any::Adapter->set({category => 'dxapi_log'}, 'Null');
-}
 
 =head1 NAME 
 
@@ -271,7 +259,14 @@ sub new_account {
 
     # If client has affiliate token, link the client to the affiliate.
     if (my $token = $self->client->myaffiliates_token and $args{account_type} ne 'demo') {
-        $self->_link_client($token, $account_id, $self->client->binary_user_id);
+        BOM::Platform::Event::Emitter::emit(
+            'cms_add_affiliate_client',
+            {
+                binary_user_id => $self->client->binary_user_id,
+                token          => $token,
+                loginid        => $account_id,
+                platform       => PLATFORM_ID
+            });
     }
 
     $account->{account_id} = $account_id;
@@ -315,7 +310,6 @@ sub get_accounts {
 
     my @local_accounts  = $self->local_accounts or return [];
     my @account_servers = $self->account_servers;
-    $self->server_check(@account_servers) if $args{force};
 
     my @accounts;
     for my $server (@account_servers) {
@@ -331,12 +325,23 @@ sub get_accounts {
 
     my @result;
     for my $local_account (@local_accounts) {
-        if (my $account = first { $_->{account_code} eq $local_account->{attributes}{account_code} } @accounts) {
-            $account->{account_id} = $local_account->{loginid};
-            $account->{login}      = $local_account->{attributes}{login};
+        next if $args{type} and $args{type} ne $local_account->{account_type};
+        my $account;
+        $account->{account_id} = $local_account->{loginid};
+        $account->{login}      = $local_account->{attributes}{login};
+        if (my $dxaccount = first { $_->{account_code} eq $local_account->{attributes}{account_code} } @accounts) {
+            $account->{enabled} = 1;
+            $account = {%$account, %$dxaccount};
+            push @result, $self->account_details($account);
+        } else {
+            $account->{account_type} = $local_account->{account_type};
+            $account->{enabled}      = 0;
+            $account->{market_type}  = $local_account->{attributes}{market_type};
+            $account->{currency}     = $local_account->{currency};
             push @result, $self->account_details($account);
         }
     }
+
     return \@result;
 }
 
@@ -444,6 +449,7 @@ sub deposit {
         platform_currency => $account->{currency},
         account_type      => $account->{account_type},
         currency          => $args{currency},
+        payment_type      => 'dxtrade_transfer',
     );
 
     my %txn_details = (
@@ -465,6 +471,10 @@ sub deposit {
             remark       => $remark,
             txn_details  => \%txn_details,
         );
+
+        $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
+        $self->client->user->daily_transfer_incr(PLATFORM_ID);
+
     } catch {
         die +{error_code => 'DXDepositFailed'};
     }
@@ -482,9 +492,6 @@ sub deposit {
     } catch {
         die +{error_code => 'DXDepositIncomplete'};
     }
-
-    $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
-    $self->client->user->daily_transfer_incr(PLATFORM_ID);
 
     # get updated balance
     my $update;
@@ -546,10 +553,9 @@ sub withdraw {
         currency          => $args{currency},
     );
 
-    my $resp = $self->call_api(
+    my %call_args = (
         server        => $server,
         method        => 'account_withdrawal',
-        quiet         => 1,
         account_code  => $account->{attributes}{account_code},
         clearing_code => $account->{attributes}{clearing_code},
         id            => $self->unique_id,                        # must be unique for withdrawals on this login
@@ -557,13 +563,15 @@ sub withdraw {
         currency      => $account->{currency},
     );
 
+    my $resp = $self->call_api(%call_args, quiet => 1);
+
     die +{error_code => 'DXInsufficientBalance'}
         if $resp->{content}{error_code}
         and $resp->{content}{error_code} eq '30005'
         and $resp->{status} eq '422';
 
     unless ($resp->{success}) {
-        $self->handle_api_error($resp, 'DXWithdrawalFailed');
+        $self->handle_api_error($resp, 'DXWithdrawalFailed', %call_args);
     }
 
     my %txn_details = (
@@ -585,12 +593,13 @@ sub withdraw {
             remark       => $remark,
             txn_details  => \%txn_details,
         );
+
+        $self->insert_payment_details($txn->payment_id, $args{from_account}, $args{amount} * -1);
+        $self->client->user->daily_transfer_incr(PLATFORM_ID);
+
     } catch {
         die +{error_code => 'DXWithdrawalIncomplete'};
     }
-
-    $self->insert_payment_details($txn->payment_id, $args{from_account}, -$args{amount});
-    $self->client->user->daily_transfer_incr(PLATFORM_ID);
 
     # get updated balance
     my $update;
@@ -783,8 +792,6 @@ sub call_api {
 
     my $quiet   = delete $args{quiet};
     my $payload = encode_json_utf8(\%args);
-
-    $dxapi_log->context->{request} = {map { $_ => $_ eq 'password' ? '<hidden>' : $args{$_} } keys %args};
     my $resp;
 
     try {
@@ -803,7 +810,7 @@ sub call_api {
         die unless $resp->{success} or $quiet;    # we expect some calls to fail, eg. client_get
         return $resp;
     } catch ($e) {
-        $self->handle_api_error($resp);
+        $self->handle_api_error($resp, undef, %args);
     }
 }
 
@@ -814,10 +821,12 @@ Called when an unexpcted Devexperts API error occurs. Dies with generic error co
 =cut
 
 sub handle_api_error {
-    my ($self, $resp, $error_code) = @_;
+    my ($self, $resp, $error_code, %args) = @_;
 
-    stats_inc('devexperts.rpc_service.api_call_fail', {tags => [map { "$_:" . $dxapi_log->context->{request}{$_} } qw/method server/]});
-    $dxapi_log->info($resp->{content} // sprintf('No content, HTTP code %s, reason %s', $resp->{status} // 'unknown', $resp->{reason} // 'unknown'));
+    $args{password} = '<hidden>'                            if $args{password};
+    $resp           = [$resp->@{qw/content reason status/}] if ref $resp;
+    stats_inc('devexperts.rpc_service.api_call_fail', {tags => ['server:' . $args{server}, 'method:' . $args{method}]});
+    $log->warnf('devexperts call failed for %s: %s, call args: %s', $self->client->loginid, $resp, \%args);
     die +{error_code => $error_code // 'DXGeneral'};
 }
 
@@ -842,20 +851,21 @@ sub dxclient_get {
 
     my $login = $self->dxtrade_login;
 
-    my $resp = $self->call_api(
+    my %args = (
         server => $server,
         method => 'client_get',
-        quiet  => 1,
         login  => $login,
         domain => DX_DOMAIN,
     );
+
+    my $resp = $self->call_api(%args, quiet => 1);
 
     return $resp->{content} if $resp->{success};
 
     # expected response for not found
     return undef if ($resp->{status} eq '404' and ref $resp->{content} eq 'HASH' and ($resp->{content}{error_code} // '') eq '30002');
 
-    $self->handle_api_error($resp);
+    $self->handle_api_error($resp, undef, %args);
 }
 
 =head2 dxtrade_login
@@ -886,19 +896,27 @@ Format account details for websocket response.
 sub account_details {
     my ($self, $account) = @_;
 
-    my $category    = first { $_->{category} eq 'Trading' } $account->{categories}->@*;
-    my $market_type = $category->{value} eq 'Financials Only' ? 'financial' : 'synthetic';
+    my $category    = {};
+    my $market_type = '';
+    if (exists($account->{categories})) {
+        $category    = first { $_->{category} eq 'Trading' } $account->{categories}->@*;
+        $market_type = ($category->{value} eq 'Financials Only' ? 'financial' : 'synthetic') if $category and exists($category->{value});
+    }
+    $market_type             = $account->{market_type} if !exists($category->{value});
+    $account->{account_type} = ($account->{account_type} eq 'LIVE' ? 'real' : 'demo') unless any { $account->{account_type} eq $_ } qw(real demo);
+    $account->{enabled}      = 1 if !exists($account->{enabled});
 
     return {
-        login                 => $account->{login},
-        account_id            => $account->{account_id},
-        account_type          => $account->{account_type} eq 'LIVE' ? 'real' : 'demo',
-        balance               => financialrounding('amount', $account->{currency}, $account->{balance}),
-        currency              => $account->{currency},
-        display_balance       => formatnumber('amount', $account->{currency}, $account->{balance}),
+        login        => $account->{login},
+        account_id   => $account->{account_id},
+        account_type => $account->{account_type},
+        enabled      => $account->{enabled},
+        $account->{enabled} ? (balance => financialrounding('amount', $account->{currency}, $account->{balance})) : (),
+        currency => $account->{currency},
+        $account->{enabled} ? (display_balance => formatnumber('amount', $account->{currency}, $account->{balance})) : (),
         platform              => PLATFORM_ID,
         market_type           => $market_type,
-        landing_company_short => 'svg',                                                                    #todo
+        landing_company_short => 'svg',          #todo
     };
 }
 
@@ -969,115 +987,4 @@ sub insert_payment_details {
         });
 }
 
-## PRIVATE METHODS ##
-
-=head2 _link_client
-
-If a client comes from an affiliate link, we need know link this client to the affiliate.
-
-=over 4
-
-=item * $myaffiliate_token = token from MyAffiliates platform
-
-=item * $dx_loginid = login id for dxtrade
-
-=item * $binary_user_id = deriv binary user id
-
-=back
-
-Returns the affiliate id.
-
-=cut
-
-sub _link_client {
-    my ($self, $myaffiliate_token, $dx_loginid, $binary_user_id) = @_;
-
-    my $aff = $self->_myaffiliates();
-
-    unless ($aff) {
-        stats_inc('myaffiliates.dxtrade.failure.get_aff_id', 1);
-        $dxapi_log->warnf("Unable to connect to MyAffiliate to parse token %s to link %s", $myaffiliate_token, $dx_loginid);
-        return;
-    }
-
-    my $myaffiliate_id = $aff->get_affiliate_id_from_token($myaffiliate_token);
-
-    unless ($myaffiliate_id) {
-        stats_inc('myaffiliates.dxtrade.failure.get_aff_id', 1);
-        $dxapi_log->warnf("Unable to parse token %s", $myaffiliate_token);
-        return;
-    }
-
-    my $affiliate_id;
-    try {
-        my ($res) = $self->_commission_db->dbic->run(
-            fixup => sub {
-                $_->selectall_array('SELECT id FROM affiliate.affiliate WHERE external_affiliate_id=?', undef, $myaffiliate_id);
-            });
-        die "can't fine affiliate_id for $myaffiliate_id" unless $res;
-        $affiliate_id = $res->[0];
-    } catch ($e) {
-        $dxapi_log->warnf("Unable to get affiliate id for %s. Error [%s]", $myaffiliate_id, $e);
-    }
-
-    unless ($affiliate_id) {
-        stats_inc('myaffiliates.dxtrade.failure.get_internal_aff_id', 1);
-        $dxapi_log->warnf("Unable to get affiliate id for %s", $myaffiliate_id);
-        return;
-    }
-
-    try {
-        $self->_commission_db->dbic->run(
-            ping => sub {
-                $_->do('SELECT * FROM affiliate.add_new_affiliate_client(?,?,?,?)', undef, $dx_loginid, PLATFORM_ID, $binary_user_id, $affiliate_id);
-            });
-
-        # notify commission deal listener about a new sign up
-        my $stream = join '::', (PLATFORM_ID, 'real_signup');
-        BOM::Config::Redis::redis_cfds_write()->execute('xadd', $stream, '*', 'platform', PLATFORM_ID, 'account_id', $dx_loginid);
-    } catch ($e) {
-        $dxapi_log->warnf("Unable to add client %s to affiliate.affiliate_client table. Error [%s]", $dx_loginid, $e);
-    }
-
-    return;
-}
-
-my $commission_db;
-
-=head2 _commission_db
-
-Return commission db.
-
-=cut
-
-sub _commission_db {
-    my $self = shift;
-
-    $commission_db //= BOM::Database::CommissionDB::rose_db();
-
-    return $commission_db;
-}
-
-my $aff;
-
-=head2 _myaffiliates
-
-Returns C<WebService::MyAffiliates> object.
-
-=cut
-
-sub _myaffiliates {
-    my $self = @_;
-
-    my $config = BOM::Config::third_party()->{myaffiliates};
-
-    $aff //= WebService::MyAffiliates->new(
-        user    => $config->{user},
-        pass    => $config->{pass},
-        host    => $config->{host},
-        timeout => 10
-    );
-
-    return $aff;
-}
 1;

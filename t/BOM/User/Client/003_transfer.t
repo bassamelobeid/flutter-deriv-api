@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::MockModule;
+use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 use BOM::Test::Helper::ExchangeRates qw( populate_exchange_rates_db );
@@ -125,6 +126,59 @@ subtest fx_transfer => sub {
     cmp_ok($to_account->balance, '==', 11124, 'Converted Amount with fees Correct');
     my $payment = _get_payment_from_transaction($client_to->db->dbic, $transaction_id->{transaction_id});
     is($payment->{transfer_fees}, 1, 'Correct Fee recorded');
+};
+
+subtest today_payment_agent_withdrawal_sum_count => sub {
+    my $pa_client = create_client();
+    $pa_client->set_default_account('USD');
+    my $client = create_client();
+    $client->set_default_account('USD');
+    $pa_client->payment_agent({
+        payment_agent_name    => 'Test Agent',
+        currency_code         => 'USD',
+        email                 => 'joe@example.com',
+        information           => 'Test Info',
+        summary               => 'Test Summary',
+        commission_deposit    => 0,
+        commission_withdrawal => 0,
+        status                => 'authorized',
+    });
+    $pa_client->save;
+
+    is_deeply [$client->today_payment_agent_withdrawal_sum_count], [0, 0], 'There is no transfer in the beginning';
+
+    $client->payment_legacy_payment(
+        currency     => 'USD',
+        amount       => 100,
+        payment_type => 'ewallet',
+        remark       => 'test',
+        staff        => 'test'
+    );
+
+    cmp_deeply [$client->today_payment_agent_withdrawal_sum_count], [0, 0], 'free_gift is not counted as a transfer';
+
+    $client->payment_account_transfer(
+        toClient     => $pa_client,
+        currency     => 'USD',
+        amount       => 10,
+        fees         => 0,
+        gateway_code => 'payment_agent_transfer',
+    );
+
+    cmp_deeply [$client->today_payment_agent_withdrawal_sum_count], [num(10), 1], 'Account transfer count and amount is changed after PA transfer';
+    cmp_deeply [$pa_client->today_payment_agent_withdrawal_sum_count], [0, 0], 'It is only for clients not payment agents';
+
+    $client->payment_account_transfer(
+        toClient     => $pa_client,
+        currency     => 'USD',
+        amount       => 10,
+        fees         => 0,
+        gateway_code => 'account_transfer',
+    );
+
+    cmp_deeply [$client->today_payment_agent_withdrawal_sum_count], [num(10), 1],
+        'Account transfer count and amount is not changed after trasnsfer between accounts';
+    cmp_deeply [$pa_client->today_payment_agent_withdrawal_sum_count], [0, 0], 'No change for the payment agent either';
 };
 
 sub _get_payment_from_transaction {

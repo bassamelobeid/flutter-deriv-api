@@ -250,6 +250,7 @@ subtest 'documents uploaded' => sub {
                     },
             },
             is_expired  => 0,
+            is_pending  => 0,
             expiry_date => $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
         },
     };
@@ -292,7 +293,7 @@ subtest 'documents uploaded' => sub {
                     },
             },
             is_expired  => 0,
-            is_pending  => 1,
+            is_pending  => 0,
             expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . '.passport.270744441_front.PNG'}{expiry_date},
         },
     };
@@ -739,7 +740,6 @@ subtest 'rejected and uploaded' => sub {
     $sth_doc_new->execute($id2);
 
     # When docs are verified we process the expiration dates
-    # Since the client is not age_verification status yet `is_pending` is also set
 
     $expected = {
         'proof_of_identity' => {
@@ -760,7 +760,7 @@ subtest 'rejected and uploaded' => sub {
                 }
             },
             'expiry_date' => re('\d+'),
-            'is_pending'  => 1,
+            'is_pending'  => 0,
             'is_expired'  => 1,
         }};
 
@@ -772,6 +772,7 @@ subtest 'rejected and uploaded' => sub {
 
     $expected = {
         'proof_of_identity' => {
+            'is_pending' => 0,
             'is_expired' => 1,
             'documents'  => {
                 $doc_mapping->{'54321'} => {
@@ -851,6 +852,7 @@ subtest 'rejected and uploaded' => sub {
         'proof_of_identity' => {
             'expiry_date' => re('\d+'),
             'is_expired'  => 0,
+            'is_pending'  => 0,
             'documents'   => {
                 $doc_mapping->{'54321'} => {
                     'format'      => 'PNG',
@@ -887,6 +889,7 @@ subtest 'rejected and uploaded' => sub {
     $expected = {
         'proof_of_identity' => {
             'expiry_date' => re('\d+'),
+            'is_pending'  => 0,
             'is_expired'  => 1,
             'documents'   => {
                 $doc_mapping->{'54321'} => {

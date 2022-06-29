@@ -2,6 +2,8 @@ use strict;
 use warnings;
 
 use Test::More;
+use Log::Any::Test;
+use Log::Any qw($log);
 use Test::Deep;
 use Test::Exception;
 
@@ -9,6 +11,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::User;
 use BOM::User::IdentityVerification;
+
+use JSON::MaybeUTF8 qw( decode_json_utf8 );
 
 my $user_cr;
 my $user_mf;
@@ -217,7 +221,7 @@ subtest 'update document check' => sub {
         $idv_model_ccr->update_document_check({
             document_id => $document->{id},
             status      => 'verified',
-            messages    => ['gotcha'],
+            messages    => ['got', undef, 'cha'],
             provider    => 'smile_identity'
         });
     }
@@ -232,6 +236,11 @@ subtest 'update document check' => sub {
     is $document->{issuing_country},          'ng',                  'issuing country is correct';
     is $document->{document_expiration_date}, '2099-01-01 00:00:00', 'expiration date is correct';
     is $document->{is_checked},               1,                     'check detailes added is correct';
+    cmp_deeply decode_json_utf8($document->{status_messages}), ['got', undef, 'cha'], 'expected status messages';
+
+    my $document_id = $document->{id};
+    $log->contains_ok(qr/IdentityVerification is pushing a NULL status message, document_id=$document_id, provider=smile_identity/,
+        'Expected warning logged');
 
     throws_ok {
         local $SIG{__WARN__} = undef;

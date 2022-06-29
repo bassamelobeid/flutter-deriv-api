@@ -6,8 +6,10 @@ use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
 use Test::Exception;
+use Test::MockTime qw(set_fixed_time restore_time);
 
 use BOM::User::Client;
+use BOM::Config::Redis;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
@@ -63,7 +65,6 @@ subtest 'advertiser Registration' => sub {
     cmp_ok $advertiser_info->{name}, 'eq', $advertiser_name, "advertiser name";
 
     is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
-
 };
 
 subtest 'advertiser already age verified' => sub {
@@ -197,6 +198,65 @@ subtest 'show real name' => sub {
     is $details->{first_name}, undef, 'correct response for advertiser';
     is $details->{last_name},  undef, 'correct response for advertiser';
 
+};
+
+subtest 'online status' => sub {
+    my $redis = BOM::Config::Redis->redis_p2p_write;
+    set_fixed_time(1000);
+
+    my $client = BOM::Test::Helper::P2P::create_advertiser();
+    $redis->zadd('P2P::USERS_ONLINE', 910, $client->loginid);
+
+    cmp_deeply(
+        $client->p2p_advertiser_info,
+        superhashof({
+                is_online        => 1,
+                last_online_time => 910,
+            }
+        ),
+        'online at 90s'
+    );
+
+    $redis->zadd('P2P::USERS_ONLINE', 909, $client->loginid);
+
+    cmp_deeply(
+        $client->p2p_advertiser_info,
+        superhashof({
+                is_online        => 0,
+                last_online_time => 909,
+            }
+        ),
+        'offline at 91s'
+    );
+
+    restore_time();
+};
+
+subtest 'p2p_advertiser_info subscription' => sub {
+    my $advertiser1 = BOM::Test::Helper::P2P::create_advertiser;
+    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser;
+
+    my $id2   = $advertiser1->_p2p_advertisers(loginid => $advertiser2->loginid)->[0]{id};
+    my $info1 = $advertiser1->p2p_advertiser_info;
+    my $info2 = $advertiser1->p2p_advertiser_info(id => $id2);
+
+    ok !exists $info1->{client_loginid}, 'loginid not in reponse for self when not subscribe';
+    ok !exists $info2->{client_loginid}, 'loginid not in reponse for other when not subscribe';
+
+    cmp_deeply(
+        $advertiser1->p2p_advertiser_info(subscribe => 1),
+        {%$info1, client_loginid => $advertiser1->loginid},
+        'loginid is added to repsonse when subscribe to self'
+    );
+
+    cmp_deeply(
+        $advertiser1->p2p_advertiser_info(
+            id        => $id2,
+            subscribe => 1
+        ),
+        {%$info2, client_loginid => $advertiser2->loginid},
+        'loginid is added to repsonse when subscribe to other'
+    );
 };
 
 done_testing;

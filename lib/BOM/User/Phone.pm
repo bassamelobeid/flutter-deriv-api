@@ -1,6 +1,6 @@
 package BOM::User::Phone;
 
-use Number::Phone;
+use Number::Phone::Lib;
 
 =head1 Description
 
@@ -23,7 +23,7 @@ sub format_phone {
     # Number::Phone does not accept the 00 convention, so we map 00 to +
     $phone =~ s/^00/+/;
 
-    my $phone_obj = Number::Phone->new($phone);
+    my $phone_obj = Number::Phone::Lib->new($phone);
     # To keep numbers unique for duplicate check, we retain only the leading + and numbers
     my $formatted_phone = $phone_obj ? $phone_obj->format =~ s{[^0-9+]+}{}gr : '';
 

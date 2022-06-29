@@ -43,7 +43,7 @@ subtest 'initialization' => sub {
 };
 
 subtest "Client load and saving." => sub {
-    plan tests => 43;
+    plan tests => 45;
     # create client object
     lives_ok { $client = BOM::User::Client->new({'loginid' => $login_id}); }
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => $login_id})'";
@@ -77,6 +77,11 @@ subtest "Client load and saving." => sub {
     lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR0007'}); }
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => CR0007})'";
     is($client->fully_authenticated(), 1, "CR0007 - fully authenticated");
+
+    lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR0008'}); }
+    "Can create client object 'BOM::User::Client::get_instance({'loginid' => CR0008})'";
+    $client->set_authentication('IDV', {status => 'pass'});
+    is($client->fully_authenticated(), 1, "CR0008 - fully authenticated");
 
     my $client_details = {
         'loginid'            => 'CR5089',
@@ -258,6 +263,23 @@ subtest "format and validate" => sub {
 
     $args = {date_of_birth => '2010-15-15'};
     is $client->format_input_details($args)->{error}, 'InvalidDateOfBirth', 'InvalidDateOfBirth';
+
+    $args = {address_state => 'Dummy Value'};
+    is $client->format_input_details($args), undef, 'No error for invalid state without residence';
+    is $args->{address_state}, undef, 'Invalid state is removed if residence is empty';
+
+    $args = {
+        address_state => 'Dummy Value',
+        residence     => 'id'
+    };
+    is $client->format_input_details($args)->{error}, 'InvalidState', 'Correct error for invalid state';
+
+    $args = {
+        address_state => 'Sumatera',
+        residence     => 'id'
+    };
+    is $client->format_input_details($args), undef, 'No error for a valid state name with residence';
+    is $args->{address_state}, 'SM', 'State name is converted form text to code';
 
     $args = {date_of_birth => '2010-10-15'};
     is $client->validate_common_account_details($args)->{error}, 'BelowMinimumAge', 'validate_common_account_details: BelowMinimumAge';

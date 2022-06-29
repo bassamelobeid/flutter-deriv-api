@@ -14,6 +14,7 @@ use warnings;
 use Date::Utility;
 use JSON::MaybeUTF8 qw( encode_json_utf8 );
 use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 use BOM::Config::Redis;
 use BOM::Database::UserDB;
@@ -143,6 +144,14 @@ sub update_document_check {
     };
 
     die 'document_id is required' unless $document_id;
+
+    if (ref $messages eq 'ARRAY') {
+        for my $msg ($messages->@*) {
+            unless (defined $msg) {
+                $log->warnf('IdentityVerification is pushing a NULL status message, document_id=%d, provider=%s', $document_id, $provider);
+            }
+        }
+    }
 
     $messages        = encode_json_utf8($messages)                if $messages;
     $expiration_date = Date::Utility->new($expiration_date)->date if $expiration_date;

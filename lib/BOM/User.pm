@@ -16,14 +16,17 @@ use JSON::MaybeXS qw(encode_json decode_json);
 
 use BOM::MT5::User::Async;
 use BOM::Database::UserDB;
+use BOM::Database::Model::UserConnect;
 use BOM::User::Password;
 use BOM::User::AuditLog;
 use BOM::User::Static;
 use BOM::User::Utility;
 use BOM::User::Client;
 use BOM::User::Wallet;
+use BOM::User::Affiliate;
 use BOM::User::Onfido;
 use BOM::User::RiskScreen;
+use BOM::User::SocialResponsibility;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw(in_usd);
@@ -239,6 +242,26 @@ sub create_wallet {
     }
 }
 
+=head2 create_affiliate
+
+Creates a new affiliate account
+
+=over 4
+
+=item * C<args> new affiliate details
+
+=back
+
+=cut
+
+sub create_affiliate {
+    my ($self, %args) = @_;
+    $args{binary_user_id} = $self->{id};
+    my $client = BOM::User::Affiliate->register_and_return_new_client(\%args);
+    $self->add_client($client);
+    return $client;
+}
+
 =head2 login
 
 Check user credentials.
@@ -395,10 +418,10 @@ get clients given special landing company short name.
 sub clients_for_landing_company {
     my $self      = shift;
     my $lc_short  = shift // die 'need landing_company';
-    my @login_ids = grep { LandingCompany::Registry->check_valid_broker_short_code($self->broker_code_from_loginid($_)) } $self->bom_loginids;
+    my @login_ids = grep { LandingCompany::Registry->check_broker_from_loginid($_) } $self->bom_loginids;
 
     return map { $self->get_client_using_replica($_) }
-        grep { LandingCompany::Registry->get_by_loginid($_)->short eq $lc_short } @login_ids;
+        grep { LandingCompany::Registry->by_loginid($_)->short eq $lc_short } @login_ids;
 }
 
 =head2 bom_loginid_details
@@ -601,7 +624,7 @@ sub accounts_by_category {
     my (@enabled_accounts_fiat, @enabled_accounts_crypto, @virtual_accounts, @self_excluded_accounts, @disabled_accounts, @duplicated_accounts);
     foreach my $loginid (sort @$loginid_list) {
         # deleted broker code/not existing broker code then skip it to avoid couldn't init_db issue
-        unless (LandingCompany::Registry->check_valid_broker_short_code($self->broker_code_from_loginid($loginid))) {
+        unless (LandingCompany::Registry->check_broker_from_loginid($loginid)) {
             $log->warnf("Invalid login id $loginid");
             next;
         }
@@ -751,6 +774,7 @@ sub add_login_history {
 ################################################################################
 sub update_email_fields {
     my ($self, %args) = @_;
+    $args{email} = lc $args{email} if $args{email};
     my ($email, $email_consent, $email_verified) = $self->dbic->run(
         fixup => sub {
             $_->selectrow_array('select * from users.update_email_fields(?, ?, ?, ?)',
@@ -763,13 +787,29 @@ sub update_email_fields {
 }
 
 sub update_totp_fields {
-    my ($self,            %args)       = @_;
-    my ($is_totp_enabled, $secret_key) = $self->dbic->run(
+    my ($self, %args) = @_;
+
+    my $user_is_totp_enabled = $self->is_totp_enabled;
+
+    # if 2FA is enabled, we won't update the secret key
+    if ($args{secret_key} && $user_is_totp_enabled && ($args{is_totp_enabled} // 1)) {
+        return;
+    }
+
+    my ($new_is_totp_enabled, $secret_key) = $self->dbic->run(
         fixup => sub {
             $_->selectrow_array('select * from users.update_totp_fields(?, ?, ?)', undef, $self->{id}, $args{is_totp_enabled}, $args{secret_key});
         });
-    $self->{is_totp_enabled} = $is_totp_enabled;
+    $self->{is_totp_enabled} = $new_is_totp_enabled;
     $self->{secret_key}      = $secret_key;
+
+    # revoke tokens if 2FA is updated
+    if ($user_is_totp_enabled xor $new_is_totp_enabled) {
+        my $oauth = BOM::Database::Model::OAuth->new;
+        $oauth->revoke_tokens_by_loginid($_->loginid) for ($self->clients);
+        $oauth->revoke_refresh_tokens_by_user_id($self->id);
+    }
+
     return $self;
 }
 
@@ -880,17 +920,13 @@ sub logged_in_before_from_same_location {
     my $attempt_known = undef;
     try {
         $attempt_known = $auth_redis->hget($key, $entry);
-        if (!$attempt_known) {
-            # for backward compatibility with users who never changed their login.
-            my $last_attempt_in_db = $self->get_last_successful_login_history();
-            if (!$last_attempt_in_db) {
-                $attempt_known = 1;
-                return;
-            }
+        return $attempt_known if $attempt_known;
+        # for backward compatibility with users who never changed their login.
+        my $last_attempt_in_db = $self->get_last_successful_login_history();
+        return 1 unless $last_attempt_in_db;
 
-            my $last_attempt_entry = BOM::User::Utility::login_details_identifier($last_attempt_in_db->{environment});
-            $attempt_known = 1 if $last_attempt_entry eq $entry;
-        }
+        my $last_attempt_entry = BOM::User::Utility::login_details_identifier($last_attempt_in_db->{environment});
+        return 1 if $last_attempt_entry eq $entry;
     } catch {
         $log->warnf("Failed to get user login entry from redis, error: %s", shift);
     }
@@ -1233,9 +1269,47 @@ sub update_user_password {
     my $user_id = $self->{id};
     $oauth->revoke_refresh_tokens_by_user_id($user_id);
 
-    $log = $is_reset_password ? 'your password has been reset' : 'your password has been changed';
+    $log = $is_reset_password ? 'Password has been reset' : 'Password has been changed';
     BOM::User::AuditLog::log($log, $self->email);
 
+    return 1;
+}
+
+=head2 update_email
+
+Updates user and client emails for a given user.
+
+=over 4
+
+=item * C<new_email> - new email
+
+=back
+
+Returns 1 on success
+
+=cut
+
+sub update_email {
+    my ($self, $new_email) = @_;
+
+    $new_email = lc $new_email;
+    $self->update_email_fields(email => $new_email);
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my @clients = $self->clients(
+        include_self_closed => 1,
+        include_disabled    => 1,
+        include_duplicated  => 1,
+    );
+    for my $client (@clients) {
+        $client->email($new_email);
+        $client->save;
+        $oauth->revoke_tokens_by_loginid($client->loginid);
+    }
+
+    # revoke refresh_token
+    my $user_id = $self->{id};
+    $oauth->revoke_refresh_tokens_by_user_id($user_id);
+    BOM::User::AuditLog::log('Email has been changed', $self->email);
     return 1;
 }
 
@@ -1411,32 +1485,6 @@ sub get_account_by_loginid {
     };
 }
 
-=head2 broker_code_from_loginid
-
-    $user->broker_code_from_loginid($loginid);
-
-Get the broker short code from login id
-
-Takes the following parameter
-
-=over 4
-
-=item * C<loginid>
-
-=back
-
-Returns broker code
-
-=cut
-
-sub broker_code_from_loginid {
-    my ($self, $loginid) = @_;
-
-    my ($broker_code) = $loginid =~ /^([A-Z]+)[0-9]+$/;
-
-    return $broker_code;
-}
-
 =head2 linked_wallet
 
 Calls a db function to get a list of linked wallet for a user.
@@ -1583,8 +1631,8 @@ sub update_edd_status {
 
     return $self->dbic->run(
         fixup => sub {
-            $_->do('SELECT users.update_edd_status(?, ?, ?, ?, ?, ?)',
-                undef, $self->{id}, @args{qw/status start_date last_review_date average_earnings comment/});
+            $_->do('SELECT users.update_edd_status(?, ?, ?, ?, ?, ?, ?)',
+                undef, $self->{id}, @args{qw/status start_date last_review_date average_earnings comment reason/});
         });
 }
 
@@ -1725,6 +1773,26 @@ sub affiliate_coc_approval_required {
     return undef unless defined $self->affiliate->{coc_approval};
 
     return $self->affiliate->{coc_approval} ? 0 : 1;
+}
+
+=head2 unlink_social
+
+Returns 1 if user was unlinked for social providers.
+Returns undef if user as no social providers.
+
+=cut
+
+sub unlink_social {
+    my $user = shift;
+
+    # remove social signup flag
+    $user->update_has_social_signup(0);
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    my @providers    = $user_connect->get_connects_by_user_id($user->{id});
+
+    # remove all other social accounts
+    $user_connect->remove_connect($user->{id}, $_) for @providers;
+    return 1;
 }
 
 1;

@@ -17,8 +17,12 @@ use Locale::Codes::Country qw(country_code2code);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use List::Util qw(first uniq);
 use BOM::Config::Redis;
+use BOM::Platform::Event::Emitter;
+use Log::Any qw($log);
 
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
+use constant ONFIDO_REQUEST_PENDING_PREFIX  => 'ONFIDO::REQUEST::PENDING::PER::USER::';
+use constant ONFIDO_REQUEST_PENDING_TTL     => 86400;                                     # one day in second
 
 =head2 store_onfido_applicant
 
@@ -390,14 +394,16 @@ Returns,
 =cut
 
 sub get_latest_check {
-    my $client                     = shift;
+    my $client = shift;
+
+    my $country_code               = uc($client->place_of_birth || $client->residence // '');
     my $report_document_sub_result = '';
     my $report_document_status     = '';
     my $user_check;
     my $user_applicant;
 
     try {
-        $user_applicant = get_all_user_onfido_applicant($client->binary_user_id);
+        $user_applicant = get_all_user_onfido_applicant($client->binary_user_id) if BOM::Config::Onfido::is_country_supported($country_code);
     } catch ($error) {
         $user_applicant = undef;
     }
@@ -633,7 +639,8 @@ Returns,
 =cut
 
 sub submissions_left {
-    my $client           = shift;
+    my $client = shift;
+
     my $redis            = BOM::Config::Redis::redis_events();
     my $request_per_user = $redis->get(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id) // 0;
     my $submissions_left = limit_per_user() - $request_per_user;
@@ -719,9 +726,116 @@ sub reported_properties {
 
     my ($report)   = grep { $_->{api_name} eq 'document' } values get_all_onfido_reports($client->binary_user_id, $check_id)->%*;
     my $properties = decode_json_utf8($report->{properties} // '{}');
-    my $fields     = [qw/first_name last_name/];
+    my $fields     = [qw/first_name last_name date_of_birth/];
 
     return +{map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } $fields->@*};
+}
+
+=head2 ready_for_authentication
+
+Fires the infamous event to perform the applicant check request.
+
+This function will also take care of counter increasing and everything
+the the frontend may need to properly render the POI page.
+
+It takes:
+
+=over 4
+
+=item * C<$client> - a client instance
+
+=item * C<$args> - an arrayref of arguments, we are particularly interested in:
+
+=over 4
+
+=item * C<documents> - an arrayref Onfido documents ids (optional)
+
+=back
+
+=back
+
+Returns C<1>.
+
+=cut
+
+sub ready_for_authentication {
+    my ($client, $args) = @_;
+    my $redis = BOM::Config::Redis::redis_events();
+
+    unless ($redis->set(ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id, 1, 'NX', 'EX', ONFIDO_REQUEST_PENDING_TTL)) {
+        # this should not happen as we'd expect the frontend to block further Onfido requests
+        $log->warnf('Unexpected Onfido request when pending flag is still alive, user: %d', $client->binary_user_id);
+        return 0;
+    }
+
+    $redis->multi;
+    $redis->incr(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id);
+    $redis->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, timeout_per_user());
+    $redis->exec;
+
+    my $user_applicant = get_user_onfido_applicant($client->binary_user_id);
+    my $documents      = $args->{documents};
+
+    BOM::Platform::Event::Emitter::emit(
+        ready_for_authentication => {
+            loginid      => $client->loginid,
+            applicant_id => $user_applicant->{id},
+            defined $documents ? (documents => $documents) : (),
+        });
+
+    return 1;
+}
+
+=head2 pending_request
+
+Determines whether there is a pending Onfido request.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$user_id> - the binary user id we are dealing with
+
+=back
+
+Returns a bool scalar.
+
+=cut
+
+sub pending_request {
+    my ($user_id) = @_;
+
+    my $redis = BOM::Config::Redis::redis_events();
+
+    return $redis->get(ONFIDO_REQUEST_PENDING_PREFIX . $user_id);
+}
+
+=head2 maybe_pending
+
+Use this function to return the `pending` status for Onfido.
+
+Some scenarios may cancel the `pending` and would yield a `none` instead.
+
+It takes the following:
+
+=over 4
+
+=item * C<$client> - the instance of L<BOM::User::Client>
+
+=back
+
+Returns either C<pending> or C<none>
+
+=cut
+
+sub maybe_pending {
+    my ($client) = @_;
+
+    my $country_code = uc($client->place_of_birth || $client->residence // '');
+
+    return 'pending' if BOM::Config::Onfido::is_country_supported($country_code);
+
+    return 'none';
 }
 
 1;
