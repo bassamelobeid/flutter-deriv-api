@@ -5,7 +5,7 @@ use warnings;
 use Moo;
 
 use JSON::MaybeXS qw(encode_json decode_json);
-use List::Util    qw(any all);
+use List::Util qw(any all);
 
 =head1 NAME
 

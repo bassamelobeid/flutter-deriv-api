@@ -7,15 +7,15 @@ no indirect;
 use Syntax::Keyword::Try;
 use YAML::XS;
 use HTTP::Tiny;
-use JSON::MaybeUTF8        qw(:v1);
-use List::Util             qw(first any uniq);
-use Array::Utils           qw(array_minus);
-use Format::Util::Numbers  qw(financialrounding formatnumber);
-use Digest::SHA1           qw(sha1_hex);
+use JSON::MaybeUTF8 qw(:v1);
+use List::Util qw(first any uniq);
+use Array::Utils qw(array_minus);
+use Format::Util::Numbers qw(financialrounding formatnumber);
+use Digest::SHA1 qw(sha1_hex);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Event::Emitter;
 use BOM::Config;
-use Log::Any                   qw($log);
+use Log::Any qw($log);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use BOM::Config::Redis;
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -169,8 +169,9 @@ sub new_account {
                 and $_->{type} eq 'CLIENT'
                 and $_->{status} eq 'FULL_TRADING'
                 and any { $_->{category} eq 'Trading' and $_->{value} eq $trading_category }
-                ($_->{categories} // [])->@*
-        } ($dxclient->{accounts} // [])->@*;
+            ($_->{categories} // [])->@*
+        }
+        ($dxclient->{accounts} // [])->@*;
         die +{
             error_code     => 'DXExistingAccount',
             message_params => [$existing->{account_code}]} if $existing;
@@ -465,7 +466,7 @@ sub deposit {
     try {
         $txn = $self->client_payment(
             payment_type => 'dxtrade_transfer',
-            amount       => -$args{amount},        # negative!
+            amount       => -$args{amount},                                     # negative!
             fees         => $tx_amounts->{fees},
             remark       => $remark,
             txn_details  => \%txn_details,

@@ -25,7 +25,7 @@ use IO::Socket::IP;
 use BOM::User::Client;
 use BOM::User;
 
-use DataDog::DogStatsd::Helper       qw(stats_timing stats_gauge stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge stats_inc);
 use ExchangeRates::CurrencyConverter qw(in_usd);
 
 my $sock;

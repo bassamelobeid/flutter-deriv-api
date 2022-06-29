@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use List::Util      qw(any);
+use List::Util qw(any);
 use Syntax::Keyword::Try;
 
 use BOM::User;

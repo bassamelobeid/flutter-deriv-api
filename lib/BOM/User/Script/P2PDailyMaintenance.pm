@@ -20,7 +20,7 @@ use BOM::User::Utility;
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
 use Date::Utility;
-use List::Util      qw(uniq);
+use List::Util qw(uniq);
 use JSON::MaybeUTF8 qw(:v1);
 use Brands;
 
@@ -104,7 +104,7 @@ sub run {
 
                     if ($is_archived) {
                         push $archived_ads->{$advertiser_loginid}->@*, $id;
-                        push @advertiser_ids,                          $advertiser_id;
+                        push @advertiser_ids, $advertiser_id;
                     }
                 }
 

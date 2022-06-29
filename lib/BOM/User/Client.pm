@@ -13,14 +13,14 @@ use Syntax::Keyword::Try;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use Date::Utility;
-use List::Util   qw(all first any min max none pairgrep uniq reduce);
+use List::Util qw(all first any min max none pairgrep uniq reduce);
 use Array::Utils qw(array_minus intersect);
 use Locale::Country::Extra;
-use Text::Trim             qw(trim);
+use Text::Trim qw(trim);
 use BOM::Platform::Context qw(localize request);
-use YAML::XS               qw(LoadFile);
+use YAML::XS qw(LoadFile);
 use Path::Tiny;
-use Format::Util::Numbers            qw(roundcommon financialrounding formatnumber);
+use Format::Util::Numbers qw(roundcommon financialrounding formatnumber);
 use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
 use JSON::MaybeXS;
 use Encode;
@@ -2818,7 +2818,8 @@ sub p2p_order_create {
             my $invalid_method = first {
                 my $m = $_;
                 none { $m eq $_ } $advert->{payment_method_names}->@*
-            } @order_methods;
+            }
+            @order_methods;
 
             if ($invalid_method) {
                 my $method_defs = $self->p2p_payment_methods(all => 1);
@@ -3941,15 +3942,18 @@ sub _validate_advert_duplicates {
             if any {
             sprintf('%.' . P2P_RATE_PRECISION . 'f', $_->{rate}) == sprintf('%.' . P2P_RATE_PRECISION . 'f', $param{rate})
                 and $_->{rate_type} eq $param{rate_type}
-            } @active_ads_same_type;
+        }
+        @active_ads_same_type;
     }
 
     # cannot have an ad with overlapping min/max amounts and same type + currencies
     die +{error_code => 'AdvertSameLimits'} if any {
-               ($param{min_order_amount} >= $_->{min_order_amount} and $param{min_order_amount} <= $_->{max_order_amount})
+        ($param{min_order_amount} >= $_->{min_order_amount} and $param{min_order_amount} <= $_->{max_order_amount})
             or ($param{max_order_amount} >= $_->{min_order_amount} and $param{max_order_amount} <= $_->{max_order_amount})
-            or ($param{max_order_amount} >= $_->{max_order_amount} and $param{min_order_amount} <= $_->{min_order_amount})
-    } @active_ads_same_type;
+            or
+            ($param{max_order_amount} >= $_->{max_order_amount} and $param{min_order_amount} <= $_->{min_order_amount})
+    }
+    @active_ads_same_type;
 }
 
 =head2 _validate_advert_payment_method_type
@@ -7674,7 +7678,8 @@ sub allow_paymentagent_withdrawal_legacy {
         unless any {
         BOM::Database::DataMapper::Payment->new({'client_loginid' => $_})
             ->get_client_payment_count_by({payment_gateway_code => ['doughflow', 'bank_wire']})
-        } @all_loginids;
+    }
+    @all_loginids;
 
     return 1;
 }

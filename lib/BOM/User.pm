@@ -8,11 +8,11 @@ use feature 'state';
 use Syntax::Keyword::Try;
 use Date::Utility;
 use Format::Util::Numbers qw(formatnumber);
-use List::Util            qw(first any all minstr);
-use Scalar::Util          qw(blessed looks_like_number);
-use Carp                  qw(croak carp);
-use Log::Any              qw($log);
-use JSON::MaybeXS         qw(encode_json decode_json);
+use List::Util qw(first any all minstr);
+use Scalar::Util qw(blessed looks_like_number);
+use Carp qw(croak carp);
+use Log::Any qw($log);
+use JSON::MaybeXS qw(encode_json decode_json);
 
 use BOM::MT5::User::Async;
 use BOM::Database::UserDB;
@@ -33,7 +33,7 @@ use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::Platform::Redis;
 use LandingCompany::Registry;
 use BOM::Platform::Context qw(request);
-use Exporter               qw( import );
+use Exporter qw( import );
 our @EXPORT_OK = qw( is_payment_agents_suspended_in_country );
 
 # Backoffice Application Id used in some login cases
@@ -364,7 +364,8 @@ sub after_login {
     my $gamstop_client = first {
         my $client = $_;
         any { $client->landing_company->short eq $_ } ($countries_list->{$client->residence}->{gamstop_company} // [])->@*
-    } @clients;
+    }
+    @clients;
 
     BOM::User::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
 
@@ -577,7 +578,8 @@ sub has_mt5_regulated_account {
                 $_->is_done
                     && ($_->result->{group} =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_financial)/
                     || $_->result->{group} =~ /^real(\\p01_ts)?(?:01|02|03|04)\\financial\\(?!svg)/)
-            } @_;
+            }
+            @_;
             return Future->done(0);
         })->get;
 }
@@ -1749,7 +1751,7 @@ sub set_affiliate_coc_approval {
         fixup => sub {
             $_->do(
                 'SELECT users.set_affiliate_coc_approval(?, ?, ?, ?)',
-                undef, $self->{id}, $self->affiliate->{affiliate_id},
+                undef,         $self->{id}, $self->affiliate->{affiliate_id},
                 $coc_approval, $coc_version
             );
         });
