@@ -217,9 +217,9 @@ top-up batch withdrawal so that
 =cut
 
 sub top_up_eth_batch_withdrawal_contract {
-    my ($amount)    = @_;
-    my $currency    = BOM::CTC::Currency->new(currency_code => 'ETH');
-    my $is_unlocked = $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address},
+    my ($amount) = @_;
+    my $currency = BOM::CTC::Currency->new(currency_code => 'ETH');
+    $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address},
         $currency->account_config->{account}->{passphrase}, 0);
     my $base_fee_calc = $currency->get_EIP1559_feecap();
 
