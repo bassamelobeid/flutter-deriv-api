@@ -250,6 +250,15 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::backoffice
         }
+    },
+    {
+        name => 'currency_config.yml',
+        args => {
+            expected_config => {
+                currency_pairs => []
+            },
+            config => \&BOM::Config::currency_pairs_backoffice
+        }
     }
     ];
 
