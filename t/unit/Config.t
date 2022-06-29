@@ -341,11 +341,6 @@ for my $test_parameter (@$test_parameters) {
     subtest "Test YAML return correct structure for $test_parameter->{name}", \&yaml_structure_validator, $test_parameter->{args};
 }
 
-subtest 'Config stores state' => sub {
-    is(refaddr BOM::Config::node(), refaddr BOM::Config::node(), 'Returns the same object');
-
-    # these tests for all configs in BOM::Config.pm
-};
 
 sub yaml_structure_validator {
     my $args            = shift;
