@@ -225,6 +225,31 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::randsrv
         }
+    },
+    {
+        name => 'backoffice.yml',
+        args => {
+            expected_config => {
+                directory => {
+                    tmp_gif => '',
+                    tmp => ''
+                },
+                log => {
+                    deposit => '',
+                    withdraw_broker => '',
+                    staff => '',
+                    staff_dir => '',
+                    fsave_complete => ''
+                },
+                experian_document_s3 => {
+                    aws_bucket => '',
+                    aws_region => '',
+                    aws_access_key_id => '',
+                    aws_secret_access_key => ''
+                }
+            },
+            config => \&BOM::Config::backoffice
+        }
     }
     ];
 
