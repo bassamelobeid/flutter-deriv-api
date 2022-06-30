@@ -3,7 +3,7 @@ use Date::Utility;
 use Test::Fatal;
 use Test::MockModule;
 use Test::Deep;
-use Test::MockTime qw/set_relative_time restore_time/;
+use Test::MockTime qw/restore_time set_fixed_time/;
 use Digest::SHA qw/sha256_hex/;
 
 use BOM::Config::Runtime;
@@ -122,6 +122,8 @@ subtest 'payloads' => sub {
 };
 
 subtest 'redis storage' => sub {
+    my $time = time;
+
     my $payment = {
         pp => 'Test',
         pm => 'Capy',
@@ -132,7 +134,7 @@ subtest 'redis storage' => sub {
     subtest 'store some payments' => sub {
         ok $pr->add_payment($payment->%*);
 
-        set_relative_time(86400 * -1);    # one day ago
+        set_fixed_time($time - 86400);
 
         ok $pr->add_payment($payment->%*, pt => 'CreditCard'), 'add payment';
 
@@ -141,12 +143,12 @@ subtest 'redis storage' => sub {
         ok $pr->add_payment($payment->%*, pt => 'CreditXard'), 'add payment';
         ok $pr->add_payment($payment->%*, pt => 'APM'),        'add payment';
 
-        set_relative_time(86400 * -2);    # two days ago
+        set_fixed_time($time - 86400 * 2);
 
         ok $pr->add_payment($payment->%*, pp => 'Beta'),  'add payment';
         ok $pr->add_payment($payment->%*, pp => 'Theta'), 'add payment';
 
-        set_relative_time(86400 * -3);    # 3 days ago
+        set_fixed_time($time - 86400 * 3);
 
         ok $pr->add_payment($payment->%*, pm => 'Alpha'), 'add payment';
 
@@ -158,7 +160,7 @@ subtest 'redis storage' => sub {
             'add payment';
 
         subtest 'retrieve payments' => sub {
-            restore_time();
+            set_fixed_time($time);
             cmp_deeply $pr->get_payments(0), [], 'Zero payments';
             cmp_deeply $pr->get_payments(1 + BOM::User::PaymentRecord::LIFETIME_IN_DAYS), [], 'Gone too far away';
 
@@ -328,25 +330,25 @@ subtest 'redis storage' => sub {
 
                 is scalar $redis->zrangebyscore($pr->storage_key, '-Inf', '+Inf')->@*, 9, 'No records were deleted';
 
-                set_relative_time(86400 * 87);    # jump 87 days into the future
+                set_fixed_time($time + 86400 * 87);    # jump 87 days into the future
 
                 ok BOM::User::PaymentRecord::trimmer();
 
                 is scalar $redis->zrangebyscore($pr->storage_key, '-Inf', '+Inf')->@*, 7, 'Records added 3 days (relative) ago were trimmed';
 
-                set_relative_time(86400 * 88);    # jump 88 days into the future
+                set_fixed_time($time + 86400 * 88);    # jump 88 days into the future
 
                 ok BOM::User::PaymentRecord::trimmer();
 
                 is scalar $redis->zrangebyscore($pr->storage_key, '-Inf', '+Inf')->@*, 5, 'Records added 2 days (relative) ago were trimmed';
 
-                set_relative_time(86400 * 89);    # jump 89 days into the future
+                set_fixed_time($time + 86400 * 89);    # jump 89 days into the future
 
                 ok BOM::User::PaymentRecord::trimmer();
 
                 is scalar $redis->zrangebyscore($pr->storage_key, '-Inf', '+Inf')->@*, 2, 'Records added yesterday (relative) ago were trimmed';
 
-                set_relative_time(86400 * 90);    # jump 90 days into the future
+                set_fixed_time($time + 86400 * 90);    # jump 90 days into the future
 
                 ok BOM::User::PaymentRecord::trimmer();
 
@@ -526,7 +528,7 @@ subtest '5 differents credit cards' => sub {
 
     my $payments = $pr->get_raw_payments(10);
 
-    cmp_deeply $payments,
+    cmp_bag $payments,
         [
         'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
         'bara|capy|CreditCard|0x05'
@@ -534,7 +536,7 @@ subtest '5 differents credit cards' => sub {
         'expected payments';
 
     my $filtered = $pr->filter_payments({pt => 'CreditCard'}, $payments);
-    cmp_deeply $filtered,
+    cmp_bag $filtered,
         [
         'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
         'bara|capy|CreditCard|0x05'
@@ -617,7 +619,7 @@ subtest '5 differents credit cards (some CC repeated)' => sub {
 
     my $payments = $pr->get_raw_payments(10);
 
-    cmp_deeply $payments,
+    cmp_bag $payments,
         [
         'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
         'bara|capy|CreditCard|0x05'
@@ -625,7 +627,7 @@ subtest '5 differents credit cards (some CC repeated)' => sub {
         'expected payments';
 
     my $filtered = $pr->filter_payments({pt => 'CreditCard'}, $payments);
-    cmp_deeply $filtered,
+    cmp_bag $filtered,
         [
         'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
         'bara|capy|CreditCard|0x05'
@@ -741,7 +743,7 @@ subtest '5 differents credit cards (different pm/pp)' => sub {
 
     my $payments = $pr->get_raw_payments(10);
 
-    cmp_deeply $payments,
+    cmp_bag $payments,
         [
         'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
         'bara|capy|CreditCard|0x05', 'bara|kapy|CreditCard|0x01', 'bara|kapy|CreditCard|0x02', 'bara|kapy|CreditCard|0x03',
@@ -751,7 +753,7 @@ subtest '5 differents credit cards (different pm/pp)' => sub {
         'expected payments';
 
     my $filtered = $pr->filter_payments({pt => 'CreditCard'}, $payments);
-    cmp_deeply $filtered,
+    cmp_bag $filtered,
         [
         'bara|capy|CreditCard|0x01', 'bara|capy|CreditCard|0x02', 'bara|capy|CreditCard|0x03', 'bara|capy|CreditCard|0x04',
         'bara|capy|CreditCard|0x05', 'bara|kapy|CreditCard|0x01', 'bara|kapy|CreditCard|0x02', 'bara|kapy|CreditCard|0x03',
