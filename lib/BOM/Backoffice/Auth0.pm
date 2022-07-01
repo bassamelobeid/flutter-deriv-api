@@ -1,14 +1,21 @@
 package BOM::Backoffice::Auth0;
+
 use warnings;
 use strict;
+
 use Mojo::UserAgent;
 use JSON::MaybeUTF8 qw(:v1);
+use List::Util qw(any);
+
 use BOM::Config::Runtime;
 use BOM::Config;
 use BOM::User::AuditLog;
 use BOM::Config::Redis;
-
 use BOM::Backoffice::Utility;
+
+use constant WRITE_GROUPS => qw(
+    AntiFraud CSWrite COMPLIANCE P2PWrite Payments QuantsWrite
+);
 
 sub exchange_code_for_token {
     my $code = shift;
@@ -135,6 +142,31 @@ Check if a staff is logged in, redirect to the login page otherwise.
 sub get_staff {
     BOM::Backoffice::Utility::redirect_login() unless my $staff = check_staff();
     return $staff;
+}
+
+=head2 has_write_access
+
+Check if the staff has write access
+
+=cut
+
+sub has_write_access {
+    my $staff = get_staff();
+
+    my $staffname = $staff->{nickname};
+    if ($staff) {
+        if (not BOM::Config::on_production()) {
+            return 1;
+        }
+        foreach my $group (@{$staff->{groups}}) {
+            if (any { $_ eq $group } WRITE_GROUPS) {
+                BOM::User::AuditLog::log("successful write access requested by $staffname");
+                return 1;
+            }
+        }
+    }
+    BOM::User::AuditLog::log("unauthorized write access requested by $staffname");
+    return 0;
 }
 
 1;

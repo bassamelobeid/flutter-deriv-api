@@ -52,7 +52,6 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 
 BOM::Backoffice::Sysinit::init();
-my %input = %{request()->params};
 PrintContentType();
 
 # Once a day we have zombie apocalipsis at backoffice production
@@ -81,6 +80,7 @@ if (open my $mime_defs, '<', '/etc/mime.types') {
 }
 my $dbloc = BOM::Config::Runtime->instance->app_config->system->directory->db;
 
+my %input   = %{request()->params};
 my %details = get_client_details(\%input, 'backoffice/f_clientloginid_edit.cgi');
 
 my $client          = $details{client};
@@ -98,6 +98,11 @@ my $loginid         = $client->loginid;
 my $aff_mt_accounts = $details{affiliate_mt5_accounts};
 my $dx_logins       = $details{dx_logins};
 my $loginid_details = $details{loginid_details};
+
+if (my $error_message = write_operation_error()) {
+    print "<p class=\"notify notify--warning\">$error_message</p>";
+    code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+}
 
 my %doc_types_categories = $client->documents->categories->%*;
 my @poi_doctypes         = $client->documents->poi_types->@*;

@@ -29,6 +29,10 @@ my $reason             = request()->param('untrusted_reason') // '';
 my $additional_info    = request()->param('additional_info');
 my $p2p_approved       = request()->param('p2p_approved');
 
+if (my $error_message = write_operation_error()) {
+    print_error_and_exit($error_message);
+}
+
 # check invalid reason
 print_error_and_exit("Reason is not specified.") if ($reason =~ /SELECT A REASON/);
 

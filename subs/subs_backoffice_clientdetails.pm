@@ -2544,4 +2544,17 @@ sub p2p_advertiser_approval_check {
     }
 }
 
+=head2 write_operation_error
+
+Returns an error if the logged in user tries to perform
+an unauthorized update/write operation
+
+=cut
+
+sub write_operation_error {
+    return "You are not authorized to update client details" if (request()->http_method eq 'POST' and not BOM::Backoffice::Auth0::has_write_access());
+
+    return undef;
+}
+
 1;
