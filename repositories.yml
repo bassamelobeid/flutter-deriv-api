@@ -6,7 +6,6 @@
 - regentmarkets/bom-feed
 - regentmarkets/bom-populator
 - regentmarkets/bom-postgres
-- regentmarkets/bom-websocket-tests
 - binary-com/translations-websockets-api
 - regentmarkets/bom-market
 - regentmarkets/php-mt5-webapi
