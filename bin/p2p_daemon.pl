@@ -56,13 +56,14 @@ use constant {
     # So if bom-events fails and does not delete them, the job will run again after this time.
     PROCESSING_RETRY => 30,
     # redis keys
-    P2P_ORDER_DISPUTED_AT        => 'P2P::ORDER::DISPUTED_AT',
-    P2P_ORDER_EXPIRES_AT         => 'P2P::ORDER::EXPIRES_AT',
-    P2P_ORDER_TIMEDOUT_AT        => 'P2P::ORDER::TIMEDOUT_AT',
-    P2P_ADVERTISER_BLOCK_ENDS_AT => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
-    P2P_USERS_ONLINE             => 'P2P::USERS_ONLINE',
-    P2P_USERS_ONLINE_LATEST      => 'P2P::USERS_ONLINE_LATEST',
-    P2P_ONLINE_PERIOD            => 90,
+    P2P_ORDER_DISPUTED_AT         => 'P2P::ORDER::DISPUTED_AT',
+    P2P_ORDER_EXPIRES_AT          => 'P2P::ORDER::EXPIRES_AT',
+    P2P_ORDER_TIMEDOUT_AT         => 'P2P::ORDER::TIMEDOUT_AT',
+    P2P_ADVERTISER_BLOCK_ENDS_AT  => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
+    P2P_ORDER_REVIEWABLE_START_AT => 'P2P::ORDER::REVIEWABLE_START_AT',
+    P2P_USERS_ONLINE              => 'P2P::USERS_ONLINE',
+    P2P_USERS_ONLINE_LATEST       => 'P2P::USERS_ONLINE_LATEST',
+    P2P_ONLINE_PERIOD             => 90,
 };
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -188,6 +189,25 @@ sub on_tick {
                 client_loginid => $client_loginid,
             });
         $log->debugf('Order %s for %s has reached timeout refund', $order_id, $client_loginid);
+    }
+
+    # Review period ended
+    my $review_expiry = $epoch_now - ($app_config->payments->p2p->review_period * 60 * 60) - 5;    # wait for 5 seconds
+    $p2p_redis->multi;
+    $p2p_redis->zrangebyscore(P2P_ORDER_REVIEWABLE_START_AT, '-Inf', $review_expiry);
+    $p2p_redis->zremrangebyscore(P2P_ORDER_REVIEWABLE_START_AT, '-Inf', $review_expiry);
+    my @expired_review_orders = $p2p_redis->exec->[0]->@*;
+
+    for my $item (@expired_review_orders) {
+        # Item is P2P_ORDER_ID|CLIENT_LOGINID
+        my ($order_id, $loginid) = split(/\|/, $item);
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_updated => {
+                order_id       => $order_id,
+                client_loginid => $loginid,
+                self_only      => 1,
+            });
+        $log->debugf('Review period for %s on order %s has ended', $loginid, $order_id);
     }
 
     # find active advert subscription channels

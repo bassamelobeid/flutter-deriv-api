@@ -190,6 +190,7 @@ async sub order_updated {
     for my $client_type (qw(advertiser_loginid client_loginid)) {
         my $cur_client = $client;
         if ($order->{$client_type} ne $client->loginid) {
+            next if $data->{self_only};
             $cur_client = BOM::User::Client->new({loginid => $order->{$client_type}});
         }
 

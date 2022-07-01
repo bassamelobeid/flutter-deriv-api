@@ -57,6 +57,17 @@ my @data_for_notification_tests = ({
         expected => $expected_data,
     },
     {
+        name  => 'order updated (self_only = 1)',
+        event => 'p2p_order_updated',
+        data  => {
+            client_loginid => $client->loginid,
+            order_id       => $order->{id},
+            self_only      => 1,
+        },
+        channel  => join(q{::} => ('P2P::ORDER::NOTIFICATION', uc($client->broker), uc($client->residence), uc($client->currency))),
+        expected => [{$client->p2p_order_info(id => $order->{id})->%*, client_loginid => $client->loginid}],
+    },
+    {
         name  => 'advertiser updated (self)',
         event => 'p2p_advertiser_updated',
         data  => {
