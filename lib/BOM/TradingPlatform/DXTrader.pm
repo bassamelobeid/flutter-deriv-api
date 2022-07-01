@@ -423,6 +423,8 @@ Takes the following arguments as named parameters:
 
 =item * C<to_account>. Our dxtrade account id.
 
+=item * C<from_account>. Source account to deposit towards to_account.
+
 =back
 
 Returns transaction id in hashref.
@@ -488,6 +490,8 @@ sub deposit {
             id            => $self->unique_id,                        # must be unique for deposits on this login
             amount        => $tx_amounts->{recv_amount},
             currency      => $account->{currency},
+            defined($args{from_account}) ? (description => $args{from_account} . '_' . $args{to_account} . '#' . $txn->transaction_id) : (),
+
         );
     } catch {
         die +{error_code => 'DXDepositIncomplete'};
@@ -526,6 +530,8 @@ Takes the following arguments as named parameters:
 
 =item * C<from_account>. Our dxtrade account id.
 
+=item * C<to_account>. Target account to deposit towards after withdraw from from_account.
+
 =back
 
 Returns transaction id in hashref.
@@ -561,6 +567,7 @@ sub withdraw {
         id            => $self->unique_id,                        # must be unique for withdrawals on this login
         amount        => $args{amount},
         currency      => $account->{currency},
+        defined($args{to_account}) ? (description => $args{from_account} . '_' . $args{to_account}) : (),
     );
 
     my $resp = $self->call_api(%call_args, quiet => 1);
