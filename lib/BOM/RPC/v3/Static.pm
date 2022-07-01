@@ -373,6 +373,7 @@ rpc website_status => sub {
                     or $app_config->system->suspend->p2p
             ) ? 1 : 0,
             payment_methods_enabled => $p2p_config->payment_methods_enabled,
+            review_period           => $p2p_config->review_period,
             fixed_rate_adverts      => $p2p_advert_config->{fixed_ads},
             float_rate_adverts      => $p2p_advert_config->{float_ads},
             float_rate_offset_limit => $p2p_advert_config->{max_rate_range} / 2,

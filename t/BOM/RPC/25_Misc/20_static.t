@@ -385,6 +385,7 @@ subtest 'p2p_config' => sub {
         float_rate_adverts          => 'list_only',
         float_rate_offset_limit     => num(4.1),
         fixed_rate_adverts_end_date => '2012-02-03',
+        review_period               => 13,
     );
 
     $p2p_config->available(1);
@@ -398,6 +399,7 @@ subtest 'p2p_config' => sub {
     $p2p_config->limits->maximum_order($vals{maximum_order_amount});
     $p2p_config->limits->count_per_day_per_client($vals{order_daily_limit});
     $p2p_config->order_timeout($vals{order_payment_period} * 60);
+    $p2p_config->review_period($vals{review_period});
     $p2p_config->enabled(1);
     $config->system->suspend->p2p(0);
     $p2p_config->payment_methods_enabled(1);
