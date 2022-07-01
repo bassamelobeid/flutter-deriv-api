@@ -10,7 +10,6 @@ use Test::Pod::CoverageChange;
 
 my $allowed_naked_packages = {
     'BOM::MyAffiliates'                            => 4,
-    'BOM::MyAffiliatesApp'                         => 1,
     'BOM::MyAffiliates::BackfillManager'           => 4,
     'BOM::MyAffiliates::Reporter'                  => 16,
     'BOM::MyAffiliates::GenerateRegistrationDaily' => 12,
@@ -18,7 +17,9 @@ my $allowed_naked_packages = {
     'BOM::MyAffiliates::PaymentToAccountManager'   => 8,
     'BOM::MyAffiliates::TurnoverReporter'          => 3,
     'BOM::MyAffiliates::MultiplierReporter'        => 4,
-    'BOM::MyAffiliatesApp::Controller'             => 6,
+    'BOM::MyAffiliatesApp::Controller'             => 2,
+    'BOM::MyAffiliates::LookbackReporter'          => 1,
+
 };
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);

@@ -8,22 +8,57 @@ use BOM::MyAffiliates::ActivityReporter;
 use BOM::MyAffiliates::TurnoverReporter;
 use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::MyAffiliates::MultiplierReporter;
+use BOM::MyAffiliates::LookbackReporter;
 use BOM::Config::Runtime;
+
+=head2 activity_report
+
+Returns myaffiliates activity pnl report.
+
+=cut
 
 sub activity_report {
     return shift->__send_file('activity_report');
 }
 
+=head2 registration
+
+Returns myaffiliates registration  pnl report.
+
+=cut
+
 sub registration {
     return shift->__send_file('registration');
 }
+
+=head2 turnover_report
+
+Returns myaffiliates turnover report.
+
+=cut
 
 sub turnover_report {
     return shift->__send_file('turnover_report');
 }
 
+=head2 multiplier_report
+
+Returns myaffiliates multiplier commission report.
+
+=cut
+
 sub multiplier_report {
     return shift->__send_file('multiplier_report');
+}
+
+=head2 lookback_report
+
+Returns myaffiliates looback commission report.
+
+=cut
+
+sub lookback_report {
+    return shift->__send_file('lookback_report');
 }
 
 sub __send_file {
@@ -56,6 +91,12 @@ sub __send_file {
         $file_path = $reporter->output_file_path();
     } elsif ($type eq 'multiplier_report') {
         my $reporter = BOM::MyAffiliates::MultiplierReporter->new(
+            brand           => Brands->new(name => $c->stash('brand')),
+            processing_date => Date::Utility->new($date));
+        $file_name = $reporter->output_file_name();
+        $file_path = $reporter->output_file_path();
+    } elsif ($type eq 'lookback_report') {
+        my $reporter = BOM::MyAffiliates::LookbackReporter->new(
             brand           => Brands->new(name => $c->stash('brand')),
             processing_date => Date::Utility->new($date));
         $file_name = $reporter->output_file_name();

@@ -11,6 +11,12 @@ use BOM::Config::Runtime;
 use Log::Any qw($log);
 use Log::Any::Adapter::Util qw(logging_methods);
 
+=head2 startup
+
+Add new report end points that are exposed to MyAffiliates System where they can download the reports.
+
+=cut
+
 sub startup {
     my $app = shift;
 
@@ -31,6 +37,7 @@ sub startup {
     $r->get('/registration/*brand'      => {brand => 'binary'} => [brand => $allowed_brands])->to('Controller#registration');
     $r->get('/turnover_report/*brand'   => {brand => 'binary'} => [brand => $allowed_brands])->to('Controller#turnover_report');
     $r->get('/multiplier_report/*brand' => {brand => 'binary'} => [brand => $allowed_brands])->to('Controller#multiplier_report');
+    $r->get('/lookback_report/*brand'   => {brand => 'binary'} => [brand => $allowed_brands])->to('Controller#lookback_report');
 
     return;
 }
