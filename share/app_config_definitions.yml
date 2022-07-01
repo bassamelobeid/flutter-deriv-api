@@ -477,7 +477,7 @@ payments:
             isa: Num
             description: 'Total range of floating rate allowed for adverts unless overridden per country. E.g. 10 means -5% to +5%.'
             default: 10
-            global: 1        
+            global: 1
         float_rate_order_slippage:
             isa: Num
             description: 'Total allowed slippage from market rate when placing orders on floating rate ads. E.g. 1.0 means -0.5% to +0.5%.'
@@ -610,7 +610,7 @@ payments:
             min_usd:
               isa: json_string
               description: "The minimum withdrawal amount in USD"
-              default: '{"BTC":25,"LTC":5,"ETH":25,"BUSD":25,"DAI":25,"EURS":25,"IDK":5,"PAX":25,"TUSD":25,"USB":25,"USDC":25,"USDK":25,"eUSDT":25,"UST":25}'
+              default: '{"BTC":25,"LTC":5,"ETH":25,"BUSD":25,"DAI":25,"EURS":25,"IDK":5,"PAX":25,"TUSD":25,"USB":25,"USDC":25,"USDK":25,"eUSDT":25,"UST":25,"tUSDT":25}'
               global: 1
         auto_update:
           description: "Enable crypto withdrawal auto approve and reject"
