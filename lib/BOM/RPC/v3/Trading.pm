@@ -451,9 +451,10 @@ sub deposit {
         );
 
         return $platform->deposit(
-            to_account => $to_account,
-            amount     => $amount,
-            currency   => $currency,
+            to_account   => $to_account,
+            from_account => $from_account,
+            amount       => $amount,
+            currency     => $currency,
         );
 
     } catch ($e) {
@@ -482,6 +483,7 @@ sub withdrawal {
 
         return $platform->withdraw(
             from_account => $from_account,
+            to_account   => $to_account,
             amount       => $amount,
             currency     => $currency,
         );
