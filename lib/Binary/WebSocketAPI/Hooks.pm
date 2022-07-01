@@ -216,8 +216,8 @@ sub log_call_timing_sent {
 
 my %rate_limit_map = (
     # Real Actions
-    ping_real                      => '',
-    time_real                      => '',
+    ping_real                      => 'general_connection_limit',
+    time_real                      => 'general_connection_limit',
     portfolio_real                 => 'websocket_call_expensive',
     statement_real                 => 'websocket_call_expensive',
     profit_table_real              => 'websocket_call_expensive',
@@ -242,8 +242,8 @@ my %rate_limit_map = (
     trading_servers_real           => 'trading_platform',
 
     # Virtual Actions
-    ping_virtual                      => '',
-    time_virtual                      => '',
+    ping_virtual                      => 'general_connection_limit',
+    time_virtual                      => 'general_connection_limit',
     portfolio_virtual                 => 'websocket_call_expensive',
     statement_virtual                 => 'websocket_call_expensive',
     profit_table_virtual              => 'websocket_call_expensive',
@@ -399,7 +399,16 @@ sub before_forward {
             return Future->done;
         },
         sub {
-            Future->fail($c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category)));
+            my ($e) = @_;
+            my $err_resp = $c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category));
+
+            # Close websocket connection if breach rate limit per connection
+            if ($e eq 'CONNECTION_RATELIMIT_HIT') {
+                $c->send({json => $err_resp});
+                $c->finish(1008 => 'Policy Violation');
+            }
+
+            return Future->fail($err_resp);
         });
 }
 

@@ -11,6 +11,9 @@ use YAML::XS qw(LoadFile);
 use Log::Any qw($log);
 use Cache::LRU;
 
+use constant CONNECTION_RATE_LIMIT           => 10;
+use constant CONNECTION_RATE_INTERVAL_IN_SEC => 1;
+
 sub register {
     my ($self, $app) = @_;
 
@@ -156,6 +159,14 @@ sub _check_limits {
 
     return Future->done if _app_rate_limit_is_disabled($c);
 
+    #TODO: Refactor to make it more general in future,
+    # Currently we check only ping and time
+    if ($service eq "general_connection_limit") {
+        return Future->done if _check_connection_limit($c, $service);
+
+        return Future->fail('CONNECTION_RATELIMIT_HIT');
+    }
+
     my $rates_config      = $c->app->{_binary}{rates_config};
     my $limits_domain     = $rates_config->{$c->landing_company_name // ''} // $rates_config->{binary};
     my $limit_descriptors = $limits_domain->{$service};
@@ -237,6 +248,43 @@ sub _limits_cache {
     $cache->set($client_id, $cache_entry) if %updates;
 
     return $cache_entry->{$name} // {value => 0};
+}
+
+=head2 _check_connection_limit
+
+Checks to see if the given connection rate-limit have been reached or not?
+This connection rate-limit is second based 
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=back
+
+Returns C<false> if rate-limit is reached and true otherwise.
+
+=cut
+
+sub _check_connection_limit {
+    my ($c, $service) = @_;
+
+    # Fill starting value
+    my $limiter = $c->stash->{connection_ratelimit} //= +{};
+    $limiter->{$service}{start_time}                //= time;
+    $limiter->{$service}{counter}                   //= 0;
+
+    # Reset value if time interval is passed
+    my $end_time = $limiter->{$service}{start_time} + CONNECTION_RATE_INTERVAL_IN_SEC;
+    if ($end_time < time) {
+        $limiter->{$service} = +{
+            start_time => time,
+            counter    => 0
+        };
+    }
+
+    $limiter->{$service}{counter}++;
+
+    return $limiter->{$service}{counter} <= CONNECTION_RATE_LIMIT;
 }
 
 1;
