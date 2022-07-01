@@ -29,7 +29,9 @@ my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock(emit => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
-my $other_guy = BOM::Test::Helper::P2P::create_advertiser();
+my $redis      = BOM::Config::Redis->redis_p2p;
+my $review_key = 'P2P::ORDER::REVIEWABLE_START_AT';
+my $other_guy  = BOM::Test::Helper::P2P::create_advertiser();
 
 subtest 'validaton' => sub {
     my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert();
@@ -107,9 +109,13 @@ subtest 'validaton' => sub {
     is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     1, 'client can review completed order';
     is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable}, 1, 'advertiser can review completed order';
 
-    my $completion = $client->_p2p_orders(id => $order->{id})->[0]->{completion_time};
-    ok $completion, 'order has completion time';
-    $completion = Date::Utility->new($completion)->epoch;
+    my $completion = $client->p2p_order_info(id => $order->{id})->{completion_time};
+    like $completion, qr/^\d+$/, 'Order has completion';
+
+    my $redis_score = $redis->zscore($review_key, $order->{id} . '|' . $advertiser->loginid);
+    ok abs($completion - ($redis_score // 0)) <= 1, 'redis completion ts exists for advertiser and within 1 second';
+    $redis_score = $redis->zscore($review_key, $order->{id} . '|' . $client->loginid);
+    ok abs($completion - ($redis_score // 0)) <= 1, 'redis completion ts exists for client and within 1 second';
 
     set_absolute_time($completion + ((60 * 60) * 2) + 1);    # 2 hours 1 sec
     is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     0, 'client cannot review beyond period';
@@ -146,6 +152,8 @@ subtest 'validaton' => sub {
 
     is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     0, 'client cannot review again';
     is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable}, 1, 'advertiser can review after client reviewed';
+    is $redis->zscore($review_key, $order->{id} . '|' . $client->loginid), undef, 'order removed from redis key for client';
+    ok $redis->zscore($review_key, $order->{id} . '|' . $advertiser->loginid), 'order not removed from redis key for advertiser';
 
     is(
         exception {
@@ -160,6 +168,8 @@ subtest 'validaton' => sub {
 
     is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     0, 'client cannot review again';
     is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable}, 0, 'advertiser cannot review again';
+    is $redis->zscore($review_key, $order->{id} . '|' . $advertiser->loginid), undef, 'order removed from redis key for advertiser';
+    is $redis->zscore($review_key, $order->{id} . '|' . $client->loginid),     undef, 'order removed from redis key for client';
 
     restore_time();
 };
@@ -217,6 +227,7 @@ subtest 'create reviews' => sub {
                     client_loginid => $client->loginid,
                     order_event    => 'review_created',
                     order_id       => $order->{id},
+                    self_only      => 1,
                 }]
         },
         'events emitted for advertiser review',
@@ -311,6 +322,7 @@ subtest 'create reviews' => sub {
                     client_loginid => $advertiser->loginid,
                     order_event    => 'review_created',
                     order_id       => $order->{id},
+                    self_only      => 1,
                 }]
         },
         'events emitted for advertiser review',
@@ -355,6 +367,38 @@ subtest 'create reviews' => sub {
         },
         'advertiser cannot review again'
     );
+};
+
+subtest 'buy advert' => sub {
+    my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert(type => 'buy');
+    my ($client,     $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $ad->{id},
+        amount    => 10
+    );
+    $advertiser->p2p_order_confirm(id => $order->{id});
+    $client->p2p_order_confirm(id => $order->{id});
+    my $completion = $client->p2p_order_info(id => $order->{id})->{completion_time};
+
+    my $redis_score = $redis->zscore($review_key, $order->{id} . '|' . $advertiser->loginid);
+    ok abs($completion - ($redis_score // 0)) <= 1, 'redis completion ts exists for advertiser and within 1 second';
+    $redis_score = $redis->zscore($review_key, $order->{id} . '|' . $client->loginid);
+    ok abs($completion - ($redis_score // 0)) <= 1, 'redis completion ts exists for client and within 1 second';
+
+    $advertiser->p2p_order_review(
+        order_id => $order->{id},
+        rating   => 5
+        ),
+
+        is $redis->zscore($review_key, $order->{id} . '|' . $advertiser->loginid), undef, 'order removed from redis key for advertiser';
+    ok $redis->zscore($review_key, $order->{id} . '|' . $client->loginid), 'order not removed from redis key for client';
+
+    $client->p2p_order_review(
+        order_id => $order->{id},
+        rating   => 5
+        ),
+
+        is $redis->zscore($review_key, $order->{id} . '|' . $advertiser->loginid), undef, 'order removed from redis key for advertiser';
+    is $redis->zscore($review_key, $order->{id} . '|' . $client->loginid), undef, 'order removed from redis key for client';
 };
 
 done_testing();

@@ -2210,17 +2210,19 @@ use constant {
         buy  => 'sell',
         sell => 'buy',
     },
-    P2P_ORDER_DISPUTED_AT        => 'P2P::ORDER::DISPUTED_AT',
-    P2P_ORDER_EXPIRES_AT         => 'P2P::ORDER::EXPIRES_AT',
-    P2P_ORDER_TIMEDOUT_AT        => 'P2P::ORDER::TIMEDOUT_AT',
-    P2P_ADVERTISER_BLOCK_ENDS_AT => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
-    P2P_STATS_REDIS_PREFIX       => 'P2P::ADVERTISER_STATS',
-    P2P_STATS_TTL_IN_DAYS        => 120,                                # days after which to prune redis stats
-    P2P_ARCHIVE_DATES_KEY        => 'P2P::AD_ARCHIVAL_DATES',
-    P2P_USERS_ONLINE_KEY         => 'P2P::USERS_ONLINE',
-    P2P_ONLINE_PERIOD            => 90,
 
-    P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,                                # 2 hours
+    P2P_ORDER_DISPUTED_AT         => 'P2P::ORDER::DISPUTED_AT',
+    P2P_ORDER_EXPIRES_AT          => 'P2P::ORDER::EXPIRES_AT',
+    P2P_ORDER_TIMEDOUT_AT         => 'P2P::ORDER::TIMEDOUT_AT',
+    P2P_ORDER_REVIEWABLE_START_AT => 'P2P::ORDER::REVIEWABLE_START_AT',
+    P2P_ADVERTISER_BLOCK_ENDS_AT  => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
+    P2P_STATS_REDIS_PREFIX        => 'P2P::ADVERTISER_STATS',
+    P2P_STATS_TTL_IN_DAYS         => 120,                                 # days after which to prune redis stats
+    P2P_ARCHIVE_DATES_KEY         => 'P2P::AD_ARCHIVAL_DATES',
+    P2P_USERS_ONLINE_KEY          => 'P2P::USERS_ONLINE',
+    P2P_ONLINE_PERIOD             => 90,
+
+    P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,                                  # 2 hours
 
     # Statuses here should match the DB function p2p.is_status_final.
     P2P_ORDER_STATUS => {
@@ -3132,12 +3134,17 @@ sub p2p_order_review {
             advertiser_id => $reviewee,
         });
 
+    # only the reviewer's order will have changed
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
             client_loginid => $self->loginid,
             order_id       => $id,
             order_event    => 'review_created',
+            self_only      => 1,
         });
+
+    # reviewer no longer needs notification about review period expiry
+    BOM::Config::Redis->redis_p2p_write->zrem(P2P_ORDER_REVIEWABLE_START_AT, $id . '|' . $self->loginid);
 
     return $review;
 }
@@ -4667,12 +4674,14 @@ sub _order_details {
                 [map { $payment_method_defs->{$_}{display_name} } grep { exists $payment_method_defs->{$_} } split ',', $order->{payment_method}];
         }
 
-        my $can_review = 0;
-        if ((!$result->{review_details}) and $order->{status} eq 'completed' and $order->{completion_time}) {
-            $review_hours //= BOM::Config::Runtime->instance->app_config->payments->p2p->review_period;
-            $can_review = 1 if (time - Date::Utility->new($order->{completion_time})->epoch) <= ($review_hours * 60 * 60);
+        $result->{is_reviewable} = 0;
+        if ($order->{completion_time}) {
+            $result->{completion_time} = Date::Utility->new($order->{completion_time})->epoch;
+            if ($order->{status} eq 'completed' and not $result->{review_details}) {
+                $review_hours //= BOM::Config::Runtime->instance->app_config->payments->p2p->review_period;
+                $result->{is_reviewable} = 1 if (time - $result->{completion_time}) <= ($review_hours * 60 * 60);
+            }
         }
-        $result->{is_reviewable} = $can_review;
 
         push @results, $result;
     }
@@ -4913,6 +4922,7 @@ sub _p2p_order_completed {
     $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $seller, 1);
     $redis->hincrbyfloat(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $buyer,  $amount);
     $redis->hincrbyfloat(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $seller, $amount);
+    $redis->zadd(P2P_ORDER_REVIEWABLE_START_AT, time, $id . '|' . $buyer, time, $id . '|' . $seller);
     $self->_p2p_record_partners($order);
 
     if (my $buy_confirm_time = $redis->hget(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $id)) {
