@@ -144,10 +144,12 @@ subtest 'create advertiser' => sub {
     is $advertiser->{chat_user_id}, 'dummy', 'chat user id';    # from mocked sendbird
     is $advertiser->{chat_token},   'dummy', 'chat token';
     ok $advertiser->{cancels_remaining} > 0, 'cancellations remaining';
+    like $advertiser->{last_online_time}, qr/^\d+$/, 'online time';
 
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     test_schema('p2p_advertiser_info', $resp);
 
+    ok abs($resp->{p2p_advertiser_info}{last_online_time} - delete $advertiser->{last_online_time}) < 2, 'online time';
     cmp_deeply($resp->{p2p_advertiser_info}, superhashof($advertiser), 'advertiser info is correct');
 
     $resp = $t->await::p2p_advertiser_create({
