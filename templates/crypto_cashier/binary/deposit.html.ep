@@ -5,7 +5,7 @@
         <h3><%= l('Account ID: [_1]', $loginid) %></h3>
         <strong><%= l('Send only [_1] ([_2]) to this address.', $currency->{name}, $currency->{code}) %></strong>
         <p class="container-small"><%== $deposit_page_warning_message %></p>
-        
+
         <div id="qrcode" class="gr-padding-10"></div>
         <div class="gr-padding-10">
             <strong id="deposit_address" class="fill-bg-color gr-padding-10 gr-padding-lr-10 address copy-on-click"><%= $deposit_address %></strong>
@@ -19,7 +19,11 @@
             <p class="container-small">
                 <%= l('You can only deposit [_1] from your Ethereum wallet into your [_2] account.', $currency->{code}, 'Binary.com') %>
         <% } %>
-            <% if ($currency->{code} eq 'eUSDT' || $currency->{code} eq 'USDT') { %>
+        <% if ($currency->{code} eq 'tUSDT') { %>
+            <p class="container-small">
+                <%= l('You can only deposit [_1] from your TRON wallet into your [_2] account.', $currency->{code}, 'Binary.com') %>
+        <% } %>
+            <% if ($currency->{code} =~ /^(USDT|eUSDT|tUSDT)$/) { %>
                 <a onclick='learnMore()' href="javascript:;"><%= l('Learn More') %></a>
                 <div id ="LearnMore" class="container-small block" align='left'>
                     <ul class='bullet' id='list'>
@@ -32,6 +36,10 @@
                     <% if ($currency->{code} eq 'eUSDT' ) { %>
                         <li><strong><%= l('Tether on Ethereum (eUSDT)') %></strong></li>
                         <div class='margins-1'>  <%= l('Tether on the Ethereum blockchain, as an ERC20 token, is a newer transport layer, which now makes Tether available in Ethereum smart contracts. As a standard ERC20 token it can also be sent to any Ethereum address.') %></div></ul>
+                    <% } %>
+                    <% if ($currency->{code} eq 'tUSDT' ) { %>
+                        <li><strong><%= l('Tether on TRON (tUSDT)') %></strong></li>
+                        <div class='margins-1'>  <%= l('Tether on the TRON blockchain, as an TRC20 token, is a newer transport layer, which now makes Tether available in TRON smart contracts.') %></div></ul>
                     <% } %>
                 </div>
             </p>

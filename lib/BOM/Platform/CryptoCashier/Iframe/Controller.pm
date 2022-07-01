@@ -408,16 +408,21 @@ Place holder for crypto cashier deposit page currency warning message
 =cut
 
 sub deposit_page_warning_message {
-    my $currency_code   = shift;
+    my $currency_code = shift;
+
     my $warning_message = localize('Sending any other digital currency will result in the loss of your deposit.');
-    $warning_message =
-        localize('To avoid losing your funds, please use the [_1][_2] ([_3]) [_4][_5] only. Other networks are not supported for [_6] deposits.',
-        '<strong>', 'Ethereum', 'ETH', 'network', '</strong>', $currency_code)
-        if $currency_code eq 'ETH';
-    $warning_message =
-        localize('To avoid losing your funds, please use the [_1][_2] ([_3]) [_4][_5] only. Other networks are not supported for [_6] deposits.',
-        '<strong>', 'Ethereum', 'ERC20', 'network', '</strong>', $currency_code)
-        if any { $currency_code eq $_ } qw/eUSDT USDC/;
+
+    my %currency_warnings = (
+        ETH   => ['Ethereum', 'ETH'],
+        USDC  => ['Ethereum', 'ERC20'],
+        eUSDT => ['Ethereum', 'ERC20'],
+        tUSDT => ['TRON',     'TRC20'],
+    );
+    if (my $warning_params = $currency_warnings{$currency_code}) {
+        $warning_message =
+            localize('To avoid losing your funds, please use the [_1][_2] ([_3]) [_4][_5] only. Other networks are not supported for [_6] deposits.',
+            '<strong>', $warning_params->@*, 'network', '</strong>', $currency_code);
+    }
 
     return $warning_message;
 }
