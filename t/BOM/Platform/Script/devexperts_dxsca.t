@@ -45,8 +45,6 @@ cmp_deeply decode_json_utf8($resp->content),
 
 is $service->{clients}{demo}->session_expiry, 1800, 'session expiry set';
 
-$mock_api->redefine('request', sub { Future->done({}) });
-
 $logined = 0;
 $http->POST($url, '{ "server": "demo", "method": "order_history", "accounts": [ "x" ] }', content_type => 'application/json')->get;
 is $logined, 0, 'login not called again';
