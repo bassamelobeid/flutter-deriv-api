@@ -76,6 +76,13 @@ use constant CONFIG => [{
         amount   => 1,
         statuses => ['disabled'],
     },
+    {
+        desc         => 'Locked for more than 1 year, do not check the balance',
+        days         => 365,
+        amount       => undef,                                                     # undef means we don't care about the client balance
+        statuses     => ['disabled'],
+        broker_codes => [qw/CR/],
+    },
 ];
 
 =head2 _build_dbic
@@ -133,7 +140,9 @@ Rescind accounts according to parameters.
 
 =item * C<days> the status was applied at least this number of days ago
 
-=item * C<amount> account has less or equal to this amount in fiat, or in USD value for crypto
+=item * C<amount> account has less or equal to this amount in fiat, or in USD value for crypto. If C<undef> we don't care about the balance of the client.
+
+=item * C<broker_codes> an array of broker code the rule must apply to.
 
 =back
 
@@ -144,6 +153,8 @@ Returns an arrayref of accounts, or string with error.
 sub process_accounts {
     my ($self, %args) = @_;
     my $result;
+
+    return undef if $args{broker_codes} and none { $_ eq $self->broker_code } $args{broker_codes}->@*;
 
     try {
         $log->debugf('Getting accounts for %s on %s', $args{desc}, $self->broker_code);
@@ -174,13 +185,15 @@ sub process_accounts {
 
 Computes the structure needed by the `transaction.get_rescindable_loginids` db function
 in order to fetch the rescindable accounts.
-We will grab the currencies of the broker code and fill a hashref given these two simple rules:
+We will grab the currencies of the broker code and fill a hashref given these 3 simple rules:
 
 =over 4 
 
 =item * if the currency is fiat or a stable coin, the value is 1
 
 =item * if the currency is a crypto, the value is 1 USD equivalent
+
+=item * if te amount is C<undef>, the result is C<undef>
 
 =back
 
@@ -201,17 +214,21 @@ sub currencies {
     my $currencies = {};
 
     for my $currency (keys $self->landing_company->legal_allowed_currencies->%*) {
-        my $type   = $self->landing_company->legal_allowed_currencies->{$currency}->{type};
-        my $stable = $self->landing_company->legal_allowed_currencies->{$currency}->{stable};
+        try {
+            my $conv_amount = $amount;
 
-        if ($type ne 'fiat' && !$stable) {
-            try {
-                $currencies->{$currency} = convert_currency($amount, 'USD', $currency);
-            } catch {
-                $log->debugf('Could not convert USD to %s, we will skip this currency this round', $currency);
+            if (defined $amount) {
+                my $type   = $self->landing_company->legal_allowed_currencies->{$currency}->{type};
+                my $stable = $self->landing_company->legal_allowed_currencies->{$currency}->{stable};
+
+                if ($type ne 'fiat' && !$stable) {
+                    $conv_amount = convert_currency($amount, 'USD', $currency);
+                }
             }
-        } else {
-            $currencies->{$currency} = $amount;
+
+            $currencies->{$currency} = $conv_amount;
+        } catch ($e) {
+            $log->debugf('Could not convert USD to %s, we will skip this currency this round: %s', $currency, $e);
         }
     }
 
@@ -234,7 +251,7 @@ It takes the following named arguments:
 
 =back
 
-It returns error message on success, undef otherwise.
+It returns error message on failure, undef otherwise.
 
 =cut
 
