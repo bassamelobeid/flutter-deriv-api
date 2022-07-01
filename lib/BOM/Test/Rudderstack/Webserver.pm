@@ -20,7 +20,7 @@ use Object::Pad;
 
 =cut
 
-class BOM::Test::Rudderstack::Webserver extends IO::Async::Notifier;
+class BOM::Test::Rudderstack::Webserver : isa(IO::Async::Notifier);
 
 use Future::AsyncAwait;
 use Syntax::Keyword::Try;
