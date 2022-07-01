@@ -179,51 +179,6 @@ sub _process_proposal_open_contract_response {
     return;
 }
 
-sub _serialized_args {
-    my $copy = {%{+shift}};
-    my $args = shift;
-    my @arr  = ();
-
-    delete $copy->{req_id};
-    delete $copy->{language} unless $args->{keep_language};
-
-    # We want to handle similar contracts together, so we do this and sort by
-    # key in the price_queue.pl daemon
-    push @arr, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
-
-    # Keep country only if it is CN.
-    delete $copy->{country_code} if exists $copy->{country_code} and $copy->{country_code} ne 'cn';
-
-    foreach my $k (sort keys %$copy) {
-        push @arr, ($k, $copy->{$k});
-    }
-
-    return 'PRICER_ARGS::' . Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
-}
-
-sub _serialize_contract_parameters {
-    my $args = shift;
-
-    my $staking_limits = $args->{staking_limits} // {};
-    return join(
-        ",",
-        "v1",
-        $args->{currency} // '',
-        # binary
-        $args->{amount}                // '',
-        $args->{amount_type}           // '',
-        $args->{app_markup_percentage} // '',
-        $args->{deep_otm_threshold}    // '',
-        $args->{base_commission}       // '',
-        $args->{min_commission_amount} // '',
-        $staking_limits->{min}         // '',
-        $staking_limits->{max}         // '',
-        # non-binary
-        $args->{maximum_ask_price} // '',    # callputspread is the only contract type that has this
-        $args->{multiplier}        // '',
-    );
-}
-
 sub _pricing_channel_for_proposal {
     my ($c, $args, $cache, $class) = @_;
 
