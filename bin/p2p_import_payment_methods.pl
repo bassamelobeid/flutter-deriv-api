@@ -25,8 +25,9 @@ if ($update_yml) {
         $methods->{$method}{type}         = $data->{$method}{type} // 'ewallet';
 
         unless (exists $methods->{$method}{fields}) {
-            # default field named with method
-            $methods->{$method}{fields}{account}{display_name} = $data->{$method}{fields}{account}{display_name} // $data->{$method}{name};
+            # default field named with "<method> account"
+            $methods->{$method}{fields}{account}{display_name} = $data->{$method}{fields}{account}{display_name}
+                // ($data->{$method}{name}) . " account";
         }
     }
 
