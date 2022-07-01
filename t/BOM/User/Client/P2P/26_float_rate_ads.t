@@ -24,7 +24,7 @@ BOM::Test::Helper::P2P::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 
-my $mock_utility = Test::MockModule->new('BOM::User::Utility');
+my $mock_client = Test::MockModule->new('BOM::User::Client');
 
 my %params = (
     amount           => 100,
@@ -46,7 +46,7 @@ subtest 'exchange rate' => sub {
         quote => 0.5,
         epoch => 1000
     };
-    is BOM::User::Utility::p2p_exchange_rate('id')->{quote}, 2, 'use feed';
+    cmp_ok BOM::User::Utility::p2p_exchange_rate('id')->{quote}, '==', 2, 'use feed';
 
     $config->country_advert_config(
         encode_json_utf8({
@@ -54,19 +54,26 @@ subtest 'exchange rate' => sub {
                     manual_quote       => 2.1,
                     manual_quote_epoch => 1001
                 }}));
-    is BOM::User::Utility::p2p_exchange_rate('id')->{quote}, 2.1, 'use manual quote';
+    cmp_ok BOM::User::Utility::p2p_exchange_rate('id')->{quote}, '==', 2.1, 'use manual quote';
 
     $quote = {
         quote => 0.4,
         epoch => 1002
     };
-    is BOM::User::Utility::p2p_exchange_rate('id')->{quote}, 2.5, 'recent feed replaces manual quote';
+    cmp_ok BOM::User::Utility::p2p_exchange_rate('id')->{quote}, '==', 2.5, 'recent feed replaces manual quote';
+
+    $quote = {
+        quote => 0.6,
+        epoch => 1003
+    };
+    cmp_ok BOM::User::Utility::p2p_exchange_rate('id')->{quote}, '==', 1.666667, 'rate is rounded to 6 decimal places';
+
 };
 
 subtest 'float and fixed rates enabled/disabled scenarios' => sub {
     my $client = BOM::Test::Helper::P2P::create_advertiser;
 
-    $mock_utility->redefine(p2p_exchange_rate => {quote => 1});
+    $mock_client->redefine(p2p_exchange_rate => {quote => 1});
 
     $config->country_advert_config(
         encode_json_utf8({
@@ -88,7 +95,6 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
         undef,
         'Create fixed ad ok'
     );
-
     my $ad;
     is(
         exception {
@@ -163,7 +169,7 @@ subtest 'float and fixed rates enabled/disabled scenarios' => sub {
 
     $config->restricted_countries([]);
 
-    $mock_utility->redefine(p2p_exchange_rate => {});
+    $mock_client->redefine(p2p_exchange_rate => {});
 
     $config->country_advert_config(
         encode_json_utf8({
@@ -200,7 +206,7 @@ subtest 'converting ad rate types' => sub {
                     fixed_ads => 'enabled'
                 }}));
 
-    $mock_utility->redefine(p2p_exchange_rate => {quote => 1});
+    $mock_client->redefine(p2p_exchange_rate => {quote => 1});
 
     my $ad;
     is(
@@ -357,7 +363,7 @@ subtest 'rate fields' => sub {
                     fixed_ads => 'disabled'
                 }}));
 
-    $mock_utility->redefine(p2p_exchange_rate => {quote => 100});
+    $mock_client->redefine(p2p_exchange_rate => {quote => 100});
 
     my $ad;
     is(
@@ -414,7 +420,7 @@ subtest 'orders' => sub {
                     fixed_ads => 'disabled'
                 }}));
 
-    $mock_utility->redefine(p2p_exchange_rate => {quote => 100});
+    $mock_client->redefine(p2p_exchange_rate => {quote => 100});
 
     my $ad = $advertiser->p2p_advert_create(
         %params,
@@ -525,7 +531,7 @@ subtest 'ad list filtering' => sub {
                     fixed_ads => 'enabled'
                 }}));
 
-    $mock_utility->redefine(p2p_exchange_rate => {quote => 100});
+    $mock_client->redefine(p2p_exchange_rate => {quote => 100});
 
     my $fixed_ad = $client->p2p_advert_create(
         %params,
@@ -543,10 +549,10 @@ subtest 'ad list filtering' => sub {
         max_order_amount => 4,
     );
 
-    $mock_utility->redefine(p2p_exchange_rate => {});
+    $mock_client->redefine(p2p_exchange_rate => {});
     cmp_bag([map { $_->{id} } $client->p2p_advert_list->@*], [$fixed_ad->{id}], 'fixed only when there is no rate');
 
-    $mock_utility->redefine(p2p_exchange_rate => {quote => 100});
+    $mock_client->redefine(p2p_exchange_rate => {quote => 100});
     cmp_bag([map { $_->{id} } $client->p2p_advert_list->@*], [$fixed_ad->{id}, $float_ad->{id}], 'both shown when there is rate');
 
     $config->country_advert_config(

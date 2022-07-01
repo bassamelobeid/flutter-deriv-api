@@ -29,13 +29,15 @@ use BOM::Config::CurrencyConfig;
 use BOM::Config::P2P;
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(parse_mt5_group);
+our @EXPORT_OK = qw(parse_mt5_group p2p_rate_rounding p2p_exchange_rate);
 
-use constant GAMSTOP_DURATION_IN_MONTHS => 6;
+use constant {
+    GAMSTOP_DURATION_IN_MONTHS => 6,
 
-# p2p advert state storage
-use constant P2P_ADVERT_STATE_PREFIX => 'P2P::ADVERT_STATE::';
-use constant P2P_ADVERT_STATE_EXPIRY => 7 * 24 * 60 * 60;        # 7 days
+    P2P_ADVERT_STATE_PREFIX => 'P2P::ADVERT_STATE::',    # p2p advert state storage
+    P2P_ADVERT_STATE_EXPIRY => 7 * 24 * 60 * 60,         # 7 days
+    P2P_RATE_PRECISION      => 6,
+};
 
 sub aes_keys {
     state $config = YAML::XS::LoadFile('/etc/rmg/aes_keys.yml');
@@ -371,9 +373,32 @@ sub p2p_exchange_rate {
         quote  => 1 / $quote->{quote},
         source => 'feed'
         } if $quote;
+
     @quotes = sort { $b->{epoch} <=> $a->{epoch} } @quotes;
 
+    $quotes[0]->{quote} = p2p_rate_rounding($quotes[0]->{quote}) if @quotes;
+
     return $quotes[0] // {};
+}
+
+=head2 p2p_rate_rounding
+
+Formats an exchange rate to correct number of decimal places.
+
+If $args{display} is true, no more than 2 trailing zeros will be included.
+
+=cut
+
+sub p2p_rate_rounding {
+    my ($rate, %args) = @_;
+    return undef unless defined $rate;
+
+    $rate = sprintf('%.' . P2P_RATE_PRECISION . 'f', $rate);
+
+    # cut off tailing zeros 3-6
+    $rate =~ s/(?<=\.\d{2})(\d*?)0*$/$1/ if $args{display};
+
+    return $rate;
 }
 
 1;

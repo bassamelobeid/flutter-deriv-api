@@ -29,8 +29,8 @@ my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my $emitted_events;
 $mock_events->redefine('emit' => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
-my $mock_utility = Test::MockModule->new('BOM::User::Utility');
-$mock_utility->redefine(p2p_exchange_rate => {quote => 1});
+my $mock_client = Test::MockModule->new('BOM::User::Client');
+$mock_client->redefine(p2p_exchange_rate => {quote => 1});
 
 set_fixed_time(Date::Utility->new('2000-01-01')->epoch);
 
@@ -317,6 +317,7 @@ subtest 'quants alert email' => sub {
             source => 'manual'
         },
     );
+
     my $mock_utility = Test::MockModule->new('BOM::User::Utility');
     $mock_utility->redefine(p2p_exchange_rate => sub { $mock_rates{$_[0]} });
 

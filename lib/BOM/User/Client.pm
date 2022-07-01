@@ -44,7 +44,7 @@ use BOM::User::Client::ProofOfOwnership;
 use BOM::User::Client::Account;
 use BOM::User::FinancialAssessment;
 use BOM::User::SocialResponsibility;
-use BOM::User::Utility;
+use BOM::User::Utility qw(p2p_exchange_rate p2p_rate_rounding);
 use BOM::User::Wallet;
 use BOM::Database::UserDB;
 use BOM::Database::ClientDB;
@@ -2203,7 +2203,6 @@ use constant {
     # Also this limit may need to be adjusted in future.
     P2P_RATE_LOWER_LIMIT => 0.000001,    # We need it because 0.000001 < 0.1**6 is true
     P2P_RATE_UPPER_LIMIT => 10**9,
-    P2P_RATE_PRECISION   => 6,
 
     P2P_MAXIMUM_ACTIVE_ADVERTS     => 10,
     P2P_COUNTERYPARTY_TYPE_MAPPING => {
@@ -2506,7 +2505,7 @@ sub p2p_advert_create {
 
     $self->_validate_advert(%param);
 
-    my $market_rate = BOM::User::Utility::p2p_exchange_rate($self->residence)->{quote};
+    my $market_rate = p2p_exchange_rate($self->residence)->{quote};
     die +{error_code => 'AdvertFloatRateNotAllowed'} if $param{rate_type} eq 'float' and not $market_rate;
 
     my ($id) = $self->db->dbic->run(
@@ -2759,7 +2758,7 @@ sub p2p_order_create {
         message_params => [$limit_per_day_per_client]}
         if ($day_order_count // 0) >= $limit_per_day_per_client;
 
-    my $market_rate = BOM::User::Utility::p2p_exchange_rate($self->residence)->{quote};
+    my $market_rate = p2p_exchange_rate($self->residence)->{quote};
 
     my $advert = $self->_p2p_adverts(
         id                     => $advert_id,
@@ -2794,8 +2793,7 @@ sub p2p_order_create {
     die +{error_code => 'OrderCreateFailRateRequired'} if $advert->{rate_type} eq 'float' and not defined($param{rate});
 
     die +{error_code => 'OrderCreateFailRateChanged'}
-        if defined $param{rate}
-        and sprintf('%.' . P2P_RATE_PRECISION . 'f', $param{rate}) != sprintf('%.' . P2P_RATE_PRECISION . 'f', $advert->{effective_rate});
+        if defined $param{rate} and p2p_rate_rounding($param{rate}) != p2p_rate_rounding($advert->{effective_rate});
 
     my $advertiser = BOM::User::Client->new({loginid => $advertiser_info->{client_loginid}});
     my ($order_type, $amount_advertiser, $amount_client);
@@ -3665,7 +3663,7 @@ sub _p2p_adverts {
     $param{reversible_limit}    = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
     $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
     $param{advertiser_name} =~ s/([%_])/\\$1/g if $param{advertiser_name};
-    $param{market_rate} //= BOM::User::Utility::p2p_exchange_rate($self->residence)->{quote};
+    $param{market_rate} //= p2p_exchange_rate($self->residence)->{quote};
 
     if ($param{filter_rate_type}) {
         my $config = BOM::Config::P2P::advert_config()->{$self->residence} or die +{error_code => 'RestrictedCountry'};
@@ -3832,7 +3830,8 @@ sub _validate_advert_rates {
         if ($param{rate} < P2P_RATE_LOWER_LIMIT) {
             die +{
                 error_code     => 'RateTooSmall',
-                message_params => [sprintf('%.' . P2P_RATE_PRECISION . 'f', P2P_RATE_LOWER_LIMIT)]};
+                message_params => [sprintf('%.06f', P2P_RATE_LOWER_LIMIT)],
+            };
         }
 
         # rate max
@@ -3947,7 +3946,7 @@ sub _validate_advert_duplicates {
     if (defined $param{rate}) {
         die +{error_code => 'DuplicateAdvert'}
             if any {
-            sprintf('%.' . P2P_RATE_PRECISION . 'f', $_->{rate}) == sprintf('%.' . P2P_RATE_PRECISION . 'f', $param{rate})
+            p2p_rate_rounding($_->{rate}) == p2p_rate_rounding($param{rate})
                 and $_->{rate_type} eq $param{rate_type}
         }
         @active_ads_same_type;
@@ -4475,15 +4474,15 @@ sub _advert_details {
             payment_method    => $advert->{payment_method},
             type              => $advert->{type},
             counterparty_type => P2P_COUNTERYPARTY_TYPE_MAPPING->{$advert->{type}},
-            price             => $advert->{effective_rate} ? $advert->{effective_rate} * ($amount // 1) : undef,
+            price             => $advert->{effective_rate} ? p2p_rate_rounding($advert->{effective_rate}) * ($amount // 1) : undef,
             price_display     => $advert->{effective_rate}
-            ? financialrounding('amount', $advert->{local_currency}, $advert->{effective_rate} * ($amount // 1))
+            ? financialrounding('amount', $advert->{local_currency}, p2p_rate_rounding($advert->{effective_rate}) * ($amount // 1))
             : undef,
-            rate                           => $advert->{rate},
-            rate_type                      => $advert->{rate_type},
-            rate_display                   => $advert->{rate_type} eq 'float' ? sprintf('%+.2f', $advert->{rate}) : _p2p_rate_format($advert->{rate}),
-            effective_rate                 => $advert->{effective_rate},
-            effective_rate_display         => _p2p_rate_format($advert->{effective_rate}),
+            rate           => $advert->{rate},
+            rate_type      => $advert->{rate_type},
+            rate_display   => $advert->{rate_type} eq 'float' ? sprintf('%+.2f', $advert->{rate}) : p2p_rate_rounding($advert->{rate}, display => 1),
+            effective_rate => p2p_rate_rounding($advert->{effective_rate}),
+            effective_rate_display         => p2p_rate_rounding($advert->{effective_rate}, display => 1),
             min_order_amount_limit         => $advert->{min_order_amount},
             min_order_amount_limit_display => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
             max_order_amount_limit         => $advert->{max_order_amount_actual},
@@ -4613,10 +4612,10 @@ sub _order_details {
             local_currency     => $order->{local_currency},
             amount             => $order->{amount},
             amount_display     => financialrounding('amount', $order->{account_currency}, $order->{amount}),
-            price              => $order->{rate} * $order->{amount},
-            price_display      => financialrounding('amount', $order->{local_currency}, $order->{rate} * $order->{amount}),
-            rate               => $order->{rate},
-            rate_display       => _p2p_rate_format($order->{rate}),
+            price              => p2p_rate_rounding($order->{rate}) * $order->{amount},
+            price_display      => financialrounding('amount', $order->{local_currency}, p2p_rate_rounding($order->{rate}) * $order->{amount}),
+            rate               => p2p_rate_rounding($order->{rate}),
+            rate_display       => p2p_rate_rounding($order->{rate}, display => 1),
             status             => $order->{status},
             type               => $order->{type},
             chat_channel_url   => $order->{chat_channel_url} // '',
@@ -4698,12 +4697,6 @@ Returns true if the status is final.
 sub _is_order_status_final {
     my (undef, $status) = @_;
     return any { $status eq $_ } P2P_ORDER_STATUS->{final}->@*;
-}
-
-sub _p2p_rate_format {
-    my $rate = shift or return undef;
-    # We take Precision from constant but cut off tailing zeros
-    return sprintf('%0.0' . P2P_RATE_PRECISION . 'f', $rate) =~ s/(?<=\.\d{2})(\d*?)0*$/$1/r;
 }
 
 =head2 _p2p_record_stat
