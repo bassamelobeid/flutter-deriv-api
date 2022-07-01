@@ -131,13 +131,25 @@ my $c = $t->app->build_controller;
 $t->app->helper(app_id               => sub { 1 });
 $t->app->helper(rate_limitations_key => sub { "rate_limits::non-authorised::1/md5-hash-of-127.0.0.1" });
 
-subtest "no limit for 'ping' or 'time'" => sub {
-    my (@pings, @times);
-    for (1 .. 500) {
+subtest "connection lives if 'ping' or 'time' dose not pass the limit" => sub {
+    my @pings;
+    #Current limit for general_connection_limit category is 10 req/sec
+    for (1 .. 10) {
         push @pings, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'ping', 0);
-        push @times, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'time', 0);
     }
-    lives_ok { Future->needs_all(@pings, @times)->get };
+    lives_ok { Future->needs_all(@pings)->get };
+};
+
+subtest "limit for 'ping' or 'time' " => sub {
+    my $c2 = $t->app->build_controller;
+    my @times;
+    #Current limit for general_connection_limit category is 10 req/sec
+    for (1 .. 10) {
+        push @times, Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'time', 0);
+    }
+    lives_ok { Future->needs_all(@times)->get };
+
+    dies_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'time', 0)->get } "CONNECTION_RATELIMIT_HIT";
 };
 
 subtest "high real account buy sell pricing limit" => sub {
