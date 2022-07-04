@@ -334,6 +334,72 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::payment_agent
         }
+    },
+    {
+        name => 'payment_limits.yml',
+        args => {
+            expected_config => {
+                withdrawal_limits => {
+                    iom => {
+                        for_days => '',
+                        currency => '',
+                        limit_for_days => '',
+                        limit_for_days_for_authenticated => '',
+                        lifetime_limit_for_authenticated => ''
+                    },
+                    malta => {
+                        for_days => '',
+                        currency => '',
+                        limit_for_days => '',
+                        limit_for_days_for_authenticated => '',
+                        lifetime_limit_for_authenticated => ''
+                    },
+                    maltainvest => {
+                        for_days => '',
+                        currency => '',
+                        limit_for_days => '',
+                        limit_for_days_for_authenticated => '',
+                        lifetime_limit_for_authenticated => ''                       
+                    },
+                    svg => {
+                        for_days => '',
+                        currency => '',
+                        limit_for_days => '',
+                        limit_for_days_for_authenticated => '',
+                        lifetime_limit_for_authenticated => ''
+                    },
+                    "wallet-svg" => {
+                        for_days => '',
+                        currency => '',
+                        limit_for_days => '',
+                        limit_for_days_for_authenticated => '',
+                        lifetime_limit_for_authenticated => ''
+                    },
+                    champion => {
+                        for_days => '',
+                        currency => '',
+                        limit_for_days => '',
+                        limit_for_days_for_authenticated => '',
+                        lifetime_limit_for_authenticated => ''
+                    },
+                    samoa => {
+                        for_days => '',
+                        currency => '',
+                        limit_for_days => '',
+                        limit_for_days_for_authenticated => '',
+                        lifetime_limit_for_authenticated => ''
+                    }
+                },
+                qualifying_payment_check_limits => {
+                    iom => {
+                        for_days => '',
+                        currency => '',
+                        limit_for_days => ''
+                    }
+                }
+            },
+            config => \&BOM::Config::payment_limits
+        }
     }
     ];
 
@@ -359,6 +425,13 @@ sub yaml_structure_validator {
             push @expected_keys, join("|", @_);
         });
     my @differences_keys = array_minus(@expected_keys, @received_keys);
+    diag(@differences_keys."\n");
+    if(  scalar @differences_keys eq 7){
+        diag(@received_keys);
+        diag("\n");
+        diag(@expected_keys);
+        diag(@differences_keys);
+    }
     is(scalar @differences_keys, 0, 'BOM::Config::node returns correct structure');
     yaml_array_sub_structure_validator($config, $args->{array_test}) if exists($args->{array_test});
 }
