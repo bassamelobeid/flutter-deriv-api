@@ -753,7 +753,1111 @@ my $test_parameters = [{
                     }
                 ]
             },
-            config => \&BOM::Config::social_responsibility_thresholds
+            config => \&BOM::Config::social_responsibility_thresholds,
+            array_test => ["limits"]
+        }
+    },
+    {
+        name => 'p2p_payment_methods.yml',
+        args => {
+            expected_config => {
+                '2checkout' => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                '543konse' => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                access_money_wallet => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                airtel => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                alipay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                apple_pay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                atease => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                azimo => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                bank_transfer => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        },
+                        bank_code => {
+                            display_name => '',
+                            required => 0
+                        },
+                        bank_name => {
+                            display_name => ''
+                        },
+                        branch => {
+                            display_name => '',
+                            required => ''
+                        }
+                    },
+                    type => ''
+                },
+                bitpay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                boss_revolution => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                broadpay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                btc_smega => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                buyonline => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                carbon => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                cashenvoy => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                cassava_remit => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                cellulant => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                celpaid => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                clicknpay_africa => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                clickpesa => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                dpo => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                dusupay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                ecobank_mobilemoney => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                ecocash => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                equitel => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                etranzact => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                ewallet_services_tanzania => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                exchange4free => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                firstmonie => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                flutterwave => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                fnb => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                fortis => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                gcb => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                glo => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                google_pay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                gt_pay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                halotel => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                hubtel => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                instacash => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                inter_pay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                ipay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                kazang => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                konga => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                mascom_my_zaka => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                mlipa => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                mnaira => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                mobicash => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                mobipay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                moov => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                mpesa_tanzania => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                mtn_momo => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                myghpay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                netpay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                nettcash => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                noqodi => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                nownow => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                onemoney => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                opay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                orange_money => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                other => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => '',
+                            required => 0
+                        },
+                        name => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                paga => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                palmpay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                paxful => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                payant => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                paygate => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                paynow => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                paypal => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                payserv => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                paystack => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                paytoday => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                pesapel => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                pocketmoni => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                posomoney => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                postdotnet => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                qash => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                qless => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                quickteller => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                realpay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                rocket_remit => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                safaricom_mpesa => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                simplepay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                skrill => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                solidpaywave => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                speedpay_mobile => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                sticpay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                stripe => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                talkremit => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                tangaza_pesa => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                teasy_mobile_money => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                teasy_mobile_money => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                telecash => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                terrapay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                tigo_pesa => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                tilt_africa => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                transferwise => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                united_bank_of_zambia_ewallet => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                unitylink => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                vcash => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                vodafone_cash => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                voguepay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                wari => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                wave_mobile_money => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                webmoney => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                wechat_pay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                xapit_zanaco => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                xendpay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                xoom => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                xpress_money => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                yucash => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                yup_africa => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                zamlink => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                zamtel => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                zantel => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                zazu => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                zim_switch => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                zimpayments => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                zoona => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                zotapay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                },
+                zympay => {
+                    display_name => '',
+                    fields => {
+                        account => {
+                            display_name => ''
+                        }
+                    },
+                    type => ''
+                }
+            },
+            config => \&BOM::Config::p2p_payment_methods
         }
     }
     ];
