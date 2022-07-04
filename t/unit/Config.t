@@ -1972,6 +1972,24 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::cashier_config
         }
+    },
+    {
+        name => 'redis-replicated.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_replicated_config
+        }
     }
     ];
 
