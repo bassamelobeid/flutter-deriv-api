@@ -1954,6 +1954,24 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::cft_blocked_countries
         }
+    },
+    {
+        name => 'cashier.yml',
+        args => {
+            expected_config => {
+                doughflow => {
+                    sportsbooks_mapping => {
+                        svg => '',
+                        malta => '',
+                        iom => '',
+                        maltainvest => '',
+                        samoa => '',
+                        dsl => ''
+                    }
+                }
+            },
+            config => \&BOM::Config::cashier_config
+        }
     }
     ];
 
