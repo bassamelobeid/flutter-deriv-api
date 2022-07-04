@@ -1859,6 +1859,101 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::p2p_payment_methods
         }
+    },
+    {
+        name => 'cft_blocked_countries.yml',
+        args => {
+            expected_config => {
+                bd => {
+                    display_name => ''
+                },
+                io => {
+                    display_name => ''
+                },
+                kh => {
+                    display_name => ''
+                },
+                ca => {
+                    display_name => ''
+                },
+                co => {
+                    display_name => ''
+                },
+                hk => {
+                    display_name => ''
+                },
+                id => {
+                    display_name => ''
+                },
+                il => {
+                    display_name => ''
+                },
+                jp => {
+                    display_name => ''
+                },
+                ls => {
+                    display_name => ''
+                },
+                mo => {
+                    display_name => ''
+                },
+                my => {
+                    display_name => ''
+                },
+                np => {
+                    display_name => ''
+                },
+                nl => {
+                    display_name => ''
+                },
+                nz => {
+                    display_name => ''
+                },
+                pk => {
+                    display_name => ''
+                },
+                ph => {
+                    display_name => ''
+                },
+                sg => {
+                    display_name => ''
+                },
+                za => {
+                    display_name => ''
+                },
+                kr => {
+                    display_name => ''
+                },
+                lk => {
+                    display_name => ''
+                },
+                ch => {
+                    display_name => ''
+                },
+                th => {
+                    display_name => ''
+                },
+                tr => {
+                    display_name => ''
+                },
+                us => {
+                    display_name => ''
+                },
+                um => {
+                    display_name => ''
+                },
+                ve => {
+                    display_name => ''
+                },
+                vn => {
+                    display_name => ''
+                },
+                vi => {
+                    display_name => ''
+                }
+            },
+            config => \&BOM::Config::cft_blocked_countries
+        }
     }
     ];
 
