@@ -2126,6 +2126,42 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_events_config
         }
+    },
+    {
+        name => 'redis-rpc.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_rpc_config
+        }
+    },
+    {
+        name => 'redis-transaction.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_transaction_config
+        }
     }
     ];
 
