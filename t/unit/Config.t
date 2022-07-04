@@ -497,6 +497,16 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::client_limits
         }
+    },
+    {
+        name => 'cryptocurrency_api.yml',
+        args => {
+            expected_config => {
+                host => '',
+                port => ''
+            },
+            config => \&BOM::Config::crypto_api
+        }
     }
     ];
 
