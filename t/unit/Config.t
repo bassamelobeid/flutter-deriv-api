@@ -2227,6 +2227,24 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_limit_settings
         }
+    },
+    {
+        name => 'redis-auth.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },  
+            config => \&BOM::Config::redis_auth_config
+        }
     }
     ];
 
