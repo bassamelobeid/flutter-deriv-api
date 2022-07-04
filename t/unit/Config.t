@@ -507,6 +507,18 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::crypto_api
         }
+    },
+    {
+        name => 'domain.yml',
+        args => {
+            expected_config => {
+                default_domain => '',
+                white_list => [],
+                brand => ''
+            },
+            config => \&BOM::Config::domain,
+            array_test => ["white_list"],
+        }
     }
     ];
 
