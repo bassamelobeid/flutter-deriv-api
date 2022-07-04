@@ -519,6 +519,26 @@ my $test_parameters = [{
             config => \&BOM::Config::domain,
             array_test => ["white_list"],
         }
+    },
+    {
+        name => 's3.yml',
+        args => {
+            expected_config => {
+                document_auth => {
+                    aws_bucket => '',
+                    aws_region => '',
+                    aws_access_key_id => '',
+                    aws_secret_access_key => ''
+                },
+                desk => {
+                    aws_bucket => '',
+                    aws_region => '',
+                    aws_access_key_id => '',
+                    aws_secret_access_key => ''
+                }
+            },
+            config => \&BOM::Config::s3
+        }
     }
     ];
 
