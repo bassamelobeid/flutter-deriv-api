@@ -739,6 +739,22 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::financial_assessment_fields
         }
+    },
+    {
+        name => 'social_responsibility_thresholds.yml',
+        args => {
+            expected_config => {
+                limits => [
+                    {
+                        losses => '',
+                        net_deposits => '',
+                        net_income => '',
+                        hello => ''
+                    }
+                ]
+            },
+            config => \&BOM::Config::social_responsibility_thresholds
+        }
     }
     ];
 
@@ -764,7 +780,6 @@ sub yaml_structure_validator {
             push @expected_keys, join("|", @_);
         });
     my @differences_keys = array_minus(@expected_keys, @received_keys);
-    diag(@differences_keys."\n");
     if(  scalar @differences_keys != 0){
         diag("\n");
         diag(@differences_keys);
