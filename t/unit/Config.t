@@ -2052,6 +2052,44 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_exchangerates_config
         }
+    },
+    {
+        name => 'redis-feed.yml',
+        args => {
+            expected_config => {
+                'master-write' => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                'master-read' => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                'fake-read' => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                'local' => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_feed_config
+        }
     }
     ];
 
