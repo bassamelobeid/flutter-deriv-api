@@ -539,6 +539,17 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::s3
         }
+    },
+    {
+        name => 'feed_rpc.yml',
+        args => {
+            expected_config => {
+                writer => {
+                    feeddb_uri => ''
+                }
+            },
+            config => \&BOM::Config::feed_rpc
+        }
     }
     ];
 
