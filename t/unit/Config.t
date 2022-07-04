@@ -1990,6 +1990,19 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_replicated_config
         }
+    },
+    {
+        name => 'redis-pricer.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_pricer_config
+        }
     }
     ];
 
