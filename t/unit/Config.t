@@ -2034,6 +2034,24 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_pricer_shared_config
         }
+    },
+    {
+        name => 'redis-exchangerates.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_exchangerates_config
+        }
     }
     ];
 
