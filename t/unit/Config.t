@@ -550,6 +550,195 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::feed_rpc
         }
+    },
+    {
+        name => 'financial_assessment_structure.yml',
+        args => {
+            expected_config => {
+                trading_experience => {
+                    forex_trading_experience => {
+                        label => '',
+                        possible_answer => {
+                            '0-1 year' => '',
+                            '1-2 years' => '',
+                            'Over 3 years' => ''
+                        }
+                    },
+                    forex_trading_frequency => {
+                        label => '',
+                        possible_answer => {
+                            '0-5 transactions in the past 12 months' => '',
+                            '6-10 transactions in the past 12 months' => '',
+                            '11-39 transactions in the past 12 months' => '',
+                            '40 transactions or more in the past 12 months' => ''
+                        }
+                    },
+                    binary_options_trading_experience => {
+                        label => '',
+                        possible_answer => {
+                            '0-1 year' => '',
+                            '1-2 years' => '',
+                            'Over 3 years' => ''
+                        }
+                    },
+                    binary_options_trading_frequency => {
+                        label => '',
+                        possible_answer => {
+                            '0-5 transactions in the past 12 months' => '',
+                            '6-10 transactions in the past 12 months' => '',
+                            '11-39 transactions in the past 12 months' => '',
+                            '40 transactions or more in the past 12 months' => ''
+                        }
+                    },
+                    cfd_trading_experience => {
+                        label => '',
+                        possible_answer => {
+                            '0-1 year' => '',
+                            '1-2 years' => '',
+                            'Over 3 years' => ''
+                        }
+                    },
+                    cfd_trading_frequency => {
+                        label => '',
+                        possible_answer => {
+                            '0-5 transactions in the past 12 months' => '',
+                            '6-10 transactions in the past 12 months' => '',
+                            '11-39 transactions in the past 12 months' => '',
+                            '40 transactions or more in the past 12 months' => ''
+                        }
+                    },
+                    other_instruments_trading_experience => {
+                        label => '',
+                        possible_answer => {
+                            '0-1 year' => '',
+                            '1-2 years' => '',
+                            'Over 3 years' => ''
+                        }
+                    },
+                    other_instruments_trading_frequency => {
+                        label => '',
+                        possible_answer => {
+                            '0-5 transactions in the past 12 months' => '',
+                           '6-10 transactions in the past 12 months' => '',
+                            '11-39 transactions in the past 12 months' => '',
+                            '40 transactions or more in the past 12 months' => ''
+                        }
+                    }
+                },
+                financial_information => {
+                    employment_industry => {
+                        label => '',
+                        possible_answer => {
+                            'Construction' => 0,
+                            'Education' => 0,
+                            'Finance' => 0,
+                            'Health' => 0,
+                            'Tourism' => 0,
+                            'Information & Communications Technology' => 0,
+                            'Science & Engineering' => 0,
+                            'Legal' => 0,
+                            'Social & Cultural' => 0,
+                            'Agriculture' => 0,
+                            'Real Estate' => 0,
+                            'Food Services' => 0,
+                            'Manufacturing' => 0,
+                            'Unemployed' => 0,
+                        }
+                    },
+                    education_level => {
+                        label => '',
+                        possible_answer => {
+                            'Primary' => 0,
+                            'Secondary' => 0,
+                            'Tertiary' => 0,
+                        }
+                    },
+                    income_source => {
+                        label => '',
+                        possible_answer => {
+                            'Salaried Employee' => 0,
+                            'Self-Employed' => 0,
+                            'Investments & Dividends' => 0,
+                            'Pension' => 0,
+                            'State Benefits' => 0,
+                            'Savings & Inheritance' => 0
+                        }
+                    },
+                    net_income => {
+                        label => '',
+                        possible_answer => {
+                            'Less than $25,000' => 0,
+                            '$25,000 - $50,000' => 0,
+                            '$50,001 - $100,000' => 0,
+                            '$100,001 - $500,000' => 0,
+                            'Over $500,000' => 0,
+                        }
+                    },
+                    estimated_worth => {
+                        label => '',
+                        possible_answer => {
+                            'Less than $100,000' => 0,
+                            '$100,000 - $250,000' => 0,
+                            '$250,001 - $500,000' => 0,
+                            '$500,001 - $1,000,000'=> 0,
+                            'Over $1,000,000' => 0,
+                        }
+                    },
+                    account_turnover => {
+                        label => '',
+                        possible_answer => {
+                            'Less than $25,000' => 0,
+                            '$25,000 - $50,000' => 0,
+                            '$50,001 - $100,000' => 0,
+                            '$100,001 - $500,000' => 0,
+                            'Over $500,000' => 0,
+                        }
+                    },
+                    occupation => {
+                        label => '',
+                        possible_answer => {
+                            'Chief Executives, Senior Officials and Legislators'=> 0,
+                            'Managers'=> 0,
+                            'Professionals'=> 0,
+                            'Clerks' => 0,
+                            'Personal Care, Sales and Service Workers' => 0,
+                            'Agricultural, Forestry and Fishery Workers' => 0,
+                            'Craft, Metal, Electrical and Electronics Workers' => 0,
+                            'Plant and Machine Operators and Assemblers' => 0,
+                            'Cleaners and Helpers' => 0,
+                            'Mining, Construction, Manufacturing and Transport Workers' => 0,
+                            'Armed Forces' => 0,
+                            'Government Officers' => 0,
+                            'Students' => 0,
+                            'Unemployed' => 0,
+                        }
+                    },
+                    employment_status => {
+                        label => '',
+                        possible_answer => {
+                            'Employed' => '',
+                            'Pensioner' => '',
+                            'Self-Employed' => '',
+                            'Student' => '',
+                            'Unemployed' => ''
+                        }
+                    },
+                    source_of_wealth => {
+                        label => '',
+                        possible_answer => {
+                            'Accumulation of Income/Savings' => '',
+                            'Cash Business' => '',
+                            'Company Ownership' => '',
+                            'Divorce Settlement' => '',
+                            'Inheritance' => '',
+                            'Investment Income' => '',
+                            'Sale of Property' => ''
+                        }
+                    }
+                }
+            },
+            config => \&BOM::Config::financial_assessment_fields
+        }
     }
     ];
 
@@ -576,10 +765,8 @@ sub yaml_structure_validator {
         });
     my @differences_keys = array_minus(@expected_keys, @received_keys);
     diag(@differences_keys."\n");
-    if(  scalar @differences_keys eq 7){
-        diag(@received_keys);
+    if(  scalar @differences_keys != 0){
         diag("\n");
-        diag(@expected_keys);
         diag(@differences_keys);
     }
     is(scalar @differences_keys, 0, 'BOM::Config::node returns correct structure');
