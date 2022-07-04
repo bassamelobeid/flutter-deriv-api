@@ -400,6 +400,103 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::payment_limits
         }
+    },
+    {
+        name => 'client_limts.yml',
+        args => {
+            expected_config => {
+                maximum_daily_turnover => {
+                    USD => '',
+                    EUR => '',
+                    AUD => '',
+                    GBP => '',
+                    BTC => '',
+                    ETH => '',
+                    LTC => '',
+                    BUSD => '',
+                    DAI => '',
+                    EURS => '',
+                    IDK => '',
+                    PAX => '',
+                    TUSD => '',
+                    USB => '',
+                    USDC => '',
+                    USDK => '',
+                    UST => '',
+                    eUSDT => ''
+                },
+                max_balance => {
+                    virtual => {
+                        USD => '',
+                        EUR => '',
+                        AUD => '',
+                        GBP => '',
+                        BTC => '',
+                        ETH => '',
+                        LTC => '',
+                        BUSD => '',
+                        DAI => '',
+                        EURS => '',
+                        IDK => '',
+                        PAX => '',
+                        TUSD => '',
+                        USB => '',
+                        USDC => '',
+                        USDK => '',
+                        UST => '',
+                        eUSDT => ''
+                    },
+                    real => {
+                        USD => '',
+                        EUR => '',
+                        AUD => '',
+                        GBP => '',
+                        BTC => '',
+                        ETH => '',
+                        LTC => '',
+                        BUSD => '',
+                        DAI => '',
+                        EURS => '',
+                        IDK => '',
+                        PAX => '',
+                        TUSD => '',
+                        USB => '',
+                        USDC => '',
+                        USDK => '',
+                        UST => '',
+                        eUSDT => ''
+                    }
+                },
+                max_payout_open_positions => {
+                    USD => '',
+                    EUR => '',
+                    AUD => '',
+                    GBP => '',
+                    BTC => '',
+                    ETH => '',
+                    LTC => '',
+                    BUSD => '',
+                    DAI => '',
+                    EURS => '',
+                    IDK => '',
+                    PAX => '',
+                    TUSD => '',
+                    USB => '',
+                    USDC => '',
+                    USDK => '',
+                    UST => '',
+                    eUSDT => ''
+                },
+                max_open_bets_default => '',
+                max_payment_accounts_per_user => '',
+                max_client_payment_accounts_per_broker_code => {
+                    MF => '',
+                    MLT => '',
+                    MX => ''
+                }
+            },
+            config => \&BOM::Config::client_limits
+        }
     }
     ];
 
