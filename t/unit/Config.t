@@ -2263,6 +2263,24 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_expiryq_config
         }
+    },
+    {
+        name => 'redis-p2p.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_p2p_config
+        }
     }
     ];
 
