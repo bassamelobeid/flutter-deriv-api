@@ -2299,6 +2299,28 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_ws_config
         }
+    },
+    {
+        name => 'mt5_user_rights.yml',
+        args => {
+            expected_config => {
+                rights => {
+                    enabled => '',
+                    password => '',
+                    trade_disabled => '',
+                    investor => '',
+                    confirmed => '',
+                    trailing => '',
+                    expert => '',
+                    api_deprecated => '',
+                    reports => '',
+                    readonly => '',
+                    reset_pass => '',
+                    otp_enabled => ''
+                }
+            },
+            config => \&BOM::Config::mt5_user_rights
+        }
     }
     ];
 
