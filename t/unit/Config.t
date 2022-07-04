@@ -2162,6 +2162,71 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_transaction_config
         }
+    },
+    {
+        name => 'redis-transaction-limits.yml',
+        args => {
+            expected_config => {
+                per_landing_company => {
+                    svg => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    },
+                    iom => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    },
+                    malta => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    },
+                    maltainvest => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    },
+                    virtual => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    },
+                    champion => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    },
+                    'champion-virtual' => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    },
+                    samoa => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    },
+                    'samoa-virtual' => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    },
+                    dsl => {
+                        host => '',
+                        port => '',
+                        password => ''
+                    }
+                },
+                global_settings => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_limit_settings
+        }
     }
     ];
 
