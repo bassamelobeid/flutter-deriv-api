@@ -2016,6 +2016,24 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_pricer_subscription_config
         }
+    },
+    {
+        name => 'redis-pricer-shared.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_pricer_shared_config
+        }
     }
     ];
 
