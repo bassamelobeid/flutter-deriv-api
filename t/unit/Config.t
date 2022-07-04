@@ -2108,6 +2108,24 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_mt5_user_config
         }
+    },
+    {
+        name => 'redis-events.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_events_config
+        }
     }
     ];
 
