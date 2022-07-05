@@ -492,7 +492,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'none',
                                 }}
                         },
                         ownership => {
@@ -549,7 +549,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'none',
                                 }}
                         },
                         ownership => {
@@ -995,7 +995,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'none',
                                 }}
                         },
                         ownership => {
@@ -1313,7 +1313,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'none',
                                 }}
                         },
                         ownership => {
@@ -1370,7 +1370,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'none',
                                 }}
                         },
                         ownership => {
@@ -2001,7 +2001,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'none',
                                 }}
                         },
                         ownership => {
@@ -2068,7 +2068,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'none',
                                 }}
                         },
                         ownership => {
@@ -2243,7 +2243,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'verified',
+                                        status => 'none',
                                     }}
                             },
                             ownership => {
@@ -2481,7 +2481,7 @@ subtest 'get account status' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'verified',
+                                        status => 'none',
                                     }}
                             },
                             ownership => {
@@ -3023,7 +3023,7 @@ subtest 'Experian validated account' => sub {
                                 status              => 'none',
                             },
                             manual => {
-                                status => 'verified',
+                                status => 'none',
                             }}
                     },
                     ownership => {
@@ -3094,7 +3094,7 @@ subtest 'Experian validated account' => sub {
                                 status              => 'none',
                             },
                             manual => {
-                                status => 'verified',
+                                status => 'none',
                             }}
                     },
                     ownership => {
@@ -3167,7 +3167,7 @@ subtest 'Experian validated account' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'none',
                                 }}
                         },
                         ownership => {
@@ -3244,7 +3244,7 @@ subtest 'Experian validated account' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'verified',
+                                        status => 'none',
                                     }}
                             },
                             ownership => {
@@ -3334,7 +3334,7 @@ subtest 'Experian validated account' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'none',
                                 }}
                         },
                         ownership => {
@@ -3420,7 +3420,7 @@ subtest 'Experian validated account' => sub {
                                         status              => 'none',
                                     },
                                     manual => {
-                                        status => 'verified',
+                                        status => 'none',
                                     }}
                             },
                             ownership => {
