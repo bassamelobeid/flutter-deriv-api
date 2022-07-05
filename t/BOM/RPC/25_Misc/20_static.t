@@ -37,9 +37,12 @@ subtest 'residence_list' => sub {
                     onfido => {
                         is_country_supported => 0,
                         documents_supported  => {
-                            driving_licence        => {display_name => 'Driving Licence'},
-                            national_identity_card => {display_name => 'National Identity Card'},
-                            passport               => {display_name => 'Passport'},
+                            driving_licence             => {display_name => 'Driving Licence'},
+                            national_identity_card      => {display_name => 'National Identity Card'},
+                            passport                    => {display_name => 'Passport'},
+                            residence_permit            => {display_name => 'Residence Permit'},
+                            visa                        => {display_name => 'Visa'},
+                            immigration_status_document => {display_name => 'Immigration Status Document'},
                         },
                     },
                 }
