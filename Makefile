@@ -17,13 +17,10 @@ test:
 	@$(PROVE) -I./t t/BOM
 
 syntax_diff:
-	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all | grep -v localize.t)
+	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)
 
 syntax:
 	@$(PROVE) --norc -I./t $(wildcard t/0*.t)
-
-localize:
-	@$(PROVE) -I./t t/localize.t
 
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
