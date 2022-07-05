@@ -878,6 +878,20 @@ quants:
                   isa: Num 
                   default: 0.008
                   global: 1  
+    accumulator:
+      description: "accumulator variables"
+      isa: section
+      contains:
+        max_payout:
+          description: "Maximum payout for accumulator contracts"
+          isa: json_string
+          default: '{ "1655022046": {"USD": 10000, "AUD": 10000, "GBP": 10000, "EUR": 10000}}'
+          global: 1
+        max_duration_coefficient:
+          description: "coefficient use in calculating max duration(coefficient / growth_rate)"
+          isa: json_string
+          default: '{ "1655022046": 10}'
+          global: 1
     multiplier_affiliate_commission:
       description: "Affiliate commission for multiplier contracts"
       isa: section

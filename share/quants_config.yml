@@ -210,6 +210,26 @@ bet_limits:
           UST: 1
           eUSDT: 1
           tUSDT: 1
+        accumulator:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 0.000015
+          ETH: 0.00025
+          LTC: 0.0045
+          BUSD: 1
+          DAI: 1
+          EURS: 1
+          IDK: 15
+          PAX: 1
+          TUSD: 1
+          USB: 1
+          USDC: 1
+          USDK: 1
+          UST: 1
+          eUSDT: 1
+          tUSDT: 1
       synthetic_index:
         default_contract_category:
           USD: 0.35
@@ -232,6 +252,26 @@ bet_limits:
           eUSDT: 0.35
           tUSDT: 0.35
         multiplier:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 0.000015
+          ETH: 0.00025
+          LTC: 0.0045
+          BUSD: 1
+          DAI: 1
+          EURS: 1
+          IDK: 15
+          PAX: 1
+          TUSD: 1
+          USB: 1
+          USDC: 1
+          USDK: 1
+          UST: 1
+          eUSDT: 1
+          tUSDT: 1
+        accumulator:
           USD: 1
           EUR: 1
           AUD: 1
@@ -296,6 +336,26 @@ bet_limits:
           UST: 2000
           eUSDT: 2000
           tUSDT: 2000
+        accumulator:
+          USD: 1000
+          EUR: 1000
+          AUD: 1000
+          GBP: 1000
+          BTC: 0.015
+          ETH: 0.25
+          LTC: 4.5
+          BUSD: 1000
+          DAI: 1000
+          EURS: 1000
+          IDK: 13895
+          PAX: 1000
+          TUSD: 1000
+          USB: 1000
+          USDC: 1000
+          USDK: 1000
+          UST: 1000
+          eUSDT: 1000
+          tUSDT: 1000
   min_commission_amount:
     default_contract_category:
       USD: 0.02
