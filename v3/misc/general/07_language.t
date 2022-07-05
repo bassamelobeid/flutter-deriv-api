@@ -54,7 +54,16 @@ is_deeply $res->{residence_list}->[0],
                     },
                     passport => {
                         display_name => 'Passport',
-                    }
+                    },
+                    immigration_status_document => {
+                        display_name => 'Immigration Status Document',
+                    },
+                    national_health_insurance_card => {
+                        display_name => 'National Health Insurance Card',
+                    },
+                    national_identity_card => {
+                        display_name => 'National Identity Card',
+                    },
                 },
                 is_country_supported => 1,
             }}}};
