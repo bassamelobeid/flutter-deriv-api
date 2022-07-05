@@ -6668,6 +6668,42 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::redis_payment_config
         }
+    },
+    {
+        name => 'redis-cfds.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_cfds_config
+        }
+    },
+    {
+        name => 'services.yml',
+        args => {
+            expected_config => {
+                fraud_prevention => {
+                    enabled => '',
+                    host => '',
+                    port => ''
+                },
+                identity_verification => {
+                    enabled => '',
+                    host => '',
+                    port => ''
+                }
+            },
+            config => \&BOM::Config::services_config
+        }
     }
     ];
 
