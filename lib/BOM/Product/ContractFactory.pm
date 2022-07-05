@@ -67,6 +67,7 @@ use BOM::Product::Contract::Resetcall;
 use BOM::Product::Contract::Resetput;
 use BOM::Product::Contract::Runhigh;
 use BOM::Product::Contract::Runlow;
+use BOM::Product::Contract::Accu;
 
 =head2 produce_contract
 

@@ -190,7 +190,7 @@ sub _validate_take_profit {
     if ($amount < $min_order_amount) {
         return {
             message           => 'take profit too low',
-            message_to_client => [$ERROR_MAPPING->{InvalidTakeProfit}, financialrounding('price', $currency, $min_order_amount)],
+            message_to_client => [$ERROR_MAPPING->{TakeProfitTooLow}, financialrounding('price', $currency, $min_order_amount)],
             details           => $details,
         };
     }
@@ -210,7 +210,7 @@ sub _validate_take_profit {
     if ($amount <= $pnl) {
         return {
             message           => 'take profit lower than pnl',
-            message_to_client => [$ERROR_MAPPING->{InvalidTakeProfit}, financialrounding('price', $currency, $pnl)],
+            message_to_client => [$ERROR_MAPPING->{TakeProfitTooLow}, financialrounding('price', $currency, $pnl)],
             details           => $details,
         };
     }

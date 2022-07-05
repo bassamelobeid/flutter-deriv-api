@@ -38,7 +38,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::Product::Exception;
 use LandingCompany::Registry;
 use YAML::XS qw(LoadFile);
-use BOM::Config::Quants qw(minimum_payout_limit maximum_payout_limit minimum_stake_limit);
+use BOM::Config::Quants qw(minimum_payout_limit minimum_stake_limit);
 use BOM::Config;
 use BOM::Config::QuantsConfig;
 
