@@ -23,7 +23,6 @@ my $cgi = CGI->new;
 PrintContentType();
 BrokerPresentation(' ');
 
-my $p2p_write      = BOM::Backoffice::Auth0::has_authorisation(['P2PWrite']);
 my $config         = BOM::Config::third_party();
 my $sendbird_token = $config->{sendbird}->{api_token};
 
@@ -54,7 +53,7 @@ $chat_page = 1
 
 Bar('P2P Order details/management');
 
-if ($input{action} and $p2p_write) {
+if ($input{action}) {
     try {
         my $client = BOM::User::Client->new({loginid => $input{disputer}});
         my $res    = $client->p2p_resolve_order_dispute(
@@ -70,7 +69,7 @@ if ($input{action} and $p2p_write) {
     }
 }
 
-if ($input{dispute} and $p2p_write) {
+if ($input{dispute}) {
     try {
         die "Invalid dispute reason.\n" unless exists $dispute_reasons{$input{reason}};
 
@@ -202,7 +201,6 @@ BOM::Backoffice::Request::template()->process(
         order              => $order,
         escrow             => $escrow,
         transactions       => $transactions,
-        p2p_write          => $p2p_write,
         chat_messages      => $chat_messages,
         chat_messages_next => scalar @{$chat_messages} < $chat_messages_limit
         ? undef

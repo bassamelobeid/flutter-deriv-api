@@ -122,7 +122,7 @@
         </tr>
         <tr>
             <td>Band level</td>
-            <td>[% IF p2p_write %]
+            <td>[% IF can_set_band %]
                 <select name="trade_band">
                     [% FOREACH band = bands %]
                     <option value="[% band %]" [% advertiser.trade_band == band && 'selected' %]>[% band %]</option>

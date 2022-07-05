@@ -185,7 +185,7 @@
         </tbody>
     </table>
 
-    [% IF p2p_write && (order.status == 'Timed-out') %]
+    [% IF order.status == 'Timed-out' %]
         <hr>
         <h3>Manual dispute creation</h3>
 
@@ -205,7 +205,7 @@
         </form>
         [% END %]
 
-    [% IF p2p_write && (order.status == 'Disputed') %]
+    [% IF order.status == 'Disputed' %]
         <hr>
         <h3>Order under dispute</h3>
         

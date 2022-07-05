@@ -44,7 +44,7 @@ my $db = BOM::Database::ClientDB->new({
         operation   => 'write'
     })->db->dbic;
 
-my $p2p_write = BOM::Backoffice::Auth0::has_authorisation(['P2PWrite']);
+my $can_set_band = BOM::Backoffice::Auth0::has_authorisation(['P2PWrite', 'AntiFraud']);
 
 if ($input{create}) {
     try {
@@ -68,7 +68,7 @@ if ($input{update}) {
             });
 
         die "There is already another advertiser with this nickname\n" if $existing;
-        die "You do not have permission to set band level\n"           if $input{trade_band} && !$p2p_write;
+        die "You do not have permission to set band level\n"           if $input{trade_band} && !$can_set_band;
 
         if ($input{blocked_until}) {
             try {
@@ -245,7 +245,7 @@ BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_advertiser_manage.tt',
     {
         %output,
-        p2p_write => $p2p_write,
+        can_set_band => $can_set_band,
     });
 
 code_exit_BO();

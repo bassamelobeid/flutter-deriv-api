@@ -20,9 +20,6 @@ my $cgi = CGI->new;
 
 PrintContentType();
 
-code_exit_BO('<p class="error"><b>Both IT and Quants permissions are required to access this page</b></p>')
-    unless BOM::Backoffice::Auth0::has_authorisation(['Quants']) && BOM::Backoffice::Auth0::has_authorisation(['IT']);
-
 BrokerPresentation('P2P PAYMENT METHODS');
 
 if (request()->http_method eq 'POST' and request()->params->{save}) {
