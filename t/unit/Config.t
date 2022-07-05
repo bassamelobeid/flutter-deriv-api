@@ -6650,6 +6650,24 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::mt5_account_types
         }
+    },
+    {
+        name => 'redis-payment.yml',
+        args => {
+            expected_config => {
+                write => {
+                    host => '',
+                    port => '',
+                    password => ''
+                },
+                read => {
+                    host => '',
+                    port => '',
+                    password => ''
+                }
+            },
+            config => \&BOM::Config::redis_payment_config
+        }
     }
     ];
 
