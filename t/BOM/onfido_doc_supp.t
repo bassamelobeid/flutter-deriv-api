@@ -10,7 +10,7 @@ use BOM::Config::Onfido;
 use Locale::Codes::Country qw(country_code2code);
 use Test::Deep;
 
-my $id_supported_docs = ['Driving Licence', 'National Identity Card', 'Passport'];
+my $id_supported_docs = ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'];
 my $ng_supported_docs = ['Driving Licence', 'National Identity Card', 'Passport', 'Voter Id'];
 my $gh_supported_docs = ['Driving Licence', 'National Identity Card', 'Passport'];
 
@@ -37,27 +37,17 @@ subtest 'disabled countries' => sub {
 
     my $disabled_countries = [map { $_->{disabled} ? $_->{country_code} : () } values $config->@*];
 
-    my $expected_disabled_countries = [
-        qw/
-            by
-            af
-            cd
-            iq
-            ly
-            sy
-            ru
-            cn
-            ir
-            kp
-            /
-    ];
+    my @expected_disabled_countries = (
+        'af', 'by', 'cn', 'cd', 'ir', 'iq', 'ly', 'kp', 'ru', 'sy', 'aq', 'bq', 'bv', 'io', 'cx', 'cc', 'ck', 'cw', 'fk', 'gf',
+        'tf', 'gp', 'hm', 'mq', 'yt', 'nc', 'nu', 'nf', 're', 'sh', 'pm', 'sx', 'gs', 'sj', 'tl', 'tk', 'um', 'wf', 'eh', 'ax'
+    );
 
-    for my $cc ($expected_disabled_countries->@*) {
+    for my $cc (@expected_disabled_countries) {
         ok BOM::Config::Onfido::is_disabled_country($cc),   "$cc is disabled";
         ok !BOM::Config::Onfido::is_country_supported($cc), "$cc is unsupported";
     }
 
-    cmp_bag $disabled_countries, [map { uc(country_code2code($_, 'alpha-2', 'alpha-3')); } $expected_disabled_countries->@*],
+    cmp_bag $disabled_countries, [map { uc(country_code2code($_, 'alpha-2', 'alpha-3')); } @expected_disabled_countries],
         'disabled countries full list';
 };
 
