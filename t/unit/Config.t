@@ -5997,6 +5997,659 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::mt5_server_routing
         }
+    },
+    {
+        name => 'mt5_account_types.yml',
+        args => {
+            expected_config => {
+                'demo\p01_ts01\financial\labuan_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts01\financial\bvi_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts01\financial\maltainvest_std_gbp' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts01\financial\maltainvest_std_eur' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts01\financial\maltainvest_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts01\financial\svg_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts01\financial\svg_std-lim_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts01\financial\vanuatu_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts01\synthetic\svg_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo_bvi_financial_financial_stp' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\bvi_financial_stp' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo01\financial\bvi_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts02\financial\labuan_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts02\financial\bvi_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts02\financial\maltainvest_std_gbp' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts02\financial\maltainvest_std_eur' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts02\financial\svg_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts02\financial\svg_std-lim_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts02\financial\vanuatu_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts02\synthetic\svg_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'demo\p01_ts02\financial\bvi_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\financial\bvi_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\financial\bvi_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\financial\bvi_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\financial\bvi_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\financial\bvi_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\financial\labuan_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\financial\labuan_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\financial\labuan_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\financial\labuan_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\financial\labuan_stp_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\financial\maltainvest_std-hr_eur' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\financial\maltainvest_std-hr_gbp' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\financial\maltainvest_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\financial\maltainvest_std-hr_gbp'=> {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\financial\maltainvest_std-hr_eur' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\financial\maltainvest_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\financial\maltainvest_std-hr_gbp' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\financial\maltainvest_std-hr_eur' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\financial\maltainvest_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\financial\maltainvest_std-hr_gbp' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\financial\maltainvest_std-hr_eur' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\financial\maltainvest_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\financial\maltainvest_std-hr_gbp' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\financial\maltainvest_std-hr_eur' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\financial\maltainvest_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\financial\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\financial\svg_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\financial\svg_std-lim_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\financial\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\financial\svg_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\financial\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\financial\svg_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\financial\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\financial\svg_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\financial\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\financial\svg_std_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\financial\vanuatu_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\financial\vanuatu_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\financial\vanuatu_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\financial\vanuatu_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\financial\vanuatu_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\synthetic\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\synthetic\svg_std_usd\01' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\synthetic\svg_std_usd\02' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\synthetic\svg_std_usd\03' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts01\synthetic\svg_std_usd\04' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\synthetic\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\synthetic\svg_std_usd\01' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\synthetic\svg_std_usd\02' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\synthetic\svg_std_usd\03' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\synthetic\svg_std_usd\04' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\synthetic\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\synthetic\svg_std_usd\01' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\synthetic\svg_std_usd\02' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\synthetic\svg_std_usd\03' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\synthetic\svg_std_usd\04' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\synthetic\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\synthetic\svg_std_usd\01' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\synthetic\svg_std_usd\02' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\synthetic\svg_std_usd\03' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\synthetic\svg_std_usd\04' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\synthetic\svg_std-hr_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\synthetic\svg_std_usd\01' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\synthetic\svg_std_usd\02' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\synthetic\svg_std_usd\03' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\synthetic\svg_std_usd\04' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\synthetic\seychelles_ib_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts02\synthetic\seychelles_ibt_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts03\synthetic\seychelles_ibt_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p01_ts04\synthetic\seychelles_ibt_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                },
+                'real\p02_ts02\synthetic\seychelles_ibt_usd' => {
+                    account_type => '',
+                    landing_company_short => '',
+                    market_type => '',
+                    sub_account_type => '',
+                    server => ''
+                }
+
+            },
+            config => \&BOM::Config::mt5_account_types
+        }
     }
     ];
 
