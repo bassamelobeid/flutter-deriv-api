@@ -3,45 +3,34 @@ use strict;
 use warnings;
 
 use IO::Async::Loop;
-use Job::Async;
-
-use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
-use Data::Dump 'pp';
+use IO::Async::Process;
 
 # usage:
-#   perl submit-one.pl RPCNAME ARG=VALUE ARG=VALUE...
+#   perl submit-one.pl RPCNAME ARG1 ARG2
 #
 # examples:
 #
-# $ perl submit-one.pl ping
-# { result => "pong" }
-#
-# $ perl submit-one.pl sleep seconds=5
-# { result => "success", success => 1 }
-
-my $loop = IO::Async::Loop->new;
-$loop->add(my $jobman = Job::Async->new);
-
-my $client = $jobman->client(
-    redis => {
-        uri => 'redis://127.0.0.1',
-    });
-$client->start->get;
+# $ perl submit-one.pl ping HOLA
+# $ Response: "HOLA"
 
 my $name = shift @ARGV;
 
-my %args;
-my %params;
-foreach (@ARGV) {
-    next unless m/^(.+?)=(.*)$/;
-    $args{$1} = $2;
-}
+my $loop    = IO::Async::Loop->new;
+my $process = IO::Async::Process->new(
+    command => ["redis-cli", $name, @ARGV],
+    stdout  => {
+        on_read => sub {
+            my ($stream, $buffref) = @_;
+            while ($$buffref =~ s/^(.*)\n//) {
+                print "Response: '$1'\n";
+            }
+            return 0;
+        },
+    },
+    on_finish => sub {
+        $loop->stop;
+    },
+);
 
-$params{args} = \%args;
-
-my $jsonresult = $client->submit(
-    name   => $name,
-    params => encode_json_utf8(\%params))->get;
-my $result = decode_json_utf8($jsonresult);
-
-print pp($result) . "\n";
+$loop->add($process);
+$loop->run;
