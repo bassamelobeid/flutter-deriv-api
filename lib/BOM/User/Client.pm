@@ -6775,10 +6775,11 @@ sub get_poi_status {
     return 'pending' if $status{pending};
 
     if (!$self->ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
-        if ($status{expired}) {
-            # IDV does not have 2nd attempt
-            return 'rejected' if $onfido eq 'rejected';
-            return 'rejected' if $manual eq 'rejected';
+        # IDV does not have 2nd attempt
+        if ($onfido eq 'expired' || $manual eq 'expired') {
+            return 'suspected' if $onfido eq 'suspected';
+            return 'rejected'  if $onfido eq 'rejected';
+            return 'rejected'  if $manual eq 'rejected';
             return 'expired';
         }
 
@@ -6907,13 +6908,13 @@ sub get_manual_poi_status {
     my $poi_documents  = $self->documents->uploaded->{proof_of_identity};
     my $is_poi_expired = $poi_documents->{is_expired};
 
+    return 'none' unless scalar keys $poi_documents->{documents}->%*;
+
     return 'pending' if $self->documents->pending;
 
     return 'expired' if $is_poi_expired;
 
     return 'verified' if $self->status->age_verification;
-
-    return 'none' unless scalar keys $poi_documents->{documents}->%*;
 
     return 'rejected';    # if docs are not pending, not age verified, what else could it be?
 }

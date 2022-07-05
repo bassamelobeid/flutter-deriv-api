@@ -208,7 +208,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 1,
-                    documents  => {},
+                    documents  => {test => 1},
                 }};
 
             is $test_client_cr->get_poi_status, 'expired', 'Client POI status is expired';
@@ -279,7 +279,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_pending => 1,
-                    documents  => {},
+                    documents  => {test => 1},
                 }};
 
             $onfido_document_status = undef;
@@ -379,7 +379,7 @@ subtest 'get_poi_status' => sub {
                 $uploaded               = {
                     proof_of_identity => {
                         is_expired => 1,
-                        documents  => {},
+                        documents  => {test => 1},
                     }};
                 is $test_client_cr->get_poi_status, 'expired', 'POI status of an authenticated client is <expired> - if expiry check is required';
 
@@ -388,7 +388,7 @@ subtest 'get_poi_status' => sub {
                 $uploaded               = {
                     proof_of_identity => {
                         is_expired => 1,
-                        documents  => {},
+                        documents  => {test => 1},
                     }};
                 is $test_client_cr->get_poi_status, 'rejected',
                     'POI status of an authenticated client is <rejected> - if expiry check is required and onfido result is not clear';
@@ -400,6 +400,86 @@ subtest 'get_poi_status' => sub {
             $authenticated = 0;
             $test_client_cr->status->set('age_verification', 'system', 'test');
             $authenticated_test_scenarios->();
+
+            $test_client_cr->status->clear_age_verification;
+
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POI status suspected - fully authenticated or age verified' => sub {
+            $test_client_cr->status->clear_age_verification;
+            my $authenticated = 1;
+            $mocked_client->mock('fully_authenticated',               sub { return $authenticated });
+            $mocked_client->mock('latest_poi_by',                     sub { return 'onfido' });
+            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
+
+            my $authenticated_test_scenarios = sub {
+                $uploaded = {
+                    proof_of_identity => {
+                        is_expired => 0,
+                        documents  => {},
+                    }};
+                $onfido_document_status = 'complete';
+                $onfido_sub_result      = 'suspected';
+                is $test_client_cr->get_poi_status, 'verified',
+                    'POI status of an authenticated client is <verified> - even with suspected onfido check';
+
+                $onfido_document_status = 'complete';
+                $onfido_sub_result      = 'clear';
+                $uploaded               = {
+                    proof_of_identity => {
+                        is_expired => 1,
+                        documents  => {test => 1},
+                    }};
+                is $test_client_cr->get_poi_status, 'expired', 'POI status of an authenticated client is <expired> - if expiry check is required';
+
+                $onfido_document_status = 'complete';
+                $onfido_sub_result      = 'suspected';
+                $uploaded               = {
+                    proof_of_identity => {
+                        is_expired => 1,
+                        documents  => {test => 1},
+                    }};
+                is $test_client_cr->get_poi_status, 'suspected',
+                    'POI status of an authenticated client is <suspected> - if expiry check is required and onfido result is not clear';
+            };
+
+            $authenticated = 1;
+            $authenticated_test_scenarios->();
+
+            $authenticated = 0;
+            $test_client_cr->status->set('age_verification', 'system', 'test');
+            $authenticated_test_scenarios->();
+
+            $test_client_cr->status->clear_age_verification;
+
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'IDV status is expired, but the client is age verified' => sub {
+            $test_client_cr->status->clear_age_verification;
+            my $authenticated = 1;
+            my $idv_status;
+            $mocked_client->mock('fully_authenticated',               sub { return $authenticated });
+            $mocked_client->mock('latest_poi_by',                     sub { return 'idv' });
+            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
+            $mocked_client->mock('get_idv_status',                    sub { return $idv_status });
+
+            $onfido_document_status = 'complete';
+            $onfido_sub_result      = 'clear';
+            $uploaded               = {
+                proof_of_identity => {
+                    is_expired => 0,
+                    documents  => {},
+                }};
+
+            $authenticated = 1;
+            $idv_status    = 'expired';
+            is $test_client_cr->get_poi_status, 'verified', 'POI status of an authenticated client is <verified> - even with idv expired';
+
+            $authenticated = 0;
+            $idv_status    = 'expired';
+            is $test_client_cr->get_poi_status, 'expired', 'POI status of a non authenticated client is <expired> - with idv expired';
 
             $test_client_cr->status->clear_age_verification;
 
@@ -607,7 +687,7 @@ subtest 'get_poi_status' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 1,
-                    documents  => {},
+                    documents  => {test => 1},
                 }};
 
             is $test_client_mf->get_poi_status, 'expired', 'Client POI status is expired';
@@ -1500,6 +1580,7 @@ subtest 'Experian validated accounts' => sub {
             $uploaded    = {
                 proof_of_identity => {
                     is_pending => 1,
+                    documents  => {test => 1},
                 }};
 
             ok !$test_client->needs_poi_verification, 'POI verification not needed';
