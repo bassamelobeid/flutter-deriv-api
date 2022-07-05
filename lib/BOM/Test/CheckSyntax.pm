@@ -26,6 +26,7 @@ use Pod::Checker qw(podchecker);
 use Test::Pod::Coverage;
 use Array::Utils qw(intersect);
 use BOM::Test::CheckJsonMaybeXS;
+use BOM::Test::LocalizeSyntax qw(check_localize_string_structure);
 use YAML::XS qw(LoadFile);
 use Data::Dumper;
 $Data::Dumper::Maxdepth = 1;
@@ -60,6 +61,7 @@ sub check_syntax_on_diff {
         check_syntax(\@check_files, \@skipped_files, 'syntax_diff');
         check_tidy(\@check_files, \@skipped_files);
         check_yaml(@check_files);
+        check_localize_string_structure(@check_files);
     } else {
         pass "no change detected, skip tests";
     }
