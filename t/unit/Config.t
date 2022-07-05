@@ -2321,6 +2321,3682 @@ my $test_parameters = [{
             },
             config => \&BOM::Config::mt5_user_rights
         }
+    },
+    {
+        name => 'mt5_server_routing_by_country.yml',
+        args => {
+            expected_config => {
+                demo => {
+                    gb => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    im => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cy => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    dk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ee => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fi => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    hr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    hu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ie => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ro => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    se => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    si => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    be => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    de => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    es => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    it => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    au => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ao => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    km => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    za => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ug => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ls => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    na => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ne => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ng => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    zw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ml => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    zm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bi => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    td => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    so => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ga => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ke => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    st => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ci => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    er => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    et => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cd => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    yt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    in => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    id => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    la => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ph => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    th => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    vn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bd => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    np => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mo => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    jp => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ar => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bo => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    br => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    co => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ec => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gp => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gy => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pe => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    uy => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ve => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ag => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ai => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    aw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bb => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bs => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    dm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    do => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gd => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    hn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ht => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    jm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ms => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mx => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ni => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pa => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    vc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    dz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    eg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    eh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ma => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ly => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    dj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sd => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    uz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lb => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sy => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    iq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ps => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    jo => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sa => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    qa => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    om => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    af => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ye => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    am => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ru => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    al => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    io => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cx => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    re => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    az => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    is => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ki => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sb => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ck => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ky => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gi => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sx => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    me => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ws => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    rs => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    hm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ge => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ad => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    li => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    md => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ch => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gs => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    by => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fo => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ua => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    aq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ax =>{
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    va => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    wf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    to => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ba => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    no => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    vg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    an => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ss => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    }
+                },
+                real => {
+                    gb => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    im => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    at => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cy => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    dk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ee => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fi => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    hr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    hu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ie => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ro => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    se => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    si => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    be => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    de => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    es => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    it => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },au => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ao => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    km => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    za => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ug => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ls => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    na => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ne => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ng => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    zw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ml => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    zm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bi => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    td => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    so => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ga => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ke => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    st => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ci => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    er => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    et => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cd => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    yt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    in => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    id => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    la => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ph => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    th => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    vn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bd => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    np => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mo => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    jp => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ar =>{
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bo => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    br => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    co => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ec => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gp => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gy => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pe => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    uy => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ve => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ag => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ai => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    aw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bb => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bs => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    dm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    do => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gd => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    hn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ht => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    jm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ms => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mx => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ni => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pa => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tt => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    vc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    dz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    eg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    eh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ma => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ly => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    dj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sd => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    uz => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    kg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    lb => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sy => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    iq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ps => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    jo => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sa => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    qa => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    om => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    af => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ye => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    am => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ru => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    al => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    io => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cx => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    re => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    az => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    is => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ki => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sb => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ck => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ky => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pn => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pw => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gi => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sx => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    me => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ws => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    rs => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    hm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ge => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    tk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ad => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    li => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bl => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    pf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    md => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ch => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    gs => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    by => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mk => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    mh => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    sj => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bv => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fo => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nu => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    fm => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    cc => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ua => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    aq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ax => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    va => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    wf => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    to => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ba => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    nr => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    no =>{
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    vg => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    an => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    bq => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    },
+                    ss => {
+                        synthetic => {
+                            servers => []
+                        },
+                        financial => {
+                            servers => []
+                        }
+                    }
+
+                }
+            },
+            config => \&BOM::Config::mt5_server_routing
+        }
     }
     ];
 
