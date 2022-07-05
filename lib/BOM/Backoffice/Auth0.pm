@@ -14,7 +14,7 @@ use BOM::Config::Redis;
 use BOM::Backoffice::Utility;
 
 use constant WRITE_GROUPS => qw(
-    AntiFraud CSWrite COMPLIANCE P2PWrite Payments QuantsWrite
+    AntiFraud CSWrite Compliance P2PWrite Payments QuantsWrite
 );
 
 sub exchange_code_for_token {
