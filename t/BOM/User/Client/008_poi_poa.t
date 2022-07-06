@@ -18,6 +18,152 @@ $mocked_documents->mock(
         return $uploaded;
     });
 
+subtest 'get_poa_status' => sub {
+    subtest 'Unregulated account' => sub {
+        my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+        my $user = BOM::User->create(
+            email          => 'emailtest1@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_cr);
+
+        my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+        subtest 'POA status none' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            is $test_client_cr->get_poa_status, 'none', 'Client POA status is none';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status pending' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 1,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            is $test_client_cr->get_poa_status, 'pending', 'Client POA status is pending';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status rejected' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 1,
+                    documents   => {},
+                }};
+
+            is $test_client_cr->get_poa_status, 'rejected', 'Client POA status is rejected';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status verified' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
+
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            is $test_client_cr->get_poa_status, 'verified', 'Client POA status is verified';
+            $mocked_client->unmock_all;
+        };
+    };
+
+    subtest 'Regulated account' => sub {
+        my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MF',
+        });
+        my $user = BOM::User->create(
+            email          => 'emailtest2@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_mf);
+
+        my $mocked_client = Test::MockModule->new(ref($test_client_mf));
+        subtest 'POA status none' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            is $test_client_mf->get_poa_status, 'none', 'Client POA status is none';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status pending' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 1,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            is $test_client_mf->get_poa_status, 'pending', 'Client POA status is pending';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status rejected' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 1,
+                    documents   => {},
+                }};
+
+            is $test_client_mf->get_poa_status, 'rejected', 'Client POA status is rejected';
+            $mocked_client->unmock_all;
+        };
+
+        subtest 'POA status verified' => sub {
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
+
+            $uploaded = {
+                proof_of_address => {
+                    is_expired  => 0,
+                    is_pending  => 0,
+                    is_rejected => 0,
+                    documents   => {},
+                }};
+
+            is $test_client_mf->get_poa_status, 'verified', 'Client POA status is verified';
+            $mocked_client->unmock_all;
+        };
+    };
+};
 
 subtest 'get_poi_status' => sub {
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
