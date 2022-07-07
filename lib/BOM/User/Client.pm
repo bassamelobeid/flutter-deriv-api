@@ -2243,7 +2243,11 @@ use constant {
         PP011 => "OpenOrdersDeleteAdvert",
         PP012 => "PaymentMethodRemoveActiveOrdersDB",
         PP013 => "DuplicatePaymentMethod",
+        PP014 => "OrderConfirmCompleted",
+        PP015 => "OrderConfirmCompleted",
         PP016 => "OrderRefundInvalid",
+        PP017 => "OrderConfirmCompleted",
+        PP018 => "OrderConfirmCompleted"
     },
 };
 
@@ -4173,14 +4177,16 @@ sub _p2p_client_buy_confirm {
 
     # $self is the buyer
     $self->_p2p_validate_buyer_confirm($order);
-
     my $result = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order->{id}, 1);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client_v2(?)', undef, $order->{id});
         });
 
-    $self->_p2p_order_buy_confirmed($result);
-    return $result;
+    $self->_p2p_db_error_handler($result);
+    $order->{status} = $result->{status};
+    $self->_p2p_order_buy_confirmed($order);
+
+    return $order;
 }
 
 =head2 _p2p_advertiser_buy_confirm
@@ -4210,12 +4216,15 @@ sub _p2p_advertiser_buy_confirm {
     my $txn_time = Date::Utility->new->datetime;
     my $result   = $self->db->dbic->txn(
         fixup => sub {
-            $_->do('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order->{id}, 1);
+            my $confirm_result = $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser_v2(?)', undef, $order->{id});
+            return $confirm_result if $confirm_result->{error_code};
             return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?, FALSE, FALSE)',
                 undef, $order->{id}, $escrow->loginid, $source, $self->loginid, $txn_time);
         });
 
+    $self->_p2p_db_error_handler($result);
     $self->_p2p_order_completed($result);
+
     return $result;
 }
 
@@ -4247,11 +4256,15 @@ sub _p2p_client_sell_confirm {
 
     my $result = $self->db->dbic->txn(
         fixup => sub {
-            $_->do('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order->{id}, 1);
+            my $confirm_result = $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client_v2(?)', undef, $order->{id});
+            return $confirm_result if $confirm_result->{error_code};
             return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?, FALSE, FALSE)',
                 undef, $order->{id}, $escrow->loginid, $source, $self->loginid, $txn_time);
         });
+
+    $self->_p2p_db_error_handler($result);
     $self->_p2p_order_completed($result);
+
     return $result;
 }
 
@@ -4279,11 +4292,14 @@ sub _p2p_advertiser_sell_confirm {
 
     my $result = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order->{id}, 1);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser_v2(?)', undef, $order->{id});
         });
 
-    $self->_p2p_order_buy_confirmed($result);
-    return $result;
+    $self->_p2p_db_error_handler($result);
+    $order->{status} = $result->{status};
+    $self->_p2p_order_buy_confirmed($order);
+
+    return $order;
 }
 
 =head2 _p2p_validate_buyer_confirm
