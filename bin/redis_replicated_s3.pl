@@ -42,7 +42,7 @@ This script is used to do two things:
 - download from S3 and import it to redis along with database.
 
 Redis keys that will be imported:
-'interest*', 'dividend*', 'economic*', 'volatility*', 'correlation*', 'partial_trading*', 'holidays*', 'app_settings*'
+'interest*', 'dividend*', 'economic*', 'volatility*', 'correlation*', 'partial_trading*', 'holidays*', 'app_settings*', 'cryptocashier_settings*'
 
 These options are available:
   -c, --s3-config          The path to yaml config file with AWS keys (default: '/etc/rmg/redis_s3.yml').
@@ -53,8 +53,9 @@ These options are available:
   -fa, --fulsh-all         Flush all the data redis data before imported.
 EOF
 
-my @redis_keys = ('interest', 'dividend', 'economic', 'volatility', 'correlation', 'partial_trading', 'holidays', 'app_settings');
-my $config     = LoadFile($s3_config);
+my @redis_keys =
+    ('interest', 'dividend', 'economic', 'volatility', 'correlation', 'partial_trading', 'holidays', 'app_settings', 'cryptocashier_settings');
+my $config = LoadFile($s3_config);
 
 my $loop = IO::Async::Loop->new;
 my $s3   = Net::Async::Webservice::S3->new(
