@@ -202,20 +202,11 @@ our %ERROR_MAP = do {
 # To prevent duplicated messages, we only keep them in `%ERROR_MAP`
 # so for each DB error here, there should be a corresponding error code there
 our %DB_ERRORS = (
-    BI225 => 'AdvertNotFound',
-    BI226 => 'InvalidAdvertOwn',
     BI228 => 'OrderNotFound',
     BI229 => 'OrderConfirmCompleted',
     BI230 => 'OrderNotConfirmedPending',
     BI232 => 'AlreadyInProgress',
-    BI233 => 'OrderNotFound',
-    BI234 => 'OrderConfirmCompleted',
-    BI235 => 'OrderNotFound',
-    BI236 => 'OrderConfirmCompleted',
-    BI237 => 'InvalidOrderCurrency',
-    BI238 => 'ClientDailyOrderLimitExceeded',
-    BI240 => 'OrderCreateFailAmount',
-    BI243 => 'OrderCreateFailAmountAdvertiser',
+    BI242 => 'OrderRefundInvalid',
 );
 
 sub DB_ERROR_PARAMS {
