@@ -481,8 +481,7 @@ subtest 'Check Types of Suspension' => sub {
 subtest 'currency config' => sub {
     my $offerings_config = BOM::Config::Runtime->instance->get_offerings_config('sell');
     is $offerings_config->{action}, 'sell', 'get_offerings_config for sell';
-    is BOM::Config::CurrencyConfig::local_currency_for_country('ca'),        'CAD',   'local_currency_for_country';
-    is BOM::Config::CurrencyConfig::get_crypto_new_address_threshold('BTC'), '0.003', 'get_crypto_new_address_threshold';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('ca'), 'CAD', 'local_currency_for_country';
 };
 
 subtest 'rare currencies config' => sub {
