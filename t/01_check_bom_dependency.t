@@ -9,7 +9,6 @@ my @dependency = qw(
     BOM::User
     BOM::Database
     BOM::Platform
-    BOM::CTC
     BOM::Transaction
     BOM::Product
     BOM::MT5

@@ -115,7 +115,7 @@ subtest 'process - generic jobs' => sub {
                 store_mt5_transaction new_mt5_signup anonymize_client bulk_anonymization
                 document_upload ready_for_authentication account_closure client_verification
                 verify_address social_responsibility_check sync_onfido_details
-                crypto_subscription crypto_transaction_updated authenticated_with_scans qualifying_payment_check
+                authenticated_with_scans qualifying_payment_check
                 payment_deposit send_email
                 signup profile_change
                 p2p_advertiser_created p2p_advertiser_updated
@@ -123,14 +123,13 @@ subtest 'process - generic jobs' => sub {
                 p2p_order_created p2p_order_updated p2p_order_expired p2p_timeout_refund p2p_dispute_expired p2p_chat_received
                 affiliate_sync_initiated withdrawal_limit_reached
                 crypto_withdrawal
-                client_promo_codes_upload new_crypto_address onfido_doc_ready_for_upload shared_payment_method_found
+                client_promo_codes_upload onfido_doc_ready_for_upload shared_payment_method_found
                 dispute_notification account_reactivated verify_false_profile_info check_onfido_rules mt5_archived_account_reset_trading_password
                 identity_verification_requested
                 mt5_inactive_account_closure_report bulk_authentication
                 check_name_changes_after_first_deposit p2p_adverts_updated
                 affiliate_loginids_sync p2p_advertiser_approval_changed
                 cms_add_affiliate_client df_anonymization_done
-                update_crypto_config
                 account_opening_existing self_tagging_affiliates request_payment_withdraw
                 verify_email_closed_account_other verify_email_closed_account_reset_password
                 verify_email_closed_account_account_opening account_verification_for_pending_payout

@@ -15,7 +15,6 @@ use BOM::Event::Actions::MT5;
 use BOM::Event::Actions::Client;
 use BOM::Event::Actions::Client::DisputeNotification;
 use BOM::Event::Actions::Client::IdentityVerification;
-use BOM::Event::Actions::CryptoSubscription;
 use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
 use BOM::Event::Actions::P2P;
@@ -65,10 +64,6 @@ my $action_mapping = {
         profile_change                              => \&BOM::Event::Actions::User::profile_change,
         account_closure                             => \&BOM::Event::Actions::Client::account_closure,
         social_responsibility_check                 => \&BOM::Event::Actions::Client::social_responsibility_check,
-        crypto_subscription                         => \&BOM::Event::Actions::CryptoSubscription::subscription,
-        crypto_transaction_updated                  => \&BOM::Event::Actions::CryptoSubscription::transaction_updated,
-        new_crypto_address                          => \&BOM::Event::Actions::CryptoSubscription::new_crypto_address,
-        update_crypto_config                        => \&BOM::Event::Actions::CryptoSubscription::update_crypto_config,
         sync_onfido_details                         => \&BOM::Event::Actions::Client::sync_onfido_details,
         authenticated_with_scans                    => \&BOM::Event::Actions::Client::authenticated_with_scans,
         qualifying_payment_check                    => \&BOM::Event::Actions::Client::qualifying_payment_check,
