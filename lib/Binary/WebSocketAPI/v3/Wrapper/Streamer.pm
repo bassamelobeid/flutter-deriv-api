@@ -28,6 +28,12 @@ use constant {
     DEPLOY_NOTIFICATION_MESSAGE => 'release_due',
 };
 
+=head2 get_status_msg
+
+Get the appropriate message based on given status code.
+
+=cut
+
 sub get_status_msg {
     my ($c, $status_code) = @_;
 
@@ -51,6 +57,12 @@ sub get_status_msg {
 
     return $status_msg{$status_code};
 }
+
+=head2 website_status
+
+Get the status of server/website.
+
+=cut
 
 sub website_status {
     my ($c, $req_storage) = @_;
@@ -100,7 +112,7 @@ sub website_status {
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_}
                         for grep { exists $rpc_response->{$_} }
-                        qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config crypto_config p2p_config payment_agents mt5_status|;
+                        qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config crypto_config p2p_config payment_agents mt5_status dxtrade_status|;
 
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
