@@ -666,7 +666,11 @@ sub _validate_date_field {
 }
 
 sub get_payment_agent_registration_form {
-    my ($loginid, $brokercode, $coc_approval_time) = @_;
+    my $params             = shift;
+    my $loginid            = $params->{loginid};
+    my $brokercode         = $params->{brokercode};
+    my $coc_approval_time  = $params->{coc_approval_time};
+    my $allowable_services = $params->{allowable_services};
 
     # input field for pa_name
     my $input_field_pa_name = {
@@ -1090,7 +1094,7 @@ sub get_payment_agent_registration_form {
         }};
 
     my @input_fields_services_allowed;
-    for my $service (BOM::User::Client::PaymentAgent::ALLOWABLE_SERVICES->@*) {
+    for my $service ($allowable_services->@*) {
         push @input_fields_services_allowed,
             {
             'label' => {
@@ -1103,6 +1107,7 @@ sub get_payment_agent_registration_form {
                 'values'  => ['0'],
                 'options' => _select_yes_no(),
             )};
+
     }
     my $input_field_pa_serices_allowed_comments = {
         'label' => {
