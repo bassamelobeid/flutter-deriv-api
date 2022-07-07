@@ -330,6 +330,24 @@ sub _mt5_status {
         real => [@real_objects]};
 }
 
+=head2 _dxtrade_status
+
+Returns Deriv X platform suspension status
+
+Returns a HASH.
+
+=cut
+
+sub _dxtrade_status {
+    my $dxtrade_servers_config = BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend;
+
+    return {
+        all  => $dxtrade_servers_config->all,
+        demo => $dxtrade_servers_config->all || $dxtrade_servers_config->demo,
+        real => $dxtrade_servers_config->all || $dxtrade_servers_config->real
+    };
+}
+
 rpc website_status => sub {
     my $params = shift;
 
@@ -347,6 +365,7 @@ rpc website_status => sub {
         currencies_config        => _currencies_config(),
         crypto_config            => _crypto_config(),
         mt5_status               => _mt5_status(),
+        dxtrade_status           => _dxtrade_status(),
         payment_agents           => {
             initial_deposit_per_country => decode_json($app_config->payment_agents->initial_deposit_per_country),
         },
