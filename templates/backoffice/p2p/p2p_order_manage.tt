@@ -8,9 +8,9 @@
 [% IF order %]
     <hr>
     <h3>Details for order [% order.id %]</h3>
-    <table class="border">
+    <table class="border" style="table-layout:fixed; width:100%; overflow-wrap: break-word;">
         <tr>
-            <td>Status</td>
+            <td style="width:150px;">Status</td>
             <td><b>[% order.status %]</b></td>
         </tr>
         <tr>
@@ -76,6 +76,10 @@
         </tr>
         [% END %]
         <tr>
+            <td>Order amount</td>
+            <td>[% order.account_currency %] [% order.amount_display %]</td>
+        </tr>
+        <tr>
             <td>Payment due</td>
             <td>[% order.local_currency %] [% order.price_display %]
             (rate: [% order.rate %])
@@ -85,15 +89,49 @@
         </tr>
         [% IF order.payment_method_details %]
         <tr>
-            <td>Payment methods</td>
+            <td>Payment methods (current)</td>
             <td>
-                <table class="small">
-                    [% FOR pm IN order.payment_method_details.values %]
-                    <tr><td style="border:0">
-                        <b>[% pm.display_name %]</b>[% FOR fld IN pm.fields.values %], [% fld.display_name %]: [% fld.value %][% END %]
-                    </td></tr>
-                    [% END %]
+                [% FOR pm IN order.payment_method_details.values %]
+                    <table class="small" style="table-layout:fixed;width:100%;overflow-wrap: break-word;[% IF loop.count>1 %]margin-top:12px;[% END %]">
+                    <tr style="vertical-align:top;">
+                        <td style="border:0;padding:0;width:20px;">[% loop.count %]</td>
+                        <td style="border:0;padding:0;width:120px;">Method</td>
+                        <td style="border:0;padding:0;">[% pm.display_name %]</td><tr>
+                    [% FOR fld IN pm.fields.keys.sort %][% IF pm.fields.$fld.value %]
+                    <tr style="vertical-align:top;">
+                        <td style="border:0;padding:0;"></td>
+                        <td style="border:0;padding:0;">[% pm.fields.$fld.display_name %]
+                        <td style="border:0;padding:0;">[% pm.fields.$fld.value %]</td></tr>
+                    [% END %][% END %]
                 </table>
+                [% END %]
+            </td>
+        </tr>
+        [% END %]
+        [% IF order.advert_payment_method_names %]
+        <tr>
+            <td>Payment methods (visible at order creation)</td>
+            <td>[% order.advert_payment_method_names %]</td>
+        </tr>        
+        [% END %]
+        [% IF !order.buy_confirm_pms.keys.empty %]
+        <tr>
+            <td>Payment methods (visible at buyer confirm)</td>
+            <td>
+                [% FOR pm IN order.buy_confirm_pms.values %]
+                    <table class="small" style="table-layout:fixed;width:100%;overflow-wrap: break-word;[% IF loop.count>1 %]margin-top:12px;[% END %]">
+                    <tr style="vertical-align:top;">
+                        <td style="border:0;padding:0;width:20px;">[% loop.count %]</td>
+                        <td style="border:0;padding:0;width:120px;">Method</td>
+                        <td style="border:0;padding:0;">[% pm.display_name %]</td><tr>
+                    [% FOR fld IN pm.fields.keys.sort %][% IF pm.fields.$fld.value %]
+                    <tr style="vertical-align:top;">
+                        <td style="border:0;padding:0;"></td>
+                        <td style="border:0;padding:0;">[% pm.fields.$fld.display_name %]
+                        <td style="border:0;padding:0;">[% pm.fields.$fld.value %]</td></tr>
+                    [% END %][% END %]
+                </table>
+                [% END %]            
             </td>
         </tr>
         [% END %]
@@ -113,6 +151,10 @@
             <td>Contact info</td>
             <td>[% order.contact_info %]</td>
         </tr>
+        <tr>
+            <td>Instructions</td>
+            <td>[% order.advert_description %]</td>
+        </tr>        
         <tr>
             <td>Creation time</td>
             <td>[% order.created_time %]</td>
@@ -186,9 +228,10 @@
     </table>
 
     [% IF order.status == 'Timed-out' %]
-        <hr>
+        <br>
         <h3>Manual dispute creation</h3>
 
+        <table class="full-width border" style="background:lightgrey"><tr><td>
         <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id }) %]" method="post">
             <label>Dispute raised by:</label>
             <select required name="disputer" >
@@ -203,12 +246,14 @@
             </select>
             <button class="btn btn--primary" type="submit" name="dispute" value="1" onclick="return confirm('Are you sure? Order status will change to disputed.');">RAISE A DISPUTE</button>
         </form>
-        [% END %]
+        </td></tr></table>
+    [% END %]
 
     [% IF order.status == 'Disputed' %]
-        <hr>
+        <br>
         <h3>Order under dispute</h3>
         
+        <table class="full-width border" style="background:lightgrey"><tr><td>
         <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id, disputer_loginid => order.disputer_loginid }) %]" method="post">
         <input type="hidden" name="disputer" value="[% order.disputer_loginid %]">
             
@@ -242,9 +287,117 @@
             This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to buyer [% order.buyer %]. A fraud incident will be recorded against [% order.seller %] if 'Fraud Case' is 'yes'.
         </div>
         </form>
+        </td></tr></table>
     [% END %]
 
-    <hr>
+    <br>
+    <h3>Order History</h3>
+    <table class="full-width border">
+        <thead>
+            <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Status</th>
+                <th scope="col">TX Type</th>
+                <th scope="col"></th>
+                <th scope="col">TX ID</th>
+                <th scope="col">Login ID</th>
+                <th scope="col">Amount</th>
+                <th scope="col">TX type</th>
+                <th scope="col">Payment ID</th>
+                <th scope="col">Staff</th>
+            </tr>
+        </thead>
+        <tbody>
+            [% FOREACH t = transactions %]
+                [% IF t.type %]
+                    <tr>
+                        <td rowspan=2>[% t.transaction_time %]</td>
+                        <td rowspan=2>[% t.status %]</td>
+                        <td rowspan=2>[% t.type %]</td>
+                        <td>From</td>
+                        <td>[% t.src_id %]</td>
+                        <td>[% t.src_loginid %]</td>
+                        <td>[% t.src_amount %]</td>
+                        <td>[% t.src_action_type %]</td>
+                        <td>[% t.src_payment_id %]</td>
+                        <td>[% t.src_staff %]</td>
+                    </tr>
+                    <tr>
+                        <td>To</td>
+                        <td>[% t.dest_id %]</td>
+                        <td>[% t.dest_loginid %]</td>
+                        <td>[% t.dest_amount %]</td>
+                        <td>[% t.dest_action_type %]</td>
+                        <td>[% t.dest_payment_id %]</td>
+                        <td>[% t.dest_staff %]</td>
+                    </tr>
+                [% ELSE %]
+                    <tr>
+                        <td>[% t.transaction_time %]</td>
+                        <td>[% t.status %]</td>
+                        <td colspan=8></td>
+                    </tr>
+                [% END %]
+            [% END %]
+        </tbody>
+    </table>
+    
+    <br>
+    <h3>Advert changes</h3>
+    
+    [% IF history.size %]
+    
+        <table class="border">
+            <thead>
+                <tr>
+                    <th scope="col">Time</th>
+                    <th scope="col">Change</th>
+                    <th scope="col">Old value</th>
+                    <th scope="col">New value</th>
+                </tr>
+            </thead>
+            [% FOREACH hist = history %]
+            <tr>
+                <td>[% hist.stamp %]</td>
+                <td>[% hist.change %]</td>
+                
+                [% IF hist.payment_method %]
+                    <td style="vertical-align:top;">
+                    [% IF hist.old %]
+                    <table class="small" style="table-layout:fixed; width:100%;overflow-wrap:break-word;">
+                        <tr style="vertical-align:top;"><td style="border:0;padding:0;width:120px;">Method:&nbsp;</td><td style="border:0;padding:0">[% hist.method_name %]</td></tr>
+                        [% FOREACH key IN hist.old_fields.keys.sort %]
+                        <tr style="vertical-align:top;"><td style="border:0;padding:0;">[% key %]:&nbsp;</td><td style="border:0;padding:0;">[% hist.old_fields.$key %]</td></tr>
+                        [% END %]
+                    </table>
+                    [% END %]
+                    </td>
+                    <td style="vertical-align:top;">
+                    [% IF hist.new %]
+                    <table class="small" style="table-layout:fixed;width:100%;overflow-wrap:break-word;">
+                        <tr style="vertical-align:top;"><td style="border:0;padding:0;width:120px;">Method:&nbsp;</td><td style="border:0;padding:0;">[% hist.method_name %]</td></tr>
+                        [% FOREACH key IN hist.new_fields.keys.sort %]
+                        <tr style="vertical-align:top;"><td style="border:0;padding:0;">[% key %]:&nbsp;</td><td style="border:0;padding:0;">[% hist.new_fields.$key %]</td></tr>
+                        [% END %]
+                    </table>
+                    [% END %]
+                    </td>
+                [% ELSE %]
+                    <td>[% hist.old %]</td>
+                    <td>[% hist.new %]</td>
+                [% END %]
+                
+            </tr>
+            
+            [% END %]
+            
+        </table>
+
+    [% ELSE %]
+        <p>No changes while the order was active.</p>
+    [% END %]
+
+    <br>
     <h3>Chat Log</h3>
 
     [% IF chat_messages.size %]

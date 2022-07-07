@@ -17,6 +17,7 @@ use BOM::Config;
 use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw(financialrounding);
 use BOM::Platform::Event::Emitter;
+use JSON::MaybeXS;
 
 my $cgi = CGI->new;
 
@@ -38,16 +39,17 @@ my %dispute_reasons = (
 
 my $db = BOM::Database::ClientDB->new({
         broker_code => $broker,
-        operation   => 'write'
+        operation   => 'backoffice_replica'
     })->db->dbic;
 
 my $db_collector = BOM::Database::ClientDB->new({
         broker_code => 'FOG',
     })->db->dbic;
 
-my ($order, $escrow, $transactions, $chat_messages);
+my ($order, $escrow, $transactions, $history, $chat_messages);
 my $chat_messages_limit = 20;
 my $chat_page           = int($input{p} // 1);
+
 $chat_page = 1
     unless $chat_page > 0;    # The default page is 1 so math is well adjusted
 
@@ -118,12 +120,18 @@ if (my $id = $input{order_id}) {
         $order->{client_name} //= '[not an advertiser]';
         $order->{$_} = Date::Utility->new($order->{$_})->datetime_ddmmmyy_hhmmss for qw( created_time expire_time );
         ($order->{$_} = $order->{$_} ? 'Yes' : 'No') for qw( client_confirmed advertiser_confirmed );
-        $order->{$_}            = ucfirst($order->{$_}) for qw( type status advert_type);
-        $order->{price_display} = financialrounding('amount', $order->{local_currency}, $order->{rate} * $order->{amount});
-        $order->{$_}            = sprintf('%.6f', $order->{$_}) + 0 for qw(rate advert_rate);
-        $escrow                 = get_escrow($broker, $order->{account_currency});
+        $order->{$_}             = ucfirst($order->{$_}) for qw( type status advert_type);
+        $order->{amount_display} = financialrounding('amount', $order->{account_currency}, $order->{amount});
+        $order->{price_display}  = financialrounding('amount', $order->{local_currency},   $order->{rate} * $order->{amount});
+        $order->{$_} = sprintf('%.6f', $order->{$_}) + 0 for qw(rate advert_rate);
+        $escrow = get_escrow($broker, $order->{account_currency});
 
-        my $client = BOM::User::Client->new({loginid => $order->{client_loginid}});
+        my $client = BOM::User::Client->new({
+            loginid      => $order->{client_loginid},
+            db_operation => 'backoffice_replica'
+        });
+        my $pm_defs = $client->p2p_payment_methods(all => 1);
+        my $json    = JSON::MaybeXS->new;
 
         my $methods =
             lc $order->{type} eq 'buy'
@@ -136,7 +144,9 @@ if (my $id = $input{order_id}) {
             is_enabled => 1
             );
 
-        $order->{payment_method_details} = $client->_p2p_advertiser_payment_method_details($methods) if %$methods;
+        $order->{payment_method_details}      = $client->_p2p_advertiser_payment_method_details($methods) if %$methods;
+        $order->{advert_payment_method_names} = join ', ',
+            sort map { $pm_defs->{$_}{display_name} } ($order->{advert_payment_method_names} // [])->@*;
 
         $transactions = $db->run(
             fixup => sub {
@@ -175,6 +185,40 @@ if (my $id = $input{order_id}) {
         $transactions =
             [sort { Date::Utility->new($a->{transaction_time})->epoch cmp Date::Utility->new($b->{transaction_time})->epoch } $transactions->@*];
 
+        $history = $db->run(
+            fixup => sub {
+                $_->selectall_arrayref('SELECT * FROM p2p.order_advert_history(?)', {Slice => {}}, $id);
+            });
+
+        for my $row (@$history) {
+            if ($row->{payment_method}) {
+                my $def = $pm_defs->{$row->{payment_method}};
+                $row->{method_name} = $def->{display_name};
+                for my $field (grep { $row->{$_} } ('old', 'new')) {
+                    my $pm = $json->decode($row->{$field});
+                    for my $pm_field (keys $def->{fields}->%*) {
+                        $row->{$field . '_fields'}{$def->{fields}{$pm_field}{display_name}} = $pm->{$pm_field} // '';
+                    }
+                }
+            }
+
+            if ($row->{change} eq 'Payment Method Names') {
+                for my $field (grep { $row->{$_} } ('old', 'new')) {
+                    $row->{$field} = join ', ', sort map { $pm_defs->{$_}{display_name} } split ',', $row->{$field};
+                }
+            }
+        }
+
+        my $buy_confirm_pms = $db->run(
+            fixup => sub {
+                $_->selectall_hashref('SELECT * FROM p2p.order_payment_methods_at_buy_confirm(?)', 'id', {Slice => {}}, $id);
+            });
+
+        if ($buy_confirm_pms) {
+            $buy_confirm_pms->{$_}{fields} = $json->decode($buy_confirm_pms->{$_}{params}) for keys %$buy_confirm_pms;
+            $order->{buy_confirm_pms} = $client->_p2p_advertiser_payment_method_details($buy_confirm_pms);
+        }
+
         if ($order->{chat_channel_url}) {
             $chat_messages = $db_collector->run(
                 fixup => sub {
@@ -201,6 +245,7 @@ BOM::Backoffice::Request::template()->process(
         order              => $order,
         escrow             => $escrow,
         transactions       => $transactions,
+        history            => $history,
         chat_messages      => $chat_messages,
         chat_messages_next => scalar @{$chat_messages} < $chat_messages_limit
         ? undef
