@@ -152,7 +152,7 @@ sub loginid_details {
     my $loginids = $self->dbic->run(
         fixup => sub {
             return $_->selectall_arrayref(
-                'select loginid, platform, account_type, currency, attributes from users.get_loginids(?)',
+                'select loginid, platform, account_type, currency, attributes, status from users.get_loginids(?)',
                 {Slice => {}},
                 $self->{id});
         });
@@ -567,7 +567,7 @@ sub has_mt5_regulated_account {
 
     # We want to check the real mt5 accounts, so we filter out MTD, then reverse sort,
     # that will move MTR first, and latest created id first
-    my @all_mt5_loginids = $self->get_mt5_loginids('real');
+    my @all_mt5_loginids = $self->get_mt5_loginids(type_of_account => 'real');
     return 0 unless @all_mt5_loginids;
 
     my @loginids = reverse sort @all_mt5_loginids;
@@ -846,22 +846,52 @@ sub is_payment_agents_suspended_in_country {
     return any { $_ eq $country } @$suspended_countries;
 }
 
+=head2 filter_active_ids
+
+my $loginids = Reference list of all MT5 accounts associated with current client account;
+
+Filter the list of MT5 accounts to only get active accounts.
+
+Active account contains status of 'undef'.
+Other possible status includes:
+    'disabled',
+    'migrated_single_email',
+    'duplicate_account',
+    'archived'
+
+=cut
+
+sub filter_active_ids {
+    my ($self, $loginids) = @_;
+    # Since there are no plans to add "active" to status of active account in DB, current active accounts
+    # contain status of 'undef'.
+    return [grep { not defined($self->{loginid_details}{$_}{status}) } @$loginids];
+}
+
 =head2 get_mt5_loginids
 
-my $mt5_loginids = $self->get_mt5_loginids(); # all mt5 loginids
-my $mt5_real = $self->get_mt5_loginids('real'); real mt5 loginids
+my $mt5_loginids = $self->get_mt5_loginids(); # all mt5 loginids that are active accounts.
+my $mt5_real = $self->get_mt5_loginids(type_of_account => 'real'); real mt5 loginids that are active accounts.
+my $mt5_loginids = $self->get_mt5_loginids(type_of_account => 'all', include_all_status => 1); # all mt5 loginids regardless of its status.
+
+args type_of_account; Can be value of ['all', 'demo', 'real']. Indicate which 'type' of server to get account from.
+     include_all_status => 0; Get only active accounts (status = undef).
+     include_all_status => 1; Get all accounts regardless of its status.
 
 =cut
 
 sub get_mt5_loginids {
-    my ($self, $account_type) = @_;
-    $account_type //= 'all';
+    my ($self, %args) = @_;
+    $args{type_of_account}    //= 'all';
+    $args{include_all_status} //= 0;
 
     my $type = 'real';
-    $type = 'demo' if $account_type eq 'demo';
-    $type = 'all'  if $account_type eq 'all';
+    $type = 'demo' if $args{type_of_account} eq 'demo';
+    $type = 'all'  if $args{type_of_account} eq 'all';
 
     my @loginids = sort $self->get_trading_platform_loginids('mt5', $type // 'all');
+    @loginids = @{$self->filter_active_ids(\@loginids)} unless $args{include_all_status};
+
     return @loginids;
 }
 

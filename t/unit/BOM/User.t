@@ -126,7 +126,7 @@ subtest 'get_mt5_loginids' => sub {
 
         for my $account_type (keys $test->{types}->%*) {
             cmp_deeply(
-                [$user->get_mt5_loginids($account_type)],
+                [$user->get_mt5_loginids(type_of_account => $account_type)],
                 bag($test->{types}->{$account_type}->@*),
                 "Expected loginids returned: mt5 x $account_type"
             );

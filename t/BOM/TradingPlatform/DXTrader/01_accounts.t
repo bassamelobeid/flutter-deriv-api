@@ -100,6 +100,7 @@ cmp_deeply(
         platform     => 'dxtrade',
         currency     => 'USD',
         account_type => $account1->{account_type},
+        status       => undef,
         attributes   => {
             clearing_code => 'default',
             client_domain => 'default',
@@ -160,6 +161,7 @@ cmp_deeply(
         platform     => 'dxtrade',
         currency     => 'USD',
         account_type => $account2->{account_type},
+        status       => undef,
         attributes   => {
             login         => $account2->{login},
             clearing_code => 'default',
