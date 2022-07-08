@@ -36,6 +36,11 @@ my %params = (
             platform        => 'dxtrade'
         }});
 
+subtest 'return empty when residence is empty' => sub {
+    my $mock = Test::MockModule->new('BOM::User::Client');
+    $mock->mock('residence', sub { return '' });
+    cmp_deeply($c->tcall(%params), []);
+};
 subtest 'suspend severs' => sub {
 
     $suspend->all(1);

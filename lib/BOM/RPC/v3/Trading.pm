@@ -787,9 +787,12 @@ sub get_dxtrade_server_list {
     my (%args) = @_;
 
     my ($client, $account_type) = @args{qw/client account_type/};
+    return Future->done([]) unless $client->residence;
+
     my @active_servers = BOM::TradingPlatform::DXTrader->new(client => $client)->active_servers;
     my $brand          = request()->brand;
     my $countries      = $brand->countries_instance;
+
     local $log->context->{brand_name}       = $brand->name;
     local $log->context->{app_id}           = $brand->app_id;
     local $log->context->{client_residence} = $client->residence;
