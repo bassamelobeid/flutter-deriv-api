@@ -1864,7 +1864,10 @@ sub get_client_details {
     }
 
     my $loginid_details = $user->loginid_details;
-    my @mt_logins       = sort $user->get_mt5_loginids;
+    my @mt_logins       = sort $user->get_mt5_loginids(
+        type_of_account    => 'all',
+        include_all_status => 1
+    );
     my @dx_logins       = sort $user->get_trading_platform_loginids('dxtrader');
     my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
     my $broker          = $client->broker;
@@ -1917,7 +1920,10 @@ sub loginids {
     my ($user) = @_;
 
     my $details   = $user->loginid_details;
-    my @mt_logins = $user->get_mt5_loginids;
+    my @mt_logins = $user->get_mt5_loginids(
+        type_of_account    => 'all',
+        include_all_status => 1
+    );
     my @bom_logins;
     my @dx_logins;
 
