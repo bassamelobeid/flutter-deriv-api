@@ -278,7 +278,7 @@ sub mt5_accounts_lookup {
     );
 
     my @futures;
-    for my $login ($client->user->get_mt5_loginids($account_type)) {
+    for my $login ($client->user->get_mt5_loginids(type_of_account => $account_type)) {
         my $f = mt5_get_settings({
                 client => $client,
                 args   => {login => $login}}
