@@ -8,7 +8,7 @@ use DataDog::DogStatsd::Helper qw( stats_inc );
 use Email::Valid;
 use Format::Util::Strings qw( defang );
 use HTTP::BrowserDetect;
-use List::Util qw( first min none );
+use List::Util qw( first min none any);
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
 use Text::Trim;
@@ -117,7 +117,7 @@ sub validate_login {
     my @clients = $user->clients(include_self_closed => $result->{self_closed});
     my $client  = $clients[0];
 
-    return $err_var->("TEMP_DISABLED") if is_login_suspended($client->loginid);
+    return $err_var->("TEMP_DISABLED") if (any { is_login_suspended($_->loginid) } @clients);
 
     my $client_is_disabled = $client->status->disabled && !($result->{self_closed} && $client->status->closed);
     return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client_is_disabled);
