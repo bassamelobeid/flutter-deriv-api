@@ -233,6 +233,12 @@ sub invalid_email {
             message_to_client => localize('This email address is invalid.')});
 }
 
+sub suspended_login {
+    return create_error({
+            code              => 'Suspendedlogin',
+            message_to_client => localize('We can\'t take you to your account right now due to system maintenance. Please try again later.')});
+}
+
 =head2 invalid_params
 
 Validates the url_parameters.

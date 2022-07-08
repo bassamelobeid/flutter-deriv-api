@@ -13,6 +13,7 @@ use BOM::Database::Model::OAuth;
 use Email::Stuffer::TestLinks;
 use utf8;
 use LandingCompany::Registry;
+use BOM::Config::Runtime;
 
 my $email       = 'dummy@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -1098,6 +1099,42 @@ subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
     $test_client_mx->save();
 
     ok $c->call_ok($method, $params)->has_no_error->result->{loginid}, 'Self excluded client using exclude_until can login';
+};
+
+subtest 'set system suspend logins' => sub {
+    my $email = 'mah@deriv.com';
+    my $user  = BOM::User->create(
+        email    => $email,
+        password => 'ABcd12',
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'VRTC',
+        residence      => 'eg',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $user->add_client($client_vr);
+
+    $token = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+    my $params = {
+        language => 'EN',
+        token    => $token
+    };
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->logins(['VRTC']);
+
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('We can\'t take you to your account right now due to system maintenance. Please try again later.',
+        'VRTC LoginDisabled');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->logins([]);
+    BOM::Config::Runtime->instance->app_config->system->suspend->all_logins(1);
+
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('We can\'t take you to your account right now due to system maintenance. Please try again later.',
+        'VRTC LoginDisabled');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->all_logins(0);
 };
 
 $self_excluded_client->set_exclusion->timeout_until(Date::Utility->new->epoch - 2 * 86400);

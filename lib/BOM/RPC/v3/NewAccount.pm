@@ -545,6 +545,9 @@ rpc "new_account_virtual",
     $args->{token_details} = delete $params->{token_details};
     $args->{type} //= 'trading';    # default to 'trading'
 
+    return BOM::RPC::v3::Utility::suspended_login()
+        if grep { 'VRTC' eq $_ } BOM::Config::Runtime->instance->app_config->system->suspend->logins->@*;
+
     if ($args->{type} eq 'wallet' && BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
@@ -938,6 +941,9 @@ sub _new_account_pre_process {
     my $broker       = $args->{broker_code};
     my $market_type  = $args->{market_type};
     my $account_type = $args->{account_type};
+
+    return BOM::RPC::v3::Utility::suspended_login()
+        if grep { $broker eq $_ } BOM::Config::Runtime->instance->app_config->system->suspend->logins->@*;
 
     if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
         my $loginid   = $client->loginid;

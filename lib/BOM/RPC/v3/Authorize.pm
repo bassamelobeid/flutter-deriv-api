@@ -15,6 +15,7 @@ use BOM::User;
 use BOM::User::AuditLog;
 use BOM::User::Client;
 use BOM::User::TOTP;
+use BOM::Config::Runtime;
 
 use LandingCompany::Registry;
 
@@ -74,6 +75,10 @@ rpc authorize => sub {
     my ($token, $token_details, $client_ip) = @{$params}{qw/token token_details client_ip/};
 
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
+
+    return BOM::RPC::v3::Utility::suspended_login()
+        if grep { $token_details->{loginid} =~ /^\Q$_/ } BOM::Config::Runtime->instance->app_config->system->suspend->logins->@*
+        or BOM::Config::Runtime->instance->app_config->system->suspend->all_logins;
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidToken',
