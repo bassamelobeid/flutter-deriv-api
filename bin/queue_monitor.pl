@@ -143,7 +143,12 @@ my %active_stream_metrics;
 async sub group_metrics {
     my ($stream) = @_;
 
-    my ($redis_response) = await $redis->xinfo(GROUPS => $stream);
+    my $redis_response;
+    try {
+        ($redis_response) = await $redis->xinfo(GROUPS => $stream);
+    } catch ($e) {
+        die "stream: $stream, error: $e";
+    }
 
     for my $group ($redis_response->@*) {
         my $group_info = {$group->@*};
