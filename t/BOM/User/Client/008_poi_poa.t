@@ -650,7 +650,8 @@ subtest 'get_poi_status' => sub {
             is $test_client_cr->get_poi_status,        'verified', 'poi status = verified';
             is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
             is $test_client_cr->get_manual_poi_status, 'verified', 'manual status = verified';
-        }
+        };
+        $mocked_client->unmock_all;
     };
 
     subtest 'Regulated account' => sub {
