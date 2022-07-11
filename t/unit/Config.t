@@ -210,16 +210,15 @@ my $test_parameters = [{
                 cellxperts => {base_uri => 'some env'}
             },
             config     => \&BOM::Config::third_party,
-            array_test => ["smartystreets:countries:plus"]
-        }
+            array_test => ["smartystreets:countries:plus"]}
     },
     {
         name => 'randsrv.yml',
         args => {
             expected_config => {
                 rand_server => {
-                    fqdn => '',
-                    port => '',
+                    fqdn     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -232,19 +231,19 @@ my $test_parameters = [{
             expected_config => {
                 directory => {
                     tmp_gif => '',
-                    tmp => ''
+                    tmp     => ''
                 },
                 log => {
-                    deposit => '',
+                    deposit         => '',
                     withdraw_broker => '',
-                    staff => '',
-                    staff_dir => '',
-                    fsave_complete => ''
+                    staff           => '',
+                    staff_dir       => '',
+                    fsave_complete  => ''
                 },
                 experian_document_s3 => {
-                    aws_bucket => '',
-                    aws_region => '',
-                    aws_access_key_id => '',
+                    aws_bucket            => '',
+                    aws_region            => '',
+                    aws_access_key_id     => '',
                     aws_secret_access_key => ''
                 }
             },
@@ -254,10 +253,8 @@ my $test_parameters = [{
     {
         name => 'currency_config.yml',
         args => {
-            expected_config => {
-                currency_pairs => []
-            },
-            config => \&BOM::Config::currency_pairs_backoffice
+            expected_config => {currency_pairs => []},
+            config          => \&BOM::Config::currency_pairs_backoffice
         }
     },
     {
@@ -312,25 +309,21 @@ my $test_parameters = [{
                         maximum => ''
                     }
                 },
-                minimum_topup_balance => {
-                    DEFAULT => ''
-                },
-                transaction_limits => {
+                minimum_topup_balance => {DEFAULT => ''},
+                transaction_limits    => {
                     transfer => {
-                        transactions_per_day => '',
+                        transactions_per_day  => '',
                         amount_in_usd_per_day => ''
                     },
                     withdraw => {
                         weekday => {
-                            transactions_per_day => '',
+                            transactions_per_day  => '',
                             amount_in_usd_per_day => ''
                         },
                         weekend => {
-                            transactions_per_day => '',
+                            transactions_per_day  => '',
                             amount_in_usd_per_day => ''
-                        }
-                    }
-                }
+                        }}}
             },
             config => \&BOM::Config::payment_agent
         }
@@ -341,62 +334,61 @@ my $test_parameters = [{
             expected_config => {
                 withdrawal_limits => {
                     iom => {
-                        for_days => '',
-                        currency => '',
-                        limit_for_days => '',
+                        for_days                         => '',
+                        currency                         => '',
+                        limit_for_days                   => '',
                         limit_for_days_for_authenticated => '',
                         lifetime_limit_for_authenticated => ''
                     },
                     malta => {
-                        for_days => '',
-                        currency => '',
-                        limit_for_days => '',
+                        for_days                         => '',
+                        currency                         => '',
+                        limit_for_days                   => '',
                         limit_for_days_for_authenticated => '',
                         lifetime_limit_for_authenticated => ''
                     },
                     maltainvest => {
-                        for_days => '',
-                        currency => '',
-                        limit_for_days => '',
+                        for_days                         => '',
+                        currency                         => '',
+                        limit_for_days                   => '',
                         limit_for_days_for_authenticated => '',
-                        lifetime_limit_for_authenticated => ''                       
+                        lifetime_limit_for_authenticated => ''
                     },
                     svg => {
-                        for_days => '',
-                        currency => '',
-                        limit_for_days => '',
+                        for_days                         => '',
+                        currency                         => '',
+                        limit_for_days                   => '',
                         limit_for_days_for_authenticated => '',
                         lifetime_limit_for_authenticated => ''
                     },
                     "wallet-svg" => {
-                        for_days => '',
-                        currency => '',
-                        limit_for_days => '',
+                        for_days                         => '',
+                        currency                         => '',
+                        limit_for_days                   => '',
                         limit_for_days_for_authenticated => '',
                         lifetime_limit_for_authenticated => ''
                     },
                     champion => {
-                        for_days => '',
-                        currency => '',
-                        limit_for_days => '',
+                        for_days                         => '',
+                        currency                         => '',
+                        limit_for_days                   => '',
                         limit_for_days_for_authenticated => '',
                         lifetime_limit_for_authenticated => ''
                     },
                     samoa => {
-                        for_days => '',
-                        currency => '',
-                        limit_for_days => '',
+                        for_days                         => '',
+                        currency                         => '',
+                        limit_for_days                   => '',
                         limit_for_days_for_authenticated => '',
                         lifetime_limit_for_authenticated => ''
                     }
                 },
                 qualifying_payment_check_limits => {
                     iom => {
-                        for_days => '',
-                        currency => '',
+                        for_days       => '',
+                        currency       => '',
                         limit_for_days => ''
-                    }
-                }
+                    }}
             },
             config => \&BOM::Config::payment_limits
         }
@@ -406,93 +398,93 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 maximum_daily_turnover => {
-                    USD => '',
-                    EUR => '',
-                    AUD => '',
-                    GBP => '',
-                    BTC => '',
-                    ETH => '',
-                    LTC => '',
-                    BUSD => '',
-                    DAI => '',
-                    EURS => '',
-                    IDK => '',
-                    PAX => '',
-                    TUSD => '',
-                    USB => '',
-                    USDC => '',
-                    USDK => '',
-                    UST => '',
+                    USD   => '',
+                    EUR   => '',
+                    AUD   => '',
+                    GBP   => '',
+                    BTC   => '',
+                    ETH   => '',
+                    LTC   => '',
+                    BUSD  => '',
+                    DAI   => '',
+                    EURS  => '',
+                    IDK   => '',
+                    PAX   => '',
+                    TUSD  => '',
+                    USB   => '',
+                    USDC  => '',
+                    USDK  => '',
+                    UST   => '',
                     eUSDT => ''
                 },
                 max_balance => {
                     virtual => {
-                        USD => '',
-                        EUR => '',
-                        AUD => '',
-                        GBP => '',
-                        BTC => '',
-                        ETH => '',
-                        LTC => '',
-                        BUSD => '',
-                        DAI => '',
-                        EURS => '',
-                        IDK => '',
-                        PAX => '',
-                        TUSD => '',
-                        USB => '',
-                        USDC => '',
-                        USDK => '',
-                        UST => '',
+                        USD   => '',
+                        EUR   => '',
+                        AUD   => '',
+                        GBP   => '',
+                        BTC   => '',
+                        ETH   => '',
+                        LTC   => '',
+                        BUSD  => '',
+                        DAI   => '',
+                        EURS  => '',
+                        IDK   => '',
+                        PAX   => '',
+                        TUSD  => '',
+                        USB   => '',
+                        USDC  => '',
+                        USDK  => '',
+                        UST   => '',
                         eUSDT => ''
                     },
                     real => {
-                        USD => '',
-                        EUR => '',
-                        AUD => '',
-                        GBP => '',
-                        BTC => '',
-                        ETH => '',
-                        LTC => '',
-                        BUSD => '',
-                        DAI => '',
-                        EURS => '',
-                        IDK => '',
-                        PAX => '',
-                        TUSD => '',
-                        USB => '',
-                        USDC => '',
-                        USDK => '',
-                        UST => '',
+                        USD   => '',
+                        EUR   => '',
+                        AUD   => '',
+                        GBP   => '',
+                        BTC   => '',
+                        ETH   => '',
+                        LTC   => '',
+                        BUSD  => '',
+                        DAI   => '',
+                        EURS  => '',
+                        IDK   => '',
+                        PAX   => '',
+                        TUSD  => '',
+                        USB   => '',
+                        USDC  => '',
+                        USDK  => '',
+                        UST   => '',
                         eUSDT => ''
                     }
                 },
                 max_payout_open_positions => {
-                    USD => '',
-                    EUR => '',
-                    AUD => '',
-                    GBP => '',
-                    BTC => '',
-                    ETH => '',
-                    LTC => '',
-                    BUSD => '',
-                    DAI => '',
-                    EURS => '',
-                    IDK => '',
-                    PAX => '',
-                    TUSD => '',
-                    USB => '',
-                    USDC => '',
-                    USDK => '',
-                    UST => '',
+                    USD   => '',
+                    EUR   => '',
+                    AUD   => '',
+                    GBP   => '',
+                    BTC   => '',
+                    ETH   => '',
+                    LTC   => '',
+                    BUSD  => '',
+                    DAI   => '',
+                    EURS  => '',
+                    IDK   => '',
+                    PAX   => '',
+                    TUSD  => '',
+                    USB   => '',
+                    USDC  => '',
+                    USDK  => '',
+                    UST   => '',
                     eUSDT => ''
                 },
-                max_open_bets_default => '',
-                max_payment_accounts_per_user => '',
+                max_open_bets_default                       => '',
+                max_payment_accounts_per_user               => '',
                 max_client_payment_accounts_per_broker_code => {
-                    MF => '',
+                    MF  => '',
                     MLT => '',
-                    MX => ''
+                    MX  => ''
                 }
             },
             config => \&BOM::Config::client_limits
@@ -513,10 +505,10 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 default_domain => '',
-                white_list => [],
-                brand => ''
+                white_list     => [],
+                brand          => ''
             },
-            config => \&BOM::Config::domain,
+            config     => \&BOM::Config::domain,
             array_test => ["white_list"],
         }
     },
@@ -525,15 +517,15 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 document_auth => {
-                    aws_bucket => '',
-                    aws_region => '',
-                    aws_access_key_id => '',
+                    aws_bucket            => '',
+                    aws_region            => '',
+                    aws_access_key_id     => '',
                     aws_secret_access_key => ''
                 },
                 desk => {
-                    aws_bucket => '',
-                    aws_region => '',
-                    aws_access_key_id => '',
+                    aws_bucket            => '',
+                    aws_region            => '',
+                    aws_access_key_id     => '',
                     aws_secret_access_key => ''
                 }
             },
@@ -543,12 +535,8 @@ my $test_parameters = [{
     {
         name => 'feed_rpc.yml',
         args => {
-            expected_config => {
-                writer => {
-                    feeddb_uri => ''
-                }
-            },
-            config => \&BOM::Config::feed_rpc
+            expected_config => {writer => {feeddb_uri => ''}},
+            config          => \&BOM::Config::feed_rpc
         }
     },
     {
@@ -557,185 +545,182 @@ my $test_parameters = [{
             expected_config => {
                 trading_experience => {
                     forex_trading_experience => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            '0-1 year' => '',
-                            '1-2 years' => '',
+                            '0-1 year'     => '',
+                            '1-2 years'    => '',
                             'Over 3 years' => ''
                         }
                     },
                     forex_trading_frequency => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            '0-5 transactions in the past 12 months' => '',
-                            '6-10 transactions in the past 12 months' => '',
-                            '11-39 transactions in the past 12 months' => '',
+                            '0-5 transactions in the past 12 months'        => '',
+                            '6-10 transactions in the past 12 months'       => '',
+                            '11-39 transactions in the past 12 months'      => '',
                             '40 transactions or more in the past 12 months' => ''
                         }
                     },
                     binary_options_trading_experience => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            '0-1 year' => '',
-                            '1-2 years' => '',
+                            '0-1 year'     => '',
+                            '1-2 years'    => '',
                             'Over 3 years' => ''
                         }
                     },
                     binary_options_trading_frequency => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            '0-5 transactions in the past 12 months' => '',
-                            '6-10 transactions in the past 12 months' => '',
-                            '11-39 transactions in the past 12 months' => '',
+                            '0-5 transactions in the past 12 months'        => '',
+                            '6-10 transactions in the past 12 months'       => '',
+                            '11-39 transactions in the past 12 months'      => '',
                             '40 transactions or more in the past 12 months' => ''
                         }
                     },
                     cfd_trading_experience => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            '0-1 year' => '',
-                            '1-2 years' => '',
+                            '0-1 year'     => '',
+                            '1-2 years'    => '',
                             'Over 3 years' => ''
                         }
                     },
                     cfd_trading_frequency => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            '0-5 transactions in the past 12 months' => '',
-                            '6-10 transactions in the past 12 months' => '',
-                            '11-39 transactions in the past 12 months' => '',
+                            '0-5 transactions in the past 12 months'        => '',
+                            '6-10 transactions in the past 12 months'       => '',
+                            '11-39 transactions in the past 12 months'      => '',
                             '40 transactions or more in the past 12 months' => ''
                         }
                     },
                     other_instruments_trading_experience => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            '0-1 year' => '',
-                            '1-2 years' => '',
+                            '0-1 year'     => '',
+                            '1-2 years'    => '',
                             'Over 3 years' => ''
                         }
                     },
                     other_instruments_trading_frequency => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            '0-5 transactions in the past 12 months' => '',
-                           '6-10 transactions in the past 12 months' => '',
-                            '11-39 transactions in the past 12 months' => '',
+                            '0-5 transactions in the past 12 months'        => '',
+                            '6-10 transactions in the past 12 months'       => '',
+                            '11-39 transactions in the past 12 months'      => '',
                             '40 transactions or more in the past 12 months' => ''
-                        }
-                    }
+                        }}
                 },
                 financial_information => {
                     employment_industry => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            'Construction' => 0,
-                            'Education' => 0,
-                            'Finance' => 0,
-                            'Health' => 0,
-                            'Tourism' => 0,
+                            'Construction'                            => 0,
+                            'Education'                               => 0,
+                            'Finance'                                 => 0,
+                            'Health'                                  => 0,
+                            'Tourism'                                 => 0,
                             'Information & Communications Technology' => 0,
-                            'Science & Engineering' => 0,
-                            'Legal' => 0,
-                            'Social & Cultural' => 0,
-                            'Agriculture' => 0,
-                            'Real Estate' => 0,
-                            'Food Services' => 0,
-                            'Manufacturing' => 0,
-                            'Unemployed' => 0,
+                            'Science & Engineering'                   => 0,
+                            'Legal'                                   => 0,
+                            'Social & Cultural'                       => 0,
+                            'Agriculture'                             => 0,
+                            'Real Estate'                             => 0,
+                            'Food Services'                           => 0,
+                            'Manufacturing'                           => 0,
+                            'Unemployed'                              => 0,
                         }
                     },
                     education_level => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            'Primary' => 0,
+                            'Primary'   => 0,
                             'Secondary' => 0,
-                            'Tertiary' => 0,
+                            'Tertiary'  => 0,
                         }
                     },
                     income_source => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            'Salaried Employee' => 0,
-                            'Self-Employed' => 0,
+                            'Salaried Employee'       => 0,
+                            'Self-Employed'           => 0,
                             'Investments & Dividends' => 0,
-                            'Pension' => 0,
-                            'State Benefits' => 0,
-                            'Savings & Inheritance' => 0
+                            'Pension'                 => 0,
+                            'State Benefits'          => 0,
+                            'Savings & Inheritance'   => 0
                         }
                     },
                     net_income => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            'Less than $25,000' => 0,
-                            '$25,000 - $50,000' => 0,
-                            '$50,001 - $100,000' => 0,
+                            'Less than $25,000'   => 0,
+                            '$25,000 - $50,000'   => 0,
+                            '$50,001 - $100,000'  => 0,
                             '$100,001 - $500,000' => 0,
-                            'Over $500,000' => 0,
+                            'Over $500,000'       => 0,
                         }
                     },
                     estimated_worth => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            'Less than $100,000' => 0,
-                            '$100,000 - $250,000' => 0,
-                            '$250,001 - $500,000' => 0,
-                            '$500,001 - $1,000,000'=> 0,
-                            'Over $1,000,000' => 0,
+                            'Less than $100,000'    => 0,
+                            '$100,000 - $250,000'   => 0,
+                            '$250,001 - $500,000'   => 0,
+                            '$500,001 - $1,000,000' => 0,
+                            'Over $1,000,000'       => 0,
                         }
                     },
                     account_turnover => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            'Less than $25,000' => 0,
-                            '$25,000 - $50,000' => 0,
-                            '$50,001 - $100,000' => 0,
+                            'Less than $25,000'   => 0,
+                            '$25,000 - $50,000'   => 0,
+                            '$50,001 - $100,000'  => 0,
                             '$100,001 - $500,000' => 0,
-                            'Over $500,000' => 0,
+                            'Over $500,000'       => 0,
                         }
                     },
                     occupation => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            'Chief Executives, Senior Officials and Legislators'=> 0,
-                            'Managers'=> 0,
-                            'Professionals'=> 0,
-                            'Clerks' => 0,
-                            'Personal Care, Sales and Service Workers' => 0,
-                            'Agricultural, Forestry and Fishery Workers' => 0,
-                            'Craft, Metal, Electrical and Electronics Workers' => 0,
-                            'Plant and Machine Operators and Assemblers' => 0,
-                            'Cleaners and Helpers' => 0,
+                            'Chief Executives, Senior Officials and Legislators'        => 0,
+                            'Managers'                                                  => 0,
+                            'Professionals'                                             => 0,
+                            'Clerks'                                                    => 0,
+                            'Personal Care, Sales and Service Workers'                  => 0,
+                            'Agricultural, Forestry and Fishery Workers'                => 0,
+                            'Craft, Metal, Electrical and Electronics Workers'          => 0,
+                            'Plant and Machine Operators and Assemblers'                => 0,
+                            'Cleaners and Helpers'                                      => 0,
                             'Mining, Construction, Manufacturing and Transport Workers' => 0,
-                            'Armed Forces' => 0,
-                            'Government Officers' => 0,
-                            'Students' => 0,
-                            'Unemployed' => 0,
+                            'Armed Forces'                                              => 0,
+                            'Government Officers'                                       => 0,
+                            'Students'                                                  => 0,
+                            'Unemployed'                                                => 0,
                         }
                     },
                     employment_status => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
-                            'Employed' => '',
-                            'Pensioner' => '',
+                            'Employed'      => '',
+                            'Pensioner'     => '',
                             'Self-Employed' => '',
-                            'Student' => '',
-                            'Unemployed' => ''
+                            'Student'       => '',
+                            'Unemployed'    => ''
                         }
                     },
                     source_of_wealth => {
-                        label => '',
+                        label           => '',
                         possible_answer => {
                             'Accumulation of Income/Savings' => '',
-                            'Cash Business' => '',
-                            'Company Ownership' => '',
-                            'Divorce Settlement' => '',
-                            'Inheritance' => '',
-                            'Investment Income' => '',
-                            'Sale of Property' => ''
-                        }
-                    }
-                }
+                            'Cash Business'                  => '',
+                            'Company Ownership'              => '',
+                            'Divorce Settlement'             => '',
+                            'Inheritance'                    => '',
+                            'Investment Income'              => '',
+                            'Sale of Property'               => ''
+                        }}}
             },
             config => \&BOM::Config::financial_assessment_fields
         }
@@ -744,18 +729,15 @@ my $test_parameters = [{
         name => 'social_responsibility_thresholds.yml',
         args => {
             expected_config => {
-                limits => [
-                    {
-                        losses => '',
+                limits => [{
+                        losses       => '',
                         net_deposits => '',
-                        net_income => '',
-                        hello => ''
-                    }
-                ]
+                        net_income   => '',
+                        hello        => ''
+                    }]
             },
-            config => \&BOM::Config::social_responsibility_thresholds,
-            array_test => ["limits"]
-        }
+            config     => \&BOM::Config::social_responsibility_thresholds,
+            array_test => ["limits"]}
     },
     {
         name => 'p2p_payment_methods.yml',
@@ -763,1098 +745,620 @@ my $test_parameters = [{
             expected_config => {
                 '2checkout' => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 '543konse' => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 access_money_wallet => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 airtel => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 alipay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 apple_pay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 atease => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 azimo => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 bank_transfer => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        },
+                    fields       => {
+                        account   => {display_name => ''},
                         bank_code => {
                             display_name => '',
-                            required => 0
+                            required     => 0
                         },
-                        bank_name => {
-                            display_name => ''
-                        },
-                        branch => {
+                        bank_name => {display_name => ''},
+                        branch    => {
                             display_name => '',
-                            required => ''
+                            required     => ''
                         }
                     },
                     type => ''
                 },
                 bitpay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 boss_revolution => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 broadpay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 btc_smega => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 buyonline => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 carbon => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 cashenvoy => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 cassava_remit => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 cellulant => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 celpaid => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 clicknpay_africa => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 clickpesa => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 dpo => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 dusupay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 ecobank_mobilemoney => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 ecocash => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 equitel => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 etranzact => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 ewallet_services_tanzania => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 exchange4free => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 firstmonie => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 flutterwave => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 fnb => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 fortis => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 gcb => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 glo => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 google_pay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 gt_pay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 halotel => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 hubtel => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 instacash => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 inter_pay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 ipay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 kazang => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 konga => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 mascom_my_zaka => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 mlipa => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 mnaira => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 mobicash => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 mobipay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 moov => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 mpesa_tanzania => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 mtn_momo => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 myghpay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 netpay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 nettcash => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 noqodi => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 nownow => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 onemoney => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 opay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 orange_money => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 other => {
                     display_name => '',
-                    fields => {
+                    fields       => {
                         account => {
                             display_name => '',
-                            required => 0
+                            required     => 0
                         },
-                        name => {
-                            display_name => ''
-                        }
+                        name => {display_name => ''}
                     },
                     type => ''
                 },
                 paga => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 palmpay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 paxful => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 payant => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 paygate => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 paynow => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 paypal => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 payserv => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 paystack => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 paytoday => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 pesapel => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 pocketmoni => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 posomoney => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 postdotnet => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 qash => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 qless => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 quickteller => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 realpay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 rocket_remit => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 safaricom_mpesa => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 simplepay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 skrill => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 solidpaywave => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 speedpay_mobile => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 sticpay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 stripe => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 talkremit => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 tangaza_pesa => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 teasy_mobile_money => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 teasy_mobile_money => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 telecash => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 terrapay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 tigo_pesa => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 tilt_africa => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 transferwise => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 united_bank_of_zambia_ewallet => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 unitylink => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 vcash => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 vodafone_cash => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 voguepay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 wari => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 wave_mobile_money => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 webmoney => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 wechat_pay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 xapit_zanaco => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 xendpay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 xoom => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 xpress_money => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 yucash => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 yup_africa => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 zamlink => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 zamtel => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 zantel => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 zazu => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 zim_switch => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 zimpayments => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 zoona => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 zotapay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 },
                 zympay => {
                     display_name => '',
-                    fields => {
-                        account => {
-                            display_name => ''
-                        }
-                    },
-                    type => ''
+                    fields       => {account => {display_name => ''}},
+                    type         => ''
                 }
             },
             config => \&BOM::Config::p2p_payment_methods
@@ -1864,93 +1368,35 @@ my $test_parameters = [{
         name => 'cft_blocked_countries.yml',
         args => {
             expected_config => {
-                bd => {
-                    display_name => ''
-                },
-                io => {
-                    display_name => ''
-                },
-                kh => {
-                    display_name => ''
-                },
-                ca => {
-                    display_name => ''
-                },
-                co => {
-                    display_name => ''
-                },
-                hk => {
-                    display_name => ''
-                },
-                id => {
-                    display_name => ''
-                },
-                il => {
-                    display_name => ''
-                },
-                jp => {
-                    display_name => ''
-                },
-                ls => {
-                    display_name => ''
-                },
-                mo => {
-                    display_name => ''
-                },
-                my => {
-                    display_name => ''
-                },
-                np => {
-                    display_name => ''
-                },
-                nl => {
-                    display_name => ''
-                },
-                nz => {
-                    display_name => ''
-                },
-                pk => {
-                    display_name => ''
-                },
-                ph => {
-                    display_name => ''
-                },
-                sg => {
-                    display_name => ''
-                },
-                za => {
-                    display_name => ''
-                },
-                kr => {
-                    display_name => ''
-                },
-                lk => {
-                    display_name => ''
-                },
-                ch => {
-                    display_name => ''
-                },
-                th => {
-                    display_name => ''
-                },
-                tr => {
-                    display_name => ''
-                },
-                us => {
-                    display_name => ''
-                },
-                um => {
-                    display_name => ''
-                },
-                ve => {
-                    display_name => ''
-                },
-                vn => {
-                    display_name => ''
-                },
-                vi => {
-                    display_name => ''
-                }
+                bd => {display_name => ''},
+                io => {display_name => ''},
+                kh => {display_name => ''},
+                ca => {display_name => ''},
+                co => {display_name => ''},
+                hk => {display_name => ''},
+                id => {display_name => ''},
+                il => {display_name => ''},
+                jp => {display_name => ''},
+                ls => {display_name => ''},
+                mo => {display_name => ''},
+                my => {display_name => ''},
+                np => {display_name => ''},
+                nl => {display_name => ''},
+                nz => {display_name => ''},
+                pk => {display_name => ''},
+                ph => {display_name => ''},
+                sg => {display_name => ''},
+                za => {display_name => ''},
+                kr => {display_name => ''},
+                lk => {display_name => ''},
+                ch => {display_name => ''},
+                th => {display_name => ''},
+                tr => {display_name => ''},
+                us => {display_name => ''},
+                um => {display_name => ''},
+                ve => {display_name => ''},
+                vn => {display_name => ''},
+                vi => {display_name => ''}
             },
             config => \&BOM::Config::cft_blocked_countries
         }
@@ -1961,14 +1407,13 @@ my $test_parameters = [{
             expected_config => {
                 doughflow => {
                     sportsbooks_mapping => {
-                        svg => '',
-                        malta => '',
-                        iom => '',
+                        svg         => '',
+                        malta       => '',
+                        iom         => '',
                         maltainvest => '',
-                        samoa => '',
-                        dsl => ''
-                    }
-                }
+                        samoa       => '',
+                        dsl         => ''
+                    }}
             },
             config => \&BOM::Config::cashier_config
         }
@@ -1978,13 +1423,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -1996,8 +1441,8 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2009,8 +1454,8 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2022,13 +1467,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2040,13 +1485,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2058,33 +1503,33 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 'master-write' => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 'master-read' => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 'fake-read' => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 'local' => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2096,13 +1541,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2114,13 +1559,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2132,13 +1577,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2150,13 +1595,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2169,59 +1614,59 @@ my $test_parameters = [{
             expected_config => {
                 per_landing_company => {
                     svg => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     },
                     iom => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     },
                     malta => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     },
                     maltainvest => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     },
                     virtual => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     },
                     champion => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     },
                     'champion-virtual' => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     },
                     samoa => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     },
                     'samoa-virtual' => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     },
                     dsl => {
-                        host => '',
-                        port => '',
+                        host     => '',
+                        port     => '',
                         password => ''
                     }
                 },
                 global_settings => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2233,16 +1678,16 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
-            },  
+            },
             config => \&BOM::Config::redis_auth_config
         }
     },
@@ -2251,13 +1696,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2269,13 +1714,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2287,13 +1732,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -2305,18 +1750,18 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 rights => {
-                    enabled => '',
-                    password => '',
+                    enabled        => '',
+                    password       => '',
                     trade_disabled => '',
-                    investor => '',
-                    confirmed => '',
-                    trailing => '',
-                    expert => '',
+                    investor       => '',
+                    confirmed      => '',
+                    trailing       => '',
+                    expert         => '',
                     api_deprecated => '',
-                    reports => '',
-                    readonly => '',
-                    reset_pass => '',
-                    otp_enabled => ''
+                    reports        => '',
+                    readonly       => '',
+                    reset_pass     => '',
+                    otp_enabled    => ''
                 }
             },
             config => \&BOM::Config::mt5_user_rights
@@ -2328,3670 +1773,1837 @@ my $test_parameters = [{
             expected_config => {
                 demo => {
                     gb => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     im => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cy => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     dk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ee => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fi => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     hr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     hu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ie => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ro => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     se => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     si => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     be => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     de => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     es => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     it => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     au => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ao => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     km => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     za => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ug => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ls => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     na => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ne => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ng => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     zw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ml => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     zm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bi => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     td => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     so => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ga => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ke => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     st => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ci => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     er => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     et => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cd => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     yt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     in => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     id => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     la => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ph => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     th => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     vn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bd => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     np => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mo => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     jp => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ar => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bo => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     br => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     co => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ec => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gp => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gy => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pe => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     uy => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ve => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ag => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ai => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     aw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bb => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bs => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     dm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     do => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gd => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     hn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ht => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     jm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ms => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mx => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ni => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pa => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     vc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     dz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     eg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     eh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ma => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ly => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     dj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sd => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     uz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lb => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sy => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     iq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ps => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     jo => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sa => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     qa => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     om => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     af => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ye => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     am => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ru => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     al => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     io => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cx => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     re => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     az => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     is => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ki => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sb => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ck => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ky => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gi => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sx => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     me => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ws => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     rs => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     hm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ge => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ad => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     li => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     md => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ch => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gs => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     by => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fo => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ua => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     aq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
-                    ax =>{
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                    ax => {
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     va => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     wf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     to => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ba => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     no => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     vg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     an => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ss => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
-                    }
+                        synthetic => {servers => []},
+                        financial => {servers => []}}
                 },
                 real => {
                     gb => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     im => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     at => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cy => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     dk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ee => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fi => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     hr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     hu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ie => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ro => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     se => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     si => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     be => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     de => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     es => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     it => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
-                    },au => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
+                    },
+                    au => {
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ao => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     km => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     za => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ug => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ls => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     na => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ne => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ng => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     zw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ml => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     zm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bi => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     td => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     so => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ga => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ke => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     st => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ci => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     er => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     et => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cd => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     yt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     in => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     id => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     la => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ph => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     th => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     vn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bd => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     np => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mo => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     jp => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
-                    ar =>{
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                    ar => {
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bo => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     br => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     co => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ec => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gp => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gy => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pe => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     uy => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ve => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ag => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ai => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     aw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bb => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bs => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     dm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     do => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gd => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     hn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ht => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     jm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ms => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mx => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ni => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pa => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tt => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     vc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     dz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     eg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     eh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ma => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ly => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     dj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sd => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     uz => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     kg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     lb => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sy => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     iq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ps => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     jo => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sa => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     qa => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     om => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     af => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ye => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     am => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ru => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     al => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     io => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cx => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     re => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     az => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     is => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ki => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sb => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ck => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ky => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pn => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pw => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gi => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sx => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     me => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ws => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     rs => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     hm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ge => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     tk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ad => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     li => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bl => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     pf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     md => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ch => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     gs => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     by => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mk => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     mh => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     sj => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bv => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fo => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nu => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     fm => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     cc => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ua => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     aq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ax => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     va => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     wf => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     to => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ba => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     nr => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
-                    no =>{
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                    no => {
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     vg => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     an => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     bq => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
+                        synthetic => {servers => []},
+                        financial => {servers => []}
                     },
                     ss => {
-                        synthetic => {
-                            servers => []
-                        },
-                        financial => {
-                            servers => []
-                        }
-                    }
+                        synthetic => {servers => []},
+                        financial => {servers => []}}
 
                 }
             },
@@ -6003,648 +3615,648 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 'demo\p01_ts01\financial\labuan_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts01\financial\bvi_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts01\financial\maltainvest_std_gbp' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts01\financial\maltainvest_std_eur' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts01\financial\maltainvest_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts01\financial\svg_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts01\financial\svg_std-lim_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts01\financial\vanuatu_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts01\synthetic\svg_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo_bvi_financial_financial_stp' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\bvi_financial_stp' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo01\financial\bvi_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts02\financial\labuan_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts02\financial\bvi_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts02\financial\maltainvest_std_gbp' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts02\financial\maltainvest_std_eur' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts02\financial\svg_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts02\financial\svg_std-lim_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts02\financial\vanuatu_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts02\synthetic\svg_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'demo\p01_ts02\financial\bvi_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\financial\bvi_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\financial\bvi_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\financial\bvi_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\financial\bvi_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\financial\bvi_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\financial\labuan_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\financial\labuan_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\financial\labuan_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\financial\labuan_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\financial\labuan_stp_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\financial\maltainvest_std-hr_eur' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\financial\maltainvest_std-hr_gbp' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\financial\maltainvest_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
-                'real\p01_ts02\financial\maltainvest_std-hr_gbp'=> {
-                    account_type => '',
+                'real\p01_ts02\financial\maltainvest_std-hr_gbp' => {
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\financial\maltainvest_std-hr_eur' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\financial\maltainvest_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\financial\maltainvest_std-hr_gbp' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\financial\maltainvest_std-hr_eur' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\financial\maltainvest_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\financial\maltainvest_std-hr_gbp' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\financial\maltainvest_std-hr_eur' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\financial\maltainvest_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\financial\maltainvest_std-hr_gbp' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\financial\maltainvest_std-hr_eur' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\financial\maltainvest_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\financial\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\financial\svg_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\financial\svg_std-lim_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\financial\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\financial\svg_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\financial\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\financial\svg_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\financial\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\financial\svg_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\financial\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\financial\svg_std_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\financial\vanuatu_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\financial\vanuatu_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\financial\vanuatu_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\financial\vanuatu_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\financial\vanuatu_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\synthetic\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\synthetic\svg_std_usd\01' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\synthetic\svg_std_usd\02' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\synthetic\svg_std_usd\03' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts01\synthetic\svg_std_usd\04' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\synthetic\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\synthetic\svg_std_usd\01' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\synthetic\svg_std_usd\02' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\synthetic\svg_std_usd\03' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\synthetic\svg_std_usd\04' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\synthetic\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\synthetic\svg_std_usd\01' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\synthetic\svg_std_usd\02' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\synthetic\svg_std_usd\03' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\synthetic\svg_std_usd\04' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\synthetic\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\synthetic\svg_std_usd\01' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\synthetic\svg_std_usd\02' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\synthetic\svg_std_usd\03' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\synthetic\svg_std_usd\04' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\synthetic\svg_std-hr_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\synthetic\svg_std_usd\01' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\synthetic\svg_std_usd\02' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\synthetic\svg_std_usd\03' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\synthetic\svg_std_usd\04' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\synthetic\seychelles_ib_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts02\synthetic\seychelles_ibt_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts03\synthetic\seychelles_ibt_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p01_ts04\synthetic\seychelles_ibt_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 },
                 'real\p02_ts02\synthetic\seychelles_ibt_usd' => {
-                    account_type => '',
+                    account_type          => '',
                     landing_company_short => '',
-                    market_type => '',
-                    sub_account_type => '',
-                    server => ''
+                    market_type           => '',
+                    sub_account_type      => '',
+                    server                => ''
                 }
 
             },
@@ -6656,13 +4268,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -6674,13 +4286,13 @@ my $test_parameters = [{
         args => {
             expected_config => {
                 write => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 },
                 read => {
-                    host => '',
-                    port => '',
+                    host     => '',
+                    port     => '',
                     password => ''
                 }
             },
@@ -6693,13 +4305,13 @@ my $test_parameters = [{
             expected_config => {
                 fraud_prevention => {
                     enabled => '',
-                    host => '',
-                    port => ''
+                    host    => '',
+                    port    => ''
                 },
                 identity_verification => {
                     enabled => '',
-                    host => '',
-                    port => ''
+                    host    => '',
+                    port    => ''
                 }
             },
             config => \&BOM::Config::services_config
@@ -6708,1743 +4320,1738 @@ my $test_parameters = [{
     {
         name => 'paymentapi.yml',
         args => {
-            expected_config => {
-                secret => ''
-            },
-            config => \&BOM::Config::paymentapi_config
+            expected_config => {secret => ''},
+            config          => \&BOM::Config::paymentapi_config
         }
     },
     {
         name => 'qa/config.yml',
         args => {
-           expected_config => {
+            expected_config => {
                 nodes => {
                     'qa00.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa01.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa02.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa03.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa04.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa05.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa06.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa07.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa08.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa09.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa10.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa11.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa12.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa13.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa14.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa15.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa16.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa17.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa18.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa19.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa20.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa21.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa22.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa23.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa24.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa25.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa26.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa27.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa28.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa29.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa30.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa31.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa32.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa33.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa34.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa35.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa36.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
-                   'qa37.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                    'qa37.regentmarkets.com' => {
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa38.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa39.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa40.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa41.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa42.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa43.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa44.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa45.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa46.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa47.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa48.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa49.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa50.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa51.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa52.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa53.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa54.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa55.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa56.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa57.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa58.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa59.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa60.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa61.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa62.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa63.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa64.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa65.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa66.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa67.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa68.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa69.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa70.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa71.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa72.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa73.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa74.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa75.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa76.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa77.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa78.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa79.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa80.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa81.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa82.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa83.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa84.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa85.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa86.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa87.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa88.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa89.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa90.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa91.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa92.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa93.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa94.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa95.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa96.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa97.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa98.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa99.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa100.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa101.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa102.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa103.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa104.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa105.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa106.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa107.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa108.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa109.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa110.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa111.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa112.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa113.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa114.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa115.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa116.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa117.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa118.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa119.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa120.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qa121.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa122.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa123.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa124.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa125.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa126.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa127.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa128.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa129.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa130.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa131.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa132.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa133.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa134.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa135.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa136.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa137.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa138.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa139.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa140.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa141.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa142.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qa143.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qadf.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qadev01.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qadev02.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qadev03.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qadev04.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qadev05.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     },
                     'qadev06.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qadev07.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qadev08.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qadev09.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
+                        ip          => '',
+                        vpc_ip      => '',
                         mac_address => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        provider => ''
+                        env         => '',
+                        type        => '',
+                        region      => '',
+                        website     => '',
+                        provider    => ''
                     },
                     'qaloadtest.regentmarkets.com' => {
-                        ip => '',
-                        vpc_ip => '',
-                        env => '',
-                        type => '',
-                        region => '',
-                        website => '',
-                        pool => '',
+                        ip       => '',
+                        vpc_ip   => '',
+                        env      => '',
+                        type     => '',
+                        region   => '',
+                        website  => '',
+                        pool     => '',
                         iam_role => '',
                         provider => ''
                     }
                 },
-                elb => {
-                    env => ''
-                },
+                elb        => {env => ''},
                 aws_config => {
                     'us-east-1' => {
-                        ami => '',
-                        sg => '',
-                        office_ip_sg => '',
-                        office_ip_sg_02 => '',
+                        ami              => '',
+                        sg               => '',
+                        office_ip_sg     => '',
+                        office_ip_sg_02  => '',
                         cloudflare_ip_sg => '',
-                        travis_sg => '',
-                        subnet_id => ''
+                        travis_sg        => '',
+                        subnet_id        => ''
                     },
                     'eu-central-1' => {
-                        ami => '',
-                        sg => '',
-                        office_ip_sg => '',
-                        office_ip_sg_02 => '',
+                        ami              => '',
+                        sg               => '',
+                        office_ip_sg     => '',
+                        office_ip_sg_02  => '',
                         cloudflare_ip_sg => '',
-                        travis_sg => '',
-                        subnet_id => ''
+                        travis_sg        => '',
+                        subnet_id        => ''
                     },
                     'ap-southeast-1' => {
-                        ami => '',
-                        sg => '',
-                        office_ip_sg => '',
-                        office_ip_sg_02 => '',
+                        ami              => '',
+                        sg               => '',
+                        office_ip_sg     => '',
+                        office_ip_sg_02  => '',
                         cloudflare_ip_sg => '',
-                        travis_sg => '',
-                        subnet_id => ''
+                        travis_sg        => '',
+                        subnet_id        => ''
                     }
                 },
                 aliyun_config => {
                     'eu-central-1' => {
-                        sg => '',
+                        sg        => '',
                         travis_sg => '',
-                        vswitch => '',
-                        ami => ''
+                        vswitch   => '',
+                        ami       => ''
                     }
                 },
                 openstack_config => {
                     CyberJaya => {
-                        'private-network' => '',
+                        'private-network'    => '',
                         'private-network-id' => '',
-                        'private-subnet' => '',
-                        network => '',
-                        'network-id' => '',
-                        sg => '',
-                        ami => '',
-                        ssh_key => ''
+                        'private-subnet'     => '',
+                        network              => '',
+                        'network-id'         => '',
+                        sg                   => '',
+                        ami                  => '',
+                        ssh_key              => ''
                     },
                     FS => {
-                        'private-network' => '',
+                        'private-network'    => '',
                         'private-network-id' => '',
-                        'private-subnet' => '',
-                        network => '',
-                        'network-id' => '',
-                        sg => '',
-                        ami => '',
-                        ssh_key => ''
+                        'private-subnet'     => '',
+                        network              => '',
+                        'network-id'         => '',
+                        sg                   => '',
+                        ami                  => '',
+                        ssh_key              => ''
                     },
                     dxb => {
-                        'private-network' => '',
+                        'private-network'    => '',
                         'private-network-id' => '',
-                        'private-subnet' => '',
-                        network => '',
-                        'network-id' => '',
-                        sg => '',
-                        ami => '',
-                        ssh_key => ''
+                        'private-subnet'     => '',
+                        network              => '',
+                        'network-id'         => '',
+                        sg                   => '',
+                        ami                  => '',
+                        ssh_key              => ''
                     },
                     'qa-cj' => {
-                        'private-network' => '',
+                        'private-network'    => '',
                         'private-network-id' => '',
-                        'private-subnet' => '',
-                        network => '',
-                        'network-id' => '',
-                        sg => '',
-                        ami => '',
-                        ssh_key => ''
-                    }
-                }
-           },
-           config => \&BOM::Config::qa_config 
+                        'private-subnet'     => '',
+                        network              => '',
+                        'network-id'         => '',
+                        sg                   => '',
+                        ami                  => '',
+                        ssh_key              => ''
+                    }}
+            },
+            config => \&BOM::Config::qa_config
         }
     },
     {
@@ -8453,782 +6060,767 @@ my $test_parameters = [{
             expected_config => {
                 commission => {
                     intraday => {
-                        historical_fixed => '',
+                        historical_fixed       => '',
                         historical_vol_meanrev => ''
                     },
-                    digital_spread => {
-                        level_multiplier => ''
-                    },
-                    adjustment => {
-                        forward_start_factor => ''
-                    }
+                    digital_spread => {level_multiplier     => ''},
+                    adjustment     => {forward_start_factor => ''}
                 },
                 default_stake => {
-                    USD => '',
-                    EUR => '',
-                    AUD => '',
-                    GBP => '',
-                    BTC => '',
-                    ETH => '',
-                    LTC => '',
-                    BUSD => '',
-                    DAI => '',
-                    EURS => '',
-                    IDK => '',
-                    PAX => '',
-                    TUSD => '',
-                    USB => '',
-                    USDC => '',
-                    USDK => '',
-                    UST => '',
+                    USD   => '',
+                    EUR   => '',
+                    AUD   => '',
+                    GBP   => '',
+                    BTC   => '',
+                    ETH   => '',
+                    LTC   => '',
+                    BUSD  => '',
+                    DAI   => '',
+                    EURS  => '',
+                    IDK   => '',
+                    PAX   => '',
+                    TUSD  => '',
+                    USB   => '',
+                    USDC  => '',
+                    USDK  => '',
+                    UST   => '',
                     eUSDT => ''
                 },
                 bet_limits => {
-                    holiday_blackout_start => '',
-                    holiday_blackout_end => '',
+                    holiday_blackout_start        => '',
+                    holiday_blackout_end          => '',
                     inefficient_period_payout_max => {
-                        USD => '',
-                        EUR => '',
-                        AUD => '',
-                        GBP => '',
-                        BTC => '',
-                        ETH => '',
-                        LTC => '',
-                        BUSD => '',
-                        DAI => '',
-                        EURS => '',
-                        IDK => '',
-                        PAX => '',
-                        TUSD => '',
-                        USB => '',
-                        USDC => '',
-                        USDK => '',
-                        UST => '',
+                        USD   => '',
+                        EUR   => '',
+                        AUD   => '',
+                        GBP   => '',
+                        BTC   => '',
+                        ETH   => '',
+                        LTC   => '',
+                        BUSD  => '',
+                        DAI   => '',
+                        EURS  => '',
+                        IDK   => '',
+                        PAX   => '',
+                        TUSD  => '',
+                        USB   => '',
+                        USDC  => '',
+                        USDK  => '',
+                        UST   => '',
                         eUSDT => ''
                     },
                     min_payout => {
                         default_landing_company => {
                             default_market => {
                                 default_contract_category => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
                                 },
                                 callputspread => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
-                                }
-                            }
-                        }
+                                }}}
                     },
                     max_payout => {
                         default_landing_company => {
                             default_market => {
                                 default_contract_category => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
                                 },
                                 runs => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
                                 },
                                 digits => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
-                                }
-                            }
-                        }
+                                }}}
                     },
                     min_stake => {
                         default_landing_company => {
                             default_market => {
                                 default_contract_category => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
                                 },
                                 multiplier => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
                                 }
                             },
                             synthetic_index => {
                                 default_contract_category => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
                                 },
                                 multiplier => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
-                                }
-                            }
+                                }}
                         },
                         maltainvest => {
                             default_market => {
                                 default_contract_category => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
-                                }
-                            }
-                        }
+                                }}}
                     },
                     max_stake => {
                         default_landing_company => {
                             default_market => {
                                 multiplier => {
-                                    USD => '',
-                                    EUR => '',
-                                    AUD => '',
-                                    GBP => '',
-                                    BTC => '',
-                                    ETH => '',
-                                    LTC => '',
-                                    BUSD => '',
-                                    DAI => '',
-                                    EURS => '',
-                                    IDK => '',
-                                    PAX => '',
-                                    TUSD => '',
-                                    USB => '',
-                                    USDC => '',
-                                    USDK => '',
-                                    UST => '',
+                                    USD   => '',
+                                    EUR   => '',
+                                    AUD   => '',
+                                    GBP   => '',
+                                    BTC   => '',
+                                    ETH   => '',
+                                    LTC   => '',
+                                    BUSD  => '',
+                                    DAI   => '',
+                                    EURS  => '',
+                                    IDK   => '',
+                                    PAX   => '',
+                                    TUSD  => '',
+                                    USB   => '',
+                                    USDC  => '',
+                                    USDK  => '',
+                                    UST   => '',
                                     eUSDT => ''
-                                }
-                            }
-                        }
+                                }}}
                     },
                     min_commission_amount => {
                         default_contract_category => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         callputspread => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         }
                     },
                     min_order_amount => {
-                        USD => '',
-                        EUR => '',
-                        AUD => '',
-                        GBP => '',
-                        BTC => '',
-                        ETH => '',
-                        LTC => '',
-                        BUSD => '',
-                        DAI => '',
-                        EURS => '',
-                        IDK => '',
-                        PAX => '',
-                        TUSD => '',
-                        USB => '',
-                        USDC => '',
-                        USDK => '',
-                        UST => '',
+                        USD   => '',
+                        EUR   => '',
+                        AUD   => '',
+                        GBP   => '',
+                        BTC   => '',
+                        ETH   => '',
+                        LTC   => '',
+                        BUSD  => '',
+                        DAI   => '',
+                        EURS  => '',
+                        IDK   => '',
+                        PAX   => '',
+                        TUSD  => '',
+                        USB   => '',
+                        USDC  => '',
+                        USDK  => '',
+                        UST   => '',
                         eUSDT => ''
                     }
                 },
                 lookback_limits => {
-                    crypto => '',
-                    fiat => '',
+                    crypto         => '',
+                    fiat           => '',
                     min_multiplier => {
-                        R_10 => '',
-                        R_25 => '',
-                        R_50 => '',
-                        R_75 => '',
-                        R_100 => '',
-                        '1HZ10V' => '',
-                        '1HZ25V' => '',
-                        '1HZ50V' => '',
-                        '1HZ75V' => '',
+                        R_10      => '',
+                        R_25      => '',
+                        R_50      => '',
+                        R_75      => '',
+                        R_100     => '',
+                        '1HZ10V'  => '',
+                        '1HZ25V'  => '',
+                        '1HZ50V'  => '',
+                        '1HZ75V'  => '',
                         '1HZ100V' => ''
                     },
                     open_position_limits => {
-                        USD => '',
-                        EUR => '',
-                        AUD => '',
-                        GBP => '',
-                        BTC => '',
-                        ETH => '',
-                        LTC => '',
-                        BUSD => '',
-                        DAI => '',
-                        EURS => '',
-                        IDK => '',
-                        PAX => '',
-                        TUSD => '',
-                        USB => '',
-                        USDC => '',
-                        USDK => '',
-                        UST => '',
+                        USD   => '',
+                        EUR   => '',
+                        AUD   => '',
+                        GBP   => '',
+                        BTC   => '',
+                        ETH   => '',
+                        LTC   => '',
+                        BUSD  => '',
+                        DAI   => '',
+                        EURS  => '',
+                        IDK   => '',
+                        PAX   => '',
+                        TUSD  => '',
+                        USB   => '',
+                        USDC  => '',
+                        USDK  => '',
+                        UST   => '',
                         eUSDT => ''
                     }
                 },
                 risk_profile => {
                     no_business => {
                         turnover => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         payout => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         multiplier => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         }
                     },
                     extreme_risk => {
                         turnover => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         payout => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         multiplier => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         }
                     },
                     high_risk => {
                         turnover => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         payout => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         multiplier => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         }
                     },
                     moderate_risk => {
                         turnover => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         payout => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         multiplier => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         }
                     },
                     medium_risk => {
                         turnover => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         payout => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         multiplier => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         }
                     },
                     low_risk => {
                         turnover => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         payout => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => ''
                         },
                         multiplier => {
-                            USD => '',
-                            EUR => '',
-                            AUD => '',
-                            GBP => '',
-                            BTC => '',
-                            ETH => '',
-                            LTC => '',
-                            BUSD => '',
-                            DAI => '',
-                            EURS => '',
-                            IDK => '',
-                            PAX => '',
-                            TUSD => '',
-                            USB => '',
-                            USDC => '',
-                            USDK => '',
-                            UST => '',
+                            USD   => '',
+                            EUR   => '',
+                            AUD   => '',
+                            GBP   => '',
+                            BTC   => '',
+                            ETH   => '',
+                            LTC   => '',
+                            BUSD  => '',
+                            DAI   => '',
+                            EURS  => '',
+                            IDK   => '',
+                            PAX   => '',
+                            TUSD  => '',
+                            USB   => '',
+                            USDC  => '',
+                            USDK  => '',
+                            UST   => '',
                             eUSDT => '',
-                        }
-                    }
-                }
+                        }}}
             },
             config => \&BOM::Config::quants
         }
@@ -9237,21 +6829,20 @@ my $test_parameters = [{
         name => 'onfido_supported_documents.yml',
         args => {
             expected_config => [{
-                country_code => '',
-                country_name => '',
-                doc_types_list => [],
-            }],
-            config => \&BOM::Config::onfido_supported_documents,
+                    country_code   => '',
+                    country_name   => '',
+                    doc_types_list => [],
+                }
+            ],
+            config        => \&BOM::Config::onfido_supported_documents,
             file_is_array => 1,
         },
 
-    }
-    ];
+    }];
 
 for my $test_parameter (@$test_parameters) {
     subtest "Test YAML return correct structure for $test_parameter->{name}", \&yaml_structure_validator, $test_parameter->{args};
 }
-
 
 sub yaml_structure_validator {
     my $args            = shift;
@@ -9259,8 +6850,8 @@ sub yaml_structure_validator {
     my $config          = $args->{config}->();
     my $file_is_array   = $args->{file_is_array};
     diag($file_is_array) if (exists $args->{file_is_array});
-    if (! $file_is_array) {
-        my @received_keys   = ();
+    if (!$file_is_array) {
+        my @received_keys = ();
         _get_all_paths(
             $config,
             sub {
@@ -9279,7 +6870,7 @@ sub yaml_structure_validator {
         die "Test specified config is array but it was found to be non array!" unless ref($config) eq 'ARRAY';
         for my $line (@$config) {
             die "not hashref" unless ref($line) eq 'HASH';
-            my @received_keys   = ();
+            my @received_keys = ();
             _get_all_paths(
                 $line,
                 sub {
@@ -9322,7 +6913,7 @@ sub _get_all_paths {
             $code->(@newargs);
         }
     }
-    
+
 }
 
 done_testing;
