@@ -9225,7 +9225,7 @@ my $test_parameters = [{
                             USDC => '',
                             USDK => '',
                             UST => '',
-                            eUSDT => ''
+                            eUSDT => '',
                         }
                     }
                 }
@@ -9233,6 +9233,19 @@ my $test_parameters = [{
             config => \&BOM::Config::quants
         }
     },
+    {
+        name => 'onfido_supported_documents.yml',
+        args => {
+            expected_config => [{
+                country_code => '',
+                country_name => '',
+                doc_types_list => [],
+            }],
+            config => \&BOM::Config::onfido_supported_documents,
+            file_is_array => 1,
+        },
+
+    }
     ];
 
 for my $test_parameter (@$test_parameters) {
@@ -9244,25 +9257,45 @@ sub yaml_structure_validator {
     my $args            = shift;
     my $expected_config = $args->{expected_config};
     my $config          = $args->{config}->();
-    my @received_keys   = ();
-    _get_all_paths(
-        $config,
-        sub {
-            push @received_keys, join("|", @_);
-        });
-    my @expected_keys = ();
-    _get_all_paths(
-        $expected_config,
-        sub {
-            push @expected_keys, join("|", @_);
-        });
-    my @differences_keys = array_minus(@expected_keys, @received_keys);
-    if(  scalar @differences_keys != 0){
-        diag("\n");
-        diag(@differences_keys);
+    my $file_is_array   = $args->{file_is_array};
+    diag($file_is_array) if (exists $args->{file_is_array});
+    if (! $file_is_array) {
+        my @received_keys   = ();
+        _get_all_paths(
+            $config,
+            sub {
+                push @received_keys, join("|", @_);
+            });
+        my @expected_keys = ();
+        _get_all_paths(
+            $expected_config,
+            sub {
+                push @expected_keys, join("|", @_);
+            });
+        my @differences_keys = array_minus(@expected_keys, @received_keys);
+        is(scalar @differences_keys, 0, 'BOM::Config::node returns correct structure');
+        yaml_array_sub_structure_validator($config, $args->{array_test}) if exists($args->{array_test});
+    } else {
+        die "Test specified config is array but it was found to be non array!" unless ref($config) eq 'ARRAY';
+        for my $line (@$config) {
+            die "not hashref" unless ref($line) eq 'HASH';
+            my @received_keys   = ();
+            _get_all_paths(
+                $line,
+                sub {
+                    push @received_keys, join("|", @_);
+                });
+            my @expected_keys = ();
+            _get_all_paths(
+                $expected_config->[0],
+                sub {
+                    push @expected_keys, join("|", @_);
+                });
+            my @differences_keys = array_minus(@expected_keys, @received_keys);
+            is(scalar @differences_keys, 0, 'BOM::Config::node returns correct structure');
+            yaml_array_sub_structure_validator($line, $args->{array_test}) if exists($args->{array_test});
+        }
     }
-    is(scalar @differences_keys, 0, 'BOM::Config::node returns correct structure');
-    yaml_array_sub_structure_validator($config, $args->{array_test}) if exists($args->{array_test});
 }
 
 sub yaml_array_sub_structure_validator {
@@ -9280,7 +9313,8 @@ sub yaml_array_sub_structure_validator {
 
 sub _get_all_paths {
     my ($hashref, $code, $args) = @_;
-    while (my ($k, $v) = each(%$hashref)) {
+    if(ref($hashref) eq 'HASH') {
+        while (my ($k, $v) = each(%$hashref)) {
         my @newargs = defined($args) ? @$args : ();
         push(@newargs, $k);
         if (ref($v) eq 'HASH') {
@@ -9289,6 +9323,8 @@ sub _get_all_paths {
             $code->(@newargs);
         }
     }
+    }
+    
 }
 
 done_testing;
