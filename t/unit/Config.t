@@ -9313,8 +9313,7 @@ sub yaml_array_sub_structure_validator {
 
 sub _get_all_paths {
     my ($hashref, $code, $args) = @_;
-    if(ref($hashref) eq 'HASH') {
-        while (my ($k, $v) = each(%$hashref)) {
+    while (my ($k, $v) = each(%$hashref)) {
         my @newargs = defined($args) ? @$args : ();
         push(@newargs, $k);
         if (ref($v) eq 'HASH') {
@@ -9322,7 +9321,6 @@ sub _get_all_paths {
         } else {
             $code->(@newargs);
         }
-    }
     }
     
 }
