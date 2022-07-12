@@ -33,6 +33,9 @@ currency_specific_limits:
     eUSDT:
       minimum: 10
       maximum: 2000
+    tUSDT:
+      minimum: 10
+      maximum: 2000
 minimum_topup_balance:
   DEFAULT: 1000
 transaction_limits:

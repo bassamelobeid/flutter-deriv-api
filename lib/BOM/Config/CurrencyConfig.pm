@@ -600,33 +600,6 @@ sub is_experimental_currency {
     return any { $currency eq $_ } app_config()->system->suspend->experimental_currencies->@*;
 }
 
-=head2 get_crypto_new_address_threshold
-
-Gets the new_address_threshold of each currencies
-
-Takes the following argument(s)
-
-=over 4
-
-=item * C<c$urrency> - Currency code
-
-=back
-
-Returns the threshold to generate new address
-
-=cut
-
-sub get_crypto_new_address_threshold {
-    my $currency = shift;
-
-    my $new_address_threshold_list = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.new_address_threshold'));
-
-    my $new_address_threshold = $new_address_threshold_list->{$currency} // $new_address_threshold_list->{default};
-
-    return $new_address_threshold;
-
-}
-
 =head2 get_crypto_withdrawal_min_usd
 
 To get the minimum withdrawal amount for currency.

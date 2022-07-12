@@ -17,6 +17,7 @@ maximum_daily_turnover:
   USDK: 500000
   UST: 500000
   eUSDT: 500000
+  tUSDT: 500000
 max_balance:
   virtual:
     USD: 1000000
@@ -37,6 +38,7 @@ max_balance:
     USDK: 1000000
     UST: 1000000
     eUSDT: 1000000
+    tUSDT: 1000000
   real:
     USD: 300000
     EUR: 300000
@@ -56,6 +58,7 @@ max_balance:
     USDK: 300000
     UST: 300000
     eUSDT: 300000
+    tUSDT: 300000
 max_payout_open_positions:
     USD: 50000
     EUR: 50000
@@ -75,6 +78,7 @@ max_payout_open_positions:
     USDK: 50000
     UST: 50000
     eUSDT: 50000
+    tUSDT: 50000
 max_open_bets_default: 100
 max_payment_accounts_per_user: 5
 max_client_payment_accounts_per_broker_code:
