@@ -9,7 +9,6 @@ use Test::Deep qw(cmp_bag);
 use Array::Utils qw(array_minus);
 use B qw(svref_2object);
 
-
 sub yaml_structure_validator {
     my $args            = shift;
     my $expected_config = $args->{expected_config};

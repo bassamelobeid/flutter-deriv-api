@@ -5283,7 +5283,7 @@ my $test_parameters = [{
             ]}}];
 
 for my $test_parameter (@$test_parameters) {
-    subtest "Test YAML return correct structure for $test_parameter->{name}", \&YamlTestStructure::yaml_structure_validator , $test_parameter->{args}
+    subtest "Test YAML return correct structure for $test_parameter->{name}", \&YamlTestStructure::yaml_structure_validator, $test_parameter->{args};
 }
 
 done_testing;
