@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Deep;
+use Test::Deep qw(cmp_bag);
 use Array::Utils qw(array_minus);
 use Scalar::Util qw(refaddr);
 use BOM::Config;
@@ -5242,7 +5242,7 @@ my $test_parameters = [{
                         },
                         accounts => [{
                                 from => '',
-                                to   => ''
+                                to   => '',
                             }
                         ],
                         group_suffix => '',
@@ -5306,7 +5306,7 @@ sub yaml_structure_validator {
                 push @expected_keys, join("|", @_);
             });
         my @differences_keys = array_minus(@expected_keys, @received_keys);
-        is(scalar @differences_keys, 0, $function->NAME . ' returns correct structure');
+        cmp_bag(\@differences_keys,[],$function->NAME . ' returns correct structure');
         yaml_array_sub_structure_validator($config, $args->{array_test}) if exists($args->{array_test});
     } else {
         die "Test specified config is array but it was found to be non array!" unless ref($config) eq 'ARRAY';
