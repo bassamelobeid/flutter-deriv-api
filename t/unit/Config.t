@@ -5279,11 +5279,11 @@ my $test_parameters = [{
                         environment => ''
                     }}
             },
-            config => \&BOM::Config::mt5_webapi_config,
-            array_test => ["demo:p01_ts01:accounts","demo:p01_ts02:accounts",
-            "real:p01_ts01:accounts","real:p01_ts02:accounts","real:p01_ts03:accounts","real:p01_ts04:accounts",
-            "real:p02_ts02:accounts"]
-        }}];
+            config     => \&BOM::Config::mt5_webapi_config,
+            array_test => [
+                "demo:p01_ts01:accounts", "demo:p01_ts02:accounts", "real:p01_ts01:accounts", "real:p01_ts02:accounts",
+                "real:p01_ts03:accounts", "real:p01_ts04:accounts", "real:p02_ts02:accounts"
+            ]}}];
 
 for my $test_parameter (@$test_parameters) {
     subtest "Test YAML return correct structure for $test_parameter->{name}", \&yaml_structure_validator, $test_parameter->{args};
@@ -5310,7 +5310,7 @@ sub yaml_structure_validator {
                 push @expected_keys, join("|", @_);
             });
         my @differences_keys = array_minus(@expected_keys, @received_keys);
-        cmp_bag(\@differences_keys,[],$function->NAME . ' returns correct structure');
+        cmp_bag(\@differences_keys, [], $function->NAME . ' returns correct structure');
         yaml_array_sub_structure_validator($config, $args->{array_test}) if exists($args->{array_test});
     } else {
         die "Test specified config is array but it was found to be non array!" unless ref($config) eq 'ARRAY';
