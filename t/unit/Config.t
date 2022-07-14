@@ -256,7 +256,8 @@ my $test_parameters = [{
         args => {
             expected_config => {currency_pairs => []},
             config          => \&BOM::Config::currency_pairs_backoffice
-        }
+        },
+        array_test => ["currency_pairs"]
     },
     {
         name => 'paymentagent_config.yml',
@@ -5278,7 +5279,10 @@ my $test_parameters = [{
                         environment => ''
                     }}
             },
-            config => \&BOM::Config::mt5_webapi_config
+            config => \&BOM::Config::mt5_webapi_config,
+            array_test => ["demo:p01_ts01:accounts","demo:p01_ts02:accounts",
+            "real:p01_ts01:accounts","real:p01_ts02:accounts","real:p01_ts03:accounts","real:p01_ts04:accounts",
+            "real:p02_ts02:accounts"]
         }}];
 
 for my $test_parameter (@$test_parameters) {
