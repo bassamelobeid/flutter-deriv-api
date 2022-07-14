@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use BOM::Config;
 use Test::More;
+use lib qw(/home/git/regentmarkets/bom-config/t/lib/);
 use YamlTestStructure;
 
 my $test_parameters = [{
