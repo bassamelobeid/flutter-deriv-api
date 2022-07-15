@@ -731,7 +731,7 @@ async sub client_verification {
 
                 # Update expiration_date and document_id of each document in DB
                 # Using corresponding values in Onfido response
-                @reports = grep { $_->{properties}->{document_type} ne 'live_photo' } @reports;
+                @reports = grep { ($_->{properties}->{document_type} // '') ne 'live_photo' } @reports;
 
                 foreach my $report (@reports) {
                     # It seems that expiration date and document number of all documents in $report->{documents} list are similar
