@@ -467,7 +467,6 @@ sub get_settings_by_group {
                 payments.p2p.limits.maximum_advert
                 payments.p2p.limits.maximum_order
                 payments.p2p.limits.maximum_ads_per_type
-                payments.p2p.available_for_countries
                 payments.p2p.restricted_countries
                 payments.p2p.available_for_currencies
                 payments.p2p.cancellation_grace_period
