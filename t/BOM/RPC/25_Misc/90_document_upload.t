@@ -269,67 +269,8 @@ subtest 'Siblings accounts sync' => sub {
         is $mlt_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication is under review for the sibling';
     };
 
-    subtest 'MX to MF (experian)' => sub {
-        my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
-
-        $status_mock->mock(
-            'is_experian_validated',
-            sub {
-                1;
-            });
-
-        my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-        });
-        my $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MF',
-        });
-        my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_client->loginid);
-        my ($mf_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf_client->loginid);
-
-        my $user = BOM::User->create(
-            email          => 'mx2mfExperian@binary.com',
-            password       => BOM::User::Password::hashpw('ASDF2222'),
-            email_verified => 1,
-        );
-        $user->add_client($mf_client);
-        $user->add_client($mx_client);
-
-        my $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mx_token,
-                args  => {
-                    document_id       => '',
-                    expiration_date   => '',
-                    document_type     => 'proofaddress',
-                    document_format   => 'png',
-                    expected_checksum => '93052385230'
-                }})->has_no_error->result;
-
-        my $file_id = $result->{file_id};
-
-        $result = $c->call_ok(
-            'document_upload',
-            {
-                token => $mx_token,
-                args  => {
-                    file_id => $file_id,
-                    status  => 'success',
-                }})->has_no_error->result;
-        is $mx_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication is under review for the client';
-        ok !$mf_client->get_authentication('ID_DOCUMENT'), 'Authentication was not synced to sibling account';
-        $status_mock->unmock_all;
-    };
-
     subtest 'MX to MF (onfido)' => sub {
         my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
-
-        $status_mock->mock(
-            'is_experian_validated',
-            sub {
-                0;
-            });
 
         my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MLT',
@@ -379,12 +320,6 @@ subtest 'Siblings accounts sync' => sub {
     subtest 'POI upload' => sub {
         my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
         my $client_mock = Test::MockModule->new('BOM::User::Client');
-
-        $status_mock->mock(
-            'is_experian_validated',
-            sub {
-                0;
-            });
 
         $client_mock->mock(
             'fully_authenticated',
@@ -440,12 +375,6 @@ subtest 'Siblings accounts sync' => sub {
     subtest 'Fully authenticated upload' => sub {
         my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
         my $client_mock = Test::MockModule->new('BOM::User::Client');
-
-        $status_mock->mock(
-            'is_experian_validated',
-            sub {
-                0;
-            });
 
         $client_mock->mock(
             'fully_authenticated',

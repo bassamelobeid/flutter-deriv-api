@@ -34,7 +34,6 @@ use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use Finance::Underlying;
 
 use BOM::Platform::Context qw(localize request);
-use BOM::Platform::ProveID;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Redis;
