@@ -33,17 +33,11 @@ $p2p_mock->mock(
 
 my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
 my $mocked_poi_name_mismatch;
-my $mocked_is_experian_validated;
 my $upsert_calls = {};
 $status_mock->mock(
     'poi_name_mismatch',
     sub {
         return $mocked_poi_name_mismatch;
-    });
-$status_mock->mock(
-    'is_experian_validated',
-    sub {
-        return $mocked_is_experian_validated;
     });
 $status_mock->mock(
     'upsert',
@@ -95,44 +89,12 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Age verified - experian validated',
-            email    => 'test1+experian@binary.com',
-            provider => 'experian',
-            scenario => {
-                poa_status            => 'none',
-                poi_name_mismatch     => 0,
-                is_experian_validated => 1,
-            },
-            side_effects => {
-                age_verification                => 1,
-                poa_email                       => 0,
-                upsert_called                   => 1,
-                p2p_advertiser_approval_changed => 1,
-            }
-        },
-        {
-            title    => 'Age verified - not experian validated',
-            email    => 'test1+dummy@binary.com',
-            provider => 'dummy',
-            scenario => {
-                poa_status            => 'none',
-                poi_name_mismatch     => 0,
-                is_experian_validated => 0,
-            },
-            side_effects => {
-                age_verification                => 1,
-                poa_email                       => 0,
-                p2p_advertiser_approval_changed => 1,
-            }
-        },
-        {
             title    => 'Age verified - for synthetic',
             email    => 'test1+vrage@binary.com',
             provider => 'dummy',
             scenario => {
                 poa_status                         => 'none',
                 poi_name_mismatch                  => 0,
-                is_experian_validated              => 0,
                 require_age_verified_for_synthetic => 1,
             },
             side_effects => {
@@ -166,10 +128,9 @@ subtest 'set_age_verification' => sub {
             email    => 'test1+lcsync@binary.com',
             provider => 'dummy',
             scenario => {
-                poa_status            => 'none',
-                poi_name_mismatch     => 0,
-                is_experian_validated => 0,
-                allowed_lc_sync       => [qw/malta/]
+                poa_status        => 'none',
+                poi_name_mismatch => 0,
+                allowed_lc_sync   => [qw/malta/]
             },
             side_effects => {
                 age_verification                => 1,
@@ -262,7 +223,6 @@ subtest 'set_age_verification' => sub {
 
         $mocked_poa_status                                          = $scenario->{poa_status};
         $mocked_poi_name_mismatch                                   = $scenario->{poi_name_mismatch};
-        $mocked_is_experian_validated                               = $scenario->{is_experian_validated};
         $mocked_allowed_landing_companies_for_age_verification_sync = $scenario->{allowed_lc_sync} // [];
 
         subtest $title => sub {

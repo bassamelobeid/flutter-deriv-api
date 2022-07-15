@@ -150,7 +150,6 @@ my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
     notarised                                    => 'unknown',
     frontofcard                                  => 'unknown',
     professional_uk_self_certified_sophisticated => 'unknown',
-    experianproveid                              => 'unknown',
     backofcard                                   => 'unknown',
     tax_receipt                                  => 'unknown',
     payslip                                      => 'unknown',

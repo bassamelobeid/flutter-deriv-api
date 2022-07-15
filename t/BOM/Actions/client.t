@@ -2251,49 +2251,6 @@ subtest 'POA flag removal' => sub {
     }
 };
 
-subtest 'Overwrite Experian reason' => sub {
-    # Set the Experian state
-    $test_client->status->upsert('age_verification',  'test', 'Experian results are sufficient to mark client as age verified.');
-    $test_client->status->upsert('proveid_requested', 'test', 'ProveID request has been made for this account.');
-
-    my $status_mock = Test::MockModule->new(ref($test_client->status));
-    my $upsert_called;
-
-    $status_mock->mock(
-        'upsert',
-        sub {
-            $upsert_called = 1;
-            return $status_mock->original('upsert')->(@_);
-        });
-
-    # Overwrite the Experian reason
-    BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
-
-    ok $upsert_called, 'Upsert was called';
-    cmp_deeply $test_client->status->_get('age_verification'),
-        {
-        reason             => 'Onfido - age verified',
-        staff_name         => 'system',
-        status_code        => 'age_verification',
-        last_modified_date => re('.*'),
-        },
-        'The Experian reason was overwritten by system';
-
-    # If the status does not have the Experian reason, don't overwrite it
-    $upsert_called = 0;
-    BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
-
-    ok !$upsert_called, 'Upsert was not called';
-    cmp_deeply $test_client->status->_get('age_verification'),
-        {
-        reason             => 'Onfido - age verified',
-        staff_name         => 'system',
-        status_code        => 'age_verification',
-        last_modified_date => re('.*'),
-        },
-        'The Experian reason was not overwritten this time';
-};
-
 subtest 'account_reactivated' => sub {
     my @email_args;
     my $mock_event = Test::MockModule->new('BOM::Event::Actions::Client');

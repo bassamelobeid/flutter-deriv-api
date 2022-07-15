@@ -11,7 +11,6 @@ use Syntax::Keyword::Try;
 
 use BOM::User;
 use BOM::User::Client;
-use BOM::Platform::ProveID;
 use BOM::Platform::Doughflow;
 use BOM::Event::Actions::CustomerIO;
 use BOM::Database::ClientDB;
@@ -20,7 +19,6 @@ use BOM::Event::Utility qw( exception_logged );
 use BOM::Platform::CloseIO;
 use BOM::Platform::Context;
 use BOM::Platform::Desk;
-use BOM::Platform::ProveID;
 use BOM::Platform::Token::API;
 use IO::Async::Loop;
 use BOM::Event::Services;
@@ -255,15 +253,6 @@ async sub _anonymize {
             next if $cli->email =~ /\@deleted\.binary\.user$/;
             # Delete documents from S3 because after anonymization the filename will be changed.
             $cli->remove_client_authentication_docs_from_S3();
-            # Remove Experian reports if any
-            if ($cli->residence eq 'gb') {
-                my $prove = BOM::Platform::ProveID->new(
-                    client        => $cli,
-                    search_option => 'ProveID_KYC'
-                );
-                BOM::Platform::ProveID->new(client => $cli)->delete_existing_reports()
-                    if ($prove->has_saved_xml || ($cli->status->proveid_requested && !$cli->status->proveid_pending));
-            }
 
             # Set client status to disabled to prevent user from doing any future actions
 

@@ -6,7 +6,6 @@ use warnings;
 use Log::Any qw($log);
 use BOM::User;
 use BOM::User::Client;
-use BOM::Platform::ProveID;
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use Syntax::Keyword::Try;
