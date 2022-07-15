@@ -27,6 +27,7 @@ use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
+use BOM::RPC::v3::MT5::Account;
 use utf8;
 
 use IO::Pipe;
@@ -408,6 +409,10 @@ subtest $method => sub {
             $user->add_client($vclient);
         };
         'Initial users and clients';
+    };
+
+    subtest 'Check new account permission' => sub {
+        is(BOM::RPC::v3::MT5::Account::_get_new_account_permissions, 481, 'MT5 New account permission check');
     };
 
     subtest 'Auth client' => sub {

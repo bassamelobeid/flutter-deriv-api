@@ -628,6 +628,20 @@ sub _get_sub_account_type {
     return $sub_account_type;
 }
 
+=head2 _get_new_account_permissions
+
+Returns the MT5 new account permissions
+
+=over 4
+ 
+=back
+
+=cut
+
+sub _get_new_account_permissions {
+    return USER_RIGHT_ENABLED | USER_RIGHT_TRAILING | USER_RIGHT_EXPERT | USER_RIGHT_API | USER_RIGHT_REPORTS;
+}
+
 async_rpc "mt5_new_account",
     category => 'mt5',
     sub {
@@ -857,6 +871,9 @@ async_rpc "mt5_new_account",
     return create_error_future('TradingPasswordRequired',
         {message => localize('Please set your MT5 password using the [_1] API.', 'trading_platform_password_change')})
         unless $client->user->trading_password;
+
+    # Define the default rights for new account
+    $args->{rights} = _get_new_account_permissions;
 
     # disable trading for affiliate accounts
     if ($client->landing_company->is_for_affiliates) {
