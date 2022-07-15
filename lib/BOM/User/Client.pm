@@ -2802,7 +2802,7 @@ sub p2p_order_create {
         die +{error_code => 'OrderPaymentInfoRequired'} unless trim($param{payment_info}) or @payment_method_ids;
         die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
 
-        if ($advert->{payment_method_names}->@*) {
+        if ($advert->{payment_method_names} and $advert->{payment_method_names}->@*) {
             my $methods = $self->_p2p_advertiser_payment_methods(advertiser_id => $client_info->{id});
             die +{error_code => 'InvalidPaymentMethods'} unless all { exists $methods->{$_} } @payment_method_ids;
             my @order_methods = map { $methods->{$_}{method} } grep { $methods->{$_}{is_enabled} } @payment_method_ids;
