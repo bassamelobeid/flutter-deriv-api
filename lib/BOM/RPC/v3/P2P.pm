@@ -843,9 +843,6 @@ sub _check_client_access {
     die +{error_code => 'P2PDisabled'}
         unless $app_config->payments->p2p->available || any { $_ eq $client->loginid } $app_config->payments->p2p->clients->@*;
 
-    my @available_countries = $app_config->payments->p2p->available_for_countries->@*;
-    die +{error_code => 'RestrictedCountry'} if @available_countries and none { $_ eq lc($client->residence // '') } @available_countries;
-
     my @restricted_countries = $app_config->payments->p2p->restricted_countries->@*;
     die +{error_code => 'RestrictedCountry'} if any { $_ eq lc($client->residence // '') } @restricted_countries;
 

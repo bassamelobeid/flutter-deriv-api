@@ -125,17 +125,6 @@ subtest 'Currency not enabled' => sub {
 };
 
 # client residence is za
-subtest 'Available countries' => sub {
-    $app_config->payments->p2p->available_for_countries(['ag', 'us']);
-    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error('Access denied when residence not in list')
-        ->error_code_is('RestrictedCountry', 'correct error code');
-
-    $app_config->payments->p2p->available_for_countries(['ag', 'za']);
-    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('Access allowed when residence in list');
-
-    $app_config->payments->p2p->available_for_countries([]);
-    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('Access allowed when setting is empty');
-};
 
 subtest 'Restricted countries' => sub {
     $app_config->payments->p2p->restricted_countries(['za']);
