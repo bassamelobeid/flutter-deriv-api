@@ -394,9 +394,9 @@ sub set_authentication {
     my @allowed_lc_to_sync = @{$self->landing_company->allowed_landing_companies_for_authentication_sync};
     my @clients_to_update;
     # Get all siblings for a client except virtual one and itself
-    if ($self->user and not $self->is_virtual and not $self->status->is_experian_validated) {
+    if ($self->user and not $self->is_virtual) {
         @clients_to_update =
-            grep { not $_->is_virtual and $_->loginid ne $self->loginid and not $_->status->is_experian_validated } $self->user->clients;
+            grep { not $_->is_virtual and $_->loginid ne $self->loginid } $self->user->clients;
     }
     # Push the client to the list.
     push(@clients_to_update, $self);
@@ -408,11 +408,6 @@ sub set_authentication {
             or (any { $_ eq $cli->landing_company->short } @allowed_lc_to_sync)
             and not($cli->get_authentication($method) and ($cli->get_authentication($method)->status eq $status)))
         {
-            # Should not sync authentication if MX client authenticated with Experian
-            next
-                if $self->landing_company->short eq 'iom'
-                and $self->landing_company->short ne $cli->landing_company->short
-                and $method eq 'ID_ONLINE';
             # Remove existing status to make the auth methods mutually exclusive
             $_->delete for @{$cli->client_authentication_method};
             $cli->add_client_authentication_method({
@@ -1735,15 +1730,9 @@ and proof of address (POA)
     CR
       POI: High risk, withdrawals above 8k
       POA: High risk, withdrawals above 8k
-    MF
-      POI: Upon signup
-      POA: Upon signup
     MLT
       POI: Upon first successful deposit
       POA: Upon first successful deposit
-    MX
-      POI: If ProveID fails or insufficient scores / high risk status
-      POA: If ProveID fails or insufficient scores / high risk status
 
 Currently both requirements are same so currently the sub has no
 separate logic for them.
@@ -6765,7 +6754,7 @@ sub get_poa_status {
 
     return 'rejected' if $is_rejected;
 
-    return 'verified' if $self->fully_authenticated and not $self->ignore_address_verification;
+    return 'verified' if $self->fully_authenticated;
 
     return 'none';
 }
@@ -6790,7 +6779,7 @@ sub get_poi_status {
 
     return 'pending' if $status{pending};
 
-    if (!$self->ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
+    if ($self->fully_authenticated || $self->status->age_verification) {
         # IDV does not have 2nd attempt
         if ($onfido eq 'expired' || $manual eq 'expired') {
             return 'suspected' if $onfido eq 'suspected';
@@ -6970,8 +6959,6 @@ sub needs_poa_verification {
 
     return 0 if $status eq 'pending';
 
-    return 1 if $self->ignore_address_verification;
-
     # Not fully authenticated rules
     unless ($self->fully_authenticated) {
         my $poa_documents = $documents->{proof_of_address}->{documents};
@@ -7048,8 +7035,6 @@ sub needs_poi_verification {
         return 1 if any { $_ eq $self->get_onfido_status() } qw/rejected suspected expired/;
     }
 
-    # The age verification should be valid
-    return 1 if $self->ignore_age_verification;
     return 0;
 }
 
@@ -7217,78 +7202,6 @@ sub get_client_instance {
         loginid      => $loginid,
         db_operation => $db_operation // 'replica'
     });
-}
-
-=head2 ignore_age_verification
-
-We may want to override or invalidate the age verification under
-specific circumstances.
-
-Exception: when client is fully authenticated through scans / notarized docs (because that's a non Experian full auth)
-
-Rules:
-
-=over 4
-
-=item * High Risk profile and Experian validated account
-
-=back
-
-It returns 1 when we invalidate the age verification, 0 otherwise.
-
-=cut
-
-sub ignore_age_verification {
-    my ($self) = @_;
-
-    # Do not apply to fully authenticated with scans / notarized docs
-    return 0 if any { $_ ? $_->{status} eq 'pass' : 0 } map { $self->get_authentication($_) } qw/ID_DOCUMENT ID_NOTARIZED/;
-
-    # High risk profiles
-    my $risk = $self->aml_risk_classification // '';
-
-    if ($risk eq 'high') {
-        # Disregard experian authentication under high risk
-        return 1 if $self->status->is_experian_validated;
-    }
-
-    return 0;
-}
-
-=head2 ignore_address_verification
-
-We may want to override or invalidate the address verification under
-specific circumstances.
-
-Rules:
-
-=over 4
-
-=item * High Risk profile and Experian validated account (ID_ONLINE)
-
-=back
-
-It returns 1 when we invalidate the authentication, 0 otherwise.
-
-=cut
-
-sub ignore_address_verification {
-    my ($self) = @_;
-
-    # High risk profiles
-    my $risk = $self->aml_risk_classification // '';
-
-    if ($risk eq 'high') {
-        # Disregard experian authentication under high risk
-        my $auth = $self->get_authentication('ID_ONLINE');
-
-        return 0 unless $auth;
-        return 0 unless $auth->status eq 'pass';
-        return 0 unless $self->status->proveid_requested;
-        return 1;
-    }
-
-    return 0;
 }
 
 =head2 start_document_upload

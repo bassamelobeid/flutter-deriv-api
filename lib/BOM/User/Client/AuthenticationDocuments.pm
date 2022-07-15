@@ -192,9 +192,6 @@ sub _build_uploaded {
             my $expires = $documents{$category}{documents}{$single_document->file_name}{expiry_date};
             next unless $expires;
 
-            # Dont propagate expiry if is age verified by Experian
-            next if $self->client->status->is_experian_validated and $category eq 'proof_of_identity';
-
             # We have two strategies, max and min
             # max will take into account the highest date found to validate the expiration of the category
             # min will take into account the lowest date found to validate the expiration of the category
@@ -234,7 +231,7 @@ sub _build_uploaded {
     if (scalar(keys %documents) and exists $documents{proof_of_address}) {
         if (($self->client->authentication_status // '') eq 'needs_action') {
             $documents{proof_of_address}{is_rejected} = 1;
-        } elsif (not $self->client->fully_authenticated or $self->client->ignore_address_verification) {
+        } elsif (not $self->client->fully_authenticated) {
             $documents{proof_of_address}{is_pending} = 1;
         }
     }

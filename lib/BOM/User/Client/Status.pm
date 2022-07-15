@@ -8,6 +8,7 @@ use List::Util qw/uniqstr any/;
 use namespace::clean;
 use Class::Method::Modifiers qw( install_modifier );
 use Carp qw( croak );
+use Array::Utils qw(array_minus);
 
 has client_loginid => (
     is       => 'ro',
@@ -24,7 +25,7 @@ my @status_codes = qw(
     mt5_withdrawal_locked  ukgc_funds_protection  financial_risk_approval
     crs_tin_information  max_turnover_limit_not_set
     professional_requested  professional  professional_rejected  tnc_approval
-    migrated_single_email  duplicate_account  proveid_pending  proveid_requested
+    migrated_single_email  duplicate_account
     require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
     social_signup  trusted  pa_withdrawal_explicitly_allowed  financial_assessment_required
     address_verified  no_withdrawal_or_trading no_trading  allow_document_upload internal_client
@@ -32,6 +33,11 @@ my @status_codes = qw(
     allow_poi_resubmission  allow_poa_resubmission migrated_universal_password
     poi_name_mismatch crypto_auto_reject_disabled crypto_auto_approve_disabled potential_fraud
     deposit_attempt df_deposit_requires_poi
+);
+
+# codes that are about to be dropped
+my @deprecated_codes = qw(
+    proveid_requested proveid_pending
 );
 
 for my $code (@status_codes) {
@@ -322,28 +328,6 @@ sub has_any {
     return any { $is_required{$_} } $self->all->@*;
 }
 
-=head2 is_experian_validated
-
-Check if the account has been verified by Experian.
-
-Heuristic approach.
-
-Returns 1 if Experian validated, 0 otherwise.
-
-=cut
-
-sub is_experian_validated {
-    my ($self) = @_;
-
-    return 0 unless $self->proveid_requested;
-
-    my $reason = $self->reason('age_verification') // '';
-
-    return 1 if $reason =~ /Experian results are sufficient to mark client as age verified/;
-
-    return 0;
-}
-
 ################################################################################
 
 =head1 METHODS - Private
@@ -460,6 +444,9 @@ sub _get_all_clients_status {
         fixup => sub {
             $_->selectall_hashref('SELECT * FROM betonmarkets.get_client_status_all(?)', 'status_code', undef, $loginid);
         });
+
+    delete @{$list}{@deprecated_codes};
+
     #populate attributes for object
     @{$self}{keys %$list} = values %$list;
     return $list;

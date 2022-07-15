@@ -121,23 +121,6 @@ subtest 'Authenticate MLT and MF' => sub {
     ok mailbox_search(subject => qr/New authenticated MF from MLT/), qq/CS get an email to check TIN and MIFIR/;
 };
 
-# We should not sync authentication from MX to MF if it was from Experian
-# We should sync authentication from MF to MX
-subtest 'Authenticate MX and MF' => sub {
-    $client_mx->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
-    ok $client_mx->status->allow_document_upload, "MX client is allowed to upload document";
-    $client_mx->set_authentication('ID_DOCUMENT', {status => 'pass'});
-    $client_mx  = BOM::User::Client->new({loginid => $client_mx->loginid});
-    $client_mf2 = BOM::User::Client->new({loginid => $client_mf2->loginid});
-    ok !$client_mx->status->allow_document_upload, "Authenticated client is not allowed to upload document";
-    ok $client_mf2->get_authentication('ID_DOCUMENT'), "MF has ID_DOCUMENT";
-    $client_mf2->set_authentication('ID_NOTARIZED', {status => 'pass'});
-    ok $client_mx->get_authentication('ID_NOTARIZED'), "MX has ID_NOTARIZED";
-    $client_mx->set_authentication('ID_ONLINE', {status => 'pass'});
-    ok !$client_mf2->get_authentication('ID_ONLINE'), "MF has not ID_ONLINE";
-
-};
-
 subtest 'set_authentication_and_status' => sub {
     my $cr_user = BOM::User->create(
         email          => 'test@deriv.com',

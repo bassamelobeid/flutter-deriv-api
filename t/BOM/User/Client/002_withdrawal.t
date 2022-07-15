@@ -358,7 +358,7 @@ subtest 'CR withdrawal' => sub {
     # Fully authenticated CR withdrawals - No more limit
     subtest 'fully authenticated' => sub {
         my $client = new_client('USD');
-        $client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID',);
+        $client->status->set('age_verification', 'system', 'test',);
         $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->smart_payment(%deposit, amount => 20000);
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Authed CR withdrawal no more than USD10K';
@@ -373,7 +373,7 @@ subtest 'CR withdrawal' => sub {
     # Testing an odd case for validate_payment
     subtest 'BTC authenticated, full withdrawal' => sub {
         my $client = new_client('BTC');
-        $client->status->setnx('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+        $client->status->setnx('age_verification', 'system', 'testD');
         $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         my $var = $client->smart_payment(%deposit_btc, amount => 0.01434048);
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -0.01434048) } 'Authed CR withdraw full BTC amount';
