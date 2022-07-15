@@ -1,5 +1,23 @@
 package YamlTestStructure;
 
+=head1 NAME 
+
+YamlTestStructure
+
+=head1 SYNOPSIS
+
+    use lib qw(/home/git/regentmarkets/bom-config/t/lib/);
+    use YamlTestStructure;
+
+    YamlTestStructure::yaml_strcutre_validator($args)
+
+=head1 DESCRIPTION
+
+The library to  validate the structure of a hash against an expected hash. The library is used to
+validate the structure of yml files whose structure can be loaded in as a hashref. 
+
+=cut
+
 use 5.010;
 use strict;
 use warnings;
@@ -8,6 +26,18 @@ use Test::More;
 use Test::Deep qw(cmp_bag);
 use Array::Utils qw(array_minus);
 use B qw(svref_2object);
+
+=head2 yaml_structure_validator
+
+Takes a single hashref as an argument. 
+The argument is expected to have the following keys : 
+
+=item * args->{expectec_config} - An hashref to the expected structure
+=item * args->{config} - A reference to the subroutine the returns  structure that needs to be validated
+=item * args->{file_is_array} (Optional) - A flag to handle an edge case where args->{config}->() returns an arrayref instead of hashref Eg. onfido_supported_documents.yml
+=item * args ->{array_test} (Optional) - an array ref that contains the path to all the keys within the hashref whose values are arrays 
+
+=cut
 
 sub yaml_structure_validator {
     my $args            = shift;
