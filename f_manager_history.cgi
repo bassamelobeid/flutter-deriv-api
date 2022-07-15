@@ -36,7 +36,6 @@ my $encoded_loginID = encode_entities($loginID);
 
 my $trx_filter              = request()->param('trx_filter') // '';
 my $deposit_withdrawal_only = $trx_filter eq 'deposit_withdrawal_only' ? 1 : 0;
-my $all_in_one_page         = $trx_filter eq 'all_in_one_page'         ? 1 : 0;
 
 my $from_date = trim(request()->param('startdate'));
 my $to_date   = trim(request()->param('enddate'));
@@ -147,12 +146,12 @@ my $transaction_id = request()->param('transactionID');
 my $transactions   = get_transactions_details({
         client   => $client,
         currency => $currency,
-        from     => (not $all_in_one_page and $from_date) ? $from_date->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
+        from     => ($from_date) ? $from_date->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
         : undef,
-        to => (not $all_in_one_page and $to_date) ? $to_date->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
+        to => ($to_date) ? $to_date->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
         : undef,
         dw_only        => $deposit_withdrawal_only,
-        limit          => $all_in_one_page ? 99999 : 200,
+        limit          => 200,
         transaction_id => $transaction_id,
     });
 
@@ -233,8 +232,8 @@ BOM::Backoffice::Request::template()->process(
             tel         => $tel,
             date_joined => $client->date_joined,
         },
-        startdate => (not $all_in_one_page and $from_date) ? $from_date->datetime_yyyymmdd_hhmmss() : undef,
-        enddate   => (not $all_in_one_page and $to_date)   ? $to_date->datetime_yyyymmdd_hhmmss()   : undef,
+        startdate => ($from_date) ? $from_date->datetime_yyyymmdd_hhmmss() : undef,
+        enddate   => ($to_date)   ? $to_date->datetime_yyyymmdd_hhmmss()   : undef,
 
         payment_type_urls  => $payment_type_urls,
         transfer_type_urls => internal_transfer_statement_urls($client, $overview_from_date, $overview_to_date),
