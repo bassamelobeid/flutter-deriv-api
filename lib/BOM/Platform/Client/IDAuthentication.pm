@@ -10,7 +10,6 @@ use XML::LibXML;
 use Text::Markdown;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(localize request);
-use BOM::Platform::ProveID;
 use feature 'state';
 
 has event => (
@@ -50,7 +49,6 @@ sub run_validation {
     state $action_mapping = {
         age_verified     => \&_age_verified,
         fully_auth_check => \&_fully_auth_check,
-        proveid          => \&proveid,
     };
 
     for my $action (@$actions) {
@@ -82,92 +80,6 @@ sub run_authentication {
     return shift->run_validation('first_deposit');
 }
 
-=head2 proveid
-
-Checks the proveid results of the client from Experian
-
-=over 4
-
-=item * C<should_die> - Boolean, if set, the proveid will die on failure
-
-=back
-
-=cut
-
-sub proveid {
-    my $self    = shift;
-    my $client  = $self->client;
-    my $loginid = $client->loginid;
-
-    return undef unless request()->brand->countries_instance->countries_list->{lc $client->residence}->{has_proveid};
-
-    my $prove_id_result = $self->_fetch_proveid;
-
-    return undef unless $prove_id_result;
-
-    my $xml = XML::LibXML->new()->parse_string($prove_id_result);
-
-    my ($credit_reference)         = $xml->findnodes('/Search/Result/CreditReference');
-    my ($credit_reference_summary) = $xml->findnodes('/Search/Result/CreditReference/CreditReferenceSummary');
-    my ($kyc_summary)              = $xml->findnodes('/Search/Result/Summary/KYCSummary');
-
-    if (($credit_reference->getAttribute('Type') =~ /NoMatch|Error/) || (!$kyc_summary->hasChildNodes)) {
-        $self->_process_not_found;
-        return undef;
-    }
-
-    my $matches = {};
-
-    my @tags_to_match = ("Deceased", "PEP", "BOE", "OFAC");
-
-    for my $tag (@tags_to_match) {
-        try {
-            $matches->{$tag} = $credit_reference_summary->findnodes($tag . "Match")->[0]->textContent() || 0;
-        } catch ($e) {
-            warn $e;
-            $matches->{$tag} = 0;
-        }
-    }
-
-    my @invalid_matches = grep { $matches->{$_} > 0 } keys %$matches;
-
-    if (@invalid_matches) {
-        my $msg = join(", ", @invalid_matches);
-        $client->status->setnx('disabled', 'system', "Experian categorizes this client as $msg.");
-        $self->_notify_disabled_by_experian({
-            loginid         => $loginid,
-            invalid_matches => \@invalid_matches,
-        });
-
-        return $self->_request_id_authentication();
-    }
-
-    # Handle DOB match for age verification
-    my $dob_match = ($kyc_summary->findnodes("DateOfBirth/Count"))[0]->textContent();
-    # Handle Firstname and Address match for UKGC verification
-    my $name_address_match = ($kyc_summary->findnodes("FullNameAndAddress/Count"))[0]->textContent();
-
-    if ($dob_match >= NEEDED_MATCHES_FOR_AGE_VERIFICATION) {
-        $client->status->setnx('age_verification', 'system', "Experian results are sufficient to mark client as age verified.");
-        my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
-        $vr_acc->status->setnx('age_verification', 'system', 'Experian results are sufficient to mark client as age verified.');
-        if ($name_address_match >= NEEDED_MATCHES_FOR_ONLINE_AUTH) {
-            $client->set_authentication('ID_ONLINE', {status => 'pass'});
-            $client->update_status_after_auth_fa();
-            $client->status->clear_unwelcome if $client->status->unwelcome;
-        } else {
-            $client->status->setnx('unwelcome', 'system', "Experian results are insufficient to enable deposits.");
-            $self->_request_id_authentication();
-        }
-    } else {
-        $client->status->setnx('unwelcome', 'system', "Experian results are insufficient to mark client as age verified.");
-
-        $self->_request_id_authentication();
-    }
-
-    return undef;
-}
-
 =head2 _age_verified
 
 Checks if client is age verified, if not, set cashier lock on client
@@ -180,7 +92,6 @@ sub _age_verified {
 
     if (!$client->status->age_verification) {
         $client->status->setnx('unwelcome', 'system', 'Age verification is needed after first deposit.');
-        $self->_request_id_authentication();
     }
 
     return undef;
@@ -201,154 +112,6 @@ sub _fully_auth_check {
     } else {
         $client->status->set("unwelcome", "system", "Client was not fully authenticated before making first deposit");
     }
-    return undef;
-}
-
-=head2 _fetch_proveid
-
-Fetches the proveid result of the client from Experian through BOM::Platform::ProveID
-
-=cut
-
-sub _fetch_proveid {
-    my $self   = shift;
-    my $client = $self->client;
-
-    my $result;
-    try {
-        $client->status->setnx('proveid_requested', 'system', 'ProveID request has been made for this account.');
-
-        $result = BOM::Platform::ProveID->new(client => $self->client)->get_result;
-    } catch ($e) {
-        my $error = $e;
-
-        # ErrorCode 500 and 501 are Search Errors according to Appendix B of https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf
-        if ($error =~ /50[01]/) {
-            $self->_process_not_found;
-            return undef;    # Do not die, if the client was not found
-        }
-
-        # We set this flag for when the ProveID request fails and "cron_download_missing_192_pdf_reports.pl" will retry ProveID requests for these accounts every 1 hours
-        $client->status->setnx('proveid_pending', 'system', 'Experian request failed and will be attempted again within 1 hour.');
-        $client->status->setnx('unwelcome',       'system', 'FailedExperian - Experian request failed and will be attempted again within 1 hour.');
-
-        my $brand   = request()->brand;
-        my $loginid = $self->client->loginid;
-        my $message = <<EOM;
-There was an error during Experian request.
-Error is: $error
-Client: $loginid
-EOM
-        send_email({
-            from    => $brand->emails('compliance'),
-            to      => $brand->emails('compliance'),
-            subject => "Experian request error for client $loginid",
-            message => [$message],
-        });
-
-        die 'Failed to contact the ProveID server';
-    }
-
-    # On successful requests, we clear this status so the cron job will not retry ProveID requests on this account
-    $client->status->clear_proveid_pending;
-
-    # Clear unwelcome status set from failing Experian request
-    my $unwelcome_status = $client->status->unwelcome;
-    $client->status->clear_unwelcome if ($unwelcome_status && $unwelcome_status->{reason} =~ /^FailedExperian/);
-
-    return $result;
-}
-
-=head2 _request_id_authentication
-
-Sends an email to the client requesting for Proof of Identity
-
-=cut
-
-sub _request_id_authentication {
-    my $self   = shift;
-    my $client = $self->client;
-
-    my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    my $brand         = request()->brand;
-    my $support_email = $brand->emails('support');
-    my $subject       = localize('Documents are required to verify your identity');
-
-    my $template_args = {
-        name                 => $client_name,
-        website_name         => $brand->website_name,
-        title_padding        => 30,
-        title_bottom_padding => 0,
-        authentication_url   => $brand->authentication_url,
-        live_chat_url        => $brand->live_chat_url,
-    };
-
-    return send_email({
-        from                  => $support_email,
-        to                    => $client->email,
-        subject               => $subject,
-        template_name         => 'id_authentication_new',
-        template_args         => $template_args,
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        use_event             => 1,
-        template_loginid      => $client->loginid,
-    });
-}
-
-=head2 _notify_disabled_by_experian
-
-Sends an email to x-compops about the account being disabled by experian.
-
-Takes the following arguments:
-
-=over 4
-
-=item * C<$loginid> - the client loginid being disabled.
-
-=item * C<$invalid_matches> - array ref of invalid matches found by experian.
-
-=back
-
-Returns C<undef>.
-
-=cut
-
-sub _notify_disabled_by_experian {
-    my ($self, $args) = @_;
-
-    my ($loginid, $invalid_matches) = @{$args}{qw/loginid invalid_matches/};
-
-    my $msg  = join(", ", $invalid_matches->@*);
-    my $to   = request()->brand->emails('compliance_ops');
-    my $from = request()->brand->emails('system');
-
-    send_email({
-            from    => $from,
-            to      => $to,
-            subject => "Account $loginid disabled following Experian results",
-            message => [
-                "$loginid Experian results has marked this client as $msg and an email has been sent out to the client requesting for Proof of Identification."
-            ],
-        });
-
-    return undef;
-}
-
-=head2 _process_not_found
-
-Handles client which has no entry found in Experian's database
-
-=cut
-
-sub _process_not_found {
-    my $self   = shift;
-    my $client = $self->client;
-
-    $client->status->setnx('unwelcome', 'system', 'No entry for this client found in Experian database.');
-    $client->status->clear_proveid_pending;
-    $self->_request_id_authentication();
-
     return undef;
 }
 

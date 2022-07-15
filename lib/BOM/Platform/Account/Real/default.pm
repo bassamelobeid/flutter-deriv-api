@@ -66,7 +66,7 @@ sub copy_status_from_siblings {
             next if $client->status->$status && $cur_client->status->$status;
 
             my $cur_client_lc = $cur_client->landing_company->short;
-            next if ($status eq 'age_verification' && ($client->status->is_experian_validated || none { $_ eq $cur_client_lc } @allowed_lc_to_sync));
+            next if ($status eq 'age_verification' && none { $_ eq $cur_client_lc } @allowed_lc_to_sync);
 
             my $reason = $client->status->$status ? $client->status->$status->{reason} : 'Sync upon signup';
 

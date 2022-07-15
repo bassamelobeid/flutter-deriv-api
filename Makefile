@@ -40,7 +40,7 @@ cover:
 	cover -delete
 	# disable specific warning for Deparse.pm, it flood during the tests.
 	sed -i '/unexpected OP/,/OP_CUSTOM/d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
-	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc --ignore-exit -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/lib -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/local/lib/perl5 -MBOM::Test::Script::ExperianMock t/BOM/ t/unit/
+	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc --ignore-exit -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/lib -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/local/lib/perl5 t/BOM/ t/unit/
 	cover -report coveralls
 
 unit:
