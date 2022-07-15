@@ -253,13 +253,13 @@ my $all_clients = $app_config->payments->p2p->clients;
 my $new_clients = [$advertiser->loginid, $client->loginid];
 push(@$all_clients, @$new_clients);
 
-$app_config->set({'payments.p2p.enabled'                 => 1});
-$app_config->set({'payments.p2p.available'               => 1});
-$app_config->set({'system.suspend.p2p'                   => 0});
-$app_config->set({'payments.p2p.clients'                 => $reset_clients ? $new_clients : $all_clients});
-$app_config->set({'payments.p2p.escrow'                  => \@escrow_ids});
-$app_config->set({'payments.p2p.limits.maximum_advert'   => 3000});
-$app_config->set({'payments.p2p.available_for_countries' => []});
+$app_config->set({'payments.p2p.enabled'               => 1});
+$app_config->set({'payments.p2p.available'             => 1});
+$app_config->set({'system.suspend.p2p'                 => 0});
+$app_config->set({'payments.p2p.clients'               => $reset_clients ? $new_clients : $all_clients});
+$app_config->set({'payments.p2p.escrow'                => \@escrow_ids});
+$app_config->set({'payments.p2p.limits.maximum_advert' => 3000});
+
 if ($float_rate) {
     $advert_config->{$country}->@{qw(float_ads fixed_ads)} = qw(enabled disabled);
 } else {
