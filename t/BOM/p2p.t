@@ -54,10 +54,9 @@ my $lc_data = {
 };
 $mock_lc->redefine(get_loaded_landing_companies => $lc_data);
 
-subtest 'available_countries' => sub {
+subtest 'restricted_countries' => sub {
 
     $config->available(1);
-    $config->available_for_countries([]);
     $config->restricted_countries([]);
 
     cmp_deeply(BOM::Config::P2P::available_countries,
@@ -72,31 +71,25 @@ subtest 'available_countries' => sub {
     $config->available(0);
     cmp_deeply(BOM::Config::P2P::available_countries, {}, 'no available countries');
 
-    $config->available_for_countries(['aa', 'bb']);
+    $config->available(1);
+    $config->restricted_countries(['aa', 'bb']);
+
     cmp_deeply(BOM::Config::P2P::available_countries,
         {
-            aa => 'aa country',
-            bb => 'bb country'
+
+            cc => 'cc country'
         },
         'some available countries'
     );
 
-    $config->available(1);
-    $config->restricted_countries(['bb']);
-    cmp_deeply(BOM::Config::P2P::available_countries,
-        {
-            aa => 'aa country',
-            cc => 'cc country'
-        },
-        'restricted country'
-    );
+    $config->restricted_countries(['aa', 'bb', 'cc']);
+    cmp_deeply(BOM::Config::P2P::available_countries, {}, 'all countries restricted');
 };
 
 subtest 'advert_config' => sub {
     $config->float_rate_global_max_range(99);
-    $config->available(0);
-    $config->available_for_countries(['aa']);
-    $config->restricted_countries([]);
+    $config->available(1);
+    $config->restricted_countries(['bb', 'cc']);
     $config->country_advert_config('{}');
 
     cmp_deeply(BOM::Config::P2P::advert_config,

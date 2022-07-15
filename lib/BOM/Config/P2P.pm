@@ -29,18 +29,16 @@ Is not affected by system level suspend of P2P.
 sub available_countries {
     my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 
-    my @enabled_lc    = map { $_->{short} } grep { $_->{p2p_available} } values LandingCompany::Registry::get_loaded_landing_companies()->%*;
-    my $all_countries = BOM::Config->brand->countries_instance->countries_list;
-
-    my $available               = $p2p_config->available;
-    my @available_for_countries = $p2p_config->available_for_countries->@*;
-    my @restricted_countries    = $p2p_config->restricted_countries->@*;
+    my @enabled_lc           = map { $_->{short} } grep { $_->{p2p_available} } values LandingCompany::Registry::get_loaded_landing_companies()->%*;
+    my $all_countries        = BOM::Config->brand->countries_instance->countries_list;
+    my $available            = $p2p_config->available;
+    my @restricted_countries = $p2p_config->restricted_countries->@*;
 
     my $result = {};
     for my $country (keys %$all_countries) {
         next unless any { $_ eq $all_countries->{$country}{financial_company} or $_ eq $all_countries->{$country}{gaming_company} } @enabled_lc;
         next if any     { $_ eq $country } @restricted_countries;
-        next unless $available or any { $_ eq $country } @available_for_countries;
+        next unless $available;
         $result->{$country} = $all_countries->{$country}{name};
     }
 
