@@ -367,49 +367,16 @@ sub print_client_details {
         $country_codes->{$country_name} = $countries_instance->code_from_country($country_name);
     }
 
-    my ($proveID, $show_uploaded_documents) = ('', '');
-    my $user = $client->user;
+    my $show_uploaded_documents = '';
+    my $user                    = $client->user;
 
     # User should be accessable from client by loginid
     print "<p class='error'>User doesn't exist. This client is unlinked. Please, investigate.<p>"
         and die
         unless $user;
 
-    my $client_for_prove = undef;
-
-    # If client is from UK, check for ProveID
     my $config = request()->brand->countries_instance->countries_list->{$client->residence};
-    if ($config->{has_proveid}) {
-        $client_for_prove = $client;
-
-        # KYC/IDENTITY VERIFICATION SECTION
-        $proveID = BOM::Platform::ProveID->new(
-            client        => $client_for_prove,
-            search_option => 'ProveID_KYC'
-        );
-
-# If client is under Deriv Investments (Europe) Limited and there is no ProveID_KYC,
-# check whether there is ProveID_KYC under Deriv (MX) Ltd
-        if ($client->landing_company->short eq 'maltainvest'
-            && !$client->status->proveid_requested)
-        {
-            for my $client_iom ($user->clients_for_landing_company('iom')) {
-                my $prove = BOM::Platform::ProveID->new(
-                    client        => $client_iom,
-                    search_option => 'ProveID_KYC'
-                );
-                if (($client_iom->status->proveid_requested && !$client->status->proveid_pending)
-                    || $prove->has_saved_xml)
-                {
-                    $client_for_prove = $client_iom;
-                    $proveID          = $prove;
-                    last;
-                }
-            }
-        }
-    }
-
-    my $docs = [];
+    my $docs   = [];
     unless ($client->is_virtual) {
         my @siblings = grep { LandingCompany::Registry->check_broker_from_loginid($_) } $user->loginids;
         for my $sibling_loginid (@siblings) {
@@ -661,8 +628,6 @@ SQL
         mifir_config                                 => $Finance::MIFIR::CONCAT::config,
         promo_code_access                            => $promo_code_access,
         currency_type                                => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
-        proveID                                      => $proveID,
-        client_for_prove                             => $client_for_prove,
         salutation_options                           => \@salutation_options,
         secret_answer                                => $secret_answer,
         can_decode_secret_answer                     => $can_decode_secret_answer,

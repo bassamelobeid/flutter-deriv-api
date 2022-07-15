@@ -88,7 +88,6 @@ my $permissions = {
     'show_audit_trail.cgi'              => ['CS'],
     'untrusted_client_edit.cgi'         => ['CS'],
     'sync_client_status.cgi'            => ['CS'],
-    'view_192_raw_response.cgi'         => ['CS'],
     'send_emails.cgi'                   => ['CS'],
     'fetch_client_details.cgi'          => ['CS'],
     'p2p_order_list.cgi'        => ['P2PRead', 'P2PWrite', 'AntiFraud'],

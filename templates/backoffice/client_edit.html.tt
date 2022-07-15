@@ -732,56 +732,6 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 END
             %]
             </p>
-            [%  IF client_for_prove && !client_for_prove.is_virtual %]
-            [%
-                raw_url  = 'backoffice/view_192_raw_response.cgi';
-                doc_url  = 'backoffice/download_document.cgi';
-                args     = { loginID => client_for_prove.loginid };
-                pdf_args = { broker => client_for_prove.broker, category => '192_result' };
-            %]
-	            [%
-                    option = proveID.search_option;
-                    IF proveID.client.status.proveid_requested || proveID.has_saved_xml;
-                %]
-                    [%
-                        IF proveID.has_saved_xml;
-                        args.search_option = option;
-                        args.raw = 0; href_rpt = request.url_for(raw_url, args );
-                        args.raw = 1; href_xml = proveID.xml_url || request.url_for(raw_url, args );
-                        pdf_args.path = "pdf/${client_for_prove.loginid}.${option}.pdf";
-                        href_pdf = proveID.pdf_url || request.url_for(doc_url, pdf_args);
-                     %]
-                        <p>An Experian <strong>[% option %]</strong> request <strong>has</strong> been done.
-                        <span class="link-group">
-                            <a target="_blank" class="link" href="[% href_rpt | none %]">[Report]</a>
-                            <a target="_blank" class="link" href="[% href_xml | none %]">[XML]</a>
-                            [% IF proveID.has_saved_pdf %]
-                            <a target="_blank" class="link" href="[% href_pdf | none %] ">[PDF]</a>
-                        </span>
-                        </p>
-                        [% # has_saved_pdf
-                        END %]
-                    [% # has_saved_xml
-                    ELSE %]
-		                <p><b>ProveID requested, but resulting xml file doesn't exist or has been deleted. Please try again later or resend the ProveID request.</b></p>
-                    [% # has_saved_xml
-                    END %]
-                [% # proveID.client.status.proveid_requested || proveID.has_saved_xml;
-                ELSE %]
-                    <span>An Experian <strong>[% option %]</strong> request <strong>has NOT</strong> been done.</span>
-                [% # proveID.client.status.proveid_requested || proveID.has_saved_xml;
-                END %]
-            [% # client_for_prove
-            END %]
-            [% IF client.residence == 'gb' && !client.is_virtual %]
-                    <input type="submit" class="btn btn--primary" name="do_id_check" value="Submit a new ProveID request"/>
-                [% IF proveID.has_saved_xml or proveID.has_saved_pdf %]
-                    <input type="submit" class="btn btn--primary" name="delete_existing_192" value="Delete existing Experian results"/>
-                <br/>
-                [% # proveID.has_saved_xml or proveID.has_saved_pdf
-                END %]
-            [% # client.residence == 'gb'
-            END %]
         </td>
     </tr>
     <tr>

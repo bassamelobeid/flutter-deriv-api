@@ -717,30 +717,6 @@ if ($input{whattodo} eq 'copy_pa_details') {
     }
 }
 
-# PERFORM ON-DEMAND ID CHECKS
-if (my $check_str = $input{do_id_check} && !$client->is_virtual) {
-    try {
-        BOM::Platform::Client::IDAuthentication->new(client => $client)->proveid;
-    } catch ($e) {
-        code_exit_BO(
-            qq[<p><b>ProveID failed: $e</b></p>
-                 <p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]
-        );
-    }
-    code_exit_BO(
-        qq[<p><b>ProveID completed</b></p>
-                 <p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]
-    );
-}
-
-# DELETE EXISTING EXPERIAN RESULTS
-if ($input{delete_existing_192}) {
-    code_exit_BO(
-        qq[<p><b>Existing Reports Deleted</b></p>
-        <p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]
-    ) if BOM::Platform::ProveID->new(client => $client)->delete_existing_reports();
-}
-
 # AFFILIATE COC APPROVAL & RISK DISCLAIMER EMAIL
 if ($is_compliance) {
     if ($input{risk_disclaimer_email_checkbox} eq 'on') {
