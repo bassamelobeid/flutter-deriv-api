@@ -102,7 +102,7 @@ subtest 'minimum_payout_limit ' => sub {
  
 };
 
-subtest 'maximum_payout_limit' => sub {
+subtest 'maximum_payout_limita' => sub {
     is BOM::Config::Quants::maximum_payout_limit("USD","default_market","default_contract_category") , 90 , "correct arguments are passed";
     is BOM::Config::Quants::maximum_payout_limit("AUD","maltainvest","synthetic","default_contract_category") , 95 , 'non-default arguments are passed';
     Test::Warnings::allow_warnings(1);
@@ -129,8 +129,48 @@ subtest  'minimum_stake_limit' => sub {
     Test::Warnings::allow_warnings(0);
 };
 
-subtest 'market_pricing_limit' => sub {
-   is 1 , 1, 'sample'; 
+subtest 'market_pricing_limits' => sub {
+   
+   my $expected = {
+    default_market => {
+        USD => {
+            max_payout => 90,
+            min_stake => 60
+        }
+    }};
+   is_deeply(BOM::Config::Quants::market_pricing_limits(["USD"]),$expected,"default argument values are used");
+
+   $expected = {
+    default_market => {
+        USD => {
+            max_payout => 90,
+            min_stake => 60
+        },
+        EUR => {
+            max_payout => 30,
+            min_stake => 70
+        }
+    }};
+    is_deeply(BOM::Config::Quants::market_pricing_limits(["USD","EUR"]),$expected,"multiple currencies with default arguments are used");
+    
+    $expected = {
+        synthetic => {
+            AUD => {
+                max_payout => 95,
+                min_stake => 65
+            },
+            EUR => {
+                max_payout => 20,
+                min_stake => 20
+            }
+        }
+    };
+    is_deeply(BOM::Config::Quants::market_pricing_limits(["AUD","EUR"],"maltainvest",["synthetic"]),$expected,"Non default lc and market are used");
+
+    $expected = {};
+    is_deeply(BOM::Config::Quants::market_pricing_limits(["ABC"]),$expected,"un-supported currencies are used");
+
+    is_deeply(BOM::Config::Quants::market_pricing_limits(),$expected,"no arguments are passed");
 };
 
 $config_mock->unmock_all();
