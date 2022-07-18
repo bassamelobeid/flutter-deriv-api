@@ -12,7 +12,7 @@ use BOM::Config;
 use BOM::Config::Quants;
 
 my $config_mock = Test::MockModule->new("BOM::Config");
-$config_mock->redefine("quants" => {
+my $mocked_quant = {
     commission => {},
     default_stake => {},
     bet_limits => {
@@ -89,12 +89,13 @@ $config_mock->redefine("quants" => {
             }
         }
     }
-});
+};
+$config_mock->redefine("quants" => $mocked_quant);
 
 subtest 'minimum_payout_limit ' => sub {
 
-    is BOM::Config::Quants::minimum_payout_limit("USD","defaul","default_market","default_contract_category") , 10 , "default arguments are passed";
-    is BOM::Config::Quants::minimum_payout_limit("AUD","maltainvest","synthetic","default_contract_category") , 10 , 'non-default arguments are passed';
+    is BOM::Config::Quants::minimum_payout_limit("USD","default_market","default_contract_category") , $mocked_quant->{bet_limits}->{min_payout}->{default_landing_company}->{default_market}->{default_contract_category}->{USD} , "default arguments are passed";
+    is BOM::Config::Quants::minimum_payout_limit("AUD","maltainvest","synthetic","default_contract_category") , $mocked_quant->{bet_limits}->{min_payout}->{maltainvest}->{synthetic}->{default_contract_category}->{AUD} , 'non-default arguments are passed';
     Test::Warnings::allow_warnings(1);
     is BOM::Config::Quants::minimum_payout_limit() , undef , "no arguments return undef";
     is BOM::Config::Quants::minimum_payout_limit("ABS") , undef, "unsupported currency returns undef";
@@ -103,8 +104,8 @@ subtest 'minimum_payout_limit ' => sub {
 };
 
 subtest 'maximum_payout_limita' => sub {
-    is BOM::Config::Quants::maximum_payout_limit("USD","default_market","default_contract_category") , 90 , "correct arguments are passed";
-    is BOM::Config::Quants::maximum_payout_limit("AUD","maltainvest","synthetic","default_contract_category") , 95 , 'non-default arguments are passed';
+    is BOM::Config::Quants::maximum_payout_limit("USD","default_market","default_contract_category") , $mocked_quant->{bet_limits}->{max_payout}->{default_landing_company}->{default_market}->{default_contract_category}->{USD} , "correct arguments are passed";
+    is BOM::Config::Quants::maximum_payout_limit("AUD","maltainvest","synthetic","default_contract_category") , $mocked_quant->{bet_limits}->{max_payout}->{maltainvest}->{synthetic}->{default_contract_category}->{AUD} , 'non-default arguments are passed';
     Test::Warnings::allow_warnings(1);
     is BOM::Config::Quants::minimum_payout_limit() , undef , "no arguments return undef";
     is BOM::Config::Quants::minimum_payout_limit("ABS") , undef, "unsupported currency returns undef";
@@ -112,8 +113,8 @@ subtest 'maximum_payout_limita' => sub {
 };
 
 subtest 'maximum_stake_limit' => sub {
-    is BOM::Config::Quants::maximum_stake_limit("USD","default_market","default_contract_category") , 40 , "correct arguments are passed";
-    is BOM::Config::Quants::maximum_stake_limit("AUD","maltainvest","synthetic","default_contract_category") , 45 , 'non-default arguments are passed';
+    is BOM::Config::Quants::maximum_stake_limit("USD","default_market","default_contract_category") , $mocked_quant->{bet_limits}->{max_stake}->{default_landing_company}->{default_market}->{default_contract_category}->{USD} , "correct arguments are passed";
+    is BOM::Config::Quants::maximum_stake_limit("AUD","maltainvest","synthetic","default_contract_category") , $mocked_quant->{bet_limits}->{max_stake}->{maltainvest}->{synthetic}->{default_contract_category}->{AUD} , 'non-default arguments are passed';
     Test::Warnings::allow_warnings(1);
     is BOM::Config::Quants::maximum_stake_limit() , undef , "no arguments return undef";
     is BOM::Config::Quants::minimum_payout_limit("ABS") , undef, "unsupported currency returns undef";
@@ -121,8 +122,8 @@ subtest 'maximum_stake_limit' => sub {
 };
 
 subtest  'minimum_stake_limit' => sub {
-    is BOM::Config::Quants::minimum_stake_limit("USD","default_market","default_contract_category") , 60 , "correct arguments are passed";
-    is BOM::Config::Quants::minimum_stake_limit("AUD","maltainvest","synthetic","default_contract_category") , 65 , 'non-default arguments are passed';
+    is BOM::Config::Quants::minimum_stake_limit("USD","default_market","default_contract_category") , $mocked_quant->{bet_limits}->{min_stake}->{default_landing_company}->{default_market}->{default_contract_category}->{USD} , "correct arguments are passed";
+    is BOM::Config::Quants::minimum_stake_limit("AUD","maltainvest","synthetic","default_contract_category") , $mocked_quant->{bet_limits}->{min_stake}->{maltainvest}->{synthetic}->{default_contract_category}->{AUD} , 'non-default arguments are passed';
     Test::Warnings::allow_warnings(1);
     is BOM::Config::Quants::minimum_stake_limit() , undef, "no arguments return undef";
     is BOM::Config::Quants::minimum_payout_limit("ABS") , undef, "unsupported currency returns undef";
