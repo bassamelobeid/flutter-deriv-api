@@ -169,7 +169,6 @@ subtest 'market_pricing_limits' => sub {
 
     $expected = {};
     is_deeply(BOM::Config::Quants::market_pricing_limits(["ABC"]),$expected,"un-supported currencies are used");
-
     is_deeply(BOM::Config::Quants::market_pricing_limits(),$expected,"no arguments are passed");
 };
 
