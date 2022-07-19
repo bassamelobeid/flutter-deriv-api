@@ -492,111 +492,10 @@ payments:
       description: 'Cryptocurrencies related config'
       isa: section
       contains:
-        deposit_required_confirmations:
-          description: "Number of required confirmations needed to approve a deposit based on its equivalent amount in USD. 'Keys' are the minimum deposit amount in USD and 'values' are the number of confirmations needed. The amount will be checked to be greater than or equal to the maximum key (amount)."
-          isa: json_string
-          default: '{"0":1,"10":2,"100":3}'
-          global: 1
-        withdrawal_processing_max_duration:
-          description: "Maximum duration for a withdrawal transaction to stay in processing state. After this duration, we will pay the fee regardless of how high it is. Note: the duration is in hours unit"
-          isa: Num
-          default: 12
-          global: 1
-        minimum_safe_amount:
-          description: "Minimum safe amount"
-          isa: json_string
-          default: '{"BTC":10,"BUSD":6500,"DAI":6500,"ETH":40,"EURS":6500,"eUSDT":6500,"IDK":0,"LTC":30,"PAX":6500,"TUSD":6500,"USB":0,"USDC":1,"USDK":6500,"UST":6500}'
-          global: 1
-        fee_limit_usd:
-          description: "Fee limit for withdrawal"
-          isa: json_string
-          default: '{"BTC":10,"BUSD":10,"DAI":10,"ETH":5,"EURS":10,"eUSDT":10,"IDK":2,"LTC":2,"PAX":10,"TUSD":10,"USB":10,"USDC":10,"USDK":10,"UST":10}'
-          global: 1
         restricted_countries:
           description: "Countries where crypto withdrawals are restricted, separated by comma. Clients in these countries must have made a prior crypto deposit. Country code can be in lower case."
           isa: ArrayRef
           default: []
-          global: 1
-        fee_bump_wait_time:
-          description: "Time to wait before bumping transaction"
-          isa: json_string
-          default: '{"BTC":43200,"ETH":43200,"LTC":43200}'
-          global: 1
-        new_address_threshold:
-          description: "Threshold to hit to generate new address for the client"
-          isa: json_string
-          default: '{"default":50,"BTC":0.003,"LTC":1,"ETH":0.1,"IDK":700}'
-          global: 1
-        address_daemon:
-          description: "Daemon for reserving addresses to the address_pool for later assigning to clients"
-          isa: section
-          contains:
-            enabled:
-              description: "Flag to enable address reserving daemon"
-              isa: Bool
-              default: 0
-              global: 1
-            address_pool_threshold:
-              description: "Minimum number of addresses to be kept in the address pool for each currencies"
-              isa: json_string
-              default: '{"default":500,"BTC":800,"LTC":300,"ETH":1000,"TRX":10}'
-              global: 1
-        internal_sweep:
-          description: 'Internal sweep related config'
-          isa: section
-          contains:
-            amounts:
-              description: "The amounts we are trying gathering to send it in a single transaction to our main address"
-              isa: json_string
-              default: '{"BTC":[1,0.5,0.1],"LTC":[50,20,10,5,1]}'
-              global: 1
-            fee_rate_percent:
-              description: "A percent value of the current fee rate"
-              isa: json_string
-              default: '{"BTC":95,"LTC":100}'
-              global: 1
-            fee_limit_percent:
-              description: "The maximum fee limit, it's a percent value of the transfer amount"
-              isa: json_string
-              default: '{"BTC":2,"LTC":1}'
-              global: 1
-        batch_withdrawal:
-          description: 'Batch withdrawal limit configuration'
-          isa: section
-          contains:
-            min_transfer:
-              isa: json_string
-              description: "The minimum amount to transfer"
-              default: '{"BTC":0.5,"LTC":0.5}'
-              global: 1
-            fee_config:
-              description: "The fee limits configuration."
-              isa: section
-              contains:
-                min_limit:
-                  isa: json_string
-                  description: "The lowest threshold of the acceptable fee. The value is a percent of the transfer amount"
-                  default: '{"BTC":1,"LTC":1}'
-                  global: 1
-                max_limit:
-                  isa: json_string
-                  description: "The highest threshold of the acceptable fee. The value is a percent of the transfer amount"
-                  default: '{"BTC":10,"LTC":10}'
-                  global: 1
-                requests_count_to_increase:
-                  isa: json_string
-                  description: "Count of the requests to increase the fee limit"
-                  default: '{"BTC":1,"LTC":1}'
-                  global: 1
-                increase_value_per_requests_count:
-                  isa: json_string
-                  description: "An additional value to the lowest fee threshold for each bunch of requests. The value is a percent of the transfer amount"
-                  default: '{"BTC":0.003,"LTC":0.003}'
-                  global: 1
-        gas_limit_incremental_percentage:
-          description: "Configurations for gas_limit incremental percentage"
-          isa: json_string
-          default: '{"USDC":10}'
           global: 1
         withdrawal:
           description: 'withdrawal limit configuration'
@@ -621,30 +520,6 @@ payments:
               description: "Enable this to start running auto reject service for crypto payouts"
               default: 0
               global: 1
-    sweep:
-      description: 'Sweep related limit configuration'
-      isa: section
-      contains:
-        reserve_balance:
-          isa: json_string
-          description: "Reserve Balance of Sweep"
-          default: '{"BTC":50,"ETH":240,"LTC":1000,"USDC":5000,"UST":150000}'
-          global: 1
-        min_transfer:
-          isa: json_string
-          description: "Minimum transfer limit of Sweep"
-          default: '{"BTC":1,"ETH":10,"LTC":1,"USDC":100,"UST":1000}'
-          global: 1
-        max_transfer:
-          isa: json_string
-          description: "Maximum transfer limit of Sweep"
-          default: '{"BTC":100,"ETH":100,"LTC":600,"USDC":2000,"UST":10000}'
-          global: 1
-        max_fee_percentage:
-          isa: json_string
-          description: "Maximum fee percentage limit of Sweep"
-          default: '{"BTC":1,"LTC":1,"UST":5, "ETH":1, "eUSDT":1, "USDC":1}'
-          global: 1
     transfer_between_accounts:
       description: 'Transfer between accounts config'
       isa: section
@@ -802,11 +677,6 @@ payments:
       description: "List of emails that allowed to deposit using experimental currencies"
       isa: ArrayRef
       default: []
-      global: 1
-    crypto_withdrawal_approvals_required:
-      description: "Number of approvals required to verify a cryptocurrency withdrawal, restricted by the amount in USD. The withdrawal amount can be less than or equal to the amount specified here."
-      isa: json_string
-      default: '{"100":0,"199.99":1,"":2}'
       global: 1
 quants:
   description: "Various quants' parameters"
@@ -1349,20 +1219,6 @@ system:
           description: "Enables integration with IDV microservice"
           isa: Bool
           default: 1
-          global: 1
-    stop:
-      description: "Stop one or more of our services"
-      isa: section
-      contains:
-        cryptocurrencies_deposit:
-          description: "Deposit stopped comma-separated list of currencies, set this configuration if you want to stop just deposits"
-          isa: ArrayRef
-          default: []
-          global: 1
-        cryptocurrencies_withdrawal:
-          description: "Withdrawal stopped comma-separated list of currencies, set this configuration if you want to stop just withdrawals"
-          isa: ArrayRef
-          default: []
           global: 1
     directory:
       description: "Configuration for system wide directories"
