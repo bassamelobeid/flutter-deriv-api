@@ -24,6 +24,12 @@ use BOM::Config::CurrencyConfig;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Auth0;
 
+=head1 NAME
+
+BOM::DynamicSettings
+
+=cut
+
 # Limiting minimum amount transferable to 1 USD so it would not hit lowerbound
 #The background of this (or lower bound) is to cater for the scenario below:
 #
@@ -442,6 +448,8 @@ sub get_settings_by_group {
                 compliance.payment_agents.standard_risk_level
                 compliance.payment_agents.high_risk_level
                 compliance.sanctions.hmt_consolidated_url
+                compliance.enhanced_due_diligence.auto_lock
+                compliance.enhanced_due_diligence.auto_lock_threshold
                 )
         ],
         # these settings are configured in separate pages. No need to reconfigure them in Dynamic Settings/Others.
