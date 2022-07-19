@@ -2361,15 +2361,11 @@ Send an email to x-fraud@binary.com warn about the limit that has been reached f
 async sub on_user_payment_accounts_limit_reached {
     my %args = @_;
 
-    my $key = join '::', +PAYMENT_ACCOUNT_LIMIT_REACHED_KEY, $args{binary_user_id}, $args{payment_type};
+    my $key = join '::', +PAYMENT_ACCOUNT_LIMIT_REACHED_KEY, 'PaymentType', $args{payment_type};
 
-    return undef if await _redis_replicated_write()->get($key);
+    return undef if await _redis_replicated_write()->hget($key, $args{binary_user_id});
 
-    my $record = BOM::User::PaymentRecord->new(user_id => $args{binary_user_id});
-
-    return undef if $record->is_flagged('reported');
-
-    await _redis_replicated_write()->setex($key, +PAYMENT_ACCOUNT_LIMIT_REACHED_TTL, 1);
+    await _redis_replicated_write()->hset($key, $args{binary_user_id}, 1);
 
     send_email({
             from    => '<no-reply@deriv.com>',

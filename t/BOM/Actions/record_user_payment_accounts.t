@@ -45,8 +45,8 @@ sub redis_clear {
         )->storage_key
     );
 
-    my $mail_block_key = join '::', +BOM::Event::Actions::Client::PAYMENT_ACCOUNT_LIMIT_REACHED_KEY, $user_id, $payment_type;
-    BOM::Event::Actions::Client::_redis_replicated_write()->del($mail_block_key);
+    my $mail_block_key = join '::', +BOM::Event::Actions::Client::PAYMENT_ACCOUNT_LIMIT_REACHED_KEY, 'PaymentType', $payment_type;
+    BOM::Event::Actions::Client::_redis_replicated_write()->hdel($mail_block_key, $user_id);
 }
 
 subtest 'record_user_payment_accounts' => sub {
@@ -168,48 +168,6 @@ subtest 'record_user_payment_accounts' => sub {
 
         cmp_bag $records, ['X||CreditCard|0x01', 'Y||CreditCard|0x02', 'Z||CreditCard|0x03',], 'Expected records added';
     };
-};
-
-# legacy test this can be removed once the redis keys expire
-
-subtest 'legacy reported flag' => sub {
-    redis_clear($test_client->binary_user_id, 'CreditCard');
-    BOM::Config::client_limits()->{max_payment_accounts_per_user} = 1;
-
-    my $pr_mock = Test::MockModule->new('BOM::User::PaymentRecord');
-    my $flagged;
-    $pr_mock->mock(
-        'is_flagged',
-        sub {
-            return $flagged;
-        });
-
-    # with one payment, the client reaches the limit
-    $flagged = 0;
-    BOM::Event::Actions::Client::payment_deposit({
-            payment_processor  => 'X',
-            payment_type       => 'CreditCard',
-            account_identifier => 'XXXX',
-            loginid            => $test_client->{loginid}})->get;
-
-    my $email = mailbox_search(subject => qr/Allowed limit on CreditCard/);
-
-    cmp_deeply $email->{to}, ['x-fraud@deriv.com'], 'an email is sent to x-fraud@deriv.com';
-
-    redis_clear($test_client->binary_user_id, 'CreditCard');
-
-    mailbox_clear();    # just clear the inbox, we don't actually care about this email
-
-    $flagged = 1;
-    BOM::Event::Actions::Client::payment_deposit({
-            payment_processor  => 'X',
-            payment_type       => 'CreditCard',
-            account_identifier => 'XXXX',
-            loginid            => $test_client->{loginid}})->get;
-
-    is(mailbox_search(subject => qr/Allowed limit on CreditCard/), undef, 'no email has been sent (legacy flag)');
-
-    $pr_mock->unmock_all;
 };
 
 done_testing;
