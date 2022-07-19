@@ -42,49 +42,49 @@ subtest 'rule idv.check_expiration_date' => sub {
     my $tests = [{
             idv    => {lifetime_valid => 1},
             result => {
-                expiration_date => 'Not Available',
+                expiry_date => 'Not Available',
             },
             error => undef,
         },
         {
             idv    => {lifetime_valid => 0},
             result => {
-                expiration_date => undef,
+                expiry_date => undef,
             },
             error => 'Expired',
         },
         {
             idv    => {lifetime_valid => 0},
             result => {
-                expiration_date => Date::Utility->new->_plus_months(1)->date_ddmmyyyy,
+                expiry_date => Date::Utility->new->_plus_months(1)->date_ddmmyyyy,
             },
             error => undef,
         },
         {
             idv    => {lifetime_valid => 1},
             result => {
-                expiration_date => Date::Utility->new->_minus_months(1)->date_ddmmyyyy,
+                expiry_date => Date::Utility->new->_minus_months(1)->date_ddmmyyyy,
             },
             error => undef
         },
         {
             idv    => {lifetime_valid => 0},
             result => {
-                expiration_date => Date::Utility->new->_minus_months(1)->date_ddmmyyyy,
+                expiry_date => Date::Utility->new->_minus_months(1)->date_ddmmyyyy,
             },
             error => 'Expired'
         },
         {
             idv    => {lifetime_valid => 0},
             result => {
-                expiration_date => Date::Utility->new->today,
+                expiry_date => Date::Utility->new->today,
             },
             error => 'Expired'
         },
         {
             idv    => {lifetime_valid => 0},
             result => {
-                expiration_date => '1999/02/66',
+                expiry_date => '1999/02/66',
             },
             error => 'Expired'
         },
@@ -243,7 +243,7 @@ subtest 'rule idv.check_age_legality' => sub {
 
     my $tests = [{
             result => {
-                date_of_birth => Date::Utility->new->date_ddmmyyyy,
+                birthdate => Date::Utility->new->date_ddmmyyyy,
             },
             client => {
                 residence => 'de',
@@ -252,8 +252,7 @@ subtest 'rule idv.check_age_legality' => sub {
         },
         {
             result => {
-
-                date_of_birth => Date::Utility->new->_minus_years(19),
+                birthdate => Date::Utility->new->_minus_years(19),
             },
             client => {
                 residence => 'de',
@@ -262,8 +261,7 @@ subtest 'rule idv.check_age_legality' => sub {
         },
         {
             result => {
-
-                date_of_birth => Date::Utility->new,
+                birthdate => Date::Utility->new,
             },
             client => {
                 residence => 'ir',
@@ -272,8 +270,7 @@ subtest 'rule idv.check_age_legality' => sub {
         },
         {
             result => {
-
-                date_of_birth => Date::Utility->new->_minus_years(25),
+                birthdate => Date::Utility->new->_minus_years(25),
             },
             client => {
                 residence => 'ir',
@@ -282,8 +279,7 @@ subtest 'rule idv.check_age_legality' => sub {
         },
         {
             result => {
-
-                date_of_birth => Date::Utility->new->_minus_years(25)->_minus_months(1),
+                birthdate => Date::Utility->new->_minus_years(25)->_minus_months(1),
             },
             client => {
                 residence => 'ir',
@@ -292,8 +288,7 @@ subtest 'rule idv.check_age_legality' => sub {
         },
         {
             result => {
-
-                date_of_birth => Date::Utility->new->_minus_years(60),
+                birthdate => Date::Utility->new->_minus_years(60),
             },
             client => {
                 residence => 'ir',
@@ -302,8 +297,7 @@ subtest 'rule idv.check_age_legality' => sub {
         },
         {
             result => {
-
-                date_of_birth => '',
+                birthdate => '',
             },
             client => {
                 residence => 'be',
@@ -312,8 +306,7 @@ subtest 'rule idv.check_age_legality' => sub {
         },
         {
             result => {
-
-                date_of_birth => 'Not Available',
+                birthdate => 'Not Available',
             },
             client => {
                 residence => 'be',
@@ -362,80 +355,80 @@ subtest 'rule idv.check_dob_conformity' => sub {
 
     my $tests = [{
             result => {
-                date_of_birth => Date::Utility->new->date_yyyymmdd,
+                birthdate => Date::Utility->new->date_yyyymmdd,
             },
             client => {
-                date_of_birth => Date::Utility->new->_minus_months(1)->date_yyyymmdd,
+                birthdate => Date::Utility->new->_minus_months(1)->date_yyyymmdd,
             },
             error => 'DobMismatch'
         },
         {
             result => {
-                date_of_birth => Date::Utility->new->date_yyyymmdd,
+                birthdate => Date::Utility->new->date_yyyymmdd,
             },
             client => {
-                date_of_birth => Date::Utility->new->date_yyyymmdd,
+                birthdate => Date::Utility->new->date_yyyymmdd,
             },
             error => undef
         },
         {
             result => {
-                date_of_birth => Date::Utility->new->date_ddmmyyyy,
+                birthdate => Date::Utility->new->date_ddmmyyyy,
             },
             client => {
-                date_of_birth => Date::Utility->new->date_yyyymmdd,
+                birthdate => Date::Utility->new->date_yyyymmdd,
             },
             error => undef
         },
         {
             result => {
-                date_of_birth => Date::Utility->new->datetime_yyyymmdd_hhmmss,
+                birthdate => Date::Utility->new->datetime_yyyymmdd_hhmmss,
             },
             client => {
-                date_of_birth => Date::Utility->new->date_yyyymmdd,
+                birthdate => Date::Utility->new->date_yyyymmdd,
             },
             error => 'DobMismatch'
         },
         {
             result => {
-                date_of_birth => Date::Utility->new->date_ddmmyyyy,
+                birthdate => Date::Utility->new->date_ddmmyyyy,
             },
             client => {
-                date_of_birth => '1999-10-31',
+                birthdate => '1999-10-31',
             },
             error => 'DobMismatch'
         },
         {
             result => {
-                date_of_birth => undef,
+                birthdate => undef,
             },
             client => {
-                date_of_birth => Date::Utility->new->date_yyyymmdd,
+                birthdate => Date::Utility->new->date_yyyymmdd,
             },
             error => 'DobMismatch'
         },
         {
             result => {
-                date_of_birth => '2020-02-02',
+                birthdate => '2020-02-02',
             },
             client => {
-                date_of_birth => '2020-02-01',
+                birthdate => '2020-02-01',
             },
             error => 'DobMismatch'
         },
         {
             result => {
-                date_of_birth => 'Not Available',
+                birthdate => 'Not Available',
             },
             client => {
-                date_of_birth => '123',
+                birthdate => '123',
             },
             error => 'DobMismatch'
         },
     ];
 
     for my $case ($tests->@*) {
-        $client_cr->date_of_birth($case->{client}->{date_of_birth});
+        $client_cr->date_of_birth($case->{client}->{birthdate});
 
         my $args = {
             loginid => $client_cr->loginid,

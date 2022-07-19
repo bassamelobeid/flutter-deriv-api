@@ -31,7 +31,7 @@ rule 'idv.check_expiration_date' => {
 
         return undef if $is_lifetime_valid;
 
-        my $expiration_date = eval { Date::Utility->new($result->{expiration_date}) };
+        my $expiration_date = eval { Date::Utility->new($result->{expiry_date}) };
 
         $self->fail('Expired') unless $expiration_date and $expiration_date->is_after(Date::Utility->new);
 
@@ -70,7 +70,7 @@ rule 'idv.check_age_legality' => {
         die 'Client is missing'     unless $client;
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
-        my $date_of_birth = eval { Date::Utility->new($result->{date_of_birth}) };
+        my $date_of_birth = eval { Date::Utility->new($result->{birthdate}) };
 
         my $countries_config = Brands::Countries->new();
         my $min_legal_age    = $countries_config->minimum_age_for_country($client->residence);
@@ -89,7 +89,7 @@ rule 'idv.check_dob_conformity' => {
         die 'Client is missing'     unless my $client = $context->client($args);
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
-        my $reported_dob = eval { Date::Utility->new($result->{date_of_birth}) };
+        my $reported_dob = eval { Date::Utility->new($result->{birthdate}) };
         my $profile_dob  = eval { Date::Utility->new($client->date_of_birth) };
 
         $self->fail('DobMismatch') unless $reported_dob and $profile_dob and $profile_dob->is_same_as($reported_dob);
