@@ -407,35 +407,11 @@ sub get_settings_by_group {
                 system.suspend.cryptocurrencies
                 system.suspend.cryptocurrencies_deposit
                 system.suspend.cryptocurrencies_withdrawal
-                system.stop.cryptocurrencies_deposit
-                system.stop.cryptocurrencies_withdrawal
                 system.suspend.experimental_currencies
-                payments.crypto.batch_withdrawal.min_transfer
-                payments.crypto.batch_withdrawal.fee_config.min_limit
-                payments.crypto.batch_withdrawal.fee_config.max_limit
-                payments.crypto.batch_withdrawal.fee_config.requests_count_to_increase
-                payments.crypto.batch_withdrawal.fee_config.increase_value_per_requests_count
-                payments.crypto.deposit_required_confirmations
-                payments.crypto.fee_bump_wait_time
-                payments.crypto.fee_limit_usd
-                payments.crypto.minimum_safe_amount
-                payments.crypto.new_address_threshold
-                payments.crypto.internal_sweep.amounts
-                payments.crypto.internal_sweep.fee_rate_percent
-                payments.crypto.internal_sweep.fee_limit_percent
                 payments.crypto.restricted_countries
-                payments.crypto_withdrawal_approvals_required
-                payments.crypto.withdrawal_processing_max_duration
-                payments.crypto.gas_limit_incremental_percentage
                 payments.crypto.withdrawal.min_usd
                 payments.crypto.auto_update.approve
                 payments.crypto.auto_update.reject
-                payments.crypto.address_daemon.enabled
-                payments.crypto.address_daemon.address_pool_threshold
-                payments.sweep.reserve_balance
-                payments.sweep.min_transfer
-                payments.sweep.max_transfer
-                payments.sweep.max_fee_percentage
                 payments.transfer_between_accounts.limits.fiat_to_crypto
                 payments.transfer_between_accounts.limits.crypto_to_crypto
                 payments.transfer_between_accounts.limits.crypto_to_fiat

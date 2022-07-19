@@ -63,14 +63,6 @@ BOM::Cryptocurrency::DynamicSettings::render_save_dynamic_settings_response($res
     $response_bodies->{get_dynamic_settings})
     if $action && $action eq 'update_settings' && $response_bodies->{save_dynamic_settings};
 
-# Display a Warrning message message until we migrate to the new config.
-print qq~
-<div class="notify notify--warning center">
-    <b>This page has not been used on production yet. Please use <a href="~
-    . request()->url_for('backoffice/f_dynamic_settings.cgi?broker=FOG&page=global&l=EN&group=crypto')
-    . qq~">this page</a> to manage the crypto cashier settings.</b>
-</div>~;
-
 my $settings = BOM::Cryptocurrency::DynamicSettings::normalize_settings_data($response_bodies->{get_dynamic_settings});
 BOM::Backoffice::Request::template()->process(
     'backoffice/crypto_cashier/dynamic_settings.html.tt',
