@@ -122,6 +122,8 @@ create new row for details.
 
 =item * C<$provider> - the third-party provider which we use for IDV
 
+=item * C<$report> - nullable,  a summary of provider response in unified structure
+
 =item * C<$request_body> - nullable, the request body we sent to provider
 
 =item * C<$response_body> - nullable, the response we received from provider
@@ -137,9 +139,9 @@ Returns void.
 sub update_document_check {
     my ($self, $args) = @_;
 
-    my ($document_id, $status, $messages, $provider, $request_body, $response_body, $expiration_date) = @{$args}{
+    my ($document_id, $status, $messages, $provider, $report, $request_body, $response_body, $expiration_date) = @{$args}{
         qw/
-            document_id   status   messages   provider   request_body   response_body   expiration_date
+            document_id   status   messages   provider  report  request_body   response_body   expiration_date
             /
     };
 
@@ -162,8 +164,8 @@ sub update_document_check {
         $dbic->run(
             fixup => sub {
                 $_->do(
-                    'SELECT FROM idv.update_document_check(?::BIGINT, ?::idv.provider, ?::idv.check_status, ?::JSONB, ?::JSONB, ?::JSONB, ?::TIMESTAMP)',
-                    undef, $document_id, $provider, $status, $messages, $request_body, $response_body, $expiration_date
+                    'SELECT FROM idv.update_document_check(?::BIGINT, ?::idv.provider, ?::idv.check_status, ?::JSONB, ?::JSONB, ?::JSONB, ?::JSONB, ?::TIMESTAMP)',
+                    undef, $document_id, $provider, $status, $messages, $report, $request_body, $response_body, $expiration_date
                 );
             });
     } catch ($e) {
