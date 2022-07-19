@@ -16,10 +16,10 @@ use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use List::MoreUtils qw(any);
-use BOM::Config::Onfido;
 use Log::Any qw($log);
 use YAML::XS qw(LoadFile);
 
+use BOM::Config::Onfido;
 use BOM::Transaction::Utility;
 use BOM::Config;
 use BOM::User::AuditLog;
@@ -47,7 +47,6 @@ use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
 use BOM::User::IdentityVerification;
 use BOM::Platform::Doughflow;
-use BOM::Platform::Client::IdentityVerification;
 use BOM::User::RiskScreen;
 
 use 5.010;
@@ -521,21 +520,25 @@ SQL
             my $response;
 
             next unless $idv_document_check;
-            try {
-                $response = decode_json_utf8 $idv_document_check->{response} if $idv_document_check->{response};
-                $response = BOM::Platform::Client::IdentityVerification::transform_response($idv_document_check->{provider}, $response) // $response;
-                $idv_record->{full_name}  = $response->{full_name};
-                $idv_record->{dob}        = $response->{date_of_birth};
-                $idv_record->{portal_uri} = $response->{portal_uri};
-            } catch ($error) {
-                $idv_record->{full_name} = 'Error';
-                $idv_record->{dob}       = 'Error';
-            }
-            if (BOM::Platform::Client::IdentityVerification::is_mute_provider($idv_document_check->{provider})) {
+
+            my $idv_report = $idv_document_check->{report};
+            $idv_report = eval { decode_json_utf8 $idv_report } if $idv_report;
+
+            if (BOM::Config::identity_verification()->{providers}{$idv_document_check->{provider}}{selfish}) {
                 $idv_record->{tooltip}   = $idv_document_check->{provider} . " provider does not return personal data";
-                $idv_record->{full_name} = '';
-                $idv_record->{dob}       = '';
+                $idv_record->{full_name} = 'N/A';
+                $idv_record->{dob}       = 'N/A';
+            } elsif ($idv_report) {
+                $idv_record->{full_name} = $response->{full_name};
+                $idv_record->{dob}       = $response->{birthdate};
+            } else {
+                $idv_record->{full_name} = 'ERROR';
+                $idv_record->{dob}       = 'ERROR';
             }
+
+            $idv_record->{portal_uri} =
+                sprintf(BOM::Config::identity_verification()->{providers}{$idv_document_check->{provider}}{portal_base}, $idv_report->{portal_id})
+                if $idv_report && $idv_report->{portal_id};
         }
     }
 
