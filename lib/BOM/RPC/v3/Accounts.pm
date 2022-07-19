@@ -976,7 +976,6 @@ rpc get_account_status => sub {
             is_withdrawal_suspended => BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $_),
         }
     } $client->currency;
-
     return {
         status                        => [sort(uniq(@$status))],
         risk_classification           => $risk_sr eq 'high' ? $risk_sr : $risk_aml // '',
@@ -1043,8 +1042,7 @@ Possible C<status> values:
 sub _get_authentication {
     my %args = @_;
 
-    my $client = $args{client};
-
+    my $client                = $args{client};
     my $authentication_object = {
         needs_verification => [],
         identity           => {
@@ -1076,6 +1074,9 @@ sub _get_authentication {
             status   => "none",
             requests => [],
         },
+        income => {
+            status => "none",
+        },
         attempts => {
             count   => 0,
             history => [],
@@ -1099,6 +1100,8 @@ sub _get_authentication {
     $authentication_object->{identity} = _get_authentication_poi($args);
     # Resolve the POO
     $authentication_object->{ownership} = _get_authentication_poo($args);
+    # Resolve the POW proof of wealth/income
+    $authentication_object->{income} = _get_authentication_pow($args);
     # Current statuses
     my $poa_status = $authentication_object->{document}->{status};
     my $poi_status = $authentication_object->{identity}->{status};
@@ -1107,6 +1110,7 @@ sub _get_authentication {
     $needs_verification_hash{identity}  = 1 if $client->needs_poi_verification($documents, $poi_status, $args{is_verification_required});
     $needs_verification_hash{document}  = 1 if $client->needs_poa_verification($documents, $poa_status, $args{is_verification_required});
     $needs_verification_hash{ownership} = 1 if $client->proof_of_ownership->needs_verification($poo_list);
+    $needs_verification_hash{income}    = 1 if $client->needs_pow_verification($documents);
     # Craft the `needs_verification` array
     $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
     # Craft the `attempts` object
@@ -1279,6 +1283,35 @@ sub _get_authentication_poa {
     # Return the document structure
     return {
         status => $client->get_poa_status($documents),
+    };
+}
+
+=head2 _get_authentication_pow
+
+Resolves the C<document> structure of the authentication object.
+
+It takes the following named params:
+
+=over 4
+
+=item * L<BOM::User::Client> the client itself
+
+=item * C<documents> hashref containing the client documents by type
+
+=back
+
+Returns,
+    hashref containing the structure needed for C<document> at authentication object.
+
+=cut
+
+sub _get_authentication_pow {
+    my $params = shift;
+    my ($client, $documents) = @{$params}{qw/client documents/};
+
+    # Return the document structure
+    return {
+        status => $client->get_pow_status($documents),
     };
 }
 

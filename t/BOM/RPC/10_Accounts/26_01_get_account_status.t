@@ -379,6 +379,7 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income             => {status => 'none'},
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -439,6 +440,7 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income             => {status => 'none'},
                         needs_verification => ["document", "identity"],
                         attempts           => {
                             latest  => undef,
@@ -499,6 +501,7 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income             => {status => 'none'},
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -556,6 +559,7 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income             => {status => 'none'},
                         needs_verification => ['identity'],
                         attempts           => {
                             latest  => undef,
@@ -630,6 +634,7 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income             => {status => 'none'},
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -730,6 +735,7 @@ subtest 'get account status' => sub {
                                 status   => 'none',
                                 requests => [],
                             },
+                            income             => {status => 'none'},
                             needs_verification => superbagof(qw(identity)),
                             attempts           => {
                                 latest  => undef,
@@ -792,6 +798,7 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income             => {status => 'none'},
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -848,6 +855,7 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income             => {status => 'none'},
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -946,6 +954,9 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income => {
+                            status => 'none',
+                        },
                         needs_verification => ["document", "identity"],
                         attempts           => {
                             latest  => undef,
@@ -1001,6 +1012,9 @@ subtest 'get account status' => sub {
                         ownership => {
                             status   => 'none',
                             requests => [],
+                        },
+                        income => {
+                            status => 'none',
                         },
                         needs_verification => ["document"],
                         attempts           => {
@@ -1089,6 +1103,9 @@ subtest 'get account status' => sub {
                             ownership => {
                                 status   => 'none',
                                 requests => [],
+                            },
+                            income => {
+                                status => 'none',
                             },
                             needs_verification => ['identity'],
                             attempts           => {
@@ -1193,6 +1210,9 @@ subtest 'get account status' => sub {
                                 status   => 'none',
                                 requests => [],
                             },
+                            income => {
+                                status => 'none',
+                            },
                             needs_verification => ['identity'],
                             attempts           => {
                                 latest  => undef,
@@ -1258,6 +1278,9 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income => {
+                            status => 'none',
+                        },
                         needs_verification => ["document", "identity"],
                         attempts           => {
                             latest  => undef,
@@ -1320,6 +1343,9 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income => {
+                            status => 'none',
+                        },
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -1376,6 +1402,9 @@ subtest 'get account status' => sub {
                         ownership => {
                             status   => 'none',
                             requests => [],
+                        },
+                        income => {
+                            status => 'none',
                         },
                         needs_verification => [],
                         attempts           => {
@@ -1437,6 +1466,9 @@ subtest 'get account status' => sub {
                         ownership => {
                             status   => 'none',
                             requests => [],
+                        },
+                        income => {
+                            status => 'none',
                         },
                         needs_verification => [],
                         attempts           => {
@@ -1501,6 +1533,9 @@ subtest 'get account status' => sub {
                                 status   => 'none',
                                 requests => [],
                             },
+                            income => {
+                                status => 'none',
+                            },
                             needs_verification => superbagof(qw(identity)),
                             attempts           => {
                                 latest  => undef,
@@ -1559,6 +1594,9 @@ subtest 'get account status' => sub {
                             ownership => {
                                 status   => 'none',
                                 requests => [],
+                            },
+                            income => {
+                                status => 'none',
                             },
                             needs_verification => superbagof(qw(document)),
                             attempts           => {
@@ -1631,6 +1669,9 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income => {
+                            status => 'none',
+                        },
                         needs_verification => ["document", "identity"],
                         attempts           => {
                             latest  => undef,
@@ -1697,6 +1738,9 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income => {
+                            status => 'none',
+                        },
                         needs_verification => [],
                         attempts           => {
                             latest  => undef,
@@ -1761,6 +1805,9 @@ subtest 'get account status' => sub {
                         ownership => {
                             status   => 'none',
                             requests => [],
+                        },
+                        income => {
+                            status => 'none',
                         },
                         needs_verification => ["document", "identity"],
                         attempts           => {
@@ -1859,6 +1906,9 @@ subtest 'get account status' => sub {
                                 status   => 'none',
                                 requests => [],
                             },
+                            income => {
+                                status => 'none',
+                            },
                             needs_verification => superbagof(qw(identity)),
                             attempts           => {
                                 latest  => undef,
@@ -1934,6 +1984,9 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income => {
+                            status => 'none',
+                        },
                         needs_verification => ["document", "identity"],
                         attempts           => {
                             latest  => undef,
@@ -2008,6 +2061,9 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income => {
+                            status => 'none',
+                        },
                         needs_verification => ["document"],
                         attempts           => {
                             latest  => undef,
@@ -2074,6 +2130,9 @@ subtest 'get account status' => sub {
                         ownership => {
                             status   => 'none',
                             requests => [],
+                        },
+                        income => {
+                            status => 'none',
                         },
                         needs_verification => [],
                         attempts           => {
@@ -2174,6 +2233,9 @@ subtest 'get account status' => sub {
                                 status   => 'none',
                                 requests => [],
                             },
+                            income => {
+                                status => 'none',
+                            },
                             needs_verification => superbagof(qw(identity)),
                             attempts           => {
                                 latest  => undef,
@@ -2245,6 +2307,9 @@ subtest 'get account status' => sub {
                                     manual => {
                                         status => 'none',
                                     }}
+                            },
+                            income => {
+                                status => "none",
                             },
                             ownership => {
                                 status   => 'none',
@@ -2339,6 +2404,9 @@ subtest 'get account status' => sub {
                                 status   => 'none',
                                 requests => [],
                             },
+                            income => {
+                                status => 'none',
+                            },
                             needs_verification => ["identity"],
                             attempts           => {
                                 latest  => undef,
@@ -2419,6 +2487,9 @@ subtest 'get account status' => sub {
                         status   => 'none',
                         requests => [],
                     },
+                    income => {
+                        status => 'none',
+                    },
                     needs_verification => ['identity'],
                     attempts           => {
                         latest  => undef,
@@ -2487,6 +2558,9 @@ subtest 'get account status' => sub {
                             ownership => {
                                 status   => 'none',
                                 requests => [],
+                            },
+                            income => {
+                                status => 'none',
                             },
                             needs_verification => ["document"],
                             attempts           => {
@@ -2563,6 +2637,9 @@ subtest 'get account status' => sub {
                                 status   => 'none',
                                 requests => [],
                             },
+                            income => {
+                                status => 'none',
+                            },
                             needs_verification => ["document", "identity"],
                             attempts           => {
                                 latest  => undef,
@@ -2628,6 +2705,9 @@ subtest 'get account status' => sub {
                         ownership => {
                             status   => 'none',
                             requests => [],
+                        },
+                        income => {
+                            status => 'none',
                         },
                         needs_verification => ["document", "identity"],
                         attempts           => {
@@ -2792,6 +2872,9 @@ subtest 'get account status' => sub {
                             status   => 'none',
                             requests => [],
                         },
+                        income => {
+                            status => "none",
+                        },
                         needs_verification => ["identity"],
                         attempts           => {
                             latest  => undef,
@@ -2885,6 +2968,9 @@ subtest "Test onfido is_country_supported" => sub {
                     status   => 'none',
                     requests => [],
                 },
+                income => {
+                    status => 'none',
+                },
                 needs_verification => [],
                 attempts           => {
                     latest  => undef,
@@ -2938,6 +3024,9 @@ subtest "Test onfido is_country_supported" => sub {
                 ownership => {
                     status   => 'none',
                     requests => [],
+                },
+                income => {
+                    status => 'none',
                 },
                 needs_verification => [],
                 attempts           => {
@@ -3298,6 +3387,9 @@ subtest 'Social identity provider' => sub {
                 ownership => {
                     status   => 'none',
                     requests => [],
+                },
+                income => {
+                    status => "none",
                 },
                 needs_verification => [],
                 attempts           => {

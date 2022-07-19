@@ -16,7 +16,29 @@ use BOM::Platform::Token;
 
 my $c = Test::BOM::RPC::QueueClient->new();
 my $m = BOM::Platform::Token::API->new;
+my $documents_uploaded;
+my $edd_status;
+my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 
+my $user_mock = Test::MockModule->new('BOM::User');
+
+$documents_mock->mock(
+    'uploaded',
+    sub {
+        my ($self) = @_;
+
+        $self->_clear_uploaded;
+
+        return $documents_uploaded if defined $documents_uploaded;
+        return $documents_mock->original('uploaded')->(@_);
+    });
+$user_mock->mock(
+    'get_edd_status',
+    sub {
+        my ($self) = @_;
+        return $edd_status if defined $edd_status;
+        return $user_mock->original('get_edd_status')->(@_);
+    });
 subtest 'idv details' => sub {
     my %rejected_reasons = BOM::Platform::Utility::rejected_identity_verification_reasons()->%*;
     my $client           = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -572,6 +594,121 @@ subtest 'Proof of Ownership' => sub {
     cmp_bag $result->{authentication}->{needs_verification}, [], 'Does not need verification';
 };
 
+subtest 'Proof of Income' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+po_income@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+
+    BOM::Config::Runtime->instance->app_config->compliance->enhanced_due_diligence->auto_lock(1);
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{income}, {status => 'none'}, 'Expected proof of income from auth';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate';
+    $edd_status         = {status => 'pending'};
+    $documents_uploaded = {
+        proof_of_income => {
+            documents => {
+                $client->loginid
+                    . '_brokerage_statement.1319_back' => {
+                    expiry_date => undef,
+                    format      => "png",
+                    id          => 123,
+                    status      => "uploaded",
+                    type        => "brokerage_statement",
+                    },
+            },
+            is_pending => 1,
+        },
+    };
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{income}, {status => 'pending'}, 'Expected proof of income from auth';
+
+    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'proof of fund sdocuments need to be provided';
+
+    $edd_status = {status => 'in_progress'};
+
+    cmp_deeply $result->{authentication}->{income}, {status => 'pending'}, 'Expected proof of income from auth';
+
+    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'proof of income documents need to be provided';
+
+    $edd_status = {status => 'rejected'};
+
+    cmp_deeply $result->{authentication}->{income}, {status => 'pending'}, 'Expected POF from auth';
+
+    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'proof of funds documents need to be provided';
+
+    $documents_uploaded = {
+        proof_of_income => {
+            documents => {
+                $client->loginid
+                    . '_brokerage_statement.1319_back' => {
+                    expiry_date => undef,
+                    format      => "png",
+                    id          => 123,
+                    status      => "verified",
+                    type        => "brokerage_statement",
+                    },
+            },
+            is_verified => 1,
+        },
+    };
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{income}, {status => 'verified'}, 'Expected proof of income from auth';
+    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'income documents need to be provided';
+
+    $documents_uploaded = {
+        proof_of_income => {
+            documents => {
+                $client->loginid
+                    . '_brokerage_statement.1319_back' => {
+                    expiry_date => undef,
+                    format      => "png",
+                    id          => 123,
+                    status      => "rejected",
+                    type        => "brokerage_statement",
+                    },
+            },
+            is_rejected => 1,
+        },
+    };
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{income}, {status => 'rejected'}, 'Expected proof of income from auth';
+    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'proof of funds documents need to be provided';
+
+    $documents_uploaded = {
+        proof_of_income => {
+            documents => {
+                $client->loginid
+                    . '_brokerage_statement.1319_back' => {
+                    expiry_date => undef,
+                    format      => "png",
+                    id          => 123,
+                    status      => "rejected",
+                    type        => "brokerage_statement",
+                    },
+            },
+            is_rejected => 3,
+        },
+    };
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{income}, {status => 'locked'}, 'Expected proof of incometo be locked';
+    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'proof of funds documents need to be provided from  BO';
+};
 subtest 'backtest for Onfido disabled country' => sub {
     my $test_client_disabled_country = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -714,5 +851,6 @@ sub upload {
 
     return $client->finish_document_upload($file->{file_id});
 }
-
+$documents_mock->unmock_all;
+$user_mock->unmock_all;
 done_testing();
