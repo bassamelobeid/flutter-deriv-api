@@ -104,19 +104,34 @@
                            "status" : {
                                "type" : "string",
                                "enum": [
-                                  "none",
-                                  "pending",
-                                  "rejected",
-                                  "verified",
-                                  "expired",
-                                  "suspected"
+                                 "none",
+                                 "pending",
+                                 "rejected",
+                                 "verified",
+                                 "expired",
+                                 "suspected"
                               ]
                            },
                            "expiry_date" : {
                                "type" : "integer"
                            }
                        }
-                   }
+                   },
+                   "income" : {
+                     "type" : "object",
+                     "properties" : {
+                         "status" : {
+                             "type" : "string",
+                             "enum": [
+                                "none",
+                                "pending",
+                                "rejected",
+                                "verified",
+                                "locked"
+                            ]
+                         }
+                     }
+                 }
                }
             },
             "social_identity_provider": {
