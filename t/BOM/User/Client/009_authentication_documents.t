@@ -38,12 +38,11 @@ my $categories = [{
         document_id_required => 0,
         documents_uploaded   => 'proof_of_address',
         date_expiration      => [],
-        preferred            => [
-            qw/utility_bill bank_statement tax_receipt insurance_bill phone_bill poa_others proofaddress payslip bankstatement cardstatement vf_poa/],
-        date_issuance =>
-            [qw/vf_poa utility_bill bank_statement tax_receipt insurance_bill phone_bill proofaddress payslip bankstatement cardstatement/],
+        preferred            =>
+            [qw/utility_bill bank_statement tax_receipt insurance_bill phone_bill poa_others proofaddress bankstatement cardstatement vf_poa/],
+        date_issuance  => [qw/vf_poa utility_bill bank_statement tax_receipt insurance_bill phone_bill proofaddress bankstatement cardstatement/],
         date_none      => [qw/poa_others/],
-        deprecated     => [qw/vf_poa proofaddress payslip bankstatement cardstatement/],
+        deprecated     => [qw/vf_poa proofaddress bankstatement cardstatement/],
         maybe_lifetime => [],
         two_sided      => [qw/utility_bill bank_statement tax_receipt insurance_bill phone_bill poa_others/],
         photo          => [],
@@ -55,14 +54,14 @@ my $categories = [{
         expiration_strategy  => 'min',
         side_required        => 0,
         document_id_required => 0,
-        documents_uploaded   => 'other',
+        documents_uploaded   => 'proof_of_income',
         deprecated           => [],
         date_expiration      => [],
-        preferred            => [qw/tax_return employment_contract edd_others/],
-        date_issuance        => [qw/tax_return employment_contract payslip/],
+        preferred            => [qw/tax_return employment_contract payslip brokerage_statement edd_others/],
+        date_issuance        => [qw/tax_return employment_contract payslip brokerage_statement/],
         date_none            => [qw/edd_others/],
         maybe_lifetime       => [],
-        two_sided            => [qw/tax_return employment_contract payslip edd_others/],
+        two_sided            => [qw/tax_return employment_contract payslip brokerage_statement edd_others/],
         photo                => [],
         numberless           => [],
         onfido               => [],
@@ -89,7 +88,7 @@ my $categories = [{
         expiration_strategy  => 'min',
         side_required        => 0,
         document_id_required => 0,
-        documents_uploaded   => 'other',
+        documents_uploaded   => 'proof_of_income',
         deprecated           => [],
         date_expiration      => [],
         preferred            => [qw/coi business_poa article_of_association memorandum authorisation_letter declarations business_documents_others/],
@@ -265,6 +264,7 @@ for ($categories->@*) {
 
                 my $breakdown = $client->documents->uploaded();
 
+                # check this
                 # Note `payslip` used to be a proof_of_address doctype, for backwards compatibility we
                 # still use it for POA checkups and it should be tested in that category
 
@@ -298,7 +298,6 @@ subtest 'POA document types' => sub {
             phone_bill
             poa_others
             proofaddress
-            payslip
             bankstatement
             cardstatement
             vf_poa
@@ -338,7 +337,7 @@ subtest 'Preferred types' => sub {
         qw/
             passport driving_licence voter_card national_identity_card student_card poi_others proofid driverslicense
             utility_bill bank_statement tax_receipt insurance_bill phone_bill poa_others proofaddress payslip bankstatement cardstatement vf_poa
-            tax_return employment_contract edd_others
+            tax_return employment_contract edd_others brokerage_statement
             selfie video_verification doc_verification
             coi business_poa article_of_association memorandum authorisation_letter declarations business_documents_others
             power_of_attorney code_of_conduct others
@@ -366,6 +365,7 @@ subtest 'Issuance document types' => sub {
             tax_return
             payslip
             video_verification
+            brokerage_statement
             doc_verification
             coi
             business_poa

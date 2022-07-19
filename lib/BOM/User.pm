@@ -36,6 +36,12 @@ use BOM::Platform::Context qw(request);
 use Exporter qw( import );
 our @EXPORT_OK = qw( is_payment_agents_suspended_in_country );
 
+=head1 NAME
+
+BOM::User
+
+=cut
+
 # Backoffice Application Id used in some login cases
 use constant BACKOFFICE_APP_ID => 4;
 # Redis key prefix for client's previous login attempts
@@ -1674,7 +1680,6 @@ Returns a hashref of the most recent users' EDD status if exists, otherwise retu
 
 sub get_edd_status {
     my $self = shift;
-
     try {
         return $self->dbic->run(
             fixup => sub {

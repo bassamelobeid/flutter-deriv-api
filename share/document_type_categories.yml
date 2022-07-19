@@ -153,10 +153,6 @@ POA:
       preferred: 1
       deprecated: 1
       date: issuance
-    payslip:
-      preferred: 1
-      deprecated: 1
-      date: issuance
     bankstatement:
       preferred: 1
       deprecated: 1
@@ -171,6 +167,7 @@ POA:
       date: issuance
 EDD:
   description: EDD
+  category: proof_of_income
   expiration_strategy: min
   side_required: 0
   document_id_required: 0
@@ -189,15 +186,22 @@ EDD:
       priority: 2
       sides: *two_sided
     payslip:
+      preferred: 1
       description: Payslip
       date: issuance
       priority: 3
+      sides: *two_sided
+    brokerage_statement:
+      preferred: 1
+      description: brokerage statement
+      date: issuance
+      priority: 4
       sides: *two_sided
     edd_others:
       preferred: 1
       description: Others
       date: none
-      priority: 4
+      priority: 5
       sides: *two_sided
 Verification - ID:
   description: Verification - ID
@@ -225,6 +229,7 @@ Verification - ID:
       sides: *two_sided
 Business documents:
   description: Business documents
+  category: proof_of_income
   expiration_strategy: min
   side_required: 0
   document_id_required: 0

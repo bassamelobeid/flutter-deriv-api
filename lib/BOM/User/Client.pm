@@ -1571,6 +1571,24 @@ sub proof_of_ownership {
     return $self->{proof_of_ownership} //= BOM::User::Client::ProofOfOwnership->new({client => $self});
 }
 
+=head2 proof_of_income
+
+Returns proof_of_income
+
+=cut
+
+sub proof_of_income {
+    my $self = shift;
+
+    return $self->{proof_of_income} //= '';
+}
+
+=head2 is_pa_and_authenticated
+
+Returns status of payment agent
+
+=cut
+
 sub is_pa_and_authenticated {
     my $self = shift;
     return 0 unless my $pa = $self->get_payment_agent();
@@ -6725,6 +6743,46 @@ sub get_account_details {
     };
 }
 
+=head2 get_pow_status
+
+Resolves the Proof of Income/wealth status.
+This C<status> is inferred from client C<documents>.
+
+It takes the following params:
+
+=over 4
+
+=item * C<documents> hashref containing the client documents by type (optional)
+
+=back
+
+Returns,
+    string for the current POW(proof of wealth/income) status, it can be: none, pending, rejected, verified.
+
+=cut
+
+sub get_pow_status {
+    my ($self, $documents) = @_;
+    # Note optional arguments will be resolved if not provided
+    $documents //= $self->documents->uploaded();
+
+    my ($is_pending, $is_verified, $is_rejected, $is_uploaded) =
+        @{$documents->{proof_of_income}}{qw/is_pending is_verified is_rejected is_uploaded/};
+
+    # order matters
+
+    return 'verified' if $is_verified;
+
+    # limit the allowed documents uploaded to be rejected with a max of 3
+    return 'locked' if $is_rejected && $is_rejected >= 3;
+
+    return 'rejected' if $is_rejected;
+
+    return 'pending' if $is_pending || $is_uploaded;
+
+    return 'none';
+}
+
 =head2 get_poa_status
 
 Resolves the POA status.
@@ -6942,7 +7000,7 @@ It takes the following params:
 =back
 
 Returns,
-    a boolean that indicates whether a POI is needed
+    a boolean that indicates whether a POA is needed
 
 =cut
 
@@ -7035,6 +7093,34 @@ sub needs_poi_verification {
 
         return 1 if any { $_ eq $self->get_onfido_status() } qw/rejected suspected expired/;
     }
+
+    return 0;
+}
+
+=head2 needs_pow_verification
+
+Determines if POW documents are needed.
+
+It takes the following params:
+
+=over 4
+
+=item * C<documents> hashref containing the client documents by type (optional)
+
+=back
+
+Returns,
+    a boolean that indicates whether a POW is needed
+
+=cut
+
+sub needs_pow_verification {
+    my ($self, $documents) = @_;
+
+    $documents //= $self->documents->uploaded();
+    my $user = $self->user;
+
+    return 1 if $user->get_edd_status->{status} && (grep { $user->get_edd_status->{status} eq $_ } qw{pending in_progress rejected locked});
 
     return 0;
 }

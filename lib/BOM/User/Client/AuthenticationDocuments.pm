@@ -112,7 +112,7 @@ has uploaded => (
 Gets the uploaded documents in a fancy hashref structure, the scan is made upon the current client and
 its siblings, will discard documents not in the `uploaded` status. 
 
-Each key corresponds to a category of documents (e.g. proof_of_identity, proof_of_address) 
+Each key corresponds to a category of documents (e.g. proof_of_identity, proof_of_address, proof_of_income) 
 and it may contain:
 
 =over 4
@@ -134,8 +134,7 @@ Returns the uploaded documents for the client and its siblings, organized in a f
 =cut
 
 sub _build_uploaded {
-    my $self = shift;
-
+    my $self          = shift;
     my $doc_structure = sub {
         my $doc = shift;
 
@@ -171,6 +170,10 @@ sub _build_uploaded {
 
             my $category = $category_config->{category} // 'other';
             $documents{$category}{documents}{$single_document->file_name} = $doc_structure->($single_document);
+
+            if ($category eq 'proof_of_income') {
+                $documents{$category}{'is_' . $doc_status} += 1;
+            }
 
             # The expiration analysis starts right here
             # from this point we are interested in expirable documents
@@ -716,4 +719,35 @@ sub pending {
     return $poi->{is_pending};
 }
 
+=head2 pow_types
+
+Lazily computes the list of POW (proof of income/wealth) document types.
+
+=cut
+
+has pow_types => (
+    is      => 'lazy',
+    clearer => '_clear_pow_types',
+);
+
+=head2 _build_pow_types
+
+Get an arrayref of POW (proof of income/wealth) doctypes.
+
+=cut
+
+sub _build_pow_types {
+    my $self = shift;
+    my $pow  = [];
+
+    for my $category (values $self->categories->%*) {
+        if ($category->{category} && $category->{category} eq 'proof_of_income') {
+            for my $document_type (keys $category->{types}->%*) {
+                push $pow->@*, $document_type;
+            }
+        }
+    }
+
+    return $pow;
+}
 1;
