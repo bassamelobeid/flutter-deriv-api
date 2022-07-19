@@ -188,79 +188,9 @@ subtest 'df total payments by identifier' => sub {
         ok !$antifraud->df_total_payments_by_payment_type('Bara'), 'Limit not breached (limit=0 is not checked)';
     };
 
-    # todo: remove this test when the time comes
-
-    subtest 'deprecated redis' => sub {
-        add_legacy_payment(
-            id      => 2000,
-            user_id => $user->id,
-            pt      => 'Bara',
-        );
-
-        $raw_payments = [];
-
-        $high_risk_settings = {
-            days  => 10,
-            limit => 2,
-        };
-
-        ok !$antifraud->df_total_payments_by_payment_type('Bara'), 'Limit not breached';
-
-        add_legacy_payment(
-            id      => 2000,
-            user_id => $user->id,
-            pt      => 'Bara',
-        );
-
-        ok !$antifraud->df_total_payments_by_payment_type('Bara'), 'Limit not breached';
-
-        add_legacy_payment(
-            id      => 3000,
-            user_id => $user->id,
-            pt      => 'Bara',
-        );
-
-        ok $antifraud->df_total_payments_by_payment_type('Bara'), 'Limit breached';
-
-        # they can work in tandem
-
-        $high_risk_settings = {
-            days  => 10,
-            limit => 3,
-        };
-
-        ok !$antifraud->df_total_payments_by_payment_type('Bara'), 'Limit not breached';
-
-        $raw_payments = ['Test|Capy|Bara|0x01',];
-
-        ok $antifraud->df_total_payments_by_payment_type('Bara'), 'Limit breached';
-    };
-
     $pr_mock->unmock_all;
     $conf_mock->unmock_all;
     $cli_mock->unmock_all;
 };
-
-sub add_legacy_payment : method {
-    my (%args) = @_;
-    my $account_identifier = $args{id};
-
-    return 0 unless $account_identifier;
-
-    my $storage_key = BOM::User::PaymentRecord::_build_storage_key(
-        user_id      => $args{user_id},
-        payment_type => $args{pt});
-    return 0 unless $storage_key;
-
-    my $redis = BOM::User::PaymentRecord::_get_redis();
-    $redis->multi;
-    $redis->pfadd($storage_key, sha256_hex($account_identifier));
-    # we set the expiry of the whole key
-    # we extend expiry whenever the same key is updated
-    $redis->expire($storage_key, 90);
-    $redis->exec;
-
-    return 1;
-}
 
 done_testing();

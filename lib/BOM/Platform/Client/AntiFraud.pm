@@ -123,12 +123,6 @@ sub df_total_payments_by_payment_type {
     my $total_payment_accounts = scalar $grouped->@*;
     my $payment_accounts_limit = $self->client->payment_accounts_limit($limit);
 
-    # TODO: we must take this down when the deprecated redis keys expire
-    $total_payment_accounts += $record->get_distinct_payment_accounts_for_time_period(
-        payment_type => $pt,
-        period       => $days,
-    );
-
     return $total_payment_accounts >= $payment_accounts_limit;
 }
 
