@@ -1316,11 +1316,6 @@ system:
           isa: ArrayRef
           default: []
           global: 1
-        idv_legacy_providers:
-          description: "Redirect all IDV identity verification requests to the new microservice handlers for the selected providers e.g. smile_identity"
-          isa: ArrayRef
-          default: ['smile_identity']
-          global: 1
         access_token_sharing:
           description: "Suspend sharing OAuth token between third party apps"
           isa: Bool

@@ -1,0 +1,7 @@
+providers:
+  smile_identity:
+    portal_base: https://portal.smileidentity.com/partner/job_results/%s?env=production
+    selfish: 0
+  zaig:
+    portal_base: https://dash.zaig.com.br/natural-person/%s
+    selfish: 1
