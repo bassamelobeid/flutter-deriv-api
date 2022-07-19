@@ -6,12 +6,11 @@ use warnings;
 use BOM::Config::Redis;
 use Date::Utility;
 use List::Util qw/first max/;
-use Digest::SHA qw/sha256_hex/;
 
 use constant LIFETIME_IN_DAYS           => 90;
 use constant SECONDS_IN_A_DAY           => 86400;
 use constant LIFETIME_IN_SECONDS        => LIFETIME_IN_DAYS * SECONDS_IN_A_DAY;
-use constant PAYMENT_KEY_PREFIX         => 'PAYMENT_RECORD_V2';
+use constant PAYMENT_KEY_PREFIX         => 'PAYMENT_RECORD_V3';
 use constant PAYMENT_KEY_SEPARATOR      => '::';
 use constant PAYMENT_KEY_USER_ID_PREFIX => 'UID';
 # Think of this array as an only append structure, we never change the existing elements, we never delete them nor we flip them around.
@@ -91,39 +90,6 @@ sub add_payment : method {
     my $storage_key = $self->storage_key();
 
     my $redis = _get_redis();
-
-    # to avoid clashes with the old implementation we will use a temporary
-    # hyperloglog with the current element, merge with the user's hyperloglog and
-    # check the cardinality.
-    my $pt = $args{pt} // '';
-    my $id = $args{id} // '';
-
-    if ($pt eq 'CreditCard') {
-        if ($id ne '') {
-            $redis->pfadd(TEMP_PAYMENT_KEY_PREFIX . $self->{user_id}, sha256_hex($args{id}));
-            $redis->pfmerge(
-                TEMP_PAYMENT_KEY_PREFIX . $self->{user_id},
-                @{
-                    _get_keys_for_time_period(
-                        payment_type => 'CreditCard',
-                        user_id      => $self->{user_id},
-                        period       => LIFETIME_IN_DAYS
-                    )});
-
-            my $current = $self->get_distinct_payment_accounts_for_time_period(
-                period       => LIFETIME_IN_DAYS,
-                payment_type => 'CreditCard'
-            );
-
-            my $addition = $redis->pfcount(TEMP_PAYMENT_KEY_PREFIX . $self->{user_id});
-            $redis->del(TEMP_PAYMENT_KEY_PREFIX . $self->{user_id});
-
-            if ($current == $addition) {
-                return 0;
-            }
-        }
-    }
-
     $redis->multi;
     $redis->zadd($storage_key, time, $payload);
     # we set the expiry of the whole key
@@ -357,157 +323,6 @@ Returns the connection object to the payments redis instance
 
 sub _get_redis {
     return BOM::Config::Redis::redis_payment_write();
-}
-
-=head1 DEPRECATED
-
-From this points the functions defined are deprecated and we must consider removing them once
-the legacy redis keys are all expired on production servers.
-
-=head2 get_distinct_payment_accounts_for_time_period
-
-    $obj->get_distinct_payment_accounts_for_time_period(period => 30, ...);
-
-Returns the count of unique account identifiers for a given period of time, period is passed in as days
-
-Takes the following as named parameters
-
-=over 4
-
-=item * C<period>
-
-Number of days to get the data for
-
-=back
-
-=cut
-
-sub get_distinct_payment_accounts_for_time_period : method {
-    my ($self, %args) = @_;
-
-    return 0 unless $args{period};
-
-    return 0 unless $args{payment_type};
-
-    die 'Payment record required period length is greater than our storage lifetime of ' . LIFETIME_IN_DAYS . ' days.'
-        if $args{period} > LIFETIME_IN_DAYS;
-
-    return 0 unless $self->{user_id};
-
-    return _get_redis()->pfcount(
-        @{
-            _get_keys_for_time_period(
-                payment_type => $args{payment_type},
-                user_id      => $self->{user_id},
-                period       => $args{period},
-            )});
-}
-
-=head2 _get_keys_for_time_period
-
-Returns an array containing all keys
-
-Takes the following as named parameters
-
-=over 4
-
-=item * C<period>
-
-Number of days to get the data for
-
-=item * C<user_id>
-
-The id of the user to fetch the keys for
-
-=back
-
-=cut
-
-sub _get_keys_for_time_period {
-    my (%args) = @_;
-
-    my $time_period = max($args{period} // 1, 1);
-
-    my @keys = map { _build_storage_key(payment_type => $args{payment_type}, user_id => $args{user_id}, days_behind => $_) } (0 .. $time_period - 1);
-
-    return \@keys;
-}
-
-=head2 _build_storage_key
-
-Returns the storage key given an user_id for the day of C<days_behind> of the current date when provided, defaults to the key for the current date
-
-=cut
-
-sub _build_storage_key {
-    my (%args) = @_;
-    return 0 unless my $user_id      = $args{user_id};
-    return 0 unless my $payment_type = $args{payment_type};
-    my $days_behind = $args{days_behind} // 0;
-
-    my @key_parts = (
-        LEGACY_PAYMENT_KEY_PREFIX, PAYMENT_KEY_USER_ID_PREFIX, $user_id, $payment_type,
-        Date::Utility->new->minus_time_interval($days_behind . 'd')->date_yyyymmdd
-    );
-
-    # this package was designed only for CreditCard, the business logic has changed
-    # to generalize the payment type, we need to map the $payment_type accordingly
-    # in order to make it backcompat
-
-    if ($payment_type eq 'CreditCard') {
-        my $date = pop @key_parts;
-        pop @key_parts;
-        push @key_parts, $date;
-    }
-
-    return join(PAYMENT_KEY_SEPARATOR, @key_parts);
-}
-
-=head2 is_flagged
-
-Takes the following as positional parameter
-
-=over 4
-
-=item * C<name> The name of the flag
-
-=back
-
-=cut
-
-sub is_flagged {
-    my ($self, $flag_name) = @_;
-
-    return _get_redis()->get(
-        _build_flag_key(
-            user_id => $self->{user_id},
-            name    => $flag_name
-        )) // 0;
-}
-
-=head2 _build_flag_key
-
-Takes the following as named parameters
-
-=over 4
-
-=item * C<user_id> The id of the user who made the payment
-
-=item * C<name> The name of the flag
-
-=back
-
-=cut
-
-sub _build_flag_key {
-    my %args = @_;
-
-    return join(
-        PAYMENT_KEY_SEPARATOR,         #
-        PAYMENT_KEY_PREFIX,            #
-        PAYMENT_KEY_USER_ID_PREFIX,    #
-        $args{user_id},                #
-        $args{name});
 }
 
 1;

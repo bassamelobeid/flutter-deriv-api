@@ -33,7 +33,7 @@ subtest 'instantiate a valid object' => sub {
 };
 
 subtest 'storage key' => sub {
-    is $pr->storage_key, 'PAYMENT_RECORD_V2::UID::1000', 'Expected storage key';
+    is $pr->storage_key, 'PAYMENT_RECORD_V3::UID::1000', 'Expected storage key';
 };
 
 subtest 'payloads' => sub {
@@ -358,140 +358,6 @@ subtest 'redis storage' => sub {
     };
 };
 
-# the following will test the deprecated parts of the package and thus a removal is due somewhere
-# in the future
-
-subtest 'deprecated' => sub {
-    is $pr->get_distinct_payment_accounts_for_time_period(), 0, 'No period passed';
-    is $pr->get_distinct_payment_accounts_for_time_period(period => 10), 0, 'No payment type passed';
-
-    dies_ok {
-        $pr->get_distinct_payment_accounts_for_time_period(
-            period       => 10000,
-            payment_type => 'Bara'
-        );
-    }
-    'Period is too large';
-
-    add_legacy_payment(
-        id      => 1000,
-        user_id => $pr->{user_id},
-        pt      => 'CreditCard',
-    );
-
-    is $pr->get_distinct_payment_accounts_for_time_period(
-        period       => 10,
-        payment_type => 'CreditCard'
-        ),
-        1, '1 record found';
-
-    add_legacy_payment(
-        id      => 1000,
-        user_id => $pr->{user_id},
-        pt      => 'CreditCard',
-    );
-
-    is $pr->get_distinct_payment_accounts_for_time_period(
-        period       => 10,
-        payment_type => 'CreditCard'
-        ),
-        1, '1 record found still';
-
-    add_legacy_payment(
-        id      => 2000,
-        user_id => $pr->{user_id},
-        pt      => 'CreditCard',
-    );
-
-    is $pr->get_distinct_payment_accounts_for_time_period(
-        period       => 10,
-        payment_type => 'CreditCard'
-        ),
-        2, '2 records found';
-
-    is $pr->get_distinct_payment_accounts_for_time_period(
-        period       => 10,
-        payment_type => 'Bara'
-        ),
-        0, '0 records found';
-    add_legacy_payment(
-        id      => 2000,
-        user_id => $pr->{user_id},
-        pt      => 'Bara',
-    );
-
-    is $pr->get_distinct_payment_accounts_for_time_period(
-        period       => 10,
-        payment_type => 'Bara'
-        ),
-        1, '1 record found';
-
-    add_legacy_payment(
-        id      => 2000,
-        user_id => $pr->{user_id} + 1,
-        pt      => 'Capy',
-    );
-    is $pr->get_distinct_payment_accounts_for_time_period(
-        period       => 10,
-        payment_type => 'Capy'
-        ),
-        0, '0 record found';
-
-    add_legacy_payment(
-        id      => 2000,
-        user_id => $pr->{user_id},
-        pt      => 'Capy',
-    );
-    is $pr->get_distinct_payment_accounts_for_time_period(
-        period       => 10,
-        payment_type => 'Capy'
-        ),
-        1, '1 record found';
-
-    subtest 'do not update the counter if there is a legacy clash for pt=CreditCard' => sub {
-        ok $pr->add_payment(
-            id      => 2000,
-            user_id => $pr->{user_id},
-            pt      => 'Capy',
-        );
-        ok !$pr->add_payment(
-            id      => 2000,
-            user_id => $pr->{user_id},
-            pt      => 'CreditCard',
-        );
-        ok $pr->add_payment(
-            id      => 2000,
-            user_id => $pr->{user_id},
-            pt      => 'Bara',
-        );
-        ok !$pr->add_payment(
-            id      => 1000,
-            user_id => $pr->{user_id},
-            pt      => 'CreditCard',
-        );
-    };
-};
-
-subtest 'BOM::User::PaymentRecord::set_flag/is_flagged' => sub {
-    subtest 'when the flag has not been set' => sub {
-        my $record = BOM::User::PaymentRecord->new(
-            user_id => 1,
-        );
-        is($record->is_flagged('dummy'), 0, 'is_flagged returns 0');
-    };
-
-    subtest 'when the flag has been set' => sub {
-        my $record = BOM::User::PaymentRecord->new(
-            user_id => 1,
-        );
-        set_legacy_flag(
-            name    => 'dummy',
-            user_id => 1
-        );
-        is($record->is_flagged('dummy'), 1, 'is_flagged returns 1');
-    };
-};
-
 subtest '5 differents credit cards' => sub {
     $pr = BOM::User::PaymentRecord->new(user_id => 2000);
 
@@ -771,46 +637,6 @@ subtest '5 differents credit cards (different pm/pp)' => sub {
         ],
         'expected grouped payments';
 };
-
-sub add_legacy_payment : method {
-    my (%args) = @_;
-    my $account_identifier = $args{id};
-
-    return 0 unless $account_identifier;
-
-    my $storage_key = BOM::User::PaymentRecord::_build_storage_key(
-        user_id      => $args{user_id},
-        payment_type => $args{pt});
-    return 0 unless $storage_key;
-
-    my $redis = BOM::User::PaymentRecord::_get_redis();
-    $redis->multi;
-    $redis->pfadd($storage_key, sha256_hex($account_identifier));
-    # we set the expiry of the whole key
-    # we extend expiry whenever the same key is updated
-    $redis->expire($storage_key, 90);
-    $redis->exec;
-
-    return 1;
-}
-
-sub set_legacy_flag {
-    my (%args)      = @_;
-    my $flag_name   = $args{name}   // die 'name is mandatory';
-    my $flag_expire = $args{expire} // 0;
-    my $flag_key    = BOM::User::PaymentRecord::_build_flag_key(
-        user_id => $args{user_id},
-        name    => $flag_name
-    );
-
-    my $redis = BOM::User::PaymentRecord::_get_redis();
-    $redis->multi;
-    $redis->set($flag_key, 1);
-    $redis->expire($flag_key, $flag_expire) if $flag_expire;
-    $redis->exec;
-
-    return 1;
-}
 
 restore_time();
 done_testing();
