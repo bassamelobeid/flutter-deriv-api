@@ -34,9 +34,6 @@ my @requests;
 my ($resp, $verification_status, $personal_info_status, $personal_info, $args) = undef;
 my $updates = 0;
 
-my $mock_idv_event_action = Test::MockModule->new('BOM::Event::Actions::Client::IdentityVerification');
-$mock_idv_event_action->mock('_is_microservice_available', 1);
-
 my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
 my $mock_idv_status;
 $mock_idv_model->redefine(
@@ -70,6 +67,14 @@ $mock_config_service->mock(
     config => +{
         host => 'dummy',
         port => '8080',
+    });
+$mock_config_service->mock(
+    'is_enabled' => sub {
+        if ($_[1] eq 'identity_verification') {
+            return 1;
+        }
+
+        return $mock_config_service->original('is_enabled')->(@_);
     });
 
 my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
@@ -112,7 +117,11 @@ subtest 'verify identity by smile_identity through microservice is passed and da
         HTTP::Response->new(
             200, undef, undef,
             encode_json_utf8({
-                    status        => 'pass',
+                    status => 'pass',
+                    report => {
+                        full_name => $personal_info->{FullName},
+                        birthdate => $personal_info->{DOB},
+                    },
                     request_body  => {request => 'sent'},
                     response_body => {
                         Actions => {

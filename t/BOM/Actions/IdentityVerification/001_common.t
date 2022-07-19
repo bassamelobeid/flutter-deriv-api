@@ -3,6 +3,7 @@ use warnings;
 no indirect;
 
 use Test::Fatal;
+use Test::MockModule;
 use Test::More;
 
 use BOM::Event::Process;
@@ -24,30 +25,67 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $user->add_client($client);
 
-my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
-
+my $idv_model         = BOM::User::IdentityVerification->new(user_id => $client->user->id);
 my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
 
-my $args = {
-    loginid => $client->loginid,
+my $mock_config_service = Test::MockModule->new('BOM::Config::Services');
+my $idv_service_enabled = 1;
+$mock_config_service->mock(
+    'is_enabled' => sub {
+        if ($_[1] eq 'identity_verification') {
+            return $idv_service_enabled;
+        }
+
+        return $mock_config_service->original('is_enabled')->(@_);
+    });
+
+my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
+my $mock_idv_event = Test::MockModule->new('BOM::Event::Actions::Client::IdentityVerification');
+
+my $args;
+subtest 'nonentity client' => sub {
+    $args = {loginid => 'CR0'};
+    like exception { $idv_event_handler->($args)->get }, qr/Could not initiate client/i, 'Exception thrown for unknown client';
 };
 
-subtest 'verify identity basic' => sub {
-    $args = {loginid => 'CR0'};
-    like exception { $idv_event_handler->($args)->get }, qr/Could not instantiate client/i, 'Exception thrown for unknown client';
+subtest 'no submission left' => sub {
+    $args = {loginid => $client->loginid};
+    $mock_idv_model->mock(submissions_left => 0);
+    like exception { $idv_event_handler->($args)->get }, qr/No submissions left/i, 'Exception thrown when no submission left';
 
-    $args = {
-        loginid => $client->loginid,
-    };
+    $mock_idv_model->unmock_all;
+};
 
-    like exception { $idv_event_handler->($args)->get }, qr/No standby document found/i, 'Exception thrown for user without standby document for IDV';
+subtest 'no standby document' => sub {
+    $args = {loginid => $client->loginid};
+    $mock_idv_model->mock(get_standby_document => undef);
+    like exception { $idv_event_handler->($args)->get }, qr/No standby document found/i, 'Exception thrown when no standby document found';
+
+    $mock_idv_model->unmock_all;
+};
+
+subtest 'unimplemented provider' => sub {
+    $args = {loginid => $client->loginid};
+    $mock_idv_event->mock(_trigger_through_microservice => sub { die 'unexpected' });
 
     $idv_model->add_document({
-        issuing_country => 'id',
+        issuing_country => 'xx',           # unimplemented provider
         number          => '123',
         type            => 'national_id'
     });
-    is $idv_event_handler->($args)->get, undef, 'document issuing country not supported by IDV, event returned without processing';
+    is $idv_event_handler->($args)->get, undef, 'The process jumped out due to unimplemented provider';
+
+    $mock_idv_event->unmock_all;
+};
+
+subtest 'microservice is disabled' => sub {
+    $args                = {loginid => $client->loginid};
+    $idv_service_enabled = 0;
+
+    like exception { $idv_event_handler->($args)->get }, qr/microservice is not enabled/i,
+        'Exception thrown when microservice is disabled through configs';
+
+    $mock_config_service->unmock_all;
 };
 
 done_testing();
