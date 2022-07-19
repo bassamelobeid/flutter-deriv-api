@@ -1931,10 +1931,48 @@ subtest 'segment document upload' => sub {
             file_id => $upload_info->{file_id}})->get;
 
     my ($customer, %args) = @track_args;
-
     is $args{event}, 'document_upload', 'track event is document_upload';
     is $args{properties}->{document_type},              'national_identity_card', 'document type is correct';
     is $args{properties}->{uploaded_manually_by_staff}, 0,                        'uploaded_manually_by_staff is correct';
+};
+
+subtest 'edd document upload' => sub {
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    undef @track_args;
+
+    $args = {
+        document_type     => 'tax_return',
+        document_format   => 'PNG',
+        document_id       => '1234',
+        expiration_date   => undef,
+        expected_checksum => '123456',
+        page_type         => undef,
+    };
+
+    my $upload_info = start_document_upload($args, $test_client);
+
+    $test_client->db->dbic->run(
+        ping => sub {
+            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+        });
+
+    undef @track_args;
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
+    $action_handler->({
+            loginid => $test_client->loginid,
+            file_id => $upload_info->{file_id}})->get;
+
+    my ($customer, %args) = @track_args;
+    is $args{event}, 'document_upload', 'track event is document_upload';
+    is $args{properties}->{document_type},              'tax_return', 'document type is correct';
+    is $args{properties}->{uploaded_manually_by_staff}, 0,            'uploaded_manually_by_staff is correct';
 };
 
 subtest 'onfido resubmission' => sub {
@@ -2439,6 +2477,18 @@ subtest 'POA email notification' => sub {
 
     $msg = mailbox_search(subject => qr/New uploaded POA document for/);
     ok $msg, 'Second email sent';
+};
+
+subtest 'EDD email notification' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    mailbox_clear();
+    BOM::Event::Actions::Client::_send_complaince_email_pow_uploaded($test_client)->get;
+
+    my $msg = mailbox_search(subject => qr/New uploaded EDD document for/);
+    ok $msg, 'email sent';
 };
 
 subtest 'verify address' => sub {
@@ -4025,6 +4075,39 @@ subtest 'self tagging affiliates' => sub {
 
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{self_tagging_affiliates};
     my $result  = $handler->($args)->get;
+    ok $result, 'Success result';
+    is scalar @track_args, 7, 'Track event is triggered';
+};
+
+subtest 'request edd document upload' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            first_name    => $test_client->first_name,
+            email         => $test_client->email,
+            login_url     => 'https://oauth.deriv.com/oauth2/authorize?app_id=16929',
+            expiry_date   => '',
+            live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{request_edd_document_upload};
+    my $result  = $handler->($args)->get;
+    ok $handler->($args);
+    my ($customer, %args) = @track_args;
+    is $args{event}, 'request_edd_document_upload', "event name";
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
 };

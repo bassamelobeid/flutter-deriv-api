@@ -292,6 +292,7 @@ async sub document_upload {
         my $is_onfido_document =
             any { $_ eq $document_entry->{document_type} } keys $client->documents->provider_types->{onfido}->%*;
 
+        my $is_pow_document = any { $_ eq $document_entry->{document_type} } $client->documents->pow_types->@*;
         $log->warnf("Unsupported document by onfido $document_entry->{document_type}") if $is_poi_document && !$is_onfido_document;
 
         $client->propagate_clear_status('allow_poi_resubmission') if $is_poi_document || $is_onfido_document;
@@ -312,9 +313,9 @@ async sub document_upload {
             document_entry    => $document_entry,
             uploaded_by_staff => $uploaded_manually_by_staff,
         };
-
         return await _upload_poa_document($document_args) if $is_poa_document;
         return await _upload_to_onfido($document_args)    if $is_onfido_document;
+        return await _upload_pow_document($document_args) if $is_pow_document;
 
     } catch ($e) {
         $log->errorf('Failed to process Onfido application for %s : %s', $args->{loginid}, $e);
@@ -466,6 +467,27 @@ async sub _upload_to_onfido {
         uploaded_manually_by_staff => $uploaded_by_staff,
         issuing_country            => $args->{issuing_country},
     );
+}
+
+=head2 _upload_pow_document
+
+This subroutine handles uploading POW(proof of wealth/income) documents
+
+=cut
+
+async sub _upload_pow_document {
+    my $args = shift;
+
+    my ($client, $document_entry, $uploaded_by_staff) = @{$args}{qw/client document_entry uploaded_by_staff/};
+
+    await BOM::Event::Services::Track::document_upload({
+            client     => $client,
+            properties => {
+                uploaded_manually_by_staff => $uploaded_by_staff,
+                %$document_entry
+            }});
+
+    await _send_complaince_email_pow_uploaded(client => $client) unless $uploaded_by_staff;
 }
 
 =head2 ready_for_authentication
@@ -1696,6 +1718,25 @@ async sub _send_email_onfido_unsupported_country_cs {
     }
 
     return 1;
+}
+
+=head2 _send_complaince_email_pow_uploaded
+
+Send email to complaince when client uploads a document
+
+=cut
+
+async sub _send_complaince_email_pow_uploaded {
+    my ($client) = @_;
+    my $brand = request->brand;
+
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('compliance');
+
+    Email::Stuffer->from($from_email)->to($to_email)->subject('New uploaded EDD document for: ' . $client->loginid)
+        ->text_body('New proof of income document was uploaded for ' . $client->loginid)->send();
+
+    return undef;
 }
 
 =head2 social_responsibility_check
@@ -3651,4 +3692,25 @@ sub self_tagging_affiliates {
     );
 }
 
+=head2 request_edd_document_upload
+
+handler for Enhanced Due Diligence document upload request
+
+=over
+
+=item * C<args> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub request_edd_document_upload {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'request_edd_document_upload',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
 1;

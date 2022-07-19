@@ -146,9 +146,10 @@ my %EVENT_PROPERTIES = (
     account_verification_for_pending_payout     => [qw(date email)],
     authenticated_with_scans                    => [qw(first_name email contact_url live_chat_url)],
     pa_transfer_confirm                         => [qw(loginid email pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
-    pa_withdraw_confirm => [qw(email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
-    withdrawal_rejected => [qw(first_name reason remark)],
-    account_deactivated => [qw(name brand)],
+    pa_withdraw_confirm         => [qw(email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
+    withdrawal_rejected         => [qw(first_name reason remark)],
+    account_deactivated         => [qw(name brand)],
+    request_edd_document_upload => [qw(first_name email login_url expiry_date live_chat_url)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -180,6 +181,7 @@ my @COMMON_EVENT_METHODS = qw(
     request_change_email
     reset_password_confirmation
     authenticated_with_scans
+    request_edd_document_upload
     pa_transfer_confirm
     pa_withdraw_confirm
     withdrawal_rejected
@@ -1337,6 +1339,22 @@ It is triggered for each B<reset_password_confirmation> event emitted, deliverin
 =head2 authenticated_with_scans
 
 It is triggered for each B<authenticated_with_scans> event emitted, delivering it to Segment.
+
+=head2 request_edd_document_upload
+
+It is triggered for B<request_edd_document_upload> event emitted, delivering it to Segment.
+
+=over
+
+=item * C<event> - The event name
+
+=item * C<client> - required. When Client instance
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
 
 =head2 crypto_withdrawal_email
 

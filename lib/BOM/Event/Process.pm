@@ -124,6 +124,7 @@ my $action_mapping = {
         payment_withdrawal                               => \&BOM::Event::Actions::Client::payment_withdrawal,
         payment_withdrawal_reversal                      => \&BOM::Event::Actions::Client::payment_withdrawal_reversal,
         request_change_email                             => \&BOM::Event::Actions::Client::request_change_email,
+        request_edd_document_upload                      => \&BOM::Event::Actions::Client::request_edd_document_upload,
         reset_password_confirmation                      => \&BOM::Event::Actions::Client::reset_password_confirmation,
         reset_password_request                           => \&BOM::Event::Actions::Client::reset_password_request,
         set_financial_assessment                         => \&BOM::Event::Actions::Client::set_financial_assessment,
