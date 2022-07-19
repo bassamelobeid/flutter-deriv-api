@@ -16,6 +16,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 
 use APIHelper qw/ balance deposit request decode_json /;
+use Digest::SHA qw/sha256_hex/;
 
 # mock datadog
 my $mocked_datadog = Test::MockModule->new('BOM::API::Payment::Metric');
@@ -124,15 +125,36 @@ subtest 'emit payment_deposit' => sub {
         });
 
     my $req = deposit(
-        loginid           => $loginid,
-        trace_id          => 1235,
-        payment_processor => 'QIWI',
-        payment_type      => 'DogeTypeThing',
+        loginid            => $loginid,
+        trace_id           => 1235,
+        payment_processor  => 'QIWI',
+        payment_type       => 'DogeTypeThing',
+        account_identifier => '1234**9999',
     );
     is $req->code, 201, 'Correct created status code';
 
     my $trx = $client_db->db->dbic->run(
         fixup => sub { $_->selectrow_hashref("SELECT * FROM transaction.transaction ORDER BY transaction_time DESC LIMIT 1", undef) });
+
+    my $doughflow_payment = $client_db->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM payment.doughflow ORDER BY payment_id DESC LIMIT 1');
+        });
+
+    is_deeply $doughflow_payment,
+        {
+        payment_type               => 'DogeTypeThing',
+        payment_processor          => 'QIWI',
+        created_by                 => 'derek',
+        payment_id                 => $doughflow_payment->{payment_id},
+        transaction_type           => 'deposit',
+        ip_address                 => '127.0.0.1',
+        trace_id                   => $doughflow_payment->{trace_id},
+        payment_account_identifier => sha256_hex('1234**9999'),
+        payment_method             => 'VISA',
+        transaction_id             => $doughflow_payment->{transaction_id},
+        },
+        'df payment is correct';
 
     is $last_event{type}, 'payment_deposit', 'event payment_deposit emitted';
 
@@ -148,7 +170,7 @@ subtest 'emit payment_deposit' => sub {
         currency           => 'USD',
         payment_method     => 'VISA',
         payment_type       => 'DogeTypeThing',
-        account_identifier => '',
+        account_identifier => sha256_hex('1234**9999'),
         },
         'event args are correct';
 };

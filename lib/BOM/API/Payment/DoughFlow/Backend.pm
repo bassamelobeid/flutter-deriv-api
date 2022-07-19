@@ -10,6 +10,7 @@ use Syntax::Keyword::Try;
 use Date::Utility;
 use Data::Dumper;
 use Text::Trim;
+use Digest::SHA qw/sha256_hex/;
 
 use Format::Util::Numbers qw/financialrounding/;
 
@@ -288,14 +289,18 @@ sub write_transaction_line {
 
     my $client = $c->user;
 
-    my $currency_code      = $c->request_parameters->{currency_code};
-    my $transaction_id     = $c->request_parameters->{transaction_id};
-    my $trace_id           = $c->request_parameters->{trace_id};
-    my $amount             = $c->request_parameters->{amount};
-    my $payment_processor  = $c->request_parameters->{payment_processor} // '';
-    my $payment_method     = $c->request_parameters->{payment_method};
-    my $payment_type       = $c->request_parameters->{payment_type};
-    my $account_identifier = $c->request_parameters->{account_identifier} // '';
+    my $currency_code     = $c->request_parameters->{currency_code};
+    my $transaction_id    = $c->request_parameters->{transaction_id};
+    my $trace_id          = $c->request_parameters->{trace_id};
+    my $amount            = $c->request_parameters->{amount};
+    my $payment_processor = $c->request_parameters->{payment_processor} // '';
+    my $payment_method    = $c->request_parameters->{payment_method};
+    my $payment_type      = $c->request_parameters->{payment_type};
+    my $account_identifier;
+
+    if (defined $c->request_parameters->{account_identifier}) {
+        $account_identifier = sha256_hex($c->request_parameters->{account_identifier});
+    }
 
     my $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
         client_loginid => $c->user->loginid,
@@ -364,19 +369,20 @@ sub write_transaction_line {
     my $ip_address = $c->request_parameters->{ip_address};
 
     my %payment_args = (
-        currency          => $currency_code,
-        amount            => $amount,
-        remark            => $c->comment,
-        staff             => $client->loginid,
-        created_by        => $created_by,
-        trace_id          => $trace_id,
-        payment_processor => $payment_processor,
-        payment_method    => $payment_method,
-        transaction_id    => $transaction_id,
-        ip_address        => $ip_address,
-        payment_fee       => $fee,
-        transaction_type  => $type_mapping{$c->type} // $c->type,
-        df_payment_type   => $payment_type,
+        currency                   => $currency_code,
+        amount                     => $amount,
+        remark                     => $c->comment,
+        staff                      => $client->loginid,
+        created_by                 => $created_by,
+        trace_id                   => $trace_id,
+        payment_processor          => $payment_processor,
+        payment_method             => $payment_method,
+        transaction_id             => $transaction_id,
+        ip_address                 => $ip_address,
+        payment_fee                => $fee,
+        transaction_type           => $type_mapping{$c->type} // $c->type,
+        df_payment_type            => $payment_type,
+        payment_account_identifier => $account_identifier,
     );
 
     # Write the payment transaction
