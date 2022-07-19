@@ -19,6 +19,7 @@ use Data::Dumper;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Date::Utility;
 use Path::Tiny;
+use Proc::ProcessTable;
 
 =head1 NAME
 
