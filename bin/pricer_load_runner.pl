@@ -574,8 +574,8 @@ sub dd_memory{
     );
     foreach my $p (@{$t->table}) {
         foreach my $cfg (@process_cfg){
-            next unless $p->{cmnd} =~ $cfg->{regexp};
-            foreach my $f ($t->fields){
+            next unless $p->{cmndline} =~ $cfg->{regexp};
+            foreach my $f (qw(size rss)){
                 print $f, ":  ", $p->{$f}, "\n";
 
             }
