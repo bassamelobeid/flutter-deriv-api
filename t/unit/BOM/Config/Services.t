@@ -58,12 +58,14 @@ subtest 'is_enabled' => sub {
     throws_ok {BOM::Config::Services->is_enabled($unsupported_service_name)} qr/Invalid service name $unsupported_service_name /, "Un-supported service name is provided as argument";
     
     my $app_config = BOM::Config::Runtime->instance->app_config;
-    my $identity_verification_enabled_status = $mock_services->{identity_verification}->{enabled} eq 'true' ? 1 : 0 ;
     
-    my $mocked_runtime = Test::MockModule->new( ref $app_config->system->services)->redefine("identity_verification"=> sub { $identity_verification_enabled_status });
-    is(BOM::Config::Services->is_enabled("identity_verification"),$identity_verification_enabled_status,"service enable status is same on both BOM::Config and Runtime");
+    my $identity_verification_enabled_status = $mock_services->{identity_verification}->{enabled} eq 'true' ? 1 : 0 ;
+    my $identity_verification_enabled_status_runtime = $identity_verification_enabled_status;
+    my $mocked_runtime = Test::MockModule->new( ref $app_config->system->services)->redefine("identity_verification"=> sub { $identity_verification_enabled_status_runtime });
+    is(BOM::Config::Services->is_enabled("identity_verification"),$identity_verification_enabled_status_runtime,"service enable status is same on both BOM::Config and Runtime");
 
-    $mocked_runtime = Test::MockModule->new( ref $app_config->system->services)->redefine("identity_verification"=> sub { !$identity_verification_enabled_status || 0 });
-    is(BOM::Config::Services->is_enabled("identity_verification"),!$identity_verification_enabled_status || 0 ,"service enable status is different on BOM::Config and Runtime");
+    $identity_verification_enabled_status_runtime = !$identity_verification_enabled_status || 0 ;
+    $mocked_runtime = Test::MockModule->new( ref $app_config->system->services)->redefine("identity_verification"=> sub { $identity_verification_enabled_status_runtime });
+    is(BOM::Config::Services->is_enabled("identity_verification"),$identity_verification_enabled_status_runtime ,"service enable status is different on BOM::Config and Runtime");
 };
 done_testing;
