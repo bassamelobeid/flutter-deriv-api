@@ -2,6 +2,7 @@ use strict;
 use warnings;
 # Dump all the information in the current process table
 use Proc::ProcessTable;
+use DataDog::DogStatsd::Helper qw(stats_gauge);
 dd_memory();
 sub dd_memory{
     my $t = Proc::ProcessTable->new;
@@ -20,8 +21,7 @@ sub dd_memory{
         foreach my $cfg (@process_cfg){
             next unless $p->{cmndline} =~ $cfg->{regexp};
             foreach my $f (qw(size rss)){
-                print $f, ":  ", $p->{$f}, "\n";
-
+                stats_gauge("$cfg->{dd_pefix}.$f", $p->{$f});
             }
         }
     }

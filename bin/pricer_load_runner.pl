@@ -568,16 +568,15 @@ sub dd_memory{
             dd_prefix => 'memory.rpc_redis_general'
         },
         {
-             regexp => qr/binary_rpc_redis\.pl.*category=general/,
-            dd_prefix => 'memory.rpc_redis_general'
+             regexp => qr/binary_rpc_redis\.pl.*category=tick/,
+            dd_prefix => 'memory.rpc_redis_tick'
         },
     );
     foreach my $p (@{$t->table}) {
         foreach my $cfg (@process_cfg){
             next unless $p->{cmndline} =~ $cfg->{regexp};
             foreach my $f (qw(size rss)){
-                print $f, ":  ", $p->{$f}, "\n";
-
+                stats_gauge("$cfg->{dd_pefix}.$f", $p->{$f}, {tags => ['tag:' . $market]});
             }
         }
     }
