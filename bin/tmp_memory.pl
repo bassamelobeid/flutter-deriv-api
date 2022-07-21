@@ -21,7 +21,7 @@ sub dd_memory{
         foreach my $cfg (@process_cfg){
             next unless $p->{cmndline} =~ $cfg->{regexp};
             foreach my $f (qw(size rss)){
-                stats_gauge("$cfg->{dd_pefix}.$f", $p->{$f});
+                stats_gauge("$cfg->{dd_prefix}.$f", $p->{$f});
             }
         }
     }
