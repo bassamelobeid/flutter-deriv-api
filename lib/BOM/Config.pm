@@ -233,6 +233,19 @@ sub client_limits {
     return $config;
 }
 
+=head2 identity_verification
+
+    BOM::Config::identity_verification()
+
+Loads and caches configuration for idv providers
+
+=cut
+
+sub identity_verification {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/identity_verification.yml');
+    return $config;
+}
+
 =head2 crypto_api
 
 Config for connecting to the Crypto API.
