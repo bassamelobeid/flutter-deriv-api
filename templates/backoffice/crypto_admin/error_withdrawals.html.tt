@@ -1,3 +1,5 @@
+[% USE date %]
+
 <style type="text/css">
     #error_txn_list {
         margin-bottom: 30px;    /* remove vertical scroll caused by tooltip position (top) */
@@ -20,7 +22,7 @@
     }
 </style>
 
-[% IF error_withdrawals.size > 0 %]
+[% IF error_withdrawals && error_withdrawals.size > 0 %]
 <form name="revert_processing_form" method="post" onsubmit="return checkEmpty()">
     <div class="scrollable">
     <table id="error_txn_list" class="alternate border">
@@ -49,8 +51,8 @@
                 <td>[% error_withdrawals.$txn.amount %]</td>
                 <td>[% error_withdrawals.$txn.txn_fee %]</td>
                 <td>[% error_withdrawals.$txn.status %]</td>
-                <td class="nowrap">[% error_withdrawals.$txn.creation_date.replace(' ', '<br />') | none %]</td>
-                <td class="nowrap">[% error_withdrawals.$txn.error_date.replace(' ', '<br />') | none %]</td>
+                <td>[% error_withdrawals.$txn.creation_date && date.format(error_withdrawals.$txn.creation_date, '%Y-%m-%d %T') | none %]</td>
+                <td>[% error_withdrawals.$txn.error_date && date.format(error_withdrawals.$txn.error_date, '%Y-%m-%d %T') | none %]</td>
                 <td>[% error_withdrawals.$txn.error_text %]</td>
                 <td>[% error_withdrawals.$txn.remark %]</td>
                 <td>[% error_withdrawals.$txn.approved_by %]</td>
@@ -72,7 +74,11 @@
     <button type="submit" class="btn btn--primary">Revert Selected Transactions</button>
 </form>
 [% ELSE %]
+    [% IF error %]
+    <p class="error"><b>[% error %]</b></p>
+    [% ELSE %]
     <p class="error"><b>There is no withdrawal record with "ERROR" status for [% currency %].</b></p>
+    [% END %]
 [% END %]
 
 <script type="text/javascript">

@@ -119,15 +119,27 @@ $request_type->{gt_get_error_txn} = sub {
         id     => 'get_error_withdrawals',
         action => 'transaction/get_list',
         body   => {
+            type          => 'withdrawal_error',
             currency_code => $input{gt_currency},
-            type          => 'withdrawal',
-            status        => 'ERROR',
         },
         };
     return sub {
         my ($response_bodies) = @_;
-        my $redis_read        = BOM::Config::Redis::redis_replicated_read();
-        my $error_withdrawals = {map { $_->{id} => $_ } $response_bodies->{get_error_withdrawals}{transaction_list}->@*};
+        my $redis_read = BOM::Config::Redis::redis_replicated_read();
+
+        my $error = _error_handler($response_bodies, "get_error_withdrawals");
+        if ($error) {
+            $tt->process(
+                'backoffice/crypto_admin/error_withdrawals.html.tt',
+                {
+                    controller_url => $controller_url,
+                    currency       => $input{gt_currency},
+                    error          => $error->{error},
+                }) || die $tt->error();
+            return;
+        }
+
+        my $error_withdrawals = $response_bodies->{get_error_withdrawals}{transaction_list};
 
         foreach my $txn_record (keys %$error_withdrawals) {
             my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_record);
