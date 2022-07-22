@@ -12,42 +12,16 @@ $mocked_loadtest->mock('stats_gauge', sub {push @dd_data, \@_});
 my @process_table;
 my $mocked_process_table = Test::MockModule->new('Proc::ProcessTable');
 $mocked_process_table->mock('table', sub{return \@process_table});
-my @expected_data = Load(do{local $/; <DATA>});
-sub populate_process_table {
-    my $reset = shift;
-    my @process_cmds = (
-        'a_processor --something some arg',
-        'bin/binary_rpc_redis.pl --category=general --extra args',
-        'bin/binary_rpc_redis.pl --category=general --extra args',  # suppose we have 2 rpc_redis process
-        'bin/binary_rpc_redis.pl --category=tick --extra args',
-        'bin/price_queue.pl --arg1',
-        'bin/price_daemon.pl --arg2',
-        'bin/price_daemon.pl --arg2',  # 2 price_daemon to simulate 2 processes, one is another's subprocess
-        'pricer_load_runner.pl --arg something',
-        'proposal_sub.pl --arg something'
-    );
-    state $count = 10;
-    if($reset){
-        $count = 10;
-    }
-    @process_table = map {+{
-        cmndline => $_,
-        pid => $count++,
-        ppid => 1, # in most cass, ppid is 1
-        size => $count++,
-        rss => $count++,
-    }} @process_cmds;
-    $process_table[5]{ppid} = $process_table[4]{pid}; # the second price_daemon process is the first one's subprocess
-}
+my @test_data = Load(do{local $/; <DATA>});
 subtest 'general case' => sub{
-    populate_process_table(1);
+    @process_table = $test_data[0]->@*;
     @dd_data = ();
     dd_memory('market_name');
-    is_deeply(\@dd_data, $expected_data[0], 'dd write correct');
+    is_deeply(\@dd_data, $test_data[2], 'dd write correct');
     @dd_data = ();
-    populate_process_table(0);
+    @process_table = $test_data[1]->@*;
     dd_memory();
-    is_deeply(\@dd_data, $expected_data[1], 'dd write correct for second');
+    is_deeply(\@dd_data, $test_data[3], 'dd write correct for second');
     ok(1);
 };
 
@@ -56,6 +30,98 @@ ok(1);
 done_testing();
 
 __DATA__
+---
+- cmndline: a_processor --something some arg
+  pid: 10
+  ppid: 1
+  rss: 12
+  size: 11
+- cmndline: bin/binary_rpc_redis.pl --category=general --extra args
+  pid: 13
+  ppid: 1
+  rss: 15
+  size: 14
+- cmndline: bin/binary_rpc_redis.pl --category=general --extra args
+  pid: 16
+  ppid: 1
+  rss: 18
+  size: 17
+- cmndline: bin/binary_rpc_redis.pl --category=tick --extra args
+  pid: 19
+  ppid: 1
+  rss: 21
+  size: 20
+- cmndline: bin/price_queue.pl --arg1
+  pid: 22
+  ppid: 1
+  rss: 24
+  size: 23
+- cmndline: bin/price_daemon.pl --arg2
+  pid: 25
+  ppid: 22
+  rss: 27
+  size: 26
+- cmndline: bin/price_daemon.pl --arg2
+  pid: 28
+  ppid: 1
+  rss: 30
+  size: 29
+- cmndline: pricer_load_runner.pl --arg something
+  pid: 31
+  ppid: 1
+  rss: 33
+  size: 32
+- cmndline: proposal_sub.pl --arg something
+  pid: 34
+  ppid: 1
+  rss: 36
+  size: 35
+---
+- cmndline: a_processor --something some arg
+  pid: 37
+  ppid: 1
+  rss: 39
+  size: 38
+- cmndline: bin/binary_rpc_redis.pl --category=general --extra args
+  pid: 40
+  ppid: 1
+  rss: 42
+  size: 41
+- cmndline: bin/binary_rpc_redis.pl --category=general --extra args
+  pid: 43
+  ppid: 1
+  rss: 45
+  size: 44
+- cmndline: bin/binary_rpc_redis.pl --category=tick --extra args
+  pid: 46
+  ppid: 1
+  rss: 48
+  size: 47
+- cmndline: bin/price_queue.pl --arg1
+  pid: 49
+  ppid: 1
+  rss: 51
+  size: 50
+- cmndline: bin/price_daemon.pl --arg2
+  pid: 52
+  ppid: 49
+  rss: 54
+  size: 53
+- cmndline: bin/price_daemon.pl --arg2
+  pid: 55
+  ppid: 1
+  rss: 57
+  size: 56
+- cmndline: pricer_load_runner.pl --arg something
+  pid: 58
+  ppid: 1
+  rss: 60
+  size: 59
+- cmndline: proposal_sub.pl --arg something
+  pid: 61
+  ppid: 1
+  rss: 63
+  size: 62
 
 ---
 - - memory.rpc_redis_general.size
