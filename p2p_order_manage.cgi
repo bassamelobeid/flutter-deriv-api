@@ -55,8 +55,11 @@ $chat_page = 1
 
 Bar('P2P Order details/management');
 
+my $can_dispute = BOM::Backoffice::Auth0::has_authorisation(['P2PWrite', 'P2PAdmin', 'AntiFraud']);
+
 if ($input{action}) {
     try {
+        die "You do not have permission to resolve disputes\n" unless $can_dispute;
         my $client = BOM::User::Client->new({loginid => $input{disputer}});
         my $res    = $client->p2p_resolve_order_dispute(
             id     => $input{order_id},
@@ -73,7 +76,8 @@ if ($input{action}) {
 
 if ($input{dispute}) {
     try {
-        die "Invalid dispute reason.\n" unless exists $dispute_reasons{$input{reason}};
+        die "You do not have permission to create disputes\n" unless $can_dispute;
+        die "Invalid dispute reason.\n"                       unless exists $dispute_reasons{$input{reason}};
 
         my $client = BOM::User::Client->new({loginid => $input{disputer}});
         $client->p2p_create_order_dispute(
@@ -255,6 +259,7 @@ BOM::Backoffice::Request::template()->process(
         : undef,             # When undef link won't be show
         sendbird_token  => $sendbird_token,
         dispute_reasons => \%dispute_reasons,
+        can_dispute     => $can_dispute,
     });
 code_exit_BO();
 

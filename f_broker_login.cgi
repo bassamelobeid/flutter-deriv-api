@@ -195,7 +195,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
 }
 
 # P2P
-if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'AntiFraud'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
@@ -231,7 +231,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'AntiFraud
                 </form>
             </div>~;
 
-    if (BOM::Backoffice::Auth0::has_authorisation(['P2PWrite', 'AntiFraud'])) {
+    if (BOM::Backoffice::Auth0::has_authorisation(['P2PAdmin', 'AntiFraud'])) {
         print qq~
             <div class="card__content">
                 <h3>Band configuration</h3>

@@ -175,7 +175,7 @@
         </tr>        
     </table>
 
-    [% IF order.status == 'Timed-out' %]
+    [% IF order.status == 'Timed-out' and can_dispute %]
         <br>
         <h3>Manual dispute creation</h3>
 
@@ -197,7 +197,7 @@
         </td></tr></table>
     [% END %]
 
-    [% IF order.status == 'Disputed' %]
+    [% IF order.status == 'Disputed' and can_dispute %]
         <br>
         <h3>Order under dispute</h3>
         
