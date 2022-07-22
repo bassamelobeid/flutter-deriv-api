@@ -1,10 +1,12 @@
+package LoadTest::Pricer;
 use strict;
 use warnings;
-use BOM::Test::LoadTest::Pricer qw(dd_memory);
+use Proc::ProcessTable;
+use DataDog::DogStatsd::Helper qw(stats_gauge);
+use feature qw(state);
+use Exporter 'import';
+our @EXPORT_OK = qw(dd_memory);
 
-dd_memory(1,'forex');
-sleep 10;
-dd_memory(0, 'forex');
 sub dd_memory{
     my ($start, $market) = @_;
     my $t = Proc::ProcessTable->new;
