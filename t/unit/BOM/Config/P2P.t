@@ -92,4 +92,90 @@ subtest 'available_countries' => sub {
 
 };
 
+subtest 'advert_config' => sub {
+    my $mocked_country_advert_config;
+    my $expected;
+    my $mocked_global_max_range;
+    my $mocked_available_countries = {
+        'ad' => 'Andorra',
+        'ae' => 'United Arab Emirates'
+    };
+
+    my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+    my $mocked_p2p_config = Test::MockModule->new(ref $p2p_config);
+    $mocked_p2p_config->redefine("country_advert_config", sub { return $mocked_country_advert_config});
+    $mocked_p2p_config->redefine("float_rate_global_max_range", sub {return $mocked_global_max_range});
+    my $mocked_p2p = Test::MockModule->new("BOM::Config::P2P");
+    $mocked_p2p->redefine("available_countries", sub {return $mocked_available_countries });
+
+    $mocked_country_advert_config = '{ "ad": {"float_ads": "enabled","fixed_ads": "enabled", "max_rate_range": 12, "manual_quote": 15, "manual_quote_epoch": 2, "deactivate_fixed": 1 },
+    "ae": {"float_ads": "enabled","fixed_ads": "enabled", "max_rate_range": 8,"manual_quote": 25 ,"manual_quote_epoch" : 5, "deactivate_fixed": 2 } }'; 
+    $expected = {
+        'ad' => {
+            "float_ads" => 'enabled',
+            "fixed_ads" => 'enabled',
+            "max_rate_range" => 12,
+            "manual_quote" => 15,
+            "manual_quote_epoch" => 2,
+            "deactivate_fixed" => 1
+        },
+        'ae' => {
+            "float_ads" => 'enabled',
+            "fixed_ads" => 'enabled',
+            "max_rate_range" => 8,
+            "manual_quote" => 25,
+            "manual_quote_epoch" => 5,
+            "deactivate_fixed" => 2
+        }
+    };
+    $mocked_global_max_range = 10;
+    is_deeply(BOM::Config::P2P::advert_config(),$expected,"All config fields are updated correctly ");
+    
+    $mocked_country_advert_config = '{ "ad": {"fixed_ads": "enabled", "manual_quote": 15, "manual_quote_epoch": 2, "deactivate_fixed": 1 },
+    "ae": {"float_ads": "enabled", "max_rate_range": 8,"manual_quote": 25 ,"manual_quote_epoch" : 2, "deactivate_fixed": 1 } }';
+    $expected = {
+        'ad' => {
+            "float_ads" => 'disabled',
+            "fixed_ads" => 'enabled',
+            "max_rate_range" => $mocked_global_max_range,
+            "manual_quote" => 15,
+            "manual_quote_epoch" => 2,
+            "deactivate_fixed" => 1
+        },
+        'ae' => {
+            "float_ads" => 'enabled',
+            "fixed_ads" => 'enabled',
+            "max_rate_range" => 8,
+            "manual_quote" => 25,
+            "manual_quote_epoch" => 2,
+            "deactivate_fixed" => 1
+        }
+    };
+    $mocked_global_max_range = 10;
+    is_deeply(BOM::Config::P2P::advert_config(),$expected,"float_ads, fixed_ads, max_rate_range fields are missing");
+
+    $mocked_country_advert_config = '{ "ad": {"float_ads": "enabled","fixed_ads": "enabled", "max_rate_range": 12 },
+    "ae": {"float_ads": "enabled","fixed_ads": "enabled", "max_rate_range": 8,"manual_quote": 25 ,"manual_quote_epoch" : 5, "deactivate_fixed": 2 } }';
+    $expected = {
+        'ad' => {
+            "float_ads" => 'enabled',
+            "fixed_ads" => 'enabled',
+            "max_rate_range" => 12,
+            "manual_quote" => undef,
+            "manual_quote_epoch" => undef,
+            "deactivate_fixed" => undef
+        },
+        'ae' => {
+            "float_ads" => 'enabled',
+            "fixed_ads" => 'enabled',
+            "max_rate_range" => 8,
+            "manual_quote" => 25,
+            "manual_quote_epoch" => 5,
+            "deactivate_fixed" => 2
+        }
+    };
+    $mocked_global_max_range = 10;
+    is_deeply(BOM::Config::P2P::advert_config(),$expected,"manual_quote, manual_quote_epoch, deactivate_fixed fields are missing");
+};
+
 done_testing;
