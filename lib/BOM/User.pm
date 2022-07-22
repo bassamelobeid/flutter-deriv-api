@@ -381,7 +381,7 @@ sub after_login {
 =head2 clients
 
 Gets corresponding client objects in loginid order but with real and enabled accounts up first.
-Uses the replica db for speed.
+
 By default it returns only active (enabled) clients, but the result may include other clients base on the following named args:
 
 =over 4
@@ -392,6 +392,8 @@ By default it returns only active (enabled) clients, but the result may include 
 
 =item * C<include_self_closed> - Self-closed clients will be included in the result if this arg is true.
 
+=item * C<db_operation> - defaults to write.
+
 =back
 
 Returns client objects array
@@ -400,9 +402,8 @@ Returns client objects array
 
 sub clients {
     my ($self, %args) = @_;
-    my $include_duplicated = $args{include_duplicated} // 0;
 
-    my @clients = @{$self->get_clients_in_sorted_order(include_duplicated => $include_duplicated)};
+    my @clients = @{$self->get_clients_in_sorted_order(%args)};
 
     # return all clients (disabled and self-closed clients included)
     return @clients if $args{include_disabled};
@@ -419,14 +420,24 @@ sub clients {
 get clients given special landing company short name.
     $user->clients_for_landing_company('svg');
 
+%args can contain:
+
+=over 4
+
+=item * C<db_operation> - defaults to write.
+
+=back
+
 =cut
 
 sub clients_for_landing_company {
-    my $self      = shift;
-    my $lc_short  = shift // die 'need landing_company';
+    my ($self, $lc_short, %args) = @_;
+
+    die 'need landing_company' unless $lc_short;
+
     my @login_ids = grep { LandingCompany::Registry->check_broker_from_loginid($_) } $self->bom_loginids;
 
-    return map { $self->get_client_using_replica($_) }
+    return map { BOM::User::Client->get_client_instance($_, $args{db_operation} // 'write') }
         grep { LandingCompany::Registry->by_loginid($_)->short eq $lc_short } @login_ids;
 }
 
@@ -599,14 +610,21 @@ Return an ARRAY reference that is a list of clients in following order
 - self excluded accounts
 - disabled accounts
 
+%args can contain:
+
+=over 4
+
+=item * C<db_operation> - defaults to write.
+
+=back
+
 =cut
 
 sub get_clients_in_sorted_order {
     my ($self, %args) = @_;
-    my $include_duplicated = $args{include_duplicated} // 0;
-    my $account_lists      = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
-    my @allowed_statuses   = qw(enabled virtual self_excluded disabled);
-    push @allowed_statuses, 'duplicated' if ($include_duplicated);
+    my $account_lists    = $self->accounts_by_category([$self->bom_loginids], %args);
+    my @allowed_statuses = qw(enabled virtual self_excluded disabled);
+    push @allowed_statuses, 'duplicated' if ($args{include_duplicated});
 
     return [map { @$_ } @{$account_lists}{@allowed_statuses}];
 }
@@ -622,6 +640,14 @@ The categories are:
 - disabled accounts
 - duplicated accounts
 
+%args can contain:
+
+=over 4
+
+=item * C<db_operation> - defaults to write.
+
+=back
+
 =cut
 
 sub accounts_by_category {
@@ -635,7 +661,7 @@ sub accounts_by_category {
             next;
         }
 
-        my $cl = $self->get_client_using_replica($loginid);
+        my $cl = BOM::User::Client->get_client_instance($loginid, $args{db_operation} // 'write');
         next unless $cl;
 
         next if ($cl->status->is_login_disallowed and not $args{include_duplicated});
@@ -700,12 +726,11 @@ Returns An array of L<BOM::User::Client> s
 
 sub get_default_client {
     my ($self, %args) = @_;
-    my $include_duplicated = $args{include_duplicated} // 0;
 
     return $self->{_default_client_include_disabled} if exists($self->{_default_client_include_disabled}) && $args{include_disabled};
     return $self->{_default_client_without_disabled} if exists($self->{_default_client_without_disabled}) && !$args{include_disabled};
 
-    my $client_lists = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
+    my $client_lists = $self->accounts_by_category([$self->bom_loginids], %args);
     my %tmp;
     foreach my $k (keys %$client_lists) {
         $tmp{$k} = pop(@{$client_lists->{$k}});
