@@ -2826,7 +2826,8 @@ rpc set_account_currency => sub {
         BOM::Platform::Event::Emitter::emit(
             'new_crypto_address',
             {
-                loginid => $client->loginid,
+                loginid  => $client->loginid,
+                currency => $client->currency,
             });
     } catch ($e) {
         log_exception();
