@@ -47,7 +47,7 @@ sub dd_memory{
     }
     # sort to keep them same order
     my @processes = sort {$a->{pid} <=> $b->{pid}} $t->table->@*;
-    foreach my $cfg_idx ($#process_cfg){
+    foreach my $cfg_idx (0..$#process_cfg){
         my $cfg = $process_cfg[$cfg_idx];
         # the idx of processes that have same name
         my $idx = 0;
