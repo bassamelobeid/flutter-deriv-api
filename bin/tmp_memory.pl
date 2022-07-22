@@ -61,8 +61,11 @@ sub dd_memory{
                 if($start){
                     $data{$cfg_idx}{$f}{$idx}{start} = $p->{$f};
                 }
+                elsif(exists $data{$cfg_idx}{$f}{$idx}{start}){
+                    stats_gauge("$cfg->{dd_prefix}.${f}.delta", $p->{$f} - $data{$cfg_idx}{$f}{$idx}{start}, {tags => ["tag:idx$idx", "tag:$market"]});
+                }
                 else{
-                    stats_gauge("$cfg->{dd_prefix}.${f}delta", $p->{$f} - $data{$cfg_idx}{$f}{$idx}{start}, {tags => ["tag:idx$idx", "tag:$market"]});
+                    warn "no start value of $cfg->{dd_prefix}.${f} when try to calculate the delta value";
                 }
             }
         }
