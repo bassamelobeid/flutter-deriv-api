@@ -66,6 +66,9 @@ my $client_escrow = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $client_escrow->account('USD');
 $app_config->set({'payments.p2p.escrow' => [$client_escrow->loginid]});
 
+$client_escrow->db->dbic->dbh->do(
+    "UPDATE p2p.p2p_country_trade_band SET min_order_amount = 0.1, max_order_amount = 100, min_balance = 0.1 WHERE trade_band = 'low'");
+
 my %advertiser_params = map { $_ => rand(999) } qw( name contact_info default_advert_description payment_info );
 
 my %advert_params = (
@@ -149,6 +152,7 @@ subtest 'create advertiser' => sub {
     test_schema('p2p_advertiser_info', $resp);
 
     ok abs($resp->{p2p_advertiser_info}{last_online_time} - delete $advertiser->{last_online_time}) < 2, 'online time';
+
     cmp_deeply($resp->{p2p_advertiser_info}, superhashof($advertiser), 'advertiser info is correct');
 
     $resp = $t->await::p2p_advertiser_create({
