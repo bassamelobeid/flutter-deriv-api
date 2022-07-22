@@ -137,7 +137,7 @@ rpc "cashier", sub {
 
         my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
         if ($action eq 'deposit') {
-            return $crypto_service->deposit($client->loginid);
+            return $crypto_service->deposit($client->loginid, $client->currency);
         } elsif ($action eq 'withdraw') {
 
             my $rule_engine = BOM::Rules::Engine->new(client => $client);
@@ -146,7 +146,7 @@ rpc "cashier", sub {
                 $rule_engine);
 
             return $cashier_validation_error if ($cashier_validation_error);
-            return $crypto_service->withdraw($client->loginid, $args->{address}, $args->{amount}, $is_dry_run);
+            return $crypto_service->withdraw($client->loginid, $args->{address}, $args->{amount}, $is_dry_run, $client->currency);
         }
     }
 
@@ -1880,7 +1880,7 @@ rpc 'cashier_withdrawal_cancel', sub {
     }
 
     my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
-    return $crypto_service->withdrawal_cancel($client->loginid, $args->{id});
+    return $crypto_service->withdrawal_cancel($client->loginid, $args->{id}, $client->currency);
 };
 
 rpc 'cashier_payments', sub {
@@ -1904,7 +1904,7 @@ rpc 'cashier_payments', sub {
     }
 
     my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
-    return $crypto_service->transactions($client->loginid, $args->{transaction_type});
+    return $crypto_service->transactions($client->loginid, $args->{transaction_type}, $client->currency);
 };
 
 rpc 'crypto_config',

@@ -154,7 +154,7 @@ sub _banxa_order {
         return_url_on_success => $referrer,
         source                => "USD",
         target                => BANXA_CURRENCIES()->{$client->currency} // $client->currency,
-        wallet_address        => _get_crypto_deposit_address($client->loginid),
+        wallet_address        => _get_crypto_deposit_address($client->loginid, $client->currency),
     };
 
     my $content  = encode_json_utf8($data);
@@ -202,7 +202,7 @@ sub _wyre_reservation {
         destCurrency      => $client->currency,
         country           => $client->residence,
         referrerAccountId => $config->{api_account_id},
-        dest              => _get_crypto_deposit_address($client->loginid),
+        dest              => _get_crypto_deposit_address($client->loginid, $client->currency),
         lockFields        => ["destCurrency", "country"],
     };
 
@@ -233,7 +233,9 @@ Takes the following parameter:
 
 =over 4
 
-=item * C<$loginid> - The client loginid
+=item * C<$loginid>       - The client loginid
+
+=item * C<$currency_code> - The currency code
 
 =back
 
@@ -242,10 +244,10 @@ Returns the deposit address or an empty string if there was an error.
 =cut
 
 sub _get_crypto_deposit_address {
-    my ($loginid) = @_;
+    my ($loginid, $currency_code) = @_;
 
     my $crypto_service = BOM::Platform::CryptoCashier::API->new();
-    my $deposit_result = $crypto_service->deposit($loginid);
+    my $deposit_result = $crypto_service->deposit($loginid, $currency_code);
     return $deposit_result->{deposit}{address} // '';
 }
 
