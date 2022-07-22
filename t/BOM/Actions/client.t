@@ -2983,7 +2983,7 @@ subtest 'crypto_withdrawal_email event' => sub {
             amount           => '2',
             currency         => 'ETH',
             transaction_hash => '0xjkdf483jfh834ekjh834kdk48',
-            transaction_url  => 'https://rinkeby.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
+            transaction_url  => 'https://sepolia.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
             live_chat_url    => 'https://deriv.com/en/?is_livechat_open=true',
             title            => 'Your ETH withdrawal is successful',
         })->get;
@@ -3000,7 +3000,7 @@ subtest 'crypto_withdrawal_email event' => sub {
         'lang'             => 'EN',
         'amount'           => '2',
         'transaction_hash' => '0xjkdf483jfh834ekjh834kdk48',
-        'transaction_url'  => 'https://rinkeby.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
+        'transaction_url'  => 'https://sepolia.etherscan.io/tx/0xjkdf483jfh834ekjh834kdk48',
         'live_chat_url'    => 'https://deriv.com/en/?is_livechat_open=true',
         'title'            => 'Your ETH withdrawal is successful',
         },
