@@ -1272,9 +1272,9 @@ rpc transfer_between_accounts => sub {
     my ($client_from, $client_to, $res);
 
     try {
-        $client_from = BOM::User::Client->get_client_instance($siblings->{$loginid_from}->{loginid})
+        $client_from = BOM::User::Client->get_client_instance($siblings->{$loginid_from}->{loginid}, 'write')
             if $siblings->{$loginid_from};
-        $client_to = BOM::User::Client->get_client_instance($siblings->{$loginid_to}->{loginid})
+        $client_to = BOM::User::Client->get_client_instance($siblings->{$loginid_to}->{loginid}, 'write')
             if $siblings->{$loginid_to};
     } catch {
         log_exception();
