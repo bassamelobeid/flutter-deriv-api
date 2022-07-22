@@ -320,7 +320,8 @@ subtest 'AML risk update' => sub {
     my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $user_cr->email,
-        binary_user_id => $user_cr->id
+        binary_user_id => $user_cr->id,
+        residence      => 'br'
     });
     $client_cr->set_default_account('EUR');
     $client_cr->save;
@@ -333,7 +334,8 @@ subtest 'AML risk update' => sub {
     my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'MF',
         email          => $user_mf->email,
-        binary_user_id => $user_mf->id
+        binary_user_id => $user_mf->id,
+        residence      => 'es'
     });
     $client_mf->set_default_account('EUR');
     $client_mf->save;
@@ -353,46 +355,104 @@ subtest 'AML risk update' => sub {
     is $client_cr->aml_risk_classification, 'low', 'Risk classification is low: no deposits yet';
     is scalar @emails, 0, 'No email is sent';
 
-    my $app_config = BOM::Config::Runtime->instance->app_config;
+    subtest 'transaction thresholds' => sub {
 
-    my %thresholds = (
-        CR => {
-            yearly_standard => 10,
-            yearly_high     => 20
-        },
-        MF => {
-            yearly_standard => 10,
-            yearly_high     => 20
-        });
-    $app_config->compliance->aml_risk_thresholds(encode_json_utf8(\%thresholds));
+        my $thresholds = {
+            CR => {
+                yearly_standard => 10,
+                yearly_high     => 20
+            },
+            MF => {
+                yearly_standard => 10,
+                yearly_high     => 20
+            },
+            revision => 1
+        };
 
-    BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 9);
-    update_payment_dates($client_cr);
-    $c->aml_risk_update();
-    $client_cr->load;
-    is $client_cr->aml_risk_classification, 'low', 'Risk classification is low: balance less than threshold';
-    is scalar @emails, 0, 'No email is sent';
+        my $mock_config = Test::MockModule->new('BOM::Config::Compliance');
+        $mock_config->redefine(
+            get_risk_thresholds          => $thresholds,
+            get_jurisdiction_risk_rating => {});
 
-    BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 1);
-    update_payment_dates($client_cr);
-    $c->aml_risk_update();
-    $client_cr->load;
-    is $client_cr->aml_risk_classification, 'standard', 'Risk classification changed to standard: balance crossed the standard threshold';
-    is scalar @emails, 0, 'No email is sent for standard risk level';
+        BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 9);
+        update_payment_dates($client_cr);
+        $c->aml_risk_update();
+        $client_cr->load;
+        is $client_cr->aml_risk_classification, 'low', 'Risk classification is low: balance less than threshold';
+        is scalar @emails, 0, 'No email is sent';
 
-    BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 10);
-    update_payment_dates($client_cr);
-    $c->aml_risk_update();
-    $client_cr->load;
-    is $client_cr->aml_risk_classification, 'high', 'Risk classification changed to high: balance crossed the high threshold';
-    is scalar @emails, 1, 'An email is sent for the high risk client';
+        BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 1);
+        update_payment_dates($client_cr);
+        $c->aml_risk_update();
+        $client_cr->load;
+        is $client_cr->aml_risk_classification, 'standard', 'Risk classification changed to standard: balance crossed the standard threshold';
+        is scalar @emails, 0, 'No email is sent for standard risk level';
 
-    my $mail    = $emails[0];
-    my $user_id = $user_cr->id;
-    like $mail->{subject}, qr/Daily AML risk update/, 'email subject is correct';
-    my $loginid = $client_cr->loginid;
-    ok $mail->{message}->[0] =~ qr/$loginid/, 'loginids is found in email content';
-    ok $mail->{message}->[0] !~ qr/MF\d/, 'No MF loginid found in email content';
+        BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 10);
+        update_payment_dates($client_cr);
+        $c->aml_risk_update();
+        $client_cr->load;
+        is $client_cr->aml_risk_classification, 'high', 'Risk classification changed to high: balance crossed the high threshold';
+        is scalar @emails, 1, 'An email is sent for the high risk client';
+
+        my $mail    = $emails[0];
+        my $user_id = $user_cr->id;
+        like $mail->{subject}, qr/Daily AML risk update/, 'email subject is correct';
+        my $loginid = $client_cr->loginid;
+        ok $mail->{message}->[0] =~ qr/$loginid/, 'loginids is found in email content';
+        ok $mail->{message}->[0] !~ qr/MF\d/, 'No MF loginid found in email content';
+    };
+
+    subtest 'jurisdiction ratings' => sub {
+        my $jurisdiction = {
+            standard => [qw/br/],
+            high     => [qw/es ru/],
+            revision => 1,
+        };
+
+        my $mock_config = Test::MockModule->new('BOM::Config::Compliance');
+        $mock_config->redefine(
+            get_risk_thresholds          => {},
+            get_jurisdiction_risk_rating => $jurisdiction
+        );
+        my $mock_landing_company = Test::MockModule->new('LandingCompany');
+        $mock_landing_company->redefine(jurisdiction_risk_ratings => 0);
+
+        $client_cr->aml_risk_classification('low');
+        $client_mf->aml_risk_classification('low');
+        $client_cr->save();
+        $client_mf->save();
+        undef @emails;
+
+        my $c = BOM::User::Script::AMLClientsUpdate->new();
+        $c->aml_risk_update();
+        $client_cr->load;
+        $client_mf->load;
+        is $client_cr->aml_risk_classification, 'low', 'CR risk classification is not changed';
+        is $client_mf->aml_risk_classification, 'low', 'MF risk classification is not changed';
+        is scalar @emails, 0, 'No email is sent';
+
+        $mock_landing_company->redefine(jurisdiction_risk_ratings => 1);
+
+        $c = BOM::User::Script::AMLClientsUpdate->new();
+        $c->aml_risk_update();
+        $client_cr->load;
+        $client_mf->load;
+        is $client_cr->aml_risk_classification, 'standard', 'CR risk classification changed to standard by the jurisdiction rating';
+        is $client_mf->aml_risk_classification, 'high',     'MF risk classification changed to high by the jurisdiction rating';
+
+        is scalar @emails, 1, 'An email is sent for the high risk client';
+
+        my $mail    = $emails[0];
+        my $user_id = $user_mf->id;
+        like $mail->{subject}, qr/Daily AML risk update/, 'email subject is correct';
+        my $loginid = $client_mf->loginid;
+        ok $mail->{message}->[0] =~ qr/$loginid/, 'loginids is found in email content';
+        ok $mail->{message}->[0] !~ qr/CR\d/, 'No CR loginid found in email content';
+
+        $mock_landing_company->unmock_all;
+        $mock_config->unmock_all;
+    };
 
     $mock_script->unmock_all;
     $mock_user->unmock_all;

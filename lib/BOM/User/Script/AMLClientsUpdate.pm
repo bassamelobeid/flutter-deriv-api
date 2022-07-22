@@ -4,20 +4,20 @@ use strict;
 use warnings;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use List::Util qw(any);
+use List::Util qw(any uniq);
 use Syntax::Keyword::Try;
+use LandingCompany::Registry;
 
 use BOM::User;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 use BOM::Platform::Event::Emitter;
+use BOM::Config::Compliance;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 
 use Log::Any qw($log);
-
-use constant BROKER_CODES => (qw/CR MF/);
 
 =head2 new
 
@@ -27,6 +27,16 @@ Class constructor; it's called without any arguments.
 
 sub new {
     my ($class, %args) = @_;
+
+    my (@all_brokers, @jurisdiction_brokers);
+    foreach my $landing_company (LandingCompany::Registry->get_all) {
+        next if $landing_company->is_virtual or $landing_company->is_for_affiliates;
+
+        push @all_brokers,          $landing_company->broker_codes->@*;
+        push @jurisdiction_brokers, $landing_company->broker_codes->@* if $landing_company->jurisdiction_risk_ratings;
+    }
+    $args{all_brokers}          = [uniq @all_brokers];
+    $args{jurisdiction_brokers} = [uniq @jurisdiction_brokers];
 
     return bless \%args, $class;
 }
@@ -41,7 +51,7 @@ prepares for POI notificaitons in the front-end.
 sub client_status_update {
     my $self = shift;
 
-    foreach my $broker (BROKER_CODES) {
+    foreach my $broker ($self->{all_brokers}->@*) {
         $self->update_aml_high_risk_clients_status($broker);
     }
 }
@@ -55,22 +65,27 @@ Updates client aml risk levels based on the configured thresholds.
 sub aml_risk_update {
     my $self = shift;
 
-    my $thresholds      = BOM::Config::Runtime->instance->app_config->compliance->aml_risk_thresholds;
-    my $thresholds_hash = decode_json_utf8($thresholds);
-    my @broker_codes    = keys %$thresholds_hash;
+    my $config       = BOM::Config::Compliance->new;
+    my $thresholds   = $config->get_risk_thresholds('aml')     // {};
+    my $jurisdiction = $config->get_jurisdiction_risk_rating() // {};
 
-    # The DB function accepts thresholds as a json array, rather than a hash.
-    my @threshold_array = map { +{broker_code => $_, $thresholds_hash->{$_}->%*} } keys %$thresholds_hash;
-    my $threshold_json  = encode_json_utf8(\@threshold_array);
+    # filter redundant key 'revision'
+    delete $jurisdiction->{revision};
+    delete $thresholds->{revision};
 
-    foreach my $broker_code (@broker_codes) {
+    foreach my $broker_code ($self->{all_brokers}->@*) {
         my $dbic = BOM::Database::ClientDB->new({
                 broker_code => $broker_code,
             })->db->dbic;
 
         my $result = $dbic->run(
             fixup => sub {
-                $_->selectall_arrayref("SELECT * FROM betonmarkets.update_aml_risk(?)", {Slice => {}}, $threshold_json);
+                $_->selectall_arrayref(
+                    "SELECT * FROM betonmarkets.update_aml_risk(?, ?, ?)",
+                    {Slice => {}},
+                    encode_json_utf8($thresholds),
+                    encode_json_utf8($jurisdiction),
+                    $self->{jurisdiction_brokers});
             });
 
         _send_risk_report_email($broker_code, $result) if scalar(@$result);
