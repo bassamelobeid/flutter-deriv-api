@@ -65,28 +65,31 @@ subtest "_request" => sub {
         my $uri         = "http://localhost:5055/api/v1/$endpoint?loginid=&app_id=$app_id&brand=$brand&domain=&&&source=16303";
 
         my $query_params = {
-            loginid  => 'CR90000001',
-            app_id   => $app_id,
-            brand    => $brand,
-            domain   => 'deriv.com',
-            l        => 'EN',
-            language => 'EN',
-            source   => 16303,
+            loginid       => 'CR90000001',
+            app_id        => $app_id,
+            brand         => $brand,
+            domain        => 'deriv.com',
+            l             => 'EN',
+            language      => 'EN',
+            source        => 16303,
+            currency_code => 'ETH',
         };
 
         my $payload = {
-            loginid => 'CR90000001',
-            address => 'address',
-            amount  => 123,
-            dry_run => $dry_run,
+            loginid       => 'CR90000001',
+            address       => 'address',
+            amount        => 123,
+            dry_run       => $dry_run,
+            currency_code => 'ETH',
         };
 
         setup_dd_mock({
-            endpoint => $endpoint,
-            status   => $status,
-            app_id   => $app_id,
-            origin   => $brand,
-            dry_run  => $dry_run
+            endpoint      => $endpoint,
+            status        => $status,
+            app_id        => $app_id,
+            origin        => $brand,
+            dry_run       => $dry_run,
+            currency_code => 'ETH',
         });
 
         $mock_crypto_api->mock(
@@ -136,7 +139,7 @@ subtest "_request" => sub {
 
 sub setup_dd_mock {
     my $params = shift;
-    my ($endpoint, $status, $app_id, $origin, $is_dry_run) = @$params{qw/endpoint status app_id origin is_dry_run/};
+    my ($endpoint, $status, $app_id, $origin, $is_dry_run, $currency_code) = @$params{qw/endpoint status app_id origin is_dry_run currency_code/};
     $is_dry_run //= 0;
 
     $mock_dd->unmock_all;
@@ -147,7 +150,7 @@ sub setup_dd_mock {
             my $tags = $params->{tags};
 
             is $metric_name, BOM::Platform::CryptoCashier::API::DD_API_CALL_RESULT_KEY, 'Correct DD metric name';
-            is_deeply $tags, ["status:$status", "endpoint:$endpoint"], 'Correct tags for the DD metric';
+            is_deeply $tags, ["status:$status", "endpoint:$endpoint", "currency_code:$currency_code"], 'Correct tags for the DD metric';
         });
 }
 

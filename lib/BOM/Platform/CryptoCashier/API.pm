@@ -119,7 +119,9 @@ Takes the following parameter:
 
 =over 4
 
-=item * C<$loginid> - The client loginid
+=item * C<$loginid>       - The client loginid
+
+=item * C<$currency_code> - The currency_code
 
 =back
 
@@ -128,12 +130,15 @@ Returns a hashref containing the deposit address or error.
 =cut
 
 sub deposit {
-    my ($self, $loginid) = @_;
+    my ($self, $loginid, $currency_code) = @_;
 
     my $result = $self->_request({
             method       => HTTP_METHODS->{GET},
             endpoint     => API_ENDPOINTS->{DEPOSIT},
-            query_params => {loginid => $loginid}});
+            query_params => {
+                loginid       => $loginid,
+                currency_code => $currency_code,
+            }});
 
     return $result if $result->{error};
 
@@ -153,13 +158,15 @@ Takes the following parameters:
 
 =over 4
 
-=item * C<$loginid> - The client loginid
+=item * C<$loginid>       - The client loginid
 
-=item * C<$address> - Destination address to withdraw to
+=item * C<$address>       - Destination address to withdraw to
 
-=item * C<$amount> - Withdrawal amount
+=item * C<$amount>        - Withdrawal amount
 
-=item * C<$is_dry_run> - If true, just do the validations
+=item * C<$is_dry_run>    - If true, just do the validations
+
+=item * C<$currency_code> - The currency_code
 
 =back
 
@@ -187,16 +194,17 @@ Or the result of withdrawal operation containing the following keys:
 =cut
 
 sub withdraw {
-    my ($self, $loginid, $address, $amount, $is_dry_run) = @_;
+    my ($self, $loginid, $address, $amount, $is_dry_run, $currency_code) = @_;
 
     my $result = $self->_request({
             method   => HTTP_METHODS->{POST},
             endpoint => API_ENDPOINTS->{WITHDRAW},
             payload  => {
-                loginid => $loginid,
-                address => $address,
-                amount  => $amount,
-                dry_run => $is_dry_run,
+                loginid       => $loginid,
+                address       => $address,
+                amount        => $amount,
+                dry_run       => $is_dry_run,
+                currency_code => $currency_code,
             }});
 
     return $result if $result->{error};
@@ -215,9 +223,11 @@ Receives the following parameters:
 
 =over 4
 
-=item * C<$loginid> - The client loginid
+=item * C<$loginid>       - The client loginid
 
-=item * C<$id> - The ID of the withdrawal transaction to be cancelled
+=item * C<$id>            - The ID of the withdrawal transaction to be cancelled
+
+=item * C<$currency_code> - The currency_code
 
 =back
 
@@ -234,7 +244,7 @@ Returns the result of the cancellation request containing the following keys:
 =cut
 
 sub withdrawal_cancel {
-    my ($self, $loginid, $id) = @_;
+    my ($self, $loginid, $id, $currency_code) = @_;
 
     unless ($id) {
         return create_error({
@@ -248,8 +258,9 @@ sub withdrawal_cancel {
             method   => HTTP_METHODS->{POST},
             endpoint => API_ENDPOINTS->{WITHDRAW_CANCEL},
             payload  => {
-                loginid => $loginid,
-                id      => $id,
+                loginid       => $loginid,
+                id            => $id,
+                currency_code => $currency_code,
             }});
 
     return $result if $result->{error};
@@ -268,9 +279,11 @@ Receives the following parameters:
 
 =over 4
 
-=item * C<$loginid> - The client loginid
+=item * C<$loginid>          - The client loginid
 
 =item * C<$transaction_type> - Type of the transactions to return. C<deposit>, C<withdrawal>, or C<all> (default)
+
+=item * C<$currency_code>    - The currency_code
 
 =back
 
@@ -305,7 +318,7 @@ Returns pending transactions as an arrayref containing hashrefs with the followi
 =cut
 
 sub transactions {
-    my ($self, $loginid, $transaction_type) = @_;
+    my ($self, $loginid, $transaction_type, $currency_code) = @_;
 
     my $result = $self->_request({
             method       => HTTP_METHODS->{GET},
@@ -313,6 +326,7 @@ sub transactions {
             query_params => {
                 loginid          => $loginid,
                 transaction_type => $transaction_type,
+                currency_code    => $currency_code,
             }});
 
     return $result;
@@ -383,9 +397,10 @@ sub _request {
 
     my $result           = $self->ua->$method($uri, $payload // ());
     my $status           = $result->is_success ? "success" : "fail";
+    my $currency_code    = $query_params->{currency_code} // $payload->{currency_code} // '';
     my $response_content = $result->{_content} // '';
 
-    DataDog::DogStatsd::Helper::stats_inc(DD_API_CALL_RESULT_KEY, {tags => ["status:$status", "endpoint:$endpoint"]});
+    DataDog::DogStatsd::Helper::stats_inc(DD_API_CALL_RESULT_KEY, {tags => ["status:$status", "endpoint:$endpoint", "currency_code:$currency_code"]});
 
     unless ($result->is_success) {
         $log->warnf("Crypto API call faced network issue while requesting method: %s uri: %s error: %s", $method, $uri, $response_content);

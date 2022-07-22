@@ -164,19 +164,20 @@ sub _act {
 sub _deposit {
     my ($c, $crypto_api, $client) = @_;
 
-    my $deposit_response = $crypto_api->deposit($client->loginid);
+    my $currency_code = $client->account->currency_code;
+
+    my $deposit_response = $crypto_api->deposit($client->loginid, $currency_code);
     return $c->_render_error($deposit_response->{error}->{message_to_client}) if $deposit_response->{error};
 
     my $deposit_address = $deposit_response->{deposit}{address};
 
-    my $transaction_response = $crypto_api->transactions($client->loginid, 'deposit');
+    my $transaction_response = $crypto_api->transactions($client->loginid, 'deposit', $currency_code);
     return $c->_render_error($transaction_response->{error}->{message_to_client}) if $transaction_response->{error};
 
     my $trxs = $transaction_response->{crypto} || [];
     # Formate the transactions dates
     my @transactions = map { format_transaction_date($_) } $trxs->@*;
 
-    my $currency_code    = $client->account->currency_code;
     my $currency_name    = LandingCompany::Registry::get_currency_definition($currency_code)->{name};
     my $currency_display = $crypto_symbols{$currency_code} // $currency_code;
 
@@ -221,7 +222,7 @@ sub _withdraw {
                 address => $address,
             );
         } else {
-            my $withdraw_response = $crypto_api->withdraw($client->loginid, $address, $amount, 0);
+            my $withdraw_response = $crypto_api->withdraw($client->loginid, $address, $amount, 0, $currency_code);
             if ($withdraw_response->{error}) {
                 $c->stash(
                     error   => $withdraw_response->{error}->{message_to_client},
@@ -232,7 +233,7 @@ sub _withdraw {
 
     }
 
-    my $transaction_response = $crypto_api->transactions($client->loginid, 'withdrawal');
+    my $transaction_response = $crypto_api->transactions($client->loginid, 'withdrawal', $currency_code);
     return $c->_render_error($transaction_response->{error}->{message_to_client}) if $transaction_response->{error};
 
     my $trxs = $transaction_response->{crypto} || [];
@@ -267,12 +268,13 @@ sub _withdraw {
 sub _cancel_withdraw {
     my ($c, $crypto_api, $client) = @_;
 
-    my $param       = $c->stash('request')->params;
-    my $address     = $param->{address};
-    my $database_id = $param->{id};
+    my $currency_code = $client->account->currency_code;
+    my $param         = $c->stash('request')->params;
+    my $address       = $param->{address};
+    my $database_id   = $param->{id};
     $c->_render_error(localize("Invalid request.")) unless $address and $database_id;
 
-    my $withdrawal_cancel_response = $crypto_api->withdrawal_cancel($client->loginid, $database_id);
+    my $withdrawal_cancel_response = $crypto_api->withdrawal_cancel($client->loginid, $database_id, $currency_code);
 
     my $result_message = localize("Your withdrawal transaction for address: [_1] has been cancelled.", $address);
     my $is_successful  = 1;
@@ -286,8 +288,6 @@ sub _cancel_withdraw {
         code    => $is_successful,
         message => $result_message
     );
-
-    my $currency_code = $client->account->currency_code;
 
     my $url = $c->url_for("/cryptocurrency/" . lc $currency_code . "/withdraw");
     $c->redirect_to(
