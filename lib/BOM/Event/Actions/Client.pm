@@ -2575,7 +2575,8 @@ async sub signup {
         BOM::Platform::Event::Emitter::emit(
             $emitting,
             {
-                loginid => $client->loginid,
+                loginid  => $client->loginid,
+                currency => $client->currency,
             });
 
         $emitting = 'verify_false_profile_info';
