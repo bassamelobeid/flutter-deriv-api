@@ -19,7 +19,7 @@ use Data::Dumper;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Date::Utility;
 use Path::Tiny;
-use Proc::ProcessTable;
+use BOM::Test::LoadTest::Pricer qw(dd_memory);
 
 =head1 NAME
 
@@ -203,6 +203,8 @@ $timer = IO::Async::Timer::Periodic->new(
 
     on_tick => sub {
         my ($overflow_amount, $max_queue_size) = check_stats();
+        # gather memory info before process killed
+        dd_memory(0);
         # We have completed a cycle so kill off the current load test
         $process->kill(15) if $process && $process->is_running;
         if ($overflow_amount == 0 || $start == 1) {
@@ -527,7 +529,6 @@ sub start_subscription {
 
     my $whole_command = [$command, '-s', $subscriptions, '-a', $app_id, '-c', 5, '-r', $check_time, '-m', $market];
     say "start command '@$whole_command'";
-    dd_memory();
     $process = $loop->open_process(
         command => $whole_command,
         stdout  => {
@@ -556,51 +557,7 @@ sub start_subscription {
             }
         },
         on_finish => sub {
-            dd_memory();
         });
+    dd_memory(1, $market);
 }
 
-sub dd_memory{
-    my $t = Proc::ProcessTable->new;
-    #my @fields = $t->fields;
-    #print "@fields\n";
-    my @process_cfg = (
-        {
-            regexp => qr/binary_rpc_redis\.pl.*category=general/,
-            dd_prefix => 'memory.rpc_redis_general'
-        },
-        {
-            regexp => qr/binary_rpc_redis\.pl.*category=tick/,
-            dd_prefix => 'memory.rpc_redis_tick'
-        },
-        {
-            regexp => qr/price_queue\.pl/,
-            dd_prefix => 'memory.price_queue',
-        },
-        {
-            regexp => qr/price_daemon\.pl/,
-            dd_prefix => 'memory.price_daemon',
-            ppid => 'not 1', # price_daemon will fork a subprocess as a worker, the parent process does nothing, so ignore it.
-        },
-        {
-            regexp => qr/pricer_load_runner\.pl/,
-            dd_prefix => 'memory.pricer_load_runner'
-        },
-        {
-            regexp => qr/proposal_sub.pl/,
-            dd_prefix => 'memory.proposal_sub'
-        },
-
-    );
-    foreach my $p (@{$t->table}) {
-        foreach my $cfg (@process_cfg){
-            next unless $p->{cmndline} =~ $cfg->{regexp};
-            next if ($cfg->{ppid} // '') eq 'not 1' && $p->{ppid} != 1;
-            $cfg->{idx}++;
-            print "$p->{cmndline}:$p->{pid}\n";
-            foreach my $f (qw(size rss)){
-                stats_gauge("$cfg->{dd_prefix}.$f", $p->{$f}, {tags => ["tag:$cfg->{idx}"]});
-            }
-        }
-    }
-}

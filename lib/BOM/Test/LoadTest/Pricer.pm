@@ -8,7 +8,8 @@ use Exporter 'import';
 our @EXPORT_OK = qw(dd_memory);
 
 sub dd_memory{
-    my ($start, $market) = @_;
+    my ($start_market) = @_;
+
     my $t = Proc::ProcessTable->new;
     #my @fields = $t->fields;
     #print "@fields\n";
@@ -42,7 +43,9 @@ sub dd_memory{
 
     );
     state %data;
-    if($start){
+    state $current_market;
+    if($start_market){
+        $current_market = $start_market;
         %data = ();
     }
     # sort to keep them same order
@@ -57,12 +60,12 @@ sub dd_memory{
             $idx++;
             print "$p->{cmndline}:$p->{pid}\n";
             foreach my $f (qw(size rss)){
-                stats_gauge("$cfg->{dd_prefix}.$f", $p->{$f}, {tags => ["tag:idx$idx", "tag:$market"]});
-                if($start){
+                stats_gauge("$cfg->{dd_prefix}.$f", $p->{$f}, {tags => ["tag:idx$idx", "tag:$current_market"]});
+                if($start_market){
                     $data{$cfg_idx}{$f}{$idx}{start} = $p->{$f};
                 }
                 elsif(exists $data{$cfg_idx}{$f}{$idx}{start}){
-                    stats_gauge("$cfg->{dd_prefix}.${f}.delta", $p->{$f} - $data{$cfg_idx}{$f}{$idx}{start}, {tags => ["tag:idx$idx", "tag:$market"]});
+                    stats_gauge("$cfg->{dd_prefix}.${f}.delta", $p->{$f} - $data{$cfg_idx}{$f}{$idx}{start}, {tags => ["tag:idx$idx", "tag:$current_market"]});
                 }
                 else{
                     warn "no start value of $cfg->{dd_prefix}.${f} when try to calculate the delta value";
