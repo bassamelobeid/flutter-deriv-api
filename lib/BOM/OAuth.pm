@@ -70,7 +70,6 @@ sub startup {
     $r->any('/authorize')->to('O#authorize');
 
     $r->any('/oneall/callback')->to('OneAll#callback');
-    $r->any('/oneall/redirect')->to('OneAll#redirect');
 
     $r->any('session/:service/sso')->to('SingleSignOn#authorize');
     $r->any('session/:service/authorize')->to('SingleSignOn#create');
