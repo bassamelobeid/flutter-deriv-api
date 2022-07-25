@@ -11,10 +11,10 @@ my $mocked_loadtest = Test::MockModule->new('BOM::Test::LoadTest::Pricer');
 my @dd_data;
 $mocked_loadtest->mock('stats_gauge', sub {push @dd_data, \@_});
 my @process_table;
-my $mocked_process_table = Test::MockModule->new('Proc::ProcessTable');
-$mocked_process_table->mock('table', sub{return \@process_table});
-my @test_data = Load(do{local $/; <DATA>});
 subtest 'dd_memory' => sub{
+    my $mocked_process_table = Test::MockModule->new('Proc::ProcessTable');
+    $mocked_process_table->mock('table', sub{return \@process_table});
+    my @test_data = Load(do{local $/; <DATA>});
     @process_table = $test_data[0]->@*;
     @dd_data = ();
     BOM::Test::LoadTest::Pricer::dd_memory('market_name');
@@ -27,13 +27,14 @@ subtest 'dd_memory' => sub{
 };
 
 subtest 'dd_time' => sub{
-    set_relative_time(-100);
+    my $time_interval = 100;
+    set_relative_time(-$time_interval);
     @dd_data = ();
     BOM::Test::LoadTest::Pricer::dd_time('market_name');
     is(scalar @dd_data, 0, "no datadog data at the first call");
     restore_time();
     BOM::Test::LoadTest::Pricer::dd_time();
-    is_deeply(\@dd_data, [['qaloadtest.time.market_name', 100]], 'dd metric correct');
+    is_deeply(\@dd_data, [['qaloadtest.time.market_name', $time_interval]], 'dd metric correct');
 };
 
 done_testing();
