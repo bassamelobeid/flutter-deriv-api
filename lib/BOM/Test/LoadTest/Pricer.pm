@@ -5,7 +5,7 @@ use Proc::ProcessTable;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use feature qw(state);
 use Exporter 'import';
-our @EXPORT_OK = qw(dd_memory);
+our @EXPORT_OK = qw(dd_memory_and_time);
 
 sub dd_memory{
     my ($start_market) = @_;
@@ -13,32 +13,33 @@ sub dd_memory{
     my $t = Proc::ProcessTable->new;
     #my @fields = $t->fields;
     #print "@fields\n";
+    my $dd_prefix = 'qaloadtest.memory';
     my @process_cfg = (
         {
             regexp => qr/binary_rpc_redis\.pl.*category=general/,
-            dd_prefix => 'memory.rpc_redis_general'
+            dd_prefix => "$dd_prefix.rpc_redis_general"
         },
         {
             regexp => qr/binary_rpc_redis\.pl.*category=tick/,
-            dd_prefix => 'memory.rpc_redis_tick'
+            dd_prefix => "$dd_prefix.rpc_redis_tick"
         },
         {
             regexp => qr/price_queue\.pl/,
-            dd_prefix => 'memory.price_queue',
+            dd_prefix => "$dd_prefix.price_queue",
         },
         {
             regexp => qr/price_daemon\.pl/,
-            dd_prefix => 'memory.price_daemon',
+            dd_prefix => "$dd_prefix.price_daemon",
             ppid => 'not 1', # price_daemon will fork a subprocess as a worker, the parent process does nothing, so ignore it.
         },
         {
             regexp => qr/pricer_load_runner\.pl/,
-            dd_prefix => 'memory.pricer_load_runner'
+            dd_prefix => "$dd_prefix.pricer_load_runner"
         },
         {
             # TODO when finish, this process will no there, so we must process it before kill
             regexp => qr/proposal_sub.pl/,
-            dd_prefix => 'memory.proposal_sub'
+            dd_prefix => "$dd_prefix.proposal_sub"
         },
 
     );
@@ -73,4 +74,22 @@ sub dd_memory{
             }
         }
     }
+}
+
+sub dd_time {
+    my ($start_market) = @_;
+    state $last_time;
+    state $current_market;
+    if($start_market){
+        $last_time = time();
+        $current_market = $start_market;
+        return;
+    }
+    stats_gauge("qaloadtest.time.$current_market", time() - $last_time);
+    return;
+}
+
+sub dd_memory_and_time{
+    dd_memory(@_);
+    dd_time(@_);
 }
