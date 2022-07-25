@@ -23,7 +23,6 @@ subtest 'dd_memory' => sub{
     @process_table = $test_data[1]->@*;
     BOM::Test::LoadTest::Pricer::dd_memory();
     is_deeply(\@dd_data, $test_data[3], 'dd write correct for second');
-    ok(1);
 };
 
 subtest 'dd_time' => sub{
