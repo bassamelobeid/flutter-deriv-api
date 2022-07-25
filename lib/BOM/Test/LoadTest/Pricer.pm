@@ -58,7 +58,6 @@ sub dd_memory {
             next unless $p->{cmndline} =~ $cfg->{regexp};
             next if ($cfg->{ppid} // '') eq 'not 1' && $p->{ppid} == 1;
             $idx++;
-            #print "$p->{cmndline}:$p->{pid}\n";
             foreach my $f (qw(size rss)) {
                 stats_gauge("$cfg->{dd_prefix}.$f", $p->{$f}, {tags => ["tag:idx$idx", "tag:$current_market"]});
                 if ($start_market) {
