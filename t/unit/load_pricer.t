@@ -9,23 +9,23 @@ use BOM::Test::LoadTest::Pricer qw(dd_memory_and_time);
 
 my $mocked_loadtest = Test::MockModule->new('BOM::Test::LoadTest::Pricer');
 my @dd_data;
-$mocked_loadtest->mock('stats_gauge', sub {push @dd_data, \@_});
+$mocked_loadtest->mock('stats_gauge', sub { push @dd_data, \@_ });
 my @process_table;
-subtest 'dd_memory' => sub{
+subtest 'dd_memory' => sub {
     my $mocked_process_table = Test::MockModule->new('Proc::ProcessTable');
-    $mocked_process_table->mock('table', sub{return \@process_table});
-    my @test_data = Load(do{local $/; <DATA>});
+    $mocked_process_table->mock('table', sub { return \@process_table });
+    my @test_data = Load(do { local $/; <DATA> });
     @process_table = $test_data[0]->@*;
-    @dd_data = ();
+    @dd_data       = ();
     BOM::Test::LoadTest::Pricer::dd_memory('market_name');
     is_deeply(\@dd_data, $test_data[2], 'dd write correct');
-    @dd_data = ();
+    @dd_data       = ();
     @process_table = $test_data[1]->@*;
     BOM::Test::LoadTest::Pricer::dd_memory();
     is_deeply(\@dd_data, $test_data[3], 'dd write correct for second');
 };
 
-subtest 'dd_time' => sub{
+subtest 'dd_time' => sub {
     my $time_interval = 100;
     set_relative_time(-$time_interval);
     @dd_data = ();
