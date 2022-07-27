@@ -5,6 +5,7 @@ no indirect;
 
 use Test::More;
 use Test::MockModule;
+use Test::MockObject;
 use Test::Exception;
 
 use BOM::Config;
@@ -39,7 +40,7 @@ subtest 'config' => sub {
 
 subtest 'is_enabled' => sub {
     my $config_mock   = Test::MockModule->new("BOM::Config");
-    my $mock_services = {
+    my $dummy_services = {
         fraud_prevention => {
             enabled => 'false',
             host    => 127.0.0.1,
@@ -50,19 +51,32 @@ subtest 'is_enabled' => sub {
             host    => 130.0.0.1,
             port    => 8000
         }};
-    $config_mock->redefine("services_config" => $mock_services);
+
+    $config_mock->redefine("services_config" => $dummy_services);
     throws_ok { BOM::Config::Services->is_enabled() } qr/Service name is missed/, 'service name is not provided as argument';
 
     my $unsupported_service_name = "Unsupported Service";
     throws_ok { BOM::Config::Services->is_enabled($unsupported_service_name) } qr/Invalid service name $unsupported_service_name /,
         "Un-supported service name is provided as argument";
 
-    my $app_config = BOM::Config::Runtime->instance->app_config;
+    my $instance              = BOM::Config::Runtime->instance;
+    my $mocked_instance       = Test::MockObject->new($instance);
+    my $mocked_app_config     = Test::MockObject->new();
+    my $mocked_system         = Test::MockObject->new();
+    my $mocked_services       = Test::MockObject->new();
+    
+    $mocked_instance->mock("app_config" => sub { return $mocked_app_config });
+    $mocked_app_config->mock("system"  => sub { return $mocked_system });
+    $mocked_app_config->mock("check_for_update"  => sub { return 0 });
+    $mocked_system->mock("services" => sub { return $mocked_services });
 
-    my $identity_verification_enabled_status         = $mock_services->{identity_verification}->{enabled} eq 'true' ? 1 : 0;
+    my $identity_verification_enabled_status         = $dummy_services->{identity_verification}->{enabled} eq 'true' ? 1 : 0;
     my $identity_verification_enabled_status_runtime = $identity_verification_enabled_status;
-    my $mocked_runtime                               = Test::MockModule->new(ref $app_config->system->services)
-        ->redefine("identity_verification" => sub { $identity_verification_enabled_status_runtime });
+    
+    $mocked_services->mock("identity_verification" => sub { $identity_verification_enabled_status_runtime });
+    
+    diag "okay 1";
+    
     is(
         BOM::Config::Services->is_enabled("identity_verification"),
         $identity_verification_enabled_status_runtime,
@@ -70,12 +84,11 @@ subtest 'is_enabled' => sub {
     );
 
     $identity_verification_enabled_status_runtime = !$identity_verification_enabled_status || 0;
-    $mocked_runtime                               = Test::MockModule->new(ref $app_config->system->services)
-        ->redefine("identity_verification" => sub { $identity_verification_enabled_status_runtime });
     is(
         BOM::Config::Services->is_enabled("identity_verification"),
         $identity_verification_enabled_status_runtime,
         "service enable status is different on BOM::Config and Runtime"
     );
 };
+
 done_testing;
