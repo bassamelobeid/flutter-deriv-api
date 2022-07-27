@@ -36,12 +36,21 @@ subtest 'available_countries' => sub {
     my $mocked_p2p_availability     = 1;
     my $mocked_restricted_countries = ['in', 'us'];
 
-    my $lc_mock      = Test::MockModule->new("LandingCompany::Registry")->redefine("get_loaded_landing_companies", sub { return $mocked_lc });
-    my $country_mock = Test::MockModule->new("Brands::Countries")->redefine("countries_list", sub { return $mocked_countries_list });
-    my $p2p_config   = BOM::Config::Runtime->instance->app_config->payments->p2p;
-    my $mocked_p2p   = Test::MockModule->new(ref $p2p_config);
-    $mocked_p2p->redefine("available",            sub { return $mocked_p2p_availability });
-    $mocked_p2p->redefine("restricted_countries", sub { return $mocked_restricted_countries });
+    my $lc_mock          = Test::MockModule->new("LandingCompany::Registry")->redefine("get_loaded_landing_companies", sub { return $mocked_lc });
+    my $country_mock     = Test::MockModule->new("Brands::Countries")->redefine("countries_list", sub { return $mocked_countries_list });
+
+    my $instance  = BOM::Config::Runtime->instance;
+    my $mocked_instance = Test::MockObject->new($instance);
+    my $mocked_app_config = Test::MockObject->new();
+    my $mocked_payment_config = Test::MockObject->new();
+    my $mocked_p2p_config = Test::MockObject->new();
+    
+    # $mocked_instance->fake_module('BOM::Config::Runtime');
+    $mocked_instance->mock("app_config" => sub {return $mocked_app_config});
+    $mocked_app_config->mock("payments" => sub {return $mocked_payment_config});
+    $mocked_payment_config->mock("p2p" => sub {return $mocked_p2p_config});
+    $mocked_p2p_config->mock("available" => sub { return $mocked_p2p_availability });
+    $mocked_p2p_config->mock("restricted_countries" => sub { return $mocked_restricted_countries });
 
     is_deeply(BOM::Config::P2P::available_countries(), $expected, "countries that satisfy all conditions");
 
