@@ -39,7 +39,7 @@ subtest 'config' => sub {
 };
 
 subtest 'is_enabled' => sub {
-    my $config_mock   = Test::MockModule->new("BOM::Config");
+    my $config_mock    = Test::MockModule->new("BOM::Config");
     my $dummy_services = {
         fraud_prevention => {
             enabled => 'false',
@@ -59,24 +59,24 @@ subtest 'is_enabled' => sub {
     throws_ok { BOM::Config::Services->is_enabled($unsupported_service_name) } qr/Invalid service name $unsupported_service_name /,
         "Un-supported service name is provided as argument";
 
-    my $instance              = BOM::Config::Runtime->instance;
-    my $mocked_instance       = Test::MockObject->new($instance);
-    my $mocked_app_config     = Test::MockObject->new();
-    my $mocked_system         = Test::MockObject->new();
-    my $mocked_services       = Test::MockObject->new();
-    
+    my $instance          = BOM::Config::Runtime->instance;
+    my $mocked_instance   = Test::MockObject->new($instance);
+    my $mocked_app_config = Test::MockObject->new();
+    my $mocked_system     = Test::MockObject->new();
+    my $mocked_services   = Test::MockObject->new();
+
     $mocked_instance->mock("app_config" => sub { return $mocked_app_config });
-    $mocked_app_config->mock("system"  => sub { return $mocked_system });
-    $mocked_app_config->mock("check_for_update"  => sub { return 0 });
+    $mocked_app_config->mock("system"           => sub { return $mocked_system });
+    $mocked_app_config->mock("check_for_update" => sub { return 0 });
     $mocked_system->mock("services" => sub { return $mocked_services });
 
     my $identity_verification_enabled_status         = $dummy_services->{identity_verification}->{enabled} eq 'true' ? 1 : 0;
     my $identity_verification_enabled_status_runtime = $identity_verification_enabled_status;
-    
+
     $mocked_services->mock("identity_verification" => sub { $identity_verification_enabled_status_runtime });
-    
+
     diag "okay 1";
-    
+
     is(
         BOM::Config::Services->is_enabled("identity_verification"),
         $identity_verification_enabled_status_runtime,
