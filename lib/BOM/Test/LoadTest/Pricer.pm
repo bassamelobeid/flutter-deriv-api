@@ -35,7 +35,7 @@ sub dd_memory {
             regexp    => qr/pricer_load_runner\.pl/,
             dd_prefix => "$dd_prefix.pricer_load_runner",
             # Still don't know why pricer_load_runner will fork subprocess sometimes. let's filter it first
-            ppid      => 'is 1',
+            ppid => 'is 1',
         },
         {
             # TODO when finish, this process will no there, so we must process it before kill
@@ -59,7 +59,7 @@ sub dd_memory {
         foreach my $p (@processes) {
             next unless $p->{cmndline} =~ $cfg->{regexp};
             next if ($cfg->{ppid} // '') eq 'not 1' && $p->{ppid} == 1;
-            next if ($cfg->{ppid} // '') eq 'is 1' && $p->{ppid} != 1;
+            next if ($cfg->{ppid} // '') eq 'is 1'  && $p->{ppid} != 1;
             $idx++;
             foreach my $f (qw(size rss)) {
                 stats_gauge("$cfg->{dd_prefix}.$f", $p->{$f}, {tags => ["tag:idx$idx", "tag:$current_market"]});
