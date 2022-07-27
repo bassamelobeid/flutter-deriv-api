@@ -39,7 +39,6 @@ subtest 'get_risk_thresholds' => sub {
         revision => $mocked_global_revision
     };
     is_deeply(BOM::Config::Compliance->get_risk_thresholds("aml"), $expected, "supported risk type is specified as argument");
-    # $mocked_runtime->unmock_all();
 };
 
 subtest 'validate_risk_thresholds' => sub {
@@ -122,11 +121,15 @@ subtest 'validate_risk_thresholds' => sub {
 };
 
 subtest 'get_jurisdiction_risk_rating' => sub {
-    my $mocked_runtime           = Test::MockModule->new("App::Config::Chronicle");
+    my $instance              = BOM::Config::Runtime->instance;
+    my $mocked_instance       = Test::MockObject->new($instance);
+    my $mocked_app_config     = Test::MockObject->new();
+    
+    $mocked_instance->mock("app_config" => sub { return $mocked_app_config });
     my $mocked_compliance_config = '{"standard":["c","d","a","b"], "high":["a","b","d","c"]}';
     my $mocked_global_revision   = 1;
-    $mocked_runtime->redefine("get",             $mocked_compliance_config);
-    $mocked_runtime->redefine("global_revision", $mocked_global_revision);
+    $mocked_app_config->mock("get" =>             sub { $mocked_compliance_config });
+    $mocked_app_config->mock("global_revision" => sub { $mocked_global_revision });
 
     my $expected = {
         standard => ["a", "b", "c", "d"],
@@ -134,7 +137,6 @@ subtest 'get_jurisdiction_risk_rating' => sub {
         revision => $mocked_global_revision
     };
     is_deeply(BOM::Config::Compliance->get_jurisdiction_risk_rating(), $expected, "countries are sorted correctly");
-    $mocked_runtime->unmock_all();
 };
 
 subtest 'validate_jurisdiction_risk_rating' => sub {
