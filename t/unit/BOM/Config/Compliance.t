@@ -4,6 +4,7 @@ use Test::More;
 use Test::Deep;
 use Test::Exception;
 use Test::MockModule;
+use Test::MockObject;
 
 use BOM::Config::Compliance;
 
@@ -13,13 +14,19 @@ subtest 'get_risk_thresholds' => sub {
     my $invalid_threshold_type = "AMD";
     throws_ok { BOM::Config::Compliance->get_risk_thresholds($invalid_threshold_type) } qr/Invalid threshold type $invalid_threshold_type/,
         'Un-supported threshold type is used';
+    
+    my $instance              = BOM::Config::Runtime->instance;
+    my $mocked_instance       = Test::MockObject->new($instance);
+    my $mocked_app_config     = Test::MockObject->new();
+    
+    $mocked_instance->mock("app_config" => sub { return $mocked_app_config });
 
-    my $mocked_runtime = Test::MockModule->new("App::Config::Chronicle");
+    
     my $mocked_compliance_config =
         '{"CR": {"yearly_standard": 10000, "yearly_high": 20000}, "MF": {"yearly_standard": 10000, "yearly_high": 20000} }';
     my $mocked_global_revision = 1;
-    $mocked_runtime->redefine("get",             $mocked_compliance_config);
-    $mocked_runtime->redefine("global_revision", $mocked_global_revision);
+    $mocked_app_config->mock("get" =>            sub { $mocked_compliance_config });
+    $mocked_app_config->mock("global_revision" => sub { $mocked_global_revision });
     my $expected = {
         CR => {
             yearly_standard => 10000,
@@ -32,7 +39,7 @@ subtest 'get_risk_thresholds' => sub {
         revision => $mocked_global_revision
     };
     is_deeply(BOM::Config::Compliance->get_risk_thresholds("aml"), $expected, "supported risk type is specified as argument");
-    $mocked_runtime->unmock_all();
+    # $mocked_runtime->unmock_all();
 };
 
 subtest 'validate_risk_thresholds' => sub {
