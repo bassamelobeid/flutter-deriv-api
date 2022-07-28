@@ -154,6 +154,7 @@ Check Test::PerlTidy for perl files
 sub check_tidy {
     my ($check_files, $skipped_files) = @_;
     my $test = Test::Builder->new;
+    ## no critic (ProhibitNoWarnings)
     no warnings 'redefine';
     my $origin_perltidy = \&Perl::Tidy::perltidy;
 
