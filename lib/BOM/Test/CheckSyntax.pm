@@ -153,7 +153,21 @@ Check Test::PerlTidy for perl files
 sub check_tidy {
     my ($check_files, $skipped_files) = @_;
     my $test = Test::Builder->new;
+    no warnings 'redefine';
+    my $origin_perltidy = \&Perl::Tidy::perltidy;
 
+    *Perl::Tidy::perltidy = sub {
+        print STDERR "calling mocked perltidy\n";
+        my @caller = caller(1);
+        if($caller[3] eq 'Test::PerlTidy::is_file_tidy'){
+            print STDERR "will call sweeten\n";
+            return Perl::Tidy::Sweetened::perltidy(@_);
+        }
+        else{
+            print STDERR "will call origin perltidy\n";
+            return $origin_perltidy->(@_);
+        }
+    };
     diag("start checking tidy...");
     $Test::PerlTidy::MUTE = 1;
     foreach my $file (@$check_files) {
@@ -165,6 +179,7 @@ sub check_tidy {
             $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
         }
     }
+    *Perl::Tidy::perltidy = $origin_perltidy;
 }
 
 =head2 check_yaml
