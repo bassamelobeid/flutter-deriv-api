@@ -27,7 +27,7 @@ use Test::Pod::Coverage;
 use Array::Utils qw(intersect);
 use BOM::Test::CheckJsonMaybeXS;
 use BOM::Test::LocalizeSyntax qw(check_localize_string_structure);
-use YAML::XS qw(LoadFile);
+use YAML::XS                  qw(LoadFile);
 use Data::Dumper;
 $Data::Dumper::Maxdepth = 1;
 

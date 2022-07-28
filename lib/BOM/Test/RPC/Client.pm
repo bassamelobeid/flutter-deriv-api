@@ -20,7 +20,7 @@ has 'client' => (
 );
 has 'response' => (is => 'rw');
 has 'result'   => (is => 'rw');
-has 'params'   => (
+has 'params' => (
     is  => 'rw',
     isa => 'ArrayRef'
 );

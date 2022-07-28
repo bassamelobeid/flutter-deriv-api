@@ -7,7 +7,7 @@ BOM::Test::CheckJsonMaybeXS - The test to check if L<JSON::MaybeXS> return a L<C
 =head1 DESCRIPTION
 
 We use L<JSON::MaybeXS> to handle json because it has a better interface. But it will return object with different class if we load L<JSON::XS> or L<Cpanel::JSON::XS>
-before it. Please see L<the source code|https://metacpan.org/release/JSON-MaybeXS/source/lib/JSON/MaybeXS.pm#L11> of L<JSON::MaybeXS>.
+before it . Please see L<the source code|https://metacpan.org/release/JSON-MaybeXS/source/lib/JSON/MaybeXS.pm#L11> of L<JSON::MaybeXS>.
 
 We need to make sure in our code L<JSON::MaybeXS> will always return L<Cpanel::JSON::XS> at any time.
 

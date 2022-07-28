@@ -7,7 +7,7 @@ use Locale::Maketext::Extract;
 use Test::Most;
 use Path::Tiny;
 use Term::ANSIColor qw(colored);
-use base qw( Exporter );
+use base            qw( Exporter );
 our @EXPORT_OK = qw(check_localize_string_structure);
 
 =head1 Name

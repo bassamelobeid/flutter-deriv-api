@@ -41,7 +41,7 @@ struct ParamLists => [qw(
         p2p_order
         p2p_advertiser
         cashier_payments
-        )];
+    )];
 
 struct Client => [qw(
         loginid
@@ -55,9 +55,9 @@ struct Client => [qw(
         landing_company_fullname
         currency
         broker
-        )];
+    )];
 
-struct TicksHistory  => [qw( underlying times prices )];
+struct TicksHistory => [qw( underlying times prices )];
 struct ProposalArray => [qw(
         underlying
         client
@@ -69,7 +69,7 @@ struct ProposalArray => [qw(
         amount
         amount_str
         longcodes
-        )];
+    )];
 struct Contract => [qw(
         buy_tx_id
         sell_tx_id
@@ -96,7 +96,7 @@ struct Contract => [qw(
         status
         bid_price_str
         entry_tick
-        )];
+    )];
 
 struct P2POrder => [qw(
         amount
@@ -131,7 +131,7 @@ struct P2POrder => [qw(
         chat_channel_url
         dispute_reason
         disputer_loginid
-        )];
+    )];
 
 struct P2PAdvertiser => [qw(
         contact_info
@@ -154,7 +154,7 @@ struct P2PAdvertiser => [qw(
         total_completion_rate
         basic_verification
         full_verification
-        )];
+    )];
 
 struct CashierPayments => [qw(
         id
@@ -168,7 +168,7 @@ struct CashierPayments => [qw(
         status_code
         status_message
         submit_date
-        )];
+    )];
 
 my $history_count = 10;
 my $barrier_count = 2;
@@ -250,7 +250,7 @@ for my $ul (@underlying) {
             $longcodes->{$contract_type}{$barrier} = sprintf(
                 'Win payout if %s is strictly %s than %s at close on %s.',
                 $ul->display_name, $contract_type eq 'CALL' ? 'higher' : 'lower',
-                $barrier, $date_expiry_dt->date_yyyymmdd,
+                $barrier,          $date_expiry_dt->date_yyyymmdd,
             );
         }
     }

@@ -8,7 +8,7 @@ use Moo;
 use Net::Async::Redis;
 use IO::Async::Loop;
 use YAML::XS;
-use Log::Any qw($log);
+use Log::Any     qw($log);
 use Scalar::Util qw(blessed);
 
 use namespace::clean;

@@ -110,8 +110,8 @@ sub section_title {
 }
 
 sub create_client {
-    my (%args) = @_;
-    my $email = delete($args{email}) or die 'need email';
+    my (%args)          = @_;
+    my $email           = delete($args{email}) or die 'need email';
     my $password        = delete($args{password}) // 'binary123';
     my $balance         = delete($args{balance})  // 0;
     my $currency        = delete($args{currency}) // 'USD';

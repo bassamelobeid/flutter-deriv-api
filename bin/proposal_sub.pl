@@ -129,10 +129,11 @@ sub main {
 ### Class from here down ###
 # This has been kept as one script on purpose for portability #
 use Object::Pad;
+
 class LoadTest::Proposal;
 
 use Future::Utils qw(fmap0);
-use Log::Any qw($log);
+use Log::Any      qw($log);
 use Future;
 use IO::Async::Loop;
 use Binary::API;
@@ -230,7 +231,7 @@ Returns integer 1 when complete
 
 =cut
 
-method run_tests() {
+method run_tests () {
 
     my $main_connection =
         $self->create_connection($args{end_point}, $args{app_id}, $args{token});
@@ -280,7 +281,7 @@ Returns a L<Future>
 
 =cut
 
-method test_length_timer($test_duration = 0) {
+method test_length_timer ($test_duration = 0) {
     my $test_run_length;
     if ($test_duration) {
         $test_run_length = $loop->delay_future(after => $test_duration)->on_done(sub { $log->info('finished after ' . $test_duration); });
@@ -343,7 +344,7 @@ Returns a L<Net::Async::BinaryWS>
 
 =cut
 
-method create_connection($end_point, $app_id, $token) {
+method create_connection ($end_point, $app_id, $token) {
 
     $loop->add(
         my $connection = Net::Async::BinaryWS->new(
@@ -395,7 +396,7 @@ Returns an Array with two items first is the number portion of the duration, sec
 
 =cut
 
-method durations($min, $max) {
+method durations ($min, $max) {
 
     # min and max look like 1d , 2m etc
     my (($min_amount, $min_unit), ($max_amount, $max_unit)) =
@@ -456,7 +457,7 @@ Returns an integer between min and max.
 
 =cut
 
-method random_generator($min, $max) {
+method random_generator ($min, $max) {
     return int(rand($max - $min) + $min);
 
 }
@@ -481,7 +482,7 @@ Returns a HashRef of L<Binary::API::AvailableContracts> keyed by symbol and then
 
 =cut
 
-method get_contracts_for($connection, $symbols) {
+method get_contracts_for ($connection, $symbols) {
     my %contracts_for;
 
     my $contracts_for_requests = fmap0 {
@@ -520,7 +521,7 @@ Returns an array of currently active symbols as string  ['R_10','R_100', ....]
 
 =cut
 
-method get_active_symbols($connection, $markets_to_use) {
+method get_active_symbols ($connection, $markets_to_use) {
     my $assets = $connection->api->active_symbols(
         product_type => 'basic',
     )->on_fail(
@@ -558,7 +559,7 @@ If we cant do a valid duration then the result will be [0,0]
 
 =cut
 
-method forex_duration_adjustments(%attrs) {
+method forex_duration_adjustments (%attrs) {
 
     my $min                 = $attrs{min};
     my $max                 = $attrs{max};
@@ -605,7 +606,7 @@ Returns a HashRef of proposal attributes.
 
 =cut
 
-method get_params($contract_type, $symbol) {
+method get_params ($contract_type, $symbol) {
 
     if (!defined($contracts_for->{$symbol}->{$contract_type})) {
         return undef;
@@ -704,7 +705,7 @@ Returns a L<Future>
 
 =cut
 
-method subscribe($connection, $connection_number) {
+method subscribe ($connection, $connection_number) {
     my $sub;
     my $first  = 1;
     my $future = $loop->new_future;

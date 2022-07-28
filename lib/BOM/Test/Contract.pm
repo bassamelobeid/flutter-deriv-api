@@ -32,18 +32,18 @@ use Date::Utility;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 use Math::Util::CalculatedValue::Validatable;
-use BOM::Product::ContractFactory qw( produce_contract  make_similar_contract);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Product::ContractFactory                qw( produce_contract  make_similar_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Time qw( sleep_till_next_second );
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw(create_client top_up);
+use BOM::Test::Time                              qw( sleep_till_next_second );
 use BOM::Platform::Client::IDAuthentication;
 use Data::Dumper;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Exporter qw( import );
+use Exporter                                   qw( import );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 our @EXPORT_OK = qw(
@@ -148,27 +148,27 @@ SQL
     my $contract_info;
 
     my %txn;
-    @txn{@txn_col} = splice @$res, 0, 0 + @txn_col;
+    @txn{@txn_col}        = splice @$res, 0, 0 + @txn_col;
     $contract_info->{txn} = \%txn;
 
     my %fmb;
-    @fmb{@fmb_col} = splice @$res, 0, 0 + @fmb_col;
+    @fmb{@fmb_col}        = splice @$res, 0, 0 + @fmb_col;
     $contract_info->{fmb} = \%fmb;
 
     my %chld;
-    @chld{@chld_col} = splice @$res, 0, 0 + @chld_col;
+    @chld{@chld_col}       = splice @$res, 0, 0 + @chld_col;
     $contract_info->{chld} = \%chld;
 
     my %qv1;
-    @qv1{@qv_col} = splice @$res, 0, 0 + @qv_col;
+    @qv1{@qv_col}         = splice @$res, 0, 0 + @qv_col;
     $contract_info->{qv1} = \%qv1;
 
     my %qv2;
-    @qv2{@qv_col} = splice @$res, 0, 0 + @qv_col;
+    @qv2{@qv_col}         = splice @$res, 0, 0 + @qv_col;
     $contract_info->{qv2} = \%qv2;
 
     my %t2;
-    @t2{@txn_col} = splice @$res, 0, 0 + @txn_col;
+    @t2{@txn_col}        = splice @$res, 0, 0 + @txn_col;
     $contract_info->{t2} = \%t2;
 
     return $contract_info;
