@@ -101,6 +101,29 @@ sub get_lookback_activity {
         });
 }
 
+=item get_monthly_exchange_rate
+
+get average monthly exchnage rates for given currency against USD.
+
+=cut
+
+sub get_monthly_exchange_rate {
+    my ($self, $args) = @_;
+    my $dbic = $self->db->dbic;
+
+    my $sql = q{
+        SELECT * FROM get_average_montly_exchange_rate_usd($1, $2, $3)
+    };
+
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($args->{source_currency}, $args->{month}, $args->{year});
+
+            return $sth->fetchall_arrayref;
+        });
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
