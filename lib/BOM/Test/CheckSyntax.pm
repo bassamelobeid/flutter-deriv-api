@@ -160,11 +160,10 @@ sub check_tidy {
     *Perl::Tidy::perltidy = sub {
         print STDERR "calling mocked perltidy\n";
         my @caller = caller(1);
-        if($caller[3] eq 'Test::PerlTidy::is_file_tidy'){
+        if ($caller[3] eq 'Test::PerlTidy::is_file_tidy') {
             print STDERR "will call sweeten\n";
             return Perl::Tidy::Sweetened::perltidy(@_);
-        }
-        else{
+        } else {
             print STDERR "will call origin perltidy\n";
             return $origin_perltidy->(@_);
         }
