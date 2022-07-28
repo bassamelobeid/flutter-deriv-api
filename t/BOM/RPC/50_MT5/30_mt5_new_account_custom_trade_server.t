@@ -134,18 +134,13 @@ subtest 'use default routing rule if server is not provided' => sub {
     $test_client->myaffiliates_token('FakeToken');
     $test_client->save;
 
-    my $mocked = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    # fake affiliate id
-    $mocked->mock(_get_ib_affiliate_id_from_token => sub { return 12345 });
-
-    my $expected_agent_id = 1001;
     _add_affiliate_account(
         $test_client,
         {
             server         => 'p01_ts02',
-            mt5_account_id => $expected_agent_id,
+            mt5_account_id => 1001,
             binary_user_id => $test_client->user->id,
-            affiliate_id   => 12345,
+            affiliate_id   => 0,
             account_type   => 'technical'
         });
     my $method = 'mt5_new_account';
