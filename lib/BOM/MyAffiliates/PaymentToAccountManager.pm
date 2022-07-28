@@ -10,9 +10,11 @@ BOM::MyAffiliates::PaymentToAccountManager
 
 =cut
 
+use Moose;
+extends 'BOM::MyAffiliates::Reporter';
+
 use strict;
 use warnings;
-use Moose;
 use Archive::Zip qw(:ERROR_CODES);
 use Path::Tiny;
 use IO::File;
@@ -197,8 +199,24 @@ sub _get_csv_line_from_txn {
         die 'Amount[' . $USD_amount . '] is invalid. Full transaction details: ' . Dumper($transaction);
     }
     $USD_amount = abs $USD_amount;
-    my $preferred_currency        = $client->currency;
-    my $preferred_currency_amount = roundcommon(0.01, convert_currency($USD_amount, 'USD', $preferred_currency));
+    my $preferred_currency = $client->currency;
+    my $now                = Date::Utility->new();
+    my $month              = $now->month();
+    my $year               = $now->year();
+    my $rate;
+    if ($preferred_currency eq 'USD') {
+        $rate = 1;
+    } else {
+        my $exch_rate = $transaction->database_mapper()->get_monthly_exchange_rate({
+            source_currency => $preferred_currency,
+            month           => $month,
+            year            => $year,
+        });
+        # $exch_rate is 1D array with more prospective values in future but for now only contains exchange rate as the first entry.
+        $rate = $exch_rate->[0];
+    }
+
+    my $preferred_currency_amount = roundcommon(0.01, $USD_amount * $rate);
 
     my $month_str = _get_month_from_transaction($transaction);
     if (not $month_str) {
