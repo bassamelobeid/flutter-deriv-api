@@ -75,7 +75,6 @@ subtest 'is_enabled' => sub {
 
     $mocked_services->mock("identity_verification" => sub { $identity_verification_enabled_status_runtime });
 
-    diag "okay 1";
 
     is(
         BOM::Config::Services->is_enabled("identity_verification"),
