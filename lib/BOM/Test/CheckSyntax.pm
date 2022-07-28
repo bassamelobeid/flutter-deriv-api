@@ -19,6 +19,7 @@ use Test::Exception;
 use Test::Vars;
 use Test::Strict;
 use Test::PerlTidy;
+use Perl::Tidy::Sweetened;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
 use Test::Builder qw();
 use Pod::Coverage;
