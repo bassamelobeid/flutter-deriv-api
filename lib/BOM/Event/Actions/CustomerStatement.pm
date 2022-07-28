@@ -118,7 +118,6 @@ sub _send_email_statement {
         },
         offerings_available => defined($company->default_product_type),
     };
-
     my $tt = Template->new(ABSOLUTE => 1);
     $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/quarterly_statement.html.tt', $data, \my $html);
     if ($tt->error) {

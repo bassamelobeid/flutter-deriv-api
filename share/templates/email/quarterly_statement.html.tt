@@ -171,13 +171,15 @@
    <th>Reference ID</th>
    <th>Credit</th>
    <th>Debit</th>
+   <th>Transaction Type</th>
   </tr>
    [% FOREACH payment IN client.payments -%]
    <tr>
      <td>[% payment.transaction_date %]</td>
      <td>[% payment.id %]</td>
-     <td>[% IF payment.action_type == 'deposit' %] [% payment.amount %] [% END %]</td>
-     <td>[% IF payment.action_type == 'withdrawal' %] [% payment.amount %] [% END %]</td>
+     <td>[% IF (payment.action_type == 'deposit') || (payment.action_type == 'transfer' && payment.amount > 0) %] [% payment.amount %] [% END %]</td>
+     <td>[% IF (payment.action_type == 'withdrawal') || (payment.action_type == 'transfer' && payment.amount < 0) %] [% payment.amount %] [% END %]</td>
+     <td>[% (payment.action_type == 'transfer') ? 'internal transfer' : payment.action_type %]</td>
    </tr>
    [% END -%] 
  </tbody>

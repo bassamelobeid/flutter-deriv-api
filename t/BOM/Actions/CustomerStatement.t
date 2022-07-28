@@ -71,11 +71,14 @@ my $password    = 'jskjd8292922';
 my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
+    email       => $email
 });
 
-$test_client->status->set('age_verification', 'test_name', 'test_reason');
-$test_client->email($email);
-$test_client->save;
+my $test_sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => $test_client->email
+});
+$test_sibling->set_default_account('LTC');
 
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::User->create(
@@ -83,6 +86,15 @@ my $user         = BOM::User->create(
     password => $hash_pwd
 );
 $user->add_client($test_client);
+$user->add_client($test_sibling);
+
+$test_client->status->set('age_verification', 'test_name', 'test_reason');
+$test_client->binary_user_id($user->id);
+$test_client->save;
+
+$test_sibling->status->set('age_verification', 'test_name', 'test_reason');
+$test_sibling->binary_user_id($user->id);
+$test_sibling->save;
 
 my $req_args = {
     client    => $test_client,
@@ -236,6 +248,25 @@ subtest 'client with payments, trades and P2P' => sub {
     $error = $txn->buy(skip_validation => 1);
     is $error, undef, 'no error buying contract';
 
+# perform transfer between accounts
+    $txn = $test_client->payment_account_transfer(
+        currency    => 'USD',
+        amount      => 10,
+        to_amount   => 1,
+        toClient    => $test_sibling,
+        remark      => 'blabla',
+        fees        => 1.1,
+        txn_details => {
+            from_login                => $test_client->loginid,
+            to_login                  => $test_sibling->loginid,
+            fees                      => 1.1,
+            fees_currency             => 'USD',
+            fees_percent              => 1.5,
+            min_fee                   => 0.5,
+            fee_calculated_by_percent => 1.1,
+        },
+    );
+
 # perform 2 p2p escrow transactions
     BOM::Test::Helper::P2P::bypass_sendbird();
     BOM::Test::Helper::P2P::create_escrow();
@@ -260,7 +291,7 @@ subtest 'client with payments, trades and P2P' => sub {
     my $expected_content = {
         profile =>
             [[$test_client->first_name . ' ' . $test_client->last_name, $test_client->loginid, 'USD', 'Professional', '.+ to .+ \(inclusive\)'],],
-        overview     => [['^0\.00$', '^50100\.00$', '^\-2064.00', '^\-614\.00$', '^0\.00$', '47422\.00$', '^47896.00$']],
+        overview     => [['^0\.00$', '^50100\.00$', '^\-2074.00', '^\-614\.00$', '^0\.00$', '47412\.00$', '^47886.00$']],
         close_trades => [[
                 $date_format, '\d+',
                 '^sell$',    'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after contract start time.',
@@ -281,10 +312,12 @@ subtest 'client with payments, trades and P2P' => sub {
             ],
         ],
         payments => [
-            [$date_format, '\d+', '^$',         '^\-1032\.00$'],
-            [$date_format, '\d+', '^$',         '^\-1032\.00$'],
-            [$date_format, '\d+', '^100.00$',   '^$'],
-            [$date_format, '\d+', '^50000.00$', '^$'],
+            [$date_format, '\d+', '^$',         '^\-10\.00$',   '^internal transfer$'],
+            [$date_format, '\d+', '^$',         '^\-1032\.00$', '^withdrawal$'],
+            [$date_format, '\d+', '^$',         '^\-1032\.00$', '^withdrawal$'],
+            [$date_format, '\d+', '^100.00$',   '^$',           '^deposit$'],
+            [$date_format, '\d+', '^50000.00$', '^$',           '^deposit$'],
+
         ],
         escrow => [
             [$date_format, '\d+', 'release', '^50\.00$',   'P2P order \d+ cancelled'],
@@ -298,7 +331,7 @@ subtest 'client with payments, trades and P2P' => sub {
         my $mock_lc = Test::MockModule->new('LandingCompany');
         $mock_lc->mock('default_product_type' => sub { return undef });
 
-        $expected_content->{overview} = [['^0\.00$', '^50100\.00$', '^\-2064.00', '47422\.00$']];
+        $expected_content->{overview} = [['^0\.00$', '^50100\.00$', '^\-2074.00', '47412\.00$']];
 
         test_email_statement($req_args, $expected_content);
 
