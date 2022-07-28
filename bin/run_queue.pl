@@ -56,6 +56,7 @@ GetOptions(
     'c|category=s'       => \(my $category),
     'json_log_file=s'    => \(my $json_log_file),
     'maximum_job_time=i' => \(my $maximum_job_time),
+    'retry_interval=i'   => \(my $retry_interval),
     'l|log_level=s'      => \(my $log_level),
 ) or die;
 
@@ -84,6 +85,7 @@ my $listener = BOM::Event::Listener->new(
     streams          => [split ',', $streams],
     maximum_job_time => $maximum_job_time,
     category         => $category,
+    retry_interval   => $retry_interval,
 );
 
 $listener->run;

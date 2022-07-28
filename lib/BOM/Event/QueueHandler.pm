@@ -50,6 +50,22 @@ How long (in seconds) to allow for a single job call is allowed.
 
 use constant MAXIMUM_JOB_TIME => 30;
 
+=head2 PENDING_ITEMS_COUNT
+
+How many items are we looking for in the pending queue
+
+=cut
+
+use constant PENDING_ITEMS_COUNT => 100;
+
+=head2 NUMBER_OF_RETRIES
+
+How many times are we reprocessing the items
+
+=cut
+
+use constant NUMBER_OF_RETRIES => 5;
+
 =head2 configure
 
 Called from the constructor and can also be used manually to update
@@ -72,13 +88,15 @@ allowed to take.
 
 =item * C<worker_index> - Index of this worker, default is 0.
 
+=item * C<retry_interval> - How often do we retry an event (in milliseconds).
+
 =back
 
 =cut
 
 sub configure {
     my ($self, %args) = @_;
-    for (qw(queue queue_wait_time maximum_job_time streams category worker_index)) {
+    for (qw(queue queue_wait_time maximum_job_time streams category worker_index retry_interval)) {
         $self->{$_} = delete $args{$_} if exists $args{$_};
     }
     return $self->next::method(%args);
@@ -194,6 +212,14 @@ sub job_processor {
     return $self->{job_processor} //= BOM::Event::Process->new(category => $self->category);
 }
 
+=head2 retry_interval
+
+Returns the retry interval to be used when claiming an item from stream
+
+=cut
+
+sub retry_interval { return shift->{retry_interval} }
+
 =head2 host_name
 
 Returns host name if defined otherwise returns machine's name
@@ -226,8 +252,9 @@ async sub init_streams {
             $log->debugf("Created consumer group '%s' on stream %s", $self->consumer_group, $stream);
         } catch ($err) {
             if (($err) =~ /Consumer Group name already exists/) {
-                $log->debugf("Consumer group '%s' already exsits on stream %s; all pending messages will be acknowledged.",
-                    $self->consumer_group, $stream);
+                my $action = $self->retry_interval ? "retried" : "acknowledged";
+                $log->debugf("Consumer group '%s' already exsits on stream %s; all pending messages will be %s.",
+                    $self->consumer_group, $stream, $action);
                 await $self->_resolve_pending_messages($stream);
                 # Consumer group exists error will always occurre after the first init
                 # so since we may use more than 1 worker, we have to ignore it.;
@@ -331,19 +358,26 @@ async sub stream_process_loop {
     await $self->init_streams;
 
     while (!$self->should_shutdown->is_ready() && $self->{request_counter} <= REQUESTS_PER_CYCLE) {
-        my $items = await $self->get_stream_items();
-        next unless $items;    # $item will be undef in case of timeout occurred
+        my $items;
+
+        if ($self->retry_interval) {
+            $items = await $self->items_to_reprocess;
+        }
+
+        $items = await $self->get_stream_items unless $items;
 
         my $processed_job;
 
-        ITEMS:
+        ITEM:
         for my $item (@$items) {
-            my ($stream, $id, $event) = $item->@{qw/stream id event/};
+            my ($stream, $id, $event, $retry_count) = $item->@{qw/stream id event retry_count/};
 
             if ($processed_job) {
                 # if this returns false, the message has been claimed by another conusmer and should be skipped
-                next ITEMS unless await $self->_reclaim_message($stream, $id);
+                next ITEM unless await $self->_reclaim_message($stream, $id);
             }
+
+            $retry_count //= 1;
 
             my $decoded_data;
             try {
@@ -357,12 +391,106 @@ async sub stream_process_loop {
                 exception_logged();
             }
 
-            await $self->process_job($stream, $decoded_data) if $decoded_data;
-            # todo: do not xack failed jobs when we have a retry mechanism
-            await $self->_ack_message($stream, $id);
-            $processed_job = 1;
+            try {
+                # NOTE : At this point it is not guaranteed that
+                # an event will be processed at most once since a
+                # job can be successful but not acknowledged,
+                # thus keeping it 'pending'
+                my $response = await $self->process_job($stream, $decoded_data);
+
+                if ($response && $response->isa('Future')) {
+                    die $response->failure if $response->failure;
+                }
+                await $self->_ack_message($stream, $id);
+            } catch ($e) {
+                # If the retry mechanism switch is off (retry_interval is not assigned)
+                # or when we have reached the maximum number of retries, log the error
+                # message and mark the message as processed
+                if ($retry_count >= NUMBER_OF_RETRIES || !$self->retry_interval) {
+                    $log->error($e);
+                    stats_inc($stream . ".processed.failure");
+                    await $self->_ack_message($stream, $id);
+                    next ITEM;
+                }
+                $log->warnf("Event '%s' from '%s' has failed to process. The initial error was : %s. Will reprocess the event",
+                    $decoded_data->{type}, $stream, $e);
+                stats_inc($stream . '.retried_job');
+            } finally {
+                $processed_job = 1;
+            }
         }
     }
+}
+
+=head2 items_to_reprocess
+
+Retry mechanism for events.
+
+Looks for items in the pending queue and returns one if it needs to be retried
+
+=cut
+
+async sub items_to_reprocess {
+
+    my $self = shift;
+
+    STREAM:
+    for my $stream ($self->streams) {
+
+        try {
+            my $first_id = '-';
+
+            while (my $pending_items = await $self->redis->xpending($stream, $self->consumer_group, $first_id, '+', PENDING_ITEMS_COUNT)) {
+
+                ITEM:
+                # This 'for' loop can be avoided once
+                # we pass to Redis version 6.2+ where
+                # we will be able to include IDLE_TIME
+                # filter for XPENDING
+                for my $item ($pending_items->@*) {
+                    my $id        = $first_id = $item->[0];
+                    my $idle_time = $item->[2];
+
+                    next ITEM if $idle_time < $self->retry_interval;
+
+                    my $claimed_item = await $self->redis->xclaim($stream, $self->consumer_group, $self->consumer_name, $self->retry_interval, $id);
+
+                    # Go to the next item if there are no items to claim
+                    next ITEM unless @$claimed_item;
+
+                    # The reason for "+ 1" is that the item
+                    # has been reclaimed, so the count in
+                    # the stream has been increased, but
+                    # since we are getting the retry count
+                    # from XPENDING, we will need to
+                    # increment it by 1
+                    my $retry_count  = $item->[3] + 1;
+                    my $event        = $claimed_item->[0]->[1]->[1];
+                    my $decoded_info = decode_json_utf8($event);
+
+                    if ($retry_count > NUMBER_OF_RETRIES) {
+                        await $self->_ack_message($stream, $id);
+                        $log->errorf("Exceeded number of retries for '%s' event from '%s'", $decoded_info->{type}, $stream);
+                        next ITEM;
+                    }
+
+                    $log->infof("Reprocessing event '%s' from '%s', attempt # %s/%s", $decoded_info->{type}, $stream, $retry_count,
+                        NUMBER_OF_RETRIES);
+
+                    my @items =
+                        map { {stream => $stream, id => $_->[0]->[0], event => $_->[0]->[1]->[1], retry_count => $retry_count} } $claimed_item;
+
+                    return \@items;
+                }
+
+                next STREAM if @{$pending_items} < PENDING_ITEMS_COUNT;
+            }
+        } catch ($e) {
+            $log->errorf("Error while fetching items to reprocess from '%s' : '%s'", $stream, $e);
+        }
+    }
+
+    return;
 }
 
 =head2 get_queue_item
@@ -433,21 +561,24 @@ Returns undef
 
 async sub _resolve_pending_messages {
     my ($self, $stream) = @_;
-    try {
-        my $result = await $self->redis->xpending($stream, $self->consumer_group, '-', '+', '10000', $self->consumer_name);
-        # Since await is not allowed inside foreach on a non-lexical iterator variable
-        await &fmap0(    ## no critic
-            $self->$curry::weak(
-                async sub {
-                    my ($self, $msg) = @_;
-                    await $self->_ack_message($stream, $msg->[0]);
-                }
-            ),
-            foreach    => $result,
-            concurrent => 4,
-        );
-    } catch ($err) {
-        $log->errorf('Failed while resolving pending messages in (%s) stream: %s', $stream, $err);
+
+    if (!$self->retry_interval) {
+        try {
+            my $result = await $self->redis->xpending($stream, $self->consumer_group, '-', '+', '10000', $self->consumer_name);
+            # Since await is not allowed inside foreach on a non-lexical iterator variable
+            await &fmap0(    ## no critic
+                $self->$curry::weak(
+                    async sub {
+                        my ($self, $msg) = @_;
+                        await $self->_ack_message($stream, $msg->[0]);
+                    }
+                ),
+                foreach    => $result,
+                concurrent => 4,
+            );
+        } catch ($err) {
+            $log->errorf('Failed while resolving pending messages in (%s) stream: %s', $stream, $err);
+        }
     }
 
     return undef;
@@ -487,21 +618,22 @@ async sub process_job {
         return await Future->wait_any($f, $self->loop->timeout_future(after => $self->maximum_job_time));
     } catch ($e) {
         my $cleaned_data = $self->clean_data_for_logging($event_data);
+
+        my $error_msg;
+
         if ($e =~ /^Watchdog timeout|^Timeout/i) {
-            # This can happen when a job being long and timeout happened
-            $log->errorf("Processing of request from stream %s took longer than 'MAXIMUM_JOB_TIME' %s seconds - data was %s",
+            $error_msg = $log->debugf("Processing of request from stream %s took longer than 'MAXIMUM_JOB_TIME' %s seconds - data was %s",
                 $stream, $self->maximum_job_time, $cleaned_data);
         } else {
-            $log->errorf('Failed to process data (%s) - %s', $cleaned_data, $e);
+            $error_msg = $log->debugf('Failed to process data (%s) - %s', $cleaned_data, $e);
         }
-        stats_inc(lc "$stream.processed.failure");
         exception_logged();
         # This one's less clear cut than other failure cases:
         # we *do* expect occasional failures from processing,
         # and normally that does not imply everything is broken.
         # However, continuous failures should perhaps be treated
         # more seriously?
-        return undef;
+        return Future->fail($error_msg);
     }
 }
 

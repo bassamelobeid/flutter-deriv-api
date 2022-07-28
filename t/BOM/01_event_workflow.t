@@ -243,6 +243,15 @@ subtest 'process - tracking jobs' => sub {
     is(ref($action_mappings->{$_}), 'CODE', 'event handler is a code reference') for keys %$action_mappings;
 };
 
+subtest 'process - mt5 retryable jobs' => sub {
+    my $proc            = BOM::Event::Process->new(category => 'mt5_retryable');
+    my $action_mappings = $proc->actions;
+
+    cmp_deeply([keys %$action_mappings], bag(qw/link_myaff_token_to_mt5/), 'Correct number of actions that can be emitted');
+
+    is(ref($action_mappings->{$_}), 'CODE', 'event handler is a code reference') for keys %$action_mappings;
+};
+
 subtest 'request in process' => sub {
     my $proc = BOM::Event::Process->new(category => 'generic');
 

@@ -47,6 +47,14 @@ sub category { return shift->{category} }
 
 sub maximum_job_time { return shift->{maximum_job_time} }
 
+=head2 retry_interval
+
+How frequently do we reprocess an item (in milliseconds)
+
+=cut 
+
+sub retry_interval { return (shift->{retry_interval} // 0) * 1000; }
+
 sub shutdown_time_out { return shift->{shutdown_time_out} // SHUTDOWN_TIMEOUT }
 
 # Set this if it is being run in parallel forks so that the
@@ -68,6 +76,7 @@ sub run {    ## no critic (RequireFinalReturn)
         category         => $self->category,
         maximum_job_time => $self->maximum_job_time,
         worker_index     => $self->worker_index,
+        retry_interval   => $self->retry_interval,
     );
 
     $loop->add($handler);

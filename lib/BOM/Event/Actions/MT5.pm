@@ -18,6 +18,7 @@ use BOM::Config;
 use BOM::Event::Services::Track;
 use BOM::Platform::Client::Sanctions;
 use BOM::Config::MT5;
+use Future::AsyncAwait;
 
 use Email::Stuffer;
 use YAML::XS;
@@ -30,6 +31,9 @@ use DataDog::DogStatsd::Helper;
 use Syntax::Keyword::Try;
 use Future::Utils qw(fmap_void);
 use Time::Moment;
+use WebService::MyAffiliates;
+use Scalar::Util;
+
 use LandingCompany::Registry;
 use Future;
 use IO::Async::Loop;
@@ -406,6 +410,170 @@ sub mt5_inactive_account_closure_report {
             attachment => [$csv->[0]],
         });
     }
+}
+
+=head2 link_myaff_token_to_mt5
+
+Function for linking MyAffiliate token to MT5
+
+=over 4
+
+=item * C<client_loginid> - client login
+
+=item * C<client_mt5_login> - client MT5 login
+
+=item * C<myaffiliates_token> - MyAffiliate token
+
+=item * C<server> - server name
+
+=item * C<broker_code> - broker code
+
+=back
+
+=cut
+
+async sub link_myaff_token_to_mt5 {
+
+    my $args = shift;
+
+    my ($client_loginid, $client_mt5_login, $myaffiliates_token, $server) = @{$args}{qw/client_loginid client_mt5_login myaffiliates_token server/};
+
+    my $user_details;
+
+    my $ib_affiliate_id = _get_ib_affiliate_id_from_token($myaffiliates_token);
+
+    my $agent_login = _get_mt5_agent_account_id({
+        affiliate_id => $ib_affiliate_id,
+        loginid      => $client_loginid,
+        server       => $server,
+    });
+
+    my $agent_id = 'MTR' . $agent_login;
+
+    try {
+        $user_details = await BOM::MT5::User::Async::get_user($client_mt5_login);
+    } catch ($e) {
+        if ($e->{error} =~ m/Not found/i) {
+            $log->errorf("An error occured while retrieving user '%s' from MT5 : %s", $client_mt5_login, $e);
+            return 1;
+        }
+
+        die $e;
+    }
+
+    die "Could not get details for client $client_mt5_login while linking to affiliate $ib_affiliate_id" unless $user_details;
+
+    # Assign the affiliate token in the MT5 API
+    my $updated_user = await BOM::MT5::User::Async::update_user({
+        %{$user_details},
+        login => $client_mt5_login,
+        agent => $agent_id
+    });
+
+    die "Could not link client $client_mt5_login to agent $ib_affiliate_id" unless $updated_user;
+    die $updated_user->{error} if $updated_user->{error};
+
+    $log->infof("Successfully linked client %s to affiliate %s", $client_mt5_login, $ib_affiliate_id);
+}
+
+=head2 _get_ib_affiliate_id_from_token
+
+Get IB's affiliate ID based on MyAffiliate token
+
+=over 4
+
+=item * C<$token> string that contains a valid MyAffiliate token
+
+=back
+
+Returns a C<$ib_affiliate_id> an integer representing MyAffiliate ID to link to an IB
+
+=cut
+
+sub _get_ib_affiliate_id_from_token {
+    my ($token) = @_;
+
+    my $ib_affiliate_id;
+    my $myaffiliates_config = BOM::Config::third_party()->{myaffiliates};
+
+    my $aff = WebService::MyAffiliates->new(
+        user    => $myaffiliates_config->{user},
+        pass    => $myaffiliates_config->{pass},
+        host    => $myaffiliates_config->{host},
+        timeout => 10
+    );
+
+    die "Unable to create MyAffiliate object to parse token $token" unless $aff;
+
+    my $myaffiliate_id = $aff->get_affiliate_id_from_token($token);
+
+    die "Unable to parse MyAffiliate token $token" unless $myaffiliate_id;
+
+    die "Unable to map token $token to an affiliate ($myaffiliate_id)" if $myaffiliate_id !~ /^\d+$/;
+
+    my $affiliate_user = $aff->get_user($myaffiliate_id);
+
+    die "Unable to get MyAffiliate user $myaffiliate_id from token $token" unless $affiliate_user;
+
+    if (ref $affiliate_user->{USER_VARIABLES}{VARIABLE} ne 'ARRAY') {
+        die "User variable is not defined for $myaffiliate_id from token $token";
+    }
+
+    my @mt5_custom_var =
+        map { $_->{VALUE} =~ s/\s//rg; } grep { $_->{NAME} =~ s/\s//rg eq 'mt5_account' } $affiliate_user->{USER_VARIABLES}{VARIABLE}->@*;
+    $ib_affiliate_id = $myaffiliate_id if $mt5_custom_var[0];
+
+    # If we are receiving anything other than the affiliate id then the token was not parsed successfully
+    die "Affiliate ID is not a number, getting '" . $ib_affiliate_id . "' instead" unless Scalar::Util::looks_like_number($ib_affiliate_id);
+
+    return $ib_affiliate_id;
+}
+
+=head2 _get_mt5_agent_account_id
+
+_get_mt5_agent_account_id({account_type => 'real', ...});
+
+Retrieve agent's MT5 account ID on the target server
+
+=over 4
+
+=item * C<$params> - hashref with the following keys
+
+=item * C<$user> - with the value of L<BOM::User> instance
+
+=item * C<$account_type> - with the value of demo/real
+
+=item * C<$country> - with value of country 2 characters code, e.g. ID
+
+=item * C<$affiliate_id> - an integer representing MyAffiliate id as the output of _get_ib_affiliate_id_from_token
+
+=item * C<$market> - market type such financial/synthetic
+
+=back
+
+Return C<$agent_id> an integer representing agent's MT5 account ID
+
+=cut
+
+sub _get_mt5_agent_account_id {
+    my $args = shift;
+
+    my ($loginid, $affiliate_id, $server) =
+        @{$args}{qw(loginid affiliate_id server)};
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    my ($agent_id) = $client->user->dbic->run(
+        fixup => sub {
+            $_->selectrow_array("SELECT * FROM mt5.get_agent_id(?, ?)", undef, $affiliate_id, $server);
+        });
+
+    unless ($agent_id) {
+        DataDog::DogStatsd::Helper::stats_inc('myaffiliates.mt5.failure.no_info');
+        die "Could not get MT5 agent account ID for affiliate " . $affiliate_id . " while linking to client " . $loginid;
+    }
+
+    return $agent_id;
 }
 
 =head2 mt5_archived_account_reset_trading_password

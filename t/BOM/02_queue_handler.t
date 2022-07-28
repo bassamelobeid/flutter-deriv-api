@@ -213,6 +213,7 @@ subtest 'async_subs' => sub {
             type    => 'async_sub_1',
             details => {wait => 1}})->get;
     is $f, 'test did not time out', "Async job less than MAXIMUM_JOB_TIME should not time out.";
+
     $module->unmock_all();
 };
 

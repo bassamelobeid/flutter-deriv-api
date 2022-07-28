@@ -6,6 +6,8 @@ use Test::More;
 use Test::Fatal;
 use Time::Moment;
 
+use Log::Any::Test;
+use Log::Any qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Event::Actions::MT5;
@@ -524,6 +526,220 @@ subtest 'mt5 account closure report' => sub {
 
     ok $email, 'Account closure report email sent';
     like $email->{body}, qr/MT5 account closure report is attached/, 'corrent content';
+};
+
+subtest 'link myaffiliate token to mt5' => sub {
+
+    # MyAffiliate connection error test
+
+    my $args;
+    my $process_result;
+
+    my $mocked_actions      = Test::MockModule->new('BOM::Event::Actions::MT5');
+    my $mocked_myaffiliates = Test::MockModule->new('WebService::MyAffiliates');
+
+    $mocked_actions->mock(
+        'link_myaff_token_to_mt5',
+        sub {
+            $args = shift;
+            return $mocked_actions->original('link_myaff_token_to_mt5')->($args);
+        });
+
+    $mocked_actions->mock(
+        '_get_ib_affiliate_id_from_token',
+        sub {
+            die "Unable to connect to MyAffiliate to parse token";
+        });
+
+    $process_result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+            type    => 'link_myaff_token_to_mt5',
+            details => {}});
+
+    like($process_result->{failure}[0], qr/Unable to connect to MyAffiliate to parse token/, "Correct expected error message");
+    $mocked_actions->unmock_all();
+
+    # Faulty token error test
+
+    $mocked_actions->mock(
+        'link_myaff_token_to_mt5',
+        sub {
+            $args = shift;
+            return $mocked_actions->original('link_myaff_token_to_mt5')->($args);
+        });
+
+    $mocked_myaffiliates->mock(
+        'get_affiliate_id_from_token',
+        sub {
+            $args = shift;
+            return 123;
+        });
+
+    $process_result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+            type    => 'link_myaff_token_to_mt5',
+            details => {
+                myaffiliates_token => 'dummy_token',
+            }});
+
+    like($process_result->{failure}[0], qr/Unable to get MyAffiliate user 123 from token dummy_token/, "Correct expected error message");
+
+    $mocked_myaffiliates->unmock_all();
+
+    # Token mapping error test
+
+    $mocked_myaffiliates->mock(
+        'get_affiliate_id_from_token',
+        sub {
+            $args = shift;
+            return "Not a token";
+        });
+
+    $process_result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+            type    => 'link_myaff_token_to_mt5',
+            details => {
+                myaffiliates_token => 'dummy_token',
+            }});
+
+    like($process_result->{failure}[0], qr/Unable to map token dummy_token to an affiliate/, "Correct expected error message");
+
+    $mocked_myaffiliates->unmock_all();
+
+    # User variable error test
+
+    $mocked_actions->mock(
+        '_get_mt5_agent_account_id',
+        sub {
+            $args = shift;
+            return 123;
+        });
+
+    $mocked_myaffiliates->mock(
+        'get_affiliate_id_from_token',
+        sub {
+            $args = shift;
+            return 123;
+        });
+
+    $mocked_myaffiliates->mock(
+        'get_user',
+        sub {
+            $args = shift;
+            my $user->{USER_VARIABLES}{VARIABLE} = "Not a user";
+            return $user;
+        });
+
+    $process_result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+            type    => 'link_myaff_token_to_mt5',
+            details => {
+                myaffiliates_token => 'dummy_token',
+            }});
+
+    like($process_result->{failure}[0], qr/User variable is not defined for 123 from token dummy_token/, "Correct expected error message");
+
+    $mocked_myaffiliates->unmock_all();
+    $mocked_actions->unmock_all();
+
+    # Linking success test
+
+    $mocked_actions->mock(
+        'link_myaff_token_to_mt5',
+        sub {
+            $args = shift;
+            return $mocked_actions->original('link_myaff_token_to_mt5')->($args);
+        });
+
+    $mocked_actions->mock(
+        '_get_mt5_agent_account_id',
+        sub {
+            $args = shift;
+            return 123;
+        });
+
+    $mocked_myaffiliates->mock(
+        'get_affiliate_id_from_token',
+        sub {
+            $args = shift;
+            return 123;
+        });
+
+    $mocked_mt5->mock(
+        'get_user',
+        sub {
+            return Future->done({"result" => "ok"});
+        });
+
+    $mocked_mt5->mock(
+        'update_user',
+        sub {
+            return Future->done({"result" => "ok"});
+        });
+
+    $mocked_myaffiliates->mock(
+        'get_user',
+        sub {
+            $args = shift;
+            my $user = {
+                'USER_VARIABLES' => {
+                    'VARIABLE' => [{
+                            NAME  => "mt5_account",
+                            VALUE => 1234
+                        }]}};
+
+            return $user;
+        });
+
+    $process_result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+            type    => 'link_myaff_token_to_mt5',
+            details => {
+                client_loginid     => 'dummy',
+                client_mt5_login   => 'MTR123456',
+                broker_code        => 'dummy',
+                myaffiliates_token => 'dummy_token',
+            }});
+
+    like($process_result->{result}[0], qr/Successfully linked client MTR123456 to affiliate 123/, "The success message is returned correctly");
+
+    $mocked_myaffiliates->unmock_all();
+    $mocked_actions->unmock_all();
+    $mocked_mt5->unmock_all();
+
+    # User not found test
+    $mocked_actions->mock(
+        'link_myaff_token_to_mt5',
+        sub {
+            $args = shift;
+            return $mocked_actions->original('link_myaff_token_to_mt5')->($args);
+        });
+
+    $mocked_actions->mock(
+        '_get_ib_affiliate_id_from_token',
+        sub {
+            $args = shift;
+            return 123;
+        });
+
+    $mocked_actions->mock(
+        '_get_mt5_agent_account_id',
+        sub {
+            $args = shift;
+            return 'MTR123';
+        });
+
+    $mocked_mt5->mock(
+        'get_user',
+        sub {
+            $args = shift;
+            my $error->{error} = "Not found";
+            die $error;
+        });
+
+    $process_result = BOM::Event::Process->new(category => 'mt5_retryable')->process({
+            type    => 'link_myaff_token_to_mt5',
+            details => {
+                client_mt5_login => 'MTR123456',
+            }});
+
+    $log->contains_ok(qr/An error occured while retrieving user 'MTR123456' from MT5 : \{error => \"Not found\"\}/, "Correct expected error message");
+    is($process_result->{result}[0], 1, "Correct returned value");
 };
 
 done_testing();

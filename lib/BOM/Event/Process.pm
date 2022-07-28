@@ -155,6 +155,9 @@ my $action_mapping = {
         withdrawal_rejected                              => \&BOM::Event::Services::Track::withdrawal_rejected,
         account_deactivated                              => \&BOM::Event::Services::Track::account_deactivated,
     },
+    mt5_retryable => {
+        link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,
+    },
 };
 
 =head1 METHODS

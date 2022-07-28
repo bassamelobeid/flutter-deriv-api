@@ -70,6 +70,32 @@ subtest 'Create the stream consumer groups' => sub {
     cmp_deeply \@created, $expected_groups, 'Created groups for all streams';
 };
 
+subtest 'multiple messages' => sub {
+    my $mocked = Test::MockModule->new('BOM::Event::QueueHandler');
+    $loop->add($stream_handler = BOM::Event::QueueHandler->new(streams => ['my_stream']));
+    my @items = ({
+        'id'     => '0-0',
+        'event'  => '{}',
+        'stream' => 'my_stream',
+    });
+    $mocked->redefine('get_stream_items' => async sub { return \@items; });
+    my $reclaimed;
+    $mocked->redefine('_reclaim_message' => async sub { $reclaimed = 1; });
+
+    Future->wait_any($stream_handler->stream_process_loop, $loop->delay_future(after => 1))->get;
+    ok !$reclaimed, 'no messages reclaimed with one item';
+
+    push @items,
+        {
+        'id'     => '0-1',
+        'event'  => '{}',
+        'stream' => 'my_stream',
+        };
+
+    Future->wait_any($stream_handler->stream_process_loop, $loop->delay_future(after => 1))->get;
+    ok $reclaimed, 'message reclaimed with two items';
+};
+
 subtest 'Invalid stream messages' => sub {
     my $mocked = Test::MockModule->new('BOM::Event::QueueHandler');
     $loop->add($stream_handler = BOM::Event::QueueHandler->new(streams => ['GENERIC_EVENTS_STREAM']));
@@ -106,32 +132,6 @@ subtest 'reclaim message' => sub {
     ok $stream_handler->_reclaim_message('my_stream', '1-0')->get, 'true result when xclaim succeeds';
 };
 
-subtest 'multiple messages' => sub {
-    my $mocked = Test::MockModule->new('BOM::Event::QueueHandler');
-    $loop->add($stream_handler = BOM::Event::QueueHandler->new(streams => ['my_stream']));
-    my @items = ({
-        'id'     => '0-0',
-        'event'  => '{}',
-        'stream' => 'my_stream',
-    });
-    $mocked->redefine('get_stream_items' => async sub { return \@items; });
-    my $reclaimed;
-    $mocked->redefine('_reclaim_message' => async sub { $reclaimed = 1; });
-
-    Future->wait_any($stream_handler->stream_process_loop, $loop->delay_future(after => 1))->get;
-    ok !$reclaimed, 'no messages reclaimed with one item';
-
-    push @items,
-        {
-        'id'     => '0-1',
-        'event'  => '{}',
-        'stream' => 'my_stream',
-        };
-
-    Future->wait_any($stream_handler->stream_process_loop, $loop->delay_future(after => 1))->get;
-    ok $reclaimed, 'message reclaimed with two items';
-};
-
 subtest 'Resolve pending messages' => sub {
     my $redis_object = Test::MockObject->new;
     my $pendings     = [['123-0'], ['123-1'], ['123-2'], ['123-3']];
@@ -144,6 +144,12 @@ subtest 'Resolve pending messages' => sub {
     $loop->add($stream_handler = BOM::Event::QueueHandler->new(streams => 'GENERIC_EVENTS_STREAM'));
     $stream_handler->_resolve_pending_messages('my_stream')->get;
     is_deeply \@acked, $pendings, 'Pending message marked as acknowledge successfully';
+
+    $mocked->redefine('retry_interval' => sub { return 1 });
+    @acked = ();
+    my $resolved_messages = $stream_handler->_resolve_pending_messages('my_stream')->get;
+
+    is scalar(@acked), 0, "No resolved messages when the retry mechanism is on";
 };
 
 subtest 'undefined functions' => sub {
