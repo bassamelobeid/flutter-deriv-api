@@ -517,7 +517,6 @@ SQL
             $idv_record->{document_expiration_date} = "-" if uc($idv_record->{status}) eq "FAILED";
 
             my $idv_document_check = $idv_model->get_document_check_detail($idv_record->{document_id});
-            my $response;
 
             next unless $idv_document_check;
 
@@ -529,8 +528,8 @@ SQL
                 $idv_record->{full_name} = 'N/A';
                 $idv_record->{dob}       = 'N/A';
             } elsif ($idv_report) {
-                $idv_record->{full_name} = $response->{full_name};
-                $idv_record->{dob}       = $response->{birthdate};
+                $idv_record->{full_name} = $idv_report->{full_name};
+                $idv_record->{dob}       = $idv_report->{birthdate};
             } else {
                 $idv_record->{full_name} = 'ERROR';
                 $idv_record->{dob}       = 'ERROR';
