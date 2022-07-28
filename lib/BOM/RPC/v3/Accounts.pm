@@ -61,6 +61,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
 use BOM::Config::Quants qw(market_pricing_limits);
+use BOM::Config::AccountType::Registry;
 use BOM::RPC::v3::Services;
 use BOM::RPC::v3::Services::Onramp;
 use BOM::Config::Redis;
@@ -3077,33 +3078,61 @@ rpc paymentagent_details => sub {
 };
 
 rpc get_account_types => sub {
-    return {
-        wallet => {
-            fiat      => {"currencies" => ["USD", "EUR", "AUD", "GBP"]},
-            crypto    => {"currencies" => ["BTC", "LTC"]},
-            p2p       => {"currencies" => ["USD"]},
-            pa        => {"currencies" => ["USD", "EUR", "AUD"]},
-            pa_client => {"currencies" => ["USD", "EUR", "AUD"]}
-        },
-        trading => {
-            deriv => {
-                "linkable_wallet_types"          => ["fiat", "crypto"],
-                "linkable_wallet_currencies"     => ["USD",  "EUR", "AUD", "BTC", "LTC"],
-                "currencies_available"           => ["USD",  "EUR", "BTC", "LTC"],
-                "linkable_to_different_currency" => 0
-            },
-            derivx => {
-                "linkable_wallet_types"          => ["fiat", "p2p"],
-                "linkable_wallet_currencies"     => ["USD",  "EUR", "BTC", "LTC"],
-                "currencies_available"           => ["USD",  "EUR", "BTC"],
-                "linkable_to_different_currency" => 1
-            },
-            mt5 => {
-                "linkable_wallet_types"          => ["fiat"],
-                "linkable_wallet_currencies"     => ["USD"],
-                "currencies_available"           => ["USD"],
-                "linkable_to_different_currency" => 1
-            }}};
+    my $params = shift;
+
+    my $residence          = $params->{client}->residence;
+    my $countries_instance = request()->brand->countries_instance;
+    my $default_company_name =
+        $countries_instance->financial_company_for_country($residence) || $countries_instance->gaming_company_for_country($residence);
+
+    return BOM::RPC::v3::Utility::create_error_by_code('PermissionDenied') unless $default_company_name;
+
+    my $default_landing_company = LandingCompany::Registry->by_name($default_company_name);
+    my $legal_currencies        = $default_landing_company->legal_allowed_currencies;
+
+    my %categories = BOM::Config::AccountType::Registry->all_categories();
+    my %result;
+    for my $category_name (sort keys %categories) {
+        my $category = $categories{$category_name};
+
+        for my $type_name (keys $category->account_types->%*) {
+            my $account_type        = $category->account_types->{$type_name};
+            my %account_type_result = (
+                is_demo  => $account_type->is_demo,
+                services => $account_type->services,
+            );
+
+            my @currencies_available = keys %$legal_currencies;
+            if ($account_type->currencies_by_landing_company->{$default_company_name}) {
+                @currencies_available = $account_type->currencies_by_landing_company->{$default_company_name}->@*;
+            }
+            if (scalar $account_type->currencies->@*) {
+                @currencies_available = intersect($account_type->currencies->@*, @currencies_available);
+            }
+            if (scalar $account_type->currency_types->@*) {
+                my @filtered_currencies;
+                for my $currency_type ($account_type->currency_types->@*) {
+                    push @filtered_currencies, grep { LandingCompany::Registry::get_currency_type($_) eq $currency_type } @currencies_available;
+                }
+                @currencies_available = @filtered_currencies;
+            }
+
+            # TODO: filter currencies already taken (NOTE: we've got to treat MT5 and DerivX account types differently)
+
+            $account_type_result{currencies_available} = \@currencies_available;
+
+            if ($category_name ne 'wallet') {
+                $account_type_result{linkable_wallet_types}          = $account_type->linkable_wallet_types // [];
+                $account_type_result{linkable_to_different_currency} = $account_type->linkable_to_different_currency;
+                $account_type_result{linkable_wallet_currencies} =
+                    (!$account_type->is_demo && $account_type->linkable_to_different_currency) ? [keys %$legal_currencies] : \@currencies_available;
+            }
+
+            $result{$category_name}->{$type_name} = \%account_type_result;
+        }
+    }
+
+    return \%result;
 };
 
 rpc get_available_accounts_to_transfer => sub {
