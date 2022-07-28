@@ -18,137 +18,93 @@
                 "wallet"
             ],
             "properties": {
-                "trading": {
-                    "description": "Details of the trading accounts.",
+                "binary": {
+                    "description": "Traditional accounts of binary.com",
                     "type": "object",
                     "additionalProperties": false,
                     "required": [
-                        "deriv",
-                        "derivx",
-                        "mt5"
+                        "demo",
+                        "real"
                     ],
                     "properties": {
-                        "deriv": {
-                            "description": "Deriv trading account",
+                        "demo": {
+                            "description": "Demo account",
                             "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "currencies_available",
-                                "linkable_to_different_currency",
-                                "linkable_wallet_currencies",
-                                "linkable_wallet_types"
-                            ],
-                            "properties": {
-                                "currencies_available": {
-                                    "description": "Allowed currencies for creating this trading account type, used currencies or disallowed currencies are not listed.",
-                                    "type": "array"
-                                },
-                                "linkable_to_different_currency": {
-                                    "description": "If the currency of trading account is the same as wallet",
-                                    "type": "integer",
-                                    "enum": [
-                                        1,
-                                        0
-                                    ]
-                                },
-                                "linkable_wallet_currencies": {
-                                    "description": "Allowed wallet currencies for linking.",
-                                    "type": "array"
-                                },
-                                "linkable_wallet_types": {
-                                    "description": "Linkable wallets types available.",
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string",
-                                        "enum": [
-                                            "fiat",
-                                            "crypto",
-                                            "p2p",
-                                            "pa",
-                                            "pa_client"
-                                        ]
-                                    }
-                                }
-                            }
+                            "$ref": "#/$defs/non_wallet_type"
                         },
-                        "derivx": {
-                            "description": "Derivx trading account",
+                        "real": {
+                            "description": "Real acocount",
                             "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "currencies_available",
-                                "linkable_to_different_currency",
-                                "linkable_wallet_currencies",
-                                "linkable_wallet_types"
-                            ],
-                            "properties": {
-                                "currencies_available": {
-                                    "description": "Allowed currencies for creating this trading account type, used currencies or disallowed currencies are not listed.",
-                                    "type": "array"
-                                },
-                                "linkable_to_different_currency": {
-                                    "description": "If the currency of trading account is the same as wallet",
-                                    "type": "integer",
-                                    "enum": [
-                                        1,
-                                        0
-                                    ]
-                                },
-                                "linkable_wallet_currencies": {
-                                    "description": "Allowed wallet currencies.",
-                                    "type": "array"
-                                },
-                                "linkable_wallet_types": {
-                                    "description": "Linkable wallets types available.",
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string",
-                                        "enum": [
-                                            "fiat",
-                                            "p2p"
-                                        ]
-                                    }
-                                }
-                            }
+                            "$ref": "#/$defs/non_wallet_type"
+                        }
+                    }
+                },
+                "derivx": {
+                    "description": "The accuonts created for the DerivX platform",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "demo",
+                        "real"
+                    ],
+                    "properties": {
+                        "demo": {
+                            "description": "Demo account",
+                            "type": "object",
+                            "$ref": "#/$defs/non_wallet_type"
                         },
-                        "mt5": {
-                            "description": "Mt5 trading account",
+                        "real": {
+                            "description": "Real acocount",
                             "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "currencies_available",
-                                "linkable_to_different_currency",
-                                "linkable_wallet_currencies",
-                                "linkable_wallet_types"
-                            ],
-                            "properties": {
-                                "currencies_available": {
-                                    "description": "Allowed currencies for creating this trading account type, used currencies or disallowed currencies are not listed.",
-                                    "type": "array"
-                                },
-                                "linkable_to_different_currency": {
-                                    "description": "If the currency of trading account is the same as wallet",
-                                    "type": "integer",
-                                    "enum": [
-                                        1,
-                                        0
-                                    ]
-                                },
-                                "linkable_wallet_currencies": {
-                                    "description": "Allowed wallet currencies.",
-                                    "type": "array"
-                                },
-                                "linkable_wallet_types": {
-                                    "description": "Linkable wallets types available.",
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string",
-                                        "enum": [
-                                            "fiat"
-                                        ]
-                                    }
-                                }
-                            }
+                            "$ref": "#/$defs/non_wallet_type"
+                        }
+                    }
+                },
+                "mt5": {
+                    "description": "Accounts created for the MT5 platfrom",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "demo",
+                        "financial",
+                        "gaming"
+                    ],
+                    "properties": {
+                        "demo": {
+                            "description": "Demo account",
+                            "type": "object",
+                            "$ref": "#/$defs/non_wallet_type"
+                        },
+                        "financial": {
+                            "description": "MT5 trading with finacial indices",
+                            "type": "object",
+                            "$ref": "#/$defs/non_wallet_type"
+                        },
+                        "gaming": {
+                            "description": "MT5 trading with synthetic indices",
+                            "type": "object",
+                            "$ref": "#/$defs/non_wallet_type"
+                        }
+                    }
+                },
+                "trading": {
+                    "description": "Trading accounts can trade in the Deriv website and apps",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "demo",
+                        "real"
+                    ],
+                    "properties": {
+                        "demo": {
+                            "description": "Demo trading account",
+                            "type": "object",
+                            "$ref": "#/$defs/non_wallet_type"
+                        },
+                        "real": {
+                            "description": "Real trading acocounts",
+                            "type": "object",
+                            "$ref": "#/$defs/non_wallet_type"
                         }
                     }
                 },
@@ -157,82 +113,49 @@
                     "type": "object",
                     "additionalProperties": false,
                     "required": [
+                        "affiliate",
                         "crypto",
+                        "demo",
                         "fiat",
                         "p2p",
-                        "pa",
-                        "pa_client"
+                        "paymentagent",
+                        "paymentagent_client"
                     ],
                     "properties": {
-                        "crypto": {
-                            "description": "Details of the crypto wallets.",
+                        "affiliate": {
+                            "description": "Can receive affiliate commissions",
                             "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "currencies"
-                            ],
-                            "properties": {
-                                "currencies": {
-                                    "description": "Currencies that are available",
-                                    "type": "array"
-                                }
-                            }
+                            "$ref": "#/$defs/wallet_type"
+                        },
+                        "crypto": {
+                            "description": "Can deposit and withdraw through the crypto-cashier",
+                            "type": "object",
+                            "$ref": "#/$defs/wallet_type"
+                        },
+                        "demo": {
+                            "description": "Demo wallets, linkable to demo accounts only",
+                            "type": "object",
+                            "$ref": "#/$defs/wallet_type"
                         },
                         "fiat": {
-                            "description": "Details of the fiat wallets.",
+                            "description": "Can deposit and withdraw through the primary cashier",
                             "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "currencies"
-                            ],
-                            "properties": {
-                                "currencies": {
-                                    "description": "Currencies that are available",
-                                    "type": "array"
-                                }
-                            }
+                            "$ref": "#/$defs/wallet_type"
                         },
                         "p2p": {
-                            "description": "Details of the p2p wallets.",
+                            "description": "Can buy/sell using P2P exchanges",
                             "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "currencies"
-                            ],
-                            "properties": {
-                                "currencies": {
-                                    "description": "Currencies that are available",
-                                    "type": "array"
-                                }
-                            }
+                            "$ref": "#/$defs/wallet_type"
                         },
-                        "pa": {
-                            "description": "Details of the pa wallets.",
+                        "paymentagent": {
+                            "description": "Can act as a payment agent to other clients",
                             "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "currencies"
-                            ],
-                            "properties": {
-                                "currencies": {
-                                    "description": "Currencies that are available",
-                                    "type": "array"
-                                }
-                            }
+                            "$ref": "#/$defs/wallet_type"
                         },
-                        "pa_client": {
-                            "description": "Details of the pa_client wallets.",
+                        "paymentagent_client": {
+                            "description": "Can receive funds from a payment agent",
                             "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                                "currencies"
-                            ],
-                            "properties": {
-                                "currencies": {
-                                    "description": "Currencies that are available",
-                                    "type": "array"
-                                }
-                            }
+                            "$ref": "#/$defs/wallet_type"
                         }
                     }
                 }
@@ -252,6 +175,118 @@
         "req_id": {
             "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
             "type": "integer"
+        }
+    },
+    "$defs": {
+        "non_wallet_type": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "currencies_available",
+                "is_demo",
+                "linkable_to_different_currency",
+                "linkable_wallet_currencies",
+                "linkable_wallet_types",
+                "services"
+            ],
+            "properties": {
+                "currencies_available": {
+                    "description": "Allowed currencies for creating accounts of this type; used or disallowed currencies are not listed.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "is_demo": {
+                    "description": "1 if it's a real account type; 0 if it's a demo account type.",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "linkable_to_different_currency": {
+                    "description": "If the currency of the accounts should be the same as their linked wallet",
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        0
+                    ]
+                },
+                "linkable_wallet_currencies": {
+                    "description": "Allowed wallet currencies.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "linkable_wallet_types": {
+                    "description": "Linkable wallets types available.",
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "demo",
+                            "fiat",
+                            "crypto",
+                            "p2p",
+                            "paymentagent",
+                            "paymentagent_client",
+                            "affiliate"
+                        ]
+                    }
+                },
+                "services": {
+                    "$ref": "#/$defs/service_list"
+                }
+            }
+        },
+        "service_list": {
+            "description": "A list of services accessible for the account type.",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "trade",
+                    "link_to_accounts",
+                    "transfer_without_link",
+                    "p2p",
+                    "crypto_cashier",
+                    "fiat_cashier",
+                    "get_commissions",
+                    "paymentagent_transfer",
+                    "paymentagent_withdraw"
+                ]
+            }
+        },
+        "wallet_type": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "currencies_available",
+                "is_demo",
+                "services"
+            ],
+            "properties": {
+                "currencies_available": {
+                    "description": "Allowed currencies for creating accounts of this type; used or disallowed currencies are not listed.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "is_demo": {
+                    "description": "1 if it's a real account type; 0 if it's a demo account type.",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "services": {
+                    "$ref": "#/$defs/service_list"
+                }
+            }
         }
     }
 }
