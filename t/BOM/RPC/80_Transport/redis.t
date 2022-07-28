@@ -64,24 +64,25 @@ subtest 'Resolve pending messages' => sub {
     my $redis = Test::MockObject->new();
 
     my $pendings = [['123-0'], ['123-1'], ['123-2'], ['123-3']];
-
-    my @acked = ();
+    my $acked    = [];
 
     $redis->mock(
         execute => sub {
             my ($self, @cmd) = @_;
 
             if ($cmd[0] eq 'XPENDING') {
+                is $cmd[1], 'mt5', 'The stream name is correct';
                 return $pendings;
             } elsif ($cmd[0] eq 'XACK') {
-                push @acked, [$cmd[3]];
+                is $cmd[1], 'mt5', 'The stream name is correct';
+                push @$acked, [$cmd[3]];
             }
         });
 
     my $instance = create_transport_redis_instance(redis => $redis);
     $instance->_resolve_pending_messages();
 
-    is_deeply \@acked, $pendings, 'Pending message marked as acknowledge successfully';
+    is_deeply $acked, $pendings, 'Pending message marked as acknowledge successfully';
 };
 
 subtest 'Parse message' => sub {
@@ -148,7 +149,7 @@ sub create_transport_redis_instance {
     return BOM::RPC::Transport::Redis->new(
         redis        => 'dummy',
         host         => 'host01',
-        cateogry     => 'mt5',
+        category     => 'mt5',
         pid          => 123,
         worker_index => 0,
         @_
