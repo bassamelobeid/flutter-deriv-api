@@ -51,7 +51,8 @@ sub published {
             unless my $expected = first {
             ;
             $_->body->transaction_id eq $transaction->body->transaction_id
-            } $self->expected($transaction->type)->@*;
+        }
+        $self->expected($transaction->type)->@*;
         unless ($self->is_sanity_ckeck_skipped($transaction->type, 'time_travelling_response')) {
             return 0 unless $self->time_travelling_response($transaction, $expected);
         }

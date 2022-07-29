@@ -18,7 +18,7 @@ our @EXPORT =    ## no critic (ProhibitAutomaticExportation)
     test_last_stream
     test_last_stream_params
     finish
-    );
+);
 
 my $suite;
 

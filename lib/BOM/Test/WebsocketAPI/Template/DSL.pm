@@ -60,7 +60,7 @@ our @ISA    = qw( Exporter );
 our @EXPORT = qw( request rpc_request rpc_request_new_contracts rpc_response publish );    ## no critic (Modules::ProhibitAutomaticExportation)
 
 use BOM::Test::WebsocketAPI::Parameters qw( expand_params );
-use Clone                               qw(clone);
+use Clone qw(clone);
 
 # Keeps the serialized rpc_request keys to params mapping
 my $rpc_requests;

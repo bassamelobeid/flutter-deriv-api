@@ -247,11 +247,8 @@ sub create_ohlc_daily {
         return;
     }
 
-    foreach my $data (
-        [$open->epoch,      $defaults{open}],
-        [$open->epoch + 1,  $defaults{high}],
-        [$close->epoch - 1, $defaults{low}],
-        [$close->epoch,     $defaults{close}])
+    foreach my $data ([$open->epoch, $defaults{open}], [$open->epoch + 1, $defaults{high}], [$close->epoch - 1, $defaults{low}],
+        [$close->epoch, $defaults{close}])
     {
         create_tick({
             underlying => $defaults{underlying},

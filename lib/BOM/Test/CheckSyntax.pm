@@ -19,7 +19,6 @@ use Test::Exception;
 use Test::Vars;
 use Test::Strict;
 use Test::PerlTidy;
-use Perl::Tidy::Sweetened;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
 use Test::Builder qw();
 use Pod::Coverage;
@@ -28,7 +27,7 @@ use Test::Pod::Coverage;
 use Array::Utils qw(intersect);
 use BOM::Test::CheckJsonMaybeXS;
 use BOM::Test::LocalizeSyntax qw(check_localize_string_structure);
-use YAML::XS                  qw(LoadFile);
+use YAML::XS qw(LoadFile);
 use Data::Dumper;
 $Data::Dumper::Maxdepth = 1;
 
@@ -126,7 +125,7 @@ sub check_syntax {
         diag("syntax check on $file:");
         if ($file =~ /^lib\/.+[.]pm\z/) {
             critic_ok($file);
-            vars_ok($file);
+            vars_ok($file, ignore_vars => ['@(Object::Pad/slots)']);
             BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 
@@ -154,21 +153,7 @@ Check Test::PerlTidy for perl files
 sub check_tidy {
     my ($check_files, $skipped_files) = @_;
     my $test = Test::Builder->new;
-    ## no critic (ProhibitNoWarnings)
-    no warnings 'redefine';
-    my $origin_perltidy = \&Perl::Tidy::perltidy;
 
-    *Perl::Tidy::perltidy = sub {
-        print STDERR "calling mocked perltidy\n";
-        my @caller = caller(1);
-        if ($caller[3] eq 'Test::PerlTidy::is_file_tidy') {
-            print STDERR "will call sweeten\n";
-            return Perl::Tidy::Sweetened::perltidy(@_);
-        } else {
-            print STDERR "will call origin perltidy\n";
-            return $origin_perltidy->(@_);
-        }
-    };
     diag("start checking tidy...");
     $Test::PerlTidy::MUTE = 1;
     foreach my $file (@$check_files) {
@@ -180,7 +165,6 @@ sub check_tidy {
             $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
         }
     }
-    *Perl::Tidy::perltidy = $origin_perltidy;
 }
 
 =head2 check_yaml

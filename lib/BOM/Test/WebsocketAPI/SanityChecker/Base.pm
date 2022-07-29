@@ -22,9 +22,9 @@ A base class for sanity checkers.
 
 =cut
 
-use List::Util      qw(first reduce);
+use List::Util qw(first reduce);
 use List::MoreUtils qw(first_index);
-use Scalar::Util    qw(weaken);
+use Scalar::Util qw(weaken);
 use Test::More;
 use JSON::MaybeXS;
 use Path::Tiny;

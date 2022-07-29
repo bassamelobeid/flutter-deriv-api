@@ -22,7 +22,7 @@ use IO::Async::Process;
 
 use Devops::BinaryAPI::Tester::DSL;
 use BOM::Test::WebsocketAPI::Redis qw/redis_feed_master ws_redis_master redis_transaction redis_p2p/;
-use Future::Utils                  qw(fmap_void);
+use Future::Utils qw(fmap_void);
 
 =head2 restart_redis
 

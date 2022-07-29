@@ -47,8 +47,7 @@ rpc_response {
             map {
                 my $contract_type = $_;
                 $contract_type => [
-                    map {
-                        {
+                    map { {
                             display_value    => 10,
                             supplied_barrier => $_,
                             barrier          => $_,
@@ -106,8 +105,7 @@ publish proposal_array => sub {
                 map {
                     my $contract_type = $_;
                     $contract_type => [
-                        map {
-                            {
+                        map { {
                                 display_value    => 10,
                                 supplied_barrier => $_,
                                 barrier          => $_,

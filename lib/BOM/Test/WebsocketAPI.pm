@@ -36,7 +36,7 @@ sets up other parts of the test environment, e.g. temporary RPC server.
 use parent qw(Devops::BinaryAPI::Tester);
 
 use Net::Async::Redis;
-use Log::Any   qw($log);
+use Log::Any qw($log);
 use List::Util qw(shuffle);
 use curry;
 use Test::More;

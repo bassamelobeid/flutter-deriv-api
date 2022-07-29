@@ -23,7 +23,7 @@ a hash ref to published values in the C<BOM::Test::WebsocketAPI>.
 
 use Scalar::Util qw(weaken);
 use Test::More;
-use List::Util   qw(reduce);
+use List::Util qw(reduce);
 use Module::Load ();
 use Module::Pluggable search_path => ['BOM::Test::WebsocketAPI::SanityChecker'];
 Module::Load::load($_) for sort __PACKAGE__->plugins;
@@ -61,7 +61,7 @@ sub checks_list {
             check_skipped
             published
             schema_v4
-        )];
+            )];
 }
 
 =head1 METHODS

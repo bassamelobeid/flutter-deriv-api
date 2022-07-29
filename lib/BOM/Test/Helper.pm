@@ -25,7 +25,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestMarketData;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Redis                qw/is_within_threshold/;
+use BOM::Test::Helper::Redis qw/is_within_threshold/;
 use BOM::User::Password;
 use BOM::User;
 use Net::EmptyPort qw/empty_port/;
