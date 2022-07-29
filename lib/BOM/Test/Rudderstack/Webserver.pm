@@ -1,8 +1,3 @@
-package BOM::Test::Rudderstack::Webserver;
-
-use strict;
-use warnings;
-
 use Object::Pad;
 
 =head1 Rudderstack_Webserver
