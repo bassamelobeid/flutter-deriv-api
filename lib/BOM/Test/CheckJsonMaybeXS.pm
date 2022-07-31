@@ -171,9 +171,6 @@ return: undef
 
 sub _pipe_results {
     my ($pipe, @messages) = @_;
-    print STDERR "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
-    print STDERR Dumper(\@messages);
-    print STDERR ">>>>\n";
     print $pipe freeze(\@messages);
     close $pipe;
     return;
