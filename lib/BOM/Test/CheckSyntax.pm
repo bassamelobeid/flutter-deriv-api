@@ -30,7 +30,6 @@ use BOM::Test::CheckJsonMaybeXS;
 use BOM::Test::LocalizeSyntax qw(check_localize_string_structure);
 use YAML::XS                  qw(LoadFile);
 use Data::Dumper;
-$Data::Dumper::Maxdepth = 1;
 
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
@@ -271,7 +270,7 @@ sub check_pod_coverage {
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
         ok !@naked_updated_sub, "check pod coverage for $module";
 
-        diag("$module naked_sub: " . Dumper(\@naked_sub) . 'updated_subs: ' . Dumper(\@updated_subs));
+        diag("$module naked_sub: @naked_sub updated_subs: @updated_subs");
         if (scalar @naked_updated_sub) {
             diag("The private subroutine start with '_' will be ignored.");
             diag('Please add pod document for the following subroutines:');
@@ -306,6 +305,7 @@ sub _get_updated_subs {
         # @@ -182,4 +187,13 @@ sub is_skipped_file {
         if (/^[^-#]*?@@.+\s[+](\d+).+@@ .*?sub\s(\w+)\s/) {
             if ($pm_subs && $pm_subs->{$2}) {
+                local $Data::Dumper::Maxdepth = 1;
                 diag("$2 change start $1 " . Dumper($pm_subs->{$2}));
                 # $1 is the number of change start, but with 2 lines extra context
                 # if the changed lines is greater than end, it means the sub is not really changed

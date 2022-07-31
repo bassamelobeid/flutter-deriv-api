@@ -7,7 +7,7 @@ BOM::Test::CheckJsonMaybeXS - The test to check if L<JSON::MaybeXS> return a L<C
 =head1 DESCRIPTION
 
 We use L<JSON::MaybeXS> to handle json because it has a better interface. But it will return object with different class if we load L<JSON::XS> or L<Cpanel::JSON::XS>
-before it. Please see L<the source code|https://metacpan.org/release/JSON-MaybeXS/source/lib/JSON/MaybeXS.pm#L11> of L<JSON::MaybeXS>.
+before it . Please see L<the source code|https://metacpan.org/release/JSON-MaybeXS/source/lib/JSON/MaybeXS.pm#L11> of L<JSON::MaybeXS>.
 
 We need to make sure in our code L<JSON::MaybeXS> will always return L<Cpanel::JSON::XS> at any time.
 
@@ -22,6 +22,8 @@ use Storable qw(freeze thaw);
 use Path::Tiny;
 use List::MoreUtils qw(any);
 use Syntax::Keyword::Try;
+
+use Data::Dumper;
 
 our @EXPORT_OK = qw(check_JSON_MaybeXS);
 
@@ -84,6 +86,8 @@ sub file_ok {
     if ($pid != 0) {    # self
         $pipe->reader;
         my $results = thaw(join('', <$pipe>));
+        close $pipe;
+        waitpid($pid, 0);
         return _results_as_tests($file, $?, $results);
     } else {            # child
         $pipe->writer;
@@ -132,7 +136,7 @@ sub _check_object_for_cpanel_json_xs_usage {
 
     require JSON::MaybeXS;
     my $json         = JSON::MaybeXS->new;
-    my @json_results = ['pass', "JSON::MaybeXS->new returned Cpanel::JSON::XS in file $file."];
+    my @json_results = (['pass', "JSON::MaybeXS->new returned Cpanel::JSON::XS in file $file."]);
     if (not $json->isa('Cpanel::JSON::XS')) {
         my $class = ref($json);
         $json_results[0][0] = 'fail';
@@ -167,6 +171,9 @@ return: undef
 
 sub _pipe_results {
     my ($pipe, @messages) = @_;
+    print STDERR "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+    print STDERR Dumper(\@messages);
+    print STDERR ">>>>\n";
     print $pipe freeze(\@messages);
     close $pipe;
     return;
