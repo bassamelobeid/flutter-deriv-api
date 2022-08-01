@@ -541,7 +541,7 @@ subtest 'user profile change event track' => sub {
     my $result           = $action_handler->($args)->get;
     ok $result, 'Success profile_change result';
     my ($customer, %args) = @identify_args;
-    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
+    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined, 'svg');
 
     is_deeply \%args,
         {
@@ -554,7 +554,7 @@ subtest 'user profile change event track' => sub {
         'identify context is properly set for profile change';
 
     ($customer, %args) = @track_args;
-    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
+    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined, 'svg');
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is_deeply \%args, {
         context => {
@@ -912,7 +912,8 @@ sub test_fake_name {
 }
 
 sub test_segment_customer {
-    my ($customer, $test_client, $currencies, $created_at) = @_;
+    my ($customer, $test_client, $currencies, $created_at, $available_landing_companies) = @_;
+    $available_landing_companies //= 'labuan,svg';
 
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
@@ -945,7 +946,7 @@ sub test_segment_customer {
         'country'                   => Locale::Country::code2country($test_client->residence),
         mt5_loginids                => join(',', sort($user->get_mt5_loginids)),
         landing_companies           => 'svg',
-        available_landing_companies => 'labuan,svg',
+        available_landing_companies => $available_landing_companies,
         provider                    => 'email',
         unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
         },
