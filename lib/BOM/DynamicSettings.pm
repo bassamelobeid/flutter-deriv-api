@@ -285,6 +285,7 @@ sub get_settings_by_group {
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
                 system.mt5.suspend.auto_Bbook_svg_financial
+                system.mt5.suspend.auto_Bbook_bvi_financial
                 system.mt5.suspend.demo.p01_ts01.all
                 system.mt5.suspend.demo.p01_ts02.all
                 system.mt5.suspend.real.p01_ts01.all
