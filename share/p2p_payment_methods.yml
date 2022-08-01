@@ -516,8 +516,9 @@ skrill:
     account:
       display_name: Email or phone number
   type: ewallet
+# payment method display_name name has changed but key name: solidpaywave is retained to be consistent with app_settings::payments.p2p.payment_method_countries value in redis
 solidpaywave:
-  display_name: Solidpay Wave
+  display_name: SolidPyco
   fields:
     account:
       display_name: Wallet ID
