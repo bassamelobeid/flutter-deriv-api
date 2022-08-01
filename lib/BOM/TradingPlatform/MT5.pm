@@ -11,6 +11,8 @@ use Syntax::Keyword::Try;
 use BOM::Config::MT5;
 use BOM::MT5::User::Async;
 use BOM::User::Utility;
+use LandingCompany::Registry;
+use Brands;
 
 use Format::Util::Numbers qw(financialrounding formatnumber);
 
@@ -270,6 +272,48 @@ sub get_account_info {
         landing_company_short => $mt5_group->{landing_company_short},
         sub_account_type      => $mt5_group->{sub_account_type},
     });
+}
+
+=head2 available_accounts
+
+Returns a list of available trading accounts for a given user.
+
+=over 4
+
+=item * C<country_code> - 2 letter country code
+
+=back
+
+=cut
+
+sub available_accounts {
+    my ($self, $args) = @_;
+
+    die 'CountryCodeRequired' unless $args->{country_code};
+
+    # If brand is not provided, it will default to deriv.
+    my $brand = $args->{brand} // Brands->new;
+
+    my $accounts = $brand->countries_instance->mt_account_types_for_country($args->{country_code});
+
+    return [] unless $accounts->%*;
+
+    my @trading_accounts;
+    foreach my $market_type (sort keys $accounts->%*) {
+        foreach my $account ($accounts->{$market_type}->@*) {
+            my $lc = LandingCompany::Registry->by_name($account->{company});
+            push @trading_accounts,
+                +{
+                shortcode        => $lc->short,
+                name             => $lc->name,
+                requirements     => $lc->requirements,
+                sub_account_type => $account->{sub_account_type},
+                market_type      => $account->{market_type},
+                };
+        }
+    }
+
+    return \@trading_accounts;
 }
 
 =head1 Non-RPC methods

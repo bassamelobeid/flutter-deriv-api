@@ -6878,26 +6878,7 @@ Returns,
 
 sub get_idv_status {
     my ($self, $document) = @_;
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
-    $document //= $idv_model->get_last_updated_document();
-
-    return 'none' unless $document;
-
-    my $status_mapping = {
-        refuted  => 'rejected',
-        failed   => 'rejected',
-        pending  => 'pending',
-        verified => 'verified',
-    };
-
-    my $expiration_date = undef;
-    $expiration_date = Date::Utility->new($document->{document_expiration_date})->epoch if $document->{document_expiration_date};
-
-    my $idv_status = $document->{status};
-    my $status     = $status_mapping->{$idv_status} // 'none';
-    $status = 'expired' if defined $expiration_date && Date::Utility->new->epoch > $expiration_date;
-
-    return $status;
+    return BOM::User::IdentityVerification->new(user_id => $self->binary_user_id)->status($document);
 }
 
 =head2 get_onfido_status

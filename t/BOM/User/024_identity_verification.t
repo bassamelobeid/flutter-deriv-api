@@ -395,20 +395,20 @@ subtest 'get document check detail' => sub {
 };
 
 subtest 'Submissions Left' => sub {
-    is $idv_model_ccr->submissions_left($client_mf), 2, 'Expected submissions left';
+    is $idv_model_ccr->submissions_left($client_mf), 3, 'Expected submissions left';
 };
 
 subtest 'Limit per user' => sub {
-    is $idv_model_ccr->limit_per_user($client_cr), 2, 'Expected limit per user';
+    is $idv_model_ccr->limit_per_user($client_cr), 3, 'Expected limit per user';
 };
 
 subtest 'Incr submissions' => sub {
     $idv_model_ccr->incr_submissions;
-    is $idv_model_ccr->submissions_left, 1, 'Expected submissions left';
+    is $idv_model_ccr->submissions_left, 2, 'Expected submissions left';
 };
 
 subtest 'Reset submissions to zero' => sub {
-    is $idv_model_ccr->submissions_left, 1, 'Expected submissions left is correct';
+    is $idv_model_ccr->submissions_left, 2, 'Expected submissions left is correct';
     BOM::User::IdentityVerification::reset_to_zero_left_submissions($user_cr->id);
     is $idv_model_ccr->submissions_left, 0, 'Expected submissions left is reset';
 };

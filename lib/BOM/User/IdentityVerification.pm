@@ -18,7 +18,6 @@ use Log::Any qw($log);
 
 use BOM::Config::Redis;
 use BOM::Database::UserDB;
-
 use Moo;
 
 use constant IDV_REQUEST_PER_USER_PREFIX => 'IDV::REQUEST::PER::USER::';
@@ -298,7 +297,7 @@ Returns,
 =cut
 
 sub limit_per_user {
-    return $ENV{IDV_REQUEST_PER_USER_LIMIT} // 2;
+    return $ENV{IDV_REQUEST_PER_USER_LIMIT} // 3;
 }
 
 =head2 reported_properties
@@ -317,15 +316,42 @@ sub reported_properties {
 
 =head2 status
 
-Computes the current IDV status, to avoid API inconsistency we should map whatever
-status we are storing in the database to: none, expired, pending, rejected, suspected, verified.
+Computes the current IDV status of the latest document uploaded 
+or of the document which was passed to this sub as an argument
+
+=over 4
+
+=item C<$self> - Current class
+
+=item C<$document> - Document to check it's status if provided
+
+=back
 
 Returns the mapped status. 
 
 =cut
 
 sub status {
-    return 'none';    # TODO: proper implementation
+    my ($self, $document) = @_;
+    $document //= $self->get_last_updated_document();
+
+    return 'none' unless $document;
+
+    my $status_mapping = {
+        refuted  => 'rejected',
+        failed   => 'rejected',
+        pending  => 'pending',
+        verified => 'verified',
+    };
+
+    my $expiration_date;
+    $expiration_date = Date::Utility->new($document->{document_expiration_date})->epoch if $document->{document_expiration_date};
+
+    my $idv_status = $document->{status};
+    my $status     = $status_mapping->{$idv_status} // 'none';
+    $status = 'expired' if defined $expiration_date && time > $expiration_date;
+
+    return $status;
 }
 
 =head2 get_document_check
