@@ -125,10 +125,37 @@ sub after_register_client {
 
     BOM::User::Utility::set_gamstop_self_exclusion($client);
 
+    set_allow_document_upload($client) if $client->account_type eq 'trading';
+
     return {
         client => $client,
         user   => $user
     };
+}
+
+=head2 set_allow_document_upload
+
+Sets client's status to allow_document_upload if the client's residence or citizenship allow MT5 account
+creation in regulated landing companies.
+
+=over 4
+
+=item * C<$client> - BOM::User::Client object.
+
+=back
+
+=cut
+
+sub set_allow_document_upload {
+    my $client = shift;
+
+    # well, prioritise citizen over residence.
+    my $country_code = $client->citizen || $client->residence;
+    if (request()->brand->countries_instance->has_mt_regulated_company_for_country($country_code)) {
+        $client->status->upsert('allow_document_upload', 'system', 'MARKED_AS_NEEDS_ACTION');
+    }
+
+    return;
 }
 
 1;
