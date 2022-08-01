@@ -43,6 +43,9 @@ rpc identity_verification_document_add => sub {
     my $document_type   = lc($args->{document_type}   // '');
     my $document_number = $args->{document_number} // '';
 
+    # If issuing_country is not provided, then we will default to client's citizen or residence
+    $issuing_country = $client->citizen || $client->residence unless $issuing_country;
+
     return BOM::RPC::v3::Utility::create_error({
             code              => 'NoAuthNeeded',
             message_to_client => localize("You don't need to authenticate your account at this time.")}

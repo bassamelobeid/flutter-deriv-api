@@ -212,7 +212,7 @@ rpc "landing_company",
     # BE CAREFUL, do not change ref since it's persistent
     my %landing_company = %{$c_config};
 
-    delete @landing_company{qw/is_signup_allowed idd_country/};
+    delete @landing_company{qw/is_signup_allowed idd_country alpha3/};
 
     $landing_company{id} = $country;
 
@@ -227,11 +227,11 @@ rpc "landing_company",
     # mt5 structure as per country config
     # 'mt' => {
     #    'gaming' => {
-    #         'financial' => 'none'
+    #         'standard' => ['none']
     #    },
     #    'financial' => {
-    #         'financial_stp' => 'none',
-    #         'financial' => 'none'
+    #         'stp' => ['none'],
+    #         'standard' => ['none']
     #    }
     # }
     #
@@ -248,13 +248,19 @@ rpc "landing_company",
 
     # we don't want to send "mt" as key so need to delete from structure
     my $mt5_landing_company_details = delete $landing_company{mt};
+    my %output_map                  = (
+        stp      => 'financial_stp',
+        standard => 'financial',
+    );
 
     foreach my $mt5_type (keys %{$mt5_landing_company_details}) {
         foreach my $mt5_sub_type (keys %{$mt5_landing_company_details->{$mt5_type}}) {
-            my $company_name = $mt5_landing_company_details->{$mt5_type}{$mt5_sub_type};
+            # We need to keep the API backward compatible. Current API doesn't support multiple
+            # landing companies (counter parties) for one account type. So, we will return the default.
+            my $company_name = $mt5_landing_company_details->{$mt5_type}{$mt5_sub_type}[0];
             next if not $company_name or $company_name eq 'none';
 
-            $landing_company{"mt_${mt5_type}_company"}{$mt5_sub_type} =
+            $landing_company{"mt_${mt5_type}_company"}{$output_map{$mt5_sub_type}} =
                 __build_landing_company(LandingCompany::Registry->by_name($company_name), $country);
         }
     }
@@ -1635,6 +1641,7 @@ rpc get_settings => sub {
         preferred_language => $user->preferred_language,
         feature_flag       => $user->get_feature_flag,
         immutable_fields   => [$client->immutable_fields()],
+        ($client->citizen ? (citizen => $client->citizen) : ()),
         (
               ($user and BOM::Config::third_party()->{elevio}{account_secret})
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
@@ -1649,7 +1656,6 @@ rpc get_settings => sub {
         # And, use current client to return account settings attributes/fields
         # for others, like is_authenticated_payment_agent, since they account specific
         $settings = {
-            %$settings,
             has_secret_answer              => defined $real_client->secret_answer ? 1 : 0,
             salutation                     => $real_client->salutation,
             first_name                     => $real_client->first_name,
@@ -1672,6 +1678,7 @@ rpc get_settings => sub {
             request_professional_status    => $client->status->professional_requested ? 1 : 0,
             is_authenticated_payment_agent =>
                 ($client->payment_agent and $client->payment_agent->status and $client->payment_agent->status eq 'authorized') ? 1 : 0,
+            %$settings,
         };
     }
     return $settings;
@@ -1789,7 +1796,13 @@ rpc set_settings => sub {
 
     # If this is a virtual account update, we don't want to change anything else - otherwise
     # let's apply the new fields to all other accounts as well.
-    my @realclient_loginids = $current_client->is_virtual ? () : $user->bom_real_loginids;
+    my @loginids = ();
+    if ($current_client->is_virtual) {
+        push @loginids, $user->bom_virtual_loginid        if $user->bom_virtual_loginid;
+        push @loginids, $user->bom_virtual_wallet_loginid if $user->bom_virtual_wallet_loginid;
+    } else {
+        push @loginids, $user->bom_real_loginids if $user->bom_real_loginids;
+    }
 
     # set professional status for applicable countries
     if ($args->{request_professional_status}) {
@@ -1806,7 +1819,7 @@ rpc set_settings => sub {
         );
     }
 
-    foreach my $loginid (@realclient_loginids) {
+    foreach my $loginid (@loginids) {
         my $client = $loginid eq $current_client->loginid ? $current_client : BOM::User::Client->new({loginid => $loginid});
 
         $client->address_1($address1);

@@ -635,7 +635,7 @@ subtest $method => sub {
         $params->{args}->{non_pep_declaration} = 1;
 
         $rpc_ct->call_ok($method, $params)->has_error()->error_code_is('CannotChangeAccountDetails')
-            ->error_message_is('You may not change these account details.')->error_details_is({changed => ["citizen", "place_of_birth"]});
+            ->error_message_is('You may not change these account details.')->error_details_is({changed => ["place_of_birth"]});
 
         delete $params->{args}->{place_of_birth};
         delete $params->{args}->{citizen};

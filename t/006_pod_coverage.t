@@ -34,7 +34,7 @@ my $allowed_naked_packages = {
     'BOM::RPC::v3::DocumentUpload'          => 6,
     'BOM::RPC::v3::Authorize'               => 2,
     'BOM::RPC::v3::App'                     => 2,
-    'BOM::RPC::v3::MT5::Account'            => 19,
+    'BOM::RPC::v3::MT5::Account'            => 18,
     'BOM::RPC::v3::CopyTrading::Statistics' => 1,
 };
 

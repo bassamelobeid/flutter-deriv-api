@@ -451,6 +451,7 @@ subtest 'account_closure with mt5 API disabled' => sub {
             name         => $DETAILS{name},
             mainPassword => $DETAILS{password}{main},
             leverage     => 100,
+            company      => 'svg'
         },
     };
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);

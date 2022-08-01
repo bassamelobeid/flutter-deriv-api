@@ -23,7 +23,7 @@ use BOM::Config::Redis;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
-my $idv_limit    = 2;
+my $idv_limit    = 3;
 my $onfido_limit = BOM::User::Onfido::limit_per_user;
 my $email        = 'abc@binary.com';
 my $password     = 'jskjd8292922';

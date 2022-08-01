@@ -1332,10 +1332,10 @@ Returns bool
 sub is_idv_disallowed {
     my $client = shift;
 
-    return 1 if $client->status->unwelcome;
-
     # Only for non-regulated LC
     return 1 unless $client->landing_company->short eq 'svg';
+
+    return 1 if $client->status->unwelcome;
 
     return 1 if ($client->aml_risk_classification // '') eq 'high';
 
@@ -1349,6 +1349,9 @@ sub is_idv_disallowed {
         my $onfido_status = $client->get_onfido_status();
         return 1 if $onfido_status eq 'expired' or $onfido_status eq 'rejected';
     }
+
+    my $country_code = $client->citizen || $client->residence;
+    return 1 unless (request()->brand->countries_instance->has_mt_regulated_company_for_country($country_code));
 
     return 0;
 }

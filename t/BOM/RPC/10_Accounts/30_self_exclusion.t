@@ -468,6 +468,7 @@ subtest 'get and set self_exclusion' => sub {
             investPassword => 'Abcd1234',
             mainPassword   => $DETAILS{password}{main},
             leverage       => 100,
+            company        => 'svg'
         }};
 
     $test_client_mlt->user->update_trading_password($DETAILS{password}{main});

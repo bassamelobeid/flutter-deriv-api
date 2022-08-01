@@ -643,4 +643,32 @@ subtest 'landing_company call' => sub {
     }
 };
 
+subtest 'trading_platform_available_accounts' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+
+    BOM::User->create(
+        email    => 'testme@test.com',
+        password => 'test'
+    )->add_client($client);
+    $client->account('USD');
+
+    $c->call_ok('trading_platform_available_accounts', {})->has_no_system_error->has_error->error_code_is('InvalidToken', 'must be logged in');
+
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    # Try without a dx client
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {platform => 'mt5'}};
+    my $result = $c->call_ok('trading_platform_available_accounts', $params)->has_no_system_error->has_no_error->result;
+    ok ref $result eq 'ARRAY', 'result is an array reference';
+
+    my $expected_keys = [qw(market_type name requirements shortcode sub_account_type)];
+    foreach my $account ($result->@*) {
+        cmp_bag([keys %$account], $expected_keys, 'response of trading_platform_accounts is as expected');
+    }
+};
+
 done_testing();

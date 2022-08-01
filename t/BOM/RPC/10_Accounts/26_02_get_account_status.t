@@ -62,7 +62,7 @@ subtest 'idv details' => sub {
             document => undef,
             check    => undef,
             result   => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [],
                 status              => 'none',
                 reported_properties => {},
@@ -78,7 +78,7 @@ subtest 'idv details' => sub {
                 status                   => 'verified',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [],
                 status              => 'verified',
                 reported_properties => {},
@@ -94,7 +94,7 @@ subtest 'idv details' => sub {
                 status                   => 'verified',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [],
                 status              => 'verified',
                 expiry_date         => $non_expired_date->epoch,
@@ -111,7 +111,7 @@ subtest 'idv details' => sub {
                 status                   => 'verified',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [],
                 status              => 'expired',
                 expiry_date         => $expired_date->epoch,
@@ -128,7 +128,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNDERAGE", "NAME_MISMATCH"]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [map { $rejected_reasons{$_} } qw/UNDERAGE NAME_MISMATCH/],
                 status              => 'rejected',
                 reported_properties => {},
@@ -144,7 +144,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNDERAGE", "TEST"]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [map { $rejected_reasons{$_} } qw/UNDERAGE/],
                 status              => 'rejected',
                 reported_properties => {},
@@ -160,7 +160,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNDERAGE", "TEST"]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [],
                 status              => 'pending',
                 reported_properties => {},
@@ -176,7 +176,7 @@ subtest 'idv details' => sub {
                 status_messages => '["EMPTY_STATUS"]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => ["The verification status was empty, rejected for lack of information."],
                 status              => 'rejected',
                 reported_properties => {},
@@ -192,7 +192,7 @@ subtest 'idv details' => sub {
                 status_messages => '["INFORMATION_LACK"]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => ["The verfication is passed but the personal info is not available to compare."],
                 status              => 'rejected',
                 reported_properties => {},
@@ -208,7 +208,7 @@ subtest 'idv details' => sub {
                 status_messages => '["DOCUMENT_REJECTED"]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => ["Document was rejected by the provider."],
                 status              => 'rejected',
                 reported_properties => {},
@@ -224,7 +224,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNAVAILABLE_ISSUER"]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => ["The verification status is not available, provider says: Issuer Unavailable."],
                 status              => 'rejected',
                 reported_properties => {},
@@ -240,7 +240,7 @@ subtest 'idv details' => sub {
                 status_messages => '["UNAVAILABLE_STATUS"]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => ["The verification status is not available, provider says: N/A."],
                 status              => 'rejected',
                 reported_properties => {},
@@ -256,7 +256,7 @@ subtest 'idv details' => sub {
                 status_messages => '',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [],
                 status              => 'rejected',
                 reported_properties => {},
@@ -272,7 +272,7 @@ subtest 'idv details' => sub {
                 status_messages => '[]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [],
                 status              => 'rejected',
                 reported_properties => {},
@@ -288,7 +288,7 @@ subtest 'idv details' => sub {
                 status_messages => '[null]',
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [],
                 status              => 'rejected',
                 reported_properties => {},
@@ -304,7 +304,7 @@ subtest 'idv details' => sub {
                 status_messages => undef,
             },
             result => {
-                submissions_left    => 2,
+                submissions_left    => 3,
                 last_rejected       => [],
                 status              => 'rejected',
                 reported_properties => {},

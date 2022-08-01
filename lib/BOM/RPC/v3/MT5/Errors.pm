@@ -27,6 +27,7 @@ my %category_message_mapping = do {
     (
         General                    => localize('A connection error happened while we were completing your request. Please try again later.'),
         InvalidServerInput         => localize('Input parameter \'server\' is not supported for the account type.'),
+        InvalidCompanyInput        => localize('Input parameter \'company\' is not supported for the account type.'),
         MT5APISuspendedError       => localize('MT5 is currently unavailable. Please try again later.'),
         MT5DEMOAPISuspendedError   => localize('MT5 is currently unavailable. Please try again later.'),
         MT5REALAPISuspendedError   => localize('MT5 is currently unavailable. Please try again later.'),

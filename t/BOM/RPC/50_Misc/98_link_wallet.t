@@ -81,6 +81,7 @@ subtest 'link_wallet' => sub {
                 name             => $DETAILS{name},
                 mainPassword     => $DETAILS{password}{main},
                 leverage         => 100,
+                company          => 'svg'
             },
         };
 

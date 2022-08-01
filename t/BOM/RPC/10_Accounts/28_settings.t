@@ -290,6 +290,7 @@ subtest 'get settings' => sub {
             'email'              => $email_Q,
             'country'            => 'Indonesia',
             'residence'          => 'Indonesia',
+            citizen              => 'at',
             'country_code'       => 'id',
             'email_consent'      => '0',
             'user_hash'          => hmac_sha256_hex($user_Q->email, BOM::Config::third_party()->{elevio}->{account_secret}),
@@ -815,9 +816,7 @@ subtest 'set settings' => sub {
         is $test_client_X_vr->non_pep_declaration_time, undef, 'non-pep declaration time is undefined for virtual accounts';
         $params->{token} = $token_X_vr;
         $params->{args}  = {non_pep_declaration => 1};
-        is($c->tcall($method, $params)->{status}, 1, 'vr account updated successfully');
-        $test_client_X_vr->load;
-        is $test_client_X_vr->non_pep_declaration_time, undef, 'non-pep declaration is not changed for virtual accounts';
+        is($c->tcall($method, $params)->{status}, undef, 'vr account was not updated');
 
         for my $client ($test_client_Y_cr_citizen_AT, $test_client_Y_cr_1) {
             $client->non_pep_declaration_time('1999-01-01 00:00:00');

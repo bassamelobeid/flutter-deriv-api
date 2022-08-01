@@ -145,6 +145,7 @@ subtest 'password change with mt5 accounts' => sub {
             name         => $details{name},
             mainPassword => $details{password}{main},
             leverage     => 100,
+            company      => 'svg'
         }};
 
     my $result = $c->call_ok('mt5_new_account', $mt5_params)->has_no_error('gaming account successfully created')->result;

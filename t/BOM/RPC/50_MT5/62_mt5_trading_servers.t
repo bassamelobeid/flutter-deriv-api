@@ -82,10 +82,10 @@ subtest 'trading servers for south africa' => sub {
         ->result;
 
     ok @$result == 4, 'returns 4 trade servers';
-    is $result->[0]->{id},                'p01_ts02', 'first server p01_ts02';
-    ok $result->[0]->{disabled},          'first server p01_ts02 is disabled';
-    is $result->[0]->{message_to_client}, 'Region added', 'correct error message';
-    is $result->[1]->{id},                'p02_ts02',     'first server p02_ts02';
+    is $result->[0]->{id}, 'p01_ts02', 'first server p01_ts02';
+    ok !$result->[0]->{disabled},          'first server p01_ts02 is not disabled';
+    ok !$result->[0]->{message_to_client}, 'no error message';
+    is $result->[1]->{id},                'p02_ts02', 'first server p02_ts02';
     ok $result->[1]->{disabled},          'first server p01_ts02 is disabled';
     is $result->[1]->{message_to_client}, 'Temporarily unavailable', 'correct error message';
     is $result->[2]->{id},                'p01_ts03',                'first server p01_ts03';
@@ -99,6 +99,77 @@ subtest 'trading servers for south africa' => sub {
     ok @$result == 1, 'retusn 1 trade server';
     is $result->[0]->{id},          'p01_ts01',     'server id is p01_ts01';
     is $result->[0]->{environment}, 'Deriv-Server', 'on Deriv-Server environment';
+};
+
+subtest 'trading servers for Aland Islands' => sub {
+    note("Aland Islands does not allow account creation mt5 regulated company. Hence, it only allow one synthetic account");
+
+    my $new_email  = 'abcd2a2f' . $DETAILS{email};
+    my $new_client = create_client('CR', undef, {residence => 'ax'});
+    my $m          = BOM::Platform::Token::API->new;
+    my $token      = $m->create_token($new_client->loginid, 'test token 23');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+    $user->update_trading_password($DETAILS{password}{main});
+    $user->add_client($new_client);
+
+    my $method = 'trading_servers';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            platform     => 'mt5',
+            account_type => 'real',
+            market_type  => 'synthetic',
+        },
+    };
+    my $result = $c->call_ok($method, $params)->has_no_error('returns all synthetic servers for real')->result;
+
+    ok @$result == 4, 'returns 4 trade servers';
+    is $result->[0]->{id}, 'p01_ts04', 'first server p01_ts04';
+    is $result->[1]->{id}, 'p01_ts02', 'first server p01_ts02';
+    is $result->[2]->{id}, 'p02_ts02', 'first server p02_ts02';
+    is $result->[3]->{id}, 'p01_ts03', 'first server p01_ts03';
+
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
+    my $new_account_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            email        => $new_email,
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+    $result = $c->call_ok('mt5_new_account', $new_account_params)->has_no_error('gaming account successfully created')->result;
+    is $result->{account_type}, 'gaming', 'account_type=gaming';
+    is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts04\synthetic\svg_std_usd\01'}, 'created in group real\p01_ts04\synthetic\svg_std_usd\01';
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+
+    $result =
+        $c->call_ok($method, $params)->has_no_error('returns all synthetic servers for real except p01_ts04 or p02_ts01 (since routing is random)')
+        ->result;
+
+    ok @$result == 4, 'returns 4 trade servers';
+    is $result->[0]->{id},                'p01_ts04', 'first server p01_ts04';
+    ok $result->[0]->{disabled},          'first server p01_ts04 is disabled';
+    is $result->[0]->{message_to_client}, 'Region added', 'no error message';
+    is $result->[2]->{id},                'p02_ts02',     'first server p02_ts02';
+    ok $result->[2]->{disabled},          'first server p01_ts02 is disabled';
+    is $result->[2]->{message_to_client}, 'Temporarily unavailable', 'correct error message';
+    is $result->[3]->{id},                'p01_ts03',                'first server p01_ts03';
+    ok !$result->[3]->{disabled};
+    is $result->[1]->{id}, 'p01_ts02', 'first server p01_ts02';
+    ok !$result->[1]->{disabled};
+
 };
 
 done_testing();

@@ -844,4 +844,3 @@ $documents_mock->unmock_all;
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
 
 done_testing();
-

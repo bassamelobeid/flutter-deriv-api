@@ -42,7 +42,7 @@ use BOM::Platform::Event::Emitter;
 use BOM::Transaction;
 use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
 use BOM::Config::MT5;
-
+use BOM::Config::Compliance;
 requires_auth('wallet', 'trading');
 
 use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
@@ -430,12 +430,15 @@ sub _mt5_group {
         $group_type       = $account_type;
         $server_type      = _get_server_type($account_type, $country, $market_type);
         $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
-        # All svg financial account will be B-book (put in hr[high-risk] upon sign-up. Decisions to A-book will be done
+
+        # All financial account will be B-book (put in hr[high-risk] upon sign-up. Decisions to A-book will be done
         # on a case by case basis manually
         my $app_config = BOM::Config::Runtime->instance->app_config;
-        # only consider b-booking financial for svg
-        my $apply_auto_b_book =
-            ($market_type eq 'financial' and $landing_company_short eq 'svg' and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial);
+
+        my $apply_auto_b_book = (
+            $market_type eq 'financial' and (($landing_company_short eq 'svg' and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial)
+                or ($landing_company_short eq 'bvi' and not $app_config->system->mt5->suspend->auto_Bbook_bvi_financial)));
+
         # as per requirements of mt5 operation team, australian financial account will not be categorised as high-risk (hr)
         $sub_account_type .= '-hr' if $market_type eq 'financial' and $country ne 'au' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
 
@@ -660,6 +663,7 @@ async_rpc "mt5_new_account",
     my $mt5_account_type        = delete $args->{mt5_account_type}     // '';
     my $mt5_account_category    = delete $args->{mt5_account_category} // 'conventional';
     my $user_input_trade_server = delete $args->{server};
+    my $landing_company_short   = delete $args->{company};
 
     # input validation
     return create_error_future('SetExistingAccountCurrency') unless $client->default_account;
@@ -708,19 +712,34 @@ async_rpc "mt5_new_account",
     # demo accounts type determined if this parameter exists or not
     my $company_type     = $mt5_account_type eq '' ? 'gaming' : 'financial';
     my $sub_account_type = $mt5_account_type;
-    my %mt_args          = (
+
+    my %mt_args = (
         country          => $residence,
         account_type     => $company_type,
         sub_account_type => $sub_account_type
     );
-    my $company_name = _get_mt_landing_company($client, \%mt_args);
+    if ($account_type eq 'demo' and $landing_company_short) {
+        my $allowed_company = _get_mt_landing_company($client, \%mt_args);
+        if ($landing_company_short ne $allowed_company) {
+            return create_error_future('InvalidCompanyInput');
+        }
+    }
 
-    if (defined $user_input_trade_server && ($company_name eq 'malta' || $company_name eq 'maltainvest')) {
+    if (not defined $landing_company_short) {
+        $landing_company_short = _get_mt_landing_company($client, \%mt_args);
+    }
+
+    if (defined $user_input_trade_server && ($landing_company_short eq 'malta' || $landing_company_short eq 'maltainvest')) {
         return create_error_future('InvalidServerInput');
     }
+
+    # Restrict if Onfido blocked
+    return create_error_future('MT5NotAllowed', {params => $company_type})
+        if not $countries_instance->is_mt_company_supported($residence, $company_type, $landing_company_short);
+
     # MT5 is not allowed in client country
     return create_error_future($mt5_account_category eq 'swap_free' ? 'MT5SwapFreeNotAllowed' : 'MT5NotAllowed', {params => $company_type})
-        if $company_name eq 'none';
+        if $landing_company_short eq 'none';
 
     my $binary_company_name = _get_landing_company($client, $company_type);
 
@@ -749,10 +768,9 @@ async_rpc "mt5_new_account",
 
     return create_error_future('AccountTypesMismatch') if ($client->is_virtual() and $account_type ne 'demo');
 
-    my $requirements        = LandingCompany::Registry->by_name($company_name)->requirements;
+    my $requirements        = LandingCompany::Registry->by_name($landing_company_short)->requirements;
     my $signup_requirements = $requirements->{signup};
     my @missing_fields      = grep { !$client->$_ } @$signup_requirements;
-
     return create_error_future(
         'MissingSignupDetails',
         {
@@ -774,7 +792,7 @@ async_rpc "mt5_new_account",
     # - MF (residence: germany) client with selected account currency of USD. The mt5 account currency will be EUR.
     # - MF (residence: germany) client with selected account currency of GBP. The mt5 account currency will be GBP.
     # - SVG (residence: australia) client with selected account current of AUD. The mt5 account currency will be USD.
-    my $default_currency       = LandingCompany::Registry->by_name($company_name)->get_default_currency($residence);
+    my $default_currency       = LandingCompany::Registry->by_name($landing_company_short)->get_default_currency($residence);
     my $available              = $client->landing_company->available_mt5_currency_group();
     my %available_mt5_currency = map { $_ => 1 } @$available;
 
@@ -788,9 +806,19 @@ async_rpc "mt5_new_account",
 
     return create_error_future('permission') if $mt5_account_currency ne $selected_currency;
 
+    # restrict high risk countries from bvi, labuan and vanuatu
+    my $high_risk_countries = {map { $_ => 1 } @{BOM::Config::Compliance->new()->get_jurisdiction_risk_rating->{'high'}}};
+
+    return create_error_future('MT5NotAllowed', {params => $company_type})
+        if (
+        $high_risk_countries->{$residence}
+        and (  $landing_company_short eq 'bvi'
+            or $landing_company_short eq 'vanuatu'
+            or $landing_company_short eq 'labuan'));
+
     my $group = _mt5_group({
         country               => $residence,
-        landing_company_short => $company_name,
+        landing_company_short => $landing_company_short,
         account_type          => $account_type,
         mt5_account_type      => $mt5_account_type,
         currency              => $mt5_account_currency,
@@ -800,7 +828,6 @@ async_rpc "mt5_new_account",
     });
 
     my $group_config = get_mt5_account_type_config($group);
-
     # something is wrong if we're not able to get group config
     return create_error_future('permission') unless $group_config;
 
@@ -943,18 +970,6 @@ async_rpc "mt5_new_account",
                     {
                         override_code => $error_code,
                         params        => [$account_type, $existing_groups{$identical}]});
-            }
-
-            # A client can only have either one of
-            # real\vanuatu_financial or real\svg_financial or real\svg_financial_Bbook
-            if ($mt5_account_type eq 'financial') {
-                if (my $similar = _is_similar_group($company_name, \%existing_groups)) {
-                    return create_error_future(
-                        'MT5Duplicate',
-                        {
-                            override_code => $error_code,
-                            params        => [$account_type, $existing_groups{$similar}]});
-                }
             }
 
             # TODO(leonerd): This has to nest because of the `Future->done` in the
@@ -2469,23 +2484,6 @@ sub _is_identical_group {
     }
 
     return undef;
-}
-
-sub _is_similar_group {
-    my ($landing_company_short, $existing_group) = @_;
-
-    my $similar_company = $landing_company_short eq 'vanuatu' ? 'svg' : $landing_company_short eq 'svg' ? 'vanuatu' : undef;
-
-    return undef unless $similar_company;
-
-    my $first = first {
-        $_ =~ /^real\\${similar_company}_financial(?:_Bbook)?$/
-            || $_ =~ /^real(?:\\p\d{2}_ts)?\d{2}\\financial\\${similar_company}_std(?:-hr)?_usd$/
-
-    }
-    keys %$existing_group;
-
-    return $first;
 }
 
 =head2 _get_market_type

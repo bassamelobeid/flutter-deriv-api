@@ -96,6 +96,7 @@ subtest 'new account with invalid main or investor password format' => sub {
             investPassword   => "AbcDv12345",
             mainPassword     => $wrong_formatted_password,
             leverage         => 100,
+            company          => 'svg'
         },
     };
 
@@ -136,6 +137,7 @@ subtest 'new account with missing signup fields' => sub {
             investPassword   => 'Abcd1234',
             mainPassword     => $details{password}{main},
             leverage         => 100,
+            company          => 'labuan'
         },
     };
 
@@ -164,6 +166,7 @@ subtest 'new account' => sub {
             name         => $details{name},
             mainPassword => $details{password}{main},
             leverage     => 100,
+            company      => 'svg'
         },
     };
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
@@ -192,7 +195,8 @@ subtest 'new account dry_run' => sub {
             name         => $details{name},
             mainPassword => $details{password}{main},
             leverage     => 100,
-            dry_run      => 1
+            dry_run      => 1,
+            company      => 'svg'
         },
     };
     $c->call_ok($method, $params)->has_no_error('mt5 new account dry run only runs validations');
@@ -241,6 +245,7 @@ subtest 'new account with account in highRisk groups' => sub {
                 mainPassword => $details{password}{main},
                 leverage     => 100,
                 server       => 'p01_ts02',
+                company      => 'svg'
             },
         };
 
@@ -271,6 +276,7 @@ subtest 'new account with account in highRisk groups' => sub {
                 mainPassword => $details{password}{main},
                 leverage     => 100,
                 server       => 'p01_ts03',
+                company      => 'svg'
             },
         };
 
@@ -310,8 +316,16 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
             leverage         => 100,
             dry_run          => 1,
             mt5_account_type => 'financial_stp',
+            company          => 'labuan'
         },
     };
+    my $doc_mock = Test::MockModule->new('BOM::User::Client');
+    $doc_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'verified';
+        });
+
     $c->call_ok($method, $params)->has_error->error_code_is('AuthenticateAccount', 'error code is AuthenticateAccount');
 
     $method = 'get_account_status';
@@ -338,7 +352,8 @@ subtest 'new account dry_run using invalid arguments' => sub {
             name         => $details{name},
             mainPassword => $details{password}{main},
             leverage     => 100,
-            dry_run      => 1
+            dry_run      => 1,
+            company      => 'svg'
         },
     };
     $c->call_ok($method, $params)->has_error('invalid account_type on dry run')
@@ -371,7 +386,8 @@ subtest 'new account dry_run on a client with no account currency' => sub {
             name         => $details{name},
             mainPassword => $details{password}{main},
             leverage     => 100,
-            dry_run      => 1
+            dry_run      => 1,
+            company      => 'svg'
         },
     };
 
@@ -400,6 +416,7 @@ subtest 'new account with switching' => sub {
             investPassword => 'Abcd1234',
             mainPassword   => $details{password}{main},
             leverage       => 100,
+            company        => 'svg'
         },
     };
     # Expect error because we opened an account in the previous test.
@@ -432,6 +449,7 @@ subtest 'MF should be allowed' => sub {
             name             => $details{name},
             investPassword   => 'Abcd1234',
             mainPassword     => $details{password}{main},
+            company          => 'svg'
         },
     };
 
@@ -481,6 +499,7 @@ subtest 'MF to MLT account switching' => sub {
             name           => $details{name},
             investPassword => 'Abcd1234',
             mainPassword   => $details{password}{main},
+            company        => 'maltainvest'
         },
     };
 
@@ -502,6 +521,7 @@ subtest 'MF to MLT account switching' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
 
+    $params->{args}->{company} = 'maltainvest';
     $c->call_ok($method, $params)->has_no_error('financial account should be created');
     is($c->result->{account_type}, 'financial', 'account type should be financial');
 };
@@ -513,6 +533,7 @@ subtest 'MLT to MF account switching' => sub {
     $mf_switch_client->tax_residence('at');
     $mf_switch_client->tax_identification_number('1234');
     $mf_switch_client->account_opening_reason('speculative');
+    $mf_switch_client->phone('99121212');
 
     my $mlt_switch_client = create_client('MLT');
     $mlt_switch_client->set_default_account('EUR');
@@ -547,6 +568,7 @@ subtest 'MLT to MF account switching' => sub {
             name             => $details{name},
             investPassword   => 'Abcd1234',
             mainPassword     => $details{password}{main},
+            company          => 'maltainvest'
         },
     };
 
@@ -616,6 +638,7 @@ subtest 'VRTC to MLT and MF account switching' => sub {
             name           => $details{name},
             investPassword => 'Abcd1234',
             mainPassword   => $details{password}{main},
+            company        => 'maltainvest'
         },
     };
 
@@ -653,6 +676,7 @@ subtest 'VRTC to MLT and MF account switching' => sub {
             name             => $details{name},
             investPassword   => 'Abcd1234',
             mainPassword     => $details{password}{main},
+            company          => 'maltainvest'
         },
     };
 
@@ -700,6 +724,7 @@ subtest 'new account on addtional trade server' => sub {
             name         => $details{name},
             mainPassword => $details{password}{main},
             leverage     => 100,
+            company      => 'svg'
         },
     };
     note("creates a gaming account with old server config");
@@ -759,6 +784,7 @@ subtest 'new account identical account check' => sub {
             name         => $details{name},
             mainPassword => $details{password}{main},
             leverage     => 100,
+            company      => 'svg'
         },
     };
     note("creates a gaming account with existing account with old group name on a different server is allowed");
@@ -789,6 +815,7 @@ subtest 'country=za; creates financial account with existing gaming account whil
             name         => $details{name},
             mainPassword => $details{password}{main},
             leverage     => 100,
+            company      => 'svg'
         },
     };
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
@@ -831,6 +858,7 @@ subtest 'country=au, financial account' => sub {
             name             => $details{name},
             mainPassword     => $details{password}{main},
             leverage         => 100,
+            company          => 'svg'
         },
     };
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
@@ -846,11 +874,13 @@ subtest 'country=au, financial account' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{account_type}     = 'financial';
     $params->{args}->{mt5_account_type} = 'financial_stp';
+    $params->{args}->{company}          = 'labuan';
     $result                             = $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed')
         ->error_message_is('MT5 financial account is not available in your country yet.');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{mt5_account_type} = 'financial';
+    $params->{args}->{company}          = 'svg';
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
     # same account 'real\p01_ts01\financial\svg_std-lim_usd' is already created
     $result =
@@ -860,9 +890,17 @@ subtest 'country=au, financial account' => sub {
 };
 
 subtest 'country=latam african, financial STP account' => sub {
-    my @latam_african_countries =
-        qw(dz ao ai ag ar aw bs bb bz bj bo bw bv br io bf bi cv cm ky cf td cl co km cg cd cr ci cu cw dj dm do ec eg sv gq er sz et fk gf tf ga gm gh gd gp gt gn gw gy ht hn jm ke ls lr ly mg mw ml mq mr mu yt mx ms ma mz na ni ne ng pa pe re bl sh kn lc mf vc st sn sc sl sx so za gs sd sr tz tg tt tn tc ug uy ve eh zm zw ss);
 
+    #qw(dz ao ai ag ar aw bs bb bz bj bo bw bv br io bf bi cv cm ky cf td cl co km cg cd cr ci cu cw dj dm do ec eg sv gq er sz et fk gf tf ga gm gh gd gp gt gn gw gy ht hn jm ke ls lr ly mg mw ml mq mr mu yt mx ms ma mz na ni ne ng pa pe re bl sh kn lc mf vc st sn sc sl sx so za gs sd sr tz tg tt tn tc ug uy ve eh zm zw ss);
+    my @latam_african_countries =
+        qw(dz ao ai ag ar bs bz bj bo bw br bi cv cm cf td cl co km cg cr ci cu dj dm do ec eg sv gq er sz et ga gm gh gd gt gn gw gy hn ke ls lr mg mw mu mx ms mz na ne ng pa pe kn lc vc st sc sl so za sd sr tz tg tt tn tc uy ve zm zw);
+
+    my @high_risk_countries =
+        ('al', 'bb', 'bf', 'kh', 'ky', 'ht', 'jm', 'jo', 'ml', 'mm', 'ma', 'ni', 'pk', 'ph', 'ru', 'sn', 'ss', 'sy', 'tr', 'ug', 'ye');
+    my @onfido_blocked_countries = (
+        'af', 'by', 'cn', 'cd', 'iq', 'ly', 'ru', 'sy', 'aq', 'bq', 'bv', 'io', 'cx', 'cc',  'ck', 'cw', 'fk', 'gf', 'tf', 'gp',
+        'hm', 'mq', 'yt', 'nc', 'nu', 'nf', 're', 'sh', 'pm', 'sx', 'gs', 'sj', 'tl', 'tk',, 'wf', 'eh', 'ax'
+    );
     foreach my $country (@latam_african_countries) {
         my $new_email  = $country . $details{email};
         my $new_client = create_client('CR', undef, {residence => $country});
@@ -888,6 +926,7 @@ subtest 'country=latam african, financial STP account' => sub {
                 name             => $details{name},
                 mainPassword     => $details{password}{main},
                 leverage         => 100,
+                company          => 'labuan'
             },
         };
 
@@ -900,13 +939,224 @@ subtest 'country=latam african, financial STP account' => sub {
         $new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $new_client->account_opening_reason('nothing');
         $new_client->save;
-        my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
 
-        is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\labuan_stp_usd'};
+        if (grep { $country eq $_ } @high_risk_countries, @onfido_blocked_countries) {
+            $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed');
+        } else {
+            my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
+            is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\labuan_stp_usd'};
+        }
+
     }
 };
 
 # reset
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
+
+subtest 'restrict creating bvi account if poi status is not verified' => sub {
+
+    my $new_email  = 'br_poi_not_verified_' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'br'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->tax_identification_number('1234');
+    $new_client->tax_residence('br');
+    $new_client->account_opening_reason('speculative');
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'restrictMeToBVI',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+    #$new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $new_client->save;
+
+    my $method        = 'mt5_new_account';
+    my $client_params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'br',
+            email            => $new_email,
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    # not verified
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
+    $c->call_ok($method, $client_params)->has_error->error_code_is('AuthenticateAccount');
+
+    #my $result = $c->call_ok($method, $client_params)->has_no_error->result;
+    #is $result->{account_type}, 'financial', 'account_type=financial';
+    #is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std_usd'}, 'created in group real\p01_ts01\financial\bvi_std_usd';
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+};
+
+subtest 'bvi if poi status is verified, poa failed' => sub {
+
+    my $new_email  = 'br_poi_verified_poa_failed' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'br'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->tax_identification_number('1234');
+    $new_client->tax_residence('br');
+    $new_client->account_opening_reason('speculative');
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'red1rectMeToBVI',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+    $new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $new_client->save;
+
+    my $method        = 'mt5_new_account';
+    my $client_params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'br',
+            email            => $new_email,
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    #don't A book the account
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_bvi_financial(0);
+
+    my $doc_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $doc_mock->mock(
+        'expired',
+        sub {
+            return 1;
+        });
+    #verified in brasil and standard risk
+    $c->call_ok($method, $client_params)->has_error->error_code_is('ExpiredDocumentsMT5');
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+
+};
+
+subtest 'bvi/vanuatu fully authenticated' => sub {
+
+    my $new_email  = 'br_poi_failed_poa_verified_' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'br'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->tax_identification_number('1234');
+    $new_client->tax_residence('br');
+    $new_client->account_opening_reason('speculative');
+    $new_client->place_of_birth('Wakanda');
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'red1rectMeToBVI',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+    $new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $new_client->save;
+
+    my $method        = 'mt5_new_account';
+    my $client_params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'br',
+            email            => $new_email,
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    # A book the account
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_bvi_financial(1);
+
+    #verified in brasil and high risk
+    my $result = $c->call_ok($method, $client_params)->has_no_error('financial account successfully created BVI A book')->result;
+    is $result->{account_type}, 'financial', 'account_type is financial';
+    is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std-hr_usd'}, 'created in group real\p01_ts01\financial\bvi_std-hr_usd';
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+
+    $client_params->{args}->{company} = 'vanuatu';
+    $result = $c->call_ok($method, $client_params)->has_no_error('financial account successfully created Vanuatu')->result;
+    is $result->{account_type}, 'financial', 'account_type is financial';
+    is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\vanuatu_std-hr_usd'},
+        'created in group real\p01_ts01\financial\vanuatu_std-hr_usd';
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+
+    $client_params->{args}->{account_type}     = 'gaming';
+    $client_params->{args}->{mt5_account_type} = '';
+    $client_params->{args}->{company}          = 'bvi';
+    $result = $c->call_ok($method, $client_params)->has_no_error('gaming account successfully created BVI')->result;
+    is $result->{account_type}, 'gaming', 'account_type is gaming';
+    is $result->{login}, 'MTR' . $accounts{'real\p01_ts04\synthetic\bvi_std_usd'}, 'created in group real\p01_ts01\synthetic\bvi_std_usd';
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+
+};
+
+subtest 'countries restrictions, high-risk jurisdiction, onfido blocked' => sub {
+    my @countries = qw(vg bb ru aq bv);
+
+    # do not create vg for bvi
+    # bb and ru is in high risk
+    # aq and bv is onfido blocked
+    foreach my $country (@countries) {
+        my $new_email  = 'restriction_tests_' . $country . $details{email};
+        my $new_client = create_client('CR', undef, {residence => $country});
+        my $token      = $m->create_token($new_client->loginid, 'test token 2');
+        $new_client->set_default_account('USD');
+        $new_client->email($new_email);
+        $new_client->tax_identification_number('1234');
+        $new_client->tax_residence($country);
+        $new_client->account_opening_reason('speculative');
+
+        my $user = BOM::User->create(
+            email    => $new_email,
+            password => 'red1rectMeToBVI',
+        );
+        $user->update_trading_password($details{password}{main});
+        $user->add_client($new_client);
+        $new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+        $new_client->save;
+
+        my $method        = 'mt5_new_account';
+        my $client_params = {
+            token => $token,
+            args  => {
+                account_type     => 'financial',
+                email            => $new_email,
+                name             => $details{name},
+                mainPassword     => $details{password}{main},
+                leverage         => 1000,
+                mt5_account_type => 'financial',
+                company          => 'bvi'
+            },
+        };
+
+        $c->call_ok($method, $client_params)->has_error->error_code_is('MT5NotAllowed');
+        BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+    }
+
+};
+
+# my $result = $c->call_ok($method, $client_params)->has_no_error('financial account successfully created B book')->result;
+# is $result->{account_type}, 'financial', 'account_type=financial';
+# is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std_usd'}, 'created in group real\p01_ts01\financial\bvi_std_usd';
 
 done_testing();

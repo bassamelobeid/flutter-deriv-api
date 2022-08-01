@@ -282,8 +282,8 @@ subtest 'new account' => sub {
 subtest 'CR account types - low risk' => sub {
     my $client = create_client('CR');
     $client->set_default_account('USD');
-    $client->place_of_birth('af');
-    $client->residence('af');
+    $client->place_of_birth('ai');
+    $client->residence('ai');
     $client->aml_risk_classification('low');
     $client->save();
 
@@ -303,7 +303,7 @@ subtest 'CR account types - low risk' => sub {
             account_type => 'demo'
         });
     ok($login, 'demo account successfully created for a low risk client');
-    is $mt5_account_info->{country}, 'Afghanistan',                         'requested country was masked by client_s country of residence';
+    is $mt5_account_info->{country}, 'Anguilla',                            'requested country was masked by client_s country of residence';
     is $mt5_account_info->{group},   'demo\p01_ts01\synthetic\svg_std_usd', 'correct CR demo group';
 
     $login = create_mt5_account->(
@@ -390,8 +390,8 @@ subtest 'CR account types - high risk' => sub {
     $user->update_trading_password('Abcd33@!');
     my $client = create_client('CR');
     $client->set_default_account('USD');
-    $client->place_of_birth('af');
-    $client->residence('af');
+    $client->place_of_birth('ai');
+    $client->residence('ai');
     $client->aml_risk_classification('high');
     $client->save();
     $user->add_client($client);
@@ -420,9 +420,9 @@ subtest 'CR account types - high risk' => sub {
         {
             account_type     => 'demo',
             mt5_account_type => 'financial_stp'
-        });
-    is $mt5_account_info->{group}, 'demo\p01_ts01\financial\labuan_stp_usd', 'correct CR financial_stp demo group';
-
+        },
+    );
+    is $mt5_account_info->{group}, 'demo\p01_ts01\financial\labuan_stp_usd', 'correct CR financial stp demo group';
     #real accounts
 
     financial_assessment($client, 'none');
@@ -444,51 +444,6 @@ subtest 'CR account types - high risk' => sub {
         });
     ok $login, 'financial mt5 account is created without authentication';
     is $mt5_account_info->{group}, 'real\p01_ts01\financial\svg_std_usd', 'correct CR financial group';
-
-    my $error = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial_stp'
-        },
-        'ASK_FIX_DETAILS',
-        'Required fields missing for financial_stp account'
-    );
-    cmp_bag($error->{details}{missing}, ['account_opening_reason'], 'Missing account_opening_reason should appear in details.');
-    $client->account_opening_reason('Speculative');
-    $client->save();
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial_stp'
-        },
-        'AuthenticateAccount',
-        'authentication is required by labuan'
-    );
-    authenticate($client);
-
-    $documents_expired = 1;
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial_stp'
-        },
-        'ExpiredDocumentsMT5',
-        'valid documents are required for financial_stp mt5 accounts'
-    );
-    $documents_expired = 0;
-
-    $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial_stp'
-        });
-    ok $login, 'financial_stp account created without full financial assessment';
-    is $mt5_account_info->{group}, 'real\p01_ts01\financial\labuan_stp_usd', 'correct CR labuan_financial_stp group';
 };
 
 subtest 'MLT account types - low risk' => sub {
@@ -747,7 +702,7 @@ subtest 'MF accout types' => sub {
 subtest 'VR account types - CR residence' => sub {
     my $client = create_client('VRTC');
     $client->set_default_account('USD');
-    $client->residence('af');
+    $client->residence('ai');
     $client->save();
 
     my $user = BOM::User->create(
@@ -762,7 +717,7 @@ subtest 'VR account types - CR residence' => sub {
     my $login = create_mt5_account->(
         $c, $token, $client,
         {
-            country      => 'af',
+            country      => 'ai',
             account_type => 'demo'
         });
     ok($login, 'demo account successfully created for a virtual account');
@@ -1195,4 +1150,3 @@ $mocked_mt5->unmock_all;
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
 
 done_testing();
-

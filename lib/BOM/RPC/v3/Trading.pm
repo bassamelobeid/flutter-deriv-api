@@ -123,6 +123,27 @@ rpc trading_platform_product_listing => auth => [],
     return $resp;
     };
 
+rpc trading_platform_available_accounts => sub {
+    my $params = shift;
+
+    my $client = $params->{client};
+
+    try {
+        my $platform = BOM::TradingPlatform->new(
+            platform    => $params->{args}{platform},
+            client      => $client,
+            rule_engine => BOM::Rules::Engine->new(client => $client),
+        );
+
+        return $platform->available_accounts({
+            country_code => $client->residence,
+            brand        => request()->brand,
+        });
+    } catch ($e) {
+        handle_error($e);
+    }
+};
+
 =head2 trading_platform_new_account
 
 Create new account.
