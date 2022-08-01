@@ -237,6 +237,15 @@ Handles MT5 product listing.
 
 =cut
 
+my %account_display_mapping = (
+    financial => {
+        standard => 'Financial',
+        stp      => 'Financial STP',
+    },
+    gaming => {
+        standard => 'Synthetics',
+    });
+
 sub _mt5_listing {
     my ($self, $country_code, $app) = @_;
 
@@ -244,15 +253,16 @@ sub _mt5_listing {
     my $mt5_config      = BOM::Config::MT5->new();
     my $market_registry = Finance::Underlying::Market::Registry->instance;
     my $redis           = BOM::Config::Redis::redis_mt5_user();
+
     my %mt5_product_list;
     my @mt5_available_markets;
-    foreach my $account ($mt_accounts->@*) {
+    foreach my $account (grep { $_->{primary} } map { @$_ } values $mt_accounts->%*) {
         # we are only considering real accounts offerings at this point.
         my @groups = $mt5_config->available_groups({
                 server_type => 'real',
                 company     => $account->{company},
                 market_type => $account->{market_type},
-                sub_group   => $account->{sub_group}});
+                sub_group   => $account->{sub_account_type}});
         next unless @groups;
         foreach my $group (@groups) {
             my $offerings = decode_json($redis->hget('MT5_CONFIG::GROUPS', $group) // '{}');
@@ -281,7 +291,8 @@ sub _mt5_listing {
                         available_trade_types => ['CFDs'],
                     };
                     push @mt5_available_markets, $market_name;
-                    push $mt5_product_list{$symbol}{available_account_types}->@*, $account->{account_display_name};
+                    push $mt5_product_list{$symbol}{available_account_types}->@*,
+                        $account_display_mapping{$account->{market_type}}{$account->{sub_account_type}};
                 }
                 last;
             }
