@@ -30,7 +30,7 @@
             }
         },
         "country_code": {
-            "description": "[Optional] Country of legal citizenship, 2-letter country code.",
+            "description": "Country of legal citizenship, 2-letter country code.",
             "type": "string"
         },
         "passthrough": {
