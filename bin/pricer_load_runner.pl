@@ -19,6 +19,7 @@ use Data::Dumper;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Date::Utility;
 use Path::Tiny;
+use BOM::Test::LoadTest::Pricer qw(dd_memory_and_time);
 
 =head1 NAME
 
@@ -202,6 +203,8 @@ $timer = IO::Async::Timer::Periodic->new(
 
     on_tick => sub {
         my ($overflow_amount, $max_queue_size) = check_stats();
+        # gather memory info before process killed
+        dd_memory_and_time();
         # We have completed a cycle so kill off the current load test
         $process->kill(15) if $process && $process->is_running;
         if ($overflow_amount == 0 || $start == 1) {
@@ -554,6 +557,7 @@ sub start_subscription {
             }
         },
         on_finish => sub {
-
         });
+    dd_memory_and_time($market);
 }
+
