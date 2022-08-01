@@ -33,10 +33,9 @@ fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_vir
 # REAL ACCOUNT OPENING (CR)
 test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Sarah', 'id', '+61234567001';
 
-# Set POI Age_verification and allow_document_upload
+## Set POI Age_verification and allow_document_upload
 $suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set',   'poi_name_mismatch');
 $suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'clear', 'age_verification');
-$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set',   'allow_document_upload', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
 
 # get token
 my $placeholder = $suite->get_stashed('new_account_real/new_account_real/oauth_token');
