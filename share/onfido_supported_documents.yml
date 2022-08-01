@@ -1528,7 +1528,135 @@
   country_grouping: Africa
   country_name: Zimbabwe
   doc_types_list:
+  - Driving Licence
   - National Identity Card
+- country_code: BES
+  country_grouping: Americas
+  country_name: Bonaire, Sint Eustatius and Saba
+  disabled: 1
+  doc_types_list: ~
+- country_code: BVT
+  country_grouping: ''
+  country_name: Bouvet Island
+  disabled: 1
+  doc_types_list: ~
+- country_code: IOT
+  country_grouping: Africa
+  country_name: British Indian Ocean Territory
+  disabled: 1
+  doc_types_list: ~
+- country_code: CXR
+  country_grouping: Oceania
+  country_name: Christmas Island
+  disabled: 1
+  doc_types_list:
+  - Driving Licence
+- country_code: CCK
+  country_grouping: Oceania
+  country_name: Cocos (Keeling) Islands
+  disabled: 1
+  doc_types_list:
+  - Driving Licence
+- country_code: COK
+  country_grouping: Oceania
+  country_name: Cook Islands
+  disabled: 1
+  doc_types_list: ~
+- country_code: CUW
+  country_grouping: Americas
+  country_name: CuraÃ§ao
+  disabled: 1
+  doc_types_list: ~
+- country_code: FLK
+  country_grouping: Americas
+  country_name: Falkland Islands (Malvinas)
+  disabled: 1
+  doc_types_list: ~
+- country_code: GUF
+  country_grouping: Americas
+  country_name: French Guiana
+  disabled: 1
+  doc_types_list: ~
+- country_code: ATF
+  country_grouping: ''
+  country_name: French Southern Territories
+  disabled: 1
+  doc_types_list: ~
+- country_code: GLP
+  country_grouping: Americas
+  country_name: Guadeloupe
+  disabled: 1
+  doc_types_list: ~
+- country_code: HMD
+  country_grouping: ''
+  country_name: Heard Island and McDonald Islands
+  disabled: 1
+  doc_types_list: ~
+- country_code: MTQ
+  country_grouping: Americas
+  country_name: Martinique
+  disabled: 1
+  doc_types_list: ~
+- country_code: MRT
+  country_grouping: Africa
+  country_name: Mauritania
+  doc_types_list:
+  - Passport
+- country_code: MYT
+  country_grouping: Africa
+  country_name: Mayotte
+  disabled: 1
+  doc_types_list: ~
+- country_code: NCL
+  country_grouping: Oceania
+  country_name: New Caledonia
+  disabled: 1
+  doc_types_list: ~
+- country_code: NIU
+  country_grouping: Oceania
+  country_name: Niue
+  disabled: 1
+  doc_types_list: ~
+- country_code: NFK
+  country_grouping: Oceania
+  country_name: Norfolk Island
+  disabled: 1
+  doc_types_list: ~
+- country_code: REU
+  country_grouping: Africa
+  country_name: RÃ©union
+  disabled: 1
+  doc_types_list: ~
+- country_code: SHN
+  country_grouping: Africa
+  country_name: Saint Helena, Ascension and Tristan da Cunha
+  disabled: 1
+  doc_types_list: ~
+- country_code: SPM
+  country_grouping: Americas
+  country_name: Saint Pierre and Miquelon
+  disabled: 1
+  doc_types_list: ~
+- country_code: SXM
+  country_grouping: Americas
+  country_name: Sint Maarten (Dutch part)
+  disabled: 1
+  doc_types_list: ~
+- country_code: SGS
+  country_grouping: Americas
+  country_name: South Georgia and the South Sandwich Islands
+  disabled: 1
+  doc_types_list: ~
+- country_code: SJM
+  country_grouping: Europe
+  country_name: Svalbard and Jan Mayen
+  disabled: 1
+  doc_types_list: ~
+- country_code: TLS
+  country_grouping: Asia
+  country_name: Timor-Leste
+  disabled: 1
+  doc_types_list:
   - Passport
 - country_code: ATA
   country_grouping: ''

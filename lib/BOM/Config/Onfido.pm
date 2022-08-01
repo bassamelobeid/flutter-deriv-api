@@ -86,7 +86,7 @@ Returns 1 if the country is disabled, 0 otherwise.
 sub is_disabled_country {
     my $country_code = shift;
 
-    $country_code = uc(country_code2code($country_code, 'alpha-2', 'alpha-3') // '');
+    $country_code = uc(country_code2code($country_code, 'alpha-2', 'alpha-3') // '') if (length($country_code) == 2);
 
     my $country_details = _get_country_details();
 

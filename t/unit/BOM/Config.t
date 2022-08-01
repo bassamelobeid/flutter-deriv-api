@@ -4019,34 +4019,6 @@ my $test_parameters = [{
                     sub_account_type      => '',
                     server                => ''
                 },
-                'real\p01_ts02\financial\vanuatu_std-hr_usd' => {
-                    account_type          => '',
-                    landing_company_short => '',
-                    market_type           => '',
-                    sub_account_type      => '',
-                    server                => ''
-                },
-                'real\p01_ts03\financial\vanuatu_std-hr_usd' => {
-                    account_type          => '',
-                    landing_company_short => '',
-                    market_type           => '',
-                    sub_account_type      => '',
-                    server                => ''
-                },
-                'real\p01_ts04\financial\vanuatu_std-hr_usd' => {
-                    account_type          => '',
-                    landing_company_short => '',
-                    market_type           => '',
-                    sub_account_type      => '',
-                    server                => ''
-                },
-                'real\p02_ts02\financial\vanuatu_std-hr_usd' => {
-                    account_type          => '',
-                    landing_company_short => '',
-                    market_type           => '',
-                    sub_account_type      => '',
-                    server                => ''
-                },
                 'real\p01_ts01\synthetic\svg_std-hr_usd' => {
                     account_type          => '',
                     landing_company_short => '',

@@ -1388,6 +1388,11 @@ system:
               isa: Bool
               default: 0
               global: 1
+            auto_Bbook_bvi_financial:
+              description: "Suspend B-booking new sign-up for bvi financial"
+              isa: Bool
+              default: 0
+              global: 1
             demo:
               description: "Suspend MT5 API calls to demo group type"
               isa: section

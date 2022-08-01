@@ -370,12 +370,12 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 40,
+            count   => 46,
             comment => 'real groups'
         },
         {
             filter  => {server_type => 'demo'},
-            count   => 15,
+            count   => 17,
             comment => 'demo groups'
         },
         {
@@ -597,7 +597,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'bvi'
             },
-            count   => 5,
+            count   => 11,
             comment => 'real bvi groups'
         },
         {
@@ -606,7 +606,7 @@ subtest 'available_groups' => sub {
                 company     => 'bvi',
                 market_type => 'financial'
             },
-            count   => 5,
+            count   => 6,
             comment => 'real bvi financial groups'
         },
         {
@@ -615,7 +615,7 @@ subtest 'available_groups' => sub {
                 company     => 'bvi',
                 market_type => 'synthetic'
             },
-            count   => 0,
+            count   => 5,
             comment => 'real bvi synthetic groups'
         },
         {
@@ -623,7 +623,7 @@ subtest 'available_groups' => sub {
                 server_type => 'demo',
                 company     => 'bvi'
             },
-            count   => 2,
+            count   => 4,
             comment => 'demo bvi groups'
         },
         {
@@ -641,7 +641,7 @@ subtest 'available_groups' => sub {
                 company     => 'bvi',
                 market_type => 'synthetic'
             },
-            count   => 0,
+            count   => 2,
             comment => 'demo bvi synthetic groups'
         },
         {
@@ -650,7 +650,7 @@ subtest 'available_groups' => sub {
                 company     => 'vanuatu'
             },
             allow_multiple_subgroups => 1,
-            count                    => 5,
+            count                    => 1,
             comment                  => 'real vanuatu groups'
         },
         {
@@ -660,7 +660,7 @@ subtest 'available_groups' => sub {
                 market_type => 'financial'
             },
             allow_multiple_subgroups => 1,
-            count                    => 5,
+            count                    => 1,
             comment                  => 'real vanuatu financial groups'
         },
         {

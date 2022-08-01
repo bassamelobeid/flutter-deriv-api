@@ -366,11 +366,11 @@ Get available group based on parameters
 
 =item * server_key - trade server key. E.g. p01_ts01
 
-=item * market_type - synthetic or financial
+=item * market_type - gaming or financial
 
 =item * company - E.g. svg
 
-=item * sub_group - std (standard) or sf (swap free) etc
+=item * sub_group - E.g. stp or standard
 
 =item * allow_multiplier_subgroup - boolean
 
@@ -380,6 +380,10 @@ Get available group based on parameters
 
 sub available_groups {
     my ($self, $params, $allow_multiple_subgroup) = @_;
+
+    # some mapping to match the mt5 group naming convention
+    $params->{subgroup}    = 'std'       if $params->{sub_group}   and $params->{sub_group} eq 'standard';
+    $params->{market_type} = 'synthetic' if $params->{market_type} and $params->{market_type} eq 'gaming';
 
     my $allow_multi = $allow_multiple_subgroup ? '(-|_)' : '_';
     $params->{$_} //= '\w+' foreach qw(server_type server_key market_type company sub_group);
