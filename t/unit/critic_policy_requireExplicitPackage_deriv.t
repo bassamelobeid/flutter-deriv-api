@@ -90,6 +90,30 @@ $code = <<'EOF';
 # Some comment
 use Object::Pad;
 # other comment
+class Abc{
+    has $abc :reader :writer;
+};
+# comment 3
+EOF
+$expected_code = <<'EOF';
+# Some comment
+
+# other comment
+package Abc;class Abc{
+    has $abc :reader :writer;
+};
+# comment 3
+EOF
+$doc = PPI::Document->new(\$code);
+$processed_doc = Perl::Critic::Policy::Modules::RequireExplicitPackage::DERIV::_replace_class($doc);
+isnt(refaddr($doc), refaddr($processed_doc), "not same doc");
+is("$doc", $code, "the original doc not changed");
+is("$processed_doc", $expected_code, "Object::Pad and class is replaced");
+
+$code = <<'EOF';
+# Some comment
+use Object::Pad;
+# other comment
 # comment 3
 EOF
 $expected_code = $code;
