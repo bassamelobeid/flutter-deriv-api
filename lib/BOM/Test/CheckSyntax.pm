@@ -125,7 +125,7 @@ sub check_syntax {
         diag("syntax check on $file:");
         if ($file =~ /^lib\/.+[.]pm\z/) {
             critic_ok($file, 'test perlcritic');
-            vars_ok($file);
+            vars_ok($file, ignore_vars => ['@(Object::Pad/slots)']);
             BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
 

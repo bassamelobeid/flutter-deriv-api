@@ -9,6 +9,7 @@ $(SUBDIRS):
 	@if [ -d $@ ] && [ -f $@/Makefile ] && grep -q '^test:' $@/Makefile; then $(MAKE) -C $@ test; else echo Skipping $@; fi
 
 # we exclude /WebsocketAPI/{Tests,Helpers} here to prevent the Future chains from being mangled into an unreadable mess
+# TODO we exclude lib/BOM/Test/Rudderstack/Webserver.pm because perltidy cann't handle modules that using Object::Pad class. will fix it after we fix perltidy
 tidy:
 	find . -name '*.p?.bak' -delete
 	find lib t bin \( -name '*.p[lm]'  -o -name '*.t' \) -not \( -path '*/WebsocketAPI/Tests/*' -o -path '*/WebsocketAPI/Helpers/*' \) | xargs perltidier -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
