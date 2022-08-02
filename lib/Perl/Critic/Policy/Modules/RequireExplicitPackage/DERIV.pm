@@ -30,13 +30,8 @@ sub _replace_class {
                 and $_[1]->child(0)->literal eq 'class';
         });
     return $cloned_doc unless $class;
-    my $class_name = $class->find_first(
-        sub {
-            $_[1]->parent == $_[0]
-                and $_[1]->isa('PPI::Token::Word')
-                and $_[1]->literal ne 'class';
-        });
-    return $cloned_doc unless $class_name;
+    return $cloned_doc unless "$class" =~ /class\s+(\w+)/;
+    my $class_name = $1;
     $cloned_doc->remove_child($object_pad);
     my $package_code      = "package $class_name;";
     my $package_doc       = PPI::Document->new(\$package_code);
