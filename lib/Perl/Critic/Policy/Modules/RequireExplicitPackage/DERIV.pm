@@ -43,6 +43,7 @@ sub _replace_class{
     my $package_doc = PPI::Document->new(\$package_code);
     my $package_statement = $package_doc->find_first(sub{$_[1]->isa('PPI::Statement::Package')});
     $package_doc->remove_child($package_statement);
-    my $result = $class->insert_before($package_statement);
+    $class->insert_before($package_statement);
     return $cloned_doc;
 }
+1;
