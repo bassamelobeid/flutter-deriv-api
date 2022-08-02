@@ -12,17 +12,17 @@ package Abc;
 use Def;
 EOF
 $expected_code = $code;
-$doc = PPI::Document->new(\$code);
+$doc           = PPI::Document->new(\$code);
 $processed_doc = Perl::Critic::Policy::Modules::RequireExplicitPackage::DERIV::_replace_class($doc);
 isnt(refaddr($doc), refaddr($processed_doc), "not same doc");
-is("$doc", $code, "the original doc not changed");
+is("$doc",           $code, "the original doc not changed");
 is("$processed_doc", $code, "the source code not changed because there is no class");
 
 $code = <<EOF;
 # Some comment
 use Object::Pad;
 # other comment
-class Abc;
+class Abc ;
 # comment 3
 EOF
 $expected_code = <<EOF;
@@ -32,18 +32,18 @@ $expected_code = <<EOF;
 package Abc;class Abc;
 # comment 3
 EOF
-$doc = PPI::Document->new(\$code);
+$doc           = PPI::Document->new(\$code);
 $processed_doc = Perl::Critic::Policy::Modules::RequireExplicitPackage::DERIV::_replace_class($doc);
 isnt(refaddr($doc), refaddr($processed_doc), "not same doc");
-is("$doc", $code, "the original doc not changed");
+is("$doc",           $code,          "the original doc not changed");
 is("$processed_doc", $expected_code, "Object::Pad and class is replaced");
 
 $code = <<'EOF';
 # Some comment
 use Object::Pad;
 # other comment
-class Abc :isa("P1"){
-    has $abc :reader :writer;
+class Abc :isa("P1") {
+    has $abc :reader :writer ;
 };
 # comment 3
 EOF
@@ -52,14 +52,14 @@ $expected_code = <<'EOF';
 
 # other comment
 package Abc;class Abc :isa("P1"){
-    has $abc :reader :writer;
+    has $abc :reader :writer ;
 };
 # comment 3
 EOF
-$doc = PPI::Document->new(\$code);
+$doc           = PPI::Document->new(\$code);
 $processed_doc = Perl::Critic::Policy::Modules::RequireExplicitPackage::DERIV::_replace_class($doc);
 isnt(refaddr($doc), refaddr($processed_doc), "not same doc");
-is("$doc", $code, "the original doc not changed");
+is("$doc",           $code,          "the original doc not changed");
 is("$processed_doc", $expected_code, "Object::Pad and class is replaced");
 
 $code = <<'EOF';
@@ -67,7 +67,7 @@ $code = <<'EOF';
 use Object::Pad;
 # other comment
 class Abc :attr {
-    has $abc :reader :writer;
+    has $abc :reader :writer ;
 };
 # comment 3
 EOF
@@ -76,22 +76,22 @@ $expected_code = <<'EOF';
 
 # other comment
 package Abc;class Abc :attr {
-    has $abc :reader :writer;
+    has $abc :reader :writer ;
 };
 # comment 3
 EOF
-$doc = PPI::Document->new(\$code);
+$doc           = PPI::Document->new(\$code);
 $processed_doc = Perl::Critic::Policy::Modules::RequireExplicitPackage::DERIV::_replace_class($doc);
 isnt(refaddr($doc), refaddr($processed_doc), "not same doc");
-is("$doc", $code, "the original doc not changed");
+is("$doc",           $code,          "the original doc not changed");
 is("$processed_doc", $expected_code, "Object::Pad and class is replaced");
 
 $code = <<'EOF';
 # Some comment
 use Object::Pad;
 # other comment
-class Abc{
-    has $abc :reader :writer;
+class Abc {
+    has $abc :reader :writer ;
 };
 # comment 3
 EOF
@@ -100,14 +100,14 @@ $expected_code = <<'EOF';
 
 # other comment
 package Abc;class Abc{
-    has $abc :reader :writer;
+    has $abc :reader :writer ;
 };
 # comment 3
 EOF
-$doc = PPI::Document->new(\$code);
+$doc           = PPI::Document->new(\$code);
 $processed_doc = Perl::Critic::Policy::Modules::RequireExplicitPackage::DERIV::_replace_class($doc);
 isnt(refaddr($doc), refaddr($processed_doc), "not same doc");
-is("$doc", $code, "the original doc not changed");
+is("$doc",           $code,          "the original doc not changed");
 is("$processed_doc", $expected_code, "Object::Pad and class is replaced");
 
 $code = <<'EOF';
@@ -117,23 +117,23 @@ use Object::Pad;
 # comment 3
 EOF
 $expected_code = $code;
-$doc = PPI::Document->new(\$code);
+$doc           = PPI::Document->new(\$code);
 $processed_doc = Perl::Critic::Policy::Modules::RequireExplicitPackage::DERIV::_replace_class($doc);
 isnt(refaddr($doc), refaddr($processed_doc), "not same doc");
-is("$doc", $code, "the original doc not changed");
+is("$doc",           $code,          "the original doc not changed");
 is("$processed_doc", $expected_code, "code not changed becasue there is no class");
 
 $code = <<'EOF';
 # Some comment
 # other comment
-class Abc;
+class Abc ;
 # comment 3
 EOF
 $expected_code = $code;
-$doc = PPI::Document->new(\$code);
+$doc           = PPI::Document->new(\$code);
 $processed_doc = Perl::Critic::Policy::Modules::RequireExplicitPackage::DERIV::_replace_class($doc);
 isnt(refaddr($doc), refaddr($processed_doc), "not same doc");
-is("$doc", $code, "the original doc not changed");
+is("$doc",           $code,          "the original doc not changed");
 is("$processed_doc", $expected_code, "code not changed becasue there is no Object::Pad");
 
 done_testing();
