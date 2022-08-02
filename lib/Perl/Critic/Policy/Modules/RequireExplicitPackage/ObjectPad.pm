@@ -1,8 +1,22 @@
-package Perl::Critic::Policy::Modules::RequireExplicitPackage::DERIV;
+package Perl::Critic::Policy::Modules::RequireExplicitPackage::ObjectPad;
 use strict;
 use warnings;
 use parent qw(Perl::Critic::Policy::Modules::RequireExplicitPackage);
 use Class::Method::Modifiers;
+
+=head1 NAME
+
+Perl::Critic::Policy::Modules::RequireExplicitPackage::ObjectPad - Always make the package/Object::Pad class explicit.
+
+=cut
+
+=head1 METHOLDS
+
+=head2 violates
+
+Please see L<Perl::Critic::Policy::Modules::RequireExplicitPackage::violates>
+
+=cut
 
 around violates => sub {
     my $orig = shift;
@@ -10,6 +24,15 @@ around violates => sub {
     $doc = _replace_class($doc);
     return $orig->($self, $elem, $doc);
 };
+
+=head2 _replace_class
+
+replace 'use Object::Pad' and 'class XXXX' with `package XXX` in L<PPI::Document> object, to make it be processable by L<Perl::Critic::Policy::Modules::RequireExplicitPackage::violates>
+
+Argument: PPI::Document object
+Return: cloned PPI::document object
+
+=cut
 
 sub _replace_class {
     my $doc        = shift;
