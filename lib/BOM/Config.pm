@@ -263,6 +263,23 @@ sub crypto_api {
     return $config;
 }
 
+=head2 crypto_internal_api
+
+Config for connecting to the Internal Crypto API.
+
+Example:
+
+    my $crypto_server = BOM::Config::crypto_internal_api()->{host};
+
+Returns a hashref that contains host and port details to connect to the internal crypto API
+
+=cut
+
+sub crypto_internal_api {
+    state $config = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_internal_api.yml');
+    return $config;
+}
+
 =head2 domain
 
 Get brand domain information
