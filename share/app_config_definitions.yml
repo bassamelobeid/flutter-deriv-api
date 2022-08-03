@@ -1542,6 +1542,15 @@ system:
               isa: ArrayRef
               global: 1
               default: []
+    backoffice:
+      description: "Configuration for backoffice system"
+      isa: section
+      contains:
+        crypto_cashier_api:
+          description: "Enable using the crypto cashier api on BO."
+          isa: Bool
+          default: 0
+          global: 1
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section
