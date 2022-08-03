@@ -313,6 +313,7 @@ sub get_settings_by_group {
                 system.dxtrade.suspend.user_exceptions
                 system.services.fraud_prevention
                 system.services.identity_verification
+                system.backoffice.crypto_cashier_api
                 )
         ],
         quant => [qw(

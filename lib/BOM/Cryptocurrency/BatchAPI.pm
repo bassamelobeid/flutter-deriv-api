@@ -42,7 +42,9 @@ A helper class to create, validate, and process batch requests.
 use Clone qw(clone);
 use Data::UUID;
 
+use BOM::Config::Runtime;
 use BOM::CTC::API::Batch;
+use BOM::Platform::CryptoCashier::InternalAPI;
 
 =head2 new
 
@@ -118,9 +120,16 @@ sub process {
     die 'There is no request in the batch, please use "add_request()".'
         unless $self->{requests}->@*;
 
-    my $response = BOM::CTC::API::Batch::process({
-        requests => $self->{requests},
-    });
+    my $response;
+
+    if (BOM::Config::Runtime->instance->app_config->get('system.backoffice.crypto_cashier_api')) {
+        my $crypto_api = BOM::Platform::CryptoCashier::InternalAPI->new;
+        $response = $crypto_api->process_batch($self->{requests});
+    } else {
+        $response = BOM::CTC::API::Batch::process({
+            requests => $self->{requests},
+        });
+    }
 
     if ($response->{error}) {
         $self->{response_error} = $response->{error};

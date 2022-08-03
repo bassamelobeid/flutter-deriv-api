@@ -397,7 +397,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
                 </form>
             </div>
             <div class="card__content">
-                <h3>Crypto Casheir Dynamic settings</h3>
+                <h3>Crypto Cashier Dynamic settings</h3>
                 <form action="~ . request()->url_for('backoffice/crypto_dynamic_settings.cgi') . qq~" method="get">
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
