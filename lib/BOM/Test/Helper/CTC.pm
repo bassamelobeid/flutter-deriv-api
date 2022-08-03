@@ -6,25 +6,17 @@ use warnings;
 use Exporter qw( import );
 
 use JSON::MaybeXS;
-use Test::MockModule;
 use Path::Tiny;
-use LandingCompany::Registry;
+use Syntax::Keyword::Try;
 
 use BOM::CTC::Config;
+use BOM::CTC::Config::Cashier;
 use BOM::CTC::Currency;
-use BOM::Config::CurrencyConfig;
 use BOM::CTC::Database;
-use Syntax::Keyword::Try;
-use BOM::Config::Redis;
 use BOM::CTC::Daemon;
 
-our @EXPORT_OK = qw( wait_miner deploy_erc20_test_contract set_pending deploy_batch_withdrawal_test_contract top_up_eth_batch_withdrawal_contract);
-
-my $mock_cashier_validation = Test::MockModule->new('BOM::Config::CurrencyConfig');
-$mock_cashier_validation->mock(
-    is_crypto_currency_suspended => sub {
-        return 0;
-    });
+our @EXPORT_OK =
+    qw( wait_miner deploy_erc20_test_contract set_pending deploy_batch_withdrawal_test_contract top_up_eth_batch_withdrawal_contract create_loginid);
 
 =head2 wait_miner
 
@@ -92,7 +84,7 @@ It returns a hash ref containing the addresses just created for ERC20 currencies
 
 sub deploy_all_erc20_test_contracts {
     my $result = {};
-    for (LandingCompany::Registry->all_crypto_currencies) {
+    for (BOM::CTC::Config::Cashier::all_crypto_currencies()) {
         my $contract_address = deploy_erc20_test_contract($_);
         $result->{$_} = $contract_address if $contract_address;
     }
@@ -234,6 +226,18 @@ sub top_up_eth_batch_withdrawal_contract {
     my $res = $currency->rpc_client->eth_sendTransaction([$params]);
     wait_miner($res);
     return undef;
+}
+
+=head2 create_loginid
+
+Creates and returns a string of concatenating "id_" and an incremental counter.
+
+=cut
+
+my $loginid_counter = 1;
+
+sub create_loginid {
+    return "id_" . $loginid_counter++;
 }
 
 1;
