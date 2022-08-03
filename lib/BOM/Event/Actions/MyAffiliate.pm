@@ -177,7 +177,7 @@ async sub _set_affiliate_for_mt5 {
 
 sub _get_clean_loginids {
     my ($affiliate_id) = @_;
-    my $my_affiliate   = BOM::MyAffiliates->new();
+    my $my_affiliate   = BOM::MyAffiliates->new(timeout => 300);
     my $customers      = $my_affiliate->get_customers(AFFILIATE_ID => $affiliate_id);
 
     return [

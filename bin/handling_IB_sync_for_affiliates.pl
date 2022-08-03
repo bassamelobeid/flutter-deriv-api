@@ -179,7 +179,7 @@ sub affiliate_sync_initiated {
 
 sub _get_clean_loginids {
     my @date_pairs    = get_pairs($date);
-    my $my_affiliate  = BOM::MyAffiliates->new(timeout => 180);
+    my $my_affiliate  = BOM::MyAffiliates->new(timeout => 300);
     my @all_customers = ();
     for my $pairs (@date_pairs) {
         my $customers = $my_affiliate->get_customers($pairs);
