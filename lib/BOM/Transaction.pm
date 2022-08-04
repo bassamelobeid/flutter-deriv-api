@@ -719,6 +719,16 @@ sub prepare_bet_data_for_buy {
         if ($contract->cancellation) {
             $bet_params->{cancellation_price} = $contract->cancellation_price;
         }
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_ACCUMULATOR) {
+        $bet_params->{tick_count}      = undef;
+        $bet_params->{expiry_time}     = undef;
+        $bet_params->{settlement_time} = undef;
+
+        # take profit is optional.
+        if ($contract->take_profit) {
+            $bet_params->{take_profit_order_date}   = $contract->take_profit->{date}->db_timestamp;
+            $bet_params->{take_profit_order_amount} = $contract->take_profit->{amount};
+        }
     } else {
         return Error::Base->cuss(
             -quiet             => 1,
@@ -1028,13 +1038,20 @@ sub _enqueue_new_notification {
 sub batch_buy {
     my ($self, %options) = @_;
 
-    # we do not support batch buy for multiplier
+    # we do not support batch buy for multiplier and accumulator
     if ($self->contract->category_code eq 'multiplier') {
         return Error::Base->cuss(
             -quiet             => 1,
             -type              => 'UnsupportedBatchBuy',
             -mesg              => "Multiplier not supported in batch_buy",
             -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
+        );
+    } elsif ($self->contract->category_code eq 'accumulator') {
+        return Error::Base->cuss(
+            -quiet             => 1,
+            -type              => 'UnsupportedBatchBuy',
+            -mesg              => "Accumulator not supported in batch_buy",
+            -message_to_client => localize('ACCU is not supported.'),
         );
     }
 
@@ -1199,9 +1216,9 @@ sub prepare_bet_data_for_sell {
         $bet_params->{is_cancelled} = $self->action_type eq 'cancel' ? 1 : 0;
     }
 
-    # we need to verify child table for multiplier to avoid cases where a contract
+    # we need to verify child table for multiplier and accumulator to avoid cases where a contract
     # is sold while it is being updated via a difference process.
-    if ($contract->category_code eq 'multiplier') {
+    if ($contract->category_code =~ /\bmultiplier\b|\baccumulator\b/) {
         $bet_params->{verify_child} = _get_info_to_verify_child($self->contract_id, $contract);
     }
     my $quants_bet_variables;
@@ -1428,6 +1445,13 @@ sub sell_by_shortcode {
             -type              => 'UnsupportedBatchSell',
             -mesg              => "Multiplier not supported in sell_by_shortcode",
             -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
+        );
+    } elsif ($self->contract->category_code eq 'accumulator') {
+        return Error::Base->cuss(
+            -quiet             => 1,
+            -type              => 'UnsupportedBatchSell',
+            -mesg              => "Accumulator not supported in sell_by_shortcode",
+            -message_to_client => localize('ACCU is not supported.'),
         );
     }
 
@@ -2457,6 +2481,14 @@ sub _get_list_for_expiryqueue {
 sub _get_info_to_verify_child {
     my ($contract_id, $contract) = @_;
 
+    return $contract->category_code eq 'multiplier'
+        ? _multiplier_child_info($contract_id, $contract)
+        : _accumulator_child_info($contract_id, $contract);
+}
+
+sub _multiplier_child_info {
+    my ($contract_id, $contract) = @_;
+
     my $info = {
         financial_market_bet_id => $contract_id + 0,
         basis_spot              => $contract->basis_spot + 0,
@@ -2480,7 +2512,28 @@ sub _get_info_to_verify_child {
     }
 
     return $info;
+}
 
+sub _accumulator_child_info {
+    my ($contract_id, $contract) = @_;
+
+    my $info = {financial_market_bet_id => $contract_id + 0};
+
+    if ($contract->take_profit) {
+        # make sure it is numeric
+        $info->{take_profit_order_amount} = $contract->take_profit->{amount} ? $contract->take_profit->{amount} + 0 : undef;
+        # jsonb converts datatme to 2019-10-30T02:12:27 format
+        # let's do the same here.
+        my $order_date = $contract->take_profit->{date}->db_timestamp;
+        $order_date =~ s/\s/T/;
+        $info->{take_profit_order_date} = $order_date;
+    } else {
+        # to match null in the child table
+        $info->{take_profit_order_amount} = undef;
+        $info->{take_profit_order_date}   = undef;
+    }
+
+    return $info;
 }
 
 no Moose;
