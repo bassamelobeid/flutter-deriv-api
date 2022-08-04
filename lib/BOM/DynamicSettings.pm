@@ -276,6 +276,7 @@ sub get_settings_by_group {
                 system.suspend.access_token_sharing
                 system.mt5.load_balance.demo.all.p01_ts01
                 system.mt5.load_balance.demo.all.p01_ts02
+                system.mt5.load_balance.demo.all.p01_ts03
                 system.mt5.load_balance.real.all.p01_ts01
                 system.mt5.load_balance.real.europe_synthetic.p01_ts04
                 system.mt5.load_balance.real.africa_synthetic.p02_ts02
@@ -288,6 +289,7 @@ sub get_settings_by_group {
                 system.mt5.suspend.auto_Bbook_bvi_financial
                 system.mt5.suspend.demo.p01_ts01.all
                 system.mt5.suspend.demo.p01_ts02.all
+                system.mt5.suspend.demo.p01_ts03.all
                 system.mt5.suspend.real.p01_ts01.all
                 system.mt5.suspend.real.p01_ts01.deposits
                 system.mt5.suspend.real.p01_ts01.withdrawals
