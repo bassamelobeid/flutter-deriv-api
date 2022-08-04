@@ -4,13 +4,15 @@ use strict;
 use warnings;
 no indirect;
 
-use List::Util qw(first);
+use List::Util qw(any first);
 
 use Syntax::Keyword::Try;
 
 use BOM::Config::MT5;
 use BOM::MT5::User::Async;
 use BOM::User::Utility;
+use DataDog::DogStatsd::Helper qw(stats_inc);
+use Log::Any qw($log);
 use LandingCompany::Registry;
 use Brands;
 
@@ -41,6 +43,37 @@ use parent qw( BOM::TradingPlatform );
 use constant {
     MT5_REGEX => qr/^MT[DR]?(?=\d+$)/,
 };
+
+=head2 create_error_future
+
+create error handling for future object.
+
+create_error_future({code => "MT5AccountInactive", message => "Account is inactive"})
+
+=over 4
+
+=item * C<code> (required). the error code.
+
+=item * C<details> (required). the error details.
+
+=back
+
+=cut
+
+sub create_error_future {
+    my $err            = shift;
+    my $error_registry = BOM::RPC::v3::MT5::Errors->new();
+
+    if (ref $err eq 'HASH') {
+        if ($err->{code}) {
+            return Future->fail($error_registry->format_error($err->{code}, $err->{message}));
+        } else {
+            return Future->fail({error => $err->{message}});
+        }
+    } else {
+        return Future->fail($err);
+    }
+}
 
 =head2 new
 
@@ -357,6 +390,361 @@ sub get_group {
 
     return 'real' if $account_id =~ /^MTR\d+$/;
     return 'demo' if $account_id =~ /^MTD\d+$/;
+}
+
+=head2 get_accounts
+
+Gets all available client accounts and returns list formatted for websocket response.
+
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<force>. If true, an error will be raised if any accounts are inaccessible.
+
+=item * C<type>. Filter accounts to real or demo.
+
+=back
+
+=cut
+
+sub get_accounts {
+    my ($self, %args) = @_;
+    my $account_type = $args{type};
+
+    return mt5_accounts_lookup($self->client, $account_type)->then(
+        sub {
+            my (@logins) = @_;
+            my @valid_logins = grep { defined $_ and $_ } @logins;
+
+            return Future->done(\@valid_logins);
+        })->get;
+}
+
+=head2 mt5_accounts_lookup
+
+$mt5_logins = mt5_accounts_lookup($client)
+
+Takes Client object and tries to fetch MT5 account information for each loginid
+If loginid-related account does not exist on MT5, undef will be attached to the list
+
+Takes the following parameter:
+
+=over 4
+
+=item * C<params> hashref that contains a C<BOM::User::Client>
+
+=item * C<params> string to represent account type (gaming|demo|financial) or default to undefined.
+
+=back
+
+Returns a Future holding list of MT5 account information (or undef) or a failed future with error information
+
+=cut
+
+sub mt5_accounts_lookup {
+    my ($client, $account_type) = @_;
+    my %allowed_error_codes = (
+        ConnectionTimeout           => 1,
+        MT5AccountInactive          => 1,
+        NetworkError                => 1,
+        NoConnection                => 1,
+        NotFound                    => 1,
+        ERR_NOSERVICE               => 1,
+        'Service is not available.' => 1,
+        'Timed out'                 => 1,
+        'Connection closed'         => 1
+    );
+
+    my @futures;
+    $account_type = $account_type ? $account_type : 'all';
+    my @clients = $client->user->get_mt5_loginids({type_of_account => $account_type});
+    for my $login (@clients) {
+        my $f = get_settings($client, $login)->then(
+            sub {
+                my ($setting) = @_;
+
+                $setting = _filter_settings($setting,
+                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type server server_info/
+                ) if !$setting->{error};
+                return Future->done($setting);
+            }
+        )->catch(
+            sub {
+                my ($resp) = @_;
+
+                if ((
+                        ref $resp eq 'HASH' && defined $resp->{error} && ref $resp->{error} eq 'HASH' && ($allowed_error_codes{$resp->{error}{code}}
+                            || $allowed_error_codes{$resp->{error}{message_to_client}}))
+                    || $allowed_error_codes{$resp})
+                {
+                    log_stats($login, $resp);
+                    return Future->done(undef);
+                } else {
+                    $log->errorf("mt5_accounts_lookup Exception: %s", $resp);
+                }
+
+                return Future->fail($resp);
+            });
+        push @futures, $f;
+    }
+
+    # The reason for using wait_all instead of fmap here is:
+    # to guaranty the MT5 circuit breaker test request will not be canceled when failing the other requests.
+    # Note: using ->without_cancel to avoid cancel the future is not working
+    # because our RPC is not totally async, where the worker will start processing another request after return the response
+    # so the future in the background will never end
+    return Future->wait_all(@futures)->then(
+        sub {
+            my @futures_result = @_;
+            my $failed_future  = first { $_->is_failed } @futures_result;
+            return Future->fail($failed_future->failure) if $failed_future;
+
+            my @result = map { $_->result } @futures_result;
+            return Future->done(@result);
+        });
+}
+
+=head2 get_settings
+
+    $user_mt5_settings = get_settings($client,login)
+
+Takes a client object and a hash reference as inputs and returns the details of
+the MT5 user, based on the MT5 login id passed.
+
+Takes the following (named) parameters as inputs:
+
+=over 4
+
+=item * C<params> hashref that contains:
+
+=over 4
+
+=item * A BOM::User::Client object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains the MT5 login id
+under C<login> key.
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 4
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 4
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=back
+
+=item * Permission denied
+
+=over 4
+
+=item * C<code> stating C<PermissionDenied>.
+
+=back
+
+=item * Retrieval Error
+
+=over 4
+
+=item * C<code> stating C<MT5GetUserError>.
+
+=back
+
+=back
+
+=item * A hashref that contains the details of the user's MT5 account.
+
+=back
+
+=cut
+
+sub get_settings {
+    my ($client, $login) = @_;
+
+    if (BOM::MT5::User::Async::is_suspended('', {login => $login})) {
+        my $account_type  = BOM::MT5::User::Async::get_account_type($login);
+        my $server        = BOM::MT5::User::Async::get_trading_server_key({login => $login}, $account_type);
+        my $server_config = BOM::Config::MT5->new(
+            group_type  => $account_type,
+            server_type => $server
+        )->server_by_id();
+        my $resp = {
+            error => {
+                code    => 'MT5AccountInaccessible',
+                details => {
+                    login        => $login,
+                    account_type => $account_type,
+                    server       => $server,
+                    server_info  => {
+                        id          => $server,
+                        geolocation => $server_config->{$server}{geolocation},
+                        environment => $server_config->{$server}{environment},
+                    }
+                },
+                message_to_client => localize('MT5 is currently unavailable. Please try again later.'),
+            }};
+        return Future->done($resp);
+    }
+
+    return _get_user_with_group($login)->then(
+        sub {
+            my ($settings) = @_;
+
+            return create_error_future({code => 'MT5AccountInactive'}) if !$settings->{active};
+
+            $settings = _filter_settings($settings,
+                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type zipCode server server_info/
+            );
+
+            return Future->done($settings);
+        }
+    )->catch(
+        sub {
+            my $err = shift;
+
+            return create_error_future($err);
+        });
+}
+
+=head2 _filter_settings
+
+filter accounts with only the allowed settings/params.
+
+=cut
+
+sub _filter_settings {
+    my ($settings, @allowed_keys) = @_;
+    my $filtered_settings = {};
+
+    @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
+    $filtered_settings->{market_type} = 'synthetic' if $filtered_settings->{market_type} and $filtered_settings->{market_type} eq 'gaming';
+
+    return $filtered_settings;
+}
+
+=head2 _get_user_with_group
+
+fetching mt5 users with their group.
+
+=cut
+
+sub _get_user_with_group {
+    my ($loginid) = shift;
+
+    return BOM::MT5::User::Async::get_user($loginid)->then(
+        sub {
+            my ($settings) = @_;
+            return create_error_future({
+                    code    => 'MT5GetUserError',
+                    message => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
+            if (my $country = $settings->{country}) {
+                my $country_code = Locale::Country::Extra->new()->code_from_country($country);
+                if ($country_code) {
+                    $settings->{country} = $country_code;
+                } else {
+                    $log->warnf("Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra");
+                }
+            }
+            return Future->done($settings);
+        }
+    )->then(
+        sub {
+            my ($settings) = @_;
+            return BOM::MT5::User::Async::get_group($settings->{group})->then(
+                sub {
+                    my ($group_details) = @_;
+                    return create_error_future({
+                            code    => 'MT5GetGroupError',
+                            message => $group_details->{error}}) if (ref $group_details eq 'HASH' and $group_details->{error});
+                    $settings->{currency}        = $group_details->{currency};
+                    $settings->{landing_company} = $group_details->{company};
+                    $settings->{display_balance} = formatnumber('amount', $settings->{currency}, $settings->{balance});
+
+                    _set_mt5_account_settings($settings) if ($settings->{group});
+
+                    return Future->done($settings);
+                });
+        }
+    )->catch(
+        sub {
+            my $err = shift;
+
+            return create_error_future($err);
+        });
+}
+
+=head2 _set_mt5_account_settings
+
+populate mt5 accounts with settings.
+
+=cut
+
+sub _set_mt5_account_settings {
+    my ($account) = shift;
+
+    my $group_name = lc($account->{group});
+    my $config     = BOM::Config::mt5_account_types()->{$group_name};
+    $account->{server}                = $config->{server};
+    $account->{active}                = $config->{landing_company_short} ? 1 : 0;
+    $account->{landing_company_short} = $config->{landing_company_short};
+    $account->{market_type}           = $config->{market_type};
+    $account->{account_type}          = $config->{account_type};
+    $account->{sub_account_type}      = $config->{sub_account_type};
+
+    if ($config->{server}) {
+        my $server_config = BOM::Config::MT5->new(group => $group_name)->server_by_id();
+        $account->{server_info} = {
+            id          => $config->{server},
+            geolocation => $server_config->{$config->{server}}{geolocation},
+            environment => $server_config->{$config->{server}}{environment},
+        };
+    }
+}
+
+=head2 log_stats
+
+Adds DD metrics related to 'mt5_accounts_lookup' allowed error codes
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<login> login of the user
+
+=item * C<resp> response containing the allowed error code info
+
+=back
+
+=cut
+
+sub log_stats {
+
+    my ($login, $resp) = @_;
+
+    my $error_code    = $resp;
+    my $error_message = $resp;
+
+    if (ref $resp eq 'HASH') {
+        $error_code    = $resp->{error}{code};
+        $error_message = $resp->{error}{message_to_client};
+    }
+
+    # 'NotFound' error occurs if a user has at least one archived MT5 account. Since it is very common for users to have multiple archived
+    # MT5 accounts and since this error is not critical, we will be excluding it from DD
+    unless ($error_code eq 'NotFound') {
+        stats_inc("mt5.accounts.lookup.error.code", {tags => ["login:$login", "error_code:$error_code", "error_messsage:$error_message"]});
+    }
 }
 
 1;

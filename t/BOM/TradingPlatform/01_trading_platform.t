@@ -58,7 +58,7 @@ subtest 'Implementation completeness' => sub {
             deposit                  => 0,
             withdraw                 => 0,
             get_account_info         => 1,
-            get_accounts             => 0,
+            get_accounts             => 1,
             get_open_positions       => 0,
         },
         dxtrade => {
