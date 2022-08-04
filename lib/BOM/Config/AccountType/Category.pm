@@ -15,13 +15,76 @@ A class representing a an account category.
 use List::Util qw(any);
 use Brands;
 
+=head1 METHODS - Accessors
 
+=head2 name
+
+Returns the name of account type category
+
+=cut
 
 has $name          : reader;
+
+=head2 broker_codes
+
+Returns broker codes of account type category
+
+=cut
+
+
 has $broker_codes  : reader;
+
+=head2 account_types
+
+Returns account types of name of account type category
+
+=cut
+
+
 has $account_types : reader;
+
+=head2 brands
+
+Returns brands of account type category
+
+=cut
+
+
 has $brands        : reader;
+
+=head2 groups
+
+Returns groups of account type category
+
+=cut
+
 has $groups        : reader;
+
+=head1 METHODS
+
+=head2 new
+
+Create account type category object
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<name> -  a string that represent the name of account type category
+
+=item * C<groups> - an arrayref of L<BOM::Config::AccountType::Group> objects
+
+=item * C<brands> - an arrayref of brand names
+
+=item * C<broker_codes> - a hashref of landing company : broker_codes pairs
+
+=item * C<account_types> - a hashref of account type name : L<BOM::Config::AccountType> pairs
+
+=back
+
+Returns a L<BOM::config::AccountType::Category> object
+
+=cut
 
 BUILD {
     my %args = @_;

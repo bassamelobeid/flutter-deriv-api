@@ -16,18 +16,108 @@ use List::Util qw(any uniq);
 use LandingCompany::Registry;
 use BOM::Config;
 
+=head1 METHODS - Accessors
+
+=head2 name
+
+Returns the name of account type
+
+=cut
+
 has $name                           : reader;
+
+=head2 category
+
+Returns the category of account type
+
+=cut
+
 has $category                       : reader;
+
+=head2 groups
+
+Returns groups of account type
+
+=cut
+
 has $groups                         : reader;
+
+=head2 services
+
+Returns services of account type
+
+=cut
+
 has $services                       : reader;
+
+=head2 services_lookup
+
+Returns services lookup of account type
+
+=cut
+
 has $services_lookup                : reader;
+
+=head2 is_demo
+
+Returns a bool value to indicate the account type is demo or not
+
+=cut
+
 has $is_demo                        : reader;
+
+=head2 linkable_to_different_currency
+
+Returns linkable to different currency of account type
+
+=cut
+
+
 has $linkable_to_different_currency : reader;
+
+=head2 linkable_wallet_types
+
+Returns linkable wallet types of account type
+
+=cut
+
+
 has $linkable_wallet_types          : reader;
+
+=head2 currencies
+
+Returns currencies of account type
+
+=cut
+
+
 has $currencies                     : reader;
+
+=head2 currency_types
+
+Returns currency types of account type
+
+=cut
+
 has $currency_types                 : reader;
+
+=head2 currencies_by_landing_company
+
+Returns currencies by landing_company of account type
+
+=cut
+
 has $currencies_by_landing_company  : reader;
+
+=head2 type_broker_codes
+
+Returns type broker codes of account type
+
+=cut
+
 has $type_broker_codes              : reader;
+
+=head1 METHODS
 
 =head2 supports_service
 
@@ -84,11 +174,45 @@ method broker_codes {
     return keys $type_broker_codes->%* ? $type_broker_codes : $self->category->broker_codes // {};
 }
 
+=head2  new
+
+create account type objects
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<name> - a string that represent the name of account type
+
+=item * C<category> - a L<BOM::config::AccountType::Category> object that represent category
+
+=item * C<is_demo> - a bool that indicate it is a demo or not
+
+=item * C<linkable_to_different_currency> - a bool that indicate it is linkable to different currency
+
+=item * C<groups> - an array ref of groups
+
+=item * C<linkable_wallet_types> - an array ref of linkable wallet types
+
+=item * C<currency_types> - an array ref of currency types
+
+=item * C<currencies> - an array ref of currencies
+
+=item * C<broker_code> - an hash ref of broker codes
+
+=item * C<currencies_by_landing_company> - an hash ref of landing_company : currencies pairs
+
+=back
+
+Return account type object
+
+=cut
+
 BUILD {
     my %args = @_;
 
     $args{$_} //= 0  for (qw/is_demo linkable_to_different_currency/);
-    $args{$_} //= [] for (qw/gorups linkable_wallet_types currency_types currencies/);
+    $args{$_} //= [] for (qw/groups linkable_wallet_types currency_types currencies/);
     $args{$_} //= {} for (qw/broker_codes currencies_by_landing_company/);
 
     $name     = $args{name};

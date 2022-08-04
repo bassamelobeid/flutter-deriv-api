@@ -23,9 +23,30 @@ use constant SERVICES => {
         qw/trade link_to_accounts transfer_without_link p2p fiat_cashier crypto_cashier get_commissions paymentagent_transfer paymentagent_withdraw/)
 };
 
+=head1 METHODS -  accessors
+
+=head2 name
+
+Return the name of category
+
+=cut
 
 has $name     : reader;
+
+=head2 services
+
+return services
+
+=cut
+
 has $services : reader;
+
+=head2 services_lookup
+
+return services lookup
+
+=cut
+
 has $services_lookup : reader;
 
 =head2 supports_service
@@ -50,9 +71,19 @@ method supports_service {
     return defined $services_lookup->{$service} ? 1 : 0;
 }
 
-=head2 BUILD
+=head2 new
 
 Class constructor.
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<name> - a string that represent group name 
+
+=item * C<services> - an array ref of service name
+
+=back
 
 =cut
 

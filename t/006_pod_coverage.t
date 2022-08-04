@@ -16,9 +16,6 @@ my $allowed_naked_packages = {
     'BOM::Config::Chronicle'              => 1,
     'BOM::Config::Quants'                 => 1,
     'BOM::Config::QuantsConfig'           => 7,
-    'BOM::Config::AccountType'            => 14,
-    'BOM::Config::AccountType::Category'  => 8,
-    'BOM::Config::AccountType::Group'     => 5,
 };
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);
