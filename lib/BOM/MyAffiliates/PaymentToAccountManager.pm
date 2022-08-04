@@ -11,8 +11,6 @@ BOM::MyAffiliates::PaymentToAccountManager
 =cut
 
 use Moose;
-extends 'BOM::MyAffiliates::Reporter';
-
 use strict;
 use warnings;
 use Archive::Zip qw(:ERROR_CODES);
@@ -207,7 +205,7 @@ sub _get_csv_line_from_txn {
     if ($preferred_currency eq 'USD') {
         $rate = 1;
     } else {
-        my $exch_rate = $transaction->database_mapper()->get_monthly_exchange_rate({
+        my $exch_rate = BOM::MyAffiliates::Reporter::database_mapper()->get_monthly_exchange_rate({
             source_currency => $preferred_currency,
             month           => $month,
             year            => $year,
