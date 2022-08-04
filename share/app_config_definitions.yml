@@ -1265,12 +1265,17 @@ system:
                     p01_ts01:
                       description: "Weight for demo p01_ts01"
                       isa: Num
-                      default: 20
+                      default: 50
                       global: 1
                     p01_ts02:
                       description: "Weight for demo p01_ts02"
                       isa: Num
-                      default: 80
+                      default: 50
+                      global: 1
+                    p01_ts03:
+                      description: "Weight for demo p01_ts03"
+                      isa: Num
+                      default: 0
                       global: 1
             real:
               description: "Real trade server load balancer configuration financial (contains old synthetic accounts too)"
@@ -1326,41 +1331,46 @@ system:
               isa: section
               contains:
                 p01_ts01:
-                  description: "Demo p01_ts01 HTTP Proxy API swith config for MT5"
+                  description: "Demo p01_ts01 HTTP Proxy API switch config for MT5"
                   isa: Bool
                   default: 0
                   global: 1
                 p01_ts02:
-                  description: "Demo p01_ts02 HTTP Proxy API swith config for MT5"
-                  isa: Bool
-                  default: 0
-                  global: 1
-            real:
-              description: "Real HTTP Proxy API swith config for MT5"
-              isa: section
-              contains:
-                p01_ts01:
-                  description: "Real p01_ts01 HTTP Proxy API swith config for MT5"
-                  isa: Bool
-                  default: 0
-                  global: 1
-                p01_ts02:
-                  description: "Real p01_ts02 HTTP Proxy API swith config for MT5"
+                  description: "Demo p01_ts02 HTTP Proxy API switch config for MT5"
                   isa: Bool
                   default: 0
                   global: 1
                 p01_ts03:
-                  description: "Real p01_ts03 HTTP Proxy API swith config for MT5"
+                  description: "Demo p01_ts03 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+            real:
+              description: "Real HTTP Proxy API switch config for MT5"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Real p01_ts01 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts02:
+                  description: "Real p01_ts02 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts03:
+                  description: "Real p01_ts03 HTTP Proxy API switch config for MT5"
                   isa: Bool
                   default: 0
                   global: 1
                 p01_ts04:
-                  description: "Real p01_ts04 HTTP Proxy API swith config for MT5"
+                  description: "Real p01_ts04 HTTP Proxy API switch config for MT5"
                   isa: Bool
                   default: 0
                   global: 1
                 p02_ts02:
-                  description: "Real p02_ts02 HTTP Proxy API swith config for MT5"
+                  description: "Real p02_ts02 HTTP Proxy API switch config for MT5"
                   isa: Bool
                   default: 0
                   global: 1
@@ -1412,6 +1422,15 @@ system:
                   contains:
                     all:
                       description: "Suspend MT5 API calls on p01_ts02"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p01_ts03:
+                  description: "Configuration to suspend mt5 p01_ts03"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts03"
                       isa: Bool
                       default: 0
                       global: 1
