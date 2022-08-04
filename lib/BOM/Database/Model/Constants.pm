@@ -27,6 +27,7 @@ our $BET_CLASS_CALLPUT_SPREAD   = 'callput_spread';
 our $BET_CLASS_HIGH_LOW_TICK    = 'highlowticks';
 our $BET_CLASS_RUNS             = 'runs';
 our $BET_CLASS_MULTIPLIER       = 'multiplier';
+our $BET_CLASS_ACCUMULATOR      = 'accumulator';
 
 # Constant reference to volatile hash
 our $BET_CLASS_TO_TYPE_MAP = {
@@ -52,6 +53,7 @@ our $BET_CLASS_TO_TYPE_MAP = {
     'callput_spread'  => ['CALLSPREAD',  'PUTSPREAD'],
     'highlowticks'    => ['TICKHIGH',    'TICKLOW'],
     'multiplier'      => ['MULTUP',      'MULTDOWN'],
+    'accumulator'     => ['ACCU'],
     'INVALID'         => ['INVALID'],
 };
 
