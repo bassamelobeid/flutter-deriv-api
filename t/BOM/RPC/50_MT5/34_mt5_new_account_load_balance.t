@@ -63,8 +63,9 @@ my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
 subtest 'new synthetic account' => sub {
-    # set weight of p01_ts02 to 0
+    # set weight of p01_ts02 and p01_ts03 to 0
     BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03(0);
 
     $test_client->user->update_trading_password($details{password}{main});
     my $method = 'mt5_new_account';
@@ -95,14 +96,29 @@ subtest 'new synthetic account' => sub {
     is($result->{login},           'MTD' . $accounts{'demo\p01_ts02\synthetic\svg_std_usd'}, 'result->{login}');
     is($result->{balance},         10000,                                                    'Balance is 10000 upon creation');
     is($result->{display_balance}, '10000.00',                                               'Display balance is "10000.00" upon creation');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03(100);
+    # set weight of p01_ts01 to 0
+    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts01(0);
+
+    $result = $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword')->result;
+    is($result->{login},           'MTD' . $accounts{'demo\p01_ts03\synthetic\svg_std_usd'}, 'result->{login}');
+    is($result->{balance},         10000,                                                    'Balance is 10000 upon creation');
+    is($result->{display_balance}, '10000.00',                                               'Display balance is "10000.00" upon creation');
 };
 
 subtest 'new financial account' => sub {
-    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(80);
-    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts01(20);
+
+    # With three MT5 server at this point, we are testing an equal load balance for all
+    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03(33);
+    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(33);
+    BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts01(33);
 
     my $mocked = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mocked->mock('_rand', sub { return 0.1 });
+    $mocked->mock('_rand', sub { return 0.100 });
     my $method = 'mt5_new_account';
     my $params = {
         language => 'EN',
@@ -117,18 +133,18 @@ subtest 'new financial account' => sub {
             leverage         => 100,
         },
     };
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    my $result = $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword')->result;
-    is($result->{login},           'MTD' . $accounts{'demo\p01_ts01\financial\svg_std_usd'}, 'result->{login}');
-    is($result->{balance},         10000,                                                    'Balance is 10000 upon creation');
-    is($result->{display_balance}, '10000.00',                                               'Display balance is "10000.00" upon creation');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $mocked->mock('_rand', sub { return 22 });
-    $result = $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword')->result;
-    is($result->{login},           'MTD' . $accounts{'demo\p01_ts02\financial\svg_std_usd'}, 'result->{login}');
-    is($result->{balance},         10000,                                                    'Balance is 10000 upon creation');
-    is($result->{display_balance}, '10000.00',                                               'Display balance is "10000.00" upon creation');
+
+    my $result = $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword')->result;
+
+    $result->{login} =~ /([0-9]+)/;
+    my $loginid = $1;
+    my ($group_name) = grep { $accounts{$_} eq $loginid } keys %accounts;
+
+    is($result->{login},           'MTD' . $accounts{$group_name}, 'result->{login}');
+    is($result->{balance},         10000,                          'Balance is 10000 upon creation');
+    is($result->{display_balance}, '10000.00',                     'Display balance is "10000.00" upon creation');
 };
 
 done_testing();

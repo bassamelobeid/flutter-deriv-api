@@ -19,10 +19,14 @@ use BOM::Config::Runtime;
 use BOM::Database::Model::OAuth;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
-# disable routing to demo p01_ts02
-my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
 
+# disable routing to demo p01_ts02
+my $p01_ts02_load = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+
+# disable routing to demo p01_ts03
+my $p01_ts03_load = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03;
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03(0);
 
 my $password = 'jskjd8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
@@ -597,6 +601,7 @@ subtest 'Account closure DXTrader' => sub {
 };
 
 # reset
-BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
 
 done_testing();

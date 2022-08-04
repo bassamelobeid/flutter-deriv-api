@@ -19,8 +19,12 @@ use Email::Stuffer::TestLinks;
 use BOM::Config::Runtime;
 
 # disable routing to demo p01_ts02
-my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
+my $p01_ts02_load = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+
+# disable routing to demo p01_ts03
+my $p01_ts03_load = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03;
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03(0);
 
 my %financial_data = (
     "forex_trading_experience"             => "Over 3 years",
@@ -1146,7 +1150,9 @@ sub authenticate {
 }
 
 $mocked_mt5->unmock_all;
+
 # reset
-BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
 
 done_testing();

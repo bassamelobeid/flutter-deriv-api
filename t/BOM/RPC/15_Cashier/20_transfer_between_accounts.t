@@ -31,8 +31,12 @@ use Test::BOM::RPC::Accounts;
 use utf8;
 
 # disable routing to demo p01_ts02
-my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
+my $p01_ts02_load = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+
+# disable routing to demo p01_ts03
+my $p01_ts03_load = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03;
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03(0);
 
 my $test_binary_user_id = 65000;
 my $rpc_ct;
@@ -2387,7 +2391,8 @@ subtest 'crypto to fiat limits' => sub {
 $documents_mock->unmock_all;
 
 #reset
-BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
 
 done_testing();
 

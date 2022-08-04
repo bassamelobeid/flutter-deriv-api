@@ -28,6 +28,7 @@ my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 my $mt5_config = BOM::Config::Runtime->instance->app_config->system->mt5;
 $mt5_config->suspend->real->p01_ts03->all(0);
 $mt5_config->load_balance->demo->all->p01_ts02(0);
+$mt5_config->load_balance->demo->all->p01_ts03(0);
 $mt5_config->suspend->real->p02_ts02->all(0);
 $mt5_config->suspend->real->p01_ts02->all(0);
 

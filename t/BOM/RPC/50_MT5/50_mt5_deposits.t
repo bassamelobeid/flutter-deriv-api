@@ -25,8 +25,12 @@ my $c = BOM::Test::RPC::QueueClient->new();
 BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
 
 # disable routing to demo p01_ts02
-my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
+my $p01_ts02_load = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+
+# disable routing to demo p01_ts03
+my $p01_ts03_load = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03;
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03(0);
 
 my $runtime_system  = BOM::Config::Runtime->instance->app_config->system;
 my $runtime_payment = BOM::Config::Runtime->instance->app_config->payments;
@@ -841,6 +845,7 @@ subtest 'labuan deposit' => sub {
 $documents_mock->unmock_all;
 
 # reset
-BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
 
 done_testing();
