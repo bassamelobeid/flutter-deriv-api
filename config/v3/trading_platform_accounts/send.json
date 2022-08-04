@@ -25,7 +25,8 @@
             "description": "Trading platform name",
             "type": "string",
             "enum": [
-                "dxtrade"
+                "dxtrade",
+                "mt5"
             ]
         },
         "passthrough": {
