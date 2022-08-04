@@ -180,11 +180,12 @@ sub _generate_server_info {
     my ($self, $group_type, $servers) = @_;
 
     my $webapi_config     = $self->webapi_config;
-    my @exclusive_servers = $group_type eq 'real' ? ('p01_ts01') : ('p01_ts01', 'p01_ts02');
+    my @exclusive_servers = $group_type eq 'real' ? ('p01_ts01') : ('p01_ts01', 'p01_ts02', 'p01_ts03');
     my $app_config        = BOM::Config::Runtime->instance->app_config->system->mt5;
     my @response;
 
     foreach my $server (@$servers) {
+
         push @response, {
             disabled           => ($app_config->suspend->all || $app_config->suspend->$group_type->$server->all) ? 1 : 0,
             environment        => $webapi_config->{$group_type}{$server}{environment},

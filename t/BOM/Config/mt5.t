@@ -108,7 +108,17 @@ subtest 'servers' => sub {
                 'geolocation' => {
                     'location' => 'N. Virginia',
                     'region'   => 'US East',
-                    'sequence' => 2,
+                    'sequence' => 1,
+                    group      => 'all',
+                }}
+        },
+        {
+            'p01_ts03' => {
+                'environment' => 'Deriv-Demo',
+                'geolocation' => {
+                    'location' => 'Frankfurt',
+                    'region'   => 'Europe',
+                    'sequence' => 1,
                     group      => 'all',
                 }}
         },
@@ -169,10 +179,10 @@ subtest 'servers' => sub {
     cmp_bag($all_servers, $expected_structure, 'Correct structure for servers');
 
     $mt5_obj = BOM::Config::MT5->new(group_type => 'demo');
-    is scalar @{$mt5_obj->servers()}, 2, 'correct number of demo servers';
+    is scalar @{$mt5_obj->servers()}, 3, 'correct number of demo servers';
 
     $mt5_obj = BOM::Config::MT5->new(group => 'demo\p01_ts01\synthetic\svg_std_usd');
-    is scalar @{$mt5_obj->servers()}, 2, 'correct number of demo servers with group';
+    is scalar @{$mt5_obj->servers()}, 3, 'correct number of demo servers with group';
 
     $mt5_obj = BOM::Config::MT5->new(group_type => 'real');
     is scalar @{$mt5_obj->servers()}, 5, 'correct number of demo servers retrieved with group_type';
@@ -232,7 +242,20 @@ subtest 'server by country' => sub {
                 },
                 {
                     'geolocation' => {
-                        'sequence' => 2,
+                        'sequence' => 1,
+                        'region'   => 'Europe',
+                        'location' => 'Frankfurt',
+                        group      => 'all',
+                    },
+                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
+                    'recommended'        => 0,
+                    'id'                 => 'p01_ts03',
+                    'disabled'           => 0,
+                    'environment'        => 'Deriv-Demo'
+                },
+                {
+                    'geolocation' => {
+                        'sequence' => 1,
                         'region'   => 'US East',
                         'location' => 'N. Virginia',
                         group      => 'all',
@@ -242,13 +265,9 @@ subtest 'server by country' => sub {
                     'id'                 => 'p01_ts02',
                     'disabled'           => 0,
                     'environment'        => 'Deriv-Demo'
-                }
+                },
             ],
             'synthetic' => [{
-                    'environment' => 'Deriv-Demo',
-                    'disabled'    => 0,
-                    'recommended' => 1,
-                    'id'          => 'p01_ts01',
                     'geolocation' => {
                         'sequence' => 1,
                         'region'   => 'Europe',
@@ -256,10 +275,27 @@ subtest 'server by country' => sub {
                         group      => 'all',
                     },
                     'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
+                    'recommended'        => 1,
+                    'id'                 => 'p01_ts01',
+                    'disabled'           => 0,
+                    'environment'        => 'Deriv-Demo',
                 },
                 {
                     'geolocation' => {
-                        'sequence' => 2,
+                        'sequence' => 1,
+                        'region'   => 'Europe',
+                        'location' => 'Frankfurt',
+                        group      => 'all',
+                    },
+                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
+                    'recommended'        => 0,
+                    'id'                 => 'p01_ts03',
+                    'disabled'           => 0,
+                    'environment'        => 'Deriv-Demo'
+                },
+                {
+                    'geolocation' => {
+                        'sequence' => 1,
                         'region'   => 'US East',
                         'location' => 'N. Virginia',
                         group      => 'all',
@@ -280,6 +316,7 @@ subtest 'server by country' => sub {
             group_type  => 'demo',
             market_type => 'synthetic'
         });
+
     is_deeply($result, $expected, 'output expected for demo synthetic server on Indonesia');
     $expected = {
         'real' => {
@@ -351,6 +388,7 @@ subtest 'server by country' => sub {
                 }]}};
 
     $result = $mt5->server_by_country('id', {group_type => 'real'});
+
     is_deeply($result, $expected, 'output expected for real server on Indonesia');
     delete $expected->{real}{financial};
 
@@ -375,7 +413,7 @@ subtest 'available_groups' => sub {
         },
         {
             filter  => {server_type => 'demo'},
-            count   => 17,
+            count   => 24,
             comment => 'demo groups'
         },
         {
@@ -409,7 +447,7 @@ subtest 'available_groups' => sub {
                 server_type => 'demo',
                 company     => 'svg'
             },
-            count   => 4,
+            count   => 6,
             comment => 'demo svg groups'
         },
         {
@@ -418,7 +456,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'financial'
             },
-            count   => 2,
+            count   => 3,
             comment => 'demo svg financial groups'
         },
         {
@@ -427,7 +465,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'synthetic'
             },
-            count   => 2,
+            count   => 3,
             comment => 'demo svg synthetic groups'
         },
         {
@@ -517,7 +555,7 @@ subtest 'available_groups' => sub {
                 company     => 'maltainvest'
             },
             allow_multiple_subgroups => 1,
-            count                    => 5,
+            count                    => 7,
             comment                  => 'demo maltainvest groups'
         },
         {
@@ -527,7 +565,7 @@ subtest 'available_groups' => sub {
                 market_type => 'financial'
             },
             allow_multiple_subgroups => 1,
-            count                    => 5,
+            count                    => 7,
             comment                  => 'demo maltainvest financial groups'
         },
         {
@@ -623,7 +661,7 @@ subtest 'available_groups' => sub {
                 server_type => 'demo',
                 company     => 'bvi'
             },
-            count   => 4,
+            count   => 5,
             comment => 'demo bvi groups'
         },
         {
@@ -632,7 +670,7 @@ subtest 'available_groups' => sub {
                 company     => 'bvi',
                 market_type => 'financial'
             },
-            count   => 2,
+            count   => 3,
             comment => 'demo bvi financial groups'
         },
         {
@@ -677,7 +715,7 @@ subtest 'available_groups' => sub {
                 server_type => 'demo',
                 company     => 'vanuatu'
             },
-            count   => 2,
+            count   => 3,
             comment => 'demo vanuatu groups'
         },
         {
@@ -686,7 +724,7 @@ subtest 'available_groups' => sub {
                 company     => 'vanuatu',
                 market_type => 'financial'
             },
-            count   => 2,
+            count   => 3,
             comment => 'demo vanuatu financial groups'
         },
         {
@@ -729,7 +767,7 @@ subtest 'available_groups' => sub {
                 server_type => 'demo',
                 company     => 'labuan'
             },
-            count   => 2,
+            count   => 3,
             comment => 'demo labuan groups'
         },
         {
@@ -738,7 +776,7 @@ subtest 'available_groups' => sub {
                 company     => 'labuan',
                 market_type => 'financial'
             },
-            count   => 2,
+            count   => 3,
             comment => 'demo labuan financial groups'
         },
         {
