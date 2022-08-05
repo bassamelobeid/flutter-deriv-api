@@ -26,7 +26,7 @@ use List::MoreUtils qw(any);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Config::Runtime;
 use BOM::User::Client;
-use BOM::MyAffiliates;
+use BOM::MyAffiliates::Reporter;
 use LandingCompany::Registry;
 use Text::Trim qw(trim);
 
