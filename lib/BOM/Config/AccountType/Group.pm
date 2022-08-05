@@ -43,7 +43,9 @@ has $services : reader;
 
 =head2 services_lookup
 
-return services lookup
+An auxiliary lookup table that includes all services in the current group
+
+Note: It's created for speeding up service lookups needed within internal methods.  It's recommended to use `I<supports_service>  for service lookup everywhere else.
 
 =cut
 
