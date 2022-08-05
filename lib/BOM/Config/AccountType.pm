@@ -70,7 +70,7 @@ has $is_demo                        : reader;
 
 =head2 linkable_to_different_currency
 
-Returns linkable to different currency of account type
+A boolean flag that tells if the account type can be linked to a wallet with a different currency. The value is false for wallet account types, because they are not linkable to any other wallet.
 
 =cut
 
