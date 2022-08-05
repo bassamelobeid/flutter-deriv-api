@@ -81,7 +81,7 @@ Takes the following parameters:
 
 =item * C<name> - a string that represent group name 
 
-=item * C<services> - an array ref of service name
+=item * C<services> - an array ref of the services accessible for the group
 
 =back
 
