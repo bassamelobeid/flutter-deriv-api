@@ -36,7 +36,7 @@ has $category                       : reader;
 
 =head2 groups
 
-Returns groups of account type
+Returns groups (roles) of account type
 
 =cut
 
