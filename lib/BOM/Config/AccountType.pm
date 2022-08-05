@@ -193,7 +193,7 @@ Takes the following parameters:
 
 =item * C<linkable_to_different_currency> - a bool that indicate it is linkable to a wallet with a different currency
 
-=item * C<groups> - an array ref of groups
+=item * C<groups> - an array ref of groups (roles)
 
 =item * C<linkable_wallet_types> - an array ref of linkable wallet types
 
