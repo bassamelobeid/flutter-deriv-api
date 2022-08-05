@@ -27,7 +27,7 @@ use constant SERVICES => {
 
 =head2 name
 
-Return the name of category
+Return the name of the account type group (role)
 
 =cut
 
