@@ -98,7 +98,7 @@ has $currencies                     : reader;
 
 =head2 currency_types
 
-Returns currency types of account type
+Returns the currency types allowed for the account type. The list is empty if there is no such limitation.
 
 =cut
 
