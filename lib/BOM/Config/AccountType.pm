@@ -79,7 +79,7 @@ has $linkable_to_different_currency : reader;
 
 =head2 linkable_wallet_types
 
-Returns linkable wallet types of account type
+Returns a list of wallet types linkable to the account type. The value I<all> indicates that all wallet types are linkable (which the case for most of the account types). This list should be empty for all wallet account types.
 
 =cut
 
