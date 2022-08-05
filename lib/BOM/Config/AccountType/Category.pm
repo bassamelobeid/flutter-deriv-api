@@ -19,7 +19,7 @@ use Brands;
 
 =head2 name
 
-Returns the name of account type category
+Returns the name of account category
 
 =cut
 
@@ -27,7 +27,7 @@ has $name          : reader;
 
 =head2 broker_codes
 
-Returns broker codes of account type category
+Returns a hash-ref containing the broker codes per landing company.
 
 =cut
 
@@ -36,7 +36,7 @@ has $broker_codes  : reader;
 
 =head2 account_types
 
-Returns account types of name of account type category
+Returns account types included in the current category as a hash ref of name:L<BOM::Config::AccountType> pairs
 
 =cut
 
@@ -45,7 +45,7 @@ has $account_types : reader;
 
 =head2 brands
 
-Returns brands of account type category
+Returns a list of brands that the account type is available for
 
 =cut
 
@@ -54,7 +54,7 @@ has $brands        : reader;
 
 =head2 groups
 
-Returns groups of account type category
+Returns groups (roles) of the account category. These groups are shared among all included account types and appear in their list of B<groups>.
 
 =cut
 
@@ -64,19 +64,19 @@ has $groups        : reader;
 
 =head2 new
 
-Create account type category object
+Create account category object
 
 Takes the following parameters:
 
 =over 4
 
-=item * C<name> -  a string that represent the name of account type category
+=item * C<name> -  a string that represent the name of account category
 
-=item * C<groups> - an arrayref of L<BOM::Config::AccountType::Group> objects
+=item * C<groups> - an arrayref of L<BOM::Config::AccountType::Group> objects (or roles)
 
-=item * C<brands> - an arrayref of brand names
+=item * C<brands> - an arrayref of brand names within which the category is activated.
 
-=item * C<broker_codes> - a hashref of landing company : broker_codes pairs
+=item * C<broker_codes> - a hashref of broker_codes per landing company
 
 =item * C<account_types> -contains all included account types a hashref of name : L<BOM::Config::AccountType> pairs
 

@@ -197,13 +197,13 @@ Takes the following parameters:
 
 =item * C<linkable_wallet_types> - an array ref of wallet types allowed for linkage (if there's such limitation)
 
-=item * C<currency_types> - an array ref of currency types
+=item * C<currency_types> - an array ref of currency types allowed (if there's such limitation)
 
-=item * C<currencies> - an array ref of currencies
+=item * C<currencies> - an array ref of allowed currencies (if there's such limitation)
 
-=item * C<broker_code> - an hash ref of broker codes
+=item * C<broker_code> - an hash ref of broker codes per landing company, if the account type overrides the broker codes of it's B<category>.
 
-=item * C<currencies_by_landing_company> - an hash ref of landing_company : currencies pairs
+=item * C<currencies_by_landing_company> - an hash ref representing the currencies allowed per landing company (if applicable)
 
 =back
 
