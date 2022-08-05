@@ -35,7 +35,7 @@ has $name     : reader;
 
 =head2 services
 
-return services
+Returns the list of services available for the current group
 
 =cut
 
