@@ -106,7 +106,7 @@ has $currency_types                 : reader;
 
 =head2 currencies_by_landing_company
 
-Returns currencies by landing_company of account type
+Returns a hash-ref of available currencies per landing company. It's a combination of account type currency limitations introduced by B<currencies> and B<currency_types> and the availability of currencies in landing companies.
 
 =cut
 
