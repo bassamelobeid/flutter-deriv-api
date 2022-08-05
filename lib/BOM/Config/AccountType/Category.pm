@@ -78,7 +78,7 @@ Takes the following parameters:
 
 =item * C<broker_codes> - a hashref of landing company : broker_codes pairs
 
-=item * C<account_types> - a hashref of account type name : L<BOM::Config::AccountType> pairs
+=item * C<account_types> -contains all included account types a hashref of name : L<BOM::Config::AccountType> pairs
 
 =back
 
