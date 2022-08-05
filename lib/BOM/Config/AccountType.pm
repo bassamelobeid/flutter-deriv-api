@@ -88,7 +88,8 @@ has $linkable_wallet_types          : reader;
 
 =head2 currencies
 
-Returns currencies of account type
+Returns the currencies allowed for the account type. The list is empty if there is no such limitation.
+
 
 =cut
 
