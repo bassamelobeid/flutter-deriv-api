@@ -195,7 +195,7 @@ Takes the following parameters:
 
 =item * C<groups> - an array ref of groups (roles)
 
-=item * C<linkable_wallet_types> - an array ref of linkable wallet types
+=item * C<linkable_wallet_types> - an array ref of wallet types allowed for linkage (if there's such limitation)
 
 =item * C<currency_types> - an array ref of currency types
 
