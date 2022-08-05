@@ -13,7 +13,7 @@ test:
 tidy:
 	find . -name '*.p?.bak' -delete
 	# Account type modules are excluded temporarily, because perltidy doesn't recognize Object::Pad field attributes like ':reader'.
-	find . -not -path "./.git*" -name '*.p[lm]' -o -name '*.t' | xargs perltider -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
+	find . -not -path "./.git*" -name '*.p[lm]' -o -name '*.t' | xargs perltidier -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
 
 syntax_diff:
