@@ -191,7 +191,7 @@ Takes the following parameters:
 
 =item * C<is_demo> - a bool that indicate it is a demo or not
 
-=item * C<linkable_to_different_currency> - a bool that indicate it is linkable to different currency
+=item * C<linkable_to_different_currency> - a bool that indicate it is linkable to a wallet with a different currency
 
 =item * C<groups> - an array ref of groups
 
