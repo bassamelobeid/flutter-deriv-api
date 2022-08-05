@@ -44,7 +44,7 @@ has $groups                         : reader;
 
 =head2 services
 
-Returns services of account type
+Returns services accessible to account type
 
 =cut
 
