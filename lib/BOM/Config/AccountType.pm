@@ -52,7 +52,9 @@ has $services                       : reader;
 
 =head2 services_lookup
 
-Returns services lookup of account type
+An auxiliary lookup table that includes all services in the account type's B<groups>.
+
+Note: It's created for speeding up service lookups needed within internal methods.  It's recommended to use `I<supports_service>  for service lookup everywhere else.
 
 =cut
 
