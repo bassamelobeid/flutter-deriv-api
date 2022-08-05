@@ -86,7 +86,7 @@ use constant ONFIDO_PENDING_REQUEST_PREFIX   => 'ONFIDO::PENDING::REQUEST::';
 use constant ONFIDO_PENDING_REQUEST_TIMEOUT  => 20 * 60;
 
 # Redis key namespace to store onfido results and link
-use constant ONFIDO_REQUESTS_LIMIT                  => $ENV{ONFIDO_REQUESTS_LIMIT} // 1000;
+use constant ONFIDO_REQUESTS_LIMIT                  => $ENV{ONFIDO_REQUESTS_LIMIT} // 5000;
 use constant ONFIDO_LIMIT_TIMEOUT                   => $ENV{ONFIDO_LIMIT_TIMEOUT}  // 24 * 60 * 60;
 use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';
 use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';

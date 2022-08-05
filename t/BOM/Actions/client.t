@@ -2125,7 +2125,7 @@ subtest 'onfido resubmission' => sub {
     is($counter_after3, $counter_after4, 'Resubmission Counter has not been incremented due to user limits');
 
     # The last one, will be made upon the fact the whole company has its own onfido submit limit
-    $redis_events->hset(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, $ENV{ONFIDO_REQUESTS_LIMIT} // 1000)->get;
+    $redis_events->hset(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, $ENV{ONFIDO_REQUESTS_LIMIT} // 5000)->get;
     $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, 0)->get;
     $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     $action_handler->($call_args)->get;
