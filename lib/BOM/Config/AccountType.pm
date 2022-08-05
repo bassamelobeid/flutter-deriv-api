@@ -114,7 +114,7 @@ has $currencies_by_landing_company  : reader;
 
 =head2 type_broker_codes
 
-Returns type broker codes of account type
+Returns a hash-ref of account type's broker codes per landing company. It's usually inherited from the I<account category>, but some account types (like B<affiliate>) override it in their configuration.
 
 =cut
 
