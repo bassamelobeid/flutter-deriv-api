@@ -23,9 +23,9 @@ use strict;
 use warnings;
 use Scalar::Util qw(refaddr);
 use Test::More;
-use Test::Deep qw(cmp_bag);
+use Test::Deep   qw(cmp_bag);
 use Array::Utils qw(array_minus);
-use B qw(svref_2object);
+use B            qw(svref_2object);
 
 =head2 yaml_structure_validator
 

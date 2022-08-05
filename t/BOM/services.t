@@ -35,8 +35,8 @@ subtest 'Tests for is_enabled' => sub {
     $app_config->system->services->$service_name(1);
     ok(BOM::Config::Services->is_enabled($service_name), 'Able to enable from app config');
 
-    like exception { BOM::Config::Services->is_enabled() }, qr{Service name is missed}, 'Got exception for missed service name';
-    like exception { BOM::Config::Services->is_enabled('not_existed_service') }, qr{Invalid service name}, 'Got exception for invalid service name';
+    like exception { BOM::Config::Services->is_enabled() },                      qr{Service name is missed}, 'Got exception for missed service name';
+    like exception { BOM::Config::Services->is_enabled('not_existed_service') }, qr{Invalid service name},   'Got exception for invalid service name';
 };
 
 subtest 'Test for config' => sub {
@@ -54,8 +54,8 @@ subtest 'Test for config' => sub {
 
     ok(BOM::Config::Services->config($service_name), 'Able to get config for service');
 
-    like exception { BOM::Config::Services->config() }, qr{Service name is missed}, 'Got exception for missed service name';
-    like exception { BOM::Config::Services->config('not_existed_service') }, qr{Invalid service name}, 'Got exception for invalid service name';
+    like exception { BOM::Config::Services->config() },                      qr{Service name is missed}, 'Got exception for missed service name';
+    like exception { BOM::Config::Services->config('not_existed_service') }, qr{Invalid service name},   'Got exception for invalid service name';
 };
 
 done_testing();

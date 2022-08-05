@@ -21,10 +21,10 @@ A repository of dynamic configurations set on currencies, like their minimum/max
 =cut
 
 use JSON::MaybeUTF8;
-use Log::Any qw($log);
-use Format::Util::Numbers qw(get_min_unit financialrounding);
+use Log::Any                         qw($log);
+use Format::Util::Numbers            qw(get_min_unit financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
-use List::Util qw(any max min uniq);
+use List::Util                       qw(any max min uniq);
 use LandingCompany::Registry;
 
 use BOM::Config::Runtime;

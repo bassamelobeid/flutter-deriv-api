@@ -28,7 +28,7 @@ use Moose;
 
 use Date::Utility;
 use LandingCompany::Registry;
-use List::Util qw(first all);
+use List::Util   qw(first all);
 use Scalar::Util qw(looks_like_number);
 use Finance::Contract::Category;
 use Syntax::Keyword::Try;

@@ -1,4 +1,5 @@
 use Object::Pad;
+
 class BOM::Config::AccountType;
 
 =head1 NAME
@@ -10,7 +11,6 @@ BOM::Config::AccountType
 A class representing a an account type. Each account type belongs to a specific B<Category> and a number of B<Groups>.
 
 =cut
-
 
 use List::Util qw(any uniq);
 use LandingCompany::Registry;
@@ -24,7 +24,7 @@ Returns the name of account type
 
 =cut
 
-has $name                           : reader;
+has $name : reader;
 
 =head2 category
 
@@ -32,7 +32,7 @@ Returns the category of account type
 
 =cut
 
-has $category                       : reader;
+has $category : reader;
 
 =head2 groups
 
@@ -40,7 +40,7 @@ Returns groups (roles) of account type
 
 =cut
 
-has $groups                         : reader;
+has $groups : reader;
 
 =head2 services
 
@@ -48,7 +48,7 @@ Returns services accessible to account type
 
 =cut
 
-has $services                       : reader;
+has $services : reader;
 
 =head2 services_lookup
 
@@ -58,7 +58,7 @@ Note: It's created for speeding up service lookups needed within internal method
 
 =cut
 
-has $services_lookup                : reader;
+has $services_lookup : reader;
 
 =head2 is_demo
 
@@ -66,14 +66,13 @@ Returns a bool value to indicate the account type is demo or not
 
 =cut
 
-has $is_demo                        : reader;
+has $is_demo : reader;
 
 =head2 linkable_to_different_currency
 
 A boolean flag that tells if the account type can be linked to a wallet with a different currency. The value is false for wallet account types, because they are not linkable to any other wallet.
 
 =cut
-
 
 has $linkable_to_different_currency : reader;
 
@@ -83,8 +82,7 @@ Returns a list of wallet types linkable to the account type. The value I<all> in
 
 =cut
 
-
-has $linkable_wallet_types          : reader;
+has $linkable_wallet_types : reader;
 
 =head2 currencies
 
@@ -93,8 +91,7 @@ Returns the currencies allowed for the account type. The list is empty if there 
 
 =cut
 
-
-has $currencies                     : reader;
+has $currencies : reader;
 
 =head2 currency_types
 
@@ -102,7 +99,7 @@ Returns the currency types allowed for the account type. The list is empty if th
 
 =cut
 
-has $currency_types                 : reader;
+has $currency_types : reader;
 
 =head2 currencies_by_landing_company
 
@@ -110,7 +107,7 @@ Returns a hash-ref of available currencies per landing company. It's a combinati
 
 =cut
 
-has $currencies_by_landing_company  : reader;
+has $currencies_by_landing_company : reader;
 
 =head2 type_broker_codes
 
@@ -118,7 +115,7 @@ Returns a hash-ref of account type's broker codes per landing company. It's usua
 
 =cut
 
-has $type_broker_codes              : reader;
+has $type_broker_codes : reader;
 
 =head1 METHODS
 
@@ -238,7 +235,7 @@ BUILD {
         die "Invalid group in account type $category_name-$name" unless ref($group) eq 'BOM::Config::AccountType::Group';
     }
 
-    $services        = [sort {$a cmp $b} uniq map { $_->services->@* } $args{groups}->@* ];
+    $services        = [sort { $a cmp $b } uniq map { $_->services->@* } $args{groups}->@*];
     $services_lookup = +{map { $_ => 1 } @$services};
 
     my @all_real_wallets =
@@ -255,7 +252,7 @@ BUILD {
 
         die "Demo account type $category_name-$name is linked to non-demo wallet $wallet_type" if $args{is_demo} && $wallet_type ne 'demo';
     }
-    @linkable_wallet_types = @all_real_wallets if any {$_ eq 'all'} $args{linkable_wallet_types}->@*;
+    @linkable_wallet_types = @all_real_wallets if any { $_ eq 'all' } $args{linkable_wallet_types}->@*;
 
     $args{linkable_wallet_types} = \@linkable_wallet_types;
 
@@ -276,12 +273,12 @@ BUILD {
 
         for my $currency ($args{currencies_by_landing_company}->{$company_name}->@*) {
             die "Invalid currency $currency in account type $category_name-$name 's landing company limited currencies for $company_name"
-                unless any {$_ eq $currency} (keys $landing_company->legal_allowed_currencies->%*);
+                unless any { $_ eq $currency } (keys $landing_company->legal_allowed_currencies->%*);
         }
     }
 
     (
-        $groups,                 $type_broker_codes, $is_demo,    $linkable_to_different_currency,
+        $groups,                $type_broker_codes, $is_demo,    $linkable_to_different_currency,
         $linkable_wallet_types, $currency_types,    $currencies, $currencies_by_landing_company
         )
         = @args{

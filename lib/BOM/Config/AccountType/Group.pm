@@ -1,4 +1,5 @@
 use Object::Pad;
+
 class BOM::Config::AccountType::Group;
 
 =head1 NAME
@@ -31,7 +32,7 @@ Return the name of the account type group (role)
 
 =cut
 
-has $name     : reader;
+has $name : reader;
 
 =head2 services
 

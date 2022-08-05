@@ -1,6 +1,6 @@
 use Object::Pad;
-class BOM::Config::AccountType::Category;
 
+class BOM::Config::AccountType::Category;
 
 =head1 NAME
 
@@ -23,7 +23,7 @@ Returns the name of account category
 
 =cut
 
-has $name          : reader;
+has $name : reader;
 
 =head2 broker_codes
 
@@ -31,15 +31,13 @@ Returns a hash-ref containing the broker codes per landing company.
 
 =cut
 
-
-has $broker_codes  : reader;
+has $broker_codes : reader;
 
 =head2 account_types
 
 Returns account types included in the current category as a hash ref of name:L<BOM::Config::AccountType> pairs
 
 =cut
-
 
 has $account_types : reader;
 
@@ -49,8 +47,7 @@ Returns a list of brands that the account type is available for
 
 =cut
 
-
-has $brands        : reader;
+has $brands : reader;
 
 =head2 groups
 
@@ -58,7 +55,7 @@ Returns groups (roles) of the account category. These groups are shared among al
 
 =cut
 
-has $groups        : reader;
+has $groups : reader;
 
 =head1 METHODS
 
@@ -109,7 +106,8 @@ BUILD {
         my $account_type = $args{account_types}->{$type_name};
 
         die "Invalid object for the account type $type_name in category $name" unless ref($account_type) eq 'BOM::Config::AccountType';
-        die "Incorrect account type name $type_name in category $name - correct name is: ". $account_type->name unless $type_name eq $account_type->name;
+        die "Incorrect account type name $type_name in category $name - correct name is: " . $account_type->name
+            unless $type_name eq $account_type->name;
         die "Invalid category name " . $account_type->category_name . " found in account type $type_name. The expected category name was $name"
             unless $name eq $account_type->category_name;
     }
