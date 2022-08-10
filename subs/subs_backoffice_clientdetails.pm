@@ -1834,6 +1834,17 @@ sub get_client_details {
     }
 
     my $user = $client->user;
+
+    if ((any { $_ =~ /^MF/ } $user->bom_loginids) and !BOM::Backoffice::Auth0::has_authorisation([qw/CSRegulated IT Compliance Payments/])) {
+        print "<p class='notify notify--danger'>ERROR: You cannot view this client's profile. </p>";
+        code_exit_BO(
+            qq[<form action="$self_post" method="get">
+                <label>Login ID:</label><input type="text" name="loginID" size="15" value="$encoded_loginid" data-lpignore="true" />
+                <input type="submit" class="btn btn--primary" value="Search" />
+            </form>]
+        );
+    }
+
     my @user_clients;
     push @user_clients, $client;
     foreach my $login_id ($user->bom_loginids) {
