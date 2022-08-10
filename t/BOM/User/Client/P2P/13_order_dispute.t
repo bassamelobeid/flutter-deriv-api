@@ -23,6 +23,8 @@ populate_exchange_rates();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->escrow([]);
+$config->transaction_verification_countries([]);
+$config->transaction_verification_countries_all(0);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 

@@ -10,6 +10,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Rules::Engine;
+use BOM::Config::Runtime;
 
 my $rule_engine = BOM::Rules::Engine->new();
 
@@ -19,6 +20,10 @@ BOM::Test::Helper::P2P::create_escrow();
 my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock(emit => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
+
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->transaction_verification_countries([]);
+$config->transaction_verification_countries_all(0);
 
 subtest 'favourites' => sub {
     my $client = BOM::Test::Helper::Client::create_client();

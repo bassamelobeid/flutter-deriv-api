@@ -19,6 +19,8 @@ BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->transaction_verification_countries([]);
+$config->transaction_verification_countries_all(0);
 
 my $mock_emit = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my $emissions = {};

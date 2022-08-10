@@ -21,6 +21,8 @@ BOM::Test::Helper::P2P::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->cancellation_grace_period(10);
+$config->transaction_verification_countries([]);
+$config->transaction_verification_countries_all(0);
 
 my $rule_engine = BOM::Rules::Engine->new();
 

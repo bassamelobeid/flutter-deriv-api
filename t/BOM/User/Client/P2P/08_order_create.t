@@ -180,7 +180,8 @@ subtest 'Creating new buy order' => sub {
             dispute_reason   => undef,
             disputer_loginid => undef,
         },
-        is_reviewable => 0,
+        is_reviewable        => 0,
+        verification_pending => 0,
     };
     cmp_deeply($new_order, $expected_order, 'order_create expected response');
     $expected_order->{advertiser_details}{is_recommended} = undef;    # not returned from p2p.order_create db function yet,

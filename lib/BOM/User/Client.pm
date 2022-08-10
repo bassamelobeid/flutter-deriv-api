@@ -25,6 +25,7 @@ use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
 use JSON::MaybeXS;
 use Encode;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use POSIX qw(ceil);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
@@ -48,6 +49,7 @@ use BOM::User::Utility qw(p2p_exchange_rate p2p_rate_rounding);
 use BOM::User::Wallet;
 use BOM::Database::UserDB;
 use BOM::Database::ClientDB;
+use BOM::Database::Model::OAuth;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
@@ -62,6 +64,7 @@ use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::User::IdentityVerification;
 use BOM::Platform::Utility qw(error_map);
+use BOM::Platform::Token;
 use BOM::User::Onfido;
 
 use Carp qw(croak confess);
@@ -2221,12 +2224,19 @@ use constant {
     P2P_ORDER_REVIEWABLE_START_AT => 'P2P::ORDER::REVIEWABLE_START_AT',
     P2P_ADVERTISER_BLOCK_ENDS_AT  => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
     P2P_STATS_REDIS_PREFIX        => 'P2P::ADVERTISER_STATS',
-    P2P_STATS_TTL_IN_DAYS         => 120,                                 # days after which to prune redis stats
+    P2P_STATS_TTL_IN_DAYS         => 120,                                   # days after which to prune redis stats
     P2P_ARCHIVE_DATES_KEY         => 'P2P::AD_ARCHIVAL_DATES',
     P2P_USERS_ONLINE_KEY          => 'P2P::USERS_ONLINE',
     P2P_ONLINE_PERIOD             => 90,
-
-    P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,                                  # 2 hours
+    P2P_TOKEN_MIN_EXPIRY          => 2 * 60 * 60,                           # 2 hours. Sendbird token min expiry
+    P2P_VERIFICATION_TOKEN_EXPIRY => 10 * 60,                               # 10 min
+    P2P_VERIFICATION_MAX_ATTEMPTS => 3,                                     # number of unsucsessful attempts before lockout
+    P2P_VERIFICATION_LOCKOUT_TTL  => 30 * 60,                               # 30 min. Lockout after too many unsucsessful attempts
+    P2P_VERIFICATION_LOCKOUT_KEY  => 'P2P::ORDER::VERIFICATION_LOCKOUT',    # flag to lockout
+    P2P_VERIFICATION_REQUEST_KEY  => 'P2P::ORDER::VERIFICATION_REQUEST',    # flag for rate limit
+    P2P_VERIFICATION_ATTEMPT_KEY  => 'P2P::ORDER::VERIFICATION_ATTEMPT',    # sorted set to track verification failures
+    P2P_VERIFICATION_HISTORY_KEY  => 'P2P::ORDER::VERIFICATION_HISTORY',    # list of verification events for backoffice
+    P2P_VERIFICATION_PENDING_KEY  => 'P2P::ORDER::VERIFICATION_PENDING',    # to maintain verification_pending field of orders
 
     # Statuses here should match the DB function p2p.is_status_final.
     P2P_ORDER_STATUS => {
@@ -3005,15 +3015,73 @@ Otherwise dies with error code.
 
 sub p2p_order_confirm {
     my ($self, %param) = @_;
-    my $id         = $param{id} // die +{error_code => 'OrderNotFound'};
-    my $order_info = $self->_p2p_orders(id => $id)->[0];
-    die +{error_code => 'OrderNotFound'} unless $order_info;
 
-    my $ownership_type = _order_ownership_type($self, $order_info);
-    my $method         = $self->can('_p2p_' . $ownership_type . '_' . $order_info->{type} . '_confirm');
-    die +{error_code => 'PermissionDenied'} unless $method;
+    my $id    = $param{id} // die +{error_code => 'OrderNotFound'};
+    my $order = $self->_p2p_orders(
+        id      => $id,
+        loginid => $self->loginid
+    )->[0] // die +{error_code => 'OrderNotFound'};
+    my $role = $self->_order_ownership_type($order) or die +{error_code => 'PermissionDenied'};
 
-    my $update = $self->$method($order_info, $param{source});
+    my $confirm_type = {
+        sell_client     => 'sell',
+        sell_advertiser => 'buy',
+        buy_client      => 'buy',
+        buy_advertiser  => 'sell',
+    }->{$order->{type} . '_' . $role};
+
+    my $db_confirm_func = 'p2p.order_confirm_' . $role . '_v2';
+    my $new_status;
+
+    if ($confirm_type eq 'sell') {
+
+        die +{error_code => 'OrderNotConfirmedPending'} if $order->{status} eq 'pending';
+        die +{error_code => 'OrderConfirmCompleted'}    if $order->{status} !~ /^(buyer-confirmed|timed-out|disputed)$/;
+        my $escrow = $self->p2p_escrow($order->{account_currency}) // die +{error_code => 'EscrowNotFound'};
+
+        $self->_p2p_order_confirm_verification($order, %param);
+
+        return {
+            id      => $id,
+            dry_run => 1
+        } if $param{dry_run};
+
+        my $txn_time = Date::Utility->new->datetime;
+        my $result   = $self->db->dbic->txn(
+            fixup => sub {
+                my $confirm_result = $_->selectrow_hashref("SELECT * FROM $db_confirm_func(?)", undef, $order->{id});
+                return $confirm_result if $confirm_result->{error_code};
+                return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?, FALSE, FALSE)',
+                    undef, $order->{id}, $escrow->loginid, $param{source}, $self->loginid, $txn_time);
+            });
+
+        $self->_p2p_db_error_handler($result);
+        $self->_p2p_order_completed($order);    # these functions do not consider status
+        $self->_p2p_order_finalized($order);
+
+        $new_status = $result->{status};
+
+    } elsif ($confirm_type eq 'buy') {
+
+        die +{error_code => 'OrderAlreadyConfirmedBuyer'}    if $order->{status} eq 'buyer-confirmed';
+        die +{error_code => 'OrderAlreadyConfirmedTimedout'} if $order->{status} eq 'timed-out';
+        die +{error_code => 'OrderUnderDispute'}             if $order->{status} eq 'disputed';
+        die +{error_code => 'OrderConfirmCompleted'}         if $order->{status} ne 'pending';
+
+        return {
+            id      => $id,
+            dry_run => 1
+        } if $param{dry_run};
+
+        my $result = $self->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref("SELECT * FROM $db_confirm_func(?)", undef, $order->{id});
+            });
+
+        $self->_p2p_db_error_handler($result);
+        $self->_p2p_order_buy_confirmed($order);    # this function does not consider status
+        $new_status = $result->{status};
+    }
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
@@ -3022,7 +3090,10 @@ sub p2p_order_confirm {
             order_event    => 'confirmed',
         });
 
-    return $update;
+    return {
+        id     => $id,
+        status => $new_status
+    };
 }
 
 =head2 p2p_order_cancel
@@ -3043,7 +3114,7 @@ sub p2p_order_cancel {
     die +{error_code => 'OrderNoEditExpired'}    if $order->{is_expired};
     die +{error_code => 'OrderAlreadyCancelled'} if $order->{status} eq 'cancelled';
 
-    my $ownership_type = _order_ownership_type($self, $order);
+    my $ownership_type = $self->_order_ownership_type($order);
 
     die +{error_code => 'PermissionDenied'}
         unless ($ownership_type eq 'client' and $order->{type} eq 'buy')
@@ -3069,6 +3140,7 @@ sub p2p_order_cancel {
     $self->_p2p_db_error_handler($db_result);
 
     $self->_p2p_order_cancelled({%$order, %$db_result});
+    $self->_p2p_order_finalized($order);
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
@@ -3329,7 +3401,7 @@ sub p2p_create_order_dispute {
     my $order          = $self->_p2p_orders(id => $id)->[0];
     die +{error_code => 'OrderNotFound'} unless $order;
 
-    my $side = _order_ownership_type($self, $order);
+    my $side = $self->_order_ownership_type($order);
     die +{error_code => 'OrderNotFound'} unless $side;
 
     # Some reasons may apply only to buyer/seller
@@ -3446,6 +3518,8 @@ sub p2p_resolve_order_dispute {
     } else {
         die "Invalid action: $action\n";
     }
+
+    $self->_p2p_order_finalized($order);
 
     my $order_event = join('_', 'dispute', $fraud ? 'fraud' : (), $action);
 
@@ -3593,6 +3667,8 @@ sub p2p_expire_order {
             p2p_adverts_updated => {
                 advertiser_id => $order->{type} eq 'buy' ? $order->{client_id} : $order->{advertiser_id},
             });
+
+        $self->_p2p_order_finalized($order);
     }
 
     return $new_status;
@@ -4161,202 +4237,112 @@ sub _order_ownership_type {
     return '';
 }
 
-=head2 _p2p_client_buy_confirm
+=head2 _p2p_order_confirm_verification
 
-Sets order client confirmed = true and status = buyer-confirmed.
-
-Takes a single argument:
-
-=over 4
-
-=item * C<order> - an order as returned from L<_p2p_orders>
-
-=back
-
-Returns a hashref of the row returned by the final db function.
+Handles email verification if required by the country.
 
 =cut
 
-sub _p2p_client_buy_confirm {
-    my ($self, $order) = @_;
-
-    # $self is the buyer
-    $self->_p2p_validate_buyer_confirm($order);
-    my $result = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client_v2(?)', undef, $order->{id});
-        });
-
-    $self->_p2p_db_error_handler($result);
-    $order->{status} = $result->{status};
-    $self->_p2p_order_buy_confirmed($order);
-
-    return $order;
-}
-
-=head2 _p2p_advertiser_buy_confirm
-
-Sets order advertiser_confirmed = true and completes the order in a single transaction.
-Completing the order moves funds from escrow to order client.
-
-Takes a single argument:
-
-=over 4
-
-=item * C<order> - an order as returned from L<_p2p_orders>
-
-=back
-
-Returns a hashref of the row returned by the final db function.
-
-=cut
-
-sub _p2p_advertiser_buy_confirm {
-    my ($self, $order, $source) = @_;
-
-    # $self is the seller
-    $self->_p2p_validate_seller_confirm($order);
-
-    my $escrow   = $self->p2p_escrow($order->{account_currency}) // die +{error_code => 'EscrowNotFound'};
-    my $txn_time = Date::Utility->new->datetime;
-    my $result   = $self->db->dbic->txn(
-        fixup => sub {
-            my $confirm_result = $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser_v2(?)', undef, $order->{id});
-            return $confirm_result if $confirm_result->{error_code};
-            return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?, FALSE, FALSE)',
-                undef, $order->{id}, $escrow->loginid, $source, $self->loginid, $txn_time);
-        });
-
-    $self->_p2p_db_error_handler($result);
-    $self->_p2p_order_completed($result);
-
-    return $result;
-}
-
-=head2 _p2p_client_sell_confirm
-
-Sets order client_confirmed = true and completes the order in a single transaction.
-Completing the order moves funds from escrow to advertiser.
-
-Takes a single argument:
-
-=over 4
-
-=item * C<order> - an order as returned from L<_p2p_orders>
-
-=back
-
-Returns a hashref of the row returned by the final db function.
-
-=cut
-
-sub _p2p_client_sell_confirm {
-    my ($self, $order, $source) = @_;
-
-    # $self is the seller
-    $self->_p2p_validate_seller_confirm($order);
-
-    my $escrow   = $self->p2p_escrow($order->{account_currency}) // die +{error_code => 'EscrowNotFound'};
-    my $txn_time = Date::Utility->new->datetime;
-
-    my $result = $self->db->dbic->txn(
-        fixup => sub {
-            my $confirm_result = $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client_v2(?)', undef, $order->{id});
-            return $confirm_result if $confirm_result->{error_code};
-            return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?, FALSE, FALSE)',
-                undef, $order->{id}, $escrow->loginid, $source, $self->loginid, $txn_time);
-        });
-
-    $self->_p2p_db_error_handler($result);
-    $self->_p2p_order_completed($result);
-
-    return $result;
-}
-
-=head2 _p2p_advertiser_sell_confirm
-
-Sets order advertiser confirmed = true and status = buyer-confirmed.
-
-Takes a single argument:
-
-=over 4
-
-=item * C<order> - an order as returned from L<_p2p_orders>
-
-=back
-
-Returns a hashref of the row returned by the final db function.
-
-=cut
-
-sub _p2p_advertiser_sell_confirm {
-    my ($self, $order) = @_;
-
-    # $self is the buyer
-    $self->_p2p_validate_buyer_confirm($order);
-
-    my $result = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser_v2(?)', undef, $order->{id});
-        });
-
-    $self->_p2p_db_error_handler($result);
-    $order->{status} = $result->{status};
-    $self->_p2p_order_buy_confirmed($order);
-
-    return $order;
-}
-
-=head2 _p2p_validate_buyer_confirm
-
-Validates if order can be confirmed by client as a buyer.
-Throws an error hashref if cannot.
-
-Takes a single argument:
-
-=over 4
-
-=item * C<order> - an order as returned from L<_p2p_orders>
-
-=back
-
-Returns nothing.
-
-=cut
-
-sub _p2p_validate_buyer_confirm {
-    my ($self, $order) = @_;
-
-    die +{error_code => 'OrderAlreadyConfirmedBuyer'}    if $order->{status} eq 'buyer-confirmed';
-    die +{error_code => 'OrderAlreadyConfirmedTimedout'} if $order->{status} eq 'timed-out';
-    die +{error_code => 'OrderUnderDispute'}             if $order->{status} eq 'disputed';
-    die +{error_code => 'OrderConfirmCompleted'}         if $order->{status} ne 'pending';
-
-    return;
-}
-
-=head2 _p2p_validate_seller_confirm
-
-Validates if order can be confirmed by client as a seller.
-Throws an error hashref if cannot.
-
-Takes a single argument:
-
-=over 4
-
-=item * C<order> - an order as returned from L<_p2p_orders>
-
-=back
-
-Returns nothing.
-
-=cut
-
-sub _p2p_validate_seller_confirm {
-    my ($self, $order) = @_;
-
-    die +{error_code => 'OrderNotConfirmedPending'} if $order->{status} eq 'pending';
-    die +{error_code => 'OrderConfirmCompleted'}    if $order->{status} !~ /^(buyer-confirmed|timed-out|disputed)$/;
+sub _p2p_order_confirm_verification {
+    my ($self, $order, %param) = @_;
+
+    my $p2p_config    = BOM::Config::Runtime->instance->app_config->payments->p2p;
+    my @countries     = $p2p_config->transaction_verification_countries->@*;
+    my $all_countries = $p2p_config->transaction_verification_countries_all;
+
+    return if (not $all_countries) and none { $self->residence eq $_ } @countries;
+    return if $all_countries       and any { $self->residence eq $_ } @countries;
+
+    my $order_id     = $order->{id};
+    my $redis        = BOM::Config::Redis->redis_p2p_write;
+    my $attempts_key = P2P_VERIFICATION_ATTEMPT_KEY . "::$order_id";
+    my $lockout_key  = P2P_VERIFICATION_LOCKOUT_KEY . "::$order_id";
+    my $history_key  = P2P_VERIFICATION_HISTORY_KEY . "::$order_id";
+    my $redis_item   = $order_id . '|' . $order->{client_loginid};
+
+    # after 3 failures, lockout for 30 min
+    if ($redis->zrangebyscore($attempts_key, '-Inf', time)->@* >= P2P_VERIFICATION_MAX_ATTEMPTS) {
+        $redis->set($lockout_key, 1, 'EX', P2P_VERIFICATION_LOCKOUT_TTL);
+        $redis->del($attempts_key);
+        $redis->rpush($history_key, time . '|30 minute lockout for too many failures');
+    }
+
+    my $ttl = $redis->ttl($lockout_key);
+    if ($ttl > 0) {
+        die +{
+            error_code     => 'ExcessiveVerificationFailures',
+            message_params => [ceil($ttl / 60)],
+        };
+    }
+
+    if (my $code = $param{verification_code}) {
+        my $token = BOM::Platform::Token->new({token => $code});
+
+        unless ($token->token and $token->{created_for} eq 'p2p_order_confirm' and $token->email eq $self->email) {
+            $redis->zrem($attempts_key, $code);           # don't count expired code twice
+            $redis->zadd($attempts_key, time, rand());    # record a failed attempt at current time
+            $redis->rpush($history_key, time . '|Invalid/expired token provided');
+            die +{error_code => 'InvalidVerificationToken'};
+        }
+
+        unless ($param{dry_run}) {
+            $token->delete_token;
+            $redis->zrem(P2P_VERIFICATION_PENDING_KEY, $redis_item);
+            $redis->rpush($history_key, time . '|Successful verification');
+        }
+    } else {
+        # max 1 request per minute
+        unless ($redis->set(P2P_VERIFICATION_REQUEST_KEY . "::$order_id", 1, 'NX', 'EX', 60)) {
+            $redis->rpushx($history_key, time . '|Too frequent requests for verification email');
+            die +{
+                error_code     => 'ExcessiveVerificationRequests',
+                message_params => [$redis->ttl(P2P_VERIFICATION_REQUEST_KEY . "::$order_id")],
+            };
+        }
+
+        my $code = BOM::Platform::Token->new({
+                email       => $self->email,
+                created_for => 'p2p_order_confirm',
+                expires_in  => P2P_VERIFICATION_TOKEN_EXPIRY,
+            })->token;
+
+        my $token_expiry = time + P2P_VERIFICATION_TOKEN_EXPIRY;
+        $redis->zadd($attempts_key, $token_expiry, $code);    # record a failed attempt for future, on token expiry
+
+        $redis->zadd(P2P_VERIFICATION_PENDING_KEY, $token_expiry, $redis_item);
+
+        if (my $order_expiry = $redis->zscore(P2P_ORDER_EXPIRES_AT, $redis_item)) {    #todo: simplify this when our redis version supports GT flag
+            $redis->zadd(P2P_ORDER_EXPIRES_AT, $token_expiry, $redis_item) if $token_expiry > $order_expiry;
+        }
+
+        if (my $order_timedout_at = $redis->zscore(P2P_ORDER_TIMEDOUT_AT, $redis_item)) {
+            my $adjusted_expiry = $token_expiry - ($p2p_config->refund_timeout * 24 * 60 * 60);    # setting is days
+            $redis->zadd(P2P_ORDER_TIMEDOUT_AT, $adjusted_expiry, $redis_item) if $adjusted_expiry > $order_timedout_at;
+        }
+
+        my $url = BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($param{source});
+        $url .= "?action=p2p_order_confirm&order_id=$order_id&code=$code&lang=" . request->language if $url;
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_confirm_verify => {
+                loginid          => $self->loginid,
+                verification_url => $url,
+                code             => $code,
+                order_id         => $order_id,
+                order_amount     => $order->{amount},
+                buyer_name       => $order->{advert_type} eq 'buy' ? $order->{advertiser_name} : $order->{client_name},
+            });
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_updated => {
+                client_loginid => $self->loginid,
+                order_id       => $order_id,
+            });
+
+        $redis->rpush($history_key, time . '|Requested email');
+
+        die +{error_code => 'OrderEmailVerificationRequired'};
+    }
 
     return;
 }
@@ -4619,8 +4605,10 @@ sub _order_details {
     my ($self, $list) = @_;
     my (@results, $payment_method_defs, $review_hours);
 
+    my $redis = BOM::Config::Redis->redis_p2p();
+
     for my $order (@$list) {
-        my $role = $self->loginid eq $order->{client_loginid} ? 'client' : 'advertiser';
+        my $role = $self->_order_ownership_type($order);
 
         my $result = +{
             account_currency   => $order->{account_currency},
@@ -4702,6 +4690,9 @@ sub _order_details {
                 $result->{is_reviewable} = 1 if (time - $result->{completion_time}) <= ($review_hours * 60 * 60);
             }
         }
+
+        my $verification_ts = $redis->zscore(P2P_VERIFICATION_PENDING_KEY, $order->{id} . '|' . $order->{client_loginid}) // 0;
+        $result->{verification_pending} = $verification_ts > time ? 1 : 0;
 
         push @results, $result;
     }
@@ -5039,6 +5030,30 @@ sub _p2p_order_cancelled {
     }
 
     return;
+}
+
+=head2 _p2p_order_finalized
+
+Called when an order enters final status for any reason.
+For cleanup etc.
+
+Takes the following argument:
+
+=over 4
+
+=item * C<order> - order hashref
+
+=back
+
+=cut
+
+sub _p2p_order_finalized {
+    my ($self, $order) = @_;
+
+    my $order_id = $order->{id};
+    my $redis    = BOM::Config::Redis->redis_p2p_write;
+
+    $redis->del(P2P_VERIFICATION_ATTEMPT_KEY . "::$order_id", P2P_VERIFICATION_HISTORY_KEY . "::$order_id",);
 }
 
 =head2 _p2p_advertiser_cancellations

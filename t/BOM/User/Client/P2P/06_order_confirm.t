@@ -24,6 +24,8 @@ $mock_events->mock('emit' => sub { push @emitted_events, [@_] });
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->limits->maximum_advert(100);
+$config->transaction_verification_countries([]);
+$config->transaction_verification_countries_all(0);
 
 my @test_cases = (
     #Sell orders client confirmation:
@@ -413,6 +415,7 @@ for my $test_case (@test_cases) {
                 die 'Invalid who_confirm value: ' . $test_case->{who_confirm};
             }
         };
+
         is($err->{error_code}, $test_case->{error}, 'Got expected error behavior (' . ($test_case->{error} // 'none') . ')');
 
         cmp_ok($escrow->account->balance,     '==', $test_case->{escrow}{after},     'Escrow balance is correct');

@@ -6,7 +6,7 @@ use Test::Fatal;
 use Test::Exception;
 use Test::Deep;
 use Test::MockModule;
-use Test::MockTime qw(set_absolute_time restore_time);
+use Test::MockTime qw(set_fixed_time restore_time);
 use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::User::Client;
@@ -24,6 +24,8 @@ BOM::Test::Helper::P2P::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->review_period(2);
+$config->transaction_verification_countries([]);
+$config->transaction_verification_countries_all(0);
 
 my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -117,7 +119,7 @@ subtest 'validaton' => sub {
     $redis_score = $redis->zscore($review_key, $order->{id} . '|' . $client->loginid);
     ok abs($completion - ($redis_score // 0)) <= 1, 'redis completion ts exists for client and within 1 second';
 
-    set_absolute_time($completion + ((60 * 60) * 2) + 1);    # 2 hours 1 sec
+    set_fixed_time($completion + ((60 * 60) * 2) + 1);    # 2 hours 1 sec
     is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     0, 'client cannot review beyond period';
     is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable}, 0, 'advertiser cannot review beyond period';
 
@@ -135,7 +137,7 @@ subtest 'validaton' => sub {
         'error for create review beyond allowed period'
     );
 
-    set_absolute_time($completion + ((60 * 60) * 2));
+    set_fixed_time($completion + ((60 * 60) * 2));
     is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     1, 'client can review at end of period';
     is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable}, 1, 'advertiser can review at end of period';
 

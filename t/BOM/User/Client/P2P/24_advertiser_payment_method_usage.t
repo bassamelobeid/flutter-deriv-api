@@ -26,6 +26,8 @@ $mock_events->mock('emit' => sub { push @emitted_events, [@_] });
 
 my $runtime_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $runtime_config->payment_methods_enabled(1);
+$runtime_config->transaction_verification_countries([]);
+$runtime_config->transaction_verification_countries_all(0);
 
 subtest 'adverts' => sub {
 
