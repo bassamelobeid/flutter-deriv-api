@@ -3,11 +3,11 @@ use Moose;
 extends 'BOM::MarketDataAutoUpdater';
 
 use List::MoreUtils qw(notall);
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util    qw(looks_like_number);
 use Text::CSV::Slurp;
 
 use Format::Util::Numbers qw(roundcommon);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData       qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config::Chronicle;
 use Bloomberg::FileDownloader;

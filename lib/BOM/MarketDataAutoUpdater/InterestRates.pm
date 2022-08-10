@@ -4,7 +4,7 @@ use Moose;
 extends 'BOM::MarketDataAutoUpdater';
 
 use List::MoreUtils qw(notall);
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util    qw(looks_like_number);
 use Text::CSV::Slurp;
 
 use Bloomberg::FileDownloader;
