@@ -86,8 +86,7 @@ use constant ONFIDO_PENDING_REQUEST_PREFIX   => 'ONFIDO::PENDING::REQUEST::';
 use constant ONFIDO_PENDING_REQUEST_TIMEOUT  => 20 * 60;
 
 # Redis key namespace to store onfido results and link
-use constant ONFIDO_REQUESTS_LIMIT                  => $ENV{ONFIDO_REQUESTS_LIMIT} // 5000;
-use constant ONFIDO_LIMIT_TIMEOUT                   => $ENV{ONFIDO_LIMIT_TIMEOUT}  // 24 * 60 * 60;
+use constant ONFIDO_LIMIT_TIMEOUT                   => $ENV{ONFIDO_LIMIT_TIMEOUT} // 24 * 60 * 60;
 use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';
 use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
 use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
@@ -123,6 +122,9 @@ use constant SR_30_DAYS_EXP => 86400 * 30;
 # Applicant check lock
 use constant APPLICANT_CHECK_LOCK_PREFIX => 'ONFIDO::APPLICANT_CHECK_LOCK::';
 use constant APPLICANT_CHECK_LOCK_TTL    => 30;
+
+# Onfido Dynamic Limit
+my $app_config = BOM::Config::Runtime->instance->app_config;
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -554,8 +556,10 @@ async sub ready_for_authentication {
             die "Onfido authentication requests limit ${\ONFIDO_REQUEST_PER_USER_LIMIT} is hit by $loginid (to be expired in $time_to_live seconds).";
 
         }
+        $app_config->check_for_update;
+        my $onfido_request_limit = $app_config->system->onfido->global_daily_limit;
 
-        if ($request_count >= ONFIDO_REQUESTS_LIMIT) {
+        if ($request_count >= $onfido_request_limit) {
             # NOTE: We do not send email again if we already send before
             my $redis_data = encode_json_utf8({
                 creation_epoch => Date::Utility->new()->epoch,
@@ -1638,6 +1642,8 @@ async sub _send_email_notification_for_poa {
 sub _send_email_onfido_check_exceeded_cs {
     my $request_count = shift;
     my $brand         = request->brand;
+    $app_config->check_for_update;
+    my $onfido_request_limit = $app_config->system->onfido->global_daily_limit;
 
     my $system_email         = $brand->emails('system');
     my @email_recipient_list = ($brand->emails('support'), $brand->emails('compliance_alert'));
@@ -1645,7 +1651,7 @@ sub _send_email_onfido_check_exceeded_cs {
     my $email_subject        = 'Onfido request count limit exceeded';
     my $email_template       = "\
         <p><b>IMPORTANT: We exceeded our Onfido authentication check request per day..</b></p>
-        <p>We have sent about $request_count requests which exceeds (" . ONFIDO_REQUESTS_LIMIT . "\)
+        <p>We have sent about $request_count requests which exceeds (" . $onfido_request_limit . "\)
         our own request limit per day with Onfido server.</p>
         Team $website_name
         ";
