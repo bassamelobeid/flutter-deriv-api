@@ -11,12 +11,12 @@ use BOM::Database::ClientDB;
 use BOM::Config::Chronicle;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
-use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Product::ContractFactory                qw( produce_contract );
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(create_client top_up);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw(create_client top_up);
 use JSON::MaybeXS;
 use Crypt::NamedKeys;
 use Date::Utility;
@@ -113,33 +113,33 @@ subtest 'buy CALLSPREAD R_100' => sub {
     # note explain $trx;
 
     subtest 'transaction row', sub {
-        cmp_ok $trx->{id},      '>', 0, 'id';
-        is $trx->{account_id},  $acc_usd->id, 'account_id';
-        is $trx->{action_type}, 'buy', 'action_type';
-        is $trx->{amount} + 0, -50, 'amount';
-        is $trx->{balance_after} + 0, 5000 - 50, 'balance_after';
-        is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $trx->{payment_id}, undef, 'payment_id';
+        cmp_ok $trx->{id}, '>', 0, 'id';
+        is $trx->{account_id},              $acc_usd->id, 'account_id';
+        is $trx->{action_type},             'buy',        'action_type';
+        is $trx->{amount} + 0,              -50,          'amount';
+        is $trx->{balance_after} + 0,       5000 - 50,    'balance_after';
+        is $trx->{financial_market_bet_id}, $fmb->{id},   'financial_market_bet_id';
+        is $trx->{payment_id},              undef,        'payment_id';
 
         is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
         is $trx->{remark},        undef,                  'remark';
-        is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
+        is $trx->{staff_loginid}, $cl->loginid,           'staff_loginid';
         cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
     };
 
     # note explain $fmb;
 
     subtest 'fmb row', sub {
-        cmp_ok $fmb->{id},     '>', 0, 'id';
-        is $fmb->{account_id}, $acc_usd->id, 'account_id';
-        is $fmb->{bet_class},  'callput_spread', 'bet_class';
-        is $fmb->{bet_type},   'CALLSPREAD',     'bet_type';
-        is $fmb->{buy_price} + 0, 50, 'buy_price';
+        cmp_ok $fmb->{id}, '>', 0, 'id';
+        is $fmb->{account_id},    $acc_usd->id,             'account_id';
+        is $fmb->{bet_class},     'callput_spread',         'bet_class';
+        is $fmb->{bet_type},      'CALLSPREAD',             'bet_type';
+        is $fmb->{buy_price} + 0, 50,                       'buy_price';
         is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
         cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
         is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-        is !$fmb->{is_expired}, !0, 'is_expired';
-        is !$fmb->{is_sold},    !0, 'is_sold';
+        is !$fmb->{is_expired},  !0,    'is_expired';
+        is !$fmb->{is_sold},     !0,    'is_sold';
         cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
         is $fmb->{sell_price}, undef, 'sell_price';
         is $fmb->{sell_time},  undef, 'sell_time';
@@ -153,12 +153,12 @@ subtest 'buy CALLSPREAD R_100' => sub {
     # note explain $chld;
 
     subtest 'chld row', sub {
-        is $chld->{absolute_high_barrier},   100.52, 'absolute_high_barrier';
-        is $chld->{absolute_low_barrier},    99.48,  'absolute_low_barrier';
+        is $chld->{absolute_high_barrier},   100.52,     'absolute_high_barrier';
+        is $chld->{absolute_low_barrier},    99.48,      'absolute_low_barrier';
         is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{prediction},              undef, 'prediction';
-        is $chld->{relative_high_barrier},   undef, 'relative_high_barrier';
-        is $chld->{relative_low_barrier},    undef, 'relative_low_barrier';
+        is $chld->{prediction},              undef,      'prediction';
+        is $chld->{relative_high_barrier},   undef,      'relative_high_barrier';
+        is $chld->{relative_low_barrier},    undef,      'relative_low_barrier';
     };
 };
 
@@ -204,33 +204,33 @@ subtest 'buy PUTSPREAD R_100' => sub {
     # note explain $trx;
 
     subtest 'transaction row', sub {
-        cmp_ok $trx->{id},      '>', 0, 'id';
-        is $trx->{account_id},  $acc_usd->id, 'account_id';
-        is $trx->{action_type}, 'buy', 'action_type';
-        is $trx->{amount} + 0, -50, 'amount';
-        is $trx->{balance_after} + 0, 5000 - 50 - 50, 'balance_after';
-        is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $trx->{payment_id}, undef, 'payment_id';
+        cmp_ok $trx->{id}, '>', 0, 'id';
+        is $trx->{account_id},              $acc_usd->id,   'account_id';
+        is $trx->{action_type},             'buy',          'action_type';
+        is $trx->{amount} + 0,              -50,            'amount';
+        is $trx->{balance_after} + 0,       5000 - 50 - 50, 'balance_after';
+        is $trx->{financial_market_bet_id}, $fmb->{id},     'financial_market_bet_id';
+        is $trx->{payment_id},              undef,          'payment_id';
 
         is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
         is $trx->{remark},        undef,                  'remark';
-        is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
+        is $trx->{staff_loginid}, $cl->loginid,           'staff_loginid';
         cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
     };
 
     # note explain $fmb;
 
     subtest 'fmb row', sub {
-        cmp_ok $fmb->{id},     '>', 0, 'id';
-        is $fmb->{account_id}, $acc_usd->id, 'account_id';
-        is $fmb->{bet_class},  'callput_spread', 'bet_class';
-        is $fmb->{bet_type},   'PUTSPREAD',      'bet_type';
-        is $fmb->{buy_price} + 0, 50, 'buy_price';
+        cmp_ok $fmb->{id}, '>', 0, 'id';
+        is $fmb->{account_id},    $acc_usd->id,             'account_id';
+        is $fmb->{bet_class},     'callput_spread',         'bet_class';
+        is $fmb->{bet_type},      'PUTSPREAD',              'bet_type';
+        is $fmb->{buy_price} + 0, 50,                       'buy_price';
         is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
         cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
         is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-        is !$fmb->{is_expired}, !0, 'is_expired';
-        is !$fmb->{is_sold},    !0, 'is_sold';
+        is !$fmb->{is_expired},  !0,    'is_expired';
+        is !$fmb->{is_sold},     !0,    'is_sold';
         cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
         is $fmb->{sell_price}, undef, 'sell_price';
         is $fmb->{sell_time},  undef, 'sell_time';
@@ -244,12 +244,12 @@ subtest 'buy PUTSPREAD R_100' => sub {
     # note explain $chld;
 
     subtest 'chld row', sub {
-        is $chld->{absolute_high_barrier},   105.23, 'absolute_high_barrier';
-        is $chld->{absolute_low_barrier},    94.77,  'absolute_low_barrier';
+        is $chld->{absolute_high_barrier},   105.23,     'absolute_high_barrier';
+        is $chld->{absolute_low_barrier},    94.77,      'absolute_low_barrier';
         is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{prediction},              undef, 'prediction';
-        is $chld->{relative_high_barrier},   undef, 'relative_high_barrier';
-        is $chld->{relative_low_barrier},    undef, 'relative_low_barrier';
+        is $chld->{prediction},              undef,      'prediction';
+        is $chld->{relative_high_barrier},   undef,      'relative_high_barrier';
+        is $chld->{relative_low_barrier},    undef,      'relative_low_barrier';
     };
 
 };
@@ -297,33 +297,33 @@ subtest 'buy CALLSPREAD frxGBPUSD' => sub {
     # note explain $trx;
 
     subtest 'transaction row', sub {
-        cmp_ok $trx->{id},      '>', 0, 'id';
-        is $trx->{account_id},  $acc_usd->id, 'account_id';
-        is $trx->{action_type}, 'buy', 'action_type';
-        is $trx->{amount} + 0, -50, 'amount';
-        is $trx->{balance_after} + 0, 5000 - 3 * 50, 'balance_after';
-        is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $trx->{payment_id}, undef, 'payment_id';
+        cmp_ok $trx->{id}, '>', 0, 'id';
+        is $trx->{account_id},              $acc_usd->id,  'account_id';
+        is $trx->{action_type},             'buy',         'action_type';
+        is $trx->{amount} + 0,              -50,           'amount';
+        is $trx->{balance_after} + 0,       5000 - 3 * 50, 'balance_after';
+        is $trx->{financial_market_bet_id}, $fmb->{id},    'financial_market_bet_id';
+        is $trx->{payment_id},              undef,         'payment_id';
 
         is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
         is $trx->{remark},        undef,                  'remark';
-        is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
+        is $trx->{staff_loginid}, $cl->loginid,           'staff_loginid';
         cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
     };
 
     # note explain $fmb;
 
     subtest 'fmb row', sub {
-        cmp_ok $fmb->{id},     '>', 0, 'id';
-        is $fmb->{account_id}, $acc_usd->id, 'account_id';
-        is $fmb->{bet_class},  'callput_spread', 'bet_class';
-        is $fmb->{bet_type},   'CALLSPREAD',     'bet_type';
-        is $fmb->{buy_price} + 0, 50, 'buy_price';
+        cmp_ok $fmb->{id}, '>', 0, 'id';
+        is $fmb->{account_id},    $acc_usd->id,             'account_id';
+        is $fmb->{bet_class},     'callput_spread',         'bet_class';
+        is $fmb->{bet_type},      'CALLSPREAD',             'bet_type';
+        is $fmb->{buy_price} + 0, 50,                       'buy_price';
         is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
         cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
         is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-        is !$fmb->{is_expired}, !0, 'is_expired';
-        is !$fmb->{is_sold},    !0, 'is_sold';
+        is !$fmb->{is_expired},  !0,    'is_expired';
+        is !$fmb->{is_sold},     !0,    'is_sold';
         cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
         is $fmb->{sell_price}, undef, 'sell_price';
         is $fmb->{sell_time},  undef, 'sell_time';
@@ -337,12 +337,12 @@ subtest 'buy CALLSPREAD frxGBPUSD' => sub {
     # note explain $chld;
 
     subtest 'chld row', sub {
-        is $chld->{absolute_high_barrier},   100.00001, 'absolute_high_barrier';
-        is $chld->{absolute_low_barrier},    99.99999,  'absolute_low_barrier';
+        is $chld->{absolute_high_barrier},   100.00001,  'absolute_high_barrier';
+        is $chld->{absolute_low_barrier},    99.99999,   'absolute_low_barrier';
         is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{prediction},              undef, 'prediction';
-        is $chld->{relative_high_barrier},   undef, 'relative_high_barrier';
-        is $chld->{relative_low_barrier},    undef, 'relative_low_barrier';
+        is $chld->{prediction},              undef,      'prediction';
+        is $chld->{relative_high_barrier},   undef,      'relative_high_barrier';
+        is $chld->{relative_low_barrier},    undef,      'relative_low_barrier';
     };
 };
 
@@ -388,33 +388,33 @@ subtest 'buy PUTSPREAD frxGBPUSD' => sub {
     # note explain $trx;
 
     subtest 'transaction row', sub {
-        cmp_ok $trx->{id},      '>', 0, 'id';
-        is $trx->{account_id},  $acc_usd->id, 'account_id';
-        is $trx->{action_type}, 'buy', 'action_type';
-        is $trx->{amount} + 0, -50, 'amount';
-        is $trx->{balance_after} + 0, 5000 - 4 * 50, 'balance_after';
-        is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $trx->{payment_id}, undef, 'payment_id';
+        cmp_ok $trx->{id}, '>', 0, 'id';
+        is $trx->{account_id},              $acc_usd->id,  'account_id';
+        is $trx->{action_type},             'buy',         'action_type';
+        is $trx->{amount} + 0,              -50,           'amount';
+        is $trx->{balance_after} + 0,       5000 - 4 * 50, 'balance_after';
+        is $trx->{financial_market_bet_id}, $fmb->{id},    'financial_market_bet_id';
+        is $trx->{payment_id},              undef,         'payment_id';
 
         is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
         is $trx->{remark},        undef,                  'remark';
-        is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
+        is $trx->{staff_loginid}, $cl->loginid,           'staff_loginid';
         cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
     };
 
     # note explain $fmb;
 
     subtest 'fmb row', sub {
-        cmp_ok $fmb->{id},     '>', 0, 'id';
-        is $fmb->{account_id}, $acc_usd->id, 'account_id';
-        is $fmb->{bet_class},  'callput_spread', 'bet_class';
-        is $fmb->{bet_type},   'PUTSPREAD',      'bet_type';
-        is $fmb->{buy_price} + 0, 50, 'buy_price';
+        cmp_ok $fmb->{id}, '>', 0, 'id';
+        is $fmb->{account_id},    $acc_usd->id,             'account_id';
+        is $fmb->{bet_class},     'callput_spread',         'bet_class';
+        is $fmb->{bet_type},      'PUTSPREAD',              'bet_type';
+        is $fmb->{buy_price} + 0, 50,                       'buy_price';
         is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
         cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
         is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-        is !$fmb->{is_expired}, !0, 'is_expired';
-        is !$fmb->{is_sold},    !0, 'is_sold';
+        is !$fmb->{is_expired},  !0,    'is_expired';
+        is !$fmb->{is_sold},     !0,    'is_sold';
         cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
         is $fmb->{sell_price}, undef, 'sell_price';
         is $fmb->{sell_time},  undef, 'sell_time';
@@ -428,12 +428,12 @@ subtest 'buy PUTSPREAD frxGBPUSD' => sub {
     # note explain $chld;
 
     subtest 'chld row', sub {
-        is $chld->{absolute_high_barrier},   100.00001, 'absolute_high_barrier';
-        is $chld->{absolute_low_barrier},    99.99999,  'absolute_low_barrier';
+        is $chld->{absolute_high_barrier},   100.00001,  'absolute_high_barrier';
+        is $chld->{absolute_low_barrier},    99.99999,   'absolute_low_barrier';
         is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{prediction},              undef, 'prediction';
-        is $chld->{relative_high_barrier},   undef, 'relative_high_barrier';
-        is $chld->{relative_low_barrier},    undef, 'relative_low_barrier';
+        is $chld->{prediction},              undef,      'prediction';
+        is $chld->{relative_high_barrier},   undef,      'relative_high_barrier';
+        is $chld->{relative_low_barrier},    undef,      'relative_low_barrier';
     };
 
 };
@@ -469,7 +469,7 @@ subtest 'offerings' => sub {
         } else {
             ok $error, 'invalid buy';
             is $error->{'-type'}, 'InvalidOfferings', 'InvalidOfferings';
-            is $error->{'-mesg'}, $data->[3], $data->[3];
+            is $error->{'-mesg'}, $data->[3],         $data->[3];
         }
     }
 };

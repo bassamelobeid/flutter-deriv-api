@@ -13,16 +13,16 @@ use Test::MockObject::Extends;
 use Format::Util::Numbers qw(roundcommon);
 use Quant::Framework;
 use BOM::Config::Chronicle;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use BOM::Product::ContractFactory           qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::Test::Helper::Client               qw(create_client top_up);
+use BOM::Test::Helper::ExchangeRates        qw/populate_exchange_rates/;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Config;
 
@@ -558,7 +558,7 @@ subtest 'synthetic_age_verification_check' => sub {
     $mock_countries->mock(countries_list => {id => {require_age_verified_for_synthetic => 1}});
 
     my $error = $tx->buy;
-    is $error->get_type, 'NeedAuthenticateForSynthetic', 'error code ok';
+    is $error->get_type,             'NeedAuthenticateForSynthetic',                                    'error code ok';
     is $error->{-message_to_client}, 'Please authenticate your account to trade on synthetic markets.', 'error message ok';
 
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);

@@ -5,12 +5,12 @@ use warnings;
 use Syntax::Keyword::Try;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw(produce_contract);
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
-use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
+use Finance::Contract::Longcode   qw(shortcode_to_parameters);
+use DataDog::DogStatsd::Helper    qw(stats_inc stats_event);
 use Format::Util::Numbers;
 use List::Util qw(min max);
 
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use Log::Any::Adapter qw(DERIV),
     stderr    => 'json',
     log_level => 'info';

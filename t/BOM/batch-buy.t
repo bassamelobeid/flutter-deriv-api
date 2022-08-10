@@ -22,15 +22,15 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData::Types;
 use BOM::User::Password;
 use BOM::Product::ContractFactory qw( produce_contract );
-use Finance::Contract::Longcode qw( shortcode_to_parameters );
+use Finance::Contract::Longcode   qw( shortcode_to_parameters );
 use BOM::Transaction::Validation;
 use BOM::Transaction;
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw( create_client top_up );
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw( create_client top_up );
 
 my $expiryq = ExpiryQueue->new(redis => BOM::Config::Redis::redis_expiryq_write);
 

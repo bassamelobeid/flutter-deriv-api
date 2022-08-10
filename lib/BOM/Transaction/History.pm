@@ -12,7 +12,7 @@ no indirect;
 use Date::Utility;
 use JSON::MaybeXS;
 use BOM::Platform::Context qw(localize);
-use Format::Util::Numbers qw(formatnumber);
+use Format::Util::Numbers  qw(formatnumber);
 
 my $json = JSON::MaybeXS->new;
 

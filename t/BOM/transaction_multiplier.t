@@ -8,11 +8,11 @@ use Test::More;
 use Test::Exception;
 use Test::Warnings;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(top_up create_client);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw(top_up create_client);
 
 use Guard;
 use Crypt::NamedKeys;
@@ -210,17 +210,17 @@ subtest 'buy MULTUP', sub {
 
         subtest 'transaction row', sub {
             plan tests => 12;
-            cmp_ok $trx->{id},      '>', 0, 'id';
-            is $trx->{account_id},  $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -100, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 100, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,           'account_id';
+            is $trx->{action_type},             'buy',                  'action_type';
+            is $trx->{amount} + 0,              -100,                   'amount';
+            is $trx->{balance_after} + 0,       5000 - 100,             'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
             is $trx->{remark},                  undef,                  'remark';
-            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
-            is $trx->{source},                  19, 'source';
+            is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
+            is $trx->{source},                  19,                     'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
@@ -228,20 +228,20 @@ subtest 'buy MULTUP', sub {
 
         subtest 'fmb row', sub {
             plan tests => 19;
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'multiplier', 'bet_class';
-            is $fmb->{bet_type},   'MULTUP',     'bet_type';
-            is $fmb->{buy_price} + 0, 100, 'buy_price';
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,             'account_id';
+            is $fmb->{bet_class},     'multiplier',             'bet_class';
+            is $fmb->{bet_type},      'MULTUP',                 'bet_type';
+            is $fmb->{buy_price} + 0, 100,                      'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is !$fmb->{is_expired}, !0, 'is_expired';
-            is !$fmb->{is_sold},    !0, 'is_sold';
+            is !$fmb->{is_expired},  !0,    'is_expired';
+            is !$fmb->{is_sold},     !0,    'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                     'sell_price';
-            is $fmb->{sell_time},  undef,                     'sell_time';
+            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
+            is $fmb->{sell_price}, undef, 'sell_price';
+            is $fmb->{sell_time},  undef, 'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/MULTUP/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
@@ -252,13 +252,13 @@ subtest 'buy MULTUP', sub {
         # note explain $chld;
 
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'}, 10, 'multiplier is 10';
-            is $chld->{'basis_spot'} + 0, 100, 'basis_spot is 100';
-            is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_basis_spot'},   undef, 'stop_loss_basis_spot is undef';
-            is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
-            cmp_ok $chld->{'stop_out_order_date'},  "eq",  $fmb->{start_time}, 'stop_out_order_date is correctly set';
+            is $chld->{financial_market_bet_id},     $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{'multiplier'},                10,         'multiplier is 10';
+            is $chld->{'basis_spot'} + 0,            100,        'basis_spot is 100';
+            is $chld->{'stop_loss_order_amount'},    undef,      'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_basis_spot'},      undef,      'stop_loss_basis_spot is undef';
+            is $chld->{'stop_out_order_amount'} + 0, -100,       'stop_out_order_amount is -100';
+            cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
             is $chld->{'take_profit_order_date'},   undef, 'take_profit_order_date is undef';
         };
@@ -317,17 +317,17 @@ subtest 'buy MULTUP with take profit', sub {
 
         subtest 'transaction row', sub {
             plan tests => 12;
-            cmp_ok $trx->{id},      '>', 0, 'id';
-            is $trx->{account_id},  $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -100, 'amount';
-            is $trx->{balance_after} + 0, 4900 - 100, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,           'account_id';
+            is $trx->{action_type},             'buy',                  'action_type';
+            is $trx->{amount} + 0,              -100,                   'amount';
+            is $trx->{balance_after} + 0,       4900 - 100,             'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
             is $trx->{remark},                  undef,                  'remark';
-            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
-            is $trx->{source},                  19, 'source';
+            is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
+            is $trx->{source},                  19,                     'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
@@ -335,20 +335,20 @@ subtest 'buy MULTUP with take profit', sub {
 
         subtest 'fmb row', sub {
             plan tests => 19;
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'multiplier', 'bet_class';
-            is $fmb->{bet_type},   'MULTUP',     'bet_type';
-            is $fmb->{buy_price} + 0, 100, 'buy_price';
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,             'account_id';
+            is $fmb->{bet_class},     'multiplier',             'bet_class';
+            is $fmb->{bet_type},      'MULTUP',                 'bet_type';
+            is $fmb->{buy_price} + 0, 100,                      'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is !$fmb->{is_expired}, !0, 'is_expired';
-            is !$fmb->{is_sold},    !0, 'is_sold';
+            is !$fmb->{is_expired},  !0,    'is_expired';
+            is !$fmb->{is_sold},     !0,    'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                     'sell_price';
-            is $fmb->{sell_time},  undef,                     'sell_time';
+            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
+            is $fmb->{sell_price}, undef, 'sell_price';
+            is $fmb->{sell_time},  undef, 'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/MULTUP/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
@@ -359,14 +359,14 @@ subtest 'buy MULTUP with take profit', sub {
         # note explain $chld;
 
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'}, 10, 'multiplier is 10';
-            is $chld->{'basis_spot'} + 0, 100, 'basis_spot is 100';
-            is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef, 'stop_loss_order_date is undef';
-            is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
-            cmp_ok $chld->{'stop_out_order_date'},    "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
-            is $chld->{'take_profit_order_amount'},   5,    'take_profit_order_amount is 5';
+            is $chld->{financial_market_bet_id},     $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{'multiplier'},                10,         'multiplier is 10';
+            is $chld->{'basis_spot'} + 0,            100,        'basis_spot is 100';
+            is $chld->{'stop_loss_order_amount'},    undef,      'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},      undef,      'stop_loss_order_date is undef';
+            is $chld->{'stop_out_order_amount'} + 0, -100,       'stop_out_order_amount is -100';
+            cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
+            is $chld->{'take_profit_order_amount'}, 5, 'take_profit_order_amount is 5';
             cmp_ok $chld->{'take_profit_order_date'}, "eq", $fmb->{start_time}, 'take_profit_order_date is correctly set';
         };
 
@@ -425,17 +425,17 @@ subtest 'buy MULTUP with stop loss', sub {
 
         subtest 'transaction row', sub {
             plan tests => 12;
-            cmp_ok $trx->{id},      '>', 0, 'id';
-            is $trx->{account_id},  $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -100, 'amount';
-            is $trx->{balance_after} + 0, 4800 - 100, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,           'account_id';
+            is $trx->{action_type},             'buy',                  'action_type';
+            is $trx->{amount} + 0,              -100,                   'amount';
+            is $trx->{balance_after} + 0,       4800 - 100,             'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
             is $trx->{remark},                  undef,                  'remark';
-            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
-            is $trx->{source},                  19, 'source';
+            is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
+            is $trx->{source},                  19,                     'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
@@ -443,20 +443,20 @@ subtest 'buy MULTUP with stop loss', sub {
 
         subtest 'fmb row', sub {
             plan tests => 19;
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'multiplier', 'bet_class';
-            is $fmb->{bet_type},   'MULTUP',     'bet_type';
-            is $fmb->{buy_price} + 0, 100, 'buy_price';
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,             'account_id';
+            is $fmb->{bet_class},     'multiplier',             'bet_class';
+            is $fmb->{bet_type},      'MULTUP',                 'bet_type';
+            is $fmb->{buy_price} + 0, 100,                      'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is !$fmb->{is_expired}, !0, 'is_expired';
-            is !$fmb->{is_sold},    !0, 'is_sold';
+            is !$fmb->{is_expired},  !0,    'is_expired';
+            is !$fmb->{is_sold},     !0,    'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                     'sell_price';
-            is $fmb->{sell_time},  undef,                     'sell_time';
+            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
+            is $fmb->{sell_price}, undef, 'sell_price';
+            is $fmb->{sell_time},  undef, 'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/MULTUP/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
@@ -466,13 +466,13 @@ subtest 'buy MULTUP with stop loss', sub {
 
         # note explain $chld;
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'}, 10, 'multiplier is 10';
-            is $chld->{'basis_spot'} + 0, 100, 'basis_spot is 100';
-            is $chld->{'stop_loss_order_amount'}, -5, 'stop_loss_order_amount is -5';
+            is $chld->{financial_market_bet_id},  $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{'multiplier'},             10,         'multiplier is 10';
+            is $chld->{'basis_spot'} + 0,         100,        'basis_spot is 100';
+            is $chld->{'stop_loss_order_amount'}, -5,         'stop_loss_order_amount is -5';
             cmp_ok $chld->{'stop_loss_order_date'}, "eq", $fmb->{start_time}, 'stop_loss_order_date is correctly set';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
-            cmp_ok $chld->{'stop_out_order_date'},  "eq",  $fmb->{start_time}, 'stop_out_order_date is correctly set';
+            cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
             is $chld->{'take_profit_order_date'},   undef, 'take_profit_order_date is undef';
         };
@@ -530,36 +530,36 @@ subtest 'sell a bet', sub {
         # note explain $trx;
 
         subtest 'transaction row', sub {
-            cmp_ok $trx->{id},      '>', 0, 'id';
-            is $trx->{account_id},  $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'sell', 'action_type';
-            is $trx->{amount} + 0, $contract->bid_price + 0, 'amount';
-            is $trx->{balance_after} + 0, 4799.5, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $trx->{payment_id},              undef,                  'payment_id';
-            is $trx->{quantity},                1,                      'quantity';
-            is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
-            is $trx->{remark},                  undef,                  'remark';
-            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
-            is $trx->{source},                  23, 'source';
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,             'account_id';
+            is $trx->{action_type},             'sell',                   'action_type';
+            is $trx->{amount} + 0,              $contract->bid_price + 0, 'amount';
+            is $trx->{balance_after} + 0,       4799.5,                   'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},               'financial_market_bet_id';
+            is $trx->{payment_id},              undef,                    'payment_id';
+            is $trx->{quantity},                1,                        'quantity';
+            is $trx->{referrer_type},           'financial_market_bet',   'referrer_type';
+            is $trx->{remark},                  undef,                    'remark';
+            is $trx->{staff_loginid},           $cl->loginid,             'staff_loginid';
+            is $trx->{source},                  23,                       'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
         # note explain $fmb;
 
         subtest 'fmb row', sub {
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'multiplier', 'bet_class';
-            is $fmb->{bet_type},   'MULTUP',     'bet_type';
-            is $fmb->{buy_price} + 0, 100, 'buy_price';
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id, 'account_id';
+            is $fmb->{bet_class},     'multiplier', 'bet_class';
+            is $fmb->{bet_type},      'MULTUP',     'bet_type';
+            is $fmb->{buy_price} + 0, 100,          'buy_price';
             ok $fmb->{expiry_daily}, 'expiry_daily';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
             is $fmb->{is_expired},   0,     'is_expired';
-            ok $fmb->{is_sold},      'is_sold';
+            ok $fmb->{is_sold}, 'is_sold';
             is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
-            cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
-            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
+            cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch,       '<=', $contract->date_pricing->epoch, 'sell_time';
+            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time,                           'settlement_time';
             like $fmb->{short_code}, qr/MULTUP/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
             is $fmb->{tick_count},        undef,   'tick_count';

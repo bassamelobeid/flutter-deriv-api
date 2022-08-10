@@ -19,8 +19,8 @@ use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Product::ContractFactory                qw( produce_contract make_similar_contract );
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 initialize_realtime_ticks_db;

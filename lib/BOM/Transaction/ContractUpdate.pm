@@ -11,7 +11,7 @@ use BOM::Config::Redis;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
 use BOM::Transaction::Utility;
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use Finance::Contract::Longcode   qw(shortcode_to_parameters);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Syntax::Keyword::Try;
 use ExpiryQueue;

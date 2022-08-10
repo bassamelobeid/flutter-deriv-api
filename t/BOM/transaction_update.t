@@ -7,11 +7,11 @@ use Test::MockModule;
 use Test::More;
 use Test::Exception;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(top_up);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw(top_up);
 use ExpiryQueue;
 
 use Guard;
@@ -274,14 +274,14 @@ subtest 'update take profit', sub {
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id},  $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
-            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
-            is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
-            cmp_ok $chld->{'stop_out_order_date'},    "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
-            is $chld->{'take_profit_order_amount'},   10,   'take_profit_order_amount is 5';
+            is $chld->{financial_market_bet_id},     $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{'multiplier'},                10,         'multiplier is 10';
+            is $chld->{'basis_spot'},                '100.0',    'basis_spot is 100.0';
+            is $chld->{'stop_loss_order_amount'},    undef,      'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},      undef,      'stop_loss_order_date is undef';
+            is $chld->{'stop_out_order_amount'} + 0, -100,       'stop_out_order_amount is -100';
+            cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
+            is $chld->{'take_profit_order_amount'}, 10, 'take_profit_order_amount is 5';
             cmp_ok $chld->{'take_profit_order_date'}, "ge", $fmb->{start_time}, 'take_profit_order_date is correctly set';
         };
 
@@ -303,14 +303,14 @@ subtest 'update take profit', sub {
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id},  $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
-            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
-            is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
-            cmp_ok $chld->{'stop_out_order_date'},    "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
-            is $chld->{'take_profit_order_amount'},   15,   'take_profit_order_amount is 5';
+            is $chld->{financial_market_bet_id},     $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{'multiplier'},                10,         'multiplier is 10';
+            is $chld->{'basis_spot'},                '100.0',    'basis_spot is 100.0';
+            is $chld->{'stop_loss_order_amount'},    undef,      'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},      undef,      'stop_loss_order_date is undef';
+            is $chld->{'stop_out_order_amount'} + 0, -100,       'stop_out_order_amount is -100';
+            cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
+            is $chld->{'take_profit_order_amount'}, 15, 'take_profit_order_amount is 5';
             cmp_ok $chld->{'take_profit_order_date'}, "ge", $fmb->{start_time}, 'take_profit_order_date is correctly set';
         };
 
@@ -333,15 +333,15 @@ subtest 'update take profit', sub {
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id},  $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
-            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
-            is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
-            cmp_ok $chld->{'stop_out_order_date'},    "eq",  $fmb->{start_time}, 'stop_out_order_date is correctly set';
-            is $chld->{'take_profit_order_amount'},   undef, 'take_profit_order_amount is undef';
-            cmp_ok $chld->{'take_profit_order_date'}, "ge",  $fmb->{start_time}, 'take_profit_order_date is correctly set';
+            is $chld->{financial_market_bet_id},     $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{'multiplier'},                10,         'multiplier is 10';
+            is $chld->{'basis_spot'},                '100.0',    'basis_spot is 100.0';
+            is $chld->{'stop_loss_order_amount'},    undef,      'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},      undef,      'stop_loss_order_date is undef';
+            is $chld->{'stop_out_order_amount'} + 0, -100,       'stop_out_order_amount is -100';
+            cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
+            is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
+            cmp_ok $chld->{'take_profit_order_date'}, "ge", $fmb->{start_time}, 'take_profit_order_date is correctly set';
         };
 
         $audit_details = get_audit_details_by_fmbid($fmb->{id});
@@ -357,7 +357,7 @@ subtest 'update take profit', sub {
                 contract_id => $fmb->{id},
                 limit       => 5000
             });
-            is scalar(@$history), 3, 'has three entries';
+            is scalar(@$history),             3, 'has three entries';
             is $history->[0]->{display_name}, 'Take profit';
             is $history->[0]->{order_amount}, 0;
             is $history->[1]->{display_name}, 'Take profit';

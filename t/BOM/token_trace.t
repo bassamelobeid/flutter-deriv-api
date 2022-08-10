@@ -10,10 +10,10 @@ use Test::Exception;
 
 use Date::Utility;
 use BOM::Transaction;
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory              qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw(create_client top_up);
+use BOM::Test::Helper::Client                  qw(create_client top_up);
 
 use BOM::MarketData qw(create_underlying);
 

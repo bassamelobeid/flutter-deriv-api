@@ -15,8 +15,8 @@ use JSON::MaybeXS;
 
 use Date::Utility;
 use BOM::Test;
-use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Contract qw(create_contract buy_contract sell_contract);
+use BOM::Test::Helper::Client     qw(create_client top_up);
+use BOM::Test::Contract           qw(create_contract buy_contract sell_contract);
 use BOM::Test::ContractTestHelper qw(close_all_open_contracts reset_all_loss_hashes);
 use BOM::Config::RedisTransactionLimits;
 use BOM::Config::Runtime;

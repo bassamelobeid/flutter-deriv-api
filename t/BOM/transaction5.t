@@ -7,14 +7,14 @@ use Test::Most;
 use Test::FailWarnings;
 use Test::MockModule;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use BOM::Product::ContractFactory           qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData                         qw(create_underlying);
 use BOM::MarketData::Types;
 
 initialize_realtime_ticks_db();

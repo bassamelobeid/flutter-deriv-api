@@ -15,13 +15,13 @@ use JSON::MaybeXS;
 
 use Date::Utility;
 use BOM::Test;
-use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Contract qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode);
+use BOM::Test::Helper::Client     qw(create_client top_up);
+use BOM::Test::Contract           qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode);
 use BOM::Test::ContractTestHelper qw(close_all_open_contracts reset_all_loss_hashes);
 use BOM::Transaction::Limits::SyncLoss;
 use BOM::Config::RedisTransactionLimits;
 use BOM::Config::Runtime;
-use BOM::Test::Email qw(mailbox_search);
+use BOM::Test::Email                 qw(mailbox_search);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
@@ -138,8 +138,8 @@ subtest 'Batch buy on error must revert', sub {
         buy_price      => 3,
     );
 
-    is $error, undef, 'no errors during batch buy';
-    is scalar(grep { defined $_->{error} } @$multiple), 2, 'There should be 2 failed buys';
+    is $error,                                          undef, 'no errors during batch buy';
+    is scalar(grep { defined $_->{error} } @$multiple), 2,     'There should be 2 failed buys';
 
     cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+,+'), '==', 28,
         'Batch buy 3 same contracts again, but now only one passes. Should only increment by 7.';

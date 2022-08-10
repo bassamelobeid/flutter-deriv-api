@@ -17,7 +17,7 @@ use warnings;
 
 use BOM::Transaction::Limits::Groups;
 use BOM::Config::RedisTransactionLimits;
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use Log::Any::Adapter qw(DERIV),
     stdout    => 'text',
     log_level => 'info';
