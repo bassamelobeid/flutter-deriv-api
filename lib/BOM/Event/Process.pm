@@ -15,6 +15,7 @@ use BOM::Event::Actions::MT5;
 use BOM::Event::Actions::Client;
 use BOM::Event::Actions::Client::DisputeNotification;
 use BOM::Event::Actions::Client::IdentityVerification;
+use BOM::Event::Actions::CryptoCashier;
 use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
 use BOM::Event::Actions::P2P;
@@ -106,6 +107,7 @@ my $action_mapping = {
         pa_transfer_confirm                         => \&BOM::Event::Actions::Client::pa_transfer_confirm,
         pa_withdraw_confirm                         => \&BOM::Event::Actions::Client::pa_withdraw_confirm,
         trigger_cio_broadcast                       => \&BOM::Event::Actions::Common::trigger_cio_broadcast,
+        crypto_cashier_transaction_updated          => \&BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated,
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,
