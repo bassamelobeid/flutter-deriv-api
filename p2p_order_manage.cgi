@@ -14,6 +14,7 @@ use Syntax::Keyword::Try;
 use Date::Utility;
 use BOM::Config::Runtime;
 use BOM::Config;
+use BOM::Config::Redis;
 use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw(financialrounding);
 use BOM::Platform::Event::Emitter;
@@ -46,7 +47,7 @@ my $db_collector = BOM::Database::ClientDB->new({
         broker_code => 'FOG',
     })->db->dbic;
 
-my ($order, $escrow, $transactions, $history, $chat_messages);
+my ($order, $escrow, $transactions, $history, $chat_messages, @verification_history);
 my $chat_messages_limit = 20;
 my $chat_page           = int($input{p} // 1);
 
@@ -189,6 +190,17 @@ if (my $id = $input{order_id}) {
         $transactions =
             [sort { Date::Utility->new($a->{transaction_time})->epoch cmp Date::Utility->new($b->{transaction_time})->epoch } $transactions->@*];
 
+        if (my $items = BOM::Config::Redis->redis_p2p->lrange("P2P::VERIFICATION_HISTORY::$id", 0, -1)) {
+            for my $item (@$items) {
+                my ($ts, $event) = split /\|/, $item;
+                push @verification_history,
+                    {
+                    datetime => Date::Utility->new($ts)->datetime_yyyymmdd_hhmmss,
+                    event    => $event
+                    };
+            }
+        }
+
         $history = $db->run(
             fixup => sub {
                 $_->selectall_arrayref('SELECT * FROM p2p.order_advert_history(?)', {Slice => {}}, $id);
@@ -257,9 +269,10 @@ BOM::Backoffice::Request::template()->process(
         chat_messages_prev => $chat_page > 1
         ? $chat_page - 1
         : undef,             # When undef link won't be show
-        sendbird_token  => $sendbird_token,
-        dispute_reasons => \%dispute_reasons,
-        can_dispute     => $can_dispute,
+        sendbird_token       => $sendbird_token,
+        dispute_reasons      => \%dispute_reasons,
+        can_dispute          => $can_dispute,
+        verification_history => \@verification_history,
     });
 code_exit_BO();
 

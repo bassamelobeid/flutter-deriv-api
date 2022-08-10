@@ -21,7 +21,7 @@
             [% IF settings.$setting.value.size %]
                 [% FOREACH v IN settings.$setting.value %]
                    <br/>[% loop.count %]. [% v %]
-                    [% IF setting == 'payments.p2p.escrow' %] ([% escrow_currencies.$v %])[% ELSIF setting.match('countries$') %] ([% countries_list.$v.name %])[% END %]
+                    [% IF setting == 'payments.p2p.escrow' %] ([% escrow_currencies.$v %])[% ELSIF setting.match('countries$') %] ([% countries_list.$v.name || '<span class="error">invalid</span>' | none %])[% END %]
                 [% END %]
             [% ELSE %]
                 none

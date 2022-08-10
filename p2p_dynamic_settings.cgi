@@ -53,6 +53,8 @@ my @setting_keys = qw(
     payments.p2p.float_rate_order_slippage
     payments.p2p.email_campaign_ids
     payments.p2p.review_period
+    payments.p2p.transaction_verification_countries
+    payments.p2p.transaction_verification_countries_all
 );
 
 my $countries_list = request()->brand->countries_instance->countries_list;

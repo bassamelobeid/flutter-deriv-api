@@ -290,6 +290,28 @@
         </tbody>
     </table>
     
+    [% IF verification_history.size %]
+
+        <br>
+        <h3>Seller email verification history</h3>
+
+        <table class="border">
+        <thead>
+            <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Event</th>
+            </tr>
+        </thead>
+        [% FOREACH item = verification_history %]
+        <tr>
+            <td>[% item.datetime %]</td>
+            <td>[% item.event %]</td>
+        </tr>
+        [% END %]
+        </table>
+    
+    [% END %]
+    
     <br>
     <h3>Advert changes</h3>
     
