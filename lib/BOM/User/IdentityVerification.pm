@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use JSON::MaybeUTF8 qw( encode_json_utf8 );
+use JSON::MaybeUTF8 qw(:v2);
 use Syntax::Keyword::Try;
 use Log::Any qw($log);
 
@@ -154,7 +154,8 @@ sub update_document_check {
         }
     }
 
-    $messages        = encode_json_utf8($messages)                if $messages;
+    # should've already been utf8 decoded
+    $messages        = encode_json_text($messages)                if $messages;
     $expiration_date = Date::Utility->new($expiration_date)->date if $expiration_date;
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
