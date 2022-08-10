@@ -8,8 +8,8 @@ use List::Util qw(first);
 use Carp;
 use Math::Business::BlackScholesMerton::NonBinaries;
 
-use VolSurface::Utils qw(get_2vol_butterfly);
-use BOM::MarketData qw(create_underlying);
+use VolSurface::Utils             qw(get_2vol_butterfly);
+use BOM::MarketData               qw(create_underlying);
 use BOM::Product::ContractFactory qw( produce_contract );
 use SetupDatasetTestFixture;
 use BOM::Test::Data::Utility::FeedTestDatabase;
@@ -289,7 +289,7 @@ sub _convert_to_array_of_hashes {
     my @wanted_strings = map { join ',', @$_ } @wanted;
 
     my $wanted_string = join "\n", @wanted_strings;
-    my $ar_of_hr = Text::CSV::Slurp->load(string => $wanted_string);
+    my $ar_of_hr      = Text::CSV::Slurp->load(string => $wanted_string);
 
     return $ar_of_hr;
 }

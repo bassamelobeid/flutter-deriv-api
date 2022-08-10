@@ -131,7 +131,7 @@ sub _calculate_results {
         $string .= "\n";
 
         $full_report_file->append($string);
-        push @output, \@output_array;
+        push @output,                                             \@output_array;
         push @{$analysis_mid_diffs->{$base_or_num}->{$bet_type}}, $mid_diff;
     }
 
