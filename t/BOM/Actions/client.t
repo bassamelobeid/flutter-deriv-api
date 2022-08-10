@@ -101,18 +101,30 @@ mailbox_clear();
 
 BOM::Event::Actions::Common::_email_client_age_verified($test_client);
 
-my $msg = mailbox_search(subject => qr/Your identity is verified/);
+is_deeply \@emit_args,
+    [
+    'age_verified',
+    {
+        loginid    => $test_client->loginid,
+        properties => {
+            contact_url   => 'https://deriv.com/en/contact-us',
+            poi_url       => 'https://app.deriv.com/account/proof-of-identity?lang=en',
+            live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
+            email         => $test_client->email,
+            name          => $test_client->first_name,
+            website_name  => 'Deriv.com'
+        }}
+    ],
+    'Age verified client';
 
-is($msg->{from}, 'no-reply@deriv.com', 'Correct from Address');
+undef @emit_args;
+
 $test_client->status->set('age_verification');
 
-mailbox_clear();
 BOM::Event::Actions::Common::_email_client_age_verified($test_client);
 
-$msg = mailbox_search(subject => qr/Your identity is verified/);
-is($msg, undef, "Didn't send email when already age verified");
-
-mailbox_clear();
+is scalar @emit_args, 0, "Didn't send email when already age verified";
+undef @emit_args;
 
 my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MLT',
@@ -120,15 +132,15 @@ my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 BOM::Event::Actions::Common::_email_client_age_verified($test_client_mx);
 
-$msg = mailbox_search(subject => qr/Your identity is verified/);
-is($msg, undef, 'No email for non CR account');
+is scalar @emit_args, 0, "No email for non CR account";
+undef @emit_args;
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 BOM::Event::Actions::Client::authenticated_with_scans({loginid => $test_client_cr->loginid})->get;
 
-$msg = mailbox_search(subject => qr/Your address and identity have been verified successfully/);
+my $msg = mailbox_search(subject => qr/Your address and identity have been verified successfully/);
 
 my $args = {
     document_type     => 'proofaddress',
@@ -2154,7 +2166,7 @@ subtest 'onfido resubmission' => sub {
 
     subtest "_set_age_verification on resubmission, verification success" => sub {
         # As I don't have/know a valid payload from onfido, I'm going to test _set_age_verification instead
-        mailbox_clear();
+        undef @emit_args;
 
         my $req = BOM::Platform::Context::Request->new(language => 'EN');
         request($req);
@@ -2165,9 +2177,24 @@ subtest 'onfido resubmission' => sub {
 
         $test_client->status->clear_poi_name_mismatch;
         BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
-        my $msg = mailbox_search(subject => qr/Your identity is verified/);
         ok $test_client->status->age_verification, 'Client is age verified';
-        ok($msg, 'Valid email sent to client for resubmission passed');
+        is_deeply \@emit_args,
+            [
+            'age_verified',
+            {
+                loginid    => $test_client->loginid,
+                properties => {
+                    contact_url   => 'https://deriv.com/en/contact-us',
+                    poi_url       => 'https://app.deriv.com/account/proof-of-identity?lang=en',
+                    live_chat_url => 'https://deriv.com/en/?is_livechat_open=true',
+                    email         => $test_client->email,
+                    name          => $test_client->first_name,
+                    website_name  => 'Deriv.com'
+                }}
+            ],
+            'Age verified client';
+
+        undef @emit_args;
     };
 
     $mock_client->unmock_all;
@@ -4077,10 +4104,6 @@ subtest 'self tagging affiliates' => sub {
         language   => 'ID',
         app_id     => $app_id,
     );
-    request($req);
-    undef @identify_args;
-    undef @track_args;
-
     my $args = {
         properties => {
             email         => 'Backend@binary.com',
@@ -4092,6 +4115,62 @@ subtest 'self tagging affiliates' => sub {
     my $result  = $handler->($args)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
+};
+
+subtest 'bonus_reject|approve' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            full_name => $test_client->full_name,
+            brand     => $req->brand_name,
+            language  => 'EN',
+        }};
+
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{bonus_approve};
+    my $result  = $handler->($args)->get;
+
+    ok $result, 'Success result';
+    my ($customer, %args) = @track_args;
+    is_deeply $args->{properties},
+        {
+        full_name => $test_client->full_name,
+        brand     => 'deriv',
+        language  => 'EN',
+        },
+        'Bonus approved';
+    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+
+    undef @identify_args;
+    undef @track_args;
+
+    $handler = BOM::Event::Process->new(category => 'track')->actions->{bonus_reject};
+    $result  = $handler->($args)->get;
+
+    ok $result, 'Success result';
+    ($customer, %args) = @track_args;
+    is_deeply $args->{properties},
+        {
+        full_name => $test_client->full_name,
+        brand     => 'deriv',
+        language  => 'EN',
+        },
+        'Bonus rejected';
+    is $args{properties}->{loginid}, $test_client->loginid, "Got correct customer loginid";
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
 };
 
 subtest 'request edd document upload' => sub {
