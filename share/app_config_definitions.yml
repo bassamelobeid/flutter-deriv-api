@@ -1066,6 +1066,14 @@ system:
   description: "Various parameters determining core application functionality"
   isa: section
   contains:
+    onfido:
+      isa: section
+      contains:
+        global_daily_limit:
+          description: global daily limits for onfido requests
+          default: 5000
+          isa: Num
+          global: 1
     suspend:
       description: "Suspend one or more of our services"
       isa: section
