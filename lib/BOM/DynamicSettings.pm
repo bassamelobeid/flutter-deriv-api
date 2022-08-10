@@ -273,6 +273,7 @@ sub get_settings_by_group {
                 system.suspend.idv
                 system.suspend.idv_countries
                 system.suspend.idv_providers
+                system.onfido.global_daily_limit
                 system.suspend.access_token_sharing
                 system.mt5.load_balance.demo.all.p01_ts01
                 system.mt5.load_balance.demo.all.p01_ts02
