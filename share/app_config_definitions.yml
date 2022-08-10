@@ -470,25 +470,35 @@ payments:
           default: '{}'
           global: 1
         float_rate_global_max_range:
-            isa: Num
-            description: 'Total range of floating rate allowed for adverts unless overridden per country. E.g. 10 means -5% to +5%.'
-            default: 10
-            global: 1
+          isa: Num
+          description: 'Total range of floating rate allowed for adverts unless overridden per country. E.g. 10 means -5% to +5%.'
+          default: 10
+          global: 1
         float_rate_order_slippage:
-            isa: Num
-            description: 'Total allowed slippage from market rate when placing orders on floating rate ads. E.g. 1.0 means -0.5% to +0.5%.'
-            default: 1
-            global: 1
+          isa: Num
+          description: 'Total allowed slippage from market rate when placing orders on floating rate ads. E.g. 1.0 means -0.5% to +0.5%.'
+          default: 1
+          global: 1
         email_campaign_ids:
           description: "IDs of Customer.io email Broadcast campaigns triggered by events."
           isa: json_string
           default: '{ "float_rate_notice": "210", "fixed_rate_disabled": "211", "float_rate_disabled": "212" }'
           global: 1
         review_period:
-            isa: Num
-            description: 'Period (in hours) after an order is completed during which users can create a review.'
-            default: 24
-            global: 1
+          isa: Num
+          description: 'Period (in hours) after an order is completed during which users can create a review.'
+          default: 24
+          global: 1
+        transaction_verification_countries:
+          description: 'List of countries to include or exclude from order transaction verrification, per transaction_verification_countries_all setting. 2 letter lower case country codes.'
+          isa: ArrayRef
+          global: 1
+          default: []
+        transaction_verification_countries_all:
+          description: 'If enabled, all P2P countries will have order transaction enabled except countries in transaction_verification_countries setting. If disabled, only transaction_verification_countries will have order transaction verification.'
+          isa: Bool
+          global: 1
+          default: 0
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
