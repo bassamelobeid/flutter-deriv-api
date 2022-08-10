@@ -35,6 +35,8 @@ $app_config->payments->p2p->enabled(1);
 $app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
 $app_config->payments->p2p->cancellation_barring->count(2);
 $app_config->payments->p2p->cancellation_barring->period(2);
+$app_config->payments->p2p->transaction_verification_countries([]);
+$app_config->payments->p2p->transaction_verification_countries_all(0);
 
 my $email_advertiser = 'p2p_advertiser@test.com';
 my $email_client     = 'p2p_client@test.com';
@@ -877,8 +879,9 @@ subtest 'P2P Order Info' => sub {
             disputer_loginid => undef,
             dispute_reason   => undef
         },
-        is_reviewable => 0,
-        stash         => {
+        is_reviewable        => 0,
+        verification_pending => 0,
+        stash                => {
             source_bypass_verification => 0,
             app_markup_percentage      => '0',
             valid_source               => 1

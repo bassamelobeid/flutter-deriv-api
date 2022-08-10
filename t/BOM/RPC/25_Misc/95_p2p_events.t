@@ -22,6 +22,8 @@ my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->system->suspend->p2p(0);
 $app_config->payments->p2p->enabled(1);
 $app_config->payments->p2p->available_for_currencies(['usd']);
+$app_config->payments->p2p->transaction_verification_countries([]);
+$app_config->payments->p2p->transaction_verification_countries_all(0);
 
 my $call_args;
 
