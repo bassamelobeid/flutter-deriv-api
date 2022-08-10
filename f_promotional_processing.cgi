@@ -7,12 +7,13 @@ use JSON::MaybeXS;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Event::Emitter;
 use BOM::Platform::Locale;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use Syntax::Keyword::Try;
+use Format::Util::Numbers qw/formatnumber financialrounding/;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -103,16 +104,17 @@ Returns undef
 sub process_bonus_claim {
     my ($client, $approved, $amount, $notify) = @_;
 
+    $amount //= 0;
     my $json  = JSON::MaybeXS->new();
     my $clerk = BOM::Backoffice::Auth0::get_staffname();
     my $brand = request()->brand;
 
-    my $tac_url     = $brand->tnc_approval_url . '?anchor=free-bonus#legal-binary';
+    my $tac_url     = $brand->tnc_approval_url({language => uc($client->user->preferred_language)}) . '?anchor=free-bonus#legal-binary';
     my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
-    my $email_content;
-    my $template_name;
-    my $loginid = $client->loginid;
+    my $loginid     = $client->loginid;
     my $result;
+    my $event_name;
+    my $currency;
 
     if ($approved) {
 
@@ -121,7 +123,7 @@ sub process_bonus_claim {
         my $pc  = $cpc->promotion;
         $pc->{_json} = eval { $json->decode($pc->promo_code_config) } || {};
 
-        my $currency = $pc->{_json}->{currency}
+        $currency = $pc->{_json}->{currency}
             || return "Failed to approve $loginid: no currency for promocode $pc";
         if ($currency eq 'ALL') {
             $currency = $client->currency;
@@ -139,47 +141,35 @@ sub process_bonus_claim {
                 staff    => $clerk,
             );
         }
-        $template_name = 'bonus_approve';
-        $email_content = {
-            name         => $client_name,
-            currency     => $currency,
-            amount       => $amount,
-            tac_url      => $tac_url,
-            website_name => $brand->website_name,
-        };
-
-        $result = "$loginid: bonus credited ($currency $amount)";
+        $event_name = 'bonus_approve';
+        $result     = "$loginid: bonus credited ($currency $amount)";
 
     } else {
-        # reject client
-
+        # Reject client
         if ($client->promo_code_status eq 'APPROVAL') {
             $client->promo_code_status('REJECT');
             $client->save();
         }
 
-        $template_name = 'bonus_reject';
-        $email_content = {
-            name         => $client_name,
-            tac_url      => $tac_url,
-            website_name => $brand->website_name,
-        };
-
-        $result = "$loginid: bonus rejected";
+        $event_name = 'bonus_reject';
+        $result     = "$loginid: bonus rejected";
     }
 
     if ($notify) {
-        send_email({
-            from                  => request()->brand->emails('support'),
-            to                    => $client->email,
-            template_name         => $template_name,
-            template_args         => $email_content,
-            template_loginid      => $client->loginid,
-            email_content_is_html => 1,
-            use_email_template    => 1,
-            use_event             => 1,
-            language              => $client->user->preferred_language
-        });
+        BOM::Platform::Event::Emitter::emit(
+            $event_name => {
+                loginid    => $client->loginid,
+                properties => {
+                    language     => $client->user->preferred_language,
+                    email        => $client->email,
+                    full_name    => $client->full_name,
+                    website_name => $brand->website_name,
+                    contact_url  => $brand->contact_url({language => uc($client->user->preferred_language // request->language // 'en')}),
+                    poi_url      => $brand->authentication_url({language => uc($client->user->preferred_language // request->language // 'en')}),
+                    currency     => $currency // '',
+                    amount       => formatnumber('amount', $currency, $amount),
+                    tac_url      => $tac_url
+                }});
     }
     return $result;
 }
