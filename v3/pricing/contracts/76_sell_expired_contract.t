@@ -54,10 +54,10 @@ my $call_params;
         sell_expired => 1,
         req_id       => 123,
     });
-is $call_params->{token}, $token;
-is $response->{msg_type}, 'sell_expired';
+is $call_params->{token},                 $token;
+is $response->{msg_type},                 'sell_expired';
 is $response->{echo_req}->{sell_expired}, 1;
 is $response->{echo_req}->{req_id},       123;
-is $response->{req_id}, 123;
+is $response->{req_id},                   123;
 
 done_testing();

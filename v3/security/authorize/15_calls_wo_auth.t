@@ -7,9 +7,9 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request/;
 use Test::MockModule;
 use BOM::Config::Runtime;
-use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::Test::Helper::ExchangeRates             qw/populate_exchange_rates/;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use JSON::MaybeUTF8 qw/decode_json_utf8/;
+use JSON::MaybeUTF8                              qw/decode_json_utf8/;
 
 use await;
 
@@ -33,14 +33,14 @@ is $res->{error}->{code}, 'InputValidationFailed';
 # landing_company
 $res = $t->await::landing_company({landing_company => 'de'});
 ok $res->{landing_company};
-is $res->{landing_company}->{name}, 'Germany';
+is $res->{landing_company}->{name},                           'Germany';
 is $res->{landing_company}->{financial_company}->{shortcode}, 'maltainvest';
 is $res->{landing_company}->{gaming_company}->{shortcode},    undef;
 test_schema('landing_company', $res);
 
 $res = $t->await::landing_company({landing_company => 'im'});
 ok $res->{landing_company};
-is $res->{landing_company}->{name}, 'Isle of Man';
+is $res->{landing_company}->{name},                           'Isle of Man';
 is $res->{landing_company}->{financial_company}->{shortcode}, undef;
 is $res->{landing_company}->{gaming_company}->{shortcode},    undef;
 test_schema('landing_company', $res);

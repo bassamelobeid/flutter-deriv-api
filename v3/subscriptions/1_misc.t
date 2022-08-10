@@ -7,7 +7,7 @@ no indirect;
 use Test::More;
 use IO::Async::Loop;
 use Future::Utils qw( fmap0 );
-use feature qw(state);
+use feature       qw(state);
 
 ok(1, 'SKIP THE TEST');
 

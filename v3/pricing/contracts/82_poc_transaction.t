@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data build_mojo_test/;
+use BOM::Test::Helper                          qw/test_schema build_wsapi_test build_test_R_50_data build_mojo_test/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -174,7 +174,7 @@ subtest 'sell a contract and test' => sub {
             ++$try;
         } while ($try < 3 && $poc->{is_sold} == 0);
 
-        is $poc->{is_sold}, 1, 'got the sell poc response';
+        is $poc->{is_sold},     1,                  'got the sell poc response';
         is $poc->{contract_id}, $contract_ids->[0], 'contract id is correct';
 
         test_subscriptions($c, 0);

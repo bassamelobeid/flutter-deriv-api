@@ -10,7 +10,7 @@ use Test::Refcount;
 use Test::MockModule;
 use Scalar::Util qw(weaken);
 
-use BOM::Test::Helper qw/test_schema build_mojo_test build_test_R_50_data/;
+use BOM::Test::Helper                         qw/test_schema build_mojo_test build_test_R_50_data/;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use await;

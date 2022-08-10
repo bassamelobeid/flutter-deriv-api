@@ -24,10 +24,10 @@ is_deeply(\%tags,  {}, 'start with no tags');
 
 use BOM::Config::Redis;
 use Sereal::Encoder;
-use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
+use BOM::Test::Helper                          qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::Product::ContractFactory qw(produce_contract);
 
 use Quant::Framework;
@@ -205,12 +205,12 @@ if ($res->{error}) {
         cmp_ok pricer_sub_count(), '==', 6, "6 pricer sub Ok";
 
         $res = $t->await::forget({forget => [values(%$sub_ids)]->[0]});
-        cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
+        cmp_ok $res->{forget},     '==', 1, 'Correct number of subscription forget';
         cmp_ok pricer_sub_count(), '==', 5, "price count checking";
 
         $res = $t->await::forget_all({forget_all => 'proposal'});
         is scalar @{$res->{forget_all}}, 5, 'Correct number of subscription forget';
-        is pricer_sub_count(), 0, "price count checking";
+        is pricer_sub_count(),           0, "price count checking";
     };
 }
 

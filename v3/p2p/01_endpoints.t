@@ -10,8 +10,8 @@ use await;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw(top_up);
-use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
+use BOM::Test::Helper::Client                  qw(top_up);
+use BOM::Test::Helper::Token                   qw(cleanup_redis_tokens);
 use BOM::Test::Helper::P2P;
 use BOM::User::Client;
 use BOM::Platform::Token::API;
@@ -22,16 +22,15 @@ use BOM::User::Script::P2PDailyMaintenance;
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
-$app_config->set({'payments.p2p.enabled'                  => 1});
-$app_config->set({'system.suspend.p2p'                    => 0});
-$app_config->set({'payments.p2p.available'                => 1});
-$app_config->set({'payments.p2p.restricted_countries'     => []});
-$app_config->set({'payments.p2p.available_for_currencies' => ['usd']});
-$app_config->set({'payments.p2p.limits.maximum_order'     => 10});
-$app_config->set({'payments.p2p.archive_ads_days'         => 10});
-$app_config->set({'payments.p2p.transaction_verification_countries' => []});
+$app_config->set({'payments.p2p.enabled'                                => 1});
+$app_config->set({'system.suspend.p2p'                                  => 0});
+$app_config->set({'payments.p2p.available'                              => 1});
+$app_config->set({'payments.p2p.restricted_countries'                   => []});
+$app_config->set({'payments.p2p.available_for_currencies'               => ['usd']});
+$app_config->set({'payments.p2p.limits.maximum_order'                   => 10});
+$app_config->set({'payments.p2p.archive_ads_days'                       => 10});
+$app_config->set({'payments.p2p.transaction_verification_countries'     => []});
 $app_config->set({'payments.p2p.transaction_verification_countries_all' => 0});
-
 
 my $t = build_wsapi_test();
 
@@ -143,7 +142,7 @@ subtest 'create advertiser' => sub {
     $advertiser = $resp->{p2p_advertiser_create};
 
     is $advertiser->{$_}, $advertiser_params{$_}, "advertiser $_" for qw( name contact_info default_advert_description payment_info );
-    ok $advertiser->{id} > 0, 'advertiser id';
+    ok $advertiser->{id} > 0,       'advertiser id';
     ok !$advertiser->{is_approved}, 'advertiser not approved';
     ok $advertiser->{is_listed},    "advertiser's adverts are listed";
     is $advertiser->{chat_user_id}, 'dummy', 'chat user id';    # from mocked sendbird
@@ -207,7 +206,7 @@ subtest 'update advertiser' => sub {
             default_advert_description => $desc,
             payment_info               => $payment,
         })->{p2p_advertiser_update};
-    ok $advertiser->{is_listed},                  "is_listed updated";
+    ok $advertiser->{is_listed}, "is_listed updated";
     is $advertiser->{payment_info},               $payment, 'advertiser payment_info updated';
     is $advertiser->{default_advert_description}, $desc,    'advertiser default_advert_description updated';
     is $advertiser->{contact_info},               $contact, 'advertiser contact_info updated';
@@ -263,7 +262,7 @@ subtest 'chat token' => sub {
             service       => 'sendbird',
         })->{service_token};
 
-    is $serivce_token->{sendbird}{token},       'dummy', 'got token';    # from mocked sendbird
+    is $serivce_token->{sendbird}{token}, 'dummy', 'got token';    # from mocked sendbird
     ok $serivce_token->{sendbird}{expiry_time}, 'got expiry time';
     ok $serivce_token->{sendbird}{app_id},      'got app id';
 
@@ -285,13 +284,13 @@ subtest 'create advert (sell)' => sub {
     test_schema('p2p_advert_create', $resp);
     $advert = $resp->{p2p_advert_create};
 
-    is $advert->{account_currency}, $client_advertiser->account->currency_code, 'account currency';
-    is $advert->{advertiser_details}{id}, $advertiser->{id}, 'advertiser id';
+    is $advert->{account_currency},       $client_advertiser->account->currency_code, 'account currency';
+    is $advert->{advertiser_details}{id}, $advertiser->{id},                          'advertiser id';
     ok $advert->{amount} == $advert_params{amount}           && $advert->{amount_display} == $advert_params{amount},           'amount';
     ok $advert->{remaining_amount} == $advert_params{amount} && $advert->{remaining_amount_display} == $advert_params{amount}, 'remaining';
-    is $advert->{country}, $client_advertiser->residence, 'country';
-    is $advert->{description}, $advert_params{description}, 'description';
-    ok $advert->{id} > 0, 'advert id';
+    is $advert->{country},     $client_advertiser->residence, 'country';
+    is $advert->{description}, $advert_params{description},   'description';
+    ok $advert->{id} > 0,    'advert id';
     ok $advert->{is_active}, 'is active';
     is $advert->{local_currency}, $advert_params{local_currency}, 'local currency';
     ok $advert->{max_order_amount} == $advert_params{max_order_amount} && $advert->{max_order_amount_display} == $advert_params{max_order_amount},
@@ -301,7 +300,7 @@ subtest 'create advert (sell)' => sub {
     is $advert->{type},          $advert_params{type},         'type';
     is $advert->{payment_info},  $advert_params{payment_info}, 'payment_info';
     is $advert->{contact_info},  $advert_params{contact_info}, 'contact_info';
-    is $advert->{active_orders}, 0, 'active_orders';
+    is $advert->{active_orders}, 0,                            'active_orders';
 
     BOM::User::Script::P2PDailyMaintenance->new->run;
     $advert->{days_until_archive} = 10;    # not returned for new ad
@@ -363,22 +362,22 @@ subtest 'create order (buy)' => sub {
     });
     test_schema('p2p_order_create', $resp);
     $order = $resp->{p2p_order_create};
-    is $order->{account_currency}, $client_advertiser->account->currency_code, 'account currency';
-    is $order->{advertiser_details}{id}, $advertiser->{id}, 'advertiser id';
-    is $order->{advertiser_details}{name}, $advertiser_params{name}, 'advertiser name';
+    is $order->{account_currency},         $client_advertiser->account->currency_code, 'account currency';
+    is $order->{advertiser_details}{id},   $advertiser->{id},                          'advertiser id';
+    is $order->{advertiser_details}{name}, $advertiser_params{name},                   'advertiser name';
     ok $order->{amount} == $amount && $order->{amount_display} == $amount, 'amount';
-    ok $order->{expiry_time}, 'expiry time';
-    is $order->{local_currency}, $advert_params{local_currency}, 'local currency';
-    is $order->{advert_details}{id}, $advert->{id}, 'advert id';
-    ok $order->{price} == $price && $order->{price_display} == $price, 'price';
+    ok $order->{expiry_time},                                              'expiry time';
+    is $order->{local_currency},     $advert_params{local_currency}, 'local currency';
+    is $order->{advert_details}{id}, $advert->{id},                  'advert id';
+    ok $order->{price} == $price         && $order->{price_display} == $price,                 'price';
     ok $order->{rate} == $advert->{rate} && $order->{rate_display} == $advert->{rate_display}, 'rate';
-    is $order->{status}, 'pending', 'status';
-    is $order->{advert_details}{type}, $advert->{type}, 'type';
-    is $order->{type},         'buy', 'type';
-    is $order->{payment_info}, $advert->{payment_info}, 'payment_info copied from ad';
-    is $order->{contact_info}, $advert->{contact_info}, 'contact_info copied from ad';
-    is $order->{client_details}{id}, $client_adv_info->{id}, 'client id';
-    is $order->{client_details}{name}, 'Testclient', 'client name';
+    is $order->{status},               'pending',               'status';
+    is $order->{advert_details}{type}, $advert->{type},         'type';
+    is $order->{type},                 'buy',                   'type';
+    is $order->{payment_info},         $advert->{payment_info}, 'payment_info copied from ad';
+    is $order->{contact_info},         $advert->{contact_info}, 'contact_info copied from ad';
+    is $order->{client_details}{id},   $client_adv_info->{id},  'client id';
+    is $order->{client_details}{name}, 'Testclient',            'client name';
 
     $resp = $t->await::p2p_order_list({
         p2p_order_list => 1,
@@ -418,27 +417,28 @@ subtest 'create chat' => sub {
             p2p_chat_create => 1,
             order_id        => $order->{id}})->{p2p_chat_create};
 
-    is $chat->{channel_url}, 'dummy', 'chat channel url';    # from mocked sendbird
-    is $chat->{order_id}, $order->{id}, 'order id';
+    is $chat->{channel_url}, 'dummy',      'chat channel url';    # from mocked sendbird
+    is $chat->{order_id},    $order->{id}, 'order id';
 };
 
 subtest 'confirm order' => sub {
     $t->await::authorize({authorize => $token_client});
-    
+
     $resp = $t->await::p2p_order_confirm({
-            p2p_order_confirm => 1,
-            id                => $order->{id},
-            dry_run           => 1,
-            verification_code => 'abc'});
+        p2p_order_confirm => 1,
+        id                => $order->{id},
+        dry_run           => 1,
+        verification_code => 'abc'
+    });
     test_schema('p2p_order_confirm', $resp);
-    is $resp->{p2p_order_confirm}{id}, $order->{id}, 'client confirm: order id';
-    is $resp->{p2p_order_confirm}{dry_run}, 1, 'client confirm: dry_run';
-    
+    is $resp->{p2p_order_confirm}{id},      $order->{id}, 'client confirm: order id';
+    is $resp->{p2p_order_confirm}{dry_run}, 1,            'client confirm: dry_run';
+
     $resp = $t->await::p2p_order_confirm({
             p2p_order_confirm => 1,
             id                => $order->{id}});
     test_schema('p2p_order_confirm', $resp);
-    is $resp->{p2p_order_confirm}{id}, $order->{id}, 'client confirm: order id';
+    is $resp->{p2p_order_confirm}{id},     $order->{id},      'client confirm: order id';
     is $resp->{p2p_order_confirm}{status}, 'buyer-confirmed', 'client confirm: status';
 
     $t->await::authorize({authorize => $token_advertiser});
@@ -446,8 +446,8 @@ subtest 'confirm order' => sub {
             p2p_order_confirm => 1,
             id                => $order->{id}});
     test_schema('p2p_order_confirm', $resp);
-    is $resp->{p2p_order_confirm}{id}, $order->{id}, 'advertiser_confirm: order id';
-    is $resp->{p2p_order_confirm}{status}, 'completed', 'advertiser_confirm: status';
+    is $resp->{p2p_order_confirm}{id},     $order->{id}, 'advertiser_confirm: order id';
+    is $resp->{p2p_order_confirm}{status}, 'completed',  'advertiser_confirm: status';
 };
 
 subtest 'cancel order' => sub {
@@ -461,8 +461,8 @@ subtest 'cancel order' => sub {
             p2p_order_cancel => 1,
             id               => $order->{id}});
     test_schema('p2p_order_cancel', $resp);
-    is $resp->{p2p_order_cancel}{id}, $order->{id}, 'order id';
-    is $resp->{p2p_order_cancel}{status}, 'cancelled', 'status';
+    is $resp->{p2p_order_cancel}{id},     $order->{id}, 'order id';
+    is $resp->{p2p_order_cancel}{status}, 'cancelled',  'status';
 };
 
 subtest 'buy advert/sell order' => sub {
@@ -504,8 +504,8 @@ subtest 'dispute a order' => sub {
             id                => $order->{id}});
     test_schema('p2p_order_dispute', $resp);
 
-    is $resp->{p2p_order_dispute}{id}, $order->{id}, 'order id';
-    is $resp->{p2p_order_dispute}{dispute_details}{dispute_reason}, 'buyer_not_paid', 'Dispute reason properly set';
+    is $resp->{p2p_order_dispute}{id},                                $order->{id},            'order id';
+    is $resp->{p2p_order_dispute}{dispute_details}{dispute_reason},   'buyer_not_paid',        'Dispute reason properly set';
     is $resp->{p2p_order_dispute}{dispute_details}{disputer_loginid}, $client_client->loginid, 'Client is the disputer';
 };
 

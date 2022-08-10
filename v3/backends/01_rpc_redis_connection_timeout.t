@@ -4,7 +4,7 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
-use Scalar::Util qw( looks_like_number );
+use Scalar::Util    qw( looks_like_number );
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use Mojo::IOLoop;
 
@@ -56,7 +56,7 @@ SKIP: {
 
         my $request = {states_list => 'be'};
         ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';
-        ok !$response->{error}, 'There is no error in response';
+        ok !$response->{error},             'There is no error in response';
         ok $response = pop @queue_requests, 'Request was handled via consumer groups backend';
         is_deeply $response->{args}, $request, "Request and Response's args are equal";
         ok !@http_requests, 'No request is handled by http backend';
@@ -69,7 +69,7 @@ SKIP: {
         $redis->flushdb();
 
         ok $response = send_request($request, 'states_list'), 'Response received after stopping Consumer';
-        ok $response->{error}, 'Response contains error paramater';
+        ok $response->{error},                                'Response contains error paramater';
         is $response->{error}->{code}, 'WrongResponse', 'Response error is WrongResponse because of timeout and as our expectation';
 
         my $stream_len = $redis->execute("XLEN", "general");
@@ -112,7 +112,7 @@ subtest 'redis connnection loss' => sub {
 
     my $request = {states_list => 'be'};
     ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';
-    ok !$response->{error}, 'There is no error in response';
+    ok !$response->{error},             'There is no error in response';
     ok $response = pop @queue_requests, 'Request was handled via consumer groups backend';
     is_deeply $response->{args}, $request, "Request and Response's args are equal";
     ok !@http_requests, 'No request is handled by http backend';

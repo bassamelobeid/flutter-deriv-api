@@ -5,7 +5,7 @@ use Test::More;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
-use Net::EmptyPort qw(empty_port);
+use Net::EmptyPort    qw(empty_port);
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -213,8 +213,8 @@ subtest "try to sell: dummy tokens => success", sub {
         price                               => 2.42,
         tokens                              => ['DUMMY0', 'DUMMY1'],
     });
-    isa_ok $res->{sell_contract_for_multiple_accounts}, 'HASH';
-    isa_ok $res->{sell_contract_for_multiple_accounts}{result}, 'ARRAY';
+    isa_ok $res->{sell_contract_for_multiple_accounts},              'HASH';
+    isa_ok $res->{sell_contract_for_multiple_accounts}{result},      'ARRAY';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
 
     is_deeply $res->{sell_contract_for_multiple_accounts}{result},
@@ -241,7 +241,7 @@ subtest "sell_contract_for_multiple_accounts => successful", sub {
         price                               => 2.42,
         tokens                              => $tokens_for_sell,
     });
-    isa_ok $res->{sell_contract_for_multiple_accounts}{result}, 'ARRAY';
+    isa_ok $res->{sell_contract_for_multiple_accounts}{result},      'ARRAY';
     isa_ok $res->{sell_contract_for_multiple_accounts}{result}->[0], 'HASH';
     ok scalar @{$res->{sell_contract_for_multiple_accounts}{result}} == 3, 'check res count';
     ok(defined $res->{sell_contract_for_multiple_accounts}{result}->[0]->{transaction_id}, "check trx exist");

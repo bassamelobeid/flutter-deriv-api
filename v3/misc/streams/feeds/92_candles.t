@@ -1,9 +1,9 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::MockTime qw/:all/;
+use Test::MockTime  qw/:all/;
 use JSON::MaybeUTF8 qw/encode_json_utf8 decode_json_utf8/;
-use FindBin qw/$Bin/;
+use FindBin         qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Config::Redis;

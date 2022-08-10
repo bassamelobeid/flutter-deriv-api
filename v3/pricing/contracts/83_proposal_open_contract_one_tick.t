@@ -8,7 +8,7 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data build_mojo_test/;
-use Net::EmptyPort qw(empty_port);
+use Net::EmptyPort    qw(empty_port);
 use Test::MockModule;
 use Test::MockObject;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -104,9 +104,9 @@ subtest 'buy n check' => sub {
     is $data->{msg_type}, 'proposal_open_contract';
     ok $data->{echo_req};
     ok $data->{proposal_open_contract}->{contract_id};
-    ok $data->{proposal_open_contract}->{id},          'There is an id';
+    ok $data->{proposal_open_contract}->{id}, 'There is an id';
     is $data->{subscription}->{id},                    $data->{proposal_open_contract}->{id}, 'The same subscription id';
-    is $data->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
+    is $data->{proposal_open_contract}->{contract_id}, $contract_id,                          'got correct contract from proposal open contracts';
     test_schema('proposal_open_contract', $data);
 
 };

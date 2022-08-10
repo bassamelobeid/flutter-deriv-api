@@ -131,7 +131,7 @@ subtest 'ticks_forget_one_sub' => sub {
 
     $res = $t->await::ohlc;
     cmp_ok $res->{msg_type}, 'eq', 'ohlc', "Recived ohlc response ok";
-    is $res->{ohlc}{id}, $id1, "Subscription id ok";
+    is $res->{ohlc}{id},           $id1, "Subscription id ok";
     is $res->{subscription}->{id}, $id1, 'The same subscription->id';
 
     $res = $t->await::history($req2);

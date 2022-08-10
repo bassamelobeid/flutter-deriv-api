@@ -3,10 +3,10 @@ use warnings;
 use Test::More;
 use Test::MockModule;
 
-use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use BOM::Test::Helper                          qw/test_schema build_wsapi_test/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
+use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
 
 use BOM::Platform::Token::API;
 use BOM::Config::Redis;

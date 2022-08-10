@@ -7,7 +7,7 @@ use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use BOM::Test::Helper        qw/test_schema build_wsapi_test/;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 
 use BOM::User::Client;

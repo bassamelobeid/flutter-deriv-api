@@ -5,7 +5,7 @@ use Test::More;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
-use Scalar::Util qw( looks_like_number );
+use Scalar::Util      qw( looks_like_number );
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

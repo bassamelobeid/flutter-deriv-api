@@ -57,7 +57,7 @@ my $t = build_wsapi_test();
     });
 
     is $res->{echo_req}->{website_status}, 1;
-    is $res->{req_id}, 3;
+    is $res->{req_id},                     3;
 
 }
 
@@ -85,7 +85,7 @@ my $t = build_wsapi_test();
         req_id => 123
     });
     is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation failed';
-    is $res->{req_id}, 123, 'Response contains matching req_id';
+    is $res->{req_id},        123,                     'Response contains matching req_id';
 }
 
 {

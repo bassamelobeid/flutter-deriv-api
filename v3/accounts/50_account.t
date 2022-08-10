@@ -181,7 +181,7 @@ subtest 'balance' => sub {
     my $res = $t->await::balance({balance => 1});
     ok $res->{balance};
     is $res->{balance}->{id}, undef, 'No id for non-subscribers';
-    is $res->{subscription}, undef, 'Not subscription id';
+    is $res->{subscription},  undef, 'Not subscription id';
     test_schema('balance', $res);
 
     $res = $t->await::balance({
@@ -190,7 +190,7 @@ subtest 'balance' => sub {
     });
     ok $res->{balance};
     is $res->{balance}->{id}, undef, 'No id for non-subscribers';
-    is $res->{subscription}, undef, 'Not subscription id';
+    is $res->{subscription},  undef, 'Not subscription id';
     test_schema('balance', $res);
 
     $res = $t->await::balance({
@@ -249,7 +249,7 @@ ok exists $call_params->{token};
 
 my $res = $t->await::get_limits({get_limits => 1});
 ok($res->{get_limits});
-is $res->{msg_type}, 'get_limits';
+is $res->{msg_type},                     'get_limits';
 is $res->{get_limits}->{open_positions}, 100;
 test_schema('get_limits', $res);
 

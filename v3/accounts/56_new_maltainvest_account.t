@@ -8,7 +8,7 @@ use lib "$Bin/../lib";
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Account::Virtual;
 
-use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use BOM::Test::Helper                          qw/test_schema build_wsapi_test/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
@@ -760,7 +760,7 @@ subtest 'Address validation' => sub {
     my $cli = BOM::User::Client->new({loginid => $res->{new_account_maltainvest}->{client_id}});
     is $cli->address_line_1, $details{address_line_1}, 'Expected address line 1';
     is $cli->address_line_2, $details{address_line_2}, 'Expected address line 2';
-    is $cli->address_state,  'HH', 'State name is convered into state code';
+    is $cli->address_state,  'HH',                     'State name is convered into state code';
 
 };
 

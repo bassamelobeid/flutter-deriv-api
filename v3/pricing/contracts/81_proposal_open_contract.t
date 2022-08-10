@@ -10,7 +10,7 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data build_mojo_test/;
-use Net::EmptyPort qw(empty_port);
+use Net::EmptyPort    qw(empty_port);
 use Test::MockModule;
 use Test::MockObject;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -92,9 +92,9 @@ subtest 'buy n check' => sub {
 
     #call without subscription
     $data = $t->await::proposal_open_contract({proposal_open_contract => 1});
-    is $data->{msg_type}, 'proposal_open_contract';
+    is $data->{msg_type},                     'proposal_open_contract';
     is $data->{proposal_open_contract}->{id}, undef, 'No id for non-subscribed calls';
-    is $data->{subscription}, undef, 'There is not a subscription key';
+    is $data->{subscription},                 undef, 'There is not a subscription key';
     ok $data->{proposal_open_contract}->{contract_id}, 'There is a contract id';
     is $data->{proposal_open_contract}->{contract_id}, $contract_id, 'Contract id is the same as the value returned by <buy>';
     test_schema('proposal_open_contract', $data);
@@ -107,9 +107,9 @@ subtest 'buy n check' => sub {
     is $data->{msg_type}, 'proposal_open_contract';
     ok $data->{echo_req};
     ok $data->{proposal_open_contract}->{contract_id};
-    ok $data->{proposal_open_contract}->{id},          'There is an id';
+    ok $data->{proposal_open_contract}->{id}, 'There is an id';
     is $data->{subscription}->{id},                    $data->{proposal_open_contract}->{id}, 'The same subscription id';
-    is $data->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
+    is $data->{proposal_open_contract}->{contract_id}, $contract_id,                          'got correct contract from proposal open contracts';
     $subscription_id = $data->{subscription}{id};
     test_schema('proposal_open_contract', $data);
 
@@ -142,7 +142,7 @@ subtest 'expiryd should sell the contract' => sub {
             ++$try;
         } while ($try < 10 && $poc->{is_sold} == 0);
 
-        is $poc->{is_sold}, 1, 'got the sell poc response';
+        is $poc->{is_sold},     1,            'got the sell poc response';
         is $poc->{contract_id}, $contract_id, 'contract id is correct';
     }
 };
@@ -185,7 +185,7 @@ subtest 'forget' => sub {
         price      => 2,
         subscribe  => 1
     });
-    ok !$data->{error}, 'No error';
+    ok !$data->{error},             'No error';
     ok $data->{buy}->{contract_id}, 'got contract id';
     ok my $uuid2 = $data->{subscription}->{id}, 'Subscription id 2';
     $subscription_id = $data->{subscription}{id};
@@ -195,8 +195,8 @@ subtest 'forget' => sub {
     is $data->{forget}, 1, 'Subscription 1 is forgotten here';
 
     $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
-    is scalar @{$data->{forget_all}}, 1, 'One subscription left';
-    is $data->{forget_all}->[0], $uuid2, 'Subscription 2 is forgotten here';
+    is scalar @{$data->{forget_all}}, 1,      'One subscription left';
+    is $data->{forget_all}->[0],      $uuid2, 'Subscription 2 is forgotten here';
 };
 
 subtest 'check two contracts subscription' => sub {

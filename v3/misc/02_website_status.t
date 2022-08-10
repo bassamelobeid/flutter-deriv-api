@@ -11,7 +11,7 @@ use Test::MockModule;
 use Mojo::Redis2;
 use Clone;
 use BOM::Config::Chronicle;
-use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::Test::Helper::ExchangeRates             qw/populate_exchange_rates/;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 #we need this because of calculating max exchange rates on currency config
@@ -55,7 +55,7 @@ $t = $t->send_ok({
             subscribe      => 1
         }})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
-ok !$res->{error}, 'No error when subscribing';
+ok !$res->{error},                     'No error when subscribing';
 ok $uuid = $res->{subscription}->{id}, 'Subscription id is returned';
 
 $t = $t->send_ok({

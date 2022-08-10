@@ -4,11 +4,11 @@ use Test::More;
 use Test::Deep qw( cmp_deeply );
 
 use Date::Utility;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::MarketData qw(create_underlying);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::MarketData                              qw(create_underlying);
 use BOM::Config::Chronicle;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
