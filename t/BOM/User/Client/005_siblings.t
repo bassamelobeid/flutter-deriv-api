@@ -105,6 +105,54 @@ subtest 'copy_status_to_siblings' => sub {
     is $eth_client->status->$status_code->{reason},     'reason', "ETH client's status has been set with the correct reason";
 };
 
+subtest 'copy_status_to_all_accounts' => sub {
+    my $status_code = 'disabled';
+
+    my $user          = create_user();
+    my $usd_client    = create_client($user, 'USD');
+    my $btc_client    = create_client($user, 'BTC');
+    my $eth_client    = create_client($user, 'ETH');
+    my $usd_vr_client = create_client($user, 'USD', broker_code => 'VRTC');
+
+    $usd_client->status->set($status_code, 'user01', 'reason');
+
+    # prerequisites
+    ok $usd_client->status->$status_code,    "USD client has been set with $status_code";
+    is $btc_client->status->$status_code,    undef, "BTC client has NOT been set with $status_code";
+    is $eth_client->status->$status_code,    undef, "ETH client has NOT been set with $status_code";
+    is $usd_vr_client->status->$status_code, undef, "USD VRTC client has NOT been set with $status_code";
+    # /prerequisites
+
+    cmp_bag(
+        $usd_client->copy_status_to_siblings($status_code, 'user02', 1),
+        [$btc_client->loginid, $eth_client->loginid, $usd_vr_client->loginid],
+        'returns an array with the loginid of the updated accounts'
+    );
+
+    cmp_bag($usd_client->copy_status_to_siblings($status_code, 'user02', 1), [], 'returns an empty array');
+
+    $usd_client    = BOM::User::Client->new({loginid => $usd_client->loginid});
+    $btc_client    = BOM::User::Client->new({loginid => $btc_client->loginid});
+    $eth_client    = BOM::User::Client->new({loginid => $eth_client->loginid});
+    $usd_vr_client = BOM::User::Client->new({loginid => $usd_vr_client->loginid});
+
+    ok $usd_client->status->$status_code, "USD client is set with $status_code";
+    is $usd_client->status->$status_code->{staff_name}, 'user01', "USD client's status has been set with the correct staff name";
+    is $usd_client->status->$status_code->{reason},     'reason', "USD client's status has been set with the correct reason";
+
+    ok $btc_client->status->$status_code, "BTC client has been synced with $status_code";
+    is $btc_client->status->$status_code->{staff_name}, 'user02', "BTC client's status has been set with the correct staff name";
+    is $btc_client->status->$status_code->{reason},     'reason', "BTC client's status has been set with the correct reason";
+
+    ok $eth_client->status->$status_code, "ETH client has been synced with $status_code";
+    is $eth_client->status->$status_code->{staff_name}, 'user02', "ETH client's status has been set with the correct staff name";
+    is $eth_client->status->$status_code->{reason},     'reason', "ETH client's status has been set with the correct reason";
+
+    ok $usd_vr_client->status->$status_code, "USD VRTC client has been synced with $status_code";
+    is $usd_vr_client->status->$status_code->{staff_name}, 'user02', "USD VRTC client's status has been set with the correct staff name";
+    is $usd_vr_client->status->$status_code->{reason},     'reason', "USD VRTC client's status has been set with the correct reason";
+};
+
 subtest 'clear_status_and_sync_to_siblings' => sub {
     my $status_code = 'withdrawal_locked';
 
@@ -138,6 +186,45 @@ subtest 'clear_status_and_sync_to_siblings' => sub {
     is $usd_client->status->$status_code, undef, "USD client status $status_code has been cleared";
     is $btc_client->status->$status_code, undef, "BTC client status $status_code has been cleared";
     is $eth_client->status->$status_code, undef, "ETH client is not set with status $status_code";
+};
+
+subtest 'clear_status_and_sync_to_all_accounts' => sub {
+    my $status_code = 'disabled';
+
+    my $user          = create_user();
+    my $usd_client    = create_client($user, 'USD');
+    my $btc_client    = create_client($user, 'BTC');
+    my $usd_vr_client = create_client($user, 'USD', broker_code => 'VRTC');
+
+    $usd_client->status->set($status_code, 'user01', 'reason');
+    $usd_client->copy_status_to_siblings($status_code, 'user01', 1);
+
+    my $eth_client = create_client($user, 'ETH');
+
+    # prerequisites
+    ok $usd_client->status->$status_code,    "USD client has been set with $status_code";
+    ok $btc_client->status->$status_code,    "BTC client has been set with $status_code";
+    ok $usd_vr_client->status->$status_code, "USD VRTC client has been set with $status_code";
+    is $eth_client->status->$status_code,    undef, "ETH client is not set with status $status_code";
+    # /prerequisites
+
+    cmp_bag(
+        $btc_client->clear_status_and_sync_to_siblings($status_code, 'user01', 1),
+        [$usd_client->loginid, $btc_client->loginid, $usd_vr_client->loginid],
+        'returns an array with the loginid of the updated accounts'
+    );
+
+    cmp_bag($btc_client->clear_status_and_sync_to_siblings($status_code, 'user01', 1), [], 'returns an empty array');
+
+    $usd_client    = BOM::User::Client->new({loginid => $usd_client->loginid});
+    $btc_client    = BOM::User::Client->new({loginid => $btc_client->loginid});
+    $eth_client    = BOM::User::Client->new({loginid => $eth_client->loginid});
+    $usd_vr_client = BOM::User::Client->new({loginid => $usd_vr_client->loginid});
+
+    is $usd_client->status->$status_code,    undef, "USD client status $status_code has been cleared";
+    is $btc_client->status->$status_code,    undef, "BTC client status $status_code has been cleared";
+    is $eth_client->status->$status_code,    undef, "ETH client is not set with status $status_code";
+    is $usd_vr_client->status->$status_code, undef, "USD VRTC client is not set with status $status_code";
 };
 
 subtest 'get_sibling_loginids_without_status' => sub {

@@ -6313,16 +6313,25 @@ Returns an arrayref containing the loginids of the clients that have been update
 =cut
 
 sub copy_status_to_siblings {
-    my ($self, $status_code, $staff_name) = @_;
+    my ($self, $status_code, $staff_name, $all_accounts) = @_;
 
     $status_code                or die 'No status code provided';
     $staff_name                 or die 'No staff name provided';
     $self->status->$status_code or die $self->loginid . ": Can't copy $status_code to its siblings because it hasn't been set yet";
 
-    return $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_arrayref('SELECT betonmarkets.copy_client_status_to_siblings(?,?,?)', undef, $self->loginid, $status_code, $staff_name);
-        })->[0] // [];
+    if ($all_accounts) {
+        die "Only sync disabled status to all accounts" if $status_code ne 'disabled';
+        my @to_update;
+        foreach ($self->user->clients) {
+            push(@to_update, $_->loginid) if $_->status->setnx($status_code, $staff_name, $self->status->reason($status_code));
+        }
+        return [@to_update];
+    } else {
+        return $self->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_arrayref('SELECT betonmarkets.copy_client_status_to_siblings(?,?,?)', undef, $self->loginid, $status_code, $staff_name);
+            })->[0] // [];
+    }
 }
 
 =head2 clear_status_and_sync_to_siblings
@@ -6334,14 +6343,24 @@ Returns an array containing the loginids of the clients that have been updated.
 =cut
 
 sub clear_status_and_sync_to_siblings {
-    my ($self, $status_code) = @_;
+    my ($self, $status_code, $staff_name, $all_accounts) = @_;
 
     $status_code or die 'No status code provided';
 
-    return $self->db->dbic->run(
-        ping => sub {
-            $_->selectrow_arrayref('SELECT betonmarkets.clear_client_status_sync_all(?,?)', undef, $self->loginid, $status_code);
-        })->[0] // [];
+    if ($all_accounts) {
+        die "Only clear disabled status from all accounts" if $status_code ne 'disabled';
+        my @to_update;
+        foreach ($self->user->clients(include_disabled => 1)) {
+            my $clear_function = "clear_$status_code";
+            push(@to_update, $_->loginid) if $_->status->$clear_function;
+        }
+        return [@to_update];
+    } else {
+        return $self->db->dbic->run(
+            ping => sub {
+                $_->selectrow_arrayref('SELECT betonmarkets.clear_client_status_sync_all(?,?)', undef, $self->loginid, $status_code);
+            })->[0] // [];
+    }
 }
 
 =head2 get_sibling_loginids_without_status
