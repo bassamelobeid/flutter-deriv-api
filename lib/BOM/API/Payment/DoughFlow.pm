@@ -6,7 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use Scalar::Util qw/blessed/;
-use Time::HiRes qw(gettimeofday tv_interval);
+use Time::HiRes  qw(gettimeofday tv_interval);
 use BOM::API::Payment::DoughFlow::Backend;
 use BOM::Database::DataMapper::Payment;
 use BOM::API::Payment::Metric;

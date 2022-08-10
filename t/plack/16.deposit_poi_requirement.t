@@ -6,8 +6,8 @@ use Test::More;
 use Test::Deep;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use APIHelper qw(deposit_validate);
-use JSON::MaybeUTF8 qw(:v1);
+use APIHelper                                  qw(deposit_validate);
+use JSON::MaybeUTF8                            qw(:v1);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -38,7 +38,7 @@ $r = deposit_validate(
 );
 $resp = decode_json_utf8($r->content);
 
-is $resp->{allowed},   '0',                      'not allowed if method requires POI';
+is $resp->{allowed}, '0', 'not allowed if method requires POI';
 like $resp->{message}, qr/verify your identity/, 'correct response message';
 is $client->status->allow_document_upload->{reason}, 'Deposit attempted with method requiring POI (megaPay)',
     'allow_document_upload status added with correct reason';
@@ -116,7 +116,7 @@ subtest 'df deposit requires POI' => sub {
         payment_type      => 'CreditCard',
     );
     $resp = decode_json_utf8($r->content);
-    is $resp->{allowed},   '0',                                                                    'not allowed if the client is flagged';
+    is $resp->{allowed}, '0', 'not allowed if the client is flagged';
     like $resp->{message}, qr/You\'ve hit the deposit limit, we\'ll need to verify your identity/, 'correct response message';
 
     $r = deposit_validate(

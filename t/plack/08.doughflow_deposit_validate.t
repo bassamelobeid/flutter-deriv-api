@@ -4,7 +4,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
 use Test::MockModule;
-use APIHelper qw(balance deposit_validate);
+use APIHelper       qw(balance deposit_validate);
 use JSON::MaybeUTF8 qw(:v1);
 
 my $loginid = 'CR0011';
@@ -31,7 +31,7 @@ $r = deposit_validate(
     amount  => 'Zzz',
 );
 my $resp = decode_json_utf8($r->content);
-is $resp->{allowed},   0,                                                                                 'failed status';
+is $resp->{allowed}, 0, 'failed status';
 like $resp->{message}, qr[(Attribute \(amount\) does not pass the type constraint|Invalid money amount)], 'Correct error message on response body';
 
 subtest 'cashier validation' => sub {

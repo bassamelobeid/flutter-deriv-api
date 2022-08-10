@@ -53,7 +53,7 @@ $r = update_payout(
     trace_id => time(),
 );
 
-is $r->code,              400,                                                     'error code for bad trace_id';
+is $r->code, 400, 'error code for bad trace_id';
 like $r->decoded_content, qr/no corresponding original withdrawal could be found/, 'error message';
 is 0 + balance($loginid), 1, 'balance unchanged';
 
@@ -64,7 +64,7 @@ $r = update_payout(
     trace_id => $trace_id,
 );
 
-is $r->code,              400,                                                                      'error code for wrong amount';
+is $r->code, 400, 'error code for wrong amount';
 like $r->decoded_content, qr/this does not match the original DoughFlow withdrawal request amount/, 'error message';
 is 0 + balance($loginid), 1, 'balance unchanged';
 
@@ -86,7 +86,7 @@ $r = update_payout(
     trace_id => $trace_id,
 );
 
-is $r->code,              400,                                                        'error code for duplicate request';
+is $r->code, 400, 'error code for duplicate request';
 like $r->decoded_content, qr/multiple corresponding original withdrawals were found/, 'error message';
 is(0 + balance($loginid), 2, 'balance unchanged');
 

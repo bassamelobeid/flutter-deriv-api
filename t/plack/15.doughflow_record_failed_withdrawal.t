@@ -5,7 +5,7 @@ use lib "$Bin/lib";
 use Test::More;
 use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use APIHelper qw(record_failed_withdrawal);
+use APIHelper                                  qw(record_failed_withdrawal);
 use BOM::User::Client;
 use Test::MockModule;
 
