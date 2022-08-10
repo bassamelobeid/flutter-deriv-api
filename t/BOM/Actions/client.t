@@ -10,7 +10,7 @@ use Test::Fatal;
 use Test::Deep;
 use Guard;
 use Log::Any::Test;
-use Log::Any qw($log);
+use Log::Any                                   qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 
@@ -19,7 +19,7 @@ use BOM::Database::UserDB;
 use BOM::Database::ClientDB;
 use BOM::User;
 use BOM::Test::Script::OnfidoMock;
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context           qw(request);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 use WebService::Async::Onfido;
@@ -30,9 +30,9 @@ use BOM::Config::Redis;
 use BOM::Config::Runtime;
 
 use WebService::Async::SmartyStreets::Address;
-use Encode qw(encode_utf8);
+use Encode                 qw(encode_utf8);
 use Locale::Codes::Country qw(country_code2code);
-use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
+use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8);
 
 my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -524,7 +524,7 @@ subtest 'upload document' => sub {
             $content2 = $onfido->download_document(
                 applicant_id => $applicant_id,
                 document_id  => $doc->id
-                )->get
+            )->get
         }
         'download doc ok';
 
@@ -636,7 +636,7 @@ subtest "ready for run authentication" => sub {
             sub {
                 my $checks = $onfido->check_list(applicant_id => $consecutive_applicant->id)->as_arrayref->get;
                 is scalar @$checks, $checks_counter, 'Expected checks counter';
-                is $checks_counter, 1, 'One check done';
+                is $checks_counter, 1,               'One check done';
             });
         $f->get;
         $lock_mock->unmock_all;
@@ -753,7 +753,7 @@ subtest "client_verification" => sub {
         "client verification no exception";
 
         my $msg = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
-        ok $msg, 'Email sent';
+        ok $msg,                                                                    'Email sent';
         ok $redis_write->ttl('FORGED::EMAIL::LOCK::' . $test_client->loginid)->get, 'Cooldown has been set';
 
         mailbox_clear();
@@ -904,7 +904,7 @@ subtest 'client_verification after upload document himself' => sub {
         fixup => sub {
             $_->do(
                 'select users.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
-                undef,             $applicant2->id, Date::Utility->new($applicant2->created_at)->datetime_yyyymmdd_hhmmss,
+                undef, $applicant2->id, Date::Utility->new($applicant2->created_at)->datetime_yyyymmdd_hhmmss,
                 $applicant2->href, $test_client2->user_id
             );
         });
@@ -1554,9 +1554,9 @@ subtest 'account closure track' => sub {
     );
     request($req);
     $result = $action_handler->($call_args)->get;
-    isnt $result, undef, 'Empty result';
-    isnt scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
-    isnt scalar @track_args,    0, 'No track event is triggered when brand is binary';
+    isnt $result,               undef, 'Empty result';
+    isnt scalar @identify_args, 0,     'No identify event is triggered when brand is binary';
+    isnt scalar @track_args,    0,     'No track event is triggered when brand is binary';
 
     $mock_client->unmock_all;
 };
@@ -1723,9 +1723,9 @@ subtest 'api token create' => sub {
 
     request($req);
     $result = $action_handler->($call_args)->get;
-    isnt $result, undef, 'Empty result (not emitted)';
-    is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
-    isnt scalar @track_args,  0, 'No track event is triggered when brand is binary';
+    isnt $result,             undef, 'Empty result (not emitted)';
+    is scalar @identify_args, 0,     'No identify event is triggered when brand is binary';
+    isnt scalar @track_args,  0,     'No track event is triggered when brand is binary';
 };
 
 subtest 'api token delete' => sub {
@@ -1777,9 +1777,9 @@ subtest 'api token delete' => sub {
     );
     request($req);
     $result = $action_handler->($call_args)->get;
-    isnt $result, undef, 'Empty result (not emitted)';
-    is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
-    isnt scalar @track_args,  0, 'No track event is triggered when brand is binary';
+    isnt $result,             undef, 'Empty result (not emitted)';
+    is scalar @identify_args, 0,     'No identify event is triggered when brand is binary';
+    isnt scalar @track_args,  0,     'No track event is triggered when brand is binary';
 };
 
 sub test_segment_customer {
@@ -1943,7 +1943,7 @@ subtest 'segment document upload' => sub {
             file_id => $upload_info->{file_id}})->get;
 
     my ($customer, %args) = @track_args;
-    is $args{event}, 'document_upload', 'track event is document_upload';
+    is $args{event},                                    'document_upload',        'track event is document_upload';
     is $args{properties}->{document_type},              'national_identity_card', 'document type is correct';
     is $args{properties}->{uploaded_manually_by_staff}, 0,                        'uploaded_manually_by_staff is correct';
 };
@@ -1982,9 +1982,9 @@ subtest 'edd document upload' => sub {
             file_id => $upload_info->{file_id}})->get;
 
     my ($customer, %args) = @track_args;
-    is $args{event}, 'document_upload', 'track event is document_upload';
-    is $args{properties}->{document_type},              'tax_return', 'document type is correct';
-    is $args{properties}->{uploaded_manually_by_staff}, 0,            'uploaded_manually_by_staff is correct';
+    is $args{event},                                    'document_upload', 'track event is document_upload';
+    is $args{properties}->{document_type},              'tax_return',      'document type is correct';
+    is $args{properties}->{uploaded_manually_by_staff}, 0,                 'uploaded_manually_by_staff is correct';
 };
 
 subtest 'onfido resubmission' => sub {
@@ -2260,7 +2260,7 @@ subtest 'POI flag removal' => sub {
                     file_id => $upload_info->{file_id}})->get;
 
             ok !$test_client->status->_get('allow_poi_resubmission'), 'POI flag successfully gone';
-            ok $test_client->status->_get('allow_poa_resubmission'), 'POI upload should not disable the POA flag';
+            ok $test_client->status->_get('allow_poa_resubmission'),  'POI upload should not disable the POA flag';
         };
     }
 };
@@ -2298,7 +2298,7 @@ subtest 'POA flag removal' => sub {
                     loginid => $test_client->loginid,
                     file_id => $upload_info->{file_id}})->get;
 
-            ok $test_client->status->_get('allow_poi_resubmission'), 'POA upload should not disable the POI flag';
+            ok $test_client->status->_get('allow_poi_resubmission'),  'POA upload should not disable the POI flag';
             ok !$test_client->status->_get('allow_poa_resubmission'), 'POA flag successfully gone';
         };
     }
@@ -2863,7 +2863,7 @@ subtest 'Deriv X events' => sub {
         &{"BOM::Event::Actions::Client::$event"}($payload)->get;
 
         my ($customer, %args) = @track_args;
-        is $args{event}, $event, "$event event name";
+        is $args{event},                  $event,                             "$event event name";
         is $args{properties}{first_name}, $payload->{properties}{first_name}, "$event properties";
     }
 
@@ -2894,7 +2894,7 @@ subtest 'request_change_email' => sub {
     ok $result, 'OK result';
     is scalar @track_args, 7, 'OK event';
     my ($customer, %args) = @track_args;
-    is $args{event}, 'request_change_email', "event name";
+    is $args{event},                  'request_change_email',          "event name";
     is $args{properties}{first_name}, $args->{properties}{first_name}, "event properties";
 };
 
@@ -2922,9 +2922,9 @@ subtest 'verify_change_email' => sub {
     my $result  = $handler->($args)->get;
     ok $result, 'OK result';
     my ($customer, %args) = @track_args;
-    is $args{event}, 'verify_change_email', "event event name";
+    is $args{event},                  'verify_change_email',           "event event name";
     is $args{properties}{first_name}, $args->{properties}{first_name}, "event properties";
-    is scalar @track_args, 7, 'OK event';
+    is scalar @track_args,            7,                               'OK event';
 };
 
 subtest 'confirm_change_email' => sub {
@@ -2951,9 +2951,9 @@ subtest 'confirm_change_email' => sub {
     my $result  = $handler->($args)->get;
     ok $result, 'OK result';
     my ($customer, %args) = @track_args;
-    is $args{event}, 'confirm_change_email', "event name";
+    is $args{event},                  'confirm_change_email',          "event name";
     is $args{properties}{first_name}, $args->{properties}{first_name}, "event properties";
-    is scalar @track_args, 7, 'OK event';
+    is scalar @track_args,            7,                               'OK event';
 };
 
 subtest 'crypto_withdrawal_email event' => sub {
@@ -3328,8 +3328,8 @@ subtest 'underage_account_closed' => sub {
             }})->get;
     my ($customer, %returned_args) = @track_args;
 
-    is $returned_args{event}, 'underage_account_closed', 'track event name is set correctly';
-    is $returned_args{properties}->{loginid}, $client->loginid, "got correct customer loginid";
+    is $returned_args{event},                 'underage_account_closed', 'track event name is set correctly';
+    is $returned_args{properties}->{loginid}, $client->loginid,          "got correct customer loginid";
 };
 
 subtest 'Underage detection' => sub {
@@ -3500,7 +3500,7 @@ subtest 'Underage detection' => sub {
             ok $msg->{body} =~ /The client posseses the following MT5 loginids/, 'MT5 loginds detected';
             ok $msg->{body} =~ /\bMTR9009\b/,                                    'Real MT5 loginid reported';
             ok $msg->{body} =~ /\bMTR90000\b/,                                   'Real MT5 loginid reported';
-            ok $msg->{body} !~ /\bMTD90000\b/, 'Demo MT5 loginid not reported';
+            ok $msg->{body} !~ /\bMTD90000\b/,                                   'Demo MT5 loginid not reported';
             cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
         };
 
@@ -3647,7 +3647,7 @@ subtest 'Underage detection' => sub {
             ok $msg, 'underage email sent to CS';
             ok $msg->{body} =~ /The client posseses the following Deriv X loginids/, 'DX loginds detected';
             ok $msg->{body} =~ /\bDXR9009\b/,                                        'Real DX loginid reported';
-            ok $msg->{body} !~ /\bDXD90000\b/, 'Demo DX loginid not reported';
+            ok $msg->{body} !~ /\bDXD90000\b/,                                       'Demo DX loginid not reported';
             cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
         };
 
@@ -3725,8 +3725,8 @@ subtest 'Underage detection' => sub {
 
         ok !$emissions->{underage_account_closed}, 'underage_account_closed event was not emitted';
 
-        ok !$vrtc_client->status->disabled, 'Not disabled';
-        ok !$test_client->status->disabled, 'Not disabled';
+        ok !$vrtc_client->status->disabled,        'Not disabled';
+        ok !$test_client->status->disabled,        'Not disabled';
         ok $test_client->status->age_verification, 'Age verified';
 
         my $msg = mailbox_search(subject => qr/Underage client detection/);

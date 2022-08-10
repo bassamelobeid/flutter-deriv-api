@@ -38,28 +38,28 @@ subtest 'name checks' => sub {
     change_name('bob', 'smith');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked before first deposit';
-    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
+    ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     df_deposit(100);
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after first deposit';
-    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
+    ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     change_name('smith', 'bob');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after name flip';
-    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
+    ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     change_name('bob', 'smyth');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after minor change';
-    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
+    ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     $client->status->setnx('age_verification', 'test');
     change_name('maria', 'juana');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked on age verified client';
-    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
+    ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 
     $client->status->clear_age_verification;
     change_name('mary', 'jane');
@@ -92,7 +92,7 @@ subtest 'name checks' => sub {
     undef $emitted;
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after set name from empty';
-    ok !defined($emitted->{account_with_false_info_locked}), 'no email sent';
+    ok !defined($emitted->{account_with_false_info_locked}),                              'no email sent';
 };
 
 subtest 'deposit event' => sub {

@@ -8,7 +8,7 @@ test_all: $(TESTS)
 
 tidy:
 	find . -name '*.p?.bak' -delete
-	find . -not -path "./.git*" -not -path "./srp*" -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
+	find . -not -path "./.git*" -not -path "./srp*" -name '*.p[lm]' -o -name '*.t' | xargs perltidier -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
 
 test:

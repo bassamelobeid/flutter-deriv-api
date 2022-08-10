@@ -11,7 +11,7 @@ use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Event::Services::Track;
 use BOM::Platform::Context qw(request);
-use Format::Util::Numbers qw(financialrounding formatnumber);
+use Format::Util::Numbers  qw(financialrounding formatnumber);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $escrow = BOM::Test::Helper::P2P::create_escrow();

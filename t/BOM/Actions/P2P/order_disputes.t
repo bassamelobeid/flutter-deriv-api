@@ -179,9 +179,9 @@ subtest 'Dispute resolution' => sub {
                 $order = $advertiser->p2p_order_info(id => $order->{id});
 
                 # Check whether the track_events are called
-                is scalar @track_event_args, 2, 'Two track_event fired';
-                is scalar @segment_args,     2, 'Two segments tracks fired';
-                is $_->{event}, "p2p_order_$event", "P2P $event sent" foreach @segment_args;
+                is scalar @track_event_args, 2,                  'Two track_event fired';
+                is scalar @segment_args,     2,                  'Two segments tracks fired';
+                is $_->{event},              "p2p_order_$event", "P2P $event sent" foreach @segment_args;
 
                 my $user_role       = $type eq 'buy' ? 'buyer'                              : 'seller';
                 my $order_type      = $type eq 'buy' ? 'sell'                               : 'buy';

@@ -250,7 +250,7 @@ subtest 'segment tracking' => sub {
 
     # Check whether _track_p2p_order_event has the correct arguments
     is $track_args->{order_event}, 'timeout_refund', 'The order event is correct';
-    is $track_args->{order}{id}, $order->{id}, 'The order id is correct';
+    is $track_args->{order}{id},   $order->{id},     'The order id is correct';
 
     # Check whether the track_events are called
     is scalar @track_event_args, 2, 'Two track_event fired';
@@ -294,8 +294,8 @@ subtest 'segment tracking' => sub {
 
     cmp_deeply $track_event_args[0], superhashof($expected_track_event_args[0]), 'Track event params are looking good for buyer';
     cmp_deeply $track_event_args[1], superhashof($expected_track_event_args[1]), 'Track event params are looking good for seller';
-    is scalar @segment_args, 2, 'Two segments tracks fired';
-    is $_->[2], 'p2p_order_timeout_refund', 'p2p order timeout refund sent' foreach @segment_args;
+    is scalar @segment_args, 2,                          'Two segments tracks fired';
+    is $_->[2],              'p2p_order_timeout_refund', 'p2p order timeout refund sent' foreach @segment_args;
 
     BOM::Test::Helper::P2P::reset_escrow();
     $emit_mock->unmock_all;

@@ -9,7 +9,7 @@ use Log::Any::Test;
 use BOM::Event::QueueHandler;
 use Log::Any qw($log);
 use Log::Any::Adapter (qw(Stderr), log_level => 'warn');
-use JSON::MaybeUTF8 qw(decode_json_utf8 decode_json_text);
+use JSON::MaybeUTF8                         qw(decode_json_utf8 decode_json_text);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Config::Redis;
 use IO::Async::Loop;
@@ -82,7 +82,7 @@ subtest 'items to reprocess' => sub {
     $returned_event = $stream_handler->items_to_reprocess()->get;
 
     is $returned_event, undef, 'The event is not ready to be retried';
-    is scalar @acked, 0, 'Item correctly marked as not being acknowledged';
+    is scalar @acked,   0,     'Item correctly marked as not being acknowledged';
 
     $mocked_handler->unmock_all();
     $log->clear;

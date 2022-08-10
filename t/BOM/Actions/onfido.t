@@ -157,7 +157,7 @@ subtest 'Onfido lifetime valid' => sub {
 
     $upload->('qwerty', '', 'document', 'passport')->get;
     ok !$document->{expiration_date}, 'Empty expiration date';
-    ok $document->{lifetime_valid}, 'Lifetime valid doc';
+    ok $document->{lifetime_valid},   'Lifetime valid doc';
 
     $upload->('cucamonga', '', 'photo', 'selfie')->get;
     ok !$document->{expiration_date}, 'Empty expiration date';

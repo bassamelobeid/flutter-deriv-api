@@ -14,14 +14,14 @@ use strict;
 use warnings;
 
 use List::Util qw( any );
-use Log::Any qw( $log );
+use Log::Any   qw( $log );
 use Template::AutoFilter;
 use Syntax::Keyword::Try;
 
 use BOM::Config;
-use BOM::Event::Utility qw( exception_logged );
+use BOM::Event::Utility    qw( exception_logged );
 use BOM::Platform::Context qw( localize request );
-use BOM::Platform::Email qw( send_email );
+use BOM::Platform::Email   qw( send_email );
 use BOM::Platform::Event::Emitter;
 use BOM::User::Client;
 use Email::Stuffer;

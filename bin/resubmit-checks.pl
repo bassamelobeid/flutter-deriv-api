@@ -8,7 +8,7 @@ use IO::Async::Loop;
 use WebService::Async::Onfido;
 
 use Scalar::Util qw(blessed);
-use Log::Any qw($log);
+use Log::Any     qw($log);
 use Getopt::Long;
 use List::UtilsBy qw(rev_nsort_by);
 use Digest::HMAC;

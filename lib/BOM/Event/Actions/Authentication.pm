@@ -11,8 +11,8 @@ use BOM::Database::UserDB;
 use Syntax::Keyword::Try;
 use BOM::Platform::Token::API;
 use BOM::Platform::Context;
-use BOM::Event::Utility qw(exception_logged);
-use List::Util qw(uniqstr);
+use BOM::Event::Utility  qw(exception_logged);
+use List::Util           qw(uniqstr);
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client::AuthenticationDocuments;
 

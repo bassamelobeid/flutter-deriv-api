@@ -10,7 +10,7 @@ use IO::Async::Loop;
 use Future::AsyncAwait;
 use Syntax::Keyword::Try;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use List::Util qw(min);
+use List::Util      qw(min);
 use BOM::User;
 use BOM::User::Client;
 use BOM::Database::UserDB;
@@ -125,7 +125,7 @@ my $handler = async sub {
             fixup => sub {
                 $_->do(
                     'select users.add_onfido_applicant(?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::BIGINT)',
-                    undef,            $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
+                    undef, $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
                     $applicant->href, $client->binary_user_id
                 );
             });

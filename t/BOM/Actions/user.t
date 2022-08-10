@@ -290,7 +290,7 @@ subtest 'user profile change event' => sub {
         }};
     undef @emit_args;
     my $result = $action_handler->($args);
-    ok $result, 'Success profile_change result';
+    ok $result,     'Success profile_change result';
     ok !@emit_args, 'No event is emitted';
 
     subtest 'apply sanctions on profile change' => sub {
@@ -426,7 +426,7 @@ subtest 'user profile change event' => sub {
             my $msg = mailbox_search(subject => qr/$test_loginid possible match in sanctions list - Triggered by profile update/);
             ok $msg, 'Sanctions email sent';
             ok $msg->{body} =~ qr/Triggered by profile update/, 'Correct reason appended to email body';
-            ok $msg->{body} !~ qr/MT5 Accounts/, 'Email does not show MT5 Accounts as user does not have any';
+            ok $msg->{body} !~ qr/MT5 Accounts/,                'Email does not show MT5 Accounts as user does not have any';
         };
 
         # Sanctions called for update, the dirty one, this time with mt5 accounts
@@ -889,7 +889,7 @@ sub test_fake_name {
     my $status = $test_case->{status} // 'unwelcome';
     if ($test_case->{result}) {
         ok $reason{$test_case->{result}}, "Test result is <$test_case->{result}> - $test_case->{label} -$loginid";
-        ok $client->status->$status, "client is $status - $test_case->{label}";
+        ok $client->status->$status,      "client is $status - $test_case->{label}";
         is $client->status->$status->{reason}, $reason{$test_case->{result}}, "correct  status reason - $test_case->{label} -$loginid";
 
     } else {

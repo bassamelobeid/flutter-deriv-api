@@ -16,21 +16,21 @@ BOM::Event::QueueHandler
 no indirect;
 use mro;
 use Syntax::Keyword::Try;
-use Scalar::Util qw(blessed);
-use Future::Utils qw(repeat);
+use Scalar::Util    qw(blessed);
+use Future::Utils   qw(repeat);
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_text);
 use BOM::Event::Services;
 use BOM::Event::Process;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
-use Log::Any qw($log);
-use BOM::Event::Utility qw(exception_logged);
-use Clone qw( clone );
+use Log::Any                   qw($log);
+use BOM::Event::Utility        qw(exception_logged);
+use Clone                      qw( clone );
 use Future::AsyncAwait;
 use Net::Domain qw( hostname );
 use Algorithm::Backoff;
 use curry;
 use Future::Utils qw(fmap0);
-use List::Util qw( any first );
+use List::Util    qw( any first );
 
 use constant REQUESTS_PER_CYCLE => 5000;
 

@@ -17,8 +17,8 @@ use BOM::Platform::Context;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::Utility qw(random_email_address);
-use JSON::MaybeUTF8 qw(decode_json_utf8);
+use BOM::Test::Helper::Utility                 qw(random_email_address);
+use JSON::MaybeUTF8                            qw(decode_json_utf8);
 use IO::Async::Loop;
 use BOM::Event::Services;
 use LandingCompany::Registry;
@@ -108,7 +108,7 @@ subtest client_anonymization => sub {
 
     # It should send an notification email to compliance
     like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance receive an report of anonymization./);
-    like($msg->{body}, qr/Getting client object failed. Please check if loginid is correct or client exist./, qq/user not found failure/);
+    like($msg->{body},    qr/Getting client object failed. Please check if loginid is correct or client exist./, qq/user not found failure/);
 
     cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
 
@@ -593,7 +593,7 @@ subtest 'DF anonymization done' => sub {
         is($result, 1, 'Returns 1 after user anonymized.');
 
         my $msg = mailbox_search(subject => qr/Doughflow Anonymization Report/);
-        ok $msg, 'DF anonymization report email sent';
+        ok $msg,                 'DF anonymization report email sent';
         ok $msg->{body} =~ /OK/, 'OK message';
 
         cmp_deeply $stats_inc,
@@ -621,7 +621,7 @@ subtest 'DF anonymization done' => sub {
         is($result, 1, 'Returns 1 after user anonymized.');
 
         my $msg = mailbox_search(subject => qr/Doughflow Anonymization/);
-        ok $msg, 'DF anonymization report email sent';
+        ok $msg,                                                                     'DF anonymization report email sent';
         ok $msg->{body} =~ /3 \- PIN has recent \(12 months\) transaction activity/, 'Error message';
 
         cmp_deeply $stats_inc,

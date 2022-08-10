@@ -69,18 +69,18 @@ subtest 'Shared PM event' => sub {
 
     my @emails_sent = BOM::Test::Email::email_list();
 
-    is scalar @emails_sent, 2, 'Two emails sent';
+    is scalar @emails_sent, 2,          'Two emails sent';
     is $test_client->email, $emails[0], 'Sent to the client email address';
     ok $test_client->status->cashier_locked,        'Client has cashier_locked status';
     ok $test_client->status->shared_payment_method, 'Client has shared_payment_method status';
     ok $test_client->status->allow_document_upload, 'Client has allow_document_upload status';
-    ok $ask_poi[0], 'E-mail has Upload Documents link';
+    ok $ask_poi[0],                                 'E-mail has Upload Documents link';
 
     is $shared_client->email, $emails[1], 'Sent to the shared email address';
     ok $shared_client->status->cashier_locked,        'shared client has cashier_locked status';
     ok $shared_client->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_client->status->allow_document_upload, 'shared has allow_document_upload status';
-    ok $ask_poi[1], 'E-mail has Upload Documents link';
+    ok $ask_poi[1],                                   'E-mail has Upload Documents link';
     $mocker_event->unmock_all;
     $mocker_client->unmock_all;
 
@@ -218,12 +218,12 @@ subtest 'multiple loginids sent in params' => sub {
 
     my @emails_sent = BOM::Test::Email::email_list();
 
-    is scalar @emails_sent, 3, 'Three emails sent';
+    is scalar @emails_sent, 3,          'Three emails sent';
     is $test_client->email, $emails[0], 'Sent to the client email address';
     ok $test_client->status->cashier_locked,        'Client has cashier_locked status';
     ok $test_client->status->shared_payment_method, 'Client has shared_payment_method status';
     ok $test_client->status->allow_document_upload, 'Client has allow_document_upload status';
-    ok $ask_poi[0], 'E-mail has Upload Documents link';
+    ok $ask_poi[0],                                 'E-mail has Upload Documents link';
 
     is $test_client->status->shared_payment_method->{reason}, 'Shared with: ' . $shared_client->loginid . ',' . $shared_client_another->loginid,
         'the status reason contains both the shared clients loginids';
@@ -232,13 +232,13 @@ subtest 'multiple loginids sent in params' => sub {
     ok $shared_client->status->cashier_locked,        'shared client has cashier_locked status';
     ok $shared_client->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_client->status->allow_document_upload, 'shared has allow_document_upload status';
-    ok $ask_poi[1], 'E-mail has Upload Documents link';
+    ok $ask_poi[1],                                   'E-mail has Upload Documents link';
 
     is $shared_client_another->email, $emails[2], 'Sent to the shared email address';
     ok $shared_client_another->status->cashier_locked,        'shared client has cashier_locked status';
     ok $shared_client_another->status->shared_payment_method, 'shared client has shared_payment_method status';
     ok $shared_client_another->status->allow_document_upload, 'shared has allow_document_upload status';
-    ok $ask_poi[2], 'E-mail has Upload Documents link';
+    ok $ask_poi[2],                                           'E-mail has Upload Documents link';
 
     is $shared_client_another->status->shared_payment_method->{reason}, 'Shared with: ' . $test_client->loginid,
         'Correct reason for shared payment method';
@@ -293,18 +293,18 @@ subtest 'Already age verified client' => sub {
 
     my @emails_sent = BOM::Test::Email::email_list();
 
-    is scalar @emails_sent, 2, 'Two emails sent';
+    is scalar @emails_sent, 2,          'Two emails sent';
     is $test_client->email, $emails[0], 'Sent to the client email address';
-    ok $test_client->status->cashier_locked,        'Client has cashier_locked status';
-    ok $test_client->status->shared_payment_method, 'Client has shared_payment_method status';
+    ok $test_client->status->cashier_locked,         'Client has cashier_locked status';
+    ok $test_client->status->shared_payment_method,  'Client has shared_payment_method status';
     ok !$test_client->status->allow_document_upload, 'Client does not have allow_document_upload status';
-    ok !$ask_poi[0], 'E-mail does not have Upload Documents link';
+    ok !$ask_poi[0],                                 'E-mail does not have Upload Documents link';
 
     is $shared_client->email, $emails[1], 'Sent to the shared email address';
-    ok $shared_client->status->cashier_locked,        'shared client has cashier_locked status';
-    ok $shared_client->status->shared_payment_method, 'shared client has shared_payment_method status';
+    ok $shared_client->status->cashier_locked,         'shared client has cashier_locked status';
+    ok $shared_client->status->shared_payment_method,  'shared client has shared_payment_method status';
     ok !$shared_client->status->allow_document_upload, 'shared does not have allow_document_upload status';
-    ok !$ask_poi[0], 'E-mail does not have Upload Documents link';
+    ok !$ask_poi[0],                                   'E-mail does not have Upload Documents link';
     $mocker_event->unmock_all;
     $mocker_client->unmock_all;
 };

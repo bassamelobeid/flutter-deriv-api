@@ -12,7 +12,7 @@ use Brands;
 use WebService::Async::Segment::Customer;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context                     qw(request);
 use BOM::Platform::Context::Request;
 use BOM::Event::Actions::User;
 use BOM::User;

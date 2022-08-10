@@ -20,7 +20,7 @@ use DataDog::DogStatsd::Helper;
 use Syntax::Keyword::Try;
 
 use BOM::Platform::Email qw(send_email);
-use BOM::Event::Utility qw(exception_logged);
+use BOM::Event::Utility  qw(exception_logged);
 
 # this one should come after BOM::Platform::Email
 use Email::Stuffer;

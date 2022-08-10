@@ -9,12 +9,12 @@ use Syntax::Keyword::Try;
 
 use Date::Utility;
 use List::UtilsBy qw( rev_nsort_by );
-use Log::Any qw($log);
+use Log::Any      qw($log);
 use Email::Stuffer;
 
 use BOM::User::Client;
 use BOM::Transaction;
-use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Context    qw (localize request);
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Transaction::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -22,7 +22,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Format::Util::Numbers qw(formatnumber);
 
 use Finance::Contract::Longcode qw(shortcode_to_longcode shortcode_to_parameters);
-use BOM::Event::Utility qw(exception_logged);
+use BOM::Event::Utility         qw(exception_logged);
 
 use constant EPOCH_IN_MINUTE => 60;
 use constant EPOCH_IN_HOUR   => EPOCH_IN_MINUTE * EPOCH_IN_MINUTE;

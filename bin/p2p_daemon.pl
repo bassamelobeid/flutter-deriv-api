@@ -13,9 +13,9 @@ use Getopt::Long;
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
 use Date::Utility;
-use Path::Tiny qw(path);
+use Path::Tiny                 qw(path);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
-use List::Util qw(uniq);
+use List::Util                 qw(uniq);
 
 use BOM::Config::Runtime;
 use BOM::Config::Redis;

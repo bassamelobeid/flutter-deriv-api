@@ -8,7 +8,7 @@ use IO::Async::Loop;
 use Future::AsyncAwait;
 use Syntax::Keyword::Try;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use List::Util qw(min);
+use List::Util      qw(min);
 use BOM::User;
 use BOM::User::Client;
 use BOM::User::Onfido;

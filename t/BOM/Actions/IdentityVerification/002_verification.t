@@ -51,7 +51,7 @@ $mock_http->mock(
 
         return $resp->() if ref $resp eq 'CODE';
         return $resp;
-    });                                # prevent making real calls
+    });    # prevent making real calls
 
 my $mock_country_configs = Test::MockModule->new('Brands::Countries');
 $mock_country_configs->mock(
@@ -158,7 +158,7 @@ subtest 'verify identity by smile_identity through microservice is passed and da
     is $updates, 2, 'update document triggered twice correctly';
 
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is removed correctly';
-    ok $client->status->age_verification, 'age verified correctly';
+    ok $client->status->age_verification,   'age verified correctly';
 
     is $mock_idv_status, 'verified', 'verify_identity returns `verified` status';
 };
@@ -248,8 +248,8 @@ subtest 'microservice address verified' => sub {
     is $updates, 2, 'update document triggered twice correctly';
 
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is removed correctly';
-    ok $client->status->age_verification, 'age verified correctly';
-    ok $client->fully_authenticated(), 'client is fully authenticated';
+    ok $client->status->age_verification,   'age verified correctly';
+    ok $client->fully_authenticated(),      'client is fully authenticated';
     is $client->get_authentication('IDV')->{status}, 'pass', 'PoA with IDV';
     ok !$client->status->unwelcome, 'client unwelcome is removed';
 
