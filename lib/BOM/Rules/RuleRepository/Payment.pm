@@ -13,7 +13,7 @@ Contains rules pertaining client's payments.
 use strict;
 use warnings;
 
-use Format::Util::Numbers qw(roundcommon financialrounding formatnumber);
+use Format::Util::Numbers            qw(roundcommon financialrounding formatnumber);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 
 use BOM::Rules::Registry qw(rule);

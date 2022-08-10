@@ -307,7 +307,7 @@ $rule_name = 'currency.has_deposit_attempt';
 subtest $rule_name => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr_usd);
     my %args        = (loginid => $client_cr_usd->loginid);
-    ok !$client_cr_usd->status->deposit_attempt, 'Client have not attempted to deposit';
+    ok !$client_cr_usd->status->deposit_attempt,     'Client have not attempted to deposit';
     ok $rule_engine->apply_rules($rule_name, %args), 'Rule applies with empty args - has_deposit_attempt';
 
     my $mock_status = Test::MockModule->new('BOM::User::Client::Status');
@@ -325,7 +325,7 @@ $rule_name = 'currency.no_deposit';
 subtest $rule_name => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr_usd);
     my %args        = (loginid => $client_cr_usd->loginid);
-    ok !$client_cr_usd->has_deposits, 'Client has no deposit';
+    ok !$client_cr_usd->has_deposits,                'Client has no deposit';
     ok $rule_engine->apply_rules($rule_name, %args), 'Rule applies with empty args - no deposit';
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');

@@ -46,7 +46,7 @@ subtest 'Verify an action' => sub {
     my ($action, $context, $args) = @action_verify_args;
     is $action, $test_action, 'Correct action is cought';
     is_deeply $context, {$rule_engine_1->context->%*, action => 'test_action'}, 'Correct context, action name included.';
-    is_deeply $args, {}, 'Action is verified with empty args';
+    is_deeply $args,    {},                                                     'Action is verified with empty args';
 
     undef @action_verify_args;
     isa_ok $rule_engine_1->verify_action(

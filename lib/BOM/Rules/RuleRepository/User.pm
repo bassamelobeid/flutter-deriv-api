@@ -16,7 +16,7 @@ use warnings;
 use List::Util qw(any);
 
 use BOM::Platform::Context qw(localize);
-use BOM::Rules::Registry qw(rule);
+use BOM::Rules::Registry   qw(rule);
 
 rule 'user.has_no_real_clients_without_currency' => {
     description => "Succeeds if currency of all ennabled real accounts of the context landing company are set",

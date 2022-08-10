@@ -19,7 +19,7 @@ use BOM::Platform::Context qw(request);
 use BOM::Config::CurrencyConfig;
 
 use Format::Util::Numbers qw(formatnumber financialrounding);
-use Scalar::Util qw( looks_like_number );
+use Scalar::Util          qw( looks_like_number );
 use Syntax::Keyword::Try;
 use List::Util qw/any/;
 use LandingCompany::Registry;

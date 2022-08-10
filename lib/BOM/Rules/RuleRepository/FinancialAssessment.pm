@@ -13,7 +13,7 @@ This modules declares rules and regulations applied on financial assessments.
 use strict;
 use warnings;
 
-use BOM::Rules::Registry qw(rule);
+use BOM::Rules::Registry           qw(rule);
 use BOM::User::FinancialAssessment qw(is_section_complete);
 
 rule 'financial_assessment.required_sections_are_complete' => {

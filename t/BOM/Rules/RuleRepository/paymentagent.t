@@ -4,14 +4,14 @@ use warnings;
 use Test::Most;
 use Test::Fatal;
 use Test::MockModule;
-use Test::Warnings qw(warning);
-use Test::MockTime qw( set_absolute_time restore_time);
+use Test::Warnings        qw(warning);
+use Test::MockTime        qw( set_absolute_time restore_time);
 use Format::Util::Numbers qw(financialrounding);
 
 use ExchangeRates::CurrencyConverter qw/in_usd/;
 
 use ExchangeRates::CurrencyConverter qw/in_usd/;
-use Format::Util::Numbers qw(financialrounding);
+use Format::Util::Numbers            qw(financialrounding);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;

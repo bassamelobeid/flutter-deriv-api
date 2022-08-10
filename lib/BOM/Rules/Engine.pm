@@ -36,7 +36,7 @@ use warnings;
 use YAML::XS;
 use Moo;
 use Scalar::Util qw(blessed);
-use List::Util qw(all);
+use List::Util   qw(all);
 
 use BOM::User::Client;
 use BOM::Rules::RuleRepository::Basic;

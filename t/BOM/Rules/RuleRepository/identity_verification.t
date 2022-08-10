@@ -29,8 +29,8 @@ subtest 'rule idv.check_expiration_date' => sub {
 
     my $rule_engine = BOM::Rules::Engine->new();
 
-    like exception { $rule_engine->apply_rules($rule_name); }, qr/IDV result is missing/, 'Missing result in passed args';
-    like exception { $rule_engine->apply_rules($rule_name, result => {}); }, qr/document is missing/, 'Missing document in passed args';
+    like exception { $rule_engine->apply_rules($rule_name); },               qr/IDV result is missing/, 'Missing result in passed args';
+    like exception { $rule_engine->apply_rules($rule_name, result => {}); }, qr/document is missing/,   'Missing document in passed args';
 
     my $mock_country_config = Test::MockModule->new('Brands::Countries');
     my $is_lifetime_valid   = 0;
