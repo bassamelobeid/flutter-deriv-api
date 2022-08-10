@@ -38,7 +38,7 @@ subtest 'partner_account_opening test' => sub {
             });
 
         my $response = BOM::RPC::v3::Services::CellxpertService::verify_email("some_username", $verification, "en");
-        is $response->{status}, 1;
+        is $response, undef;
 
         $mocked_event_emitter->unmock_all();
         $mocked_cellxpert_service->unmock_all();

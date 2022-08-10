@@ -14,6 +14,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::User;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Test::RPC::QueueClient;
+use Data::Dumper;
 
 use utf8;
 
@@ -364,11 +365,12 @@ subtest 'withdrawal validation' => sub {
     $params[1]->{token} = $token;
 
     my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
-    $mock_utility->mock(cashier_validation => sub { 'dummy' });
+    my %dummy_error  = ('error' => 'dummy');
+    $mock_utility->mock(cashier_validation => sub { \%dummy_error });
 
     for my $type (qw(payment_withdraw paymentagent_withdraw)) {
         $params[1]->{args}->{type} = $type;
-        is $rpc_ct->call_ok(@params)->has_no_system_error->result, 'dummy', $type . ' has withdrawal validation';
+        is $rpc_ct->call_ok(@params)->has_no_system_error->result, \%dummy_error, $type . ' has withdrawal validation';
     }
 
     for my $type (qw(account_opening reset_password)) {

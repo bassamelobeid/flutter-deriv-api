@@ -54,7 +54,7 @@ use BOM::Config;
 use BOM::Rules::Engine;
 
 use Exporter qw(import export_to_level);
-our @EXPORT_OK = qw(longcode log_exception);
+our @EXPORT_OK = qw(longcode log_exception get_verification_uri get_app_name request_email);
 
 use feature "state";
 
@@ -1399,4 +1399,81 @@ sub get_market_by_symbol {
     }
 }
 
+=head2 get_verification_uri
+
+get verification uri from app_id
+
+=cut
+
+sub get_verification_uri {
+    my $app_id = shift or return undef;
+    return BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($app_id);
+}
+
+=head2 get_app_name
+
+get app name from app_id
+
+=cut
+
+sub get_app_name {
+    my $app_id = shift;
+    return BOM::Database::Model::OAuth->new->get_names_by_app_id($app_id)->{$app_id};
+}
+
 1;
+
+=head2 is_impersonating_client
+
+Checks if this is an internal app like backend - if so we are impersonating an account. Takes the following arguments as named parameters
+
+=over 4
+
+=item - $token:  The token id used to authenticate with
+
+
+=back
+
+Returns a boolean
+
+=cut
+
+sub is_impersonating_client {
+    my ($token) = @_;
+
+    my $oauth_db = BOM::Database::Model::OAuth->new;
+    my $app_id   = $oauth_db->get_app_id_by_token($token);
+    return $oauth_db->is_internal($app_id);
+}
+
+=head2 request_email
+
+send_email with subject and template name and args as input for sending
+
+=over 4
+
+=item - $email:  Email address to send
+=item - @args: the arguments containing subject, template_name and template_args
+
+
+=back
+
+Returns a boolean
+
+=cut
+
+sub request_email {
+    my ($email, $args) = @_;
+
+    send_email({
+        to                    => $email,
+        subject               => $args->{subject},
+        template_name         => $args->{template_name},
+        template_args         => $args->{template_args},
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1,
+    });
+
+    return 1;
+}

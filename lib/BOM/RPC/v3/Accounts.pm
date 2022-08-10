@@ -30,10 +30,9 @@ use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 
 use BOM::RPC::Registry '-dsl';
 
-use BOM::RPC::v3::Utility qw(longcode log_exception);
+use BOM::RPC::v3::Utility qw(longcode log_exception get_verification_uri);
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
-use BOM::RPC::v3::NewAccount qw(get_verification_uri);
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client::CashierValidation;
@@ -1357,8 +1356,7 @@ rpc change_email => sub {
                 expires_in  => CHANGE_EMAIL_TOKEN_TTL,
                 created_for => 'request_email',
             })->token;
-        my $uri = BOM::RPC::v3::NewAccount::get_verification_uri($params->{source}) // '';
-
+        my $uri    = get_verification_uri($params->{source}) // '';
         my $params = [
             action => $user->{has_social_signup} ? 'social_email_change' : 'system_email_change',
             code   => $code,

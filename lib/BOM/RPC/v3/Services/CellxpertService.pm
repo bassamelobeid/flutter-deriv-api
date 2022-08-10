@@ -60,7 +60,7 @@ sub verify_email {
                     email            => $username,
                     live_chat_url    => $data->{template_args}->{live_chat_url} // '',
                 });
-            return {status => 1};
+            return;
         } else {
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'CXUsernameExists',

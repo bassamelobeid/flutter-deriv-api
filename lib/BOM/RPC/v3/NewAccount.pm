@@ -20,7 +20,6 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Locale;
 use BOM::Platform::Redis;
@@ -37,6 +36,7 @@ use BOM::Rules::Engine;
 use LandingCompany::Wallet;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Services::CellxpertService;
+use BOM::RPC::v3::VerifyEmail::Functions;
 
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
@@ -53,349 +53,37 @@ sub _create_oauth_token {
     return $access_token;
 }
 
-sub request_email {
-    my ($email, $args) = @_;
-
-    send_email({
-        to                    => $email,
-        subject               => $args->{subject},
-        template_name         => $args->{template_name},
-        template_args         => $args->{template_args},
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        use_event             => 1,
-    });
-
-    return 1;
-}
-
-sub get_verification_uri {
-    my $app_id = shift or return undef;
-    return BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($app_id);
-}
-
-sub get_app_name {
-    my $app_id = shift;
-    return BOM::Database::Model::OAuth->new->get_names_by_app_id($app_id)->{$app_id};
-}
-
 rpc "verify_email",
     auth => [],    # unauthenticated
     sub {
-    my $params = shift;
-    my ($token_details, $website_name, $source, $language, $args) = @{$params}{qw/token_details website_name source language args/};
+    my $params              = shift;
+    my $verify_email_object = BOM::RPC::v3::VerifyEmail::Functions->new(%{$params});
 
-    my ($email, $type, $url_params) = @{$args}{qw/verify_email type url_parameters/};
+    return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($verify_email_object->{email});
 
-    my $utm_medium   = $args->{url_parameters}->{utm_medium}   // '';
-    my $utm_campaign = $args->{url_parameters}->{utm_campaign} // '';
-
-    $email = lc $email;
-
-    return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($email);
-
-    my $error = BOM::RPC::v3::Utility::invalid_params($args);
+    my $error = BOM::RPC::v3::Utility::invalid_params($verify_email_object->{args});
     return $error if $error;
 
-    my $code = BOM::Platform::Token->new({
-            email       => $email,
-            expires_in  => REQUEST_EMAIL_TOKEN_TTL,
-            created_for => $type,
-        })->token;
+    $verify_email_object->create_token();
+    $verify_email_object->create_email_verification_function();
+    $verify_email_object->create_existing_user();
 
-    my $verification = email_verification({
-        code             => $code,
-        website_name     => $website_name,
-        verification_uri => get_verification_uri($source),
-        language         => $language,
-        source           => $source,
-        app_name         => get_app_name($source),
-        email            => $email,
-        type             => $type,
-        $url_params ? ($url_params->%*) : (),
-    });
+    return $verify_email_object->send_close_account_email() if $verify_email_object->is_existing_user_closed();
 
-    my $existing_user = BOM::User->new(
-        email => $email,
-    );
+    $verify_email_object->create_loginid();
 
-    if ($existing_user and $existing_user->is_closed) {
-        my $data           = $verification->{closed_account}->();
-        my %possible_types = (
-            account_opening => "verify_email_closed_account_account_opening",
-            reset_password  => "verify_email_closed_account_reset_password"
-        );
+    my $response = $verify_email_object->create_client();
+    return $response unless $response eq "OK";
 
-        BOM::Platform::Event::Emitter::emit(
-            $possible_types{$type} // "verify_email_closed_account_other",
-            {
-                loginid    => ($existing_user->bom_loginids)[0],
-                properties => {
-                    language      => $params->{language},
-                    type          => $data->{template_args}->{type}          // '',
-                    live_chat_url => $data->{template_args}->{live_chat_url} // '',
-                    email         => $data->{template_args}->{email}         // '',
-                }});
-        return {status => 1};
-    }
+    my $type = $verify_email_object->{type};
 
-    my $loginid = $token_details ? $token_details->{loginid} : undef;
+    die "unknow type $type" unless $verify_email_object->can($type);
+    my $error_response = $verify_email_object->$type;
+    return $error_response if ref $error_response eq 'HASH';
 
-    my $client;
-    # If user is logged in, email for verification must belong to the logged in account
-    if ($loginid) {
-        $client = BOM::User::Client->new({
-            loginid      => $loginid,
-            db_operation => 'replica'
-        });
-
-        return {status => 1} unless $client->email eq $email;
-    }
-
-    if ($existing_user and $type eq 'reset_password') {
-        my $data = $verification->{reset_password}->();
-        BOM::Platform::Event::Emitter::emit(
-            'reset_password_request',
-            {
-                loginid    => $existing_user->get_default_client->loginid,
-                properties => {
-                    verification_url => $data->{template_args}->{verification_url}  // '',
-                    social_login     => $data->{template_args}->{has_social_signup} // '',
-                    first_name       => $existing_user->get_default_client->first_name,
-                    code             => $data->{template_args}->{code} // '',
-                    email            => $email,
-                },
-            });
-    } elsif ($existing_user and $type eq 'request_email') {
-
-        my $data              = $verification->{request_email}->();
-        my $has_social_signup = $data->{template_args}->{has_social_signup} ? 1 : 0;
-        my $uri               = $data->{template_args}->{verification_url} // '';
-
-        BOM::Platform::Event::Emitter::emit(
-            'request_change_email',
-            {
-                loginid    => $existing_user->get_default_client->loginid,
-                properties => {
-                    verification_uri      => $data->{template_args}->{verification_url} // '',
-                    first_name            => $existing_user->get_default_client->first_name,
-                    code                  => $data->{template_args}->{code} // '',
-                    email                 => $email,
-                    time_to_expire_in_min => REQUEST_EMAIL_TOKEN_TTL / 60,
-                    language              => $language,
-                    social_signup         => $has_social_signup,
-                    live_chat_url         => request()->brand->live_chat_url
-                },
-            });
-    } elsif ($type eq 'account_opening') {
-        if ($utm_medium eq 'affiliate' and $utm_campaign eq 'MyAffiliates' and $url_params->{affiliate_token}) {
-            my $aff                  = BOM::MyAffiliates->new();
-            my $myaffiliate_email    = '';
-            my $received_aff_details = $aff->get_affiliate_details($url_params->{affiliate_token});
-            if ($received_aff_details and $received_aff_details->{TOKEN}->{USER_ID} !~ m/Error/) {
-                $myaffiliate_email = $received_aff_details->{TOKEN}->{USER}->{EMAIL} // '';
-            } else {
-                $log->warnf("Could not fetch affiliate details from MyAffiliates. Please check credentials: %s", $aff->errstr);
-            }
-            if ($myaffiliate_email eq $email) {
-                my $data = $verification->{self_tagging_affiliates}->();
-                BOM::Platform::Event::Emitter::emit(
-                    'self_tagging_affiliates',
-                    {
-                        properties => {
-                            live_chat_url => $data->{template_args}->{live_chat_url} // '',
-                            email         => $data->{template_args}->{email}         // '',
-                        },
-                    });
-            } else {
-                unless ($existing_user) {
-                    my $data = $verification->{account_opening_new}->();
-                    BOM::Platform::Event::Emitter::emit(
-                        'account_opening_new',
-                        {
-                            verification_url => $data->{template_args}->{verification_url} // '',
-                            code             => $data->{template_args}->{code}             // '',
-                            email            => $email,
-                            live_chat_url    => $data->{template_args}->{live_chat_url} // '',
-                        });
-                } else {
-                    my $data = $verification->{account_opening_existing}->();
-                    BOM::Platform::Event::Emitter::emit(
-                        'account_opening_existing',
-                        {
-                            loginid    => $existing_user->get_default_client->loginid,
-                            properties => {
-                                code               => $data->{template_args}->{code} // '',
-                                language           => $params->{language},
-                                login_url          => $data->{template_args}->{login_url}          // '',
-                                password_reset_url => $data->{template_args}->{password_reset_url} // '',
-                                live_chat_url      => $data->{template_args}->{live_chat_url}      // '',
-                                verification_url   => $data->{template_args}->{verification_url}   // '',
-                                email              => $data->{template_args}->{email}              // '',
-                            },
-                        });
-                }
-            }
-        } else {
-            unless ($existing_user) {
-                my $data = $verification->{account_opening_new}->();
-                BOM::Platform::Event::Emitter::emit(
-                    'account_opening_new',
-                    {
-                        verification_url => $data->{template_args}->{verification_url} // '',
-                        code             => $data->{template_args}->{code}             // '',
-                        email            => $email,
-                        live_chat_url    => $data->{template_args}->{live_chat_url} // '',
-                    });
-            } else {
-                my $data = $verification->{account_opening_existing}->();
-                BOM::Platform::Event::Emitter::emit(
-                    'account_opening_existing',
-                    {
-                        loginid    => $existing_user->get_default_client->loginid,
-                        properties => {
-                            code               => $data->{template_args}->{code} // '',
-                            language           => $params->{language},
-                            login_url          => $data->{template_args}->{login_url}          // '',
-                            password_reset_url => $data->{template_args}->{password_reset_url} // '',
-                            live_chat_url      => $data->{template_args}->{live_chat_url}      // '',
-                            verification_url   => $data->{template_args}->{verification_url}   // '',
-                            email              => $data->{template_args}->{email}              // '',
-                        },
-                    });
-            }
-        }
-    } elsif ($type eq 'partner_account_opening') {
-        return BOM::RPC::v3::Services::CellxpertService::verify_email($email, $verification);
-    } elsif ($client and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
-        # TODO: the following should be replaced by $rule_engine->validate_action($type )
-        # We should just wait until rhe rule engine integration of PA-withdrawal and cashier withdrawal actions.
-        my $validation_error = BOM::RPC::v3::Utility::cashier_validation($client, $type);
-        return $validation_error if $validation_error;
-
-        if (_is_impersonating_client($params->{token})) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'Permission Denied',
-                    message_to_client => localize('You can not perform a withdrawal while impersonating an account')});
-        }
-        if ($type eq 'paymentagent_withdraw') {
-            my $rule_engine = BOM::Rules::Engine->new(client => $client);
-            try {
-                $rule_engine->apply_rules(
-                    [qw/client.is_not_virtual paymentagent.paymentagent_withdrawal_allowed/],
-                    loginid                    => $client->loginid,
-                    source_bypass_verification => 0,
-                );
-            } catch ($rules_error) {
-
-                return BOM::RPC::v3::Utility::rule_engine_error($rules_error);
-
-            }
-        }
-        my $data = $verification->{payment_withdraw}->();
-        BOM::Platform::Event::Emitter::emit(
-            'request_payment_withdraw',
-            {
-                loginid    => $client->loginid,
-                properties => {
-                    verification_url => $data->{template_args}->{verification_url} // '',
-                    live_chat_url    => $data->{template_args}->{live_chat_url}    // '',
-                    first_name       => $client->first_name,
-                    code             => $data->{template_args}->{code} // '',
-                    email            => $email,
-                    language         => $params->{language},
-                },
-            });
-
-    } elsif ($existing_user and $type eq 'trading_platform_password_reset') {
-        my $verification = $verification->{trading_platform_password_reset}->();
-        request_email($email, $verification);
-
-        BOM::Platform::Event::Emitter::emit(
-            'trading_platform_password_reset_request',
-            {
-                loginid    => $existing_user->get_default_client->loginid,
-                properties => {
-                    first_name        => $existing_user->get_default_client->first_name,
-                    verification_url  => $verification->{template_args}{verification_url},
-                    code              => $verification->{template_args}{code},
-                    dxtrade_available => $verification->{template_args}{dxtrade_available},
-                },
-            });
-    } elsif ($existing_user and $type eq 'trading_platform_mt5_password_reset') {
-        my $verification = $verification->{trading_platform_mt5_password_reset}->();
-        request_email($email, $verification);
-
-        BOM::Platform::Event::Emitter::emit(
-            'trading_platform_password_reset_request',
-            {
-                loginid    => $existing_user->get_default_client->loginid,
-                properties => {
-                    first_name       => $existing_user->get_default_client->first_name,
-                    verification_url => $verification->{template_args}{verification_url},
-                    code             => $verification->{template_args}{code},
-                    platform         => 'mt5',
-                },
-            });
-    } elsif ($existing_user and $type eq 'trading_platform_dxtrade_password_reset') {
-        my $verification = $verification->{trading_platform_dxtrade_password_reset}->();
-        request_email($email, $verification);
-
-        BOM::Platform::Event::Emitter::emit(
-            'trading_platform_password_reset_request',
-            {
-                loginid    => $existing_user->get_default_client->loginid,
-                properties => {
-                    first_name       => $existing_user->get_default_client->first_name,
-                    verification_url => $verification->{template_args}{verification_url},
-                    code             => $verification->{template_args}{code},
-                    platform         => 'dxtrade',
-                },
-            });
-    } elsif ($existing_user and $type eq 'trading_platform_investor_password_reset') {
-        my $verification = $verification->{trading_platform_investor_password_reset}->();
-        request_email($email, $verification);
-
-        BOM::Platform::Event::Emitter::emit(
-            'trading_platform_investor_password_reset_request',
-            {
-                loginid    => $existing_user->get_default_client->loginid,
-                properties => {
-                    first_name       => $existing_user->get_default_client->first_name,
-                    verification_url => $verification->{template_args}{verification_url},
-                    code             => $verification->{template_args}{code},
-                },
-            });
-    }
-
-    # always return 1, so not to leak client's email
     return {status => 1};
+
     };
-
-=head2 _is_impersonating_client
-
-Description: Checks if this is an internal app like backend - if so
-we are impersonating an account.
-Takes the following arguments as named parameters
-
-=over 4
-
-=item - $token:  The token id used to authenticate with
-
-
-=back
-
-Returns a boolean
-
-=cut
-
-sub _is_impersonating_client {
-    my ($token) = @_;
-
-    my $oauth_db = BOM::Database::Model::OAuth->new;
-    my $app_id   = $oauth_db->get_app_id_by_token($token);
-    return $oauth_db->is_internal($app_id);
-}
 
 sub _update_professional_existing_clients {
 
