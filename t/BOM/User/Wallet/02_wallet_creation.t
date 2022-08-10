@@ -70,7 +70,7 @@ subtest 'Dublicate check' => sub {
     my $err = exception { $user->create_wallet(%$details) };
 
     ok $err, 'Got error in case of creating dublicate wallet account';
-    is ref $err, 'HASH', 'Error is a hash';
+    is ref $err,      'HASH',            'Error is a hash';
     is $err->{error}, 'DuplicateWallet', 'Error contains valid error code';
 };
 

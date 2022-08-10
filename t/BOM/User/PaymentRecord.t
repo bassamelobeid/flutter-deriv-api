@@ -4,7 +4,7 @@ use Test::Fatal;
 use Test::MockModule;
 use Test::Deep;
 use Test::MockTime qw/restore_time set_fixed_time/;
-use Digest::SHA qw/sha256_hex/;
+use Digest::SHA    qw/sha256_hex/;
 
 use BOM::Config::Runtime;
 use BOM::User::PaymentRecord;
@@ -48,7 +48,7 @@ subtest 'payloads' => sub {
 
     subtest 'complete args' => sub {
         $payload = 'Test|Capy|Bara|1900**9000';
-        is $pr->get_payload($payment),          $payload, 'Expected payload on a fully filled payment';
+        is $pr->get_payload($payment), $payload, 'Expected payload on a fully filled payment';
         cmp_deeply $pr->from_payload($payload), $payment, 'Expected payment from payload';
     };
 
@@ -56,7 +56,7 @@ subtest 'payloads' => sub {
 
     subtest 'payment type is undef' => sub {
         $payload = 'Test|Capy|^|1900**9000';
-        is $pr->get_payload($payment),          $payload, 'Expected payload';
+        is $pr->get_payload($payment), $payload, 'Expected payload';
         cmp_deeply $pr->from_payload($payload), $payment, 'Expected payment from payload';
     };
 
@@ -64,7 +64,7 @@ subtest 'payloads' => sub {
 
     subtest 'payment type was deleted' => sub {
         $payload = 'Test|Capy|^|1900**9000';
-        is $pr->get_payload($payment),          $payload, 'Expected payload';
+        is $pr->get_payload($payment), $payload, 'Expected payload';
         cmp_deeply $pr->from_payload($payload), $payment, 'Expected payment from payload';
     };
 
@@ -72,7 +72,7 @@ subtest 'payloads' => sub {
 
     subtest 'payment type is empty string' => sub {
         $payload = 'Test|Capy||1900**9000';
-        is $pr->get_payload($payment),          $payload, 'Expected payload';
+        is $pr->get_payload($payment), $payload, 'Expected payload';
         cmp_deeply $pr->from_payload($payload), $payment, 'Expected payment from payload';
     };
 
@@ -161,7 +161,7 @@ subtest 'redis storage' => sub {
 
         subtest 'retrieve payments' => sub {
             set_fixed_time($time);
-            cmp_deeply $pr->get_payments(0), [], 'Zero payments';
+            cmp_deeply $pr->get_payments(0),                                              [], 'Zero payments';
             cmp_deeply $pr->get_payments(1 + BOM::User::PaymentRecord::LIFETIME_IN_DAYS), [], 'Gone too far away';
 
             cmp_bag $pr->get_payments(BOM::User::PaymentRecord::LIFETIME_IN_DAYS),

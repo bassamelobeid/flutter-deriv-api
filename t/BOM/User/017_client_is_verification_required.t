@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More qw(no_plan);
+use Test::More  qw(no_plan);
 use Test::Fatal qw(lives_ok);
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

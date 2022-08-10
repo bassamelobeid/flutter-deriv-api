@@ -11,7 +11,7 @@ use Net::Async::HTTP;
 use Syntax::Keyword::Try;
 
 use URI;
-use Log::Any qw($log);
+use Log::Any        qw($log);
 use JSON::MaybeUTF8 qw(:v1);
 use Getopt::Long;
 use List::Util qw(uniq);

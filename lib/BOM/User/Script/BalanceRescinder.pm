@@ -4,15 +4,15 @@ use strict;
 use warnings;
 no indirect;
 
-use JSON::MaybeXS qw(encode_json);
+use JSON::MaybeXS        qw(encode_json);
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use Log::Any qw($log);
 use Date::Utility;
 use Syntax::Keyword::Try;
 use BOM::Platform::Context qw(request);
-use Format::Util::Numbers qw(formatnumber);
-use List::Util qw(none);
+use Format::Util::Numbers  qw(formatnumber);
+use List::Util             qw(none);
 
 =head1 NAME
 

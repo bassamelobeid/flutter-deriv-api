@@ -6,7 +6,7 @@ use Test::Deep;
 
 use BOM::User::Script::BalanceRescinder;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw(top_up);
+use BOM::Test::Helper::Client                  qw(top_up);
 use BOM::Test::Email;
 use LandingCompany::Registry;
 
@@ -133,10 +133,10 @@ for my $broker_code (@broker_codes) {
             my $cli = BOM::User::Client->new({loginid => $loginid});
             ok $cli->default_account->balance == 0, 'Expected 0 balance after rescind';
 
-            is $rescinded{$loginid}->{currency_code},    $cli->currency, 'currency in summary';
-            cmp_ok $rescinded{$loginid}->{balance},      '==', $expected_to_rescind{$loginid}, 'balance in summary';
+            is $rescinded{$loginid}->{currency_code}, $cli->currency, 'currency in summary';
+            cmp_ok $rescinded{$loginid}->{balance}, '==', $expected_to_rescind{$loginid}, 'balance in summary';
             cmp_deeply $rescinded{$loginid}->{statuses}, ['disabled'], 'statuses in summary';
-            is $rescinded{$loginid}->{error},            undef, 'error is undef in summary';
+            is $rescinded{$loginid}->{error}, undef, 'error is undef in summary';
         }
 
         mailbox_clear();
@@ -250,10 +250,10 @@ for my $broker_code (@broker_codes) {
                 my $cli = BOM::User::Client->new({loginid => $loginid});
                 ok $cli->default_account->balance == 0, 'Expected 0 balance after rescind';
 
-                is $rescinded{$loginid}->{currency_code},    $cli->currency, 'currency in summary';
-                cmp_ok $rescinded{$loginid}->{balance},      '==', $expected_to_rescind{$loginid}, 'balance in summary';
+                is $rescinded{$loginid}->{currency_code}, $cli->currency, 'currency in summary';
+                cmp_ok $rescinded{$loginid}->{balance}, '==', $expected_to_rescind{$loginid}, 'balance in summary';
                 cmp_deeply $rescinded{$loginid}->{statuses}, ['disabled'], 'statuses in summary';
-                is $rescinded{$loginid}->{error},            undef, 'error is undef in summary';
+                is $rescinded{$loginid}->{error}, undef, 'error is undef in summary';
             }
 
             mailbox_clear();

@@ -8,7 +8,7 @@ use Test::Warnings;
 use Test::Deep;
 use Test::MockModule;
 use Log::Any::Test;
-use Log::Any qw($log);
+use Log::Any        qw($log);
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -81,9 +81,7 @@ subtest 'store & get onfido applicant' => sub {
     qr/Fail to store Onfido/, 'incorrect user_id will cause exception';
     lives_ok { BOM::User::Onfido::store_onfido_applicant($app1, $test_client->binary_user_id); } 'now storing onfido should pass';
     lives_ok { BOM::User::Onfido::store_onfido_applicant($app2, $test_client->binary_user_id); } 'store app2 ';
-    throws_ok {
-        warning_like { BOM::User::Onfido::get_all_user_onfido_applicant("hello"); } qr/invalid input syntax for integer/, 'there is warn'
-    }
+    throws_ok { warning_like { BOM::User::Onfido::get_all_user_onfido_applicant("hello"); } qr/invalid input syntax for integer/, 'there is warn' }
     qr/Please check USER_ID/, 'incorrect user-id will cause exception';
     my $result = BOM::User::Onfido::get_all_user_onfido_applicant($test_client->binary_user_id);
     ok($result, 'now has result when getting applicant');
@@ -901,15 +899,15 @@ subtest 'get consider reasons' => sub {
 
         ok $redis->get($pending_key), 'Expected pending flag';
         ok $redis->ttl($pending_key), 'TTL set';
-        is $redis->get($key),         1, 'Expected counter initialized';
-        ok $redis->ttl($key),         'TTL set';
+        is $redis->get($key), 1, 'Expected counter initialized';
+        ok $redis->ttl($key),                                                'TTL set';
         ok BOM::User::Onfido::pending_request($test_client->binary_user_id), 'Has a pending request';
 
         $applicant_id = 'R01-x01';
         $redis->del($pending_key);
 
         ok !BOM::User::Onfido::pending_request($test_client->binary_user_id), 'Does not have a pending request';
-        ok BOM::User::Onfido::ready_for_authentication($test_client), 'Ready for auth';
+        ok BOM::User::Onfido::ready_for_authentication($test_client),         'Ready for auth';
 
         cmp_deeply $emission,
             {
@@ -922,8 +920,8 @@ subtest 'get consider reasons' => sub {
 
         ok $redis->get($pending_key), 'Expected pending flag';
         ok $redis->ttl($pending_key), 'TTL set';
-        is $redis->get($key),         2, 'Counter increased';
-        ok $redis->ttl($key),         'TTL set';
+        is $redis->get($key), 2, 'Counter increased';
+        ok $redis->ttl($key), 'TTL set';
 
         $redis->del($pending_key);
         ok BOM::User::Onfido::ready_for_authentication($test_client, {documents => ['S3', 'X', 'Y']}), 'ready for auth';
@@ -940,8 +938,8 @@ subtest 'get consider reasons' => sub {
 
         ok $redis->get($pending_key), 'Expected pending flag';
         ok $redis->ttl($pending_key), 'TTL set';
-        is $redis->get($key),         3, 'Counter increased';
-        ok $redis->ttl($key),         'TTL set';
+        is $redis->get($key), 3, 'Counter increased';
+        ok $redis->ttl($key), 'TTL set';
 
         subtest 'pending flag still alive' => sub {
             $log->clear();

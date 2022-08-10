@@ -12,7 +12,7 @@ use BOM::User;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 
 my $user_client1 = BOM::User->create(
     email          => 'abc@binary.com',
@@ -443,7 +443,7 @@ subtest 'has valid documents' => sub {
             }};
 
         ok !$client_cr->documents->valid('proof_of_identity'), 'Invalid due to expired POI';
-        ok $client_cr->documents->valid('other'), 'Valid due to non expired Other';
+        ok $client_cr->documents->valid('other'),              'Valid due to non expired Other';
 
         $docs = {
             'other' => {
@@ -456,7 +456,7 @@ subtest 'has valid documents' => sub {
             }};
 
         ok $client_cr->documents->valid('proof_of_identity'), 'Valid due to non expired POI';
-        ok !$client_cr->documents->valid('other'), 'Invalid due to expired Other';
+        ok !$client_cr->documents->valid('other'),            'Invalid due to expired Other';
     };
 
     subtest 'expiry check not required' => sub {
@@ -515,7 +515,7 @@ subtest 'has valid documents' => sub {
                 }};
 
             ok $client_cr->documents->valid('proof_of_identity'), 'Expire check not enforced';
-            ok !$client_cr->documents->expired(), 'Expire check not enforced';
+            ok !$client_cr->documents->expired(),                 'Expire check not enforced';
 
             $docs = {
                 'proof_of_identity' => {
@@ -524,7 +524,7 @@ subtest 'has valid documents' => sub {
                 }};
 
             ok !$client_cr->documents->valid($docs, 'proof_of_identity', 1), 'Expire check was enforced';
-            ok $client_cr->documents->expired(1), 'Expire check was enforced';
+            ok $client_cr->documents->expired(1),                            'Expire check was enforced';
         };
     };
 
@@ -1047,7 +1047,7 @@ subtest 'Lifetime Valid Documents' => sub {
         'Expired document uploaded';
 
     ok $client->documents->expired(), 'Client has expired docs';
-    ok !$client->documents->valid(), 'Client does not have valid docs';
+    ok !$client->documents->valid(),  'Client does not have valid docs';
 
     my $documents_uploaded = $client->documents->uploaded();
     ok upload_new_doc(
@@ -1068,7 +1068,7 @@ subtest 'Lifetime Valid Documents' => sub {
         'Expired document uploaded';
 
     ok $client->documents->expired(), 'Client has expired docs still';
-    ok !$client->documents->valid(), 'Client does not have valid docs still';
+    ok !$client->documents->valid(),  'Client does not have valid docs still';
 
     ok $documents_uploaded->{proof_of_identity}->{expiry_date}, 'POI has expiry_date reported';
     ok $documents_uploaded->{proof_of_identity}->{is_expired},  'POI has is_expired reported';
@@ -1090,7 +1090,7 @@ subtest 'Lifetime Valid Documents' => sub {
         'Lifetime valid document uploaded';
 
     ok !$client->documents->expired(), 'Client has lifetime valid docs';
-    ok $client->documents->valid(), 'Client has valid docs';
+    ok $client->documents->valid(),    'Client has valid docs';
 
     $documents_uploaded = $client->documents->uploaded();
     ok !$documents_uploaded->{proof_of_identity}->{expiry_date}, 'POI does not have expiry_date reported';

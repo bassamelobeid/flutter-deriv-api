@@ -30,9 +30,9 @@ use BOM::TradingPlatform::DXTrader;
 use BOM::TradingPlatform::MT5;
 use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
-use Format::Util::Numbers qw(financialrounding);
+use Format::Util::Numbers            qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
-use List::Util qw(first);
+use List::Util                       qw(first);
 
 use constant CLASS_DICT => {
     mt5     => 'BOM::TradingPlatform::MT5',
@@ -211,7 +211,7 @@ sub validate_transfer {
     my $local_currency = $self->client->account->currency_code;
 
     my $suspended_currency = first { $_ eq $local_currency or $_ eq $platform_currency }
-    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies->@*;
+        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies->@*;
     die +{
         error_code     => 'PlatformTransferCurrencySuspended',
         message_params => [$suspended_currency]} if $suspended_currency;

@@ -11,11 +11,11 @@ use Test::MockModule;
 
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 
 use Date::Utility;
 use Array::Utils qw(array_minus);
-use List::Util qw(uniq);
+use List::Util   qw(uniq);
 
 my $login_id = 'CR0022';
 my $client;
@@ -131,7 +131,7 @@ subtest "Client load and saving." => sub {
         'compare secret_question between client object instantize with client hash ref'
     );
     is($client2->date_joined =~ /^$client_details->{'date_joined'}/, 1, 'compare date_joined between client object instantize with client hash ref');
-    is($client2->email, $client_details->{'email'}, 'compare email between client object instantize with client hash ref');
+    is($client2->email, $client_details->{'email'},                     'compare email between client object instantize with client hash ref');
     is(
         $client2->latest_environment,
         $client_details->{'latest_environment'},
@@ -266,7 +266,7 @@ subtest "format and validate" => sub {
 
     $args = {address_state => 'Dummy Value'};
     is $client->format_input_details($args), undef, 'No error for invalid state without residence';
-    is $args->{address_state}, undef, 'Invalid state is removed if residence is empty';
+    is $args->{address_state},               undef, 'Invalid state is removed if residence is empty';
 
     $args = {
         address_state => 'Dummy Value',
@@ -279,7 +279,7 @@ subtest "format and validate" => sub {
         residence     => 'id'
     };
     is $client->format_input_details($args), undef, 'No error for a valid state name with residence';
-    is $args->{address_state}, 'SM', 'State name is converted form text to code';
+    is $args->{address_state},               'SM',  'State name is converted form text to code';
 
     $args = {date_of_birth => '2010-10-15'};
     is $client->validate_common_account_details($args)->{error}, 'BelowMinimumAge', 'validate_common_account_details: BelowMinimumAge';
@@ -724,8 +724,8 @@ sub test_validation_on_required_fields {
         for my $field (@$list) {
             my $args  = {$field => "  \r  \f\t\n \t\t\t\r"};
             my $error = $client->validate_common_account_details($args);
-            is $error->{error}, 'InputValidationFailed', 'error code is OK - InputValidationFailed';
-            is $error->{details}->{field}, $field, "error details is OK - $field";
+            is $error->{error},            'InputValidationFailed', 'error code is OK - InputValidationFailed';
+            is $error->{details}->{field}, $field,                  "error details is OK - $field";
         }
     }
 }

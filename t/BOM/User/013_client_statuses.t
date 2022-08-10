@@ -9,7 +9,7 @@ use Date::Utility;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 
 use BOM::User::Client;
 
@@ -331,14 +331,14 @@ subtest 'Upsert' => sub {
         });
     # A fresh client should not hit the _clear method
     $client->status->upsert('unwelcome', 'test', 'first reason');
-    ok !$clear_status_code, 'Clear not hit';
+    ok !$clear_status_code,        'Clear not hit';
     ok $client->status->unwelcome, 'Status set';
     is $client->status->reason('unwelcome'), 'first reason', 'Reason set';
 
     # Since the reason is the same, no need to hit _clear
     $clear_status_code = undef;
     $client->status->upsert('unwelcome', 'test', 'first reason');
-    ok !$clear_status_code, 'Clear not hit';
+    ok !$clear_status_code,        'Clear not hit';
     ok $client->status->unwelcome, 'Status set';
     is $client->status->reason('unwelcome'), 'first reason', 'Reason remains';
 

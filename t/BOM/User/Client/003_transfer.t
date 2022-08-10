@@ -4,8 +4,8 @@ use Test::More;
 use Test::MockModule;
 use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
-use BOM::Test::Helper::ExchangeRates qw( populate_exchange_rates_db );
+use BOM::Test::Helper::Client                  qw( create_client );
+use BOM::Test::Helper::ExchangeRates           qw( populate_exchange_rates_db );
 
 my $emit_data;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');

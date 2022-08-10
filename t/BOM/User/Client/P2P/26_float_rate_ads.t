@@ -6,7 +6,7 @@ use Test::Fatal;
 use Test::Exception;
 use Test::Deep;
 use Test::MockModule;
-use List::Util qw(pairs);
+use List::Util      qw(pairs);
 use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::User::Client;
@@ -392,12 +392,12 @@ subtest 'rate fields' => sub {
 
     for my $k (keys %ads) {
         my $item = $ads{$k};
-        cmp_ok $item->{rate},               '==',     0.10, "$k rate";
-        is $item->{rate_display},           '+0.10',  "$k rate_display";
-        cmp_ok $item->{effective_rate},     '==',     100.1, "$k effective_rate";
+        cmp_ok $item->{rate}, '==', 0.10, "$k rate";
+        is $item->{rate_display}, '+0.10', "$k rate_display";
+        cmp_ok $item->{effective_rate}, '==', 100.1, "$k effective_rate";
         is $item->{effective_rate_display}, '100.10', "$k effective_rate_display";
-        cmp_ok $item->{price},              '==',     100.1, "$k price";
-        is $item->{price_display},          '100.10', "$k price_display";
+        cmp_ok $item->{price}, '==', 100.1, "$k price";
+        is $item->{price_display}, '100.10', "$k price_display";
     }
 
     my $buy_ad = $client->p2p_advert_create(

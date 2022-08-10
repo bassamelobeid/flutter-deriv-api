@@ -9,7 +9,7 @@ use Date::Utility;
 use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client top_up );
+use BOM::Test::Helper::Client                  qw( create_client top_up );
 
 use BOM::User::Client;
 use BOM::User::Client::Account;

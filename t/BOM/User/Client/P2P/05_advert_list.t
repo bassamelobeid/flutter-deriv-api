@@ -9,7 +9,7 @@ use BOM::User::Client;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
+use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
@@ -68,9 +68,9 @@ subtest 'advertiser adverts' => sub {
     $advertiser2->p2p_advertiser_update(is_listed => 0);
 
     is $advertiser1->p2p_advertiser_adverts()->[0]{id}, $advert1->{id}, 'advertiser 1 (active) gets advert';
-    is $advertiser1->p2p_advertiser_adverts()->@*, 1, 'advertiser 1 got one';
+    is $advertiser1->p2p_advertiser_adverts()->@*,      1,              'advertiser 1 got one';
     is $advertiser2->p2p_advertiser_adverts()->[0]{id}, $advert2->{id}, 'advertiser 2 (inactive) gets advert';
-    is $advertiser2->p2p_advertiser_adverts()->@*, 1, 'advertiser 2 got one';
+    is $advertiser2->p2p_advertiser_adverts()->@*,      1,              'advertiser 2 got one';
 };
 
 subtest 'country & currency filtering' => sub {

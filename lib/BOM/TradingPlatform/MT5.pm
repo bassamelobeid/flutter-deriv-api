@@ -12,7 +12,7 @@ use BOM::Config::MT5;
 use BOM::MT5::User::Async;
 use BOM::User::Utility;
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use Log::Any qw($log);
+use Log::Any                   qw($log);
 use LandingCompany::Registry;
 use Brands;
 

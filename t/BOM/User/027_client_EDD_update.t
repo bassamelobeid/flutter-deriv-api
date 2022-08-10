@@ -5,7 +5,7 @@ use Test::More;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 use BOM::Test::Email;
 use BOM::User::Client;
 
@@ -72,7 +72,7 @@ subtest 'add payment client CR company with n/a status' => sub {
         }];
     my $EDD_clients = $c->_update_EDD_clients_status($landing_company);
     ok(!@$EDD_clients, 'no new clients found having more than 20k with n/a EDD status set');
-    ok !$client_cr->status->unwelcome, 'client is not unwelcome';
+    ok !$client_cr->status->unwelcome,            'client is not unwelcome';
     ok $client_cr->status->allow_document_upload, "Pending EDD docs/info";
     is($emitted[0][1]->{properties}->{first_name}, $client_cr->{first_name},      'first name is correct');
     is($emitted[0][0],                             'request_edd_document_upload', 'event name is correct');
@@ -157,7 +157,7 @@ subtest 'add payment client CR company with no EDD status set' => sub {
         }];
     my $EDD_clients = $c->_update_EDD_clients_status($landing_company);
     ok(!@$EDD_clients, 'no new clients found having more than 20k with no EDD status set');
-    ok !$client_cr->status->unwelcome, 'client is not unwelcome';
+    ok !$client_cr->status->unwelcome,            'client is not unwelcome';
     ok $client_cr->status->allow_document_upload, "Pending EDD docs/info";
     is($emitted[0][1]->{properties}->{first_name}, $client_cr->{first_name},      'first name is correct');
     is($emitted[0][0],                             'request_edd_document_upload', 'event name is correct');

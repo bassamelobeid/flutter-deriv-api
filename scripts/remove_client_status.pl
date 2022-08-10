@@ -15,7 +15,7 @@ use warnings;
 
 use Getopt::Long;
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
-use Log::Any qw($log);
+use Log::Any   qw($log);
 use Pod::Usage qw(pod2usage);
 use Text::CSV;
 

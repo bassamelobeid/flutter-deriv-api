@@ -27,7 +27,7 @@ subtest 'Circuit status is closed at the beginning' => sub {
         server_type => 'server-type',
         server_code => 'server-code'
     );
-    ok $circuit_breaker->_is_circuit_closed(), 'Circuit status is closed';
+    ok $circuit_breaker->_is_circuit_closed(),     'Circuit status is closed';
     ok !$circuit_breaker->_is_circuit_open(),      'Circuit status is not open';
     ok !$circuit_breaker->_is_circuit_half_open(), 'Circuit status is not half open';
     $mock_redis->unmock_all();
@@ -48,8 +48,8 @@ subtest 'Circuit status is open' => sub {
         server_type => 'server-type',
         server_code => 'server-code'
     );
-    ok !$circuit_breaker->_is_circuit_closed(), 'Circuit status is not closed';
-    ok $circuit_breaker->_is_circuit_open(), 'Circuit status is open';
+    ok !$circuit_breaker->_is_circuit_closed(),    'Circuit status is not closed';
+    ok $circuit_breaker->_is_circuit_open(),       'Circuit status is open';
     ok !$circuit_breaker->_is_circuit_half_open(), 'Circuit status is not half open';
     $mock_redis->unmock_all();
 };
@@ -68,8 +68,8 @@ subtest 'Circuit status is half open' => sub {
         server_type => 'server-type',
         server_code => 'server-code'
     );
-    ok !$circuit_breaker->_is_circuit_closed(), 'Circuit status is not closed';
-    ok !$circuit_breaker->_is_circuit_open(),   'Circuit status is not open';
+    ok !$circuit_breaker->_is_circuit_closed(),   'Circuit status is not closed';
+    ok !$circuit_breaker->_is_circuit_open(),     'Circuit status is not open';
     ok $circuit_breaker->_is_circuit_half_open(), 'Circuit status is half open';
     $mock_redis->unmock_all();
 };

@@ -10,8 +10,8 @@ use Test::MockTime qw(restore_time set_fixed_time);
 use Test::Deep;
 use BOM::User::Client::PaymentAgent;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
-use BOM::Test::Helper::Client qw( top_up );
+use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
+use BOM::Test::Helper::Client                  qw( top_up );
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 use BOM::Config::Runtime;
@@ -218,15 +218,15 @@ subtest 'get payment agents by name' => sub {
     is $result->@*, 0, 'No result for non-existing name';
 
     $result = $pa->get_payment_agents_by_name('Joe');
-    is $result->@*, 1, 'One row is found';
+    is $result->@*,                    1,                   'One row is found';
     is $result->[0]->{client_loginid}, $pa_client->loginid, 'Client loginid is correct';
 
     $result = $pa->get_payment_agents_by_name('Joe 2');
-    is $result->@*, 1, 'One row is found';
+    is $result->@*,                    1,                     'One row is found';
     is $result->[0]->{client_loginid}, $pa_client_2->loginid, 'Client loginid is correct';
 
     $result = $pa->get_payment_agents_by_name('jOE 2');
-    is $result->@*, 1, 'The search is case insensitive';
+    is $result->@*,                    1,                     'The search is case insensitive';
     is $result->[0]->{client_loginid}, $pa_client_2->loginid, 'Client loginid is correct';
 };
 
@@ -380,8 +380,8 @@ subtest 'validate payment agent details' => sub {
         $args{services_allowed}          = undef;
         $args{services_allowed_comments} = 'This comment will be removed - no allowed services';
         is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
-        is $result->{services_allowed},          undef, 'Services are removed from output';
-        is $result->{services_allowed_comments}, undef, 'Services comments are removed from output';
+        is $result->{services_allowed},                                        undef, 'Services are removed from output';
+        is $result->{services_allowed_comments},                               undef, 'Services comments are removed from output';
 
         $args{services_allowed}          = [];
         $args{services_allowed_comments} = 'This comment will be cleared - empty services';
@@ -392,7 +392,7 @@ subtest 'validate payment agent details' => sub {
         $args{services_allowed}          = ['p2p', 'cashier_withdraw'];
         $args{services_allowed_comments} = 'This PA is a sweetheart';
         is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
-        is_deeply $result->{services_allowed},   $args{services_allowed},          'Services are there';
+        is_deeply $result->{services_allowed}, $args{services_allowed}, 'Services are there';
         is $result->{services_allowed_comments}, $args{services_allowed_comments}, 'Services comments are there';
     };
 
@@ -622,7 +622,7 @@ subtest 'copy payment agent details and related' => sub {
     ok $client1->get_payment_agent->set_countries([qw/af ch/]), 'Countries are set';
 
     my @pa_list = $client1->get_payment_agent->sibling_payment_agents;
-    is scalar @pa_list, 1, 'There is one sibling payment agent';
+    is scalar @pa_list,                 1,           'There is one sibling payment agent';
     is $pa_list[0]->payment_agent_name, 'Copy PA 1', 'PA name is correct';
 
     my $args2 = {

@@ -275,8 +275,8 @@ subtest 'blocking' => sub {
     is $me->p2p_advertiser_info->{blocked_by_count}, 0, 'blocker has 0 blocked_by_count';
 
     delete $other1->{_p2p_advertiser_cached};
-    is $other1->p2p_advertiser_info->{blocked_by_count}, 1, 'blockee has 1 blocked_by_count';
-    is $other1->p2p_advertiser_update()->{blocked_by_count}, 1, 'blocked_by_count returned for empty advertiser update';
+    is $other1->p2p_advertiser_info->{blocked_by_count},                          1, 'blockee has 1 blocked_by_count';
+    is $other1->p2p_advertiser_update()->{blocked_by_count},                      1, 'blocked_by_count returned for empty advertiser update';
     is $other1->p2p_advertiser_update(contact_info => 'xyz')->{blocked_by_count}, 1, 'blocked_by_count returned for actual advertiser update';
 
     cmp_deeply(
@@ -286,7 +286,7 @@ subtest 'blocking' => sub {
     );
 
     ok $me->p2p_advertiser_info(id => $other1->_p2p_advertiser_cached->{id})->{is_blocked}, 'blocker gets blocked flag in advertiser details';
-    ok $me->p2p_advert_info(id => $other1_ad->{id})->{advertiser_details}{is_blocked}, 'blocker gets blocked flag in ad details';
+    ok $me->p2p_advert_info(id => $other1_ad->{id})->{advertiser_details}{is_blocked},      'blocker gets blocked flag in ad details';
 
     my $ads = $me->p2p_advertiser_adverts;
     ok(!exists $_->{advertiser_details}{is_favourite}, 'is_favourite not present in my ads') for @$ads;
@@ -324,7 +324,7 @@ subtest 'blocking' => sub {
 
     $me->p2p_advertiser_relations(add_blocked => [$other1->_p2p_advertiser_cached->{id}, $other2->_p2p_advertiser_cached->{id}]);
     ok $me->p2p_advertiser_info(id => $other2->_p2p_advertiser_cached->{id})->{is_blocked}, 'blocked advertiser with active order';
-    ok $me->p2p_advert_info(id => $other2_ad->{id})->{advertiser_details}{is_blocked}, 'blocked ad with active order';
+    ok $me->p2p_advert_info(id => $other2_ad->{id})->{advertiser_details}{is_blocked},      'blocked ad with active order';
 
     is(
         exception {
