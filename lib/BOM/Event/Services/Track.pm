@@ -150,6 +150,7 @@ my %EVENT_PROPERTIES = (
     withdrawal_rejected         => [qw(first_name reason remark)],
     account_deactivated         => [qw(name brand)],
     request_edd_document_upload => [qw(first_name email login_url expiry_date live_chat_url)],
+    p2p_order_confirm_verify    => [qw(verification_url order_id order_amount buyer_name code)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -186,6 +187,7 @@ my @COMMON_EVENT_METHODS = qw(
     pa_withdraw_confirm
     withdrawal_rejected
     account_deactivated
+    p2p_order_confirm_verify
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1384,6 +1386,10 @@ It is triggered for each B<withdrawal_rejected> event emitted, delivering it to 
 =head2 poi_authentication_requested
 
 It is triggered for each B<poi_authentication_requested> event emitted, delivering it to Segment.
+
+=head2 p2p_order_confirm_verify
+
+It is triggered for each B<p2p_order_confirm_verify> event emitted, delivering it to Segment.
 
 =cut
 

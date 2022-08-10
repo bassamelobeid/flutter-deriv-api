@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
+use BOM::Config::Runtime;
 use Brands;
 
 my (@identify_args, @track_args);
@@ -24,6 +25,10 @@ my $req      = BOM::Platform::Context::Request->new(
     app_id     => $app_id
 );
 request($req);
+
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->transaction_verification_countries([]);
+$config->transaction_verification_countries_all(0);
 
 $mock_segment->redefine(
     'identify' => sub {

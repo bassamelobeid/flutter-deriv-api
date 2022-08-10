@@ -154,6 +154,7 @@ my $action_mapping = {
         multiplier_near_dc_notification                  => \&BOM::Event::Services::Track::multiplier_near_dc_notification,
         withdrawal_rejected                              => \&BOM::Event::Services::Track::withdrawal_rejected,
         account_deactivated                              => \&BOM::Event::Services::Track::account_deactivated,
+        p2p_order_confirm_verify                         => \&BOM::Event::Services::Track::p2p_order_confirm_verify,
     },
     mt5_retryable => {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,
