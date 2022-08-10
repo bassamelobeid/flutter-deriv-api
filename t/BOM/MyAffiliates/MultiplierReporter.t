@@ -6,7 +6,7 @@ use warnings;
 use Test::More (tests => 2);
 use Test::Warnings;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 
 use BOM::MyAffiliates::MultiplierReporter;
 use YAML::XS qw(LoadFile);

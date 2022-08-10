@@ -24,8 +24,8 @@ extends 'BOM::MyAffiliates::Reporter';
 
 use Date::Utility;
 use Text::CSV;
-use File::SortedSeek qw/numeric get_between/;
-use Format::Util::Numbers qw/financialrounding/;
+use File::SortedSeek                 qw/numeric get_between/;
+use Format::Util::Numbers            qw/financialrounding/;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::Config::Runtime;
 use BOM::Config::QuantsConfig;

@@ -6,13 +6,13 @@ use Test::Deep;
 use Test::Warnings;
 use Date::Utility;
 use Format::Util::Numbers qw/financialrounding/;
-use List::Util qw(first);
+use List::Util            qw(first);
 
 use Brands;
 
 use BOM::MyAffiliates::TurnoverReporter;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 use BOM::Database::DataMapper::FinancialMarketBet;
 
 subtest 'turnover' => sub {
@@ -71,7 +71,7 @@ subtest 'turnover' => sub {
     );
 
     my @row = split ',', $csv[1];
-    is $row[0], '2017-09-01', 'got correct transaction time';
+    is $row[0], '2017-09-01',     'got correct transaction time';
     is $row[1], $client->loginid, 'got correct loginid';
 
     ok $row[2], 'has stake price';

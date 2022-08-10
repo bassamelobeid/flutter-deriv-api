@@ -24,10 +24,10 @@ extends 'BOM::MyAffiliates::Reporter';
 
 use Text::CSV;
 use Date::Utility;
-use File::SortedSeek qw(numeric get_between);
-use Format::Util::Numbers qw(formatnumber);
+use File::SortedSeek                 qw(numeric get_between);
+use Format::Util::Numbers            qw(formatnumber);
 use ExchangeRates::CurrencyConverter qw(in_usd);
-use YAML::XS qw(LoadFile);
+use YAML::XS                         qw(LoadFile);
 use BOM::Config::Runtime;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
