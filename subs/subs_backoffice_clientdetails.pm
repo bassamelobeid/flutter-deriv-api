@@ -941,8 +941,15 @@ sub build_client_warning_message {
         $output .= '</tbody></table></div>';
         $output .= '<div class="row btn-group">';
         $output .= '<button class="btn btn--primary" name="status_op" value="remove">Remove selected</button> ';
-        $output .= '<button class="btn btn--primary" name="status_op" value="remove_siblings">Remove selected including siblings</button> ';
-        $output .= '<button class="btn btn--primary" name="status_op" value="sync">Copy selected to siblings</button>';
+        $output .=
+            '<button class="btn btn--primary" name="status_op" value="remove_siblings">Remove selected including accounts within same landing company</button> ';
+        $output .= '<button class="btn btn--primary" name="status_op" value="sync">Copy selected to accounts within same landing company</button>';
+        $output .= '<div class="row btn-group" style=\'margin-top: 8px;\'>';
+        $output .=
+            '<button class="btn btn--primary" name="status_op" value="remove_accounts">Remove selected including accounts in all landing companies (including virtual)</button> ';
+        $output .=
+            '<button class="btn btn--primary" name="status_op" value="sync_accounts">Copy selected to accounts in all landing companies (including virtual)</button>';
+        $output .= '</div>';
         $output .= '<input type="hidden" name="p2p_approved" value="' . $p2p_approved . '">';
         $output .= '</div>';
         $output .= '</form>';
@@ -1019,7 +1026,7 @@ sub status_op_processor {
                 my $client_status_clearer_method_name = 'clear_' . $status;
                 $client->status->$client_status_clearer_method_name;
                 $summary .= "<div class='notify'><b>SUCCESS :</b>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from <b>$loginid</b></div>";
-            } elsif ($status_op eq 'remove_siblings') {
+            } elsif ($status_op eq 'remove_siblings' or $status_op eq 'remove_accounts') {
                 $summary .= status_op_processor(
                     $client,
                     {
@@ -1027,15 +1034,17 @@ sub status_op_processor {
                         status_op      => 'remove',
                     });
 
-                my $updated_client_loginids = $client->clear_status_and_sync_to_siblings($status, BOM::Backoffice::Auth0::get_staffname());
+                my $updated_client_loginids =
+                    $client->clear_status_and_sync_to_siblings($status, BOM::Backoffice::Auth0::get_staffname(), $status_op eq 'remove_accounts');
                 my $siblings = join ', ', $updated_client_loginids->@*;
 
                 if (scalar $updated_client_loginids->@*) {
                     $summary .=
                         "<div class='notify'><b>SUCCESS :</b><&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from siblings:<b>$siblings</b></div>";
                 }
-            } elsif ($status_op eq 'sync') {
-                my $updated_client_loginids = $client->copy_status_to_siblings($status, BOM::Backoffice::Auth0::get_staffname());
+            } elsif ($status_op eq 'sync' or $status_op eq 'sync_accounts') {
+                my $updated_client_loginids =
+                    $client->copy_status_to_siblings($status, BOM::Backoffice::Auth0::get_staffname(), $status_op eq 'sync_accounts');
                 my $siblings = join ', ', $updated_client_loginids->@*;
 
                 if (scalar $updated_client_loginids->@*) {
@@ -1045,9 +1054,11 @@ sub status_op_processor {
             }
         } catch {
             my $fail_op = 'process';
-            $fail_op = 'remove'               if $status_op eq 'remove';
-            $fail_op = 'remove from siblings' if $status_op eq 'remove_siblings';
-            $fail_op = 'copy to siblings'     if $status_op eq 'sync';
+            $fail_op = 'remove'                                                                        if $status_op eq 'remove';
+            $fail_op = 'remove from siblings'                                                          if $status_op eq 'remove_siblings';
+            $fail_op = 'copy to siblings'                                                              if $status_op eq 'sync';
+            $fail_op = 'copy to accounts, only DISABLED ACCOUNTS can be synced to all accounts'        if $status_op eq 'sync_accounts';
+            $fail_op = 'remove from accounts, only DISABLED ACCOUNTS can be removed from all accounts' if $status_op eq 'remove_accounts';
 
             $summary .=
                 "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.</div>";
@@ -2269,7 +2280,7 @@ sub _get_detailed_reason {
         POTENTIAL_FRAUD                     => 'Client was identified as potential fraud',
     };
 
-    return $status_reason_map->{$status_reason} // $status_reason;
+    return $status_reason ? $status_reason_map->{$status_reason} // $status_reason : 'Unknown reason';
 }
 
 =head2 get_mt5_group_and_status
