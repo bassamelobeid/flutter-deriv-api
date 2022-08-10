@@ -3,9 +3,9 @@ use warnings;
 use Test::More;
 
 use BOM::Database::DataMapper::CollectorReporting;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init :disable_redis_cleanup);
+use BOM::Test::Data::Utility::AuthTestDatabase          qw(:init :disable_redis_cleanup);
 use Date::Utility;
 
 my $db            = BOM::Test::Data::Utility::UnitTestCollectorDatabase::db();

@@ -40,9 +40,9 @@ use warnings;
 
 use Moo;
 
-use Digest::MD5 qw(md5_hex);
+use Digest::MD5  qw(md5_hex);
 use Scalar::Util qw(looks_like_number);
-use List::Util qw(uniq all);
+use List::Util   qw(uniq all);
 use Finance::Underlying;
 use Syntax::Keyword::Try;
 
@@ -311,7 +311,7 @@ sub get_global_limit {
             foreach my $key (@key_list) {
                 my $val = $args->{$key};
                 $val = $val eq 'atm' ? 1 : 0 if $key eq 'barrier_type' and defined $val;
-                $val = undef if $key eq 'underlying_symbol' and $val and $val eq 'default';
+                $val = undef                 if $key eq 'underlying_symbol' and $val and $val eq 'default';
                 push @execute_args, $val;
             }
             my $sth = $_->prepare($statement);
@@ -455,8 +455,11 @@ sub delete_market_group {
     my $statement = qq{SELECT betonmarkets.delete_quants_wishlist(?,?,?,?)};
     foreach my $db (@{$self->_db_list($args->{landing_company})}) {
         foreach my $symbol (split ',', $args->{symbol}) {
-            my @execute_args = ($args->{market}, $symbol, Date::Utility->new($args->{start_time})->db_timestamp,
-                Date::Utility->new($args->{end_time})->db_timestamp);
+            my @execute_args = (
+                $args->{market}, $symbol,
+                Date::Utility->new($args->{start_time})->db_timestamp,
+                Date::Utility->new($args->{end_time})->db_timestamp
+            );
             $self->_update_db($db, $statement, \@execute_args);
         }
     }

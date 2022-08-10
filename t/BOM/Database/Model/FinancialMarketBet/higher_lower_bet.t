@@ -138,18 +138,18 @@ lives_ok {
 'expect to sell';
 
 subtest 'Expect that all fields are the same after loading FROM account transfer record' => sub {
-    is $higher_lower->financial_market_bet_open_record->account_id,        $account->id;
-    is $higher_lower->financial_market_bet_open_record->underlying_symbol, 'frxUSDJPY';
-    is $higher_lower->financial_market_bet_open_record->payout_price,      '200.00';
-    is $higher_lower->financial_market_bet_open_record->buy_price,         '20.00';
-    is $higher_lower->financial_market_bet_open_record->sell_price,        '40.00';
-    is $higher_lower->financial_market_bet_open_record->remark,            'Test Remark';
+    is $higher_lower->financial_market_bet_open_record->account_id,              $account->id;
+    is $higher_lower->financial_market_bet_open_record->underlying_symbol,       'frxUSDJPY';
+    is $higher_lower->financial_market_bet_open_record->payout_price,            '200.00';
+    is $higher_lower->financial_market_bet_open_record->buy_price,               '20.00';
+    is $higher_lower->financial_market_bet_open_record->sell_price,              '40.00';
+    is $higher_lower->financial_market_bet_open_record->remark,                  'Test Remark';
     is $higher_lower->financial_market_bet_open_record->start_time->datetime(),  '2010-12-02T12:00:00';
     is $higher_lower->financial_market_bet_open_record->expiry_time->datetime(), '2010-12-02T14:00:00';
-    is $higher_lower->financial_market_bet_open_record->is_expired, 1;
-    is $higher_lower->financial_market_bet_open_record->is_sold,    1;
-    is $higher_lower->financial_market_bet_open_record->bet_class,  'higher_lower_bet';
-    is $higher_lower->financial_market_bet_open_record->bet_type,   'CALL';
+    is $higher_lower->financial_market_bet_open_record->is_expired,              1;
+    is $higher_lower->financial_market_bet_open_record->is_sold,                 1;
+    is $higher_lower->financial_market_bet_open_record->bet_class,               'higher_lower_bet';
+    is $higher_lower->financial_market_bet_open_record->bet_type,                'CALL';
 
     is $higher_lower->higher_lower_bet_record->relative_barrier, 1.1;
     is $higher_lower->higher_lower_bet_record->absolute_barrier, 1673.828;

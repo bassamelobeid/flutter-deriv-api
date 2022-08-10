@@ -4,7 +4,7 @@ use warnings;
 
 no indirect;
 
-use List::Util qw(any);
+use List::Util        qw(any);
 use Log::Any::Adapter qw(DERIV),
     stdout    => 'text',
     log_level => 'debug';

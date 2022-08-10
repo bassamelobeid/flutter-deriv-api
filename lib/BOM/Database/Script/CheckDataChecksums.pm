@@ -22,7 +22,7 @@ verbose flag (to print `.` characters on output while running).
 
 use DBIx::Connector;
 use Time::HiRes qw(sleep);
-use Log::Any qw($log);
+use Log::Any    qw($log);
 
 sub run {
 # use environment variables to connect to the database

@@ -7,7 +7,7 @@ use Test::Warnings;
 use Test::Exception;
 use BOM::Database::DataMapper::MyAffiliates;
 use Date::Utility;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 
 my $myaff_data_mapper;

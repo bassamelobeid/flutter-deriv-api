@@ -109,7 +109,7 @@ foreach my $bet_info (@bet_infos) {
             });
 
         my ($fmb, $txn) = $financial_market_bet_helper->buy_bet;
-        is $fmb->{bet_class}, $bet_info->{bet_class}, 'buy fmb object';
+        is $fmb->{bet_class},  $bet_info->{bet_class},  'buy fmb object';
         is $txn->{amount} + 0, -$bet_info->{buy_price}, 'buy txn object';
 
         my $buy_txn_id = $txn->{id};
@@ -131,9 +131,9 @@ foreach my $bet_info (@bet_infos) {
             is_expired => 0,
         });
         ($fmb, $txn, my $buy_txn_id2) = $financial_market_bet_helper->sell_bet;
-        is $fmb->{id}, $financial_market_bet->id, 'sell fmb object';
-        is $txn->{amount} + 0, $bet_info->{sell_price}, 'sell txn object';
-        is $buy_txn_id2, $buy_txn_id, 'got buy txn id during sell';
+        is $fmb->{id},         $financial_market_bet->id, 'sell fmb object';
+        is $txn->{amount} + 0, $bet_info->{sell_price},   'sell txn object';
+        is $buy_txn_id2,       $buy_txn_id,               'got buy txn id during sell';
     }
     'Buy a CALL bet and sell it';
 }
@@ -283,25 +283,25 @@ subtest 'get_transactions' => sub {
     # there are 65 transactions in the database but ->get_transactions has an implied limit of 50
     subtest 'no params' => sub {
         my $transactions = $txn_data_mapper->get_transactions();
-        is scalar @$transactions, 50, 'Got 50 transactions';
+        is scalar @$transactions,                  50,                    'Got 50 transactions';
         is $transactions->[0]->{transaction_time}, '2005-09-21 06:46:00', 'Last transaction first';
     };
 
     subtest 'with limit' => sub {
         my $transactions = $txn_data_mapper->get_transactions({limit => 10});
-        is scalar @$transactions, 10, 'Got 10 transactions';
+        is scalar @$transactions,                  10,                    'Got 10 transactions';
         is $transactions->[0]->{transaction_time}, '2005-09-21 06:46:00', 'Last transaction first';
     };
 
     subtest 'before - 2005-09-21 06:21:00' => sub {
         my $transactions = $txn_data_mapper->get_transactions({before => '2005-09-21 06:21:00'});
-        is scalar @$transactions, 11, 'Got 11 transactions';
+        is scalar @$transactions,                  11,                    'Got 11 transactions';
         is $transactions->[0]->{transaction_time}, '2005-09-21 06:20:00', 'Last transaction first, Excludes 2005-09-21 06:21:00';
     };
 
     subtest 'after - 2005-09-21 06:40:00' => sub {
         my $transactions = $txn_data_mapper->get_transactions({after => '2005-09-21 06:40:00'});
-        is scalar @$transactions, 13, 'Got 13 transactions';
+        is scalar @$transactions,                   13,                    'Got 13 transactions';
         is $transactions->[0]->{transaction_time},  '2005-09-21 06:46:00', 'Last transaction first';
         is $transactions->[-1]->{transaction_time}, '2005-09-21 06:41:00', 'Excludes transaction at 2005-09-21 06:40:00';
     };
@@ -311,7 +311,7 @@ subtest 'get_transactions' => sub {
             after => '2005-09-21 06:40:00',
             limit => 10
         });
-        is scalar @$transactions, 10, 'Got 10 transactions';
+        is scalar @$transactions,                   10,                    'Got 10 transactions';
         is $transactions->[0]->{transaction_time},  '2005-09-21 06:44:00', 'Last transaction first';
         is $transactions->[-1]->{transaction_time}, '2005-09-21 06:41:00', 'Excludes transaction at 2005-09-21 06:40:00';
     };
@@ -321,7 +321,7 @@ subtest 'get_transactions' => sub {
             before => '2005-09-21 06:40:00',
             after  => '2005-09-21 06:30:00'
         });
-        is scalar @$transactions, 10, 'Got 10 transactions';
+        is scalar @$transactions,                   10,                    'Got 10 transactions';
         is $transactions->[0]->{transaction_time},  '2005-09-21 06:39:00', 'Last transaction first';
         is $transactions->[-1]->{transaction_time}, '2005-09-21 06:37:00', 'Excludes transaction at 2005-09-21 06:30:00';
     };
@@ -332,7 +332,7 @@ subtest 'get_transactions' => sub {
             after  => '2005-09-21 06:30:00',
             limit  => 10
         });
-        is scalar @$transactions, 10, 'Got 10 transactions';
+        is scalar @$transactions,                   10,                    'Got 10 transactions';
         is $transactions->[0]->{transaction_time},  '2005-09-21 06:39:00', 'Last transaction first';
         is $transactions->[-1]->{transaction_time}, '2005-09-21 06:37:00', 'Lists from before_time to after_time';
     };
@@ -356,25 +356,25 @@ subtest 'get_payments' => sub {
 
     subtest 'all' => sub {
         my $transactions = $txn_data_mapper->get_payments();
-        is scalar @$transactions, 6, 'Got all 6 transactions';
+        is scalar @$transactions,                  6,                     'Got all 6 transactions';
         is $transactions->[0]->{transaction_time}, '2011-03-09 08:00:00', 'Last payment first';
     };
 
     subtest 'limit' => sub {
         my $transactions = $txn_data_mapper->get_payments({limit => 2});
-        is scalar @$transactions, 2, 'Got 2 transactions';
+        is scalar @$transactions,                  2,                     'Got 2 transactions';
         is $transactions->[0]->{transaction_time}, '2011-03-09 08:00:00', 'Last payment first';
     };
 
     subtest 'before - 2011-03-09 07:22:00' => sub {
         my $transactions = $txn_data_mapper->get_payments({before => '2011-03-09 07:22:00'});
-        is scalar @$transactions, 2, 'Got 2 transactions';
+        is scalar @$transactions,                  2,                     'Got 2 transactions';
         is $transactions->[0]->{transaction_time}, '2011-03-09 06:22:00', 'Last payment first';
     };
 
     subtest 'after - 2011-03-09 07:24:00' => sub {
         my $transactions = $txn_data_mapper->get_payments({after => '2011-03-09 07:24:00'});
-        is scalar @$transactions, 1, 'Got 1 transactions';
+        is scalar @$transactions,                  1,                     'Got 1 transactions';
         is $transactions->[0]->{transaction_time}, '2011-03-09 08:00:00', 'Does not include 2011-03-09 07:24:00';
     };
 
@@ -383,7 +383,7 @@ subtest 'get_payments' => sub {
             after => '2011-03-09 07:23:00',
             limit => 1
         });
-        is scalar @$transactions, 1, 'Got 1 transactions';
+        is scalar @$transactions,                  1,                     'Got 1 transactions';
         is $transactions->[0]->{transaction_time}, '2011-03-09 07:24:00', 'Last transaction first';
     };
 
@@ -392,7 +392,7 @@ subtest 'get_payments' => sub {
             before => '2011-03-09 07:24:00',
             after  => '2011-03-09 06:22:00'
         });
-        is scalar @$transactions, 2, 'Got 2 transactions';
+        is scalar @$transactions,                  2,                     'Got 2 transactions';
         is $transactions->[0]->{transaction_time}, '2011-03-09 07:23:00', 'Last payment first';
         is $transactions->[1]->{transaction_time}, '2011-03-09 07:22:00', 'Does not include 2011-03-09 06:22:00';
     };

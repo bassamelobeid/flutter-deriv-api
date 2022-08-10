@@ -324,8 +324,8 @@ my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
 
 subtest 'get_sold_bets_of_account' => sub {
     my $data = $fmb_dm->get_sold_bets_of_account();
-    is $data->[0]{underlying_symbol}, 'frxUSDJPY', 'underlying_symbol';
-    is $data->[0]{account_id},        $account->id, 'account_id';
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY',   'underlying_symbol';
+    is $data->[0]{account_id},        $account->id,  'account_id';
     is $data->[0]{remark},            'Test Remark', 'Test Remark';
 };
 
@@ -340,8 +340,8 @@ subtest 'get_fmb_by_id' => sub {
 };
 subtest 'get_sold' => sub {
     my $data = $fmb_dm->get_sold();
-    is $data->[0]{underlying_symbol}, 'frxUSDJPY', 'underlying_symbol';
-    is $data->[0]{account_id},        $account->id, 'account_id';
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY',   'underlying_symbol';
+    is $data->[0]{account_id},        $account->id,  'account_id';
     is $data->[0]{remark},            'Test Remark', 'Test Remark';
 };
 done_testing;
