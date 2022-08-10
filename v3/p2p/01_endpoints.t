@@ -29,6 +29,9 @@ $app_config->set({'payments.p2p.restricted_countries'     => []});
 $app_config->set({'payments.p2p.available_for_currencies' => ['usd']});
 $app_config->set({'payments.p2p.limits.maximum_order'     => 10});
 $app_config->set({'payments.p2p.archive_ads_days'         => 10});
+$app_config->set({'payments.p2p.transaction_verification_countries' => []});
+$app_config->set({'payments.p2p.transaction_verification_countries_all' => 0});
+
 
 my $t = build_wsapi_test();
 
@@ -421,6 +424,16 @@ subtest 'create chat' => sub {
 
 subtest 'confirm order' => sub {
     $t->await::authorize({authorize => $token_client});
+    
+    $resp = $t->await::p2p_order_confirm({
+            p2p_order_confirm => 1,
+            id                => $order->{id},
+            dry_run           => 1,
+            verification_code => 'abc'});
+    test_schema('p2p_order_confirm', $resp);
+    is $resp->{p2p_order_confirm}{id}, $order->{id}, 'client confirm: order id';
+    is $resp->{p2p_order_confirm}{dry_run}, 1, 'client confirm: dry_run';
+    
     $resp = $t->await::p2p_order_confirm({
             p2p_order_confirm => 1,
             id                => $order->{id}});

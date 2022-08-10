@@ -36,6 +36,8 @@ $app_config->set({'payments.p2p.restricted_countries'     => []});
 $app_config->set({'payments.p2p.available_for_currencies' => ['usd']});
 $app_config->set({'payments.p2p.escrow'                   => [$client_escrow->loginid]});
 $app_config->set({'payments.p2p.review_period'            => 2});
+$app_config->set({'payments.p2p.transaction_verification_countries' => []});
+$app_config->set({'payments.p2p.transaction_verification_countries_all' => 0});
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
