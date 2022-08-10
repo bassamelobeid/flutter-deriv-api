@@ -18,7 +18,7 @@ use Brands::Countries;
 use DataDog::DogStatsd::Helper;
 use Future::AsyncAwait;
 use IO::Async::Loop;
-use JSON::MaybeUTF8 qw( decode_json_utf8  encode_json_utf8 );
+use JSON::MaybeUTF8 qw(:v2);
 use List::Util qw( any uniq );
 use Log::Any qw( $log );
 use Scalar::Util qw( blessed );
@@ -150,12 +150,12 @@ async sub verify_identity {
             $idv_model->update_document_check({
                 document_id     => $document->{id},
                 status          => 'refuted',
-                report          => encode_json_utf8($report),
+                report          => encode_json_text($report),
                 expiration_date => $report->{expiry_date},
                 messages        => \@messages,
                 provider        => $provider,
-                request_body    => encode_json_utf8($provider_request_body),
-                response_body   => encode_json_utf8($provider_response_body),
+                request_body    => encode_json_text($provider_request_body),
+                response_body   => encode_json_text($provider_response_body),
             });
 
             await BOM::Event::Services::Track::track_event(
@@ -183,10 +183,10 @@ async sub verify_identity {
                 document_id     => $document->{id},
                 status          => 'verified',
                 provider        => $provider,
-                report          => encode_json_utf8($report),
+                report          => encode_json_text($report),
                 expiration_date => $report->{expiry_date},
-                request_body    => encode_json_utf8($provider_request_body),
-                response_body   => encode_json_utf8($provider_response_body),
+                request_body    => encode_json_text($provider_request_body),
+                response_body   => encode_json_text($provider_response_body),
             });
         };
 
@@ -229,8 +229,8 @@ async sub verify_identity {
                 status        => 'failed',
                 messages      => \@messages,
                 provider      => $provider,
-                request_body  => encode_json_utf8($provider_request_body),
-                response_body => encode_json_utf8($provider_response_body),
+                request_body  => encode_json_text($provider_request_body),
+                response_body => encode_json_text($provider_response_body),
             });
 
             $log->infof('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, \@messages);
@@ -381,7 +381,8 @@ async sub _trigger {
         await $loop->later;
 
         $response         = (await _http()->POST($url, $req_body, (content_type => 'application/json')))->content;
-        $decoded_response = eval { decode_json_utf8 $response } // {};
+        $decoded_response = eval { decode_json_utf8 $response }
+            // {};    # further json encoding of this hashref should not convert to utf8 again, use `json_encode_text` instead
 
         $status         = $decoded_response->{status};
         $status_message = $decoded_response->{messages};

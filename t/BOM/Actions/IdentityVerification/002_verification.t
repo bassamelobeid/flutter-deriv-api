@@ -15,6 +15,35 @@ use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User::IdentityVerification;
 
+my $idv_mock = Test::MockModule->new('BOM::Event::Actions::Client::IdentityVerification');
+my $encoding = {};
+# every execution branch of the microservice handler must use this number
+# of json functions exhaustively
+my $expected_json_usage = {
+    encode_json_utf8 => 1,    # send data to microservice
+    decode_json_utf8 => 1,    # receive data from the microservice
+    encode_json_text => 3,    # save some fields to the db as json objects (note that the strings should've been utf8 at this point)
+};
+
+$idv_mock->mock(
+    'decode_json_utf8',
+    sub {
+        $encoding->{'decode_json_utf8'}++;
+        return $idv_mock->original('decode_json_utf8')->(@_);
+    });
+$idv_mock->mock(
+    'encode_json_utf8',
+    sub {
+        $encoding->{'encode_json_utf8'}++;
+        return $idv_mock->original('encode_json_utf8')->(@_);
+    });
+$idv_mock->mock(
+    'encode_json_text',
+    sub {
+        $encoding->{'encode_json_text'}++;
+        return $idv_mock->original('encode_json_text')->(@_);
+    });
+
 # Initiate test client
 my $email = 'testw@binary.com';
 my $user  = BOM::User->create(
@@ -86,7 +115,8 @@ subtest 'verify identity by smile_identity through microservice is passed and da
         loginid => $client->loginid,
     };
 
-    $updates = 0;
+    $updates  = 0;
+    $encoding = {};
 
     $idv_model->add_document({
         issuing_country => 'ke',
@@ -134,6 +164,7 @@ subtest 'verify identity by smile_identity through microservice is passed and da
 
     ok $idv_event_handler->($args)->get, 'the event processed without error';
 
+    cmp_deeply($encoding, $expected_json_usage, 'Expected JSON usage');
     cmp_deeply decode_json_utf8($requests[0]),
         {
         document => {
@@ -259,6 +290,7 @@ subtest 'microservice address verified' => sub {
 subtest 'microservice is unavailable' => sub {
     $resp = Future->done(HTTP::Response->new(200, undef, undef, undef));
 
+    $encoding = {};
     $idv_model->add_document({
         issuing_country => 'ng',
         number          => '99989',
@@ -269,7 +301,9 @@ subtest 'microservice is unavailable' => sub {
 
     my $doc  = $idv_model->get_last_updated_document();
     my $msgs = decode_json_utf8 $doc->{status_messages};
+    $expected_json_usage->{encode_json_text} = 2;    # non microservice execution branch does not include $report
 
+    cmp_deeply($encoding, $expected_json_usage, 'Expected JSON usage');
     is_deeply $msgs, ['UNAVAILABLE_MICROSERVICE'], 'message is correct';
 };
 
