@@ -704,7 +704,7 @@ sub build_client_statement_form {
     return
         '<hr><p class="error grd-margin-bottom"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</p><FORM ACTION="'
         . request()->url_for('backoffice/f_manager_history.cgi')
-        . '" METHOD="POST" onsubmit="return validate_month(\'statement\')">'
+        . '" METHOD="GET" onsubmit="return validate_month(\'statement\')">'
         . '<div class="row"><label>Check Statement of Login ID:</label><input id="statement_loginID" name="loginID" type="text" size="15" data-lpignore="true" value="'
         . $broker . '"/> '
         . '<label>From:</label><input name="startdate" type="text" size="10" value="'
@@ -1020,6 +1020,10 @@ sub status_op_processor {
     my $loginid = $client->loginid;
     my $summary = '';
 
+    my $old_db = $client->get_db();
+    # assign write access to db_operation to perform client_status delete/copy operation
+    $client->set_db('write') if 'write' ne $old_db;
+
     for my $status ($status_checked->@*) {
         try {
             if ($status_op eq 'remove') {
@@ -1064,7 +1068,8 @@ sub status_op_processor {
                 "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.</div>";
         }
     }
-
+    # once db operation is done, set back db_operation to replica
+    $client->set_db($old_db);
     return $summary;
 }
 
