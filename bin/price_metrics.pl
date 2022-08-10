@@ -5,8 +5,8 @@ use warnings;
 
 use Digest::MD5;
 use List::MoreUtils qw(uniq);
-use Path::Tiny qw(path);
-use POSIX qw(strftime);
+use Path::Tiny      qw(path);
+use POSIX           qw(strftime);
 
 use BOM::Config::Redis;
 

@@ -12,11 +12,11 @@ use Data::UUID;
 use Date::Utility;
 
 use BOM::Pricing::v3::Contract;
-use BOM::Platform::Context qw (request);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Platform::Context                       qw (request);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory                qw( produce_contract );
 
 my $now             = Date::Utility->new;
 my $landing_company = 'svg';

@@ -4,13 +4,13 @@ use strict;
 use warnings;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8            qw(:v1);
 use BOM::Config::Redis;
 use BOM::Product::Contract;
 use Price::Calculator;
 use Math::Util::CalculatedValue::Validatable;
 use Format::Util::Numbers qw/financialrounding/;
-use List::Util qw(min);
+use List::Util            qw(min);
 
 use constant POC_PARAMETERS => 'POC_PARAMETERS';
 

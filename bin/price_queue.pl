@@ -5,8 +5,8 @@ use warnings;
 use IO::Handle ();
 
 use Getopt::Long qw(GetOptions);
-use Path::Tiny qw(path);
-use Pod::Usage qw(pod2usage);
+use Path::Tiny   qw(path);
+use Pod::Usage   qw(pod2usage);
 use IO::Async::Loop;
 
 use Log::Any::Adapter;

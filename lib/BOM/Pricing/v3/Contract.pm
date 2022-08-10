@@ -23,7 +23,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Config::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract);
-use Finance::Contract::Longcode qw( shortcode_to_parameters);
+use Finance::Contract::Longcode   qw( shortcode_to_parameters);
 use LandingCompany::Registry;
 use BOM::Pricing::v3::Utility;
 use Scalar::Util qw(looks_like_number);
@@ -283,10 +283,7 @@ Returns a contract proposal response as a  Hashref or an error from  L<BOM::Pric
 sub get_bid {
     my $params = shift;
 
-    my (
-        $short_code, $contract_id, $currency,              $is_sold,         $is_expired,
-        $sell_time,  $sell_price,  $app_markup_percentage, $landing_company, $country_code
-        )
+    my ($short_code, $contract_id, $currency, $is_sold, $is_expired, $sell_time, $sell_price, $app_markup_percentage, $landing_company, $country_code)
         = @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time sell_price app_markup_percentage landing_company country_code/};
 
     my ($contract, $bet_params);

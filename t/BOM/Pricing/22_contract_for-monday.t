@@ -6,8 +6,8 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
-use JSON::MaybeUTF8 qw(encode_json_utf8);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use JSON::MaybeUTF8                              qw(encode_json_utf8);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
