@@ -16,10 +16,10 @@ use Syntax::Keyword::Try;
 use POSIX qw(strftime);
 
 use JSON::MaybeXS;
-use JSON::MaybeUTF8 qw(encode_json_utf8);
-use Scalar::Util qw(blessed);
+use JSON::MaybeUTF8       qw(encode_json_utf8);
+use Scalar::Util          qw(blessed);
 use Variable::Disposition qw(retain_future);
-use Socket qw(:crlf);
+use Socket                qw(:crlf);
 use Proc::ProcessTable;
 use feature 'state';
 use Log::Any qw($log);

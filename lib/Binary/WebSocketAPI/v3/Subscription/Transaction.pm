@@ -10,8 +10,8 @@ use Format::Util::Numbers qw(formatnumber);
 use Future;
 use Log::Any qw($log);
 use Moo;
-use Carp qw(croak);
-use List::Util qw(any);
+use Carp         qw(croak);
+use List::Util   qw(any);
 use Scalar::Util qw(blessed);
 with 'Binary::WebSocketAPI::v3::Subscription';
 

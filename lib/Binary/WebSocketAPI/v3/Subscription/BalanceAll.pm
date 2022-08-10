@@ -5,7 +5,7 @@ use warnings;
 
 no indirect;
 use Moo;
-use Scalar::Util qw(weaken);
+use Scalar::Util          qw(weaken);
 use Format::Util::Numbers qw(formatnumber);
 with 'Binary::WebSocketAPI::v3::Subscription';
 

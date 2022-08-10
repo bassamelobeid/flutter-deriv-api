@@ -9,8 +9,8 @@ use Moo;
 use curry;
 use curry::weak;
 use Future::Mojo;
-use Log::Any qw($log);
-use Scalar::Util qw(refaddr weaken);
+use Log::Any                   qw($log);
+use Scalar::Util               qw(refaddr weaken);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_dec);
 use Binary::WebSocketAPI::v3::Subscription;
 use Binary::WebSocketAPI::v3::Instance::Redis qw(

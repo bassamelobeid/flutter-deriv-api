@@ -5,14 +5,14 @@ use warnings;
 
 use Scalar::Util qw(looks_like_number);
 use Array::Utils qw(array_minus);
-use List::Util qw(any);
-use Mojo::Util qw(camelize);
+use List::Util   qw(any);
+use Mojo::Util   qw(camelize);
 
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use Binary::WebSocketAPI::v3::Subscription;
 # TODO move it to subscription object
 use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
-use DataDog::DogStatsd::Helper qw(stats_dec);
+use DataDog::DogStatsd::Helper                qw(stats_dec);
 
 sub forget {
     my ($c, $req_storage) = @_;

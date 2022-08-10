@@ -6,7 +6,7 @@ use warnings;
 use curry::weak;
 use Mojo::IOLoop;
 use Scalar::Util qw(weaken);
-use Log::Any qw($log);
+use Log::Any     qw($log);
 use Binary::WebSocketAPI::v3::Wrapper::System;
 
 sub logout_success {

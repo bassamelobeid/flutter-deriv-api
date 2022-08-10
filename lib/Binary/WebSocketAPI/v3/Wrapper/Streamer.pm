@@ -7,11 +7,11 @@ no indirect;
 
 use Date::Utility;
 use Encode;
-use Time::HiRes qw(gettimeofday);
+use Time::HiRes     qw(gettimeofday);
 use List::MoreUtils qw(last_index);
 use JSON::MaybeXS;
-use Scalar::Util qw (looks_like_number refaddr weaken);
-use List::Util qw(any);
+use Scalar::Util          qw (looks_like_number refaddr weaken);
+use List::Util            qw(any);
 use Format::Util::Numbers qw(formatnumber);
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;

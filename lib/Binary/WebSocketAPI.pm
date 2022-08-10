@@ -23,7 +23,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Brands;
 use Encode;
 use DataDog::DogStatsd::Helper;
-use Digest::MD5 qw(md5_hex);
+use Digest::MD5           qw(md5_hex);
 use Format::Util::Strings qw( defang );
 use JSON::MaybeXS;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
