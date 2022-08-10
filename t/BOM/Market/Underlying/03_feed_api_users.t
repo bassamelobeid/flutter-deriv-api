@@ -126,7 +126,7 @@ subtest 'next_tick_after' => sub {
 
             my $tick_date = Date::Utility->new({epoch => $tick->epoch});
             is $tick_date->datetime_yyyymmdd_hhmmss, '2012-01-12 03:23:06', 'Correct time';
-            is $tick->quote, 1 / 1.5062, 'Correct quote';
+            is $tick->quote,                         1 / 1.5062,            'Correct quote';
         };
     };
 
@@ -189,7 +189,7 @@ subtest 'tick_at' => sub {
     };
 
     subtest 'call for t with data at t' => sub {
-        is $underlying->spot_source->tick_at($test_time)->quote, 80.88, 'Standard got correct quote';
+        is $underlying->spot_source->tick_at($test_time)->quote,          80.88,     'Standard got correct quote';
         is $inverted_underlying->spot_source->tick_at($test_time)->quote, 1 / 80.88, '... and so did inverted';
     };
 
@@ -209,7 +209,7 @@ subtest 'tick_at' => sub {
     };
 
     subtest 'call for t with data at t + 5 minutes, 1 second' => sub {
-        is $underlying->spot_source->tick_at($test_time)->quote, 80.88, 'Standard got correct quote';
+        is $underlying->spot_source->tick_at($test_time)->quote,          80.88,     'Standard got correct quote';
         is $inverted_underlying->spot_source->tick_at($test_time)->quote, 1 / 80.88, '... and so did inverted';
     };
 };

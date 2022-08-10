@@ -46,7 +46,7 @@ sub _collect_vol_ages {
         map { $_ => 1 } (
         @{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
         qw/OMXS30 IBOV KOSPI2 SPTSX60 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR frxXALUSD frxXNIUSD frxXCUUSD frxXZNUSD frxXPBUSD
-            /
+        /
         );
     my @offered_forex = grep { not $skip_list{$_} } create_underlying_db->get_symbols_for(
         market            => 'forex',
@@ -64,7 +64,7 @@ sub _collect_vol_ages {
     my @offer_underlyings = (@offered_forex, @offered_others, @basket_indices);
 
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
-    my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
+    my @symbols          = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
     foreach my $symbol (@symbols) {
         my $underlying = create_underlying($symbol);
         next if $underlying->flat_smile;
