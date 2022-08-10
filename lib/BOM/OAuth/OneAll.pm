@@ -7,7 +7,7 @@ use WWW::OneAll;
 use Syntax::Keyword::Try;
 use URI::QueryParam;
 use DataDog::DogStatsd::Helper qw( stats_inc );
-use Locale::Codes::Country qw( code2country );
+use Locale::Codes::Country     qw( code2country );
 use Email::Valid;
 
 use BOM::Config;
@@ -16,7 +16,7 @@ use BOM::User;
 use BOM::Platform::Account::Virtual;
 use BOM::OAuth::Helper;
 use BOM::Platform::Context qw( localize );
-use BOM::OAuth::Static qw( get_message_mapping );
+use BOM::OAuth::Static     qw( get_message_mapping );
 use BOM::OAuth::Common;
 
 sub callback {
