@@ -7,7 +7,7 @@ use Date::Utility;
 use Locale::Country;
 use Syntax::Keyword::Try;
 use List::MoreUtils qw(any none);
-use Text::Trim qw(trim);
+use Text::Trim      qw(trim);
 
 use BOM::User::Client;
 use BOM::User::Phone;

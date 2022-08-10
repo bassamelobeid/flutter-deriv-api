@@ -29,7 +29,7 @@ use Bytes::Random::Secure;
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
 use BOM::Config::Redis;
-use Log::Any ();
+use Log::Any               ();
 use BOM::Platform::Context qw (localize);
 
 use constant {

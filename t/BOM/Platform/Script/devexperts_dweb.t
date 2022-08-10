@@ -8,7 +8,7 @@ use IO::Async::Loop;
 use BOM::Platform::Script::DevExpertsAPIService::DxWeb;
 use WebService::Async::DevExperts::DxWeb::Model::Error;
 use IO::Async::Loop;
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8   qw(:v1);
 use Log::Any::Adapter qw(TAP);
 
 my $loop = IO::Async::Loop->new;
@@ -90,7 +90,7 @@ subtest 'API response types' => sub {
     my $msg = decode_json_utf8($resp->content);
     is $msg->{error_code},    123,         'error code';
     is $msg->{error_message}, 'it failed', 'error message';
-    is $resp->code, 469, 'http code';
+    is $resp->code,           469,         'http code';
 };
 
 done_testing;

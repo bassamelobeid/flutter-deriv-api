@@ -94,8 +94,8 @@ subtest 'extract_valid_params' => sub {
         foreach my $key (keys $regex_validation_keys->%*) {
             foreach my $arg (keys $args->%*) {
                 if ($arg =~ /$key/) {
-                    is $result->{$arg}, $args->{$arg}, 'argument has been validated correctly' if $args->{$arg} =~ /$regex_validation_keys->{$key}/;
-                    is $result->{$arg}, undef, 'argument has been discarded as expected' if $args->{$arg} !~ /$regex_validation_keys->{$key}/;
+                    is $result->{$arg}, $args->{$arg}, 'argument has been validated correctly'   if $args->{$arg} =~ /$regex_validation_keys->{$key}/;
+                    is $result->{$arg}, undef,         'argument has been discarded as expected' if $args->{$arg} !~ /$regex_validation_keys->{$key}/;
                 }
             }
         }

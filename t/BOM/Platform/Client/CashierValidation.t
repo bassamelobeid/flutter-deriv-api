@@ -18,8 +18,8 @@ use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Rules::Engine;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Utility qw(error_map);
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Utility                     qw(error_map);
+use BOM::Platform::Context                     qw(localize);
 
 my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_2, $mlt_client, $mf_client, $mx_client, $rule_engine) = ('CashierForwardError');
 
@@ -100,7 +100,7 @@ subtest 'basic tests' => sub {
     cmp_deeply $res->{status}, ['ASK_CURRENCY'], 'correct status';
 
     $res = BOM::Platform::Client::CashierValidation::validate(%args, loginid => 'CR1223321');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for invalid loginid';
+    is $res->{error}->{code},              $generic_err_code,  'Correct error code for invalid loginid';
     is $res->{error}->{message_to_client}, 'Invalid account.', 'Correct error message for invalid loginid';
     cmp_deeply $res->{status}, undef, 'correct status';
 };
@@ -177,7 +177,7 @@ subtest 'Cashier validation common' => sub {
     );
 
     my $res = BOM::Platform::Client::CashierValidation::validate(%args);
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for no residence';
+    is $res->{error}->{code},              $generic_err_code,                       'Correct error code for no residence';
     is $res->{error}->{message_to_client}, 'Please set your country of residence.', 'Correct error message for no residence';
     cmp_deeply $res->{status}, set('no_residence'), 'correct status';
 
@@ -186,7 +186,7 @@ subtest 'Cashier validation common' => sub {
     $cr_client->status->set('cashier_locked', 'system', 'pending investigations');
     $cr_client->save();
     $res = BOM::Platform::Client::CashierValidation::validate(%args, action => 'deposit');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code if client is cashier locked';
+    is $res->{error}->{code},              $generic_err_code,         'Correct error code if client is cashier locked';
     is $res->{error}->{message_to_client}, 'Your cashier is locked.', 'Correct error message if client is cashier locked';
     cmp_deeply $res->{status}, set('cashier_locked_status'), 'correct status';
 
@@ -194,7 +194,7 @@ subtest 'Cashier validation common' => sub {
     $cr_client->status->set('disabled', 'system', 'pending investigations');
 
     $res = BOM::Platform::Client::CashierValidation::validate(%args, action => 'deposit');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code as its disabled';
+    is $res->{error}->{code},              $generic_err_code,           'Correct error code as its disabled';
     is $res->{error}->{message_to_client}, 'Your account is disabled.', 'Correct error message as its disabled';
     cmp_deeply $res->{status}, set('disabled_status'), 'correct status';
 
@@ -254,8 +254,8 @@ subtest 'Cashier validation common' => sub {
 
     $res = BOM::Platform::Client::CashierValidation::validate(%args, action => 'withdraw');
     is_deeply($res->{error}, $expected, 'lc withdrawal requirements validated');
-    cmp_deeply $res->{status}, set('ASK_FIX_DETAILS'), 'correct status';
-    cmp_deeply $res->{missing_fields}, ['address_city'], 'missing fields for withdrawal returned';
+    cmp_deeply $res->{status},         set('ASK_FIX_DETAILS'), 'correct status';
+    cmp_deeply $res->{missing_fields}, ['address_city'],       'missing fields for withdrawal returned';
 
     $cr_client->address_city($address_city);
     $cr_client->save;
@@ -298,7 +298,7 @@ subtest 'Cashier validation deposit' => sub {
     $cr_client->status->set('unwelcome', 'system', 'pending investigations');
 
     my $res = BOM::Platform::Client::CashierValidation::validate(%args);
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for unwelcome client';
+    is $res->{error}->{code},              $generic_err_code,                                 'Correct error code for unwelcome client';
     is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.', 'Correct error message for unwelcome client';
     cmp_deeply $res->{status}, set('unwelcome_status'), 'correct status';
 
@@ -323,7 +323,7 @@ subtest 'Cashier validation withdraw' => sub {
     $cr_client->status->set('no_withdrawal_or_trading', 'system', 'pending investigations');
 
     my $res = BOM::Platform::Client::CashierValidation::validate(%args);
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for no_withdrawal_or_trading';
+    is $res->{error}->{code},              $generic_err_code,                              'Correct error code for no_withdrawal_or_trading';
     is $res->{error}->{message_to_client}, 'Your account is restricted to deposits only.', 'Correct error message for no_withdrawal_or_trading';
     cmp_deeply $res->{status}, set('no_withdrawal_or_trading_status'), 'correct status';
 
@@ -332,7 +332,7 @@ subtest 'Cashier validation withdraw' => sub {
     $cr_client->status->set('withdrawal_locked', 'system', 'pending investigations');
 
     $res = BOM::Platform::Client::CashierValidation::validate(%args);
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for withdrawal locked';
+    is $res->{error}->{code},              $generic_err_code,                         'Correct error code for withdrawal locked';
     is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.', 'Correct error message for withdrawal locked';
     cmp_deeply $res->{status}, set('withdrawal_locked_status'), 'correct status';
 
@@ -538,10 +538,10 @@ subtest 'Calculate to amount and fees' => sub {
             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount_to_tranfer, $from_currency, $to_currency,
             $from_cli, $to_cli);
 
-        cmp_ok $amount,      '==', $expected_amount,      'Correct amount sent';
-        cmp_ok $fee_applied, '==', $expected_fee_applied, 'Correct fee percent';
-        cmp_ok $fee_percent, '==', $expected_fee_percent, 'Correct fee percent';
-        cmp_ok $fee_min,     '==', $expected_fee_min,     'Correct fee percent';
+        cmp_ok $amount,                                '==', $expected_amount,                                'Correct amount sent';
+        cmp_ok $fee_applied,                           '==', $expected_fee_applied,                           'Correct fee percent';
+        cmp_ok $fee_percent,                           '==', $expected_fee_percent,                           'Correct fee percent';
+        cmp_ok $fee_min,                               '==', $expected_fee_min,                               'Correct fee percent';
         cmp_ok roundcommon(0.000001, $fee_calculated), '==', roundcommon(0.000001, $expected_fee_calculated), 'Correct fee percent';
     };
 

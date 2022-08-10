@@ -8,7 +8,7 @@ use BOM::User::Client;
 use BOM::Config;
 use XML::LibXML;
 use Text::Markdown;
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email   qw(send_email);
 use BOM::Platform::Context qw(localize request);
 use feature 'state';
 

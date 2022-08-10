@@ -8,16 +8,16 @@ use Test::Mojo;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
-use BOM::Test::Helper::Utility qw(random_email_address);
+use BOM::Test::Helper::Client                  qw(create_client top_up);
+use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
+use BOM::Test::Helper::Utility                 qw(random_email_address);
 
 use BOM::Platform::CryptoCashier::Payment::API;
 use BOM::Platform::CryptoCashier::Payment::Error qw(create_error);
 
 use Digest::HMAC;
 use Format::Util::Numbers qw(financialrounding);
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8       qw(:v1);
 
 my $mocked_user  = Test::MockModule->new('BOM::User::Client');
 my $mocked_API   = Test::MockModule->new('BOM::Platform::CryptoCashier::Payment::API');

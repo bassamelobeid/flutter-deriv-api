@@ -3,7 +3,7 @@ package BOM::Platform::Utility;
 use strict;
 use warnings;
 
-use Clone::PP qw(clone);
+use Clone::PP  qw(clone);
 use List::Util qw(any);
 use Brands::Countries;
 

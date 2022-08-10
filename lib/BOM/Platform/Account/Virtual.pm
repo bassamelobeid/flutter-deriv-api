@@ -160,7 +160,7 @@ sub _virtual_company_for_brand {
 
     my @lc = grep {
         $_->is_virtual && any { /^$brand_name$/ }
-        $_->allowed_for_brands->@*
+            $_->allowed_for_brands->@*
     } LandingCompany::Registry->get_all();
 
     # virtual landing company for Wallet will be the same as Trading

@@ -12,7 +12,7 @@ use IO::Async::Timer::Periodic;
 use HTTP::Response;
 use JSON::MaybeUTF8 qw(:v1);
 use Unicode::UTF8;
-use Scalar::Util qw(refaddr blessed);
+use Scalar::Util               qw(refaddr blessed);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use curry::weak;
 use Time::HiRes qw(gettimeofday tv_interval);

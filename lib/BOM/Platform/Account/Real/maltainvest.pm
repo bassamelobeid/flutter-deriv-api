@@ -8,8 +8,8 @@ use JSON::MaybeXS;
 use Date::Utility;
 
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Email           qw(send_email);
+use BOM::Platform::Context         qw(request);
 use BOM::User::FinancialAssessment qw(should_warn update_financial_assessment);
 
 sub create_account {

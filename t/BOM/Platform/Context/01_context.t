@@ -9,7 +9,7 @@ use Test::Warnings;
 
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(localize);
-use BOM::Test::Localize qw(is_localized);
+use BOM::Test::Localize    qw(is_localized);
 
 subtest 'request' => sub {
     ok(BOM::Platform::Context::request(), 'default');
@@ -23,7 +23,7 @@ subtest 'request' => sub {
 
 subtest 'localize' => sub {
     my @bad_params = ('1=[_1] 2=[_2] 3=[_3]', '<LOC>one', 'two', 'three');
-    ok !is_localized(localize(@bad_params)), 'invalid template message params';
+    ok !is_localized(localize(@bad_params)),  'invalid template message params';
     ok !is_localized(localize(\@bad_params)), 'invalid template message params (array ref)';
 
     my $message          = 'a message to localize';
@@ -32,8 +32,8 @@ subtest 'localize' => sub {
     is(localize(\@template_message), '<LOC>1=one 2=two 3=three</LOC>', 'template message is correctly localized (array ref)');
 
     my $localized_message = localize($message);
-    ok is_localized($localized_message, $message), 'valid localization';
-    ok !is_localized($localized_message . ' concatenated'), 'concatenation with a non-localized string is rejected';
+    ok is_localized($localized_message, $message),             'valid localization';
+    ok !is_localized($localized_message . ' concatenated'),    'concatenation with a non-localized string is rejected';
     ok !is_localized($localized_message . localize($message)), 'concatenation of two localized messages is rejected';
 
 };

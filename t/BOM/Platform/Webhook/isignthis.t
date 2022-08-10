@@ -3,7 +3,7 @@ use Test::Mojo;
 use Test::Deep;
 use Test::MockModule;
 use BOM::Config;
-use Mojo::JSON qw(encode_json);
+use Mojo::JSON  qw(encode_json);
 use Digest::SHA qw(hmac_sha256_base64);
 
 my $t                  = Test::Mojo->new('BOM::Platform::Webhook');
@@ -35,8 +35,8 @@ $emit_mock->mock(
     'emit',
     sub {
         my ($event, $args) = @_;
-        is $event, 'dispute_notification', 'Event correctly emitted';
-        is $args->{provider}, 'isignthis', 'Provider looks good';
+        is $event,            'dispute_notification', 'Event correctly emitted';
+        is $args->{provider}, 'isignthis',            'Provider looks good';
         cmp_deeply $args->{data}, $expected_data, 'Data looks good';
         return 1;
     });

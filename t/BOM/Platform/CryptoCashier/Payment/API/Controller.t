@@ -10,9 +10,9 @@ use Test::Exception;
 use Format::Util::Numbers qw(financialrounding);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
-use BOM::Test::Helper::Utility qw(random_email_address);
+use BOM::Test::Helper::Client                  qw(create_client top_up);
+use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
+use BOM::Test::Helper::Utility                 qw(random_email_address);
 
 use BOM::Platform::CryptoCashier::Payment::API::Controller;
 use BOM::Platform::CryptoCashier::Payment::Error qw(create_error);

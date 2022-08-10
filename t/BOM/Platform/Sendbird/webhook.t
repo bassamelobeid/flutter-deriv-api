@@ -4,7 +4,7 @@ use Test::MockModule;
 use BOM::Platform::Sendbird::Webhook;
 use BOM::Config;
 use Digest::SHA qw(hmac_sha256_hex);
-use Mojo::JSON qw(encode_json);
+use Mojo::JSON  qw(encode_json);
 use BOM::Database::ClientDB;
 
 my $t              = Test::Mojo->new('BOM::Platform::Sendbird::Webhook');

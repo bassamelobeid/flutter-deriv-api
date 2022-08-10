@@ -15,7 +15,7 @@ use warnings;
 
 use DataDog::DogStatsd::Helper;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use Log::Any qw($log);
+use Log::Any        qw($log);
 use LWP::UserAgent;
 use Syntax::Keyword::Try;
 use URI;

@@ -18,7 +18,7 @@ use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Config::Runtime;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Config;
 
@@ -705,8 +705,8 @@ sub create_real_acc {
     my ($vr_client, $user, $broker) = @_;
 
     my %details = %real_client_details;
-    $details{$_} = $vr_client->$_ for qw(email residence address_state);
-    $details{$_} = $broker        for qw(broker_code first_name);
+    $details{$_}              = $vr_client->$_ for qw(email residence address_state);
+    $details{$_}              = $broker        for qw(broker_code first_name);
     $details{client_password} = $vr_client->password;
 
     return BOM::Platform::Account::Real::default::create_account({

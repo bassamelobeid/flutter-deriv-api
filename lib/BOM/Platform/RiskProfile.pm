@@ -140,7 +140,7 @@ has [qw(
         raw_custom_risk_profiles
         raw_custom_commission_profiles
         raw_custom_volume_limits
-        )
+    )
 ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -460,7 +460,8 @@ sub get_current_profile_definitions {
             grep { $_->risk_profile }
             map { Finance::Underlying::SubMarket::Registry->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']);
         if (@submarket_list) {
-            my @list = map { {
+            my @list = map {
+                {
                     name           => $_->display_name,
                     turnover_limit => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{turnover}{$currency} // 0),
                     payout_limit   => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{payout}{$currency}   // 0),

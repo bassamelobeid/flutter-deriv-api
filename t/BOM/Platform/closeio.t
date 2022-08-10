@@ -61,8 +61,8 @@ subtest 'search_lead' => sub {
     $response_sample = {success => 0};
     my $response = $close->search_lead('keyword1');
 
-    is scalar @requests, 1, 'request performed';
-    is $response, $response_sample, 'error happened';
+    is scalar @requests, 1,                'request performed';
+    is $response,        $response_sample, 'error happened';
 
     @requests = ();
 
@@ -71,9 +71,9 @@ subtest 'search_lead' => sub {
         content => {data => 'ok'}};
     $response = $close->search_lead('keyword1', 'sample2');
 
-    is scalar @requests, 1, 'request performed';
-    is $requests[0]->{method}, 'GET',                              'method is correct';
-    like $requests[0]->{url},  qr/lead\?query=keyword1%2Csample2/, 'the parameters are correct';
+    is scalar @requests,       1,     'request performed';
+    is $requests[0]->{method}, 'GET', 'method is correct';
+    like $requests[0]->{url}, qr/lead\?query=keyword1%2Csample2/, 'the parameters are correct';
     is $response->{data}, 'ok', 'response correct';
 };
 
@@ -90,8 +90,8 @@ subtest 'delete_lead' => sub {
     $response_sample = {success => 0};
     my $response = $close->delete_lead('id');
 
-    is scalar @requests, 1, 'request performed';
-    is $response, $response_sample, 'error happened';
+    is scalar @requests, 1,                'request performed';
+    is $response,        $response_sample, 'error happened';
 
     @requests = ();
 
@@ -100,9 +100,9 @@ subtest 'delete_lead' => sub {
         content => {}};
     $response = $close->delete_lead('id4');
 
-    is scalar @requests, 1, 'request performed';
-    is $requests[0]->{method}, 'DELETE',      'method is correct';
-    like $requests[0]->{url},  qr/lead\/id4/, 'the parameters are correct';
+    is scalar @requests,       1,        'request performed';
+    is $requests[0]->{method}, 'DELETE', 'method is correct';
+    like $requests[0]->{url}, qr/lead\/id4/, 'the parameters are correct';
     ok defined $response, 'response correct';
 };
 
@@ -142,12 +142,12 @@ subtest 'anonymize user' => sub {
         }};
     $result = $close->anonymize_user();
 
-    is scalar @requests, 2, '2 request performed';
-    is $requests[0]->{method}, 'GET',                             'method of first call is correct';
-    like $requests[0]->{url},  qr/lead\?query=test%40binary.com/, 'queries of first call is correct';
+    is scalar @requests,       2,     '2 request performed';
+    is $requests[0]->{method}, 'GET', 'method of first call is correct';
+    like $requests[0]->{url}, qr/lead\?query=test%40binary.com/, 'queries of first call is correct';
 
-    is $requests[1]->{method}, 'DELETE',      'method of second call is correct';
-    like $requests[1]->{url},  qr/lead\/id9/, 'the parameters of second call are correct';
+    is $requests[1]->{method}, 'DELETE', 'method of second call is correct';
+    like $requests[1]->{url}, qr/lead\/id9/, 'the parameters of second call are correct';
 
     ok $result, 'user anonymized.';
 
@@ -161,9 +161,9 @@ subtest 'anonymize user' => sub {
         }};
     $result = $close->anonymize_user();
 
-    is scalar @requests, 1, '1 request performed';
-    is $requests[0]->{method}, 'GET',                             'method of first call is correct';
-    like $requests[0]->{url},  qr/lead\?query=test%40binary.com/, 'queries of first call is correct';
+    is scalar @requests,       1,     '1 request performed';
+    is $requests[0]->{method}, 'GET', 'method of first call is correct';
+    like $requests[0]->{url}, qr/lead\?query=test%40binary.com/, 'queries of first call is correct';
 
     ok $result, 'there were no user to anonymize.';
 };

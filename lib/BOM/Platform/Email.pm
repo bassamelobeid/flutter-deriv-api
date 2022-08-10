@@ -152,7 +152,7 @@ sub process_send_email {
 
     # Email subject, and title passed as args needs to be localized again
     $subject = $relocalize->($subject);
-    my $message = join "\n", @message;
+    my $message      = join "\n", @message;
     my $mail_message = $message;
     if ($use_email_template) {
         $template_name .= '.html.tt' if $template_name !~ /\.html\.tt$/;

@@ -10,7 +10,7 @@ use BOM::Platform::Script::TradeWarnings;
 
 use Brands;
 
-my $brand = Brands->new(name => 'deriv');
+my $brand      = Brands->new(name => 'deriv');
 my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
 subtest 'Send email notification when global limit is crossed' => sub {

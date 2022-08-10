@@ -126,7 +126,7 @@ subtest 'Old challenge success' => sub {
     $t->post_ok('/', json => $payload)->status_is(200)->content_is('ok');
 
     cmp_deeply + {@metrics}, +{}, 'Expected dd metrics';
-    cmp_deeply $emissions, +{}, 'Expected emissions';
+    cmp_deeply $emissions,   +{}, 'Expected emissions';
 
     cmp_bag $log->msgs,
         [{
@@ -164,7 +164,7 @@ subtest 'New challenge failure' => sub {
     $t->post_ok('/', json => $payload)->status_is(200)->content_is('failed');
 
     cmp_deeply + {@metrics}, +{}, 'Expected dd metrics';
-    cmp_deeply $emissions, +{}, 'Expected emissions';
+    cmp_deeply $emissions,   +{}, 'Expected emissions';
 
     cmp_bag $log->msgs,
         [{

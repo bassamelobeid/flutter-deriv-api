@@ -17,7 +17,7 @@ Email verification token handler
 use Bytes::Random::Secure;
 use JSON::MaybeXS;
 use Array::Utils qw (array_minus);
-use Digest::MD5 qw(md5_hex);
+use Digest::MD5  qw(md5_hex);
 
 use BOM::Config::Redis;
 
