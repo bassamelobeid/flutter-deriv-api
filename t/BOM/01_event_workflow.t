@@ -133,7 +133,7 @@ subtest 'process - generic jobs' => sub {
                 account_opening_existing self_tagging_affiliates request_payment_withdraw
                 verify_email_closed_account_other verify_email_closed_account_reset_password
                 verify_email_closed_account_account_opening account_verification_for_pending_payout
-                pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast/
+                pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast crypto_cashier_transaction_updated/
         ),
         'Correct number of actions that can be emitted'
     );
@@ -234,8 +234,9 @@ subtest 'process - tracking jobs' => sub {
                 trading_platform_password_reset_request trading_platform_investor_password_reset_request
                 trading_platform_password_changed trading_platform_password_change_failed
                 trading_platform_investor_password_changed trading_platform_investor_password_change_failed
-                underage_account_closed account_with_false_info_locked self_exclude signup request_edd_document_upload
-                withdrawal_rejected account_deactivated /
+                underage_account_closed account_with_false_info_locked self_exclude signup age_verified
+                bonus_approve bonus_reject request_edd_document_upload withdrawal_rejected
+                account_deactivated p2p_order_confirm_verify/
         ),
         'Correct number of actions that can be emitted'
     );

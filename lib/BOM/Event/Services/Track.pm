@@ -146,10 +146,14 @@ my %EVENT_PROPERTIES = (
     account_verification_for_pending_payout     => [qw(date email)],
     authenticated_with_scans                    => [qw(first_name email contact_url live_chat_url)],
     pa_transfer_confirm                         => [qw(loginid email pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
+    age_verified                                => [qw(first_name loginid contact_url live_chat_url poi_url)],
+    bonus_approve                               => [qw(full_name website contact_url live_chat_url amount currency tac_url)],
+    bonus_reject                                => [qw(full_name website contact_url live_chat_url tac_url poi_url)],
     pa_withdraw_confirm         => [qw(email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
     withdrawal_rejected         => [qw(first_name reason remark)],
     account_deactivated         => [qw(name brand)],
     request_edd_document_upload => [qw(first_name email login_url expiry_date live_chat_url)],
+    p2p_order_confirm_verify    => [qw(verification_url order_id order_amount buyer_name code)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -181,11 +185,15 @@ my @COMMON_EVENT_METHODS = qw(
     request_change_email
     reset_password_confirmation
     authenticated_with_scans
+    age_verified
+    bonus_approve
+    bonus_reject
     request_edd_document_upload
     pa_transfer_confirm
     pa_withdraw_confirm
     withdrawal_rejected
     account_deactivated
+    p2p_order_confirm_verify
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1336,6 +1344,18 @@ It is triggered for B<verify_email tag: request_email> event emitted, delivering
 
 It is triggered for each B<reset_password_confirmation> event emitted, delivering it to Segment.
 
+=head2 age_verified
+
+It is triggered for each B<age_verified> event emitted, delivering it to Segment.
+
+=head2 bonus_approve
+
+It is triggered for each B<bonus_approve> event emitted, delivering it to Segment.
+
+=head2 bonus_reject
+
+It is triggered for each B<bonus_reject> event emitted, delivering it to Segment.
+
 =head2 authenticated_with_scans
 
 It is triggered for each B<authenticated_with_scans> event emitted, delivering it to Segment.
@@ -1384,6 +1404,10 @@ It is triggered for each B<withdrawal_rejected> event emitted, delivering it to 
 =head2 poi_authentication_requested
 
 It is triggered for each B<poi_authentication_requested> event emitted, delivering it to Segment.
+
+=head2 p2p_order_confirm_verify
+
+It is triggered for each B<p2p_order_confirm_verify> event emitted, delivering it to Segment.
 
 =cut
 

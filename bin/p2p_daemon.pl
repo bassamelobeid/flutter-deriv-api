@@ -61,6 +61,7 @@ use constant {
     P2P_ORDER_TIMEDOUT_AT         => 'P2P::ORDER::TIMEDOUT_AT',
     P2P_ADVERTISER_BLOCK_ENDS_AT  => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
     P2P_ORDER_REVIEWABLE_START_AT => 'P2P::ORDER::REVIEWABLE_START_AT',
+    P2P_VERIFICATION_PENDING_KEY  => 'P2P::ORDER::VERIFICATION_PENDING',
     P2P_USERS_ONLINE              => 'P2P::USERS_ONLINE',
     P2P_USERS_ONLINE_LATEST       => 'P2P::USERS_ONLINE_LATEST',
     P2P_ONLINE_PERIOD             => 90,
@@ -208,6 +209,23 @@ sub on_tick {
                 self_only      => 1,
             });
         $log->debugf('Review period for %s on order %s has ended', $loginid, $order_id);
+    }
+
+    # Verification tokens expired
+    $p2p_redis->multi;
+    $p2p_redis->zrangebyscore(P2P_VERIFICATION_PENDING_KEY, '-Inf', $epoch_now);
+    $p2p_redis->zremrangebyscore(P2P_VERIFICATION_PENDING_KEY, '-Inf', $epoch_now);
+    my @expired_tokens = $p2p_redis->exec->[0]->@*;
+
+    for my $item (@expired_tokens) {
+        # Item is P2P_ORDER_ID|CLIENT_LOGINID
+        my ($order_id, $loginid) = split(/\|/, $item);
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_updated => {
+                order_id       => $order_id,
+                client_loginid => $loginid,
+            });
+        $log->debugf('Verification token on order %s has expired', $order_id);
     }
 
     # find active advert subscription channels

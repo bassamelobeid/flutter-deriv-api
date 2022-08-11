@@ -15,6 +15,7 @@ use BOM::Event::Actions::MT5;
 use BOM::Event::Actions::Client;
 use BOM::Event::Actions::Client::DisputeNotification;
 use BOM::Event::Actions::Client::IdentityVerification;
+use BOM::Event::Actions::CryptoCashier;
 use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
 use BOM::Event::Actions::P2P;
@@ -106,6 +107,7 @@ my $action_mapping = {
         pa_transfer_confirm                         => \&BOM::Event::Actions::Client::pa_transfer_confirm,
         pa_withdraw_confirm                         => \&BOM::Event::Actions::Client::pa_withdraw_confirm,
         trigger_cio_broadcast                       => \&BOM::Event::Actions::Common::trigger_cio_broadcast,
+        crypto_cashier_transaction_updated          => \&BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated,
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,
@@ -152,8 +154,12 @@ my $action_mapping = {
         multiplier_hit_type                              => \&BOM::Event::Services::Track::multiplier_hit_type,
         multiplier_near_expire_notification              => \&BOM::Event::Services::Track::multiplier_near_expire_notification,
         multiplier_near_dc_notification                  => \&BOM::Event::Services::Track::multiplier_near_dc_notification,
+        age_verified                                     => \&BOM::Event::Services::Track::age_verified,
+        bonus_approve                                    => \&BOM::Event::Services::Track::bonus_approve,
+        bonus_reject                                     => \&BOM::Event::Services::Track::bonus_reject,
         withdrawal_rejected                              => \&BOM::Event::Services::Track::withdrawal_rejected,
         account_deactivated                              => \&BOM::Event::Services::Track::account_deactivated,
+        p2p_order_confirm_verify                         => \&BOM::Event::Services::Track::p2p_order_confirm_verify,
     },
     mt5_retryable => {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,

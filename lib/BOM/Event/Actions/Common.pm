@@ -26,8 +26,8 @@ use BOM::Platform::Event::Emitter;
 use BOM::User::Client;
 use Email::Stuffer;
 use BOM::Event::Actions::P2P;
+use BOM::Platform::Event::Emitter;
 use BOM::Event::Actions::CustomerIO;
-
 use Brands;
 
 # Templates prefix path
@@ -223,34 +223,20 @@ sub _email_client_age_verified {
     # p2p will handle notification for this case
     return if ($client->status->reason('allow_document_upload') // '') eq 'P2P_ADVERTISER_CREATED';
 
-    my $from_email   = $brand->emails('no-reply');
     my $website_name = $brand->website_name;
 
-    my $data_tt = {
-        client       => $client,
-        l            => \&localize,
-        website_name => $website_name,
-        contact_url  => $brand->contact_url,
-    };
-    my $email_subject = localize("Your identity is verified");
-    my $tt            = Template->new(ABSOLUTE => 1);
-
     try {
-        $tt->process(TEMPLATE_PREFIX_PATH . 'age_verified.html.tt', $data_tt, \my $html);
-        die "Template error: @{[$tt->error]}" if $tt->error;
-        send_email({
-                from          => $from_email,
-                to            => $client->email,
-                subject       => $email_subject,
-                message       => [$html],
-                template_args => {
-                    name  => $client->first_name,
-                    title => localize("Your identity is verified"),
-                },
-                use_email_template    => 1,
-                email_content_is_html => 1,
-                skip_text2html        => 1,
-            });
+        BOM::Platform::Event::Emitter::emit(
+            age_verified => {
+                loginid    => $client->loginid,
+                properties => {
+                    email         => $client->email,
+                    name          => $client->first_name,
+                    website_name  => $website_name,
+                    contact_url   => $brand->contact_url({language => uc($client->user->preferred_language // request->language // 'en')}),
+                    poi_url       => $brand->authentication_url({language => uc($client->user->preferred_language // request->language // 'en')}),
+                    live_chat_url => $brand->live_chat_url({language => uc($client->user->preferred_language // request->language // 'en')}),
+                }});
     } catch ($e) {
         $log->warn($e);
         exception_logged();

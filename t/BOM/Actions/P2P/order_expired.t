@@ -6,10 +6,15 @@ use BOM::Event::Actions::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::P2P;
+use BOM::Config::Runtime;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+$config->transaction_verification_countries([]);
+$config->transaction_verification_countries_all(0);
 
 subtest pending_order_expiry => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();

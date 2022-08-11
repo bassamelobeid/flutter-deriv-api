@@ -47,12 +47,11 @@ $status_mock->mock(
     });
 
 my $emitter_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
-my $emissions    = {};
+my @emissions;
 $emitter_mock->mock(
     'emit',
     sub {
-        $emissions = {($_[0] => 1), $emissions->%*,};
-        return undef;
+        push @emissions, @_;
     });
 
 my $countries_mock        = Test::MockModule->new('Brands::Countries');
@@ -261,9 +260,10 @@ subtest 'set_age_verification' => sub {
             $mocked_countries_list = {$client->residence => {require_age_verified_for_synthetic => $scenario->{require_age_verified_for_synthetic}}};
 
             $upsert_calls = {};
-            $emissions    = {};
+            @emissions    = [];
             $p2p_trace    = {};
             mailbox_clear();
+            undef @emissions;
             BOM::Event::Actions::Common::set_age_verification($client, $provider);
 
             my @mailbox = BOM::Test::Email::email_list();
@@ -271,11 +271,27 @@ subtest 'set_age_verification' => sub {
             $client->status->_build_all;
 
             if ($side_effects->{age_verification}) {
-                ok $client->status->age_verification,             'Age verified';
-                ok exists $emails->{'Your identity is verified'}, 'Verified notitication sent';
+                ok $client->status->age_verification, 'Age verified';
+                is_deeply \@emissions,
+                    [
+                    'age_verified',
+                    {
+                        'properties' => {
+                            'website_name'  => 'Deriv.com',
+                            'name'          => $client->first_name,
+                            'email'         => $client->email,
+                            'contact_url'   => 'https://deriv.com/en/contact-us',
+                            'poi_url'       => 'https://app.deriv.com/account/proof-of-identity?lang=en',
+                            'live_chat_url' => 'https://deriv.com/en/?is_livechat_open=true'
+                        },
+                        'loginid' => $client->loginid,
+                    }
+                    ],
+                    'Verified notitication sent to CR client';
+                undef @emissions;
             } else {
-                ok !$client->status->age_verification,             'Age status not verified';
-                ok !exists $emails->{'Your identity is verified'}, 'Verified notitication not sent';
+                ok !$client->status->age_verification, 'Age status not verified';
+                ok !exists $emissions[0],              'Verified notitication not sent to CR client';
             }
 
             if ($side_effects->{df_deposit_requires_poi}) {
