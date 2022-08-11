@@ -360,7 +360,6 @@ sub _get_spot {
 sub _get_surface_data {
     my ($self, $vol_lines, $underlying, $spot) = @_;
 
-    my $premium_adjusted = $underlying->market_convention->{delta_premium_adjusted};
     my $t_vol            = $self->_transpose($vol_lines);                # we need to do this. If not I will go crazy trying to calculate delta
     my $t_vol_ref        = $self->_convert_to_array_of_hashes($t_vol);
     $self->_removes_brackets($t_vol_ref);
