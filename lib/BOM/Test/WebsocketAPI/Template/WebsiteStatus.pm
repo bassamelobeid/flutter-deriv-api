@@ -290,7 +290,7 @@ rpc_response {
                 type => 'crypto',
             },
         },
-        supported_languages      => ['EN', 'ID', 'RU', 'ES', 'FR', 'IT', 'PT', 'PL', 'DE', 'ZH_CN', 'VI', 'ZH_TW', 'TH'],
+        supported_languages      => ['EN', 'ID', 'RU', 'ES', 'FR', 'IT', 'PT', 'PL', 'DE', 'ZH_CN', 'VI', 'ZH_TW', 'TH', 'TR'],
         terms_conditions_version => 'Version 1 1970-01-01',
     };
 };
