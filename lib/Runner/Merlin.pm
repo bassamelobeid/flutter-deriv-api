@@ -136,8 +136,6 @@ sub _calculate_results {
     }
 
     my $analysis_result = $self->_generates_and_saves_analysis_report($analysis_mid_diffs);
-    my $record_num      = scalar(@output);
-
     return $analysis_result;
 }
 

@@ -66,7 +66,7 @@ sub _build_records {
         date       => $date_start
     });
 
-    my $surface_data = $self->_get_surface_data($vol_lines, $underlying, $spot, $rate);
+    my $surface_data = $self->_get_surface_data($vol_lines, $underlying, $spot);
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
         underlying => $underlying->symbol,
@@ -358,7 +358,7 @@ sub _get_spot {
 }
 
 sub _get_surface_data {
-    my ($self, $vol_lines, $underlying, $spot, $rate) = @_;
+    my ($self, $vol_lines, $underlying, $spot) = @_;
 
     my $premium_adjusted = $underlying->market_convention->{delta_premium_adjusted};
     my $t_vol            = $self->_transpose($vol_lines);                # we need to do this. If not I will go crazy trying to calculate delta
