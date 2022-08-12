@@ -986,7 +986,21 @@ sub logged_in_before_from_same_location {
         my $last_attempt_in_db = $self->get_last_successful_login_history();
         return 1 unless $last_attempt_in_db;
 
-        my $last_attempt_entry = BOM::User::Utility::login_details_identifier($last_attempt_in_db->{environment});
+        my $previous_env             = $last_attempt_in_db->{environment};
+        my $last_attempt_entry       = BOM::User::Utility::login_details_identifier($previous_env);
+        my $last_attempt_env_info    = BOM::User::Utility::get_details_from_environment($previous_env);
+        my $current_attempt_env_info = BOM::User::Utility::get_details_from_environment($new_env);
+
+        my $last_attempt_device_id    = $last_attempt_env_info->{device_id};
+        my $last_attempt_ip           = $last_attempt_env_info->{ip};
+        my $current_attempt_device_id = $current_attempt_env_info->{device_id};
+        my $current_attempt_ip        = $current_attempt_env_info->{ip};
+
+        # Ignore device id check, when previous env do not have device info
+        $entry =~ s/::$current_attempt_device_id$//ig if ($current_attempt_device_id && !$last_attempt_device_id);
+        # Ignore ip check, when previous env do not have IP address
+        $entry =~ s/::$current_attempt_ip//ig if ($current_attempt_ip && !$last_attempt_ip);
+
         return 1 if $last_attempt_entry eq $entry;
     } catch {
         $log->warnf("Failed to get user login entry from redis, error: %s", shift);

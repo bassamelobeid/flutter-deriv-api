@@ -152,11 +152,43 @@ sub set_exclude_until_for {
     return $to_date;
 }
 
+=head2 get_details_from_environment
+
+Get details from environment, which includes the IP address, country, user agent, and the
+device id.
+
+=cut
+
+sub get_details_from_environment {
+    my $env = shift;
+
+    return {} unless $env;
+
+    # Take IP address first two octet
+    my ($ip) = $env =~ /IP=(\d{1,3}\.\d{1,3})/i;
+
+    my ($country) = $env =~ /IP_COUNTRY=(\w{1,2})/i;
+
+    my ($user_agent) = $env =~ /(User_AGENT.+(?=\sLANG))/i;
+    $user_agent =~ s/User_AGENT=//i if $user_agent;
+
+    my ($device_id) = $env =~ /DEVICE_ID=(\w+)/i;
+
+    return {
+        ip         => $ip,
+        country    => uc($country // 'unknown'),
+        user_agent => $user_agent,
+        device_id  => $device_id,
+    };
+}
+
 =head2 login_details_identifier
 
 Take an environment string from the "login_history" and return an identifier for this entry.
 
 The identifier is a mix from the country, device (Android, Linux), and browser.
+
+Device ID added if it present.
 
 If one of these three pieces of information is missing it will be replaced with "unknown".
 
@@ -168,17 +200,24 @@ sub login_details_identifier {
 
     my $enviroment_string = shift;
     return "" unless $enviroment_string;
-    my ($country) = $enviroment_string =~ /IP_COUNTRY=(\w{1,2})/i;
 
-    my ($user_agent) = $enviroment_string =~ /User_AGENT(.+(?=\sLANG))/i;
-    $user_agent =~ s/User_AGENT=//i if $user_agent;
+    my $enviroment_details = get_details_from_environment($enviroment_string);
+
+    my $country    = $enviroment_details->{'country'};
+    my $user_agent = $enviroment_details->{'user_agent'};
+    my $device_id  = $enviroment_details->{'device_id'};
+    my $ip         = $enviroment_details->{'ip'};
 
     my $browser_info = HTTP::BrowserDetect->new($user_agent);
 
     my $device  = $browser_info->device || $browser_info->os_string || 'unknown';
     my $browser = $browser_info->browser_string || 'unknown';
 
-    return ($country || 'unknown') . '::' . $device . '::' . $browser;
+    my $login_identifier = ($country || 'unknown') . '::' . $device . '::' . $browser;
+    $login_identifier .= '::' . $ip        if $ip;
+    $login_identifier .= '::' . $device_id if $device_id;
+
+    return $login_identifier;
 }
 
 sub sendbird_api {
