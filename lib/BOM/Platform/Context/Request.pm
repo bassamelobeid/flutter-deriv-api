@@ -121,6 +121,8 @@ It can be called with an optional HASH ref containing the following parameters t
 
 =item * C<user_agent> - Optional.
 
+=item * C<device_id> - Optional.
+
 =back
 
 =cut
@@ -133,6 +135,7 @@ sub login_env {
     my $ip_address         = $params->{client_ip} || $self->client_ip || '';
     my $ip_address_country = uc($params->{country_code} || $self->country_code || '');
     my $lang               = uc($params->{language}     || $self->language     || '');
+    my $device_id          = $params->{device_id} || undef;
 
     ## The User-Agent can be arbitrarily large, but we do not want to store anything
     ## too large in the database, so we truncate it here if the final environment
@@ -140,8 +143,11 @@ sub login_env {
 
     my $max_env_length    = 1000;
     my $ua                = $params->{user_agent} || '';
+    my $enviroment_string = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT= LANG=$lang";
+    $enviroment_string .= " DEVICE_ID=$device_id" if $device_id;
+
     my $ua_string_length  = length($ua);
-    my $env_string_length = length("$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT= LANG=$lang");
+    my $env_string_length = length($enviroment_string);
     my $total_env_length  = $env_string_length + $ua_string_length;
     if ($total_env_length > $max_env_length) {
         my $ua_note     = " AGENT_TRUNCATED=$ua_string_length";
@@ -150,7 +156,9 @@ sub login_env {
         $ua .= $ua_note;
     }
 
-    return "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
+    $enviroment_string =~ s/User_AGENT=/User_AGENT=$ua/;
+
+    return $enviroment_string;
 
 }
 
