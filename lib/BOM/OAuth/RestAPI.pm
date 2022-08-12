@@ -545,10 +545,11 @@ sub _perform_system_login {
     } unless $password;
 
     my $result = BOM::OAuth::Common::validate_login({
-        c        => $c,
-        app      => $app,
-        email    => $email,
-        password => $password,
+        c         => $c,
+        app       => $app,
+        email     => $email,
+        password  => $password,
+        device_id => $c->req->param('device_id'),
     });
 
     if (my $err = $result->{error_code}) {
@@ -750,9 +751,11 @@ sub _perform_social_login {
     stats_inc('login.oneall.success', {tags => ["brand:$brand_name"]});
 
     my $result = BOM::OAuth::Common::validate_login({
-            c              => $c,
-            app            => $app,
-            oneall_user_id => $user->{id}});
+        c              => $c,
+        app            => $app,
+        oneall_user_id => $user->{id},
+        device_id      => $c->req->param('device_id'),
+    });
 
     _verify_otp($c, $result->{user}, defang($c->req->json->{one_time_password}));
 
@@ -789,6 +792,7 @@ sub _perform_refresh_token_login {
         user_id       => $binary_user_id,
         refresh_token => $refresh_token,
         app           => $app,
+        device_id     => $c->req->param('device_id'),
     });
 
     if (my $err = $result->{error_code}) {

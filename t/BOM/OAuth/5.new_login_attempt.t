@@ -66,6 +66,7 @@ sub do_client_login {
     my $t            = Test::Mojo->new('BOM::OAuth');
     $email    = shift // $email;
     $password = shift // $password;
+    my $device_id = shift;
 
     if ($agent eq 'firefox') {
         $agent_header = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/79.0.3945.79 Safari/537.36';
@@ -78,6 +79,8 @@ sub do_client_login {
         });
 
     my $url = "/authorize?app_id=$app_id&brand=$brand";
+    $url .= "&device_id=$device_id" if $device_id;
+
     $t = $t->get_ok($url)->content_like(qr/login/);
 
     my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
@@ -133,6 +136,109 @@ subtest "it should not send any notification email for new login if brand is der
 
     do_client_login('firefox', 'deriv', $email, $password);
     is(scalar @$virtual_inbox, 0, 'email should not be sent for deriv at all.');
+};
+
+# Test Scenario Matrix 1
+# S/No.  Signup  Login  Device ID             Trigger Email  Remark
+# -----------------------------------------------------------------------
+# 1      Yes     -      Yes (New device)      No             User signup with device information
+# 2      -       Yes    No                    Yes            User signup with device information but logged in without device
+# 3      -       Yes    Yes (existing device) No             As attempt is known
+# 4      -       Yes    Yes (changed device)  Yes            Device information changed
+
+$email    = 'user1@binary.com';
+$password = 'jskjd8292922';
+
+subtest "User signup with device information" => sub {
+    my $hash_pwd  = BOM::User::Password::hashpw($password);
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr->email($email);
+    $client_cr->save;
+    my $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+    $user->add_client($client_cr);
+
+    do_client_login('firefox', 'deriv', $email, $password, 'newdeviceid');
+    is(scalar @$virtual_inbox, 0, 'email should not be sent for first login with device information.');
+};
+
+subtest "User login without device information" => sub {
+    $virtual_inbox = [];
+    do_client_login('firefox', 'deriv', $email, $password);
+    is(scalar @$virtual_inbox, 1, 'email should be sent for as device information removed.');
+};
+
+subtest "User login with existing device information" => sub {
+    $virtual_inbox = [];
+    do_client_login('firefox', 'deriv', $email, $password, 'newdeviceid');
+    is(scalar @$virtual_inbox, 0, 'email should not sent for same device information.');
+};
+
+subtest "User login with changed device information" => sub {
+    $virtual_inbox = [];
+    do_client_login('firefox', 'deriv', $email, $password, 'newdeviceidhh');
+    is(scalar @$virtual_inbox, 1, 'email should be sent for changed device information.');
+};
+
+# Test Scenario Matrix 2
+# S/No. Signup  Login  Device ID             Trigger Email  Remark
+# --------------------------------------------------------------------
+# 1     Yes     -      No                    No             No device rgistered during signup
+# 2     -       Yes    No                    No             Login without device information
+# 3     -       Yes    Yes (New device)      No             First time new device is used - ignored
+# 4     -       Yes    No                    No             As without device, his last login (point 2) attempt was known, so ignored
+# 5     -       Yes    Yes (existing device) No             As he used the same previously used device, attempt known
+# 6     -       Yes    Yes (changed device)  Yes            As he used the new device, email triggered
+
+$email    = 'user2@binary.com';
+$password = 'jskjd8292922';
+
+subtest "User2 signup without device information" => sub {
+    my $hash_pwd  = BOM::User::Password::hashpw($password);
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr->email($email);
+    $client_cr->save;
+    my $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+    $user->add_client($client_cr);
+
+    $virtual_inbox = [];
+    do_client_login('firefox', 'deriv', $email, $password);
+    is(scalar @$virtual_inbox, 0, 'email should not be sent for first login without device information.');
+};
+
+subtest "User2 login without device information " => sub {
+    do_client_login('firefox', 'deriv', $email, $password);
+    is(scalar @$virtual_inbox, 0, 'email should not be sent for without device information.');
+};
+
+subtest "User2 login with new device information" => sub {
+    $virtual_inbox = [];
+    do_client_login('firefox', 'deriv', $email, $password, 'newdeviceidhh');
+    is(scalar @$virtual_inbox, 0, 'email should not sent first time new device is used.');
+};
+
+subtest "User2 login again without device information " => sub {
+    do_client_login('firefox', 'deriv', $email, $password);
+    is(scalar @$virtual_inbox, 0, 'email should not be sent attempt is known.');
+};
+
+subtest "User2 login with existing device information" => sub {
+    do_client_login('firefox', 'deriv', $email, $password, 'newdeviceidhh');
+    is(scalar @$virtual_inbox, 0, 'email should not be sent as attempt is known.');
+};
+
+subtest "User2 login with changed device information" => sub {
+    do_client_login('firefox', 'deriv', $email, $password, 'newdevice');
+    is(scalar @$virtual_inbox, 1, 'email should be sent as attempt is new device.');
 };
 
 done_testing()
