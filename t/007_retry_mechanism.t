@@ -18,7 +18,7 @@ use utf8;
 
 initialize_events_redis();
 
-my $loop  = IO::Async::Loop->new;
+my $loop = IO::Async::Loop->new;
 my $stream_handler;
 my $mock_log_adapter_test = Test::MockModule->new('Log::Any::Adapter::Test');
 my $mocked_handler        = Test::MockModule->new('BOM::Event::QueueHandler');
