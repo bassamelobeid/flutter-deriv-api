@@ -17,7 +17,7 @@ use Future::AsyncAwait;
 use utf8;
 
 initialize_events_redis();
-my $redis = BOM::Config::Redis::redis_events_write();
+
 my $loop  = IO::Async::Loop->new;
 my $stream_handler;
 my $mock_log_adapter_test = Test::MockModule->new('Log::Any::Adapter::Test');

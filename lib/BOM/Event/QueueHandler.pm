@@ -218,7 +218,7 @@ Returns the retry interval to be used when claiming an item from stream
 
 =cut
 
-sub retry_interval { return shift->{retry_interval} }
+sub retry_interval { return shift->{retry_interval} // 0 }
 
 =head2 host_name
 
