@@ -215,11 +215,13 @@ sub check_bom_dependency {
 
     $cmd = join(' | grep -v ', $cmd, @dependency_allowed, @self_contain_pm);
 
-    my $result = _run_command($cmd);
-    ok !$result, "BOM dependency check";
-    if ($result) {
-        diag("new dependency detected: $result, add into @dependency of check_bom_dependency.t if this module is necessary" );
-        diag("update runtime_required_repos.yml if the repo for $result is not exists ");
+    my @result = _run_command($cmd);
+    ok !@result, "BOM dependency check";
+    if (@result) {
+        diag(
+            "New BOM module dependency detected!!!\nPlease add the module into \@dependency of check_bom_dependency.t, if the module is necessary, update runtime_required_repos.yml if the repo for the module not exists."
+        );
+        diag(join("\n", @result));
     }
 }
 
