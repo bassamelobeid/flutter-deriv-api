@@ -218,8 +218,8 @@ sub check_bom_dependency {
     my $result = _run_command($cmd);
     ok !$result, "BOM dependency check";
     if ($result) {
-        diag("new BOM module dependency detected!!!");
-        diag("you may need update runtime_required_repos.yml");
+        diag("new dependency detected: $result, add into @dependency of check_bom_dependency.t if this module is necessary" );
+        diag("update runtime_required_repos.yml if the repo for $result is not exists ");
     }
 }
 
