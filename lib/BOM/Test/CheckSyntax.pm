@@ -219,7 +219,9 @@ sub check_bom_dependency {
     ok !@result, "BOM dependency check";
     if (@result) {
         diag(
-            "New BOM module dependency detected!!!\nPlease add the module into \@dependency of check_bom_dependency.t, if the module is necessary, update runtime_required_repos.yml if the repo for the module not exists."
+            qq{New BOM module dependency detected!!!
+Please add the module into \@dependency of check_bom_dependency.t, if the module is necessary.
+Update runtime_required_repos.yml if the repo for the module not exists.}
         );
         diag(join("\n", @result));
     }
