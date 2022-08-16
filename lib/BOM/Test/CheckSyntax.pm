@@ -31,6 +31,10 @@ use YAML::XS qw(LoadFile);
 use Data::Dumper;
 $Data::Dumper::Maxdepth = 1;
 
+# This module is imported in .proverc already. Here we import it again to disable end_test
+# because `end test` will make test fail with the error of plan number
+use Test::Warnings ':no_end_test';
+
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
