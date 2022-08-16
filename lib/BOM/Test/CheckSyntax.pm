@@ -35,24 +35,22 @@ our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
 
 our %bom_repo_to_module = (
-          'regentmarkets/bom-config' => 'BOM::Config',
-          'regentmarkets/bom-user' => ['BOM::User','BOM::TradingPlatform,BOM::MT5'],
-          'regentmarkets/bom-rules' => 'BOM::Rules',
-          'regentmarkets/bom-market' => 'BOM::Market',
-          'regentmarkets/bom-platform' => 'BOM::Platform',
-          'regentmarkets/bom' => 'BOM::Product',
-          'regentmarkets/bom-cryptocurrency' => 'BOM::CTC',
-          'regentmarkets/bom-myaffiliates' => 'BOM::MyAffiliates',
-          'regentmarkets/bom-transaction' => 'BOM::Transaction',
-          'regentmarkets/bom-rpc' => 'BOM::RPC',
-          'regentmarkets/bom-pricing' => 'BOM::Pricing',
-          'regentmarkets/bom-postgres' => 'BOM::Database',
-          'regentmarkets/bom-test' => 'BOM::Test',
-          'regentmarkets/bom-populator' => 'BOM::Populator',
-          'regentmarkets/bom-oauth' => 'BOM::OAuth'
-        );
-
-
+    'regentmarkets/bom-user'           => ['BOM::User', 'BOM::TradingPlatform', 'BOM::MT5'],
+    'regentmarkets/bom-config'         => 'BOM::Config',
+    'regentmarkets/bom-rules'          => 'BOM::Rules',
+    'regentmarkets/bom-market'         => 'BOM::Market',
+    'regentmarkets/bom-platform'       => 'BOM::Platform',
+    'regentmarkets/bom'                => 'BOM::Product',
+    'regentmarkets/bom-cryptocurrency' => 'BOM::CTC',
+    'regentmarkets/bom-myaffiliates'   => 'BOM::MyAffiliates',
+    'regentmarkets/bom-transaction'    => 'BOM::Transaction',
+    'regentmarkets/bom-rpc'            => 'BOM::RPC',
+    'regentmarkets/bom-pricing'        => 'BOM::Pricing',
+    'regentmarkets/bom-postgres'       => 'BOM::Database',
+    'regentmarkets/bom-test'           => 'BOM::Test',
+    'regentmarkets/bom-populator'      => 'BOM::Populator',
+    'regentmarkets/bom-oauth'          => 'BOM::OAuth'
+);
 
 =head2 check_syntax_on_diff
 
@@ -233,18 +231,18 @@ sub check_bom_dependency {
     # also found pod of some pm has comments like
     # lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
     my $required_repos_yml = 'runtime_required_repos.yml';
-    if ( -e $required_repos_yml ){
+    if (-e $required_repos_yml) {
         my $required_repos = YAML::XS::LoadFile($required_repos_yml);
         unless (ref($required_repos) eq 'ARRAY') {
             warn "$required_repos_yml format has issue.";
         } else {
-            foreach (@$required_repos){
+            foreach (@$required_repos) {
                 my $module = $bom_repo_to_module{$_};
                 if (ref($module) eq 'ARRAY') {
                     push @dependency_allowed, @$module;
-                    }else{
+                } else {
                     push @dependency_allowed, $module;
-                    }
+                }
             }
 
         }
@@ -254,9 +252,10 @@ sub check_bom_dependency {
     my @result = _run_command($cmd);
     ok !@result, "BOM dependency check";
     if (@result) {
-        diag(qq{New BOM module dependency detected!!!
-Please add the corresponding repo into runtime_required_repos.yml and test_required_repos.yml. (you may need to create it)
-});
+        diag(
+            qq{New BOM module dependency detected!!!
+Please add the corresponding repository of the following modules into runtime_required_repos.yml and test_required_repos.yml. (you may need to create it)}
+        );
         diag(join("\n", @result));
     }
 }
