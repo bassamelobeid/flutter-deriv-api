@@ -55,8 +55,6 @@ jobs:
     - *1
     - *2
     - *3
-    - *4
-    - *check_services
     - run:
         <<: *5
         command: |
