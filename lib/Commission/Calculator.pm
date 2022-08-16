@@ -195,10 +195,11 @@ sub _add_to_loop {
 
     my $redis_config = LoadFile($self->redis_exchangerates_config);
 
+    # when password is empty string, should turn it to undef, otherwise Net::Async::Redis will report an error
     my $redis = Net::Async::Redis->new(
         host => $redis_config->{read}{host},
         port => $redis_config->{read}{port},
-        auth => $redis_config->{read}{password},
+        auth => $redis_config->{read}{password} || undef,
     );
 
     $self->{redis_exchangerates} = $redis;
