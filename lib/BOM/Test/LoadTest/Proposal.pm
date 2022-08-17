@@ -119,7 +119,7 @@ method run_tests() {
     my $main_loop = fmap0 {
         try {
             my ($connection_number) = @_;
-            $self->create_subscriptions($connection_number, $contracts_for);
+            $self->create_subscriptions($connection_number);
         } catch ($e) {
 
             $log->warn('Failed ' . $e);
