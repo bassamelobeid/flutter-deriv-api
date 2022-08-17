@@ -75,8 +75,6 @@ subtest 'trading servers for south africa' => sub {
     is $result->{account_type}, 'gaming', 'account_type=gaming';
     is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'created in group real\p01_ts02\synthetic\svg_std_usd\01';
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
-
     $result =
         $c->call_ok($method, $params)->has_no_error('returns all synthetic servers for real except p01_ts02 or p02_ts01 (since routing is random)')
         ->result;
@@ -151,8 +149,6 @@ subtest 'trading servers for Aland Islands' => sub {
     $result = $c->call_ok('mt5_new_account', $new_account_params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'gaming', 'account_type=gaming';
     is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts04\synthetic\svg_std_usd\01'}, 'created in group real\p01_ts04\synthetic\svg_std_usd\01';
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 
     $result =
         $c->call_ok($method, $params)->has_no_error('returns all synthetic servers for real except p01_ts04 or p02_ts01 (since routing is random)')

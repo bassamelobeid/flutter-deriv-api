@@ -64,10 +64,6 @@ $user->add_client($test_client);
 my $m     = BOM::Platform::Token::API->new;
 my $token = $m->create_token($test_client->loginid, 'test token');
 
-# Throttle function limits requests to 1 per minute which may cause
-# consecutive tests to fail without a reset.
-BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
 my $params = {
     language => 'EN',
     token    => $token,
@@ -271,7 +267,6 @@ subtest 'create new account fails, when we get error during getting login list' 
             BOM::RPC::v3::MT5::Account::create_error_future('General');
         });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_error('has error for mt5_login_list')->error_code_is('General', 'Should return correct error code');
     $mt5_acc_mock->unmock('mt5_get_settings');
 };
@@ -337,7 +332,6 @@ subtest 'mt5 settings with correct account type' => sub {
                 leverage     => 100,
             },
         };
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         my $res = $c->call_ok('mt5_new_account', $params)->has_no_error->result;
 
         my $bom_user_mock = Test::MockModule->new('BOM::User');
@@ -392,10 +386,6 @@ $params = {
     },
 };
 
-# Throttle function limits requests to 1 per minute which may cause
-# consecutive tests to fail without a reset.
-BOM::RPC::v3::MT5::Account::reset_throttler($inactive_client->loginid);
-
 #  Mock inactive MT5 account
 my $mocker_inactive_account = Test::MockModule->new('BOM::MT5::User::Async');
 $mocker_inactive_account->mock(
@@ -428,8 +418,6 @@ subtest 'login list for inactive account' => sub {
         token    => $token,
         args     => {},
     };
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($ACCOUNTS{'real\p01_ts01\inactive_accounts_financial'});
 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
 

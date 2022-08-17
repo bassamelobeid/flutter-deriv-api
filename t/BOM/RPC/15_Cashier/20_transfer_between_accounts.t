@@ -1644,9 +1644,7 @@ subtest 'MT5' => sub {
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
     my $mock_account   = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     my $is_fa_complete = 1;
-    $mock_account->mock(
-        _is_financial_assessment_complete => sub { return $is_fa_complete },
-        _throttle                         => sub { return 0 });
+    $mock_account->mock(_is_financial_assessment_complete => sub { return $is_fa_complete });
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->mock(fully_authenticated => sub { return 1 });
 

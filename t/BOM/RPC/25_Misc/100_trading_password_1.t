@@ -159,8 +159,6 @@ subtest 'password change with mt5 accounts' => sub {
     $mt5_loginid = $result->{login};
     is($mt5_loginid, 'MTR' . $accounts{'real\p01_ts03\synthetic\svg_std_usd\01'}, 'MT5 loginid is correct');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
-
     # create demo mt5 account
     $mt5_params->{args}->{account_type}     = 'demo';
     $mt5_params->{args}->{mt5_account_type} = 'financial';

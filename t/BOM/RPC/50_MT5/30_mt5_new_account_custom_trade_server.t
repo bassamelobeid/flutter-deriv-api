@@ -54,10 +54,6 @@ my $m        = BOM::Platform::Token::API->new;
 my $token    = $m->create_token($test_client->loginid,    'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
-# Throttle function limits requests to 1 per minute which may cause
-# consecutive tests to fail without a reset.
-BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
 subtest 'custom new account' => sub {
     my $method = 'mt5_new_account';
     my $args   = {
@@ -95,14 +91,11 @@ subtest 'custom new account' => sub {
     is($c->result->{balance},         0,                                                           'Balance is 0 upon creation');
     is($c->result->{display_balance}, '0.00',                                                      'Display balance is "0.00" upon creation');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $args->{server} = 'p01_ts02';
     $c->call_ok($method, $params)->has_no_error('client from south africa can have multiple synthetic account');
     is($c->result->{login},           'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'result->{login}');
     is($c->result->{balance},         0,                                                           'Balance is 0 upon creation');
     is($c->result->{display_balance}, '0.00',                                                      'Display balance is "0.00" upon creation');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
@@ -124,7 +117,6 @@ subtest 'non-Ireland client new account check' => sub {
         args     => $args,
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     note('demo account cannot select trade server');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
     $c->call_ok($method, $params)->has_error->error_code_is('PermissionDenied')->error_message_is('Permission denied.');
@@ -158,7 +150,6 @@ subtest 'use default routing rule if server is not provided' => sub {
         args     => $args,
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     note('no server as user input');
     my $res = $c->call_ok($method, $params)->has_no_error->result;
     is $res->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'}, 'defaulted to account on real->p01_ts01';

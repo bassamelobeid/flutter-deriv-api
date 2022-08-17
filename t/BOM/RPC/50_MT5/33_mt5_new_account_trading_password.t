@@ -64,10 +64,6 @@ my $m        = BOM::Platform::Token::API->new;
 my $token    = $m->create_token($test_client->loginid,    'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
-# Throttle function limits requests to 1 per minute which may cause
-# consecutive tests to fail without a reset.
-BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 
 my $method = 'mt5_new_account';
@@ -84,8 +80,6 @@ subtest 'mt5 new account - no trading password' => sub {
             mainPassword => $password,
             leverage     => 100,
         }};
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     subtest 'should fail when password format is incorrect' => sub {
         $params->{args}->{mainPassword} = 's3kr1t';
@@ -111,8 +105,6 @@ subtest 'mt5 new account - no trading password' => sub {
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     subtest 'can create new mt5 account' => sub {
         $user->update_trading_password($password);
 
@@ -135,8 +127,6 @@ subtest 'mt5 new account - has trading password' => sub {
             leverage         => 100,
         }};
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     subtest 'should fail when password format is incorrect' => sub {
         $params->{args}->{mainPassword} = 's3kr1t';
         $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
@@ -149,8 +139,6 @@ subtest 'mt5 new account - has trading password' => sub {
         $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
             ->error_message_is("That password is incorrect. Please try again.", 'Correct error message when user entered the wrong trading_password');
     };
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     subtest 'can create new mt5 account when using the correct trading password' => sub {
         $params->{args}->{mainPassword} = $details{password}{main};

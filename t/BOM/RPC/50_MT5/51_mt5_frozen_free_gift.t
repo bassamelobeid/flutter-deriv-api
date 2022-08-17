@@ -68,8 +68,6 @@ subtest 'frozen free gift' => sub {
 
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
-
     my $params = {
         language => 'EN',
         token    => $token,

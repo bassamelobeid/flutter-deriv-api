@@ -128,7 +128,6 @@ subtest 'balance with mt5 disabled' => sub {
 
     # create mt5 financial account
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $mt5_params->{args}{account_type}     = 'financial';
     $mt5_params->{args}{mt5_account_type} = 'financial';
     $mt5_params->{args}{email}            = '123' . $mt5_params->{args}{email};

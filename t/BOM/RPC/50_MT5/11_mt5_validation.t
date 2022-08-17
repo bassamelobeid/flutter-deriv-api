@@ -156,8 +156,6 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)->has_error->error_code_is('InvalidAccountType', 'Correct error message for invalid account type');
     $params->{args}->{account_type} = 'demo';
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     my $citizen = $test_client->citizen;
 
     $test_client->citizen('');
@@ -165,19 +163,13 @@ subtest 'new account' => sub {
 
     $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating demo accounts');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     $params->{args}->{account_type} = 'gaming';
     $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating gaming accounts');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}->{account_type}     = 'financial';
     $params->{args}->{mt5_account_type} = 'financial';
 
     $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating financial accounts');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}->{mt5_account_type} = 'financial_stp';
 
@@ -192,8 +184,6 @@ subtest 'new account' => sub {
     $test_client->account_opening_reason('speculatove');
     $test_client->citizen($citizen);
     $test_client->save;
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}->{account_type}   = 'demo';
     $params->{args}->{mainPassword}   = 'Abcd33@!';
@@ -275,9 +265,6 @@ subtest 'new account' => sub {
         $params->{args}->{mainPassword}   = 'Abcd82378@!';
         $params->{args}->{leverage}       = 100;
 
-        # Throttle function limits requests to 1 per minute which may cause
-        # consecutive tests to fail without a reset.
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok($method, $params)->has_no_error();
         like($c->response->{rpc_response}->{result}->{login}, qr/[0-9]+/, 'Should return MT5 ID');
     }
@@ -850,7 +837,7 @@ subtest 'Virtual account types - EU residences' => sub {
     $mf_client->save();
 
     $user->add_client($mf_client);
-    BOM::RPC::v3::MT5::Account::reset_throttler($mf_client->loginid);
+
     $login = create_mt5_account->(
         $c, $token,
         $mf_client,
@@ -1103,7 +1090,7 @@ sub create_mt5_account {
     foreach (keys %$args) { $params->{args}->{$_} = $args->{$_} }
 
     $mt5_account_info = {};
-    BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
+
     my $result = $c->call_ok('mt5_new_account', $params);
 
     if ($expected_error) {

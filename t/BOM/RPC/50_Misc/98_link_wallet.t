@@ -89,7 +89,6 @@ subtest 'link_wallet' => sub {
             },
         };
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($vr_client->loginid);
         my $result = $c->tcall('mt5_new_account', $params);
         is $result->{account_type}, 'demo';
         is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'};

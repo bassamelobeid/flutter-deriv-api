@@ -57,8 +57,6 @@ subtest 'country=za; creates financial account with existing gaming account whil
     is $result->{account_type}, 'gaming', 'account_type=gaming';
     is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'created in group real\p01_ts02\synthetic\svg_std_usd\01';
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
-
     $params->{args}{account_type}     = 'financial';
     $params->{args}{mt5_account_type} = 'financial';
     my $financial = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;

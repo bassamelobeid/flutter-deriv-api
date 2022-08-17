@@ -69,7 +69,6 @@ subtest 'create mt5 client with different currency' => sub {
         $token = $m->create_token($new_client_vr->loginid, 'test token 2');
         $user->add_client($new_client_vr);
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
         $params->{token} = $token;
         $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')
             ->error_message_is(
@@ -155,7 +154,6 @@ subtest 'create mt5 client with different currency' => sub {
             },
         };
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         my $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
         is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_gbp'};
@@ -180,7 +178,6 @@ subtest 'create mt5 client with different currency' => sub {
         $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
         $params->{token} = $token;
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
         is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_usd'};
@@ -205,7 +202,6 @@ subtest 'create mt5 client with different currency' => sub {
         $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
         $params->{token} = $token;
-        BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
         is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_eur'};
@@ -215,7 +211,6 @@ subtest 'create mt5 client with different currency' => sub {
         $token = $m->create_token($new_client_vr->loginid, 'test token 2');
         $user->add_client($new_client_vr);
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         $params->{token} = $token;
         $params->{args}->{account_type} = 'demo';
         delete $params->{args}->{currency};
@@ -258,7 +253,6 @@ subtest 'create mt5 client with different currency' => sub {
             },
         };
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         my $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'demo';
         is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\maltainvest_std_eur'};
@@ -308,18 +302,15 @@ subtest 'auto b-booking' => sub {
 
     $params->{args}->{account_type}     = 'financial';
     $params->{args}->{mt5_account_type} = 'financial';
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
-    $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
+    $result                             = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'financial';
     is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std-hr_usd'}, 'routed to financial high risk';
 
     $params->{args}->{mt5_account_type} = 'financial_stp';
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'financial';
     is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'}, 'financial stp account no high risk flag';
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
 };
 
@@ -358,46 +349,10 @@ subtest 'real & demo split on account creation' => sub {
 
     note("disable real02 trade server's API");
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{account_type} = 'demo';
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'demo';
     is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\synthetic\svg_std_usd'};
-};
-
-subtest 'account creation throttle' => sub {
-    my $new_email  = 'throttle' . $DETAILS{email};
-    my $new_client = create_client('CR');
-    my $token      = $m->create_token($new_client->loginid, 'test token 2');
-    $new_client->set_default_account('EUR');
-    $new_client->email($new_email);
-
-    my $user = BOM::User->create(
-        email    => $new_email,
-        password => 's3kr1t',
-    );
-    $user->update_trading_password($DETAILS{password}{main});
-    $user->add_client($new_client);
-
-    my $method = 'mt5_new_account';
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            account_type => 'gaming',
-            email        => $new_email,
-            name         => $DETAILS{name},
-            mainPassword => $DETAILS{password}{main},
-            leverage     => 100,
-        },
-    };
-    my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
-    is $result->{account_type}, 'gaming';
-    is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
-
-    $result = $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')
-        ->error_message_is("We're unable to add another MT5 account right now. Please try again in a minute.");
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 };
 
 SKIP: {
@@ -472,7 +427,6 @@ SKIP: {
         is $mt5_args->{group},  'real\p02_ts02\synthetic\seychelles_ib_usd', 'Expected group for dsl';
         is $mt5_args->{rights}, '0x0000000000000004',                        'Expected user rights';
         $mt5_mock->unmock_all;
-        BOM::RPC::v3::MT5::Account::reset_throttler($aff_loginid);
 
         $c->call_ok('mt5_new_account', $params)->has_error->error_code_is('MT5CreateUserError')
             ->error_message_is(

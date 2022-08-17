@@ -73,10 +73,6 @@ $user->add_client($test_client);
 my $m     = BOM::Platform::Token::API->new;
 my $token = $m->create_token($test_client->loginid, 'test token');
 
-# Throttle function limits requests to 1 per minute which may cause
-# consecutive tests to fail without a reset.
-BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
 BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
 
 my $params = {
@@ -196,8 +192,6 @@ subtest 'multi currency transfers' => sub {
                 return Future->done({success => 1});
             });
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
         $client_eur->status->set('no_withdrawal_or_trading', 'system', '..dont like you, sorry.');
         $c->call_ok('mt5_deposit', $deposit_params)
             ->has_error->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
@@ -229,7 +223,7 @@ subtest 'multi currency transfers' => sub {
             quote => $EUR_USD,
             epoch => time
         );
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with current rate - has transaction id');
 
@@ -253,7 +247,6 @@ subtest 'multi currency transfers' => sub {
         );
 
         $prev_bal = $client_eur->account->balance;
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
         $client_eur->status->set('unwelcome', 'system', '..dont like you, sorry.');
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error->error_message_is('Your account is restricted to withdrawals only.');
@@ -288,12 +281,10 @@ subtest 'multi currency transfers' => sub {
             quote => $EUR_USD,
             epoch => time - (3600 * 12));
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with 12hr old rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with 12hr old rate - has transaction id');
 
         $prev_bal = $client_eur->account->balance;
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with 12hr old rate - has transaction id');
         is financialrounding('amount', 'EUR', $client_eur->account->balance),
@@ -311,11 +302,9 @@ subtest 'multi currency transfers' => sub {
             'exchange_rates::EUR_USD',
             quote => $EUR_USD,
             epoch => time - ((3600 * $available_hours) + 1));
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_error("deposit EUR->USD with >" . $available_hours . " hours old rate - has error")
             ->error_code_is('MT5DepositError', "deposit EUR->USD with >" . $available_hours . " hours old rate - correct error code");
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error("withdraw USD->EUR with >" . $available_hours . " hours old rate - has error")
             ->error_code_is('MT5WithdrawalError', "withdraw USD->EUR with >" . $available_hours . " hours old rate - correct error code");
     };
@@ -346,12 +335,10 @@ subtest 'multi currency transfers' => sub {
         # clear the cache for previous test
         BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1);
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit BTC->USD with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit BTC->USD with current rate - has transaction id');
 
         $prev_bal = $client_btc->account->balance;
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with current rate - has transaction id');
         is financialrounding('amount', 'BTC', $client_btc->account->balance),
@@ -364,12 +351,10 @@ subtest 'multi currency transfers' => sub {
             epoch => time - 3595
         );
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit BTC->USD with older rate <1 hour - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit BTC->USD with older rate <1 hour - has transaction id');
 
         $prev_bal = $client_btc->account->balance;
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with older rate <1 hour - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with older rate <1 hour - has transaction id');
         is financialrounding('amount', 'BTC', $client_btc->account->balance),
@@ -382,11 +367,9 @@ subtest 'multi currency transfers' => sub {
             epoch => time - 3605
         );
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit BTC->USD with rate >1 hour old - has error')
             ->error_code_is('MT5DepositError', 'deposit BTC->USD with rate >1 hour old - correct error code');
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->BTC with rate >1 hour old - has error')
             ->error_code_is('MT5WithdrawalError', 'withdraw USD->BTC with rate >1 hour old - correct error code');
     };
@@ -412,12 +395,10 @@ subtest 'multi currency transfers' => sub {
         );
         _offer_to_clients(1, 'UST');
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit UST->USD with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit UST->USD with current rate - has transaction id');
 
         $prev_bal = $client_ust->account->balance;
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->UST with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->UST with current rate - has transaction id');
         is financialrounding('amount', 'UST', $client_ust->account->balance),
@@ -429,12 +410,10 @@ subtest 'multi currency transfers' => sub {
             quote => $UST_USD,
             epoch => time - 3595
         );
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit UST->USD with older rate <1 hour - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit UST->USD with older rate <1 hour - has transaction id');
 
         $prev_bal = $client_ust->account->balance;
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->UST with older rate <1 hour - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->UST with older rate <1 hour - has transaction id');
         is financialrounding('amount', 'UST', $client_ust->account->balance),
@@ -447,11 +426,9 @@ subtest 'multi currency transfers' => sub {
             epoch => time - 3605
         );
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit UST->USD with rate >1 hour old - has error')
             ->error_code_is('MT5DepositError', 'deposit UST->USD with rate >1 hour old - correct error code');
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->UST with rate >1 hour old - has error')
             ->error_code_is('MT5WithdrawalError', 'withdraw USD->UST with rate >1 hour old - correct error code');
     };

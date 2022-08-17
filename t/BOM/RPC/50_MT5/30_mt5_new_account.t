@@ -73,10 +73,6 @@ my $m        = BOM::Platform::Token::API->new;
 my $token    = $m->create_token($test_client->loginid,    'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
-# Throttle function limits requests to 1 per minute which may cause
-# consecutive tests to fail without a reset.
-BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
 subtest 'new account with invalid main or investor password format' => sub {
     my $method                   = 'mt5_new_account';
     my $wrong_formatted_password = 'abc123';
@@ -109,16 +105,12 @@ subtest 'new account with invalid main or investor password format' => sub {
         ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'error code for mt5_new_account wrong password formatting');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     $params->{args}->{mainPassword}   = 'ABCDE123';
     $params->{args}->{investPassword} = 'ABCDEFGE';
     $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong investor password formatting')
         ->error_code_is('IncorrectMT5PasswordFormat', 'error code for mt5_new_account wrong investor password formatting')
         ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'error code for mt5_new_account wrong investor password formatting');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
 subtest 'new account with missing signup fields' => sub {
@@ -149,8 +141,6 @@ subtest 'new account with missing signup fields' => sub {
         ->error_code_is('ASK_FIX_DETAILS', 'error code for missing basic details')
         ->error_details_is({missing => ['phone', 'account_opening_reason']}, 'missing field in response details');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     $test_client->status->clear_crs_tin_information;
     $test_client->phone('12345678');
     $test_client->account_opening_reason('no reason');
@@ -179,12 +169,8 @@ subtest 'new account' => sub {
     is($c->result->{balance},         0,                                                           'Balance is 0 upon creation');
     is($c->result->{display_balance}, '0.00',                                                      'Display balance is "0.00" upon creation');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
 subtest 'new account dry_run' => sub {
@@ -207,8 +193,6 @@ subtest 'new account dry_run' => sub {
     is($c->result->{balance},         0,      'Balance is 0 upon dry run');
     is($c->result->{display_balance}, '0.00', 'Display balance is "0.00" upon dry run');
     is($c->result->{currency},        'USD',  'Currency is "USD" upon dry run');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
 subtest 'new account with account in highRisk groups' => sub {
@@ -253,7 +237,6 @@ subtest 'new account with account in highRisk groups' => sub {
             },
         };
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
         $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
         is $c->result->{login}, 'MTR' . $accounts{'real\p01_ts02\synthetic\svg_std-hr_usd'}, 'group changed to high risk';
@@ -284,7 +267,6 @@ subtest 'new account with account in highRisk groups' => sub {
             },
         };
 
-        BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
         $c->call_ok($method, $params)->has_error('high risk group does not exist for corresponding group')
             ->error_code_is('MT5CreateUserError', 'error code for mt5_new_account with navailable high risk group')
@@ -364,8 +346,6 @@ subtest 'new account dry_run using invalid arguments' => sub {
         ->error_code_is('InvalidAccountType', 'invalid account_type entered on dry run')
         ->error_message_like(qr/We can't find this account/, 'error message for invalid account_type entered on dry run');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     # Invalid sub account type
     $params->{args}->{account_type}     = 'financial';
     $params->{args}->{mt5_account_type} = 'invalid_account_type';
@@ -373,8 +353,6 @@ subtest 'new account dry_run using invalid arguments' => sub {
     $c->call_ok($method, $params)->has_error('invalid mt5_account_type on dry run')
         ->error_code_is('InvalidSubAccountType', 'invalid mt5_account_type entered on dry run')
         ->error_message_like(qr/We can't find this account/, 'error message for invalid mt5_account_type entered on dry run');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
 subtest 'new account dry_run on a client with no account currency' => sub {
@@ -398,8 +376,6 @@ subtest 'new account dry_run on a client with no account currency' => sub {
     $c->call_ok($method, $params)->has_error('no currency set for the account')
         ->error_code_is('SetExistingAccountCurrency', 'provided client has no default currency on dry run')
         ->error_message_like(qr/Please set your account currency./, 'error message for client with no default currency on dry run');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
 subtest 'new account with switching' => sub {
@@ -427,12 +403,9 @@ subtest 'new account with switching' => sub {
     $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account')
         ->error_message_like(qr/account already exists/, 'error message for duplicate mt5_new_account');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
 subtest 'MF should be allowed' => sub {
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     my $mf_client = create_client('MF');
     $mf_client->set_default_account('EUR');
@@ -507,23 +480,18 @@ subtest 'MF to MLT account switching' => sub {
         },
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot create gaming account for MF only users')
         ->error_code_is('MT5NotAllowed', 'error should be account not available');
 
     # add MLT client
     $switch_user->add_client($mlt_switch_client);
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
         ->error_code_is('MT5NotAllowed', 'error should be account not available');
 
     # MF client should be allowed to open financial account as well
     $params->{args}->{account_type}     = 'financial';
     $params->{args}->{mt5_account_type} = 'financial';
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
-    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
 
     $params->{args}->{company} = 'maltainvest';
     $c->call_ok($method, $params)->has_no_error('financial account should be created');
@@ -576,23 +544,18 @@ subtest 'MLT to MF account switching' => sub {
         },
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot create financial account for MLT only users')
         ->error_code_is('FinancialAccountMissing', 'error should be financial account missing');
 
     # add MF client
     $switch_user->add_client($mf_switch_client);
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_no_error('financial account should be created');
     is($c->result->{account_type}, 'financial', 'account type should be financial');
 
     # MLT client should be allowed to open gaming account as well
     $params->{args}->{account_type}     = 'gaming';
     $params->{args}->{mt5_account_type} = undef;
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
-    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
 
     $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
         ->error_code_is('MT5NotAllowed', 'error should be account not available');
@@ -646,11 +609,8 @@ subtest 'VRTC to MLT and MF account switching' => sub {
         },
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
         ->error_code_is('MT5NotAllowed', 'error should be account not available');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
 
     # Add dry_run test, we should get exact result like previous test
     $params->{args}->{dry_run} = 1;
@@ -659,7 +619,6 @@ subtest 'VRTC to MLT and MF account switching' => sub {
 
     # Reset params after dry_run test
     $params->{args}->{dry_run} = 0;
-    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
 
     $switch_user->add_client($mlt_switch_client);
 
@@ -684,14 +643,12 @@ subtest 'VRTC to MLT and MF account switching' => sub {
         },
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot create financial account for MLT only users')
         ->error_code_is('FinancialAccountMissing', 'error should be permission denied');
 
     # add MF client
     $switch_user->add_client($mf_switch_client);
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_no_error('financial account should be created');
     is($c->result->{account_type}, 'financial', 'account type should be financial');
 };
@@ -738,7 +695,6 @@ subtest 'new account on addtional trade server' => sub {
     is($c->result->{currency},        'USD',                                                       'Currency is "USD"');
     is($c->result->{login},           'MTR' . $accounts{'real\p01_ts01\synthetic\svg_std_usd\01'}, 'login is MTR00001013');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     note('suspend mt5 real\p01_ts02. Tries to create financial account with new config.');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
     $mocked->unmock_all;
@@ -747,7 +703,6 @@ subtest 'new account on addtional trade server' => sub {
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
 
     note('unsuspend mt5 real\p01_ts02. Tries to create financial account with new config.');
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}{mt5_account_category} = 'conventional';
     $c->call_ok($method, $params)->has_no_error('mt5 new account with new config');
     is($c->result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_std_usd'}, 'login is MTR1001016');
@@ -826,7 +781,6 @@ subtest 'country=za; creates financial account with existing gaming account whil
     is $result->{account_type}, 'gaming', 'account_type=gaming';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'created in group real\p01_ts02\synthetic\svg_std_usd\01';
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     note("disable real->p01_ts02 API calls.");
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
 
@@ -869,20 +823,17 @@ subtest 'country=au, financial account' => sub {
     is $result->{account_type}, 'financial', 'account_type=financial';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_std-lim_usd'}, 'created in group real\p01_ts01\financial\svg_std-lim_usd';
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{account_type} = 'demo';
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'demo', 'account_type=demo';
     is $result->{login}, 'MTD' . $accounts{'demo\p01_ts01\financial\svg_std-lim_usd'}, 'created in group demo\p01_ts01\financial\svg_std-lim_usd';
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{account_type}     = 'financial';
     $params->{args}->{mt5_account_type} = 'financial_stp';
     $params->{args}->{company}          = 'labuan';
     $result                             = $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed')
         ->error_message_is('MT5 financial account is not available in your country yet.');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{mt5_account_type} = 'financial';
     $params->{args}->{company}          = 'svg';
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
@@ -935,7 +886,6 @@ subtest 'country=latam african, financial STP account' => sub {
         };
 
         # Fill up required user details for financial_stp account
-        BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
         $new_client->status->clear_crs_tin_information;
         $new_client->phone('12345678');
         $new_client->tax_residence('mt');
@@ -1000,7 +950,6 @@ subtest 'restrict creating bvi account if poi status is not verified' => sub {
     #my $result = $c->call_ok($method, $client_params)->has_no_error->result;
     #is $result->{account_type}, 'financial', 'account_type=financial';
     #is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std_usd'}, 'created in group real\p01_ts01\financial\bvi_std_usd';
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 };
 
 subtest 'bvi if poi status is verified, poa failed' => sub {
@@ -1049,7 +998,6 @@ subtest 'bvi if poi status is verified, poa failed' => sub {
         });
     #verified in brasil and standard risk
     $c->call_ok($method, $client_params)->has_error->error_code_is('ExpiredDocumentsMT5');
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 
 };
 
@@ -1096,14 +1044,12 @@ subtest 'bvi/vanuatu fully authenticated' => sub {
     my $result = $c->call_ok($method, $client_params)->has_no_error('financial account successfully created BVI A book')->result;
     is $result->{account_type}, 'financial', 'account_type is financial';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std-hr_usd'}, 'created in group real\p01_ts01\financial\bvi_std-hr_usd';
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 
     $client_params->{args}->{company} = 'vanuatu';
     $result = $c->call_ok($method, $client_params)->has_no_error('financial account successfully created Vanuatu')->result;
     is $result->{account_type}, 'financial', 'account_type is financial';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\vanuatu_std-hr_usd'},
         'created in group real\p01_ts01\financial\vanuatu_std-hr_usd';
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 
     $client_params->{args}->{account_type}     = 'gaming';
     $client_params->{args}->{mt5_account_type} = '';
@@ -1111,7 +1057,6 @@ subtest 'bvi/vanuatu fully authenticated' => sub {
     $result = $c->call_ok($method, $client_params)->has_no_error('gaming account successfully created BVI')->result;
     is $result->{account_type}, 'gaming', 'account_type is gaming';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts04\synthetic\bvi_std_usd'}, 'created in group real\p01_ts01\synthetic\bvi_std_usd';
-    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 
 };
 
@@ -1155,7 +1100,6 @@ subtest 'countries restrictions, high-risk jurisdiction, onfido blocked' => sub 
         };
 
         $c->call_ok($method, $client_params)->has_error->error_code_is('MT5NotAllowed');
-        BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     }
 
 };

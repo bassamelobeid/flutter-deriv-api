@@ -104,10 +104,6 @@ my $m        = BOM::Platform::Token::API->new;
 my $token    = $m->create_token($test_client->loginid,    'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
-# Throttle function limits requests to 1 per minute which may cause
-# consecutive tests to fail without a reset.
-BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
 my $params = {
     language => 'EN',
     token    => $token,
@@ -124,7 +120,6 @@ BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03
 $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account');
 
 $params->{args}->{account_type} = 'demo';
-BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account')->result;
 
 sub _get_mt5transfer_from_transaction {
@@ -164,7 +159,6 @@ subtest 'deposit' => sub {
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
     subtest record_mt5_transfer_deposit => sub {
@@ -174,28 +168,19 @@ subtest 'deposit' => sub {
     # assert that account balance is now 1000-180 = 820
     cmp_ok $test_client->default_account->balance, '==', 820, "Correct balance after deposited to mt5 account";
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
-
     $runtime_system->suspend->experimental_currencies(['USD']);
     $c->call_ok($method, $params)->has_error('error as currency is experimental')->error_code_is('Experimental', 'error code is Experimental')
         ->error_message_is('This currency is temporarily suspended. Please select another currency to proceed.');
     $runtime_system->suspend->experimental_currencies([]);
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
     $test_client->status->set('no_withdrawal_or_trading', 'system', 'pending investigations');
     $c->call_ok($method, $params)->has_error('client is blocked from withdrawal')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
     $test_client->status->clear_no_withdrawal_or_trading;
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
     $test_client->status->set('mt5_withdrawal_locked', 'system', 'testing');
     $params->{args}{to_mt5} = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
@@ -251,7 +236,6 @@ subtest 'deposit_exceeded_balance' => sub {
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     $c->call_ok($method, $params)->has_error('Failed MT5 Deposit')->error_code_is('MT5DepositError')
         ->error_message_like(qr/The maximum amount you may transfer is: 820.00./, 'Balance exceeded');
     is($c->result->{binary_transaction_id}, undef, 'result does not have a transaction ID');
@@ -259,8 +243,6 @@ subtest 'deposit_exceeded_balance' => sub {
         my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
         is($mt5_transfer->{mt5_amount}, undef, 'No amount recorded');
     };
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
     cmp_ok $test_client->default_account->balance, '==', 820, "Correct balance after a failed MT5 deposit";
 
@@ -290,14 +272,12 @@ subtest 'demo account can not be tagged as an agent' => sub {
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     is($c->result->{agent}, undef, 'Agent should not be tagged for demo account');
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $test_client->myaffiliates_token("");
     $test_client->save;
 };
 
 subtest 'virtual topup' => sub {
     my $method = "mt5_new_account";
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     my $new_account_params = {
         language => 'EN',
@@ -317,8 +297,6 @@ subtest 'virtual topup' => sub {
     is($c->result->{balance},         10000,      'Balance is 10,000 upon creation');
     is($c->result->{display_balance}, '10000.00', 'Display balance is "10000.00" upon creation');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_is_account_demo', sub { return 1 });
     $demo_account_mock->mock('_fetch_mt5_lc',    sub { return LandingCompany::Registry->by_name('iom'); });
@@ -335,8 +313,6 @@ subtest 'virtual topup' => sub {
 
     $c->call_ok($method, $deposit_demo_params)->has_error('Cannot Deposit')->error_code_is('MT5DepositError')
         ->error_message_like(qr/balance falls below 1000.00 USD/, 'Balance is higher');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     subtest 'virtual deposit under mt5 withdrawal locked' => sub {
         my $config_mock = Test::MockModule->new('BOM::Config');
@@ -387,24 +363,22 @@ subtest 'virtual deposit' => sub {
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_error('Cannot depoosit to demo mt5 from real trading account')
         ->error_message_is('Transfer between real and virtual accounts is not allowed.', 'Demo to real error message');
 
     is $test_wallet_vr->default_account->balance, 0, "Correct balance after deposited to mt5 account";
     $params->{args}->{from_binary} = $test_client_vr->loginid;
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
     $c->call_ok($method, $params)->has_error('fail to deposit from virtual trading account')
         ->error_code_is('InvalidVirtualAccount', 'Deposit to demo MT5 from virtual trading account is not allowed');
 
     $params->{args}->{from_binary} = $test_wallet_vr->loginid;
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
     # note we don't have proper validation for virtual transfers, so for now this error is raised from the DB and processed by BOM::Transaction->format_error
     $c->call_ok($method, $params)->has_error('fail to deposit from an empty wallet')->error_code_is('MT5DepositError')
         ->error_message_is('Your account balance is insufficient for this transaction.', 'Deposit from empty wallet fails.');
 
     top_up $test_wallet_vr, USD => 180;
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'Virtual wallet to demo MT5 transfer is allowed');
 
@@ -439,8 +413,6 @@ subtest 'mx_deposit' => sub {
 
     my $method = "mt5_deposit";
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_mx_client->loginid);
-
     $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')
         ->error_code_is('MT5DepositError', 'Transfers to MT5 not allowed error_code')->error_message_like(qr/not allow MT5 trading/);
     $demo_account_mock->unmock_all();
@@ -471,8 +443,6 @@ subtest 'mx_withdrawal' => sub {
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('maltainvest'); });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_mx_client->loginid);
-
     $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
         ->error_message_like(qr/not allow MT5 trading/);
     $demo_account_mock->unmock_all();
@@ -497,7 +467,6 @@ subtest 'withdrawal' => sub {
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot withdrawals from real mt5 to virtual trading account')
         ->error_message_is('Transfer between real and virtual accounts is not allowed.');
 
@@ -506,7 +475,6 @@ subtest 'withdrawal' => sub {
     $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')->error_code_is('PermissionDenied', 'error code is PermissionDenied');
 
     $params->{token} = $token;
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
@@ -517,16 +485,11 @@ subtest 'withdrawal' => sub {
 
         is($mt5_transfer->{mt5_amount}, 150, 'Correct amount recorded');
     };
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $runtime_system->suspend->experimental_currencies(['USD']);
     $c->call_ok($method, $params)->has_error('error as currency is experimental')->error_code_is('Experimental', 'error code is Experimental')
         ->error_message_is('This currency is temporarily suspended. Please select another currency to proceed.');
     $runtime_system->suspend->experimental_currencies([]);
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
@@ -552,17 +515,14 @@ subtest 'virtual withdrawal' => sub {
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_error('Cannot withdrawals from demo mt5 to real trading account')
         ->error_message_is('Transfer between real and virtual accounts is not allowed.', 'Demo to real error message');
 
     $params->{args}->{to_binary} = $test_client_vr->loginid;
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')
         ->error_code_is('InvalidVirtualAccount', 'Withdrawal from demo MT5 to demo trading account is not allowed');
 
     $params->{args}->{to_binary} = $test_wallet_vr->loginid;
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'Demo to virtual wallet transfer is allowed');
 
@@ -611,8 +571,6 @@ subtest 'labuan withdrawal' => sub {
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     my $mocked_status = Test::MockModule->new(ref($test_client->status));
     $mocked_status->mock('cashier_locked', sub { return 1 });
 
@@ -622,23 +580,16 @@ subtest 'labuan withdrawal' => sub {
 
     $mocked_status->unmock_all;
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     $c->call_ok($method, $params)->has_error('request failed as labuan needs to have valid documents')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
         ->error_message_is(
         'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
     $has_valid_documents = 1;
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from labuan mt5 without FA before first deposit');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok(
         'mt5_deposit',
         {
@@ -652,14 +603,12 @@ subtest 'labuan withdrawal' => sub {
         })->has_no_error('Deposit allowed to labuan mt5 account without FA');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150, "Correct balance after deposit";
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_error('Withdrawal request failed.')
         ->error_code_is('FinancialAssessmentRequired', 'error code is FinancialAssessmentRequired')
         ->error_message_like(qr/complete your financial assessment/);
 
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('svg'); });
     $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from svg mt5 account when sibling labuan account is withdrawal-locked');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
 
@@ -667,11 +616,9 @@ subtest 'labuan withdrawal' => sub {
     $test_client->save;
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
     $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('Withdrawal unlocked for labuan mt5 after financial assessment');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 100, "Correct balance after withdrawal";
     $has_valid_documents = undef;
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
 subtest 'mf_withdrawal' => sub {
@@ -697,8 +644,6 @@ subtest 'mf_withdrawal' => sub {
         },
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
-
     my $method = "mt5_withdrawal";
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
@@ -713,8 +658,6 @@ subtest 'mf_withdrawal' => sub {
     $has_valid_documents = 1;
 
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
 
     $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_withdrawal when client authenticated');
 
@@ -746,8 +689,6 @@ subtest 'mf_deposit' => sub {
         },
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
-
     my $method = "mt5_deposit";
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
@@ -762,8 +703,6 @@ subtest 'mf_deposit' => sub {
     $has_valid_documents = 1;
 
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
 
     $c->call_ok($method, $params_mf)->has_error('Deposit failed.')->error_message_like(qr/Financial Risk approval is required./);
     $test_mf_client->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
@@ -801,12 +740,10 @@ subtest 'labuan deposit' => sub {
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     $has_valid_documents = 1;
     $c->call_ok($method, $params)->has_no_error('Deposit allowed to enable labuan mt5 account');
     cmp_ok $test_client->default_account->balance, '==', 1050, "Correct balance after deposit";
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     $manager_module->mock(
         'get_group',
         sub {

@@ -45,8 +45,6 @@ use BOM::Config::MT5;
 use BOM::Config::Compliance;
 requires_auth('wallet', 'trading');
 
-use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
-
 use constant MT5_MALTAINVEST_MOCK_LEVERAGE => 33;
 use constant MT5_MALTAINVEST_REAL_LEVERAGE => 30;
 
@@ -360,27 +358,6 @@ sub log_stats {
     unless ($error_code eq 'NotFound') {
         stats_inc("mt5.accounts.lookup.error.code", {tags => ["login:$login", "error_code:$error_code", "error_messsage:$error_message"]});
     }
-}
-
-# limit number of requests to once per minute
-sub _throttle {
-    my $loginid = shift;
-    my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
-
-    return 1 if BOM::Config::Redis::redis_replicated_read()->get($key);
-
-    BOM::Config::Redis::redis_replicated_write()->set($key, 1, 'EX', 60);
-
-    return 0;
-}
-
-# removes the database entry that limit requests to 1/minute
-# returns 1 if entry was present, 0 otherwise
-sub reset_throttler {
-    my $loginid = shift;
-    my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
-
-    return BOM::Config::Redis::redis_replicated_write()->del($key);
 }
 
 =head2 _mt5_group
@@ -887,11 +864,6 @@ async_rpc "mt5_new_account",
                 currency        => 'USD',
                 display_balance => '0.00',
                 ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
-    }
-
-    # Check if client is throttled before sending MT5 request
-    if (_throttle($client->loginid)) {
-        return create_error_future('MT5AccountCreationThrottle', {override_code => $error_code});
     }
 
     # don't allow new mt5 account creation without trading password
@@ -1709,8 +1681,6 @@ async_rpc "mt5_deposit",
     my $error_code = 'MT5DepositError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
-    # no need to throttle this call only limited numbers of transfers are allowed
-
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
 
@@ -1732,8 +1702,6 @@ async_rpc "mt5_deposit",
                         if ($status->{error}) {
                             return create_error_future($status->{code});
                         }
-
-                        reset_throttler($to_mt5);
 
                         return Future->done({status => 1});
                     });
@@ -1883,8 +1851,6 @@ async_rpc "mt5_withdrawal",
 
     my $error_code = 'MT5WithdrawalError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
-
-    # no need to throttle this call only limited numbers of transfers are allowed
 
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
@@ -2063,10 +2029,6 @@ sub _mt5_validate_and_get_amount {
                         override_code => $error_code,
                         params        => [formatnumber('amount', $mt5_currency, $max_balance_before_topup), $mt5_currency]}
                 ) if ($setting->{balance} > $max_balance_before_topup);
-
-                if (_throttle($mt5_loginid)) {
-                    return create_error_future('DemoTopupThrottle', {override_code => $error_code});
-                }
 
                 return Future->done({top_up_virtual => 1});
             }
