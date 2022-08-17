@@ -240,7 +240,7 @@ sub check_bom_dependency {
                 my $module = $bom_repo_to_module{$_};
                 if (ref($module) eq 'ARRAY') {
                     push @dependency_allowed, @$module;
-                } else {
+                } elsif ($module) {
                     push @dependency_allowed, $module;
                 }
             }
