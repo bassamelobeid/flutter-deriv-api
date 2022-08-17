@@ -212,8 +212,8 @@ sub check_yaml {
 
 =head2 check_bom_dependency
 
-Check BOM module dependency under lib.
-Test fail when new dependency detected.
+Check BOM module useage under lib and bin under the root of a repo.
+Test fail when new dependency detected, which means the BOM module is not in the list of runtime_required_repos.yml.
 
 =over
 
