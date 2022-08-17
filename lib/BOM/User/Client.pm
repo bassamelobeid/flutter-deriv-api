@@ -2262,7 +2262,13 @@ use constant {
         PP015 => "OrderConfirmCompleted",
         PP016 => "OrderRefundInvalid",
         PP017 => "OrderConfirmCompleted",
-        PP018 => "OrderConfirmCompleted"
+        PP018 => "OrderConfirmCompleted",
+        PP018 => "OrderConfirmCompleted",
+        PP019 => 'OrderNotFound',
+        PP020 => 'AlreadyInProgress',
+        PP021 => "OrderRefundInvalid",
+        PP022 => 'OrderNotConfirmedPending',
+        PP023 => 'OrderConfirmCompleted'
     },
 };
 
@@ -3051,7 +3057,7 @@ sub p2p_order_confirm {
             fixup => sub {
                 my $confirm_result = $_->selectrow_hashref("SELECT * FROM $db_confirm_func(?)", undef, $order->{id});
                 return $confirm_result if $confirm_result->{error_code};
-                return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?, FALSE, FALSE)',
+                return $_->selectrow_hashref('SELECT * FROM p2p.order_complete_v2(?, ?, ?, ?, ?, FALSE, FALSE)',
                     undef, $order->{id}, $escrow->loginid, $param{source}, $self->loginid, $txn_time);
             });
 
@@ -3491,11 +3497,12 @@ sub p2p_resolve_order_dispute {
         $self->_p2p_record_stat($buyer, 'BUY_COMPLETION', $id, 0);
         $advertiser_for_update = $order->{type} eq 'buy' ? $order->{client_id} : $order->{advertiser_id};
     } elsif ($action eq 'complete') {
-        $self->db->dbic->run(
+        my $completed_order = $self->db->dbic->run(
             fixup => sub {
-                $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?, ?, ?)', undef, $id, $escrow->loginid, 4, $staff, $txn_time, $is_manual, $fraud);
+                $_->selectrow_hashref('SELECT p2p.order_complete_v2(?, ?, ?, ?, ?, ?, ?)',
+                    undef, $id, $escrow->loginid, 4, $staff, $txn_time, $is_manual, $fraud);
             });
-
+        $self->_p2p_db_error_handler($completed_order);
         $self->_p2p_record_stat($buyer, 'BUY_COMPLETION', $id, 1);
         $self->_p2p_record_stat($buyer, 'BUY_COMPLETED',  $id, $amount);
         $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $buyer, 1);
