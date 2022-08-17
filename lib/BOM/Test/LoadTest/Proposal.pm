@@ -177,7 +177,7 @@ Returns a L<Future>
 
 =cut
 
-async method create_subscriptions($connection_number, $contracts_for) {
+async method create_subscriptions($connection_number) {
     $log->info('Connection Number ' . $connection_number);
     my $connection =
         $self->create_connection($args{end_point}, $args{app_id}, $args{token});
@@ -639,15 +639,15 @@ method subscribe($connection, $connection_number) {
     return $future;
 }
 
-method all_markets{
+method all_markets {
     my $connection = $self->create_connection($args{end_point}, $args{app_id}, $args{token});
-    my $assets = $connection->api->active_symbols(
+    my $assets     = $connection->api->active_symbols(
         product_type => 'basic',
     )->on_fail(
         sub {
             $log->warn('Get Active Symbols Failed  Message: ' . shift->body->message);
         })->get;
-    my @markets = uniq map { $_->market } grep {$_->exchange_is_open and not $_->is_trading_suspended} $assets->body->symbols;
+    my @markets = uniq map { $_->market } grep { $_->exchange_is_open and not $_->is_trading_suspended } $assets->body->symbols;
 
     return @markets;
 

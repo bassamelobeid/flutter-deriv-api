@@ -73,7 +73,7 @@ pod2usage({
     }) if $help;
 
 # Set Defaults
-$app_id        = $app_id        // 1003;
+$app_id        = $app_id        // 16303;
 $end_point     = $end_point     // 'ws://127.0.0.1:5004';
 $connections   = $connections   // 1;
 $subscriptions = $subscriptions // 5;
@@ -91,24 +91,7 @@ if ($markets) {
     @markets_to_use = split(',', $markets);
 }
 
-my %valid_markets = (
-    'forex'           => 1,
-    'synthetic_index' => 1,
-    'indices'         => 1,
-    'commodities'     => 1
-);
-
-for (@markets_to_use) {
-    if (!defined($valid_markets{$_})) {
-        $log->info('Invalid Market Type: ' . $_);
-        pod2usage({
-            -verbose  => 99,
-            -sections => "NAME|SYNOPSIS|DESCRIPTION"
-        });
-    }
-}
-
-my $load_tester = LoadTest::Proposal->new(
+my $load_tester = BOM::Test::LoadTest::Proposal->new(
     end_point               => $end_point,
     app_id                  => $app_id,
     number_of_connections   => $connections,
@@ -118,5 +101,18 @@ my $load_tester = LoadTest::Proposal->new(
     markets                 => \@markets_to_use,
     token                   => $token,
 );
+
+my @valid_markets = $load_tester->all_markets();
+
+for my $market (@markets_to_use) {
+    if (!grep { $market eq $_ } @valid_markets) {
+        $log->info('Invalid Market Type: ' . $_);
+        pod2usage({
+            -verbose  => 99,
+            -sections => "NAME|SYNOPSIS|DESCRIPTION"
+        });
+    }
+}
+
 path('/tmp/proposal_sub.pid')->spew($$);
 $load_tester->run_tests();
