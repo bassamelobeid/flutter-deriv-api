@@ -78,15 +78,6 @@ my $c = BOM::Test::RPC::QueueClient->new();
 my $params = {language => 'EN'};
 my $advert;
 
-subtest 'DB errors' => sub {
-    my %error_map = %BOM::RPC::v3::P2P::ERROR_MAP;
-    my %db_errors = %BOM::RPC::v3::P2P::DB_ERRORS;
-
-    for my $err_code_db (sort keys %db_errors) {
-        ok exists $error_map{$db_errors{$err_code_db}}, "DB error '$err_code_db' has a corresponding error message in %ERROR_MAP";
-    }
-};
-
 subtest 'No token' => sub {
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'error code is InvalidToken');
 };

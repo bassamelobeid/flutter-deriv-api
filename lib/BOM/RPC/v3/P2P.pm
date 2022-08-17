@@ -204,16 +204,6 @@ our %ERROR_MAP = do {
     );
 };
 
-# To prevent duplicated messages, we only keep them in `%ERROR_MAP`
-# so for each DB error here, there should be a corresponding error code there
-our %DB_ERRORS = (
-    BI228 => 'OrderNotFound',
-    BI229 => 'OrderConfirmCompleted',
-    BI230 => 'OrderNotConfirmedPending',
-    BI232 => 'AlreadyInProgress',
-    BI242 => 'OrderRefundInvalid',
-);
-
 sub DB_ERROR_PARAMS {
     return {'ClientDailyOrderLimitExceeded' => [BOM::Config::Runtime->instance->app_config->payments->p2p->limits->count_per_day_per_client]};
 }
@@ -299,7 +289,6 @@ sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
             SWITCH: for (ref $exception) {
                 if (/ARRAY/) {
                     $err_code_db = $exception->[0];
-                    $err_code    = $DB_ERRORS{$err_code_db};
                     $err_params  = DB_ERROR_PARAMS->{$err_code};
                     last SWITCH;
                 }
