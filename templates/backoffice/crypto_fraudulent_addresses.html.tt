@@ -70,6 +70,7 @@
                 <th>Creation date</th>
                 <th>Last update date</th>
                 <th>Staff</th>
+                <th>Categories</th>
                 [% IF is_update %]
                 <th>Updated</th>
                 [% END %]
@@ -89,6 +90,7 @@
                     <td>[% date.format(row.insert_date, '%Y-%m-%d %T') %]</td>
                     <td>[% row.last_status_date %]</td>
                     <td>[% row.last_status_update_by %]</td>
+                    <td>[% row.categories %]</td>
                     [% IF is_update %]
                     <td class="center">
                         <span style="color: var(--color-darkblue); [% !row.has_updated && 'display: none;' %]">&#10004;</span>
