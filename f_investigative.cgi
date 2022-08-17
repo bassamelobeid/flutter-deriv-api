@@ -68,4 +68,13 @@ BOM::Backoffice::Request::template()->process(
         max_pages => 1,
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
+Bar("Crypto Wrong Currency Deposit");
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/crypto_wrong_currency_deposit.html.tt',
+    {
+        data_url => request()->url_for('backoffice/crypto_wrong_currency_deposit.cgi'),
+
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
+
 code_exit_BO();

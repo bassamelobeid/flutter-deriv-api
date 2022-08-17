@@ -2557,4 +2557,37 @@ sub write_operation_error {
     return undef;
 }
 
+=head2 get_sibiling_account_by_currency_code
+
+Returns the sibling account login_id corresponding to the currency code
+
+=over 4
+
+=item * C<client_loginid> - client loginid
+
+=item * C<currency_code> - currency code
+
+=back
+
+=cut
+
+sub get_sibiling_account_by_currency_code {
+    my ($client_loginid, $currency_code) = @_;
+
+    my $client = BOM::User::Client->new({loginid => $client_loginid});
+    my $user   = $client->user;
+
+    foreach my $sibling_lid ($user->bom_real_loginids) {
+        next if ($sibling_lid eq $client_loginid);
+        next unless (LandingCompany::Registry->check_broker_from_loginid($sibling_lid));
+
+        my $sibling_client   = BOM::User::Client->new({loginid => $sibling_lid});
+        my $sibling_currency = $sibling_client->default_account->currency_code;
+
+        return $sibling_lid if ($sibling_currency eq $currency_code);
+    }
+
+    return undef;
+}
+
 1;

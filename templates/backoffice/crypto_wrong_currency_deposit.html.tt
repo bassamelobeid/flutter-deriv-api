@@ -1,0 +1,42 @@
+<div><b>Please be inform that tool is only working for ETH network currently.</b></div>
+<br>
+<form ACTION="[% data_url %]" METHOD=POST>
+    <table>
+        <tr>
+            <td><label>Transaction Hash:</label></td>
+            <td><input type=text size=70 name='transaction_hash' value='[% transaction_hash %]' required data-lpignore='true' /></td>
+        </tr>
+        <tr>
+            <td><label>Address:</label></td>
+            <td><input type=text size=70 name='to_address' value='[% to_address %]' required data-lpignore='true' /></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><input type=submit class="btn btn--primary" name="search" value='Search'></td>
+        </tr>
+    </table>
+</form>
+
+
+[% IF transaction_hash %]
+    [% IF data.size == 0 %]
+        <p>We haven't received this transaction in our system, the reason can be one of the followings: </p>
+         <ul>
+            <li>We might missed the transaction in subscription service.</li>
+            <li>Client deposited to an address which does not belong to us.</li>
+            <li>Client might used a network which we do not support.</li>
+         </ul>
+    [% ELSE %]    
+        [% IF has_manual_credit %]
+            <p class ="notify notify--warning">Please note that, we have credited the client account manually for this address once before. DO NOT PROCEED</p>
+        [% ELSE %]    
+            <p>This is to confirm that we have received <b>[% data.amount %] [% data.wrong_currency %]</b> to address <b>[% to_address %]</b> that belongs to <b>[% data.client_loginid %]([% data.correct_currency %])</b></p>
+            <p>Transaction hash: <b>[% transaction_hash %]</b></p>
+            [% IF sibiling_account %]
+                <p>Account funds need to be credited: <b>[% sibiling_account %] ([% data.wrong_currency %])</b></p>
+            [% ELSE %]
+                <p>Client needs to create <b>[% data.wrong_currency %]</b> account.</p>
+            [% END %]
+        [% END %]    
+    [% END %]
+[% END %]
