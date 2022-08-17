@@ -647,7 +647,7 @@ method all_markets {
         sub {
             $log->warn('Get Active Symbols Failed  Message: ' . shift->body->message);
         })->get;
-    my @markets = uniq map { $_->market } grep { $_->exchange_is_open and not $_->is_trading_suspended } $assets->body->symbols;
+    my @markets = sort {$a cmp $b} uniq map { $_->market } grep { $_->exchange_is_open and not $_->is_trading_suspended } $assets->body->symbols;
 
     return @markets;
 

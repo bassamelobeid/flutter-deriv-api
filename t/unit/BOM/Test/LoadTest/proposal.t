@@ -10,3 +10,16 @@ my $load_tester = BOM::Test::LoadTest::Proposal->new(
 );
 use Data::Dumper;
 print Dumper([$load_tester->all_markets]);
+
+__END__
+$VAR1 = [
+          'basket_index',
+          'commodities',
+          'cryptocurrency',
+          'forex',
+          'indices',
+          'synthetic_index'
+        ];
+/home/git/regentmarkets/bom-test/bin/proposal_sub.pl -s 10 -a 16303 -c 5 -r 120 -m synthetic_index,forex
+
+/home/git/regentmarkets/bom-test/bin/proposal_sub.pl -s 10 -a 16303 -c 5 -r 120 -m basket_index
