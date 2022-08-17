@@ -8,11 +8,9 @@ use Scalar::Util qw( looks_like_number );
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use Mojo::IOLoop;
 use Syntax::Keyword::Try;
-
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper qw(build_wsapi_test call_instrospection test_schema);
-use BOM::RPC::v3::MT5::Account qw(reset_throttler);
 use BOM::Config::Redis;
 
 use BOM::Test::Script::RpcRedis;
@@ -107,7 +105,6 @@ subtest 'Dynamic category timeouts' => sub {
     ok !kill(0, $pid), 'Consumer worker process killed successfully';
 
     flush_redis();
-    BOM::RPC::v3::MT5::Account::reset_throttler($cr_1);
 
     # mt5 rpc calls work with mt5 specific consumer
     $rpc_redis = BOM::Test::Script::RpcRedis->new('mt5');
@@ -123,7 +120,6 @@ subtest 'Dynamic category timeouts' => sub {
     ok !kill(0, $pid), 'Consumer worker process killed successfully';
 
     flush_redis();
-    BOM::RPC::v3::MT5::Account::reset_throttler($cr_1);
 };
 
 sub send_request {
