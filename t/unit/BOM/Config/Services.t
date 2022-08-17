@@ -7,6 +7,7 @@ use Test::More;
 use Test::MockModule;
 use Test::MockObject;
 use Test::Exception;
+use Test::Deep;
 
 use BOM::Config;
 use BOM::Config::Services;
@@ -87,6 +88,23 @@ subtest 'is_enabled' => sub {
         $identity_verification_enabled_status_runtime,
         "service enable status is different on BOM::Config and Runtime"
     );
+    $config_mock->unmock_all();
+};
+
+subtest 'identify_vetification.yml integrity check' => sub {
+    my $config   = BOM::Config::identity_verification;
+    my $expected = {
+        'providers' => {
+            'smile_identity' => {
+                'selfish'     => 0,
+                'portal_base' => 'https://portal.smileidentity.com/partner/job_results/%s?env=production'
+            },
+            'derivative_wealth' => {'selfish' => 0},
+            'zaig'              => {
+                'selfish'     => 1,
+                'portal_base' => 'https://dash.zaig.com.br/natural-person/%s'
+            }}};
+    cmp_deeply $config, $expected, 'Expected information for config yml file';
 };
 
 done_testing;
