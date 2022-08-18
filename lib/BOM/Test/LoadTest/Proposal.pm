@@ -538,7 +538,7 @@ method get_params($contract_type, $symbol) {
 
     };
 
-    if ($market =~ /^(forex|basket_index|commodities)$/) {
+    if ($market =~ /^(forex|basket_index|commodities|indices)$/) {
         delete $contract_params->{$contract_type}->{barrier};
     }
     if ($sub_market eq 'minor_pairs') {
