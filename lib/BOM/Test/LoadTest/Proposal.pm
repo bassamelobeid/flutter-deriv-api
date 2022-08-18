@@ -177,7 +177,7 @@ Returns a L<Future>
 
 =cut
 
-async method create_subscriptions($connection_number) {
+method create_subscriptions($connection_number) {
     $log->info('Connection Number ' . $connection_number);
     my $connection =
         $self->create_connection($args{end_point}, $args{app_id}, $args{token});
