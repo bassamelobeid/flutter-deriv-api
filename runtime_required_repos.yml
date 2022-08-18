@@ -8,5 +8,6 @@
 - regentmarkets/bom-oauth
 - regentmarkets/bom-platform
 - regentmarkets/bom-postgres
+- regentmarkets/bom-rules
 - regentmarkets/bom-transaction
 - regentmarkets/bom-user
