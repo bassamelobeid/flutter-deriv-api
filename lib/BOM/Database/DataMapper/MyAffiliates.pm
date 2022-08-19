@@ -112,7 +112,7 @@ sub get_monthly_exchange_rate {
     my $dbic = $self->db->dbic;
 
     my $sql = q{
-        SELECT * FROM get_average_montly_exchange_rate($1, $2, $3)
+        SELECT * FROM data_collection.get_average_montly_exchange_rate_usd($1, $2, $3)
     };
 
     return $dbic->run(
