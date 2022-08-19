@@ -59,7 +59,7 @@ jobs:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          prove -rlv t/BOM/007_retry_mechanism.t
+          make test
         name: Core tests
     - run:
         command: make unit
