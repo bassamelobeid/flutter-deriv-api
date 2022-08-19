@@ -198,9 +198,7 @@ sub _get_csv_line_from_txn {
     }
     $USD_amount = abs $USD_amount;
     my $preferred_currency = $client->currency;
-    my $now                = Date::Utility->new($1);
-    my $month              = $now->month();
-    my $year               = $now->year();
+    my ($month_str, $month, $year) = _get_month_from_transaction($transaction);
     my $rate;
     if ($preferred_currency eq 'USD') {
         $rate = 1;
@@ -216,7 +214,6 @@ sub _get_csv_line_from_txn {
 
     my $preferred_currency_amount = financialrounding('amount', $preferred_currency, $USD_amount / $rate);
 
-    my $month_str = _get_month_from_transaction($transaction);
     if (not $month_str) {
         die 'Could not extract month from transaction. Full transaction details: ' . Dumper($transaction);
     }
@@ -235,13 +232,17 @@ sub _get_month_from_transaction {
 
     my $occurred  = $transaction->{'OCCURRED'} || '';
     my $month_str = '';
+    my $month     = '';
+    my $year      = '';
 
     if ($occurred =~ /^(\d{4}-\d{2}-\d{2})/) {
         my $date = Date::Utility->new($1);
         $month_str = $date->month_as_string . ' ' . $date->year;
+        $month     = $date->month;
+        $year      = $date->year;
     }
 
-    return $month_str;
+    return ($month_str, $month, $year);
 }
 
 no Moose;
