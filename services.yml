@@ -4,5 +4,3 @@
 - postgres-client
 - postgres-feed
 - postgres-user
-- redis
-- redis-replicated
