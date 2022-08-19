@@ -10,7 +10,6 @@ use BOM::Event::QueueHandler;
 use Log::Any qw($log);
 use Log::Any::Adapter (qw(Stderr), log_level => 'warn');
 use JSON::MaybeUTF8 qw(decode_json_utf8 decode_json_text);
-use BOM::Config::Redis;
 use IO::Async::Loop;
 use Future::AsyncAwait;
 use utf8;
