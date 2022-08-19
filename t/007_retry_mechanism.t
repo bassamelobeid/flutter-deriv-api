@@ -6,20 +6,24 @@ use Test::MockModule;
 use Test::MockObject;
 use Test::Warn;
 use Log::Any::Test;
-use BOM::Event::QueueHandler;
 use Log::Any qw($log);
 use Log::Any::Adapter (qw(Stderr), log_level => 'warn');
 use JSON::MaybeUTF8 qw(decode_json_utf8 decode_json_text);
-use IO::Async::Loop;
 use Future::AsyncAwait;
 use utf8;
 
-my $loop = IO::Async::Loop->new;
+my $loop;
 my $stream_handler;
 my $mock_log_adapter_test = Test::MockModule->new('Log::Any::Adapter::Test');
 my $mocked_handler        = Test::MockModule->new('BOM::Event::QueueHandler');
 my $mocked_process        = Test::MockModule->new('BOM::Event::Process');
 my $redis_object          = Test::MockObject->new;
+
+BEGIN {
+    require IO::Async::Loop;
+    require BOM::Event::QueueHandler;
+    $loop = IO::Async::Loop->new;
+}
 
 $mock_log_adapter_test->mock(
     'is_debug',
