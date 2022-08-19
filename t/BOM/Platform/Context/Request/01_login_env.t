@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 2);
+use Test::More (tests => 3);
 use Test::Warnings;
 
 use BOM::Platform::Context::Request;
@@ -40,6 +40,23 @@ subtest 'login_env' => sub {
     like($actual, qr/$agent_warning=2000/, "login_env sets $agent_warning for an extra long user_agent string");
     is(length($actual), 1000, 'login_env returns a sane length string when user_agent is extra long');
 
+};
+
+subtest 'login_env with device information' => sub {
+    my $request = BOM::Platform::Context::Request->new();
+
+    # Check with different parameters to overwrite
+    my $params = {
+        client_ip    => '1.1.1.1',
+        country_code => 'TR',
+        language     => 'en',
+        user_agent   => 'ua',
+        device_id    => 'android1212',
+    };
+    my $actual   = $request->login_env($params);
+    my $expected = qr/IP=1.1.1.1 IP_COUNTRY=TR User_AGENT=ua LANG=EN DEVICE_ID=android1212/;
+
+    like($actual, $expected, 'login_env returns expected value with device id.');
 };
 
 done_testing();
