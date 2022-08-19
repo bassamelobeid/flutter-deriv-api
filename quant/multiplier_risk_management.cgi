@@ -219,7 +219,19 @@ sub _get_existing_dc_configs {
     my $reader     = BOM::Config::Chronicle::get_chronicle_reader();
     my $dc_configs = $reader->get("quants_config", "deal_cancellation");
 
-    return $dc_configs;
+    # Had to change the grouping of the configs, with having the backward compatibility in mind.
+    return _dc_configs_group_by_landing_company($dc_configs);
+}
+
+sub _dc_configs_group_by_landing_company {
+    my ($dc_configs) = @_;
+    my %lc_grouped_dc_configs;
+
+    foreach my $id (keys $dc_configs->%*) {
+        push @{$lc_grouped_dc_configs{uc($dc_configs->{$id}->{landing_companies})}}, $dc_configs->{$id};
+    }
+
+    return \%lc_grouped_dc_configs;
 }
 
 code_exit_BO();

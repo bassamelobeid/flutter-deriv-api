@@ -22,3 +22,4 @@ tags
 *.sw?
 statics/javascript/data
 .DS_Store
+.vscode/

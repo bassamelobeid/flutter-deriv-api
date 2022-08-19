@@ -409,47 +409,58 @@ if ($r->param('delete_multiplier_custom_commission')) {
 }
 
 if ($r->param('save_dc_config')) {
-    my $underlying_symbol    = $r->param('underlying_symbol');
-    my $landing_companies    = $r->param('landing_company');
-    my $dc_types             = $r->param('dc_types');
-    my $start_datetime_limit = $r->param('start_datetime_limit');
-    my $end_datetime_limit   = $r->param('end_datetime_limit');
-    my $dc_comment           = $r->param('dc_comment');
+    my $underlying_symbol = $r->param('underlying_symbol');
+    my $landing_companies = $r->param('landing_company');
+    my $dc_types          = $r->param('dc_types');
+    my $start_date_limit  = $r->param('start_date_limit');
+    my $start_time_limit  = $r->param('start_time_limit');
+    my $end_date_limit    = $r->param('end_date_limit');
+    my $end_time_limit    = $r->param('end_time_limit');
+    my $dc_comment        = $r->param('dc_comment');
 
     my $args = {
-        underlying_symbol    => $underlying_symbol,
-        landing_companies    => $landing_companies,
-        dc_types             => $dc_types,
-        end_datetime_limit   => $end_datetime_limit,
-        start_datetime_limit => $start_datetime_limit,
-        dc_comment           => $dc_comment,
+        underlying_symbol => $underlying_symbol,
+        landing_companies => $landing_companies,
+        dc_types          => $dc_types,
+        start_date_limit  => $start_date_limit,
+        start_time_limit  => $start_time_limit,
+        end_date_limit    => $end_date_limit,
+        end_time_limit    => $end_time_limit,
+        dc_comment        => $dc_comment,
     };
 
-    my $validated_dc_arg = BOM::Backoffice::MultiplierRiskManagementTool::validate_deal_cancellation_args($args);
-    if (defined $validated_dc_arg->{error}) {
+    my $validated_dc_arg = BOM::Backoffice::MultiplierRiskManagementTool::prepare_dc_args_for_create($args);
+    if (ref $validated_dc_arg eq 'HASH' && defined $validated_dc_arg->{error}) {
         return print encode_json_utf8({error => $validated_dc_arg->{error}});
     }
 
     my @landing_companies_multiple = split(',', $landing_companies);
-    my ($output, @errors);
-    foreach my $landing_company (@landing_companies_multiple) {
-        my $key  = "deal_cancellation";
-        my $name = $underlying_symbol . "_" . $landing_company;
-        $args->{id}                = $name;
-        $args->{landing_companies} = $landing_company;
-        my $result = BOM::Backoffice::MultiplierRiskManagementTool::save_deal_cancellation($key, $name, $validated_dc_arg);
+    my ($output, @errors, @items);
 
-        if ($result->{success} == 1) {
-            $output = {success => 1};
-        } else {
-            push @errors, $result->{error};
+    foreach my $dc_arg ($validated_dc_arg->@*) {
+        foreach my $landing_company (@landing_companies_multiple) {
+            my $key  = "deal_cancellation";
+            my $name = $dc_arg->{underlying_symbol} . "_" . $landing_company;
+            $dc_arg->{id}                = $name;
+            $dc_arg->{landing_companies} = $landing_company;
+
+            my $result = BOM::Backoffice::MultiplierRiskManagementTool::save_deal_cancellation($key, $name, $dc_arg);
+
+            if ($result->{success} == 1) {
+                $output = {success => 1};
+                push @items, {%{$dc_arg}{qw/id landing_companies underlying_symbol dc_types start_datetime_limit end_datetime_limit dc_comment/}};
+            } else {
+                push @errors, $result->{error};
+                my $error = join ', ', @errors;
+                $output = {error => $error};
+                print encode_json_utf8($output);
+
+                return;
+            }
         }
     }
 
-    if (@errors) {
-        my $error = join ', ', @errors;
-        $output = {error => $error};
-    }
+    $output->{items} = \@items;
 
     print encode_json_utf8($output);
 }
@@ -459,4 +470,74 @@ if ($r->param('destroy_dc_config')) {
     my $key   = "deal_cancellation";
 
     print encode_json_utf8(BOM::Backoffice::MultiplierRiskManagementTool::destroy_deal_cancellation($key, $dc_id));
+}
+
+if ($r->param('update_dc_config')) {
+    my $dc_id = $r->param('dc_id');
+    my $key   = "deal_cancellation";
+
+    if (   $r->param('start_datetime_limit')
+        && $r->param('start_datetime_limit') !~ /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/
+        && $r->param('start_datetime_limit') !~ /^\d{4}-\d{2}-\d{2}$/
+        && $r->param('start_datetime_limit') !~ /^\d{2}:\d{2}:\d{2}$/)
+    {
+        print encode_json_utf8({error => "Start datetime is not in correct format."});
+        return;
+    }
+
+    if (   $r->param('end_datetime_limit')
+        && $r->param('end_datetime_limit') !~ /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/
+        && $r->param('end_datetime_limit') !~ /^\d{4}-\d{2}-\d{2}$/
+        && $r->param('end_datetime_limit') !~ /^\d{2}:\d{2}:\d{2}$/)
+    {
+        print encode_json_utf8({error => "End datetime is not in correct format."});
+        return;
+    }
+
+    my $start_date_limit;
+    my $start_time_limit;
+    my $end_date_limit;
+    my $end_time_limit;
+
+    # Parsing the date and time depending on the format of datetime fields.
+    ($start_date_limit, $start_time_limit) = $r->param('start_datetime_limit') =~ /^(\d{4}-\d{2}-\d{2})\s(\d{2}:\d{2}:\d{2})$/;
+    ($end_date_limit,   $end_time_limit)   = $r->param('end_datetime_limit')   =~ /^(\d{4}-\d{2}-\d{2})\s(\d{2}:\d{2}:\d{2})$/;
+
+    $start_date_limit = $r->param('start_datetime_limit') if $r->param('start_datetime_limit') =~ /^\d{4}-\d{2}-\d{2}$/;
+    $start_time_limit = $r->param('start_datetime_limit') if $r->param('start_datetime_limit') =~ /^\d{2}:\d{2}:\d{2}$/;
+
+    $end_date_limit = $r->param('end_datetime_limit') if $r->param('end_datetime_limit') =~ /^\d{4}-\d{2}-\d{2}$/;
+    $end_time_limit = $r->param('end_datetime_limit') if $r->param('end_datetime_limit') =~ /^\d{2}:\d{2}:\d{2}$/;
+
+    my $new_config = {
+        landing_companies => $r->param('landing_companies'),
+        underlying_symbol => $r->param('underlying_symbol'),
+        dc_types          => $r->param('dc_types'),
+        start_date_limit  => $start_date_limit,
+        start_time_limit  => $start_time_limit,
+        end_date_limit    => $end_date_limit,
+        end_time_limit    => $end_time_limit,
+        dc_comment        => $r->param('dc_comment'),
+    };
+
+    my $validated_args = BOM::Backoffice::MultiplierRiskManagementTool::validate_deal_cancellation_args($new_config);
+
+    if ($validated_args->{error}) {
+        print encode_json_utf8($validated_args);
+        return;
+    }
+
+    print encode_json_utf8(BOM::Backoffice::MultiplierRiskManagementTool::update_deal_cancellation($key, $dc_id, $validated_args));
+}
+
+if ($r->param('fetch_dc_config')) {
+    my $reader     = BOM::Config::Chronicle::get_chronicle_reader();
+    my $dc_configs = $reader->get("quants_config", "deal_cancellation");
+    my %lc_grouped_dc_configs;
+
+    foreach my $id (sort keys $dc_configs->%*) {
+        push @{$lc_grouped_dc_configs{uc($dc_configs->{$id}->{landing_companies})}}, $dc_configs->{$id};
+    }
+
+    print encode_json_utf8(\%lc_grouped_dc_configs);
 }
