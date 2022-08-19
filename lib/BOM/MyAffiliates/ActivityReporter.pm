@@ -27,7 +27,7 @@ extends 'BOM::MyAffiliates::Reporter';
 use Text::CSV;
 use Date::Utility;
 use File::SortedSeek                 qw(numeric get_between);
-use Format::Util::Numbers            qw(formatnumber);
+use Format::Util::Numbers            qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use constant HEADERS => qw(
@@ -81,27 +81,28 @@ sub activity {
         my @output_fields = ($when->date_yyyymmdd, $self->prefix_field($loginid));
 
         if ($currency eq 'USD') {
-            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{pnl});
-            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{deposits});
-            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_ticktrade});
-            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_intradays});
-            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_others});
+            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{pnl});
+            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{deposits});
+            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{turnover_ticktrade});
+            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{turnover_intradays});
+            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{turnover_others});
             push @output_fields, $first_funded_date;
-            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{'withdrawals'});
-            push @output_fields, formatnumber('amount', $currency, ($activity->{$loginid}->{'first_funded_amount'}) // 0);
-            push @output_fields, formatnumber('amount', $currency, 1);
+            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{'withdrawals'});
+            push @output_fields, financialrounding('amount', $currency, ($activity->{$loginid}->{'first_funded_amount'}) // 0);
+            push @output_fields, financialrounding('amount', $currency, 1);
         } else {
             # we need to convert other currencies to USD as required
             # by myaffiliates system
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{pnl});
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{deposits});
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_ticktrade});
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_intradays});
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_others});
+            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{pnl});
+            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{deposits});
+            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_ticktrade});
+            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_intradays});
+            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_others});
             push @output_fields, $first_funded_date;
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{'withdrawals'});
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * ($activity->{$loginid}->{'first_funded_amount'} // 0));
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency});
+            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{'withdrawals'});
+            push @output_fields,
+                financialrounding('amount', 'USD', $conversion_hash{$currency} * ($activity->{$loginid}->{'first_funded_amount'} // 0));
+            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency});
         }
 
         $csv->combine(@output_fields);

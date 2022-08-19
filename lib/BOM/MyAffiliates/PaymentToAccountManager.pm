@@ -21,7 +21,7 @@ use Data::Dumper qw( Dumper );
 use Text::CSV;
 use Text::Trim;
 use Date::Utility;
-use Format::Util::Numbers            qw(roundcommon);
+use Format::Util::Numbers            qw(financialrounding);
 use List::MoreUtils                  qw(any);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Config::Runtime;
@@ -198,7 +198,7 @@ sub _get_csv_line_from_txn {
     }
     $USD_amount = abs $USD_amount;
     my $preferred_currency = $client->currency;
-    my $now                = Date::Utility->new();
+    my $now                = Date::Utility->new($1);
     my $month              = $now->month();
     my $year               = $now->year();
     my $rate;
@@ -211,10 +211,10 @@ sub _get_csv_line_from_txn {
             year            => $year,
         });
         # $exch_rate is 1D array with more prospective values in future but for now only contains exchange rate as the first entry.
-        $rate = $exch_rate->[0];
+        $rate = $exch_rate->[0]->[0];
     }
 
-    my $preferred_currency_amount = roundcommon(0.01, $USD_amount * $rate);
+    my $preferred_currency_amount = financialrounding('amount', $preferred_currency, $USD_amount / $rate);
 
     my $month_str = _get_month_from_transaction($transaction);
     if (not $month_str) {

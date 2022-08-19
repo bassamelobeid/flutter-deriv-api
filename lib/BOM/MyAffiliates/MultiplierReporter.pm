@@ -25,7 +25,7 @@ extends 'BOM::MyAffiliates::Reporter';
 use Text::CSV;
 use Date::Utility;
 use File::SortedSeek                 qw(numeric get_between);
-use Format::Util::Numbers            qw(formatnumber);
+use Format::Util::Numbers            qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use YAML::XS                         qw(LoadFile);
 use BOM::Config::Runtime;
@@ -83,15 +83,15 @@ sub activity {
         my @output_fields = (
             $when->date_yyyymmdd,
             $self->prefix_field($loginid),
-            formatnumber('amount', 'USD', $result->{$loginid}{trade_commission}),
-            formatnumber('amount', 'USD', $result->{$loginid}{commission}));
+            financialrounding('amount', 'USD', $result->{$loginid}{trade_commission}),
+            financialrounding('amount', 'USD', $result->{$loginid}{commission}));
 
         if ($currency eq 'USD') {
-            push @output_fields, formatnumber('amount', 'USD', 1);
+            push @output_fields, financialrounding('amount', 'USD', 1);
         } else {
             # we need to convert other currencies to USD as required
             # by myaffiliates system
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency});
+            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency});
         }
 
         $csv->combine(@output_fields);
