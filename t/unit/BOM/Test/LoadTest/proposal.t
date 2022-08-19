@@ -29,3 +29,15 @@ indices
 synthetic_index
 forex
 bad: cryptocurrency
+
+amount: 10
+basis: "stake"
+contract_type: "MULTUP"
+currency: "USD"
+duration_unit: "s"
+multiplier: 50
+product_type: "basic"
+proposal: 1
+req_id: 33
+subscribe: 1
+symbol: "cryBTCUSD"

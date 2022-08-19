@@ -481,7 +481,10 @@ method get_params($contract_type, $symbol) {
     if (!defined($contracts_for->{$symbol}->{$contract_type})) {
         return undef;
     }
+    
+
     my $contract   = $contracts_for->{$symbol}->{$contract_type};
+    return $self->get_parrams_cryptocurrency($contract) if $contract->market eq 'cryptocurrency';
     my $market     = $contract->market;
     my $sub_market = $contract->submarket;
     my $min        = $contract->min_contract_duration;
@@ -556,6 +559,19 @@ method get_params($contract_type, $symbol) {
     return $contract_params->{$contract_type};
 }
 
+method get_parrams_cryptocurrency($contract){
+    return {
+        amount => 1 + int(rand(200)),
+basis => "stake",
+contract_type => $contract->contract_type,
+currency => "USD",
+duration_unit => "s",
+multiplier => $contract->data->{multiplier_range}->[int(rand(scalar($contract->data->{multiplier_range}->@*)))],
+product_type => "basic",
+symbol => $contract->underlying_symbol,
+    };
+}
+
 =head2 subscribe
 
 Description: Creates one subscription to a proposal,  subscriptions will randomly be forgotten if the forget_time attribute was set,  when they do
@@ -581,7 +597,8 @@ method subscribe($connection, $connection_number) {
     my $future = $loop->new_future;
     my $symbol =
         $active_symbols->[int(rand(scalar($active_symbols->@*)))];
-    my @contract_types = qw(PUT CALL PUTE CALLE);
+    # TODO modify & cache this types accoring to the returned value
+    my @contract_types = qw(PUT CALL PUTE CALLE MULTUP MULTDOWN);
     my $contract_type  = $contract_types[int(rand(@contract_types))];
     $log->info('Subscribing to ' . $symbol . ' using using connection number ' . $connection_number);
     my $params      = $self->get_params($contract_type, $symbol);
