@@ -2424,30 +2424,6 @@ async sub on_user_payment_accounts_limit_reached {
         });
 }
 
-=head2 payment_withdrawal
-
-Event to handle withdrawal payment type.
-
-=cut
-
-sub payment_withdrawal {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::payment_withdrawal(@args);
-}
-
-=head2 payment_withdrawal_reversal
-
-Event to handle withdrawal_reversal payment type.
-
-=cut
-
-sub payment_withdrawal_reversal {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::payment_withdrawal_reversal(@args);
-}
-
 =head2 withdrawal_limit_reached
 
 Sets 'needs_action' to a client
@@ -2688,63 +2664,6 @@ async sub check_email_for_fraud {
     }
 
     return;
-}
-
-=head2 transfer_between_accounts
-
-It is triggered for each B<transfer_between_accounts> event emitted.
-It is called with the following parameters:
-
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub transfer_between_accounts {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::transfer_between_accounts(@args);
-}
-
-=head2 api_token_created
-
-It is triggered for each B<api_token_create> event emitted.
-
-=cut
-
-sub api_token_created {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::api_token_created(@args);
-}
-
-=head2 api_token_delete
-
-It is triggered for each B<api_token_delete> event emitted.
-
-=cut
-
-sub api_token_deleted {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::api_token_deleted(@args);
-}
-
-=head2 set_financial_assessment
-
-It is triggered for each B<set_financial_assessment> event emitted.
-
-=cut
-
-sub set_financial_assessment {
-    my @args = @_;
-
-    return BOM::Event::Services::Track::set_financial_assessment(@args);
 }
 
 =head2 _set_all_sibling_status
@@ -3133,118 +3052,6 @@ sub _send_shared_payment_method_email {
     return;
 }
 
-=head2 trading_platform_account_created
-
-Handler for trading_platform_account_created event
-
-=cut
-
-sub trading_platform_account_created {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'trading_platform_account_created',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 trading_platform_password_reset_request
-
-Handler for trading_platform_password_reset_request event
-
-=cut
-
-sub trading_platform_password_reset_request {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'trading_platform_password_reset_request',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 trading_platform_investor_password_reset_request
-
-Handler for trading_platform_investor_password_reset_request event
-
-=cut
-
-sub trading_platform_investor_password_reset_request {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'trading_platform_investor_password_reset_request',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 trading_platform_password_changed
-
-Handler for trading_platform_password_changed event
-
-=cut
-
-sub trading_platform_password_changed {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'trading_platform_password_changed',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 trading_platform_password_change_failed
-
-Handler for trading_platform_password_change_failed event
-
-=cut
-
-sub trading_platform_password_change_failed {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'trading_platform_password_change_failed',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 trading_platform_investor_password_changed
-
-Handler for trading_platform_investor_password_changed
-
-=cut
-
-sub trading_platform_investor_password_changed {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'trading_platform_investor_password_changed',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 trading_platform_investor_password_change_failed
-
-Handler for trading_platform_investor_password_change_failed event
-
-=cut
-
-sub trading_platform_investor_password_change_failed {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'trading_platform_investor_password_change_failed',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
 =head2 check_name_changes_after_first_deposit
 
 Called when name is changed or doughflow deposit occurs.
@@ -3317,69 +3124,6 @@ sub check_name_changes_after_first_deposit {
     }
 
     return 1;
-}
-
-=head2 request_change_email
-
-Triggered before B<change_email> request.
-It can be called with the following parameters:
-
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub request_change_email {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::request_change_email($args);
-}
-
-=head2 verify_change_email
-
-Triggered for first stage in B<change_email tag: verify>  request.
-It can be called with the following parameters:
-
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub verify_change_email {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::verify_change_email($args);
-}
-
-=head2 confirm_change_email
-
-Triggered after second stage in B<change_email tag: update> request.
-It can be called with the following parameters:
-
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub confirm_change_email {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::confirm_change_email($args);
 }
 
 =head2 link_affiliate_client
@@ -3464,48 +3208,6 @@ sub link_affiliate_client {
     return;
 }
 
-=head2 reset_password_request
-
-It is triggered for each B<reset_password_request> event emitted, delivering it to Segment.
-It can be called with the following parameters:
-
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub reset_password_request {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::reset_password_request($args);
-}
-
-=head2 reset_password_confirmation
-
-It is triggered for each B<reset_password_confirmation> event emitted, delivering it to Segment.
-It can be called with the following parameters:
-
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub reset_password_confirmation {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::reset_password_confirmation($args);
-}
-
 =head2 account_opening_new
 
 It is triggered for each B<account_opening_new> event emitted, delivering it to Segment.
@@ -3529,159 +3231,6 @@ sub account_opening_new {
     );
 }
 
-=head2 account_opening_existing
-
-handler for account_opening_existing event
-
-=over
-
-=item * C<args> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub account_opening_existing {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'account_opening_existing',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 request_payment_withdraw
-
-handler for payment_withdrawal event
-
-=over
-
-=item * C<args> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub request_payment_withdraw {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'request_payment_withdraw',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 verify_email_closed_account_other
-
-handler for closed_account event
-
-=over
-
-=item * C<args> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub verify_email_closed_account_other {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'verify_email_closed_account_other',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 verify_email_closed_account_account_opening
-
-handler for closed_account event
-
-=over
-
-=item * C<args> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub verify_email_closed_account_account_opening {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'verify_email_closed_account_account_opening',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 verify_email_closed_account_reset_password
-
-handler for closed_account event
-
-=over
-
-=item * C<args> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub verify_email_closed_account_reset_password {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'verify_email_closed_account_reset_password',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
-}
-
-=head2 pa_transfer_confirm
-
-It is triggered for each B<pa_transfer_confirm> event emitted, delivering it to Segment.
-
-It can be called with the following parameters:
-
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub pa_transfer_confirm {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::pa_transfer_confirm($args);
-}
-
-=head2 pa_withdraw_confirm
-
-It is triggered for each B<pa_withdraw_confirm> event emitted, delivering it to Segment.
-It can be called with the following parameters:
-
-=over
-
-=item * C<loginid> - required. Login Id of the user.
-
-=item * C<properties> - Free-form dictionary of event properties.
-
-=back
-
-=cut
-
-sub pa_withdraw_confirm {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::pa_withdraw_confirm($args);
-}
-
 =head2 self_tagging_affiliates
 
 handler for self_tagging_affiliates event
@@ -3699,6 +3248,141 @@ sub self_tagging_affiliates {
     );
 }
 
+# Some generated functions
+
+=head2 pa_withdraw_confirm
+
+It is triggered for each B<pa_withdraw_confirm> event emitted, delivering it to Segment.
+
+=head2 pa_transfer_confirm
+
+It is triggered for each B<pa_transfer_confirm> event emitted, delivering it to Segment.
+
+=head2 reset_password_confirmation
+
+It is triggered for each B<reset_password_confirmation> event emitted, delivering it to Segment.
+
+=head2 reset_password_request
+
+It is triggered for each B<reset_password_request> event emitted, delivering it to Segment.
+
+=head2 confirm_change_email
+
+Triggered after second stage in B<change_email tag: update> request.
+
+=head2 verify_change_email
+
+Triggered for first stage in B<change_email tag: verify>  request.
+
+=head2 request_change_email
+
+Triggered before B<change_email> request.
+
+=head2 set_financial_assessment
+
+It is triggered for each B<set_financial_assessment> event emitted.
+
+=head2 api_token_delete
+
+It is triggered for each B<api_token_delete> event emitted.
+
+=head2 api_token_created
+
+It is triggered for each B<api_token_create> event emitted.
+
+=head2 transfer_between_accounts
+
+It is triggered for each B<transfer_between_accounts> event emitted.
+
+=head2 payment_withdrawal_reversal
+
+Event to handle withdrawal_reversal payment type.
+
+=head2 payment_withdrawal
+
+Event to handle withdrawal payment type.
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+for my $func_name (
+    qw(pa_withdraw_confirm
+    pa_transfer_confirm
+    reset_password_confirmation
+    reset_password_request
+    confirm_change_email
+    verify_change_email
+    request_change_email
+    set_financial_assessment
+    api_token_deleted
+    api_token_created
+    transfer_between_accounts
+    payment_withdrawal_reversal
+    payment_withdrawal
+    ))
+{
+    no strict 'refs';    # allow symbol table manipulation
+    *{__PACKAGE__ . '::' . $func_name} = sub {
+        my ($args) = @_;
+        return &{"BOM::Event::Services::Track::$func_name"}($args);
+    }
+}
+
+=head2 verify_email_closed_account_reset_password
+
+handler for closed_account event
+
+=head2 verify_email_closed_account_account_opening
+
+handler for closed_account event
+
+=head2 verify_email_closed_account_other
+
+handler for closed_account event
+
+=head2 request_payment_withdraw
+
+handler for payment_withdrawal event
+
+=head2 account_opening_existing
+
+handler for account_opening_existing event
+
+=head2 trading_platform_investor_password_change_failed
+
+Handler for trading_platform_investor_password_change_failed event
+
+=head2 trading_platform_investor_password_changed
+
+Handler for trading_platform_investor_password_changed
+
+=head2 trading_platform_password_change_failed
+
+Handler for trading_platform_password_change_failed event
+
+=head2 trading_platform_password_changed
+
+Handler for trading_platform_password_changed event
+
+=head2 trading_platform_investor_password_reset_request
+
+Handler for trading_platform_investor_password_reset_request event
+
+=head2 trading_platform_password_reset_request
+
+Handler for trading_platform_password_reset_request event
+
+=head2 trading_platform_account_created
+
+Handler for trading_platform_account_created event
+
 =head2 request_edd_document_upload
 
 handler for Enhanced Due Diligence document upload request
@@ -3711,13 +3395,31 @@ handler for Enhanced Due Diligence document upload request
 
 =cut
 
-sub request_edd_document_upload {
-    my ($args) = @_;
-
-    return BOM::Event::Services::Track::track_event(
-        event      => 'request_edd_document_upload',
-        loginid    => $args->{loginid},
-        properties => $args->{properties},
-    );
+for my $func_name (
+    qw(verify_email_closed_account_reset_password
+    verify_email_closed_account_account_opening
+    verify_email_closed_account_other
+    request_payment_withdraw
+    request_edd_document_upload
+    account_opening_existing
+    trading_platform_investor_password_change_failed
+    trading_platform_investor_password_changed
+    trading_platform_password_change_failed
+    trading_platform_password_changed
+    trading_platform_investor_password_reset_request
+    trading_platform_password_reset_request
+    trading_platform_account_created
+    ))
+{
+    no strict 'refs';    # allow symbol table manipulation
+    *{__PACKAGE__ . '::' . $func_name} = sub {
+        my ($args) = @_;
+        return BOM::Event::Services::Track::track_event(
+            event      => $func_name,
+            loginid    => $args->{loginid},
+            properties => $args->{properties},
+        );
+    }
 }
+
 1;
