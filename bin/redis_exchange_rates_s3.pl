@@ -62,7 +62,7 @@ sub upload_redis {
 
     my $r       = BOM::Config::Redis::redis_exchangerates();
     my $keys    = $r->keys('*');
-    my %data    = map { $_ => {$r->hgetall($_)->@*} } grep { $_ ne 'exchange_rates::queue' } $keys->@*;
+    my %data    = map { $_ => {$r->hgetall($_)->@*} } grep { $_ ne 'exchange_rates_::queue' } $keys->@*;
     my $content = encode_json(\%data);
 
     try {

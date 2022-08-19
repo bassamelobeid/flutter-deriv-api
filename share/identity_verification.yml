@@ -5,3 +5,5 @@ providers:
   zaig:
     portal_base: https://dash.zaig.com.br/natural-person/%s
     selfish: 1
+  derivative_wealth:
+    selfish: 0
