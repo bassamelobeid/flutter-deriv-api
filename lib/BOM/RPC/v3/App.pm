@@ -315,6 +315,43 @@ rpc app_markup_details => sub {
             })};
 };
 
+rpc app_markup_statistics => sub {
+    my $params    = shift;
+    my $args      = $params->{args};
+    my $client    = $params->{client};
+    my $user_id   = $client->user_id;
+    my $oauth     = BOM::Database::Model::OAuth->new;
+    my $collector = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
+    my $app_ids   = $oauth->get_app_ids_by_user_id($user_id);
+
+    my ($time_from, $time_to);
+    try {
+        $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
+        $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
+    } catch {
+        log_exception();
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidDateFormat',
+                message_to_client => localize('Invalid date format.'),
+            })
+    }
+
+    my $res = {
+        breakdown => $collector->run(
+            fixup => sub {
+                $_->selectall_arrayref(
+                    'SELECT * FROM data_collection.get_app_markup_statistics(?,?,?)',
+                    {Slice => {}},
+                    $app_ids, $time_from, $time_to
+                );
+            })};
+    foreach my $row ($res->{breakdown}->@*) {
+        $res->{total_app_markup_usd}     += $row->{app_markup_usd};
+        $res->{total_transactions_count} += $row->{transactions_count};
+    }
+    return $res;
+};
+
 =head2 __validate_redirect_uri
 
     __validate_redirect_uri($redirect_uri, $app_markup_percentage);
