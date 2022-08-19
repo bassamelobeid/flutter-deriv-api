@@ -464,7 +464,7 @@ sub _invoke_using_proxy {
     state $http;
     unless ($http) {
         $http = Net::Async::HTTP->new(
-            max_connections_per_host => 4,
+            max_connections_per_host => 10,
             decode_content           => 1,
             fail_on_error            => 1,
             timeout                  => 10,
