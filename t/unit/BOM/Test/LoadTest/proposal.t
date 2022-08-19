@@ -25,6 +25,7 @@ $VAR1 = [
 /home/git/regentmarkets/bom-test/bin/proposal_sub.pl -s 10 -a 16303 -c 5 -r 120 -m commodities
 good: basket_index
 commodities
+indices
 synthetic_index
 forex
 bad: cryptocurrency
