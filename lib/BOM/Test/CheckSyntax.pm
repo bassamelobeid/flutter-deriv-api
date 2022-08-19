@@ -31,8 +31,30 @@ use BOM::Test::LocalizeSyntax qw(check_localize_string_structure);
 use YAML::XS                  qw(LoadFile);
 use Data::Dumper;
 
+# This module is imported in .proverc already. Here we import it again to disable end_test
+# because `end test` will make test fail with the error of plan number
+use Test::Warnings ':no_end_test';
+
 our @EXPORT_OK = qw(check_syntax_on_diff check_syntax_all check_bom_dependency);
 our $skip_tidy;
+
+our %bom_repo_to_module = (
+    'regentmarkets/bom-user'           => ['BOM::User', 'BOM::TradingPlatform', 'BOM::MT5'],
+    'regentmarkets/bom-config'         => 'BOM::Config',
+    'regentmarkets/bom-rules'          => 'BOM::Rules',
+    'regentmarkets/bom-market'         => 'BOM::Market',
+    'regentmarkets/bom-platform'       => 'BOM::Platform',
+    'regentmarkets/bom'                => 'BOM::Product',
+    'regentmarkets/bom-cryptocurrency' => 'BOM::CTC',
+    'regentmarkets/bom-myaffiliates'   => 'BOM::MyAffiliates',
+    'regentmarkets/bom-transaction'    => 'BOM::Transaction',
+    'regentmarkets/bom-rpc'            => 'BOM::RPC',
+    'regentmarkets/bom-pricing'        => 'BOM::Pricing',
+    'regentmarkets/bom-postgres'       => 'BOM::Database',
+    'regentmarkets/bom-test'           => 'BOM::Test',
+    'regentmarkets/bom-populator'      => 'BOM::Populator',
+    'regentmarkets/bom-oauth'          => 'BOM::OAuth'
+);
 
 =head2 check_syntax_on_diff
 
@@ -209,8 +231,8 @@ sub check_yaml {
 
 =head2 check_bom_dependency
 
-Check BOM module dependency under lib.
-Test fail when new dependency detected.
+Check BOM module usage under lib and bin under the root of a repo.
+Test fail when new dependency detected, which means the BOM module is not in the list of runtime_required_repos.yml.
 
 =over
 
@@ -227,14 +249,33 @@ sub check_bom_dependency {
     $cmd .= ' bin' if (-d 'bin');
     # also found pod of some pm has comments like
     # lib/BOM/OAuth.pm:  perl -MBOM::Test t/BOM/001_structure.t
+    my $required_repos_yml = 'runtime_required_repos.yml';
+    if (-e $required_repos_yml) {
+        my $required_repos = YAML::XS::LoadFile($required_repos_yml);
+        unless (ref($required_repos) eq 'ARRAY') {
+            warn "$required_repos_yml format has issue.";
+        } else {
+            foreach (@$required_repos) {
+                my $module = $bom_repo_to_module{$_};
+                if (ref($module) eq 'ARRAY') {
+                    push @dependency_allowed, @$module;
+                } elsif ($module) {
+                    push @dependency_allowed, $module;
+                }
+            }
 
+        }
+    }
     $cmd = join(' | grep -v ', $cmd, @dependency_allowed, @self_contain_pm);
 
-    my $result = _run_command($cmd);
-    ok !$result, "BOM dependency check";
-    if ($result) {
-        diag("new BOM module dependency detected!!!");
-        diag("you may need update runtime_required_repos.yml");
+    my @result = _run_command($cmd);
+    ok !@result, "BOM dependency check";
+    if (@result) {
+        diag(
+            qq{New BOM module dependency detected!!!
+Please add the corresponding repository of the following modules into runtime_required_repos.yml and test_required_repos.yml. (you may need to create it)}
+        );
+        diag(join("\n", @result));
     }
 }
 
