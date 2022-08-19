@@ -368,6 +368,7 @@ sub _login {
         oneall_user_id => $oneall_user_id,
         email          => $email,
         password       => $password,
+        device_id      => $c->req->param('device_id'),
     });
 
     if ($result->{error_code}) {
@@ -427,34 +428,6 @@ sub _bad_request {
     my ($c, $error) = @_;
 
     return $c->throw_error('invalid_request', $error);
-}
-
-=head2 _get_details_from_environment
-
-Get details from environment, which includes the IP address, country, and the
-user agent.
-
-=cut
-
-sub _get_details_from_environment {
-    my $env = shift;
-
-    return unless $env;
-
-    my ($ip) = $env =~ /(IP=(\d{1,3}\.){3}\d{1,3})/i;
-    $ip =~ s/IP=//i;
-
-    my ($country) = $env =~ /(IP_COUNTRY=\w{1,2})/i;
-    $country =~ s/IP_COUNTRY=//i if $country;
-
-    my ($user_agent) = $env =~ /(User_AGENT.+(?=\sLANG))/i;
-    $user_agent =~ s/User_AGENT=//i;
-
-    return {
-        ip         => $ip,
-        country    => uc($country // 'unknown'),
-        user_agent => $user_agent
-    };
 }
 
 sub _get_template_name {

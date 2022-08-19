@@ -129,7 +129,11 @@ workflows:
     - core_syntax_diff:
         context: perl
   daily:
-    jobs: *7
+    jobs:
+    - core:
+        context: perl
+    - syntax_unit:
+        context: perl
     triggers:
     - schedule:
         cron: 8 20 * * *

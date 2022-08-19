@@ -59,6 +59,7 @@ sub validate_login {
     my $app                   = delete $login_details->{app};
     my $email                 = delete $login_details->{email};
     my $password              = delete $login_details->{password};
+    my $device_id             = delete $login_details->{device_id};
 
     my $app_id = $app->{id};
 
@@ -93,7 +94,11 @@ sub validate_login {
         return $err_var->("TEMP_DISABLED");
     }
 
-    my $env              = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
+    my $env = request()->login_env({
+        user_agent => $c->req->headers->header('User-Agent'),
+        device_id  => $device_id,
+    });
+
     my $unknown_location = !$user->logged_in_before_from_same_location($env);
 
     my $result = $user->login(
@@ -101,7 +106,8 @@ sub validate_login {
         environment            => $env,
         is_refresh_token_login => $refresh_token  ? 1 : 0,
         is_social_login        => $oneall_user_id ? 1 : 0,
-        app_id                 => $app_id
+        app_id                 => $app_id,
+        device_id              => $device_id,
     );
 
     # Self-closed error is treated like a success; we'll try to reactivate accounts.
