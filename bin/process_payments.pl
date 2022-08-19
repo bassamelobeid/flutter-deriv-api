@@ -23,11 +23,17 @@ use BOM::User::AuditLog;
 use BOM::User::Client;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
-
-use Log::Any::Adapter qw(Stderr), log_level => 'debug';
 use Log::Any qw($log);
-
 use Getopt::Long;
+require Log::Any::Adapter;
+
+my $json_log_file = '/var/log/deriv/bom-backoffice-process_payments_trace.json.log';
+Log::Any::Adapter->import(
+    qw(DERIV),
+    stderr        => 'json',
+    log_level     => 'debug',
+    json_log_file => $json_log_file
+);
 
 GetOptions(
     's|staff=s'       => \my $staff,
@@ -141,6 +147,7 @@ read_csv_row_and_callback(
                     }
                 } catch ($e) {
                     $error = $e;
+                    $log->errorf('%s faild to retrive client - %s', $login_id, $error);
                     last;
                 }
                 $row{name} = $client->full_name;
