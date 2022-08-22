@@ -1,43 +1,8 @@
-#!/usr/bin/env perl
-
+use strict;
+use warnings;
+use Test::More;
 use BOM::Test::LoadTest::Proposal;
 
-my $app_id      = 16303;
-my $end_point   = 'ws://127.0.0.1:5004';
-my $load_tester = BOM::Test::LoadTest::Proposal->new(
-    end_point => $end_point,
-    app_id    => $app_id,
-);
-use Data::Dumper;
-print Dumper([$load_tester->all_markets]);
-
-__END__
-$VAR1 = [
-          'basket_index',
-          'commodities',
-          'cryptocurrency',
-          'forex',
-          'indices',
-          'synthetic_index'
-        ];
-/home/git/regentmarkets/bom-test/bin/proposal_sub.pl -s 10 -a 16303 -c 5 -r 120 -m synthetic_index,forex
-
-/home/git/regentmarkets/bom-test/bin/proposal_sub.pl -s 10 -a 16303 -c 5 -r 120 -m commodities
-good: basket_index
-commodities
-indices
-synthetic_index
-forex
-bad: cryptocurrency
-
-amount: 10
-basis: "stake"
-contract_type: "MULTUP"
-currency: "USD"
-duration_unit: "s"
-multiplier: 50
-product_type: "basic"
-proposal: 1
-req_id: 33
-subscribe: 1
-symbol: "cryBTCUSD"
+my $tester = BOM::Test::LoadTest::Proposal->new();
+ok 1;
+done_testing();
