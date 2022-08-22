@@ -28,7 +28,6 @@ alias:
 - &5
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
-    RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
 default: &6
   docker:
   - auth:
