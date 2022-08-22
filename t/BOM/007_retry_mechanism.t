@@ -10,15 +10,11 @@ use BOM::Event::QueueHandler;
 use Log::Any qw($log);
 use Log::Any::Adapter (qw(Stderr), log_level => 'warn');
 use JSON::MaybeUTF8 qw(decode_json_utf8 decode_json_text);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
-use BOM::Config::Redis;
 use IO::Async::Loop;
 use Future::AsyncAwait;
 use utf8;
 
-initialize_events_redis();
-my $redis = BOM::Config::Redis::redis_events_write();
-my $loop  = IO::Async::Loop->new;
+my $loop = IO::Async::Loop->new;
 my $stream_handler;
 my $mock_log_adapter_test = Test::MockModule->new('Log::Any::Adapter::Test');
 my $mocked_handler        = Test::MockModule->new('BOM::Event::QueueHandler');
