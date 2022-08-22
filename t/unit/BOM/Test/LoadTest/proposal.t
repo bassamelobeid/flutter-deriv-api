@@ -52,11 +52,30 @@ subtest 'test get_params' => sub {
           'duration' => 4,
           'amount' => 10,
           'basis' => 'stake',
-          'date_start' => 1661101000,
+          'date_start' => time() + 1000,
           'contract_type' => 'CALL',
           'symbol' => 'frxAUDCAD',
           'currency' => 'USD'
         },
     "forex common CALL");
+
+    set_fixed_time(1661209000); # current time is 22:00
+     $contract_for_forex_call->set_always('market', 'forex')
+        ->set_always('min_contract_duration', '1d')
+        ->set_always('max_contract_duration', '365d');
+    use Data::Dumper;
+    is_deeply($tester->get_params('CALL', 'frxAUDCAD'),
+    {
+          'contract_type' => 'CALL',
+          'amount' => 10,
+          'basis' => 'stake',
+          'currency' => 'USD',
+          'duration' => 1,
+          'duration_unit' => 'd',
+          'date_start' => time() + 3*3600,
+          'symbol' => 'frxAUDCAD'
+        },
+    "forex common CALL in 22:00 oclock");
+
 };
 done_testing();
