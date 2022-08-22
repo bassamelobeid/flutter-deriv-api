@@ -19,7 +19,7 @@ use Data::Dumper;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Date::Utility;
 use Path::Tiny;
-use BOM::Test::LoadTest::Pricer qw(dd_memory_and_time);
+use BOM::Test::LoadTest::Util qw(dd_memory_and_time);
 use BOM::Test::LoadTest::Proposal;
 
 =head1 NAME

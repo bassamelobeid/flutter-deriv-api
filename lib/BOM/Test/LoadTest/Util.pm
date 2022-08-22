@@ -1,4 +1,4 @@
-package BOM::Test::LoadTest::Pricer;
+package BOM::Test::LoadTest::Util;
 use strict;
 use warnings;
 use Proc::ProcessTable;
