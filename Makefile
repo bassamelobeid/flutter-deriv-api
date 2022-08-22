@@ -12,7 +12,7 @@ $(SUBDIRS):
 # TODO we exclude lib/BOM/Test/Rudderstack/Webserver.pm because perltidy cann't handle modules that using Object::Pad class. will fix it after we fix perltidy
 tidy:
 	find . -name '*.p?.bak' -delete
-	find lib t bin \( -name '*.p[lm]'  -o -name '*.t' \) -not \( -path '*/WebsocketAPI/Tests/*' -o -path '*/WebsocketAPI/Helpers/*' -o -path 'lib/BOM/Test/Rudderstack/Webserver.pm' \) | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
+	find lib t bin \( -name '*.p[lm]'  -o -name '*.t' \) -not \( -path '*/WebsocketAPI/Tests/*' -o -path '*/WebsocketAPI/Helpers/*' -o -path 'lib/BOM/Test/Rudderstack/Webserver.pm' -o -path '*/LoadTest/Proposal.pm' \) | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
 
 test:
