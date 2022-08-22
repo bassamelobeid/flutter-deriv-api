@@ -12,6 +12,7 @@ use DateTime;
 use JSON::MaybeXS;
 use Syntax::Keyword::Try;
 use List::Util qw(uniq);
+use Array::Utils qw(intersect);
 
 use constant TIMEOUT => 10;
 
@@ -598,7 +599,10 @@ method subscribe($connection, $connection_number) {
     my $symbol =
         $active_symbols->[int(rand(scalar($active_symbols->@*)))];
     # TODO modify & cache this types accoring to the returned value
-    my @contract_types = qw(PUT CALL PUTE CALLE MULTUP MULTDOWN);
+    my @possible_contract_types = qw(PUT CALL PUTE CALLE MULTUP MULTDOWN);
+    my @available_contract_types = keys $contracts_for->{$symbol}->%*;
+    my @contract_types = intersect(@possible_contract_types, @available_contract_types);
+    die "possible available contract types is none for symbol $symbol" unless @contract_types;
     my $contract_type  = $contract_types[int(rand(@contract_types))];
     $log->info('Subscribing to ' . $symbol . ' using using connection number ' . $connection_number);
     my $params      = $self->get_params($contract_type, $symbol);
