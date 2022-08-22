@@ -76,7 +76,7 @@ has %args;
 has $json;
 has $active_symbols;
 has %subs;
-has $contracts_for;
+has $contracts_for :writer;
 has $multipliers;
 has $loop;
 
@@ -484,7 +484,7 @@ method get_params($contract_type, $symbol) {
     
 
     my $contract   = $contracts_for->{$symbol}->{$contract_type};
-    return $self->get_parrams_cryptocurrency($contract) if $contract->market eq 'cryptocurrency';
+    return $self->get_params_cryptocurrency($contract) if $contract->market eq 'cryptocurrency';
     my $market     = $contract->market;
     my $sub_market = $contract->submarket;
     my $min        = $contract->min_contract_duration;
@@ -559,16 +559,16 @@ method get_params($contract_type, $symbol) {
     return $contract_params->{$contract_type};
 }
 
-method get_parrams_cryptocurrency($contract){
+method get_params_cryptocurrency($contract){
     return {
         amount => 1 + int(rand(200)),
-basis => "stake",
-contract_type => $contract->contract_type,
-currency => "USD",
-duration_unit => "s",
-multiplier => $contract->data->{multiplier_range}->[int(rand(scalar($contract->data->{multiplier_range}->@*)))],
-product_type => "basic",
-symbol => $contract->underlying_symbol,
+        basis => "stake",
+        contract_type => $contract->contract_type,
+        currency => "USD",
+        duration_unit => "s",
+        multiplier => $contract->data->{multiplier_range}->[int(rand(scalar($contract->data->{multiplier_range}->@*)))],
+        product_type => "basic",
+        symbol => $contract->underlying_symbol,
     };
 }
 
