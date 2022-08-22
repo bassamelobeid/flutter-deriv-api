@@ -7,12 +7,35 @@ use feature qw(state);
 use Exporter 'import';
 our @EXPORT_OK = qw(dd_memory_and_time);
 
+=head1 NAME
+
+C<BOM::Test::LoadTest::Util> - Util subs for LoadTest
+
+=head1 SYNOPSIS
+
+    use BOM::Test::LoadTest::Util qw(dd_memory_and_time)
+
+    dd_memory_and_time('forex');
+
+=cut
+
+=head1 FUNCTIONS
+
+=head2 dd_memory
+
+Store memory usages of some processes to Datadog during the given market loadtest running.
+
+Paramter: start_market - a market name
+
+if there is start market, get values of memory usage and store the start value in to a variable.
+if there is no market, then get the values of memory usage and calculate the delta value and store into datadog.
+
+=cut
+
 sub dd_memory {
     my ($start_market) = @_;
 
     my $t = Proc::ProcessTable->new;
-    #my @fields = $t->fields;
-    #print "@fields\n";
     my $dd_prefix   = 'qaloadtest.memory';
     my @process_cfg = ({
             regexp    => qr/binary_rpc_redis\.pl.*category=general/,
@@ -78,6 +101,12 @@ sub dd_memory {
     }
 }
 
+=HEAD2 dd_time
+
+store the taken time that loadtest has been running on a given market
+
+=cut
+
 sub dd_time {
     my ($start_market) = @_;
     state $last_time;
@@ -91,6 +120,11 @@ sub dd_time {
     return;
 }
 
+=head2 dd_memory_and_time
+
+store memroy and time usage
+
+=cut
 sub dd_memory_and_time {
     dd_memory(@_);
     dd_time(@_);
