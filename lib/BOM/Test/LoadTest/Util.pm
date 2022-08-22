@@ -35,7 +35,7 @@ if there is no market, then get the values of memory usage and calculate the del
 sub dd_memory {
     my ($start_market) = @_;
 
-    my $t = Proc::ProcessTable->new;
+    my $t           = Proc::ProcessTable->new;
     my $dd_prefix   = 'qaloadtest.memory';
     my @process_cfg = ({
             regexp    => qr/binary_rpc_redis\.pl.*category=general/,
@@ -125,6 +125,7 @@ sub dd_time {
 store memroy and time usage
 
 =cut
+
 sub dd_memory_and_time {
     dd_memory(@_);
     dd_time(@_);
