@@ -2,6 +2,8 @@ use strict;
 use warnings;
 use Test::More;
 use Test::MockObject;
+use Test::MockModule;
+use Test::MockTime qw(set_fixed_time);
 use BOM::Test::LoadTest::Proposal;
 
 subtest 'test get_params' => sub {
@@ -18,7 +20,6 @@ subtest 'test get_params' => sub {
     });
 
     ok(!$tester->get_params('BAD_TYPE', 'BAD_SYMBOL'), 'will return undef if no contracts for such type and symbol');
-    use Data::Dumper;
     is_deeply($tester->get_params('CALL','crycur'), 
     {
           'duration_unit' => 's',
@@ -32,5 +33,30 @@ subtest 'test get_params' => sub {
         },
         'get crypto currency contract params'
     );
+
+    my $contract_for_forex_call = Test::MockObject->new();
+    $contract_for_forex_call->set_always('market', 'forex')
+        ->set_always('submarket', 'minor_pairs')
+        ->set_always('min_contract_duration', '1t')
+        ->set_always('max_contract_duration', '5t');
+    my $mocked_test = Test::MockModule->new('BOM::Test::LoadTest::Proposal');
+    $mocked_test->mock('forex_duration_adjustments', sub {return (0,0)});
+    $tester->set_contracts_for({frxAUDCAD => {CALL => $contract_for_forex_call}});
+    ok(!$tester->get_params('CALL', 'frxAUDCAD'), 'will return undef if forex_duration_adjustments return 0');
+    undef $mocked_test;
+
+    set_fixed_time(1661100000);
+    is_deeply($tester->get_params('CALL', 'frxAUDCAD'),
+    {
+          'duration_unit' => 't',
+          'duration' => 4,
+          'amount' => 10,
+          'basis' => 'stake',
+          'date_start' => 1661101000,
+          'contract_type' => 'CALL',
+          'symbol' => 'frxAUDCAD',
+          'currency' => 'USD'
+        },
+    "forex common CALL");
 };
 done_testing();
