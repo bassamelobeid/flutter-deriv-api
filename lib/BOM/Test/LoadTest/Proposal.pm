@@ -485,7 +485,7 @@ method get_params($contract_type, $symbol) {
     
 
     my $contract   = $contracts_for->{$symbol}->{$contract_type};
-    return $self->get_params_cryptocurrency($contract) if $contract->market eq 'cryptocurrency';
+    return $self->get_params_mult_up_down($contract) if $contract_type eq 'MULTUP' or $contract_type eq 'MULTDOWN';
     my $market     = $contract->market;
     my $sub_market = $contract->submarket;
     my $min        = $contract->min_contract_duration;
@@ -522,24 +522,11 @@ method get_params($contract_type, $symbol) {
         symbol        => $symbol,
     };
 
-    my $reset_put_call = {
-        amount        => 10,
-        basis         => "stake",
-        contract_type => $contract_type,
-        currency      => "USD",
-        duration      => $duration,
-        duration_unit => $duration_unit,
-        symbol        => $symbol,
-
-    };
-
     my $contract_params = {
         PUT      => $put_call,
         CALL     => $put_call,
         PUTE     => $pute_calle,
         CALLE    => $pute_calle,
-        RESETPUT => $reset_put_call,
-
     };
 
     if ($market =~ /^(forex|basket_index|commodities|indices)$/) {
@@ -560,7 +547,7 @@ method get_params($contract_type, $symbol) {
     return $contract_params->{$contract_type};
 }
 
-method get_params_cryptocurrency($contract){
+method get_params_mult_up_down($contract){
     return {
         amount => 1 + int(rand(200)),
         basis => "stake",
@@ -601,10 +588,11 @@ method subscribe($connection, $connection_number) {
     # TODO modify & cache this types accoring to the returned value
     my @possible_contract_types = qw(PUT CALL PUTE CALLE MULTUP MULTDOWN);
     my @available_contract_types = keys $contracts_for->{$symbol}->%*;
+    #$log->info("available contract type @available_contract_types");
     my @contract_types = intersect(@possible_contract_types, @available_contract_types);
     die "possible available contract types is none for symbol $symbol" unless @contract_types;
     my $contract_type  = $contract_types[int(rand(@contract_types))];
-    $log->info('Subscribing to ' . $symbol . ' using using connection number ' . $connection_number);
+    $log->info("Subscribing to $symbol using using connection number $connection_number contract type $contract_type");
     my $params      = $self->get_params($contract_type, $symbol);
     my $retry_count = 0;
 

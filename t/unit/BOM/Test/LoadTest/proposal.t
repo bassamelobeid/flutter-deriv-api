@@ -12,19 +12,19 @@ subtest 'test get_params' => sub {
     my $tester = BOM::Test::LoadTest::Proposal->new();
     my $contract_for_cryBTCUSD_call = Test::MockObject->new();
     $contract_for_cryBTCUSD_call->set_always('market', 'cryptocurrency')
-        ->set_always('contract_type','CALL')
+        ->set_always('contract_type','MULTUP')
         ->set_always('data', {multiplier_range => [10,20,30,40,50]})
         ->set_always('underlying_symbol', 'cryBTCUSD');
     $tester->set_contracts_for({
-        'cryBTCUSD' => {'CALL' => $contract_for_cryBTCUSD_call} 
+        'cryBTCUSD' => {'MULTUP' => $contract_for_cryBTCUSD_call} 
     });
 
     ok(!$tester->get_params('BAD_TYPE', 'BAD_SYMBOL'), 'will return undef if no contracts for such type and symbol');
-    is_deeply($tester->get_params('CALL','cryBTCUSD'), 
+    is_deeply($tester->get_params('MULTUP','cryBTCUSD'), 
     {
           'duration_unit' => 's',
           'basis' => 'stake',
-          'contract_type' => 'CALL',
+          'contract_type' => 'MULTUP',
           'product_type' => 'basic',
           'multiplier' => 30,
           'symbol' => 'cryBTCUSD',
