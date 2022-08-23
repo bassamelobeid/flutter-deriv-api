@@ -34,6 +34,7 @@ use Finance::Contract::Category;
 use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
 use Finance::Underlying;
+use POSIX qw(strftime);
 
 use BOM::Config::Runtime;
 
@@ -344,15 +345,29 @@ sub custom_deal_cancellation {
     my $custom_deal_cancellation_configs = $self->chronicle_reader->get(CONFIG_NAMESPACE, "deal_cancellation", $self->for_date) // {};
     my $dc_config_id                     = join('_', $underlying_symbol, $landing_company_short);
 
-    if ($custom_deal_cancellation_configs->{$dc_config_id}) {
-        my $start_dt = Date::Utility->new($custom_deal_cancellation_configs->{$dc_config_id}{"start_datetime_limit"});
-        my $end_dt   = Date::Utility->new($custom_deal_cancellation_configs->{$dc_config_id}{"end_datetime_limit"});
-
-        if ($date_pricing >= $start_dt->epoch and $date_pricing < $end_dt->epoch) {
-            my @dc_type = split(',', $custom_deal_cancellation_configs->{$dc_config_id}{"dc_types"});
-            return \@dc_type;
-        }
+    if (!$custom_deal_cancellation_configs->{$dc_config_id}) {
+        return 0;
     }
+
+    my $start_datetime_limit = $custom_deal_cancellation_configs->{$dc_config_id}{"start_datetime_limit"};
+    my $end_datetime_limit   = $custom_deal_cancellation_configs->{$dc_config_id}{"end_datetime_limit"};
+
+    # In case the limitation was specified in time range and not date,
+    # we'll add the current date to avoid errors of the Date::Utility instaniation.
+    if ($start_datetime_limit =~ /^\d{2}:\d{2}:\d{2}$/ && $end_datetime_limit =~ /^\d{2}:\d{2}:\d{2}$/) {
+        $start_datetime_limit = strftime('%Y-%m-%d', gmtime) . " " . $start_datetime_limit;
+        $end_datetime_limit   = strftime('%Y-%m-%d', gmtime) . " " . $end_datetime_limit;
+    }
+
+    my $start_dt = Date::Utility->new($start_datetime_limit);
+    my $end_dt   = Date::Utility->new($end_datetime_limit);
+
+    if ($date_pricing >= $start_dt->epoch and $date_pricing < $end_dt->epoch) {
+        my @dc_type = split(',', $custom_deal_cancellation_configs->{$dc_config_id}{"dc_types"});
+        return \@dc_type;
+    }
+
+    return 0;
 }
 
 =head2 get_mt5_symbols_mapping
