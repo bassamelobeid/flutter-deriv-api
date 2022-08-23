@@ -478,6 +478,7 @@ sub actions_config {
         ['copy_stop'],
 
         ['app_markup_details'],
+        ['app_markup_statistics'],
         [
             'account_security',
             {
