@@ -19,7 +19,8 @@ use Data::Dumper;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Date::Utility;
 use Path::Tiny;
-use BOM::Test::LoadTest::Pricer qw(dd_memory_and_time);
+use BOM::Test::LoadTest::Util qw(dd_memory_and_time);
+use BOM::Test::LoadTest::Proposal;
 
 =head1 NAME
 
@@ -110,24 +111,25 @@ pod2usage({
 # Set Defaults
 $check_time            = $check_time            // 120;
 $initial_subscriptions = $initial_subscriptions // 10;
-$app_id                = $app_id                // 1003;
+$app_id                = $app_id                // 16303;
 our $| = 1;
 if (!$hostname) {
     $hostname = hostname();
 }
 my @mails_to = split(',', $mail_to) if $mail_to;
 $iterations = $iterations // 1;
-my @markets_to_use = ("forex", "synthetic_index", "indices", "commodities");
-@markets_to_use = split(',', $markets) if ($markets);
-my %valid_markets = (
-    'forex'           => 1,
-    'synthetic_index' => 1,
-    'indices'         => 1,
-    'commodities'     => 1
+
+my $load_tester = BOM::Test::LoadTest::Proposal->new(
+    end_point => 'ws://127.0.0.1:5004',
+    app_id    => $app_id,
 );
 
-for (@markets_to_use) {
-    if (!defined($valid_markets{$_})) {
+my @valid_markets  = $load_tester->all_markets();
+my @markets_to_use = @valid_markets;
+@markets_to_use = split(',', $markets) if ($markets);
+
+for my $market (@markets_to_use) {
+    if (!grep { $market eq $_ } @valid_markets) {
         say 'Invalid Market Type: ' . $_;
         pod2usage({
             -verbose  => 99,

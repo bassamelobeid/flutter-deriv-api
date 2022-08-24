@@ -16,7 +16,7 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 test:
-	@$(PROVE) t/BOM t/bin
+	@$(PROVE) t/BOM
 
 syntax_diff:
 	@$(PROVE) --norc $$(ls t/*.t | grep -v syntax_all)

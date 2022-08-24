@@ -5,11 +5,11 @@ use Test::More;
 use Test::MockModule;
 use Test::MockTime qw(set_relative_time restore_time);
 use YAML::XS;
-use BOM::Test::LoadTest::Pricer qw(dd_memory_and_time);
+use BOM::Test::LoadTest::Util qw(dd_memory_and_time);
 
-my $mocked_loadtest = Test::MockModule->new('BOM::Test::LoadTest::Pricer');
+my $mocked_util = Test::MockModule->new('BOM::Test::LoadTest::Util');
 my @dd_data;
-$mocked_loadtest->mock('stats_gauge', sub { push @dd_data, \@_ });
+$mocked_util->mock('stats_gauge', sub { push @dd_data, \@_ });
 my @process_table;
 subtest 'dd_memory' => sub {
     my $mocked_process_table = Test::MockModule->new('Proc::ProcessTable');
