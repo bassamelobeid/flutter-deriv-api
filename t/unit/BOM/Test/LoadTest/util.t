@@ -17,11 +17,11 @@ subtest 'dd_memory' => sub {
     my @test_data = Load(do { local $/; <DATA> });
     @process_table = $test_data[0]->@*;
     @dd_data       = ();
-    BOM::Test::LoadTest::Pricer::dd_memory('market_name');
+    BOM::Test::LoadTest::Util::dd_memory('market_name');
     is_deeply(\@dd_data, $test_data[2], 'dd write correct');
     @dd_data       = ();
     @process_table = $test_data[1]->@*;
-    BOM::Test::LoadTest::Pricer::dd_memory();
+    BOM::Test::LoadTest::Util::dd_memory();
     is_deeply(\@dd_data, $test_data[3], 'dd write correct for second');
 };
 
@@ -29,10 +29,10 @@ subtest 'dd_time' => sub {
     my $time_interval = 100;
     set_relative_time(-$time_interval);
     @dd_data = ();
-    BOM::Test::LoadTest::Pricer::dd_time('market_name');
+    BOM::Test::LoadTest::Util::dd_time('market_name');
     is(scalar @dd_data, 0, "no datadog data at the first call");
     restore_time();
-    BOM::Test::LoadTest::Pricer::dd_time();
+    BOM::Test::LoadTest::Util::dd_time();
     is_deeply(\@dd_data, [['qaloadtest.time.market_name', $time_interval]], 'dd metric correct');
 };
 
