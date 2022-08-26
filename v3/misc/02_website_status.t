@@ -101,12 +101,9 @@ $t   = $t->send_ok({json => {forget => $uuid}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
 is $res->{forget}, 1, 'Successfully forgotten';
 
-# The followind does NOT work on travis, as rpc lauched as separate process
-# my $time_mock =  Test::MockModule->new('App::Config::Chronicle');
-# $time_mock->mock('refresh_interval', sub { -1 });
-
+# we set refresh_interval=>1 in bom-test/bin/binary_rpc_redis_for_test.pl
 # wait app-cconfig refresh
-sleep 11;
+sleep 1.1;
 $t   = $t->send_ok({json => {website_status => 1}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
 
