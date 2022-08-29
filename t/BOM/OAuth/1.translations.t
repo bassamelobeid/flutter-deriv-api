@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
 use BOM::User::TOTP;
-use BOM::Test::Email qw/ :no_event /;
+use BOM::Test::Email     qw/ :no_event /;
 use BOM::Platform::Email qw(send_email);
 
 my $redis = BOM::Config::Redis::redis_auth_write();

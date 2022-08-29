@@ -15,14 +15,14 @@ Implementation based on the following spec: https://wikijs.deriv.cloud/en/Backen
 =cut
 
 use DataDog::DogStatsd::Helper qw( stats_inc );
-use Digest::SHA qw( hmac_sha256_hex );
-use Digest::MD5 qw( md5_hex );
+use Digest::SHA                qw( hmac_sha256_hex );
+use Digest::MD5                qw( md5_hex );
 use Email::Valid;
 use Format::Util::Strings qw( defang );
 use JSON::MaybeXS;
 use JSON::WebToken;
 use List::Util qw( any none );
-use Log::Any qw( $log );
+use Log::Any   qw( $log );
 use Mojo::Base 'Mojolicious::Controller';
 use Syntax::Keyword::Try;
 use Text::Trim;

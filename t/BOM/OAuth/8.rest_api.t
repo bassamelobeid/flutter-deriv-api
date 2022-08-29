@@ -11,8 +11,8 @@ use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use JSON::MaybeUTF8 qw(encode_json_utf8);
-use Digest::SHA qw(hmac_sha256_hex);
+use JSON::MaybeUTF8                            qw(encode_json_utf8);
+use Digest::SHA                                qw(hmac_sha256_hex);
 use JSON::WebToken;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use BOM::Config::Redis;
@@ -36,7 +36,7 @@ sub _generate_app_id {
     $app->{app_id};
 }
 
-my $app_id = _generate_app_id('Test App', 'https://www.example.com/', ['read', 'trade', 'admin']);
+my $app_id             = _generate_app_id('Test App',   'https://www.example.com/',  ['read', 'trade', 'admin']);
 my $destination_app_id = _generate_app_id('Test App 2', 'https://www.example2.com/', ['read', 'trade']);
 
 # Create users
@@ -315,11 +315,7 @@ subtest 'login' => sub {
         },
         {
             Authorization => "Bearer $jwt_token",
-        }
-    )->status_is(400)->json_is(
-        '/error_code',
-        'INVALID_DATE_FIRST_CONTACT'
-    );
+        })->status_is(400)->json_is('/error_code', 'INVALID_DATE_FIRST_CONTACT');
 
     note "Blocked client ip";
     my $block_redis_key = "oauth::blocked_by_ip::$client_ip";
@@ -424,7 +420,7 @@ subtest 'login' => sub {
             })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
 
         is $redis->get('oauth::failure_count_by_user::' . $system_user->id), 1, 'Failure counter by user is incremented';
-        is $redis->get('oauth::failure_count_by_ip::127.0.0.1'), 1, 'Failure counter by ip is incremented';
+        is $redis->get('oauth::failure_count_by_ip::127.0.0.1'),             1, 'Failure counter by ip is incremented';
 
         note "Successful Login with ONE TIME PASSWORD";
         $post->(
@@ -549,8 +545,8 @@ subtest 'login' => sub {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'MISSING_ONE_TIME_PASSWORD');
 
-        ok $oneall_hit, 'OneAll API was hit';
-        ok $redis->get('ONE::ALL::TEMP::true'), 'OneAll response is cached';
+        ok $oneall_hit,                                'OneAll API was hit';
+        ok $redis->get('ONE::ALL::TEMP::true'),        'OneAll response is cached';
         ok $redis->ttl('ONE::ALL::TEMP::true') <= 600, 'OneAll cache expiration is 600 seconds';
 
         note "Wrong ONE TIME PASSWORD";
@@ -569,10 +565,10 @@ subtest 'login' => sub {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
         is $redis->get('oauth::failure_count_by_user::' . $social_user->id), 1, 'Failure counter by user is incremented';
-        is $redis->get('oauth::failure_count_by_ip::127.0.0.1'), 1, 'Failure counter by ip is incremented';
+        is $redis->get('oauth::failure_count_by_ip::127.0.0.1'),             1, 'Failure counter by ip is incremented';
 
-        ok !$oneall_hit, 'OneAll API was skipped';
-        ok $redis->get('ONE::ALL::TEMP::true'), 'OneAll response is still cached';
+        ok !$oneall_hit,                               'OneAll API was skipped';
+        ok $redis->get('ONE::ALL::TEMP::true'),        'OneAll response is still cached';
         ok $redis->ttl('ONE::ALL::TEMP::true') <= 600, 'OneAll cache expiration is 600 seconds (or less)';
 
         note "Successful social login with ONE TIME PASSWORD";
@@ -588,7 +584,7 @@ subtest 'login' => sub {
                 Authorization => "Bearer $jwt_token",
             })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->json_is('/social_type', 'login');
 
-        ok !$oneall_hit, 'OneAll API was skipped';
+        ok !$oneall_hit,                         'OneAll API was skipped';
         ok !$redis->get('ONE::ALL::TEMP::true'), 'OneAll response cache is deleted after successful login';
     };
 

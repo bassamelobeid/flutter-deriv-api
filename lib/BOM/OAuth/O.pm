@@ -13,7 +13,7 @@ use Format::Util::Strings qw( defang );
 use HTML::Entities;
 use HTTP::BrowserDetect;
 use List::Util qw( any first min );
-use Log::Any qw( $log );
+use Log::Any   qw( $log );
 use Mojo::Base 'Mojolicious::Controller';
 use Syntax::Keyword::Try;
 use Text::Trim;
@@ -29,9 +29,9 @@ use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::OAuth::Common;
 use BOM::OAuth::Helper;
-use BOM::OAuth::Static qw(get_message_mapping);
+use BOM::OAuth::Static     qw(get_message_mapping);
 use BOM::Platform::Context qw(localize request);
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email   qw(send_email);
 use BOM::User::AuditLog;
 
 sub authorize {

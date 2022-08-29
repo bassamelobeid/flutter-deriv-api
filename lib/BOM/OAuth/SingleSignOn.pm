@@ -11,9 +11,9 @@ use Mojo::Parameters;
 use URI;
 use Path::Tiny;
 use Format::Util::Strings qw( defang );
-use Digest::SHA qw(hmac_sha256_hex);
+use Digest::SHA           qw(hmac_sha256_hex);
 use Syntax::Keyword::Try;
-use Encode qw(encode);
+use Encode   qw(encode);
 use Log::Any qw($log);
 
 use BOM::User::Client;

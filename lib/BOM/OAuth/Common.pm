@@ -9,16 +9,16 @@ use Email::Valid;
 use Format::Util::Strings qw( defang );
 use HTTP::BrowserDetect;
 use List::Util qw( first min none any);
-use Log::Any qw($log);
+use Log::Any   qw($log);
 use Syntax::Keyword::Try;
 use Text::Trim;
 use Digest::MD5 qw( md5_hex );
 
 use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
-use BOM::OAuth::Static qw( get_message_mapping get_valid_device_types );
+use BOM::OAuth::Static     qw( get_message_mapping get_valid_device_types );
 use BOM::Platform::Context qw( localize request );
-use BOM::Platform::Email qw( send_email );
+use BOM::Platform::Email   qw( send_email );
 use BOM::User;
 use BOM::User::AuditLog;
 use BOM::Platform::Account::Virtual;
@@ -516,10 +516,9 @@ sub activate_accounts {
     # - social responsibility check is reqired (MLT and MX)
     # - real account with fiat currency
     # - real account with crypto currency
-    my $selected_account = (
-        first { $_->landing_company->social_responsibility_check && $_->landing_company->social_responsibility_check eq 'required' }
-        @$closed_clients
-    ) // (first { !$_->is_virtual && LandingCompany::Registry::get_currency_type($_->currency) eq 'fiat' } @$closed_clients)
+    my $selected_account =
+        (first { $_->landing_company->social_responsibility_check && $_->landing_company->social_responsibility_check eq 'required' }
+            @$closed_clients) // (first { !$_->is_virtual && LandingCompany::Registry::get_currency_type($_->currency) eq 'fiat' } @$closed_clients)
         // (first { !$_->is_virtual } @$closed_clients) // $closed_clients->[0];
 
     my $reason = $selected_account->status->closed->{reason} // '';
