@@ -17,7 +17,7 @@ use BOM::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Utility qw(master_live_server_error);
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email     qw(send_email);
 use BOM::Config::Runtime;
 use BOM::DailySummaryReport;
 

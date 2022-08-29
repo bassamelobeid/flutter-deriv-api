@@ -11,7 +11,7 @@ use HTML::Entities;
 use f_brokerincludeall;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();

@@ -10,7 +10,7 @@ use Duo::Web;
 use BOM::Config;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 use BOM::JavascriptConfig;
 
 BOM::Backoffice::Sysinit::init();

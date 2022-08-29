@@ -63,7 +63,7 @@ subtest "normalize_settings_data" => sub {
 
 subtest "textify_obj" => sub {
     is BOM::Cryptocurrency::DynamicSettings::textify_obj('ArrayRef', ['BTC', 'ETH']), 'BTC,ETH', 'Convert the array value to string';
-    is BOM::Cryptocurrency::DynamicSettings::textify_obj('Int', 1), 1, 'Return same value for non array value';
+    is BOM::Cryptocurrency::DynamicSettings::textify_obj('Int',      1),              1,         'Return same value for non array value';
 };
 
 subtest "get_display_value" => sub {

@@ -20,14 +20,14 @@ use f_brokerincludeall;
 
 use List::Util qw( min max );
 use JSON::MaybeXS;
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8       qw(:v1);
 use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use Finance::Contract::Longcode qw( shortcode_to_parameters );
+use Finance::Contract::Longcode   qw( shortcode_to_parameters );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_JSON );
-use BOM::Backoffice::Sysinit ();
-use Log::Any qw($log);
+use BOM::Backoffice::Sysinit      ();
+use Log::Any                      qw($log);
 BOM::Backoffice::Sysinit::init();
 
 # to complete a multiplier contract, we need limit order

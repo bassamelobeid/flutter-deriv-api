@@ -3,13 +3,13 @@ package main;
 
 use strict;
 use warnings;
-use open qw[ :encoding(UTF-8) ];
-use lib qw(/home/git/regentmarkets/bom-backoffice);
-use JSON::MaybeUTF8 qw(:v1);
+use open                     qw[ :encoding(UTF-8) ];
+use lib                      qw(/home/git/regentmarkets/bom-backoffice);
+use JSON::MaybeUTF8          qw(:v1);
 use BOM::Backoffice::Sysinit ();
 use Syntax::Keyword::Try;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
-use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Request          qw(request);
 use BOM::Backoffice::DividendSchedulerTool;
 
 BOM::Backoffice::Sysinit::init();

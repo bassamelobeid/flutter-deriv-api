@@ -13,13 +13,13 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsConfigHelper;
 use BOM::Backoffice::Utility qw(is_valid_date_time);
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email     qw(send_email);
 use BOM::Config::Runtime;
 use Brands;
 use Time::Duration::Concise;
 use Syntax::Keyword::Try;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
-use Storable qw(dclone);
+use Storable                          qw(dclone);
 
 BOM::Backoffice::Sysinit::init();
 my $json       = JSON::MaybeXS->new;

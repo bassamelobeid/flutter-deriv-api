@@ -9,7 +9,7 @@ use Syntax::Keyword::Try;
 use Date::Utility;
 use HTML::Entities;
 use Format::Util::Numbers qw/formatnumber/;
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util          qw(looks_like_number);
 use JSON::MaybeXS;
 
 use LandingCompany::Registry;
@@ -19,7 +19,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::ClientDB;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Utility;
-use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
 use BOM::User::AuditLog;

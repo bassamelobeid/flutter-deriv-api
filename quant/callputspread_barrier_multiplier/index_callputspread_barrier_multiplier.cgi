@@ -4,7 +4,7 @@ package main;
 
 use strict;
 use warnings;
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8          qw(:v1);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Request qw(request);
 

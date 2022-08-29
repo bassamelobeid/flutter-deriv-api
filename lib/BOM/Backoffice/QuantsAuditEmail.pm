@@ -4,9 +4,9 @@ use strict;
 use warnings;
 
 use Text::SimpleTable;
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email     qw(send_email);
 use BOM::Backoffice::Request qw(request);
-use JSON::MaybeUTF8 qw(encode_json_utf8);
+use JSON::MaybeUTF8          qw(encode_json_utf8);
 
 use parent 'Exporter';
 our @EXPORT_OK = qw(send_trading_ops_email);

@@ -334,14 +334,13 @@ sub code_for_account {
     for my $account (@$accounts) {
         next unless any { uc $_->{currency} eq 'ALL' || uc $_->{currency} eq uc $account->{currency} } @$codes;
         next unless any {
-            any { uc $_ eq 'ALL' || uc $_ eq uc $account->{residence} } $_->{country}->@*
-        }
-        @$codes;
+            any { uc $_ eq 'ALL' || uc $_ eq uc $account->{residence} }
+                $_->{country}->@*
+        } @$codes;
         next unless any {
-            (!$_->{start_date} || $account->{date_joined} >= $_->{start_date})
+                   (!$_->{start_date} || $account->{date_joined} >= $_->{start_date})
                 && (!$_->{expiry_date} || $account->{date_joined} <= $_->{expiry_date})
-        }
-        @$codes;
+        } @$codes;
         push @filtered_accounts, $account;
     }
 
@@ -356,13 +355,11 @@ sub code_for_account {
         next unless any {
             my $res = $_->{residence};
             any { uc $_ eq 'ALL' || uc $_ eq uc $res } $code->{country}->@*
-        }
-        @filtered_accounts;
+        } @filtered_accounts;
         next unless any {
-            (!$code->{start_date} || $_->{date_joined} >= $code->{start_date})
+                   (!$code->{start_date} || $_->{date_joined} >= $code->{start_date})
                 && (!$code->{expiry_date} || $_->{date_joined} <= $code->{expiry_date})
-        }
-        @filtered_accounts;
+        } @filtered_accounts;
         push @filtered_codes, $code;
     }
 

@@ -31,7 +31,7 @@ use Time::Duration::Concise::Localize;
 use Syntax::Keyword::Try;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
-use Finance::Contract::Longcode qw( shortcode_to_parameters );
+use Finance::Contract::Longcode   qw( shortcode_to_parameters );
 use BOM::MarketData::Types;
 use BOM::Backoffice::Request;
 use Date::Utility;

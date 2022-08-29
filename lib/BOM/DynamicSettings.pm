@@ -12,7 +12,7 @@ use Syntax::Keyword::Try;
 use feature 'state';
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber/;
-use Array::Utils qw(:all);
+use Array::Utils          qw(:all);
 use Date::Utility;
 use Scalar::Util;
 use List::Util qw(any max);
@@ -317,7 +317,7 @@ sub get_settings_by_group {
                 system.services.fraud_prevention
                 system.services.identity_verification
                 system.backoffice.crypto_cashier_api
-                )
+            )
         ],
         quant => [qw(
                 quants.commission.adjustment.global_scaling
@@ -341,12 +341,12 @@ sub get_settings_by_group {
                 quants.underlyings.suspend_early_sellback
                 quants.callputspreads.disable_sellback
                 quants.callputspreads.minimum_allowed_sellback_duration
-                )
+            )
         ],
         it => [qw(
                 cgi.allowed_languages
                 cgi.terms_conditions_versions
-                )
+            )
         ],
         payments => [qw(
                 payments.payment_limits
@@ -405,7 +405,7 @@ sub get_settings_by_group {
                 payments.autoapproval.cft.max_mt5_net_transfer
                 payments.p2p_withdrawal_limit
                 payments.p2p_deposits_lookback
-                )
+            )
         ],
         crypto => [qw(
                 system.suspend.cryptocashier
@@ -421,7 +421,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.limits.crypto_to_crypto
                 payments.transfer_between_accounts.limits.crypto_to_fiat
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
-                )
+            )
         ],
         compliance => [qw(
                 compliance.fake_names.corporate_patterns
@@ -431,7 +431,7 @@ sub get_settings_by_group {
                 compliance.sanctions.hmt_consolidated_url
                 compliance.enhanced_due_diligence.auto_lock
                 compliance.enhanced_due_diligence.auto_lock_threshold
-                )
+            )
         ],
         # these settings are configured in separate pages. No need to reconfigure them in Dynamic Settings/Others.
         exclude => [qw(
@@ -480,7 +480,7 @@ sub get_settings_by_group {
                 payments.p2p.transaction_verification_countries_all
                 payment_agents.initial_deposit_per_country
                 payments.payments_limit
-                )]};
+            )]};
 
     my $settings;
 
@@ -787,7 +787,7 @@ sub send_email_notification {
     push @message, "$disable_type: " . join(",", @different);
     push @message, "By $staff on " . Date::Utility->new->datetime;
 
-    my $brand = request()->brand;
+    my $brand      = request()->brand;
     my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
     send_email({

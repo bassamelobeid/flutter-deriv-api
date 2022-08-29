@@ -16,7 +16,7 @@ use Syntax::Keyword::Try;
 use f_brokerincludeall;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 use BOM::Config::Compliance;
 use BOM::Config::Chronicle;
 use BOM::DynamicSettings;

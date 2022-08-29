@@ -142,7 +142,7 @@ sub send_notification_email {
         "Reason: " . $limit->{name},
         );
     push @message, ("By " . $limit->{updated_by} . " on " . $limit->{updated_on});
-    my $brand = BOM::Config->brand();
+    my $brand      = BOM::Config->brand();
     my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
     send_email({

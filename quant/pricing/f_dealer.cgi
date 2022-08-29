@@ -20,14 +20,14 @@ use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::Config;
-use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Transaction::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use Finance::Contract::Longcode   qw(shortcode_to_parameters);
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -106,7 +106,8 @@ if (request()->param('whattodo') eq 'closeatzero') {
                     ) x @$fmbs
                 ],
                 bet_data => [
-                    map { {
+                    map {
+                        {
                             sell_price => 0,
                             sell_time  => $now->db_timestamp,
                             quantity   => $qty,

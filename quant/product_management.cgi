@@ -16,9 +16,9 @@ use f_brokerincludeall;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Request qw(request);
-use BOM::Backoffice::Sysinit ();
-use BOM::Backoffice::Utility qw(is_valid_time is_valid_date_time);
+use BOM::Backoffice::Request      qw(request);
+use BOM::Backoffice::Sysinit      ();
+use BOM::Backoffice::Utility      qw(is_valid_time is_valid_date_time);
 use BOM::DynamicSettings;
 use BOM::Config;
 use BOM::Platform::RiskProfile;
@@ -87,12 +87,7 @@ if ($r->param('update_limit')) {
                     }
                     $ref{$key} = $value;
                 }
-            } elsif (
-                first {
-                    $value eq $_
-                }
-                @{$known_values{$key}})
-            {
+            } elsif (first { $value eq $_ } @{$known_values{$key}}) {
                 $ref{$key} = $value;
             } else {
                 code_exit_BO("Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!");
@@ -359,7 +354,7 @@ sub send_notification_email {
         );
     push @message, ("By " . $limit->{updated_by} . " on " . $limit->{updated_on});
 
-    my $brand = request()->brand;
+    my $brand      = request()->brand;
     my $email_list = join ', ', map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
     send_email({

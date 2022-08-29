@@ -6,8 +6,8 @@ use Date::Utility;
 use Text::Trim qw(trim);
 use Syntax::Keyword::Try;
 use BOM::Database::ClientDB;
-use Scalar::Util qw(looks_like_number);
-use BOM::MarketData qw(create_underlying);
+use Scalar::Util              qw(looks_like_number);
+use BOM::MarketData           qw(create_underlying);
 use BOM::Config::QuantsConfig qw(get_mt5_symbols_mapping);
 
 =head1 Name

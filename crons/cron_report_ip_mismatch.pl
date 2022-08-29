@@ -16,7 +16,7 @@ use warnings;
 
 use BOM::Backoffice::Request;
 use BOM::Platform::Email qw(send_email);
-use JSON::MaybeXS qw{decode_json};
+use JSON::MaybeXS        qw{decode_json};
 use Date::Utility;
 use BOM::Config;
 use BOM::Config::Redis;

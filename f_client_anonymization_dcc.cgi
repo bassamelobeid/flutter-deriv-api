@@ -6,7 +6,7 @@ use warnings;
 use Date::Utility;
 use CGI;
 use Digest::SHA qw(sha1_hex);
-use Text::Trim qw(trim);
+use Text::Trim  qw(trim);
 
 BOM::Backoffice::Sysinit::init();
 use constant MAX_FILE_SIZE => 1024 * 1600;
@@ -53,8 +53,7 @@ if ($batch_file) {
 }
 #Logging
 
-my $message =
-    "The dual control code created by $clerk  (for a " . $input->{transtype} . ") for " . $input->{clientloginid}
+my $message = "The dual control code created by $clerk  (for a " . $input->{transtype} . ") for " . $input->{clientloginid}
     // $input->{bulk_loginids} . " is: $code This code is valid for 1 hour (from " . Date::Utility->new->datetime_ddmmmyy_hhmmss . ") only.";
 
 BOM::User::AuditLog::log($message, '', $clerk);

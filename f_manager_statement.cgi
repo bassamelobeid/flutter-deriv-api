@@ -14,12 +14,12 @@ use BOM::Transaction::Utility;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Backoffice::Request qw(request localize);
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use BOM::Backoffice::Request      qw(request localize);
+use Finance::Contract::Longcode   qw(shortcode_to_parameters);
 use BOM::Transaction;
 use HTML::Entities;
 use BOM::Backoffice::Sysinit ();
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8          qw(:v1);
 BOM::Backoffice::Sysinit::init();
 
 local $\ = "\n";

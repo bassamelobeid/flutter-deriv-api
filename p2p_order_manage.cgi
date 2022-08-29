@@ -5,8 +5,8 @@ use warnings;
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Request qw(request);
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Request      qw(request);
+use BOM::Backoffice::Sysinit      ();
 BOM::Backoffice::Sysinit::init();
 
 use BOM::Database::ClientDB;
@@ -15,7 +15,7 @@ use Date::Utility;
 use BOM::Config::Runtime;
 use BOM::Config;
 use BOM::Config::Redis;
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util          qw(looks_like_number);
 use Format::Util::Numbers qw(financialrounding);
 use BOM::Platform::Event::Emitter;
 use JSON::MaybeXS;
@@ -128,8 +128,8 @@ if (my $id = $input{order_id}) {
         $order->{$_}             = ucfirst($order->{$_}) for qw( type status advert_type);
         $order->{amount_display} = financialrounding('amount', $order->{account_currency}, $order->{amount});
         $order->{price_display}  = financialrounding('amount', $order->{local_currency},   $order->{rate} * $order->{amount});
-        $order->{$_} = sprintf('%.6f', $order->{$_}) + 0 for qw(rate advert_rate);
-        $escrow = get_escrow($broker, $order->{account_currency});
+        $order->{$_}             = sprintf('%.6f', $order->{$_}) + 0 for qw(rate advert_rate);
+        $escrow                  = get_escrow($broker, $order->{account_currency});
 
         my $client = BOM::User::Client->new({
             loginid      => $order->{client_loginid},

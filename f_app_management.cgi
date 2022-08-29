@@ -15,8 +15,8 @@ use LandingCompany;
 use Mojo::Redis2;
 use JSON::MaybeUTF8;
 use Syntax::Keyword::Try;
-use Scalar::Util qw(looks_like_number);
-use Log::Any qw($log);
+use Scalar::Util             qw(looks_like_number);
+use Log::Any                 qw($log);
 use BOM::Backoffice::Sysinit ();
 
 BOM::Backoffice::Sysinit::init();

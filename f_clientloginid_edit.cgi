@@ -12,12 +12,12 @@ use Digest::MD5;
 use Media::Type::Simple;
 use Date::Utility;
 use List::UtilsBy qw(rev_sort_by);
-use List::Util qw(none uniq);
+use List::Util    qw(none uniq);
 use LandingCompany::Registry;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
-use Format::Util::Numbers qw(financialrounding);
-use Scalar::Util qw(looks_like_number);
-use Log::Any qw($log);
+use Format::Util::Numbers  qw(financialrounding);
+use Scalar::Util           qw(looks_like_number);
+use Log::Any               qw($log);
 use f_brokerincludeall;
 
 use BOM::Config;
@@ -47,7 +47,7 @@ use BOM::Platform::S3Client;
 use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
 use BOM::User::Phone;
-use Log::Any qw($log);
+use Log::Any        qw($log);
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 
@@ -513,7 +513,7 @@ if ($input{whattodo} eq 'uploadID') {
                 ping => sub {
                     $_->selectrow_hashref(
                         'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        undef, $loginid, $doctype, $docformat, $expiration_date || undef,
+                        undef,        $loginid,       $doctype, $docformat, $expiration_date || undef,
                         $document_id, $file_checksum, $comments,
                         $page_type  || '',
                         $issue_date || undef,
@@ -1061,7 +1061,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
                     try {
                         $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
                     } catch ($e) {
-                        my $err = (split "\n", $e)[0];                                      #handle Date::Utility's confess() call
+                        my $err = (split "\n", $e)[0];    #handle Date::Utility's confess() call
                         print qq{<p class="notify notify--warning">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
                         next CLIENT_KEY;
                     }
@@ -1625,7 +1625,7 @@ for my $section_name (qw(trading_experience financial_information)) {
     my $is_financial_information = $section_name eq 'financial_information';
     my $show_edd_form            = $is_financial_information && !$client->is_virtual && $user_edd_status;
 
-    my $title = join ' ', map { ucfirst } split '_', $section_name;
+    my $title         = join ' ', map { ucfirst } split '_', $section_name;
     my $content_class = $show_edd_form ? 'grid2col border' : 'grid2col';
     Bar($title, {content_class => $content_class});
 

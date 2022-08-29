@@ -18,7 +18,7 @@ use Log::Any qw($log);
 
 use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
-use base qw( Exporter );
+use base                     qw( Exporter );
 
 our @EXPORT_OK = qw(
     http_redirect

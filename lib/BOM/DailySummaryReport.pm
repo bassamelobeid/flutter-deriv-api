@@ -12,7 +12,7 @@ use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::Transaction;
 use BOM::Transaction::Utility;
-use Log::Any qw($log);
+use Log::Any                    qw($log);
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 
 has save_file => (

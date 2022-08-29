@@ -3,7 +3,7 @@ package main;
 use strict;
 use warnings;
 use BOM::Config;
-use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
+use BOM::Backoffice::Config  qw/get_tmp_path_or_die/;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::User::Client::PaymentAgent;

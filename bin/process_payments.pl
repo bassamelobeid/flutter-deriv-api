@@ -9,7 +9,7 @@ use Date::Utility;
 use Brands;
 use HTML::Entities;
 use Format::Util::Numbers qw/formatnumber/;
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util          qw(looks_like_number);
 use Scope::Guard;
 
 use LandingCompany::Registry;
@@ -91,10 +91,8 @@ read_csv_row_and_callback(
     \@payment_lines,
     sub {
         my $cols_found = @_;
-        my (
-            $login_id, $action, $payment_type,      $payment_processor, $trace_id,
-            $currency, $amount, $statement_comment, $transaction_id,    $cols_expected
-        );
+        my ($login_id, $action, $payment_type, $payment_processor, $trace_id,
+            $currency, $amount, $statement_comment, $transaction_id, $cols_expected);
         if ($format eq 'doughflow') {
             ($login_id, $action, $trace_id, $payment_processor, $currency, $amount, $statement_comment, $transaction_id) = @_;
             $payment_type = 'external_cashier';

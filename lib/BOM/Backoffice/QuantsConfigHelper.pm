@@ -12,7 +12,7 @@ use Finance::Underlying;
 use LandingCompany::Registry;
 use Finance::Contract::Category;
 use Syntax::Keyword::Try;
-use YAML::XS qw(LoadFile);
+use YAML::XS   qw(LoadFile);
 use List::Util qw(uniq);
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;

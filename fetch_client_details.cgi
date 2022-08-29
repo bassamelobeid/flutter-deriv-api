@@ -10,7 +10,7 @@ Handles AJAX requests for client details.
 use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
-use lib qw(/home/git/regentmarkets/bom-backoffice);
+use lib  qw(/home/git/regentmarkets/bom-backoffice);
 
 use JSON::MaybeXS;
 use BOM::Backoffice::Sysinit ();

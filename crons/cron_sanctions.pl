@@ -15,7 +15,7 @@ use BOM::Config;
 use BOM::Config::Redis;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use Log::Any::Adapter qw(DERIV);
 
 use constant LAST_CRON_SANCTIONS_CHECK_RUN_KEY => 'LAST_CRON_SANCTIONS_CHECK_RUN';

@@ -8,15 +8,15 @@ no indirect;
 use Text::Trim qw( trim );
 use Locale::Country;
 use f_brokerincludeall;
-use List::Util qw( max );
+use List::Util                       qw( max );
 use ExchangeRates::CurrencyConverter qw( in_usd );
-use Format::Util::Numbers qw( formatnumber );
+use Format::Util::Numbers            qw( formatnumber );
 
 use BOM::User::Client;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Request qw( request );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Request      qw( request );
+use BOM::Backoffice::Sysinit      ();
 use BOM::Config;
 use BOM::Cryptocurrency::BatchAPI;
 use BOM::Cryptocurrency::Helper qw(render_message has_manual_credit);
@@ -160,7 +160,7 @@ my $prepare_transaction = sub {
         };
     }
 
-    push @batch_requests, {        # Request for transaction list
+    push @batch_requests, {    # Request for transaction list
         id     => $txn_type . '_list',
         action => 'transaction/get_list',
         body   => {

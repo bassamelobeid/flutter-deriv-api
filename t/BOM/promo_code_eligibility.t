@@ -161,7 +161,8 @@ $mock_aff->mock(
         note 'mocking get_users';
         return {
             USER => [
-                map { {
+                map {
+                    {
                         ID             => $_,
                         USER_VARIABLES => {
                             VARIABLE => [{
@@ -179,10 +180,10 @@ subtest 'affiliate promo for all countries' => sub {
     BOM::Backoffice::PromoCodeEligibility::approve_all();
     is client_promo('user1_c1')->{promotion_code}, 'PROMO1',   'Promo matches ALL country';
     is client_promo('user1_c1')->{status},         'APPROVAL', 'Welcome promo is approved';
-    is client_promo('user1_c2'), undef, 'Crypto client has no promo';
+    is client_promo('user1_c2'),                   undef,      'Crypto client has no promo';
     is client_promo('user2_c1')->{promotion_code}, 'PROMO1',   'MF account chosen for promo';
     is client_promo('user2_c1')->{status},         'APPROVAL', 'Welcome promo is approved';
-    is client_promo('user2_c2'), undef, 'MLT account not chosen for promo';
+    is client_promo('user2_c2'),                   undef,      'MLT account not chosen for promo';
 };
 
 subtest 'affiliate promo for select countries' => sub {
@@ -199,7 +200,7 @@ subtest 'multiple affiliate promos' => sub {
     BOM::Backoffice::PromoCodeEligibility::approve_all();
     is client_promo('user1_c1')->{promotion_code}, 'PROMO4',   'Promo will longest expiry is applied';
     is client_promo('user1_c1')->{status},         'APPROVAL', 'Welcome promo is approved';
-    is client_promo('user1_c2'), undef, 'Crypto client has no promo';
+    is client_promo('user1_c2'),                   undef,      'Crypto client has no promo';
 };
 
 subtest 'GET_X_WHEN_DEPOSIT_Y promo approval' => sub {
@@ -210,7 +211,7 @@ subtest 'GET_X_WHEN_DEPOSIT_Y promo approval' => sub {
     BOM::Backoffice::PromoCodeEligibility::approve_all();
     is client_promo('user1_c1')->{promotion_code}, 'PROMO6',    'Deposit promo applied';
     is client_promo('user1_c1')->{status},         'NOT_CLAIM', 'Deposit promo not approved';
-    is client_promo('user1_c2'), undef, 'Crypto client has no promo';
+    is client_promo('user1_c2'),                   undef,       'Crypto client has no promo';
     is client_promo('user2_c1')->{promotion_code}, 'PROMO6',    'Deposit promo applied';
     is client_promo('user2_c1')->{status},         'NOT_CLAIM', 'Deposit promo not approved';
 

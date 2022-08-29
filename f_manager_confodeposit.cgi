@@ -17,7 +17,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Request      qw(request);
 use BOM::User::AuditLog;
 use BOM::ContractInfo;
 use BOM::Backoffice::Config;

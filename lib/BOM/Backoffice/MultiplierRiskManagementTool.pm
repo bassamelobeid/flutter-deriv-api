@@ -5,7 +5,7 @@ use warnings;
 use Date::Utility;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
-use Text::Trim qw(trim);
+use Text::Trim                        qw(trim);
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 use Syntax::Keyword::Try;
 

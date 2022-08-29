@@ -7,7 +7,7 @@ use Date::Manip;
 use JSON::MaybeXS;
 use List::Util qw( min max );
 use Cache::RedisDB;
-use Format::Util::Numbers qw/roundcommon financialrounding/;
+use Format::Util::Numbers            qw/roundcommon financialrounding/;
 use ExchangeRates::CurrencyConverter qw/in_usd/;
 
 use LandingCompany::Registry;

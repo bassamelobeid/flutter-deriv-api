@@ -5,7 +5,7 @@ use warnings;
 use HTTP::Tiny;
 use List::Util qw(first any none reduce sum);
 use HTML::TreeBuilder;
-use Digest::SHA1 qw(sha1_hex);
+use Digest::SHA1           qw(sha1_hex);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Context::Request;
 use BOM::Config;
@@ -13,7 +13,7 @@ use Encode qw(encode_utf8);
 use Text::Trim;
 use Syntax::Keyword::Try;
 use JSON::MaybeUTF8 qw(:v1);
-use Log::Any qw($log);
+use Log::Any        qw($log);
 use Time::HiRes;
 
 use constant {
@@ -482,10 +482,9 @@ Returns true if the node is block element that cannot appear inline in text.
 
 sub is_block {
     my $node = shift;
-    return (
-        ref($node)
+    return (ref($node)
             and any { $node->tag eq $_ }
-        qw(address article aside blockquote canvas dd div dl dt fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header hr li main nav noscript ol p pre section table td tfoot tr ul video)
+            qw(address article aside blockquote canvas dd div dl dt fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header hr li main nav noscript ol p pre section table td tfoot tr ul video)
     );
 }
 

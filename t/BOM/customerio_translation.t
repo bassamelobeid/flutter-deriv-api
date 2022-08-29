@@ -174,10 +174,9 @@ subtest 'email parsing' => sub {
 
     for my $string ($res->{strings}->@*) {
         lives_ok {
-            is BOM::Platform::Context::localize($string->{loc_text}, $string->{placeholders}->@*), $string->{orig_text},
-                'square brackets localized properly'
-        }
-        'localize square brackets had no error';
+            is BOM::Platform::Context::localize($string->{loc_text}, $string->{placeholders}->@*),
+                $string->{orig_text}, 'square brackets localized properly'
+        } 'localize square brackets had no error';
     }
 
     cmp_deeply(

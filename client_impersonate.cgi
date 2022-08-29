@@ -10,7 +10,7 @@ use BOM::Backoffice::Auth0;
 use BOM::Database::Model::OAuth;
 use BOM::User::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 BOM::Backoffice::Sysinit::init();
 
 # hard-coding the app names because CS team needs them to be as below

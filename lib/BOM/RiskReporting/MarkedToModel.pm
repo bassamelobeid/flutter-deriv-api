@@ -26,14 +26,14 @@ use Email::Address::UseXS;
 use Email::Stuffer;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
-use Finance::Contract::Longcode qw( shortcode_to_parameters );
+use Finance::Contract::Longcode   qw( shortcode_to_parameters );
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Config;
 use DataDog::DogStatsd::Helper qw( stats_gauge );
 use BOM::Transaction;
 use BOM::Transaction::Utility;
 use List::Util qw(max);
-use Log::Any qw($log);
+use Log::Any   qw($log);
 
 use constant SECONDS_PAST_CONTRACT_EXPIRY => 15;
 

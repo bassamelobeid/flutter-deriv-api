@@ -25,7 +25,7 @@ sub process_dividend {
     save_dividends($data);
 
     my $number_of_underlyings_processed = scalar keys %$data;
-    my $skipped_string = join ',', @$skipped;
+    my $skipped_string                  = join ',', @$skipped;
     my $success_msg =
         '<p class="success">Processed dividends for ' . $number_of_underlyings_processed . ' underlyings. Skipped [' . $skipped_string . ']</p>';
 

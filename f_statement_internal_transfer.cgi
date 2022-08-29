@@ -11,15 +11,15 @@ use f_brokerincludeall;
 use HTML::Entities;
 use Date::Utility;
 use YAML::XS;
-use List::Util qw(max);
+use List::Util                       qw(max);
 use ExchangeRates::CurrencyConverter qw(in_usd);
-use Format::Util::Numbers qw(formatnumber);
+use Format::Util::Numbers            qw(formatnumber);
 use Syntax::Keyword::Try;
 
 use BOM::User::Client;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Request      qw(request);
 use BOM::Database::ClientDB;
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();

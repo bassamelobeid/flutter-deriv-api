@@ -58,7 +58,7 @@ foreach my $currency_code (@all_cryptos) {
                     sweep_min_transfer
                     sweep_reserve_balance
                     parent_currency
-                    }
+                }
             ],
         },
     };

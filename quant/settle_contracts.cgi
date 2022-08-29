@@ -18,9 +18,9 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Config::Runtime;
-use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 use BOM::Backoffice::Cookie;
 BOM::Backoffice::Sysinit::init();
 

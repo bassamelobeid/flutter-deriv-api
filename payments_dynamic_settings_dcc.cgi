@@ -6,7 +6,7 @@ use warnings;
 use Date::Utility;
 use CGI;
 use Digest::SHA qw(sha1_hex);
-use Text::Trim qw(trim);
+use Text::Trim  qw(trim);
 
 BOM::Backoffice::Sysinit::init();
 use constant MAX_FILE_SIZE => 1024 * 1600;

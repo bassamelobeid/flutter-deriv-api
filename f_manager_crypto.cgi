@@ -8,8 +8,8 @@ no indirect;
 use Date::Utility;
 use Format::Util::Numbers qw/financialrounding formatnumber commas/;
 use HTML::Entities;
-use List::UtilsBy qw(sort_by extract_by);
-use POSIX ();
+use List::UtilsBy                    qw(sort_by extract_by);
+use POSIX                            ();
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use YAML::XS;
 use Math::BigFloat;
@@ -25,8 +25,8 @@ use Brands;
 use f_brokerincludeall;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
-use BOM::Backoffice::Request qw(request);
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Request      qw(request);
+use BOM::Backoffice::Sysinit      ();
 use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 use BOM::Config;
 use BOM::Cryptocurrency::Helper qw(render_message has_manual_credit);
@@ -144,7 +144,7 @@ push @batch_requests, {
                 sweep_max_transfer
                 sweep_min_transfer
                 sweep_reserve_balance
-                }
+            }
         ],
     },
 };

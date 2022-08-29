@@ -10,7 +10,7 @@ use Syntax::Keyword::Try;
 
 use BOM::User::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 BOM::Backoffice::Sysinit::init();
 
 sub success { return '<span class="success">SUCCESS:</span>&nbsp;' . shift . '</b>' }

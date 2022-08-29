@@ -4,8 +4,8 @@ use Test::More;
 
 use BOM::RiskReporting::Dashboard;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
+use BOM::Test::Helper::ExchangeRates                    qw/populate_exchange_rates/;
 use LandingCompany::Registry;
 use Date::Utility;
 

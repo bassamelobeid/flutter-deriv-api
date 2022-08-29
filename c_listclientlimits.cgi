@@ -9,7 +9,7 @@ use BOM::User::Client;
 use HTML::Entities;
 use BOM::Database::DataMapper::Account;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();

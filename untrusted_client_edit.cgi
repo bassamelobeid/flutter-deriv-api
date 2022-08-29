@@ -9,7 +9,7 @@ use HTML::Entities;
 use Syntax::Keyword::Try;
 use BOM::Platform::Token::API;
 use BOM::Platform::Event::Emitter;
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email          qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();

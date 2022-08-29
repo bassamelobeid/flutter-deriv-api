@@ -5,7 +5,7 @@ use strict;
 
 use Mojo::UserAgent;
 use JSON::MaybeUTF8 qw(:v1);
-use List::Util qw(any);
+use List::Util      qw(any);
 
 use BOM::Config::Runtime;
 use BOM::Config;

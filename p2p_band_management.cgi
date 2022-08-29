@@ -5,8 +5,8 @@ use warnings;
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Request qw(request);
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Request      qw(request);
+use BOM::Backoffice::Sysinit      ();
 BOM::Backoffice::Sysinit::init();
 
 use BOM::Database::ClientDB;
@@ -29,7 +29,7 @@ my $db = BOM::Database::ClientDB->new({
     })->db->dbic;
 
 my %countries_list = request()->brand->countries_instance->countries_list->%*;
-my @countries = map { {code => $_, name => $countries_list{$_}{name}} }
+my @countries      = map { {code => $_, name => $countries_list{$_}{name}} }
     sort { $countries_list{$a}{name} cmp $countries_list{$b}{name} } keys %countries_list;
 
 my @currencies = sort @{request()->available_currencies};

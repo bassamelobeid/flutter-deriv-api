@@ -12,7 +12,7 @@ use BOM::User::Client;
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 use BOM::User::AuditLog;
 use BOM::DualControl;
 use BOM::Backoffice::Config;

@@ -8,7 +8,7 @@ use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use JSON::MaybeXS;
 use Syntax::Keyword::Try;
-use List::Util qw(max);
+use List::Util   qw(max);
 use Scalar::Util qw(looks_like_number);
 use Date::Utility;
 

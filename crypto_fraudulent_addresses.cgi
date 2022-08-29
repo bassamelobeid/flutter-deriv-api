@@ -6,9 +6,9 @@ use warnings;
 
 use Text::Trim qw(trim);
 use f_brokerincludeall;
-use JSON::MaybeUTF8 qw(decode_json_utf8);
+use JSON::MaybeUTF8               qw(decode_json_utf8);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 use BOM::Cryptocurrency::BatchAPI;
 BOM::Backoffice::Sysinit::init();
 use POSIX;

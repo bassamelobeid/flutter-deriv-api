@@ -4,9 +4,9 @@ package main;
 use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
-use lib qw(/home/git/regentmarkets/bom-backoffice);
+use lib  qw(/home/git/regentmarkets/bom-backoffice);
 
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8          qw(:v1);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
 use BOM::Backoffice::Auth0;
@@ -17,12 +17,12 @@ use Date::Utility;
 use BOM::Backoffice::Request qw(request);
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
-use Digest::MD5 qw(md5_hex);
-use Text::Trim qw(trim);
+use Digest::MD5  qw(md5_hex);
+use Text::Trim   qw(trim);
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
-use Log::Any qw($log);
+use Log::Any                          qw($log);
 use BOM::Backoffice::MultiplierRiskManagementTool;
 
 BOM::Backoffice::Sysinit::init();

@@ -8,7 +8,7 @@ use Bloomberg::BloombergCalendar;
 use File::Temp ();
 use File::Copy;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 BOM::Backoffice::Sysinit::init();
 use BOM::Config::Chronicle;
 use Date::Utility;

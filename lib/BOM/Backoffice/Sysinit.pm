@@ -9,13 +9,13 @@ use List::MoreUtils qw( any );
 use Path::Tiny;
 use Plack::App::CGIBin::Streaming;
 use Time::HiRes ();
-use Log::Any qw($log);
+use Log::Any    qw($log);
 
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Request qw(request localize);
+use BOM::Backoffice::Request      qw(request localize);
 use BOM::Backoffice::Request::Base;
 use BOM::Config::Chronicle;
 use BOM::Config;
@@ -195,7 +195,7 @@ sub init {
 
         my $timeout = 1800;
 
-        $SIG{ALRM} = sub {                            ## no critic (RequireLocalizedPunctuationVars)
+        $SIG{ALRM} = sub {    ## no critic (RequireLocalizedPunctuationVars)
             my $runtime = time - $^T;
 
             $log->warn("Panic timeout after $runtime seconds");

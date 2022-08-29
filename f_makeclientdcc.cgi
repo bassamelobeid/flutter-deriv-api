@@ -6,7 +6,7 @@ use warnings;
 use HTML::Entities;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 use BOM::Backoffice::Cookie;
 use BOM::User::AuditLog;
 use BOM::DualControl;

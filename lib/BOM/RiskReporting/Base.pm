@@ -22,7 +22,7 @@ use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;
-use Log::Any qw($log);
+use Log::Any              qw($log);
 use Syntax::Keyword::Try;
 
 local $\ = undef;    # Sigh.

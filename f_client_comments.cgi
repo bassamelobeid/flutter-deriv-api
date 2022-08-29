@@ -7,7 +7,7 @@ use HTML::Entities;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType http_redirect );
 use JSON::MaybeXS;
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8          qw(:v1);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Cookie;
 use BOM::User::AuditLog;

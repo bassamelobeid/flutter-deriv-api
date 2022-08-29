@@ -5,9 +5,9 @@ use warnings;
 use Syntax::Keyword::Try;
 use Date::Utility;
 use BOM::User::Client;
-use BOM::Backoffice::Request qw(request);
+use BOM::Backoffice::Request      qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Sysinit      ();
 use BOM::Database::ClientDB;
 use BOM::MyAffiliates;
 use BOM::Backoffice::PromoCodeEligibility;
@@ -94,7 +94,7 @@ my $statuses = join '/', map { uc } @{$client->status->all};
 if (my $statuses = build_client_warning_message($loginid)) {
     print $statuses;
 }
-my $name = $client->full_name;
+my $name        = $client->full_name;
 my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
 Bar("CLIENT " . $client_info);
 
