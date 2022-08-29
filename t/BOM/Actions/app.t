@@ -9,7 +9,7 @@ use Test::MockModule;
 use WebService::Async::Segment::Customer;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context                     qw(request);
 use BOM::Platform::Context::Request;
 use BOM::User;
 use BOM::Event::Process;

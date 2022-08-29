@@ -36,8 +36,8 @@ undef @track_args;
 BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client => $client});
 my $msg = mailbox_search(to => $client->email);
 
-is $msg, undef, 'no email sent if client has allow_document_upload for other reason';
-is scalar @track_args, 0, 'no track events sent';
+is $msg,               undef, 'no email sent if client has allow_document_upload for other reason';
+is scalar @track_args, 0,     'no track events sent';
 
 $client->status->clear_allow_document_upload;
 $client->status->set('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
@@ -47,8 +47,8 @@ undef @track_args;
 BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid});
 $msg = mailbox_search(to => $client->email);
 
-is $msg, undef, 'no email sent if client is not approved';
-is scalar @track_args, 0, 'no track events sent';
+is $msg,               undef, 'no email sent if client is not approved';
+is scalar @track_args, 0,     'no track events sent';
 
 $client->status->set('age_verification', 'system', 'manually set');
 $client->p2p_advertiser_create(name => 'bob');
@@ -58,11 +58,11 @@ undef @track_args;
 BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid});
 $msg = mailbox_search(to => $client->email);
 
-is $msg->{subject}, 'You can now use Deriv P2P', 'email received - subject';
-is scalar @track_args, 1, 'track event sent';
+is $msg->{subject},    'You can now use Deriv P2P', 'email received - subject';
+is scalar @track_args, 1,                           'track event sent';
 
 my $event = $track_args[0];
-is $event->{event}, 'p2p_advertiser_approved', 'event fired - event name';
-is $event->{properties}{loginid}, $client->loginid, 'event fired - loginid';
+is $event->{event},               'p2p_advertiser_approved', 'event fired - event name';
+is $event->{properties}{loginid}, $client->loginid,          'event fired - loginid';
 
 done_testing();

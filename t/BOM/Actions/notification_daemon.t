@@ -10,7 +10,7 @@ use Test::Exception;
 use Syntax::Keyword::Try;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Test::Helper::Client qw(create_client);
+use BOM::Test::Helper::Client     qw(create_client);
 use BOM::Event::NotificationsService;
 
 use constant SEPARATOR                 => '::';

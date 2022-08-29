@@ -59,10 +59,10 @@ subtest 'crypto_cashier_transaction_updated' => sub {
         );
 
         BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated($txn_info);
-        is_deeply $p_txn_info,     $expected_txn_info,      'Correct txn_info parameter';
-        is_deeply $p_txn_metadata, $expected_txn_metadata,  'Correct txn_metadata parameter';
-        is $redis_key,             $expected_redis_key,     'Correct Redis channel key';
-        is_deeply $message,        $expected_redis_message, 'Correct published message';
+        is_deeply $p_txn_info,     $expected_txn_info,     'Correct txn_info parameter';
+        is_deeply $p_txn_metadata, $expected_txn_metadata, 'Correct txn_metadata parameter';
+        is $redis_key, $expected_redis_key, 'Correct Redis channel key';
+        is_deeply $message, $expected_redis_message, 'Correct published message';
 
         $mocked_redis->unmock_all;
     };

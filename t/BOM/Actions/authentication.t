@@ -16,8 +16,8 @@ use BOM::Platform::Context;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::Utility qw(random_email_address);
-use JSON::MaybeUTF8 qw(decode_json_utf8);
+use BOM::Test::Helper::Utility                 qw(random_email_address);
+use JSON::MaybeUTF8                            qw(decode_json_utf8);
 use BOM::Event::Actions::Authentication;
 
 subtest 'bulk_authentication' => sub {

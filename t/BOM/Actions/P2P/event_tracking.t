@@ -10,7 +10,7 @@ use BOM::Test::Helper::P2P;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context                     qw(request);
 use BOM::Platform::Context::Request;
 use BOM::Config::Runtime;
 use Brands;
@@ -61,7 +61,7 @@ subtest 'p2p order event validation' => sub {
     undef @identify_args;
     undef @track_args;
 
-    is $handler->({})->get, 0, 'retruns zero on error';
+    is $handler->({})->get,   0, 'retruns zero on error';
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    0, 'Segment track is not called';
 

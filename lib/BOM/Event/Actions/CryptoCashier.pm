@@ -17,7 +17,7 @@ use BOM::Config::Redis;
 use BOM::Platform::Event::Emitter;
 
 use JSON::MaybeUTF8 qw(encode_json_utf8);
-use Log::Any qw($log);
+use Log::Any        qw($log);
 use Syntax::Keyword::Try;
 
 use constant {

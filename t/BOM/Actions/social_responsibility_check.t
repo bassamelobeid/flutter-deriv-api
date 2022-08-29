@@ -8,7 +8,7 @@ use Test::MockModule;
 use Test::Exception;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 use BOM::Test::Email;
 
 use BOM::User::Client;

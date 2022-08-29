@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use Log::Any qw($log);
+use Log::Any    qw($log);
 use Time::HiRes qw(time sleep);
 use DateTime;
 use Getopt::Long;

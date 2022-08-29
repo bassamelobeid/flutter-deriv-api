@@ -7,7 +7,7 @@ use Test::Fatal;
 use Time::Moment;
 
 use Log::Any::Test;
-use Log::Any qw($log);
+use Log::Any                                   qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Event::Actions::MT5;
@@ -16,7 +16,7 @@ use BOM::User;
 use DataDog::DogStatsd::Helper;
 use BOM::Platform::Context qw(localize request);
 use BOM::Event::Process;
-use BOM::Test::Email qw(mailbox_clear mailbox_search);
+use BOM::Test::Email   qw(mailbox_clear mailbox_search);
 use BOM::User::Utility qw(parse_mt5_group);
 
 my $brand = Brands->new(name => 'deriv');
@@ -322,9 +322,9 @@ subtest 'sanctions' => sub {
     is scalar @sanct_args, 0, 'sanctions are not included in signup actions';
 
     $lc_actions = {signup => [qw(sanctions)]};
-    is $action_handler->($args)->get, 1, 'Success mt5 new account result';
-    is scalar @sanct_args, 5, 'sanction check is called, because it is included in signup actions';
-    is ref($sanct_args[0]), 'BOM::Platform::Client::Sanctions', 'Sanctions object type is correct';
+    is $action_handler->($args)->get, 1,                                  'Success mt5 new account result';
+    is scalar @sanct_args,            5,                                  'sanction check is called, because it is included in signup actions';
+    is ref($sanct_args[0]),           'BOM::Platform::Client::Sanctions', 'Sanctions object type is correct';
     ok $sanct_args[0]->recheck_authenticated_clients, 'recheck for authenticated clients is enabled';
     shift @sanct_args;
     is_deeply \@sanct_args,

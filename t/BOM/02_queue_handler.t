@@ -8,7 +8,7 @@ use Test::Warn;
 use Log::Any::Test;
 use Log::Any qw($log);
 use Log::Any::Adapter (qw(Stderr), log_level => 'warn');
-use JSON::MaybeUTF8 qw(decode_json_utf8 decode_json_text);
+use JSON::MaybeUTF8                         qw(decode_json_utf8 decode_json_text);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Config::Redis;
 use Future::AsyncAwait;

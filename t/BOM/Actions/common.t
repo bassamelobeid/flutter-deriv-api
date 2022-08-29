@@ -291,7 +291,7 @@ subtest 'set_age_verification' => sub {
                 undef @emissions;
             } else {
                 ok !$client->status->age_verification, 'Age status not verified';
-                ok !exists $emissions[0], 'Verified notitication not sent to CR client';
+                ok !exists $emissions[0],              'Verified notitication not sent to CR client';
             }
 
             if ($side_effects->{df_deposit_requires_poi}) {
@@ -299,7 +299,7 @@ subtest 'set_age_verification' => sub {
                 ok $client_mlt->status->df_deposit_requires_poi, 'DF deposit lock is there';
                 ok $vr->status->df_deposit_requires_poi,         'DF deposit lock is there';
             } else {
-                ok !$client->status->df_deposit_requires_poi,     'DF deposit lock is gone';
+                ok !$client->status->df_deposit_requires_poi, 'DF deposit lock is gone';
                 ok !$client_mlt->status->df_deposit_requires_poi, 'DF deposit lock is gone'
                     if scalar @$mocked_allowed_landing_companies_for_age_verification_sync;
                 ok !$vr->status->df_deposit_requires_poi, 'DF deposit lock is gone';
@@ -339,7 +339,7 @@ subtest 'set_age_verification' => sub {
 };
 
 subtest 'trigger_cio_broadcast' => sub {
-    is BOM::Event::Actions::Common::trigger_cio_broadcast({}), 0, 'no campaign_id';
+    is BOM::Event::Actions::Common::trigger_cio_broadcast({}),                 0, 'no campaign_id';
     is BOM::Event::Actions::Common::trigger_cio_broadcast({campaign_id => 1}), 0, 'no user ids';
 
     my $cio_mock = Test::MockModule->new('BOM::Event::Actions::CustomerIO');

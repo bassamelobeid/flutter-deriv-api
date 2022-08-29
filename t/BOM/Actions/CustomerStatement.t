@@ -4,12 +4,12 @@ use utf8;
 
 use BOM::Database::DataMapper::Transaction;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::User::Password;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::MarketData qw(create_underlying);
-use BOM::Platform::Context qw (localize);
+use BOM::MarketData               qw(create_underlying);
+use BOM::Platform::Context        qw (localize);
 
 use BOM::Transaction;
 use BOM::Transaction::History qw(get_transaction_history);
@@ -294,8 +294,8 @@ subtest 'client with payments, trades and P2P' => sub {
         overview     => [['^0\.00$', '^50100\.00$', '^\-2074.00', '^\-614\.00$', '^0\.00$', '47412\.00$', '^47886.00$']],
         close_trades => [[
                 $date_format, '\d+',
-                '^sell$',    'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after contract start time.',
-                '^100\.00$', '^0\.00$', '^200\.00$', '^0\.00$'
+                '^sell$',     'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after contract start time.',
+                '^100\.00$',  '^0\.00$', '^200\.00$', '^0\.00$'
             ],
             [
                 '2014-10-21 \d{2}:\d{2}:\d{2}',

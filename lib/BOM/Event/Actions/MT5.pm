@@ -9,7 +9,7 @@ use Log::Any qw($log);
 
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw(localize request);
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email   qw(send_email);
 use BOM::User::Client;
 use BOM::User::Utility qw(parse_mt5_group);
 use BOM::MT5::User::Async;

@@ -7,7 +7,7 @@ use BOM::Event::Services::Track;
 use BOM::Platform::Client::Sanctions;
 use BOM::User::Client;
 use BOM::Platform::Context qw(request);
-use List::Util qw(any);
+use List::Util             qw(any);
 
 =head1 NAME
 

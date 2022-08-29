@@ -4,7 +4,7 @@ package BOM::Event::Utility;
 use strict;
 use warnings;
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use Exporter qw(import);
+use Exporter                   qw(import);
 our @EXPORT_OK = qw(try_logged exception_logged);
 use Syntax::Keyword::Try;
 use constant GENERIC_DD_STATS_KEY => 'bom.events.exception';

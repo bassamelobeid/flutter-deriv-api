@@ -48,7 +48,7 @@ subtest 'Event processing return value' => sub {
 
     BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'buyer-confirmed');
     ok $client->broker_code, 'Client have a broker code';
-    ok $order->{id}, 'We have an order id';
+    ok $order->{id},         'We have an order id';
 
     ok !BOM::Event::Actions::P2P::dispute_expired({
             broker_code => $client->broker_code,

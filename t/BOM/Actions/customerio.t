@@ -37,7 +37,7 @@ subtest 'trigger broadcast' => sub {
 
     $cio->trigger_broadcast_by_ids(2, \@ids,)->get;
 
-    is scalar @activations, 2, 'more than 9999 ids split into 2 triggers';
+    is scalar @activations,                    2,    'more than 9999 ids split into 2 triggers';
     is scalar $activations[0]->[0]->{ids}->@*, 9999, 'first trigger has 9999 ids';
     is scalar $activations[1]->[0]->{ids}->@*, 1,    'second trigger has 1 id';
 };

@@ -6,7 +6,7 @@ use warnings;
 use Future;
 use Future::AsyncAwait;
 use List::Util qw( uniqstr );
-use Log::Any qw( $log );
+use Log::Any   qw( $log );
 use Syntax::Keyword::Try;
 
 use BOM::User;
@@ -23,7 +23,7 @@ use BOM::Platform::Token::API;
 use IO::Async::Loop;
 use BOM::Event::Services;
 use LandingCompany::Registry;
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email       qw(send_email);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
 # Load Brands object globally

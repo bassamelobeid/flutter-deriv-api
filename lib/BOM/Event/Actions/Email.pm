@@ -8,7 +8,7 @@ no indirect;
 use Log::Any qw($log);
 
 use BOM::Platform::Context qw(request localize);
-use BOM::Platform::Email qw(process_send_email);
+use BOM::Platform::Email   qw(process_send_email);
 use BOM::Event::Services;
 use BOM::Event::Services::Track;
 

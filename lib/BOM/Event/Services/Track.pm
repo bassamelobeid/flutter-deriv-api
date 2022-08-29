@@ -11,8 +11,8 @@ use Locale::Country qw(code2country);
 use Time::Moment;
 use Date::Utility;
 use Brands;
-use List::Util qw(first any uniq);
-use Storable qw(dclone);
+use List::Util            qw(first any uniq);
+use Storable              qw(dclone);
 use Format::Util::Numbers qw(formatnumber);
 use Future::AsyncAwait;
 
@@ -20,7 +20,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::Event::Services;
 use BOM::Platform::Context qw(localize request);
-use BOM::Platform::Locale qw(get_state_by_id);
+use BOM::Platform::Locale  qw(get_state_by_id);
 use BOM::Database::Model::UserConnect;
 
 # Constant user_id for anonymous events.
