@@ -8,13 +8,13 @@ use Test::Exception;
 use Test::Most;
 use Test::Warn;
 use File::Slurp;
-use List::Util qw(max min);
+use List::Util   qw(max min);
 use Scalar::Util qw(looks_like_number);
 use File::Spec;
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundcommon);

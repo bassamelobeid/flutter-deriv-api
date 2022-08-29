@@ -20,7 +20,7 @@ my $now        = time;
 subtest 'tick_at' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(map { [100 + $_ / 100, $now + $_, $symbol] } (1, 3, 5, 7, 10));
     my $accessor = BOM::Market::RedisTickAccessor->new(underlying => $underlying);
-    ok !$accessor->tick_at($now), 'no previous tick, tick_at returns undef';
+    ok !$accessor->tick_at($now),                            'no previous tick, tick_at returns undef';
     ok !$accessor->tick_at($now, {allow_inconsistent => 1}), 'no previous tick, tick_at({allow_inconsistent => 1}) returns undef';
     is $accessor->tick_at($now + 1)->quote,  '100.01', "quote is 100.01 at $now + 1";
     is $accessor->tick_at($now + 2)->quote,  '100.01', "quote is 100.01 at $now + 2";
@@ -41,7 +41,7 @@ subtest 'next_tick_after' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(map { [100 + $_ / 100, $now + $_, $symbol] } (1, 5));
     my $accessor = BOM::Market::RedisTickAccessor->new(underlying => $underlying);
     ok !$accessor->next_tick_after($now + 5), 'undef if there is no next tick';
-    is $accessor->next_tick_after($now)->quote, 100.01, 'next tick is 100.01';
+    is $accessor->next_tick_after($now)->quote,     100.01, 'next tick is 100.01';
     is $accessor->next_tick_after($now + 1)->quote, 100.05, 'next tick is 100.05';
 };
 
@@ -59,11 +59,11 @@ subtest 'ticks_in_between_end_limit' => sub {
         end_time => $now + 2,
         limit    => 5
     });
-    is scalar @$ticks, 2, 'got two ticks if we only have two';
+    is scalar @$ticks,     2,        'got two ticks if we only have two';
     is $ticks->[0]->epoch, $now + 2, "first tick epoch $now + 2";
-    is $ticks->[0]->quote, 100.02, "first tick quote 100.02";
+    is $ticks->[0]->quote, 100.02,   "first tick quote 100.02";
     is $ticks->[1]->epoch, $now + 1, "second tick epoch $now + 1";
-    is $ticks->[1]->quote, 100.01, "second tick quote 100.01";
+    is $ticks->[1]->quote, 100.01,   "second tick quote 100.01";
     is_deeply(
         $ticks,
         $accessor->underlying->ticks_in_between_end_limit({
@@ -96,11 +96,11 @@ subtest 'ticks_in_between_start_limit' => sub {
         start_time => $now + 4,
         limit      => 5
     });
-    is scalar @$ticks, 2, 'got two ticks if we only have two';
+    is scalar @$ticks,     2,        'got two ticks if we only have two';
     is $ticks->[0]->epoch, $now + 4, "first tick epoch $now + 4";
-    is $ticks->[0]->quote, 100.04, "first tick quote 100.04";
+    is $ticks->[0]->quote, 100.04,   "first tick quote 100.04";
     is $ticks->[1]->epoch, $now + 5, "second tick epoch $now + 5";
-    is $ticks->[1]->quote, 100.05, "second tick quote 100.05";
+    is $ticks->[1]->quote, 100.05,   "second tick quote 100.05";
     is_deeply(
         $ticks,
         $accessor->underlying->ticks_in_between_start_limit({
@@ -136,13 +136,13 @@ subtest 'ticks_in_between_start_end' => sub {
         start_time => $now + 3,
         end_time   => $now + 6,
     });
-    is scalar @$ticks, 3, 'got 3 ticks';
+    is scalar @$ticks,     3,        'got 3 ticks';
     is $ticks->[2]->epoch, $now + 3, "first tick epoch $now + 3";
-    is $ticks->[2]->quote, 100.03, "first tick quote 100.03";
+    is $ticks->[2]->quote, 100.03,   "first tick quote 100.03";
     is $ticks->[1]->epoch, $now + 4, "second tick epoch $now + 4";
-    is $ticks->[1]->quote, 100.04, "second tick quote 100.04";
+    is $ticks->[1]->quote, 100.04,   "second tick quote 100.04";
     is $ticks->[0]->epoch, $now + 5, "second tick epoch $now + 5";
-    is $ticks->[0]->quote, 100.05, "second tick quote 100.05";
+    is $ticks->[0]->quote, 100.05,   "second tick quote 100.05";
     is_deeply $ticks,
         $accessor->underlying->ticks_in_between_start_end({
             start_time => $now + 3,
@@ -167,12 +167,12 @@ subtest 'breaching_tick' => sub {
     my $hit;
     $args{higher} = 100.04;
     ok $hit = $accessor->breaching_tick(%args);
-    is $hit->quote, 100.09, 'quote is 100.09';
+    is $hit->quote, 100.09,   'quote is 100.09';
     is $hit->epoch, $now + 2, 'correct tick epoch';
     $args{higher} = 102.02;
     $args{lower}  = 99.9;
     ok $hit = $accessor->breaching_tick(%args);
-    is $hit->quote, 99.89, 'quote is 99.89';
+    is $hit->quote, 99.89,    'quote is 99.89';
     is $hit->epoch, $now + 5, 'correct tick epoch';
     $args{lower} = 98;
     ok !$accessor->breaching_tick(%args), 'no breaching tick';

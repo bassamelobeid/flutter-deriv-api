@@ -4,7 +4,7 @@ use warnings;
 
 use Test::Most 0.22;
 use Test::MockTime qw(set_relative_time);
-use YAML::XS qw(DumpFile LoadFile);
+use YAML::XS       qw(DumpFile LoadFile);
 
 use Finance::Contract::Category;
 use BOM::MarketData qw(create_underlying_db);

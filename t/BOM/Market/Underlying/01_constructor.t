@@ -26,7 +26,7 @@ my $index6 = new_ok(
             weekend_weight => 0.75
         }]);
 
-is $index->for_date,      undef,           'for_date undef when not included in constructor';
+is $index->for_date, undef, 'for_date undef when not included in constructor';
 isa_ok $index3->for_date, 'Date::Utility', 'for_date when included in constructor';
 
 is $index,    $index2, 'Second object is cached copy of first';

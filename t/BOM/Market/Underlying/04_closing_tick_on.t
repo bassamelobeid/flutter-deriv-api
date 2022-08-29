@@ -7,7 +7,7 @@ use File::Spec;
 use Date::Parse;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis    qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
@@ -50,10 +50,10 @@ subtest 'closing_tick_on - unofficial OHLC' => sub {
 
     subtest 'closing_tick_on - should use unofficial OHLC for frxUSDJPY' => sub {
         my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxUSDJPY'}]);
-        is $underlying->closing_tick_on('2012-05-30')->close, 90.1, 'close for 2012-05-30';
-        is $underlying->closing_tick_on('2012-05-31')->close, 91.1, 'close for 2012-05-31';
-        is $underlying->closing_tick_on('2012-06-01'), undef, 'ohlc for 2012-06-01 not aggregated yet';
-        is $underlying->closing_tick_on('2012-06-02'), undef, 'no tick for 2012-06-01';
+        is $underlying->closing_tick_on('2012-05-30')->close, 90.1,  'close for 2012-05-30';
+        is $underlying->closing_tick_on('2012-05-31')->close, 91.1,  'close for 2012-05-31';
+        is $underlying->closing_tick_on('2012-06-01'),        undef, 'ohlc for 2012-06-01 not aggregated yet';
+        is $underlying->closing_tick_on('2012-06-02'),        undef, 'no tick for 2012-06-01';
     };
 };
 
