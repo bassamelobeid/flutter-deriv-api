@@ -7,8 +7,8 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Future::Mojo;
 use Time::Duration::Concise;
 use Variable::Disposition qw/retain_future/;
-use YAML::XS qw(LoadFile);
-use Log::Any qw($log);
+use YAML::XS              qw(LoadFile);
+use Log::Any              qw($log);
 use Cache::LRU;
 
 use constant CONNECTION_RATE_LIMIT           => 10;
@@ -55,7 +55,7 @@ sub register {
 sub _update_redis {
     my ($c, $name, $ttl) = @_;
     my $local_storage = $c->stash->{rate_limits} //= {};
-    my $diff = $local_storage->{$name}{pending};
+    my $diff          = $local_storage->{$name}{pending};
 
     $local_storage->{$name}{pending}            = 0;
     $local_storage->{$name}{update_in_progress} = $diff;
@@ -136,7 +136,7 @@ sub _set_key_expiry {
 
 sub _check_single_limit {
     my ($c, $limit_descriptor) = @_;
-    my $name = $limit_descriptor->{name};
+    my $name          = $limit_descriptor->{name};
     my $local_storage = $c->stash->{rate_limits} //= {};
 
     # update value speculatively (i.e. before getting real values from redis)

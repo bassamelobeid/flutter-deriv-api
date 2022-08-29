@@ -4,7 +4,7 @@ use 5.014;
 use strict;
 use warnings;
 use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
-use JSON::MaybeUTF8 qw(encode_json_utf8);
+use JSON::MaybeUTF8                           qw(encode_json_utf8);
 
 sub block_app_id {
     my ($c, $rpc_response, $req_storage) = @_;

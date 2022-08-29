@@ -22,7 +22,7 @@ use curry::weak;
 use JSON::MaybeUTF8 qw(:v1);
 use Binary::WebSocketAPI::v3::SubscriptionManager;
 use Scalar::Util qw(blessed weaken);
-use Log::Any qw($log);
+use Log::Any     qw($log);
 use Syntax::Keyword::Try;
 use Moo::Role;
 

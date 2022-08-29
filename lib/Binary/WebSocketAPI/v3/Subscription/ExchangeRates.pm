@@ -34,8 +34,8 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription>
 =cut
 
 use Scalar::Util qw(looks_like_number);
-use List::Util qw(first);
-use Log::Any qw($log);
+use List::Util   qw(first);
+use Log::Any     qw($log);
 use Moo;
 with 'Binary::WebSocketAPI::v3::Subscription';
 

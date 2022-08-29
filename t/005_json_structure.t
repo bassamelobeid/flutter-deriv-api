@@ -10,7 +10,7 @@ use JSON::MaybeUTF8 qw(decode_json_utf8);
 use JSON::MaybeXS;
 use List::Util qw(first all);
 use Path::Tiny;
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util    qw(looks_like_number);
 use Term::ANSIColor qw(colored);
 use Text::Diff;
 use Tie::IxHash;
@@ -101,13 +101,7 @@ sub sort_elements {
 
     if (ref $ref eq 'ARRAY' and $parent eq 'required') {
         return [sort { ($order->{properties}{$a} // 99) <=> ($order->{properties}{$b} // 99) or $a cmp $b } @$ref];
-    } elsif (
-        ref $ref eq 'ARRAY' and all {
-            ref eq 'HASH'
-        }
-        @$ref
-        )
-    {
+    } elsif (ref $ref eq 'ARRAY' and all { ref eq 'HASH' } @$ref) {
         return [map { sort_elements($_) } @$ref];
     } elsif (ref $ref eq 'ARRAY' and $parent ne 'enum') {
         return [sort { looks_like_number($a); looks_like_number($a) ? $a <=> $b : $a cmp $b } @$ref];

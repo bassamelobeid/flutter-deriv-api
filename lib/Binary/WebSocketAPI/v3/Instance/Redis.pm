@@ -20,8 +20,8 @@ use YAML::XS qw(LoadFile);
 use Exporter qw(import);
 use Mojo::Redis2;
 use Scalar::Util qw(looks_like_number);
-use List::Util qw(any);
-use Log::Any qw($log);
+use List::Util   qw(any);
+use Log::Any     qw($log);
 
 =head2 redis_feed_master
 

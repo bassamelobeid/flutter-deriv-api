@@ -40,10 +40,10 @@ use warnings;
 # The result of this function is supposed to be used as a tag sent
 # with other metrics to datadog.
 
-use Mojo::IOLoop::Server ();
+use Mojo::IOLoop::Server       ();
 use DataDog::DogStatsd::Helper qw/stats_histogram/;
-use Socket qw/IPPROTO_TCP TCP_NODELAY/;
-use Scalar::Util qw/weaken/;
+use Socket                     qw/IPPROTO_TCP TCP_NODELAY/;
+use Scalar::Util               qw/weaken/;
 
 my $active_connections = 0;
 my $timer_set;
