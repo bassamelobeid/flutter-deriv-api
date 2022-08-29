@@ -11,9 +11,9 @@ use Format::Util::Numbers qw/roundcommon/;
 
 use Test::Fatal;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
@@ -70,14 +70,14 @@ subtest 'touch' => sub {
         is $c->code,         'ONETOUCH';
         is $c->pricing_code, 'ONETOUCH';
 
-        is $c->ask_price, 9.28;
+        is $c->ask_price,                       9.28;
         is roundcommon(0.001, $c->pricing_vol), 0.193;
 
         is $c->sentiment, 'high_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily', 'tick'];
-        isa_ok $c->pricing_engine,        'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
+        isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 
@@ -94,14 +94,14 @@ subtest 'touch' => sub {
         $c = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '<', $c->date_expiry->epoch, 'date pricing is before expiry';
         ok $c->is_expired, 'expired';
-        cmp_ok $c->hit_tick->quote, '==', 100.020, 'correct hit tick';
-        cmp_ok $c->value, '==', $c->payout, 'full payout';
+        cmp_ok $c->hit_tick->quote, '==', 100.020,    'correct hit tick';
+        cmp_ok $c->value,           '==', $c->payout, 'full payout';
         $args->{barrier}      = 'S40P';
         $args->{date_pricing} = $now->plus_time_interval('1h1s');
         $c                    = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';
-        ok !$c->hit_tick, 'hit tick is undef';
+        ok !$c->hit_tick,  'hit tick is undef';
         cmp_ok $c->value, '==', 0.00, 'zero payout';
     }
     'expiry checks';
@@ -139,8 +139,8 @@ subtest 'notouch' => sub {
         is $c->sentiment,    'low_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily', 'tick'];
-        isa_ok $c->pricing_engine,        'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
+        isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 
@@ -158,7 +158,7 @@ subtest 'notouch' => sub {
         ok $c->is_expired, 'expired';
         ok $c->hit_tick,   'hit tick present';
         cmp_ok $c->hit_tick->quote, '==', 100.030, 'correct hit tick';
-        cmp_ok $c->value, '==', 0.00, 'zero payout, cause it touched';
+        cmp_ok $c->value,           '==', 0.00,    'zero payout, cause it touched';
         $args->{barrier}            = 100.050;
         $args->{date_pricing}       = $now->truncate_to_day->plus_time_interval('2d');
         $args->{exit_tick}          = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
@@ -166,7 +166,7 @@ subtest 'notouch' => sub {
         $c                          = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';
-        ok !$c->hit_tick, 'no hit tick';
+        ok !$c->hit_tick,  'no hit tick';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
     'expiry checks';

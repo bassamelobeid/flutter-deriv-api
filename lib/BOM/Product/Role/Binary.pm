@@ -6,8 +6,8 @@ use BOM::Config;
 use BOM::Product::Static;
 use BOM::Config::Quants qw/market_pricing_limits/;
 
-use List::Util qw(min);
-use Scalar::Util qw(looks_like_number);
+use List::Util            qw(min);
+use Scalar::Util          qw(looks_like_number);
 use Format::Util::Numbers qw(formatnumber);
 use Format::Util::Numbers qw/financialrounding/;
 use Syntax::Keyword::Try;
@@ -18,7 +18,7 @@ has [qw(
         ask_probability
         theo_probability
         bid_probability
-        )
+    )
 ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',

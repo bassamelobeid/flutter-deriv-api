@@ -8,7 +8,7 @@ use Test::FailWarnings;
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::Config::QuantsConfig;
 use Postgres::FeedDB::Spot::Tick;
 

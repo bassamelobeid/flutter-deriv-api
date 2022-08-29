@@ -15,9 +15,9 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::Runtime;
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
 my $json = JSON::MaybeXS->new;
@@ -165,12 +165,12 @@ subtest 'asian' => sub {
         my $params = $c->build_parameters;
         $params->{date_pricing} = $c->date_start->epoch + 299;
         $c = produce_contract($params);
-        is $c->code, 'ASIANU', 'extracted the right bet type from shortcode';
-        is $c->underlying->symbol, 'R_75', 'extracted the right symbol from shortcode';
-        is $c->payout, 5, 'correct payout from shortcode';
-        is $c->date_start->epoch, 1310631887, 'correct start time';
-        is $c->tick_count, 2, 'correct number of ticks';
-        ok $c->tick_expiry, 'is a tick expiry contract';
+        is $c->code,               'ASIANU',   'extracted the right bet type from shortcode';
+        is $c->underlying->symbol, 'R_75',     'extracted the right symbol from shortcode';
+        is $c->payout,             5,          'correct payout from shortcode';
+        is $c->date_start->epoch,  1310631887, 'correct start time';
+        is $c->tick_count,         2,          'correct number of ticks';
+        ok $c->tick_expiry,          'is a tick expiry contract';
         ok !$c->is_after_settlement, 'is not expired';
         is $c->barrier, undef, 'barrier is undef';
 

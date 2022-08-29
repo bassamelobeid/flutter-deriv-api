@@ -4,7 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary';
 
-use BOM::Product::Static qw/get_error_mapping/;
+use BOM::Product::Static        qw/get_error_mapping/;
 use Finance::Contract::Longcode qw(get_longcodes);
 
 sub value     { return 0 }

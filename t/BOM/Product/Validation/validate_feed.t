@@ -8,14 +8,14 @@ use Test::Warnings qw(warning);
 use Test::Warn;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
 
 use BOM::Config::Runtime;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use Test::MockModule;
 use Postgres::FeedDB::Spot;
 
@@ -103,7 +103,7 @@ subtest 'expired contracts' => sub {
     $bet_params->{current_tick} = $old_tick;
     $bet_params->{exit_tick}    = $fake_tick;
     my $c = produce_contract($bet_params);
-    ok $c->is_expired, 'contract expired';
+    ok $c->is_expired,      'contract expired';
     ok !$c->_validate_feed, 'no feed error triggered';
 };
 

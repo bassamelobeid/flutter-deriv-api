@@ -5,11 +5,11 @@ use strict;
 use warnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use VolSurface::Utils qw(get_strike_for_spot_delta);
+use VolSurface::Utils                            qw(get_strike_for_spot_delta);
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use List::MoreUtils qw(uniq);
-use YAML::XS qw(LoadFile);
+use YAML::XS        qw(LoadFile);
 
 sub create_pricing_data {
     my ($underlying_symbol, $payout_currency, $for_date) = @_;

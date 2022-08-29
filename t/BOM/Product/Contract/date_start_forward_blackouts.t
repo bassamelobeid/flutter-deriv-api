@@ -8,9 +8,9 @@ use Test::Deep;
 use Test::FailWarnings;
 use Date::Utility;
 
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory                qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 my $now = Date::Utility->new('2019-06-20 20:00:00');
 
@@ -51,14 +51,14 @@ subtest 'forex forward' => sub {
     };
     my $c = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
-    ok !$c->is_valid_to_buy, 'is not valid to buy';
+    ok !$c->is_valid_to_buy,    'is not valid to buy';
     is_deeply $c->primary_validation_error->message_to_client,
         ['Trading is not available from [_1] to [_2].', '21:00:00', '23:59:59'],
         'error is expected';
     $args->{date_start} = $now->plus_time_interval('1h');
     $c = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
-    ok !$c->is_valid_to_buy, 'is not valid to buy';
+    ok !$c->is_valid_to_buy,    'is not valid to buy';
     is_deeply $c->primary_validation_error->message_to_client,
         ['Trading is not available from [_1] to [_2].', '21:00:00', '23:59:59'],
         'error is expected';

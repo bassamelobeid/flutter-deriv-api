@@ -9,8 +9,8 @@ use Test::Exception;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -66,12 +66,12 @@ subtest 'arbitrage markup on intraday fx' => sub {
 
     $args->{duration} = '4h58m59s';
     $c = produce_contract($args);
-    ok $c->is_valid_to_buy, 'valid to buy';
+    ok $c->is_valid_to_buy,                                              'valid to buy';
     ok !$c->pricing_engine->risk_markup->peek_amount('model_arbitrage'), '3% of model arbitrage is not charged for 4h58m59s on PUT';
 
     $args->{bet_type} = 'CALL';
     $c = produce_contract($args);
-    ok $c->is_valid_to_buy, 'valid to buy';
+    ok $c->is_valid_to_buy,                                              'valid to buy';
     ok !$c->pricing_engine->risk_markup->peek_amount('model_arbitrage'), '3% of model arbitrage is not charged for 4h58m59s on CALL';
 };
 

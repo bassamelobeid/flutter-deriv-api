@@ -5,7 +5,7 @@ use Moose;
 use BOM::Product::Exception;
 use BOM::Product::Types;
 use BOM::Product::Static;
-use List::Util qw(max min);
+use List::Util            qw(max min);
 use Scalar::Util::Numeric qw(isint);
 use Format::Util::Numbers qw(financialrounding);
 use BOM::Config;

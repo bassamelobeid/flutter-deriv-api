@@ -14,9 +14,9 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::Runtime;
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 use Test::BOM::UnitTestPrice;
 
@@ -76,7 +76,7 @@ subtest 'tick highlow hit tick' => sub {
     ok !$c->is_expired, 'contract did not expired';
     ok !$c->hit_tick,   'no hit tick';
     is $c->current_tick->quote, 101 + ($index - 2) + 1, 'correct current tick' if $index > 2;
-    is $c->current_tick->quote, 101, 'correct current tick' if $index == 2;
+    is $c->current_tick->quote, 101,                    'correct current tick' if $index == 2;
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
@@ -99,7 +99,7 @@ subtest 'tick highlow hit tick' => sub {
     ok !$c->is_expired, 'contract did not expired';
     ok !$c->hit_tick,   'no hit tick';
     is $c->current_tick->quote, 101 + ($index - 2) + 1, 'correct current tick' if $index > 2;
-    is $c->current_tick->quote, 101, 'correct current tick' if $index == 2;
+    is $c->current_tick->quote, 101,                    'correct current tick' if $index == 2;
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
@@ -122,7 +122,7 @@ subtest 'tick highlow hit tick' => sub {
     ok !$c->is_expired, 'contract did not expired';
     ok !$c->hit_tick,   'no hit tick';
     is $c->current_tick->quote, 101 + ($index - 2) + 1, 'correct current tick' if $index > 2;
-    is $c->current_tick->quote, 101, 'correct current tick' if $index == 2;
+    is $c->current_tick->quote, 101,                    'correct current tick' if $index == 2;
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',

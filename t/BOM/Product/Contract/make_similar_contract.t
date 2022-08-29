@@ -7,9 +7,9 @@ use Test::More;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract make_similar_contract);
 
 my $now          = Date::Utility->new;
 my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

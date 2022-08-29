@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use BOM::Product::ContractFactory qw/produce_contract/;
-use Time::HiRes ();
+use Time::HiRes                   ();
 
 sub get_worklist {
     my @worklist;
@@ -64,9 +64,9 @@ sub profile {
         my $fn = "nytprof-$i.out";
         unlink $fn;
         print "profiling: @$item to $fn\n";
-        DB::enable_profile $fn;
+        DB::enable_profile($fn);
         one $item for (1 .. 10);
-        DB::finish_profile;
+        DB::finish_profile();
     }
 
     open my $html, '>', 'index.html' or die "Cannot open index.html: $!\n";
@@ -76,9 +76,9 @@ sub profile {
         last unless $item;
         my $fn = "nytprof-$i.out";
         my $dn = join '--', @{$item}[0, 1, 2];
-        system 'rm',          '-rf', $dn;
-        system 'nytprofhtml', '-f',  $fn, '-o', $dn;
-        system 'sed',         '-i',
+        system 'rm', '-rf', $dn;
+        system 'nytprofhtml', '-f', $fn, '-o', $dn;
+        system 'sed', '-i',
             's/>Performance Profile Index</>Profile for shortcode: ' . " $item->[0] currency: $item->[1] ($item->[2])</",
             $dn . '/index.html';
         print $html qq{<li><a href="$dn/index.html">@{$item}</a></li>\n};
@@ -94,4 +94,4 @@ sub profile {
 
 my $wl = get_worklist;
 warm_up $wl;
-profile sorted($wl), 15;
+profile(sorted($wl), 15);

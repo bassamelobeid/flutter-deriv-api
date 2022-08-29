@@ -4,13 +4,13 @@ use strict;
 use warnings;
 
 use Test::More tests => 2;
-use Test::Warnings qw/warning/;
+use Test::Warnings                                      qw/warning/;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis             qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData;
 use BOM::Config::Chronicle;
 use Date::Utility;
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::Product::ContractFactory qw(produce_contract);
 
 initialize_realtime_ticks_db();

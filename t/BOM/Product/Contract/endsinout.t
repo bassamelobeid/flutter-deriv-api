@@ -10,9 +10,9 @@ use Date::Utility;
 use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
@@ -50,14 +50,14 @@ subtest 'expiry miss' => sub {
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Expirymiss';
-        is $c->code,          'EXPIRYMISS';
-        is $c->pricing_code,  'EXPIRYMISS';
-        is $c->sentiment,     'high_vol';
+        is $c->code,         'EXPIRYMISS';
+        is $c->pricing_code, 'EXPIRYMISS';
+        is $c->sentiment,    'high_vol';
         cmp_ok $c->ask_price, '==', 6.75;
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine_name,   'Pricing::Engine::EuropeanDigitalSlope';
-        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
+        isa_ok $c->greek_engine,        'BOM::Product::Pricing::Greeks::BlackScholes';
         $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
@@ -113,13 +113,13 @@ subtest 'expiry range' => sub {
         $args->{bet_type}     = 'EXPIRYRANGE';
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Expiryrange';
-        is $c->code,                      'EXPIRYRANGE';
-        is $c->pricing_code,              'EXPIRYRANGE';
-        is $c->ask_price,                 '4.20';
-        ok $c->sentiment,                 'low_vol';
+        is $c->code,         'EXPIRYRANGE';
+        is $c->pricing_code, 'EXPIRYRANGE';
+        is $c->ask_price,    '4.20';
+        ok $c->sentiment, 'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine_name,   'Pricing::Engine::EuropeanDigitalSlope';
-        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
+        isa_ok $c->greek_engine,        'BOM::Product::Pricing::Greeks::BlackScholes';
         $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};

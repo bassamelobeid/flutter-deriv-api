@@ -4,7 +4,7 @@ use Moose::Role;
 use BOM::Product::Static;
 
 use Postgres::FeedDB::Spot::Tick;
-use List::Util qw/min max/;
+use List::Util   qw/min max/;
 use Scalar::Util qw/looks_like_number/;
 
 override is_expired => sub {

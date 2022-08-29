@@ -9,9 +9,9 @@ use Test::Warnings;
 use Test::Exception;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
@@ -43,11 +43,11 @@ my $args = {
 
 subtest 'RUNLOW - config check' => sub {
     my $c = produce_contract($args);
-    is $c->code,                'RUNLOW',                         'code - RUNLOW';
-    is $c->pricing_engine_name, 'Pricing::Engine::HighLow::Runs', 'engine - Pricing::Engine::HighLow::Runs';
-    is $c->tick_count,          2,                                'tick count is 2';
-    is $c->selected_tick,       2,                                'selected_tick is 2';
-    is $c->barrier->as_absolute, '99.00', 'barrier is equals to current spot';
+    is $c->code,                 'RUNLOW',                         'code - RUNLOW';
+    is $c->pricing_engine_name,  'Pricing::Engine::HighLow::Runs', 'engine - Pricing::Engine::HighLow::Runs';
+    is $c->tick_count,           2,                                'tick count is 2';
+    is $c->selected_tick,        2,                                'selected_tick is 2';
+    is $c->barrier->as_absolute, '99.00',                          'barrier is equals to current spot';
     ok $c->theo_probability->amount;
 };
 
@@ -115,11 +115,11 @@ subtest 'RUNLOW - shortcode & longcode' => sub {
 
     note('shortcode to contract');
     $c = produce_contract($c->shortcode, 'USD');
-    is $c->code, 'RUNLOW', 'code is RUNLOW';
-    is $c->underlying->symbol, 'R_100', 'underlying symbol is R_100';
-    is $c->payout, 100, 'payout is 100';
+    is $c->code,                 'RUNLOW', 'code is RUNLOW';
+    is $c->underlying->symbol,   'R_100',  'underlying symbol is R_100';
+    is $c->payout,               100,      'payout is 100';
     is $c->barrier->as_absolute, '100.00', 'barrier is 100.00';
-    is $c->selected_tick, 5, 'selected_tick is 5';
+    is $c->selected_tick,        5,        'selected_tick is 5';
 };
 
 subtest 'passing in barrier' => sub {

@@ -10,7 +10,7 @@ use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Config::Chronicle;
 
 use Test::MockModule;
@@ -81,7 +81,7 @@ sub test_economic_events_markup {
     };
 
     my $bet = produce_contract($params);
-    is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
+    is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex',           'uses Intraday Historical pricing engine');
     is($bet->pricing_engine->economic_events_spot_risk_markup->amount, $expected_ee_srmarkup, 'correct spot risk markup');
 
     my $amount;

@@ -6,9 +6,9 @@ use warnings;
 use Time::HiRes;
 use Date::Utility;
 use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period);
-use DataDog::DogStatsd::Helper qw/stats_timing/;
-use Time::HiRes ();
-use List::Util qw(any first uniq);
+use DataDog::DogStatsd::Helper          qw/stats_timing/;
+use Time::HiRes                         ();
+use List::Util                          qw(any first uniq);
 
 use LandingCompany::Registry;
 

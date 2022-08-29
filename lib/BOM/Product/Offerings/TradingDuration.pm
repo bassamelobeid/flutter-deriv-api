@@ -11,7 +11,7 @@ use Finance::Underlying::Market::Registry;
 use Finance::Underlying::SubMarket::Registry;
 use Finance::Contract::Category;
 use BOM::MarketData qw(create_underlying);
-use List::UtilsBy qw(sort_by);
+use List::UtilsBy   qw(sort_by);
 
 =head2 generate_trading_durations
 

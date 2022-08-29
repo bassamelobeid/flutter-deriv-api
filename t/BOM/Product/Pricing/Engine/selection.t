@@ -8,7 +8,7 @@ use Test::Warnings;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 use LandingCompany::Registry;
 use BOM::Product::Offerings::TradingContract qw(get_contracts);

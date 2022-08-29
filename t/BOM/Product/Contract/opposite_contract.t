@@ -9,8 +9,8 @@ use Date::Utility;
 use Test::More;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 my $now = Date::Utility->new('2017-03-06 01:00:00');
 
@@ -40,8 +40,8 @@ subtest 'opposite_contract for pricing_new' => sub {
     });
 
     ok $c->pricing_new, 'is pricing new';
-    is $c->current_tick->quote, 100, 'current tick is 100';
-    is $c->code, 'CALL', 'contract code is CALL';
+    is $c->current_tick->quote, 100,                  'current tick is 100';
+    is $c->code,                'CALL',               'contract code is CALL';
     is $c->timeinyears->amount, 3600 / (86400 * 365), 'contract duration is 1 day';
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
@@ -52,8 +52,8 @@ subtest 'opposite_contract for pricing_new' => sub {
 
     my $opposite_c = $c->opposite_contract;
     ok $opposite_c->pricing_new, 'is pricing new';
-    is $opposite_c->current_tick->quote, 100, 'current tick is 100';
-    is $opposite_c->code, 'PUT', 'contract code is PUT';
+    is $opposite_c->current_tick->quote, 100,                  'current tick is 100';
+    is $opposite_c->code,                'PUT',                'contract code is PUT';
     is $opposite_c->timeinyears->amount, 3600 / (86400 * 365), 'contract duration is 1 day';
     ok !$opposite_c->for_sale, 'not for sale';
 };
@@ -71,8 +71,8 @@ subtest 'opposite_contract for sellback' => sub {
     });
 
     ok !$c->pricing_new, 'not pricing new';
-    is $c->current_tick->quote, 102, 'current tick is 102';
-    is $c->code, 'CALL', 'contract code is CALL';
+    is $c->current_tick->quote, 102,                  'current tick is 102';
+    is $c->code,                'CALL',               'contract code is CALL';
     is $c->timeinyears->amount, 3595 / (86400 * 365), 'contract duration is 1 day';
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
@@ -82,8 +82,8 @@ subtest 'opposite_contract for sellback' => sub {
     });
     my $opposite_c = $c->opposite_contract_for_sale;
     ok $opposite_c->pricing_new, 'is pricing new';
-    is $opposite_c->current_tick->quote, 105, 'current tick is 105';
-    is $opposite_c->code, 'PUT', 'contract code is PUT';
+    is $opposite_c->current_tick->quote, 105,                  'current tick is 105';
+    is $opposite_c->code,                'PUT',                'contract code is PUT';
     is $opposite_c->timeinyears->amount, 3595 / (86400 * 365), 'contract duration is 1 day';
     ok $opposite_c->for_sale, 'not for sale';
 };

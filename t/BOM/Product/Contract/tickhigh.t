@@ -7,8 +7,8 @@ use Test::More tests => 6;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -38,14 +38,14 @@ my $c = produce_contract($args);
 subtest 'Test that contract can be created correctly' => sub {
     lives_ok {
         my $c = produce_contract($args);
-        is $c->code,         'TICKHIGH';
-        is $c->pricing_code, 'TICKHIGH';
-        is $c->sentiment,    'high';
+        is $c->code,           'TICKHIGH';
+        is $c->pricing_code,   'TICKHIGH';
+        is $c->sentiment,      'high';
         is $c->category->code, 'highlowticks';
         is_deeply $c->supported_expiries, ['tick'];
         isa_ok $c, 'BOM::Product::Contract::Tickhigh';
         is $c->pricing_engine_name, 'Pricing::Engine::HighLow::Ticks';
-        isa_ok $c->greek_engine,    'BOM::Product::Pricing::Greeks::ZeroGreek';
+        isa_ok $c->greek_engine, 'BOM::Product::Pricing::Greeks::ZeroGreek';
         ok $c->tick_expiry;
         is $c->tick_count,      5;
         is $c->ticks_to_expiry, 5;

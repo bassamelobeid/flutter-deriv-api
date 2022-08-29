@@ -31,9 +31,9 @@ subtest 'app markup amount' => sub {
         theo_probability      => $fake_theo,
     });
 
-    is $c2->app_markup->amount, 0.01, 'correct markup amount';
-    is $c2->payout + 0, 18.87, 'correct payout';
-    is $c2->app_markup_dollar_amount, 0.19, 'correct dollar amount';
+    is $c2->app_markup->amount,       0.01,  'correct markup amount';
+    is $c2->payout + 0,               18.87, 'correct payout';
+    is $c2->app_markup_dollar_amount, 0.19,  'correct dollar amount';
 
     my $c = produce_contract({
         underlying            => 'R_100',
@@ -47,7 +47,7 @@ subtest 'app markup amount' => sub {
         base_commission       => 0.02,
     });
 
-    is $c->app_markup->amount, 0.01, 'correct markup amount';
+    is $c->app_markup->amount,       0.01, 'correct markup amount';
     is $c->app_markup_dollar_amount, 0.19, 'correct dollar amount';
 
 };

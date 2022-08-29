@@ -5,8 +5,8 @@ use namespace::autoclean;
 
 use Readonly;
 use Date::Utility;
-use POSIX qw( floor );
-use Scalar::Util qw(looks_like_number);
+use POSIX                 qw( floor );
+use Scalar::Util          qw(looks_like_number);
 use Scalar::Util::Numeric qw(isint);
 use Format::Util::Numbers qw/roundcommon/;
 

@@ -5,7 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::FailWarnings;
-use List::Util qw(all);
+use List::Util                               qw(all);
 use BOM::Product::Offerings::TradingContract qw(get_contracts);
 use BOM::Product::ContractFinder::Basic;
 use Date::Utility;

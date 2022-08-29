@@ -12,8 +12,8 @@ use JSON::MaybeXS;
 use Math::Util::CalculatedValue::Validatable;
 use Format::Util::Numbers qw/roundcommon/;
 
-use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Product::ContractFactory                qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

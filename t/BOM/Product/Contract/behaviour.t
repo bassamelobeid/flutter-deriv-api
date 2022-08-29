@@ -9,9 +9,9 @@ use Test::Deep;
 
 use Time::HiRes;
 use Cache::RedisDB;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 initialize_realtime_ticks_db();
 
@@ -60,9 +60,9 @@ subtest 'prices at different times' => sub {
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
     ok $c->pricing_new,     'pricing new';
-    ok !$c->entry_tick, 'entry tick is undefined';
+    ok !$c->entry_tick,     'entry tick is undefined';
     is $c->barrier->as_absolute + 0, 100, 'barrier is current spot';
-    is $c->pricing_spot + 0, 100, 'pricing spot is current spot';
+    is $c->pricing_spot + 0,         100, 'pricing spot is current spot';
     ok $c->ask_price, 'can price';
 
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([101, $now->epoch, 'R_100'], [103, $now->epoch + 1, 'R_100']));
@@ -70,11 +70,11 @@ subtest 'prices at different times' => sub {
     $bet_params->{date_pricing} = $now->epoch + 61;
     $c                          = produce_contract($bet_params);
     ok $c->is_valid_to_sell, 'valid to sell';
-    ok !$c->pricing_new, 'not pricing new';
-    ok $c->entry_tick, 'entry tick is defined';
-    is $c->entry_tick->quote, 101, 'entry tick is 101';
+    ok !$c->pricing_new,     'not pricing new';
+    ok $c->entry_tick,       'entry tick is defined';
+    is $c->entry_tick->quote,        101, 'entry tick is 101';
     is $c->barrier->as_absolute + 0, 101, 'barrier is entry spot';
-    is $c->pricing_spot + 0, 103, 'pricing spot is current spot';
+    is $c->pricing_spot + 0,         103, 'pricing spot is current spot';
     ok $c->bid_price, 'can price';
 };
 
@@ -140,12 +140,12 @@ subtest 'tick expiry contract settlement' => sub {
     $bet_params->{duration}     = '5t';
     $bet_params->{date_pricing} = $now->epoch + 301;
     my $c = produce_contract($bet_params);
-    ok $c->tick_expiry,         'tick expiry contract';
-    ok $c->is_expired,          'contract expired after 5 minutes of contract start time even without required ticks';
-    ok $c->entry_tick,          'has entry tick';
-    ok $c->is_after_expiry,     'is after expiry';
-    ok $c->is_after_settlement, 'is after settlement';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
+    ok $c->tick_expiry,               'tick expiry contract';
+    ok $c->is_expired,                'contract expired after 5 minutes of contract start time even without required ticks';
+    ok $c->entry_tick,                'has entry tick';
+    ok $c->is_after_expiry,           'is after expiry';
+    ok $c->is_after_settlement,       'is after settlement';
+    ok !$c->is_valid_to_sell,         'not valid to sell';
     ok $c->require_manual_settlement, 'requires manual settlement';
     like($c->primary_validation_error->message, qr/Entry tick came after the maximum delay/, 'throws error');
 
@@ -154,12 +154,12 @@ subtest 'tick expiry contract settlement' => sub {
     $bet_params->{duration}     = '5t';
     $bet_params->{date_pricing} = $now->epoch + 301;
     $c                          = produce_contract($bet_params);
-    ok $c->tick_expiry, 'tick expiry contract';
-    ok $c->is_expired,  'contract expired after 5 minutes of contract start time even without required ticks';
-    ok !$c->exit_tick, 'no exit tick';
-    ok $c->is_after_expiry,     'is after expiry';
-    ok $c->is_after_settlement, 'is after settlement';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
+    ok $c->tick_expiry,               'tick expiry contract';
+    ok $c->is_expired,                'contract expired after 5 minutes of contract start time even without required ticks';
+    ok !$c->exit_tick,                'no exit tick';
+    ok $c->is_after_expiry,           'is after expiry';
+    ok $c->is_after_settlement,       'is after settlement';
+    ok !$c->is_valid_to_sell,         'not valid to sell';
     ok $c->require_manual_settlement, 'requires manual settlement';
     like($c->primary_validation_error->message, qr/Contract has started. Exit tick came after the maximum delay/, 'throws error');
 
@@ -175,12 +175,12 @@ subtest 'tick expiry contract settlement' => sub {
     $bet_params->{duration}     = '5t';
     $bet_params->{date_pricing} = $now->epoch + 301;
     $c                          = produce_contract($bet_params);
-    ok $c->tick_expiry,         'tick expiry contract';
-    ok $c->is_expired,          'is expired';
-    ok $c->exit_tick,           'has exit tick';
-    ok $c->is_after_expiry,     'is after expiry';
-    ok $c->is_after_settlement, 'is after settlement';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
+    ok $c->tick_expiry,               'tick expiry contract';
+    ok $c->is_expired,                'is expired';
+    ok $c->exit_tick,                 'has exit tick';
+    ok $c->is_after_expiry,           'is after expiry';
+    ok $c->is_after_settlement,       'is after settlement';
+    ok !$c->is_valid_to_sell,         'not valid to sell';
     ok $c->require_manual_settlement, 'requires manual settlement';
     like($c->primary_validation_error->message, qr/Contract has started. Exit tick came after the maximum delay/, 'throws error');
 
@@ -212,8 +212,8 @@ subtest 'intraday duration contract settlement' => sub {
     $bet_params->{duration}     = '5m';
     $bet_params->{date_pricing} = $now->epoch + 301;
     my $c = produce_contract($bet_params);
-    ok $c->is_expired, 'is expired';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
+    ok $c->is_expired,                'is expired';
+    ok !$c->is_valid_to_sell,         'not valid to sell';
     ok $c->require_manual_settlement, 'missing market data if entry tick is undef after expiry';
     like($c->primary_validation_error->message, qr/entry tick is after exit tick/, 'throws error');
 
@@ -222,27 +222,27 @@ subtest 'intraday duration contract settlement' => sub {
     $bet_params->{duration}     = '5m';
     $bet_params->{date_pricing} = $now->epoch + 301;
     $c                          = produce_contract($bet_params);
-    ok $c->is_expired, 'is expired';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
+    ok $c->is_expired,                'is expired';
+    ok !$c->is_valid_to_sell,         'not valid to sell';
     ok $c->require_manual_settlement, 'missing market data if entry tick is undef after expiry';
     like($c->primary_validation_error->message, qr/only one tick throughout contract period/, 'throws error');
 
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100']);
     $c = produce_contract($bet_params);
-    ok $c->is_after_settlement, 'after expiry';
-    ok !$c->entry_tick,       'no entry tick';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
+    ok $c->is_after_settlement,       'after expiry';
+    ok !$c->entry_tick,               'no entry tick';
+    ok !$c->is_valid_to_sell,         'not valid to sell';
     ok $c->require_manual_settlement, 'missing market data if entry tick is undef after expiry';
     like($c->primary_validation_error->message, qr/entry tick is undefined/, 'throws error');
 
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101, $now->epoch + 1, 'R_100']);
     $c = produce_contract($bet_params);
-    ok $c->is_after_expiry, 'after expiry';
-    ok $c->is_expired,      'it is expireable';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
-    ok $c->is_after_settlement, 'after settlement';
-    ok $c->exit_tick,           'there is exit tick';
-    ok !$c->require_manual_settlement, 'no missing market data while waiting for exit tick after expiry';
+    ok $c->is_after_expiry,             'after expiry';
+    ok $c->is_expired,                  'it is expireable';
+    ok !$c->is_valid_to_sell,           'not valid to sell';
+    ok $c->is_after_settlement,         'after settlement';
+    ok $c->exit_tick,                   'there is exit tick';
+    ok !$c->require_manual_settlement,  'no missing market data while waiting for exit tick after expiry';
     ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
     like($c->primary_validation_error->message, qr/exit tick is inconsistent/, 'throws error');
 };
@@ -251,7 +251,7 @@ subtest 'longcode misbehaving for daily contracts' => sub {
     $bet_params->{duration} = '2d';
     my $c = produce_contract($bet_params);
     ok $c->expiry_daily, 'multiday contract';
-    is $c->expiry_type,  'daily';
+    is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c->longcode;
     $bet_params->{date_pricing} = $c->date_start->plus_time_interval('2d');
     $c = produce_contract($bet_params);
@@ -381,17 +381,17 @@ subtest 'ATM and non ATM switches on sellback' => sub {
     $bet_params->{date_pricing} = $now->epoch + 2;
     $bet_params->{barrier}      = 'S10P';
     my $c = produce_contract($bet_params);
-    is $c->current_spot + 0, 100.1, 'current tick is 100.1';
+    is $c->current_spot + 0,         100.1, 'current tick is 100.1';
     is $c->barrier->as_absolute + 0, 100.1, 'barrier is 100.1';
     ok !$c->is_atm_bet, 'not atm bet';
     #starts atm
     $bet_params->{barrier}      = 'S0P';
     $bet_params->{date_pricing} = $now->epoch + 3;
     $c                          = produce_contract($bet_params);
-    ok $c->is_atm_bet, 'atm contract';
-    ok $c->opposite_contract_for_sale->supplied_barrier == $c->entry_spot, 'opposite barrier correctly set';
+    ok $c->is_atm_bet,                                                                                       'atm contract';
+    ok $c->opposite_contract_for_sale->supplied_barrier == $c->entry_spot,                                   'opposite barrier correctly set';
     ok $c->opposite_contract_for_sale->barrier->as_absolute == $c->opposite_contract_for_sale->current_spot, 'barrier identical to spot';
-    ok !$c->opposite_contract_for_sale->is_atm_bet, 'non atm bet';
+    ok !$c->opposite_contract_for_sale->is_atm_bet,                                                          'non atm bet';
 };
 
 subtest 'expiry condition for range' => sub {
@@ -547,9 +547,9 @@ subtest 'after expiry but not after settlement' => sub {
     };
 
     my $c = produce_contract($params);
-    ok $c->is_expired, 'expired';
-    ok !$c->is_after_settlement, 'not after settlement';
-    ok !$c->is_valid_to_sell,    'not valid to sell';
+    ok $c->is_expired,                  'expired';
+    ok !$c->is_after_settlement,        'not after settlement';
+    ok !$c->is_valid_to_sell,           'not valid to sell';
     ok $c->waiting_for_settlement_tick, 'waiting for settlement tick flag returns true';
     is $c->primary_validation_error->message, 'waiting for settlement', 'error message - waiting for settlement';
 };
@@ -571,28 +571,28 @@ subtest 'entry tick for different contract conditions' => sub {
     };
 
     my $c = produce_contract($params);
-    is $c->_basis_tick->epoch, $c->date_start->epoch, 'basis tick epoch is at start';
-    is $c->_basis_tick->quote, 100, 'basis tick is at start';
+    is $c->_basis_tick->epoch, $c->date_start->epoch,     'basis tick epoch is at start';
+    is $c->_basis_tick->quote, 100,                       'basis tick is at start';
     is $c->entry_tick->epoch,  $c->date_start->epoch + 1, 'entry tick epoch is start + 1';
-    is $c->entry_tick->quote,  101, 'entry tick is tick at start + 1';
+    is $c->entry_tick->quote,  101,                       'entry tick is tick at start + 1';
 
     $params->{duration} = '5m';
     $params->{barrier}  = '+0.123';
     $c                  = produce_contract($params);
 
     is $c->_basis_tick->epoch, $c->date_start->epoch + 1, 'basis tick epoch is start time + 1';
-    is $c->_basis_tick->quote, 101, 'basis tick is tick at start + 1';
+    is $c->_basis_tick->quote, 101,                       'basis tick is tick at start + 1';
     is $c->entry_tick->epoch,  $c->date_start->epoch + 1, 'entry tick epoch is start time + 1';
-    is $c->entry_tick->quote,  101, 'entry tick is tick at start + 1';
+    is $c->entry_tick->quote,  101,                       'entry tick is tick at start + 1';
 
     $params->{duration} = '5t';
     $params->{barrier}  = 8;
     $c                  = produce_contract($params);
 
     is $c->_basis_tick->epoch, $c->date_start->epoch + 1, 'basis tick epoch is start time + 1';
-    is $c->_basis_tick->quote, 101, 'basis tick is tick at start + 1';
+    is $c->_basis_tick->quote, 101,                       'basis tick is tick at start + 1';
     is $c->entry_tick->epoch,  $c->date_start->epoch + 1, 'entry tick epoch is start time + 1';
-    is $c->entry_tick->quote,  101, 'entry tick is tick at start + 1';
+    is $c->entry_tick->quote,  101,                       'entry tick is tick at start + 1';
 };
 
 subtest 'first tick as settlement tick' => sub {
@@ -618,9 +618,9 @@ subtest 'first tick as settlement tick' => sub {
         $params->{duration} = $duration;
         my $c = produce_contract($params);
         ok $c->is_expired, 'expired';
-        is $c->value, $c->payout, 'contract won';
-        is $c->entry_tick->quote,    102,      'entry tick is 102';
-        is $c->barrier->as_absolute, '101.00', 'barrier is 101';
+        is $c->value,                $c->payout,            'contract won';
+        is $c->entry_tick->quote,    102,                   'entry tick is 102';
+        is $c->barrier->as_absolute, '101.00',              'barrier is 101';
         is $c->hit_tick->quote,      $c->entry_tick->quote, 'entry tick hits the barrier';
     }
 

@@ -9,9 +9,9 @@ use Test::FailWarnings;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Product::ContractFactory                qw(produce_contract);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Config::Chronicle;
 use Quant::Framework;
 use Finance::Exchange;
@@ -95,11 +95,11 @@ subtest 'config' => sub {
         date_start    => $now
     });
 
-    is $c->longcode->[0], 'Win up to [_7] [_6] if [_1]\'s exit tick is between [_4] and [_5] at [_3] after [_2].';
-    is $c->longcode->[2][0], 'contract start time', 'contract start time';
-    is $c->longcode->[3]->{value}, 7200, 'longcode value 7200';
-    ok !$c->is_binary, 'non-binary';
-    ok $c->two_barriers,  'two barriers';
+    is $c->longcode->[0],          'Win up to [_7] [_6] if [_1]\'s exit tick is between [_4] and [_5] at [_3] after [_2].';
+    is $c->longcode->[2][0],       'contract start time', 'contract start time';
+    is $c->longcode->[3]->{value}, 7200,                  'longcode value 7200';
+    ok !$c->is_binary,   'non-binary';
+    ok $c->two_barriers, 'two barriers';
     is $c->pricing_code,  'PUTSPREAD',     'pricing code is PUTSPREAD';
     is $c->display_name,  'Put Spread',    'display name is Put Spread';
     is $c->category_code, 'callputspread', 'category code is callputspread';

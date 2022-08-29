@@ -8,7 +8,7 @@ use Date::Utility;
 use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use Test::MockModule;
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');

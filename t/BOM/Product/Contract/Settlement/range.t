@@ -10,9 +10,9 @@ use Test::MockModule;
 
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 initialize_realtime_ticks_db();
 
@@ -58,7 +58,7 @@ subtest 'intraday' => sub {
         ok !$c->hit_tick,          'no hit tick';
         is $c->primary_validation_error->message, 'inconsistent close for period';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
     };
 
     subtest 'RANGE - Does not touch the barrier and ok through expiry. Contract will be settled as a win.' => sub {
@@ -71,8 +71,8 @@ subtest 'intraday' => sub {
         is $c->high_barrier->as_absolute, '100.10', 'high barrier is 100.10';
         is $c->low_barrier->as_absolute,  '99.90',  'low barrier is 99.90';
         ok $c->ok_through_expiry, 'ok through expiry';
-        ok !$c->hit_tick, 'no hit tick';
-        ok $c->is_valid_to_sell, 'valid to sell';
+        ok !$c->hit_tick,         'no hit tick';
+        ok $c->is_valid_to_sell,  'valid to sell';
         is $c->value, $c->payout, 'win';
     };
 
@@ -125,7 +125,7 @@ subtest 'multiday' => sub {
         ok !$c->is_valid_to_sell, 'not valid to sell';
         is $c->primary_validation_error->message, 'exit tick is inconsistent';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
     };
 
     subtest 'RANGE - expired with OHLC data' => sub {
@@ -138,8 +138,8 @@ subtest 'multiday' => sub {
         ok $c->expiry_daily, 'multi-day contract';
         ok $c->is_expired,   'is expired';
         is $c->hit_tick->quote, 102, 'hit tick is 102';
-        ok $c->ok_through_expiry, 'ok through expiry';
-        ok $c->is_valid_to_sell,  'valid to sell';
+        ok $c->ok_through_expiry,            'ok through expiry';
+        ok $c->is_valid_to_sell,             'valid to sell';
         ok !$c->waiting_for_settlement_tick, 'waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss - because high > barrier';

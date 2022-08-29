@@ -7,16 +7,16 @@ use Test::More tests => 2;
 use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
-use YAML::XS qw(LoadFile);
-use Storable qw(dclone);
+use YAML::XS              qw(LoadFile);
+use Storable              qw(dclone);
 use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::MarketData::Types;
 
 Cache::RedisDB->flushall;
@@ -58,6 +58,6 @@ subtest 'tuesday to friday close' => sub {
         });
 
         is roundcommon(0.00001, $c->theo_probability->amount), roundcommon(0.00001, $data->{$now->datetime}{theo_probability}), 'theo_probability';
-        is $c->timeindays->amount, $data->{$now->datetime}{timeindays}, 'timeindays';
+        is $c->timeindays->amount,                             $data->{$now->datetime}{timeindays},                             'timeindays';
     }
 };

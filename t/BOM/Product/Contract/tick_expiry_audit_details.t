@@ -15,9 +15,9 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::Runtime;
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
 my $json = JSON::MaybeXS->new;
@@ -289,9 +289,9 @@ subtest 'runs audit details' => sub {
     $args_runs->{date_pricing} = $now->epoch + 1;
     $args_runs->{duration}     = '1t';
     my $c = produce_contract($args_runs);
-    ok $c->entry_tick, 'has entry tick';
+    ok $c->entry_tick,                                    'has entry tick';
     ok $c->entry_tick->quote == $c->barrier->as_absolute, 'barrier = entry spot';
-    ok !$c->is_expired, 'not expired';
+    ok !$c->is_expired,                                   'not expired';
     _create_ticks($now->epoch, [100, 100]);                        # [entry_tick, first_tick]
     $c = produce_contract($args_runs);
     ok $c->is_expired, 'expired';

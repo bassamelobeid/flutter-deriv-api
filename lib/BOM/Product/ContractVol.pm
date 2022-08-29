@@ -3,8 +3,8 @@ package BOM::Product::Contract;    ## no critic ( RequireFilenameMatchesPackage 
 use strict;
 use warnings;
 
-use List::MoreUtils qw(none all);
-use List::Util qw(min max);
+use List::MoreUtils                     qw(none all);
+use List::Util                          qw(min max);
 use Quant::Framework::VolSurface::Utils qw(effective_date_for);
 use Quant::Framework::VolSurface;
 use VolSurface::Empirical;

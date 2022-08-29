@@ -16,7 +16,7 @@ use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use Test::BOM::UnitTestPrice qw(:init);
+use Test::BOM::UnitTestPrice                   qw(:init);
 
 my $now = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);

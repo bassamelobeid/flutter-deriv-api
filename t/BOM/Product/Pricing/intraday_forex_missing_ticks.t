@@ -15,7 +15,7 @@ use BOM::MarketData::Types;
 use Text::CSV;
 use BOM::Market::DataDecimate;
 
-use List::Util qw(first max);
+use List::Util     qw(first max);
 use Data::Decimate qw(decimate);
 
 use Test::BOM::UnitTestPrice;

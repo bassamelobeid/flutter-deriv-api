@@ -11,9 +11,9 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::DataDecimate;
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use Cache::RedisDB;
 Cache::RedisDB->flushall;
 
@@ -121,7 +121,7 @@ subtest 'non dst' => sub {
     $bet_params->{duration}   = '2m';
     my $c = produce_contract($bet_params);
     ok !$c->date_pricing->is_dst_in_zone('America/New_York'), 'date pricing is at non dst';
-    ok $c->is_valid_to_buy, 'valid to buy';
+    ok $c->is_valid_to_buy,                                   'valid to buy';
     $bet_params->{date_start}                      = $bet_params->{date_pricing} = $non_dst->plus_time_interval('1s');
     $bet_params->{disable_trading_at_quiet_period} = 0;
     $c                                             = produce_contract($bet_params);

@@ -7,7 +7,7 @@ use Test::MockModule;
 use File::Spec;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -892,8 +892,8 @@ test_with_feed([
 
         my $bet_params = {
             bet_type     => 'EXPIRYRANGE',
-            date_start   => '1234502653',                                # 13-Feb-09 05:24:13 64285.11 64285.11 64285.11
-            date_expiry  => '1234502953',                                # 13-Feb-09 05:29:13 63948.31 63948.31 63948.31
+            date_start   => '1234502653',    # 13-Feb-09 05:24:13 64285.11 64285.11 64285.11
+            date_expiry  => '1234502953',    # 13-Feb-09 05:29:13 63948.31 63948.31 63948.31
             underlying   => 'R_100',
             payout       => 20,
             high_barrier => 63948.30,
@@ -1015,8 +1015,8 @@ test_with_feed([
 
         my $bet_params = {
             bet_type     => 'EXPIRYMISS',
-            date_start   => '1234502653',                                # 13-Feb-09 05:24:13 64285.11 64285.11 64285.11
-            date_expiry  => '1234502953',                                # 13-Feb-09 05:29:13 63948.31 63948.31 63948.31
+            date_start   => '1234502653',    # 13-Feb-09 05:24:13 64285.11 64285.11 64285.11
+            date_expiry  => '1234502953',    # 13-Feb-09 05:29:13 63948.31 63948.31 63948.31
             underlying   => 'R_100',
             payout       => 20,
             high_barrier => 63948.30,

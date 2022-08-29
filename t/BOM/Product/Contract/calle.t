@@ -7,10 +7,10 @@ use Test::More;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::MarketData qw(create_underlying_db);
-use BOM::MarketData qw(create_underlying);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::MarketData                              qw(create_underlying_db);
+use BOM::MarketData                              qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config::Redis;
 use Date::Utility;
@@ -124,7 +124,7 @@ subtest 'call variations' => sub {
         isa_ok $c, 'BOM::Product::Contract::Calle';
         is $c->code,            'CALLE';
         is $c->other_side_code, 'PUT';
-        ok $c->is_intraday,     'is intraday';
+        ok $c->is_intraday,   'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
@@ -134,12 +134,12 @@ subtest 'call variations' => sub {
     'generic';
     lives_ok {
         my $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Calle';
+        isa_ok $c,                 'BOM::Product::Contract::Calle';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Calle';
+        isa_ok $c,                      'BOM::Product::Contract::Calle';
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{duration}     = '10m';
@@ -147,7 +147,7 @@ subtest 'call variations' => sub {
         $args->{date_start}   = $now->plus_time_interval('20m');
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Calle';
-        ok $c->is_forward_starting,     'forward starting';
+        ok $c->is_forward_starting, 'forward starting';
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{date_pricing} = $now;
@@ -155,12 +155,12 @@ subtest 'call variations' => sub {
         $args->{duration}     = '15m';
         $args->{barrier}      = 'S0P';
         $c                    = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Calle';
+        isa_ok $c,                 'BOM::Product::Contract::Calle';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Calle';
+        isa_ok $c,                      'BOM::Product::Contract::Calle';
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
     }
     'pricing engine selection';
@@ -265,7 +265,7 @@ subtest 'call pricing engine equal tie markup' => sub {
             current_tick => $ct,
         });
 
-        ok !$c->pricing_engine->apply_equal_tie_markup, 'cant apply_equal_tie_markup';
+        ok !$c->pricing_engine->apply_equal_tie_markup,                               'cant apply_equal_tie_markup';
         ok !defined $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), 'no correct equal tie markup';
     }
     'no equal tie for call USDJPY';
@@ -282,7 +282,7 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok !$c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup ';
+        ok !$c->pricing_engine->apply_equal_tie_markup,                               'can apply_equal_tie_markup ';
         ok !defined $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), 'correct equal tie markup';
     }
     'no equal tie for call WLDUSD';
@@ -315,7 +315,7 @@ subtest 'call pricing engine equal tie markup' => sub {
             current_tick => $ct,
         });
         ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
-        ok $c->ask_price, 'can ask price';
+        ok $c->ask_price,                              'can ask price';
         cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
     }
     'correct equal tie markup for USDJPY';
@@ -333,7 +333,7 @@ subtest 'call pricing engine equal tie markup' => sub {
             current_tick => $ct,
         });
         ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
-        ok $c->ask_price, 'can ask price';
+        ok $c->ask_price,                              'can ask price';
         cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
     }
     'correct equal tie markup for AUDCAD';
@@ -351,8 +351,8 @@ subtest 'call pricing engine equal tie markup' => sub {
             current_tick => $ct,
         });
 
-        ok !$c->pricing_engine->apply_equal_tie_markup, 'cant apply_equal_tie_markup';
-        ok $c->ask_price, 'can ask price';
+        ok !$c->pricing_engine->apply_equal_tie_markup,                                 'cant apply_equal_tie_markup';
+        ok $c->ask_price,                                                               'can ask price';
         ok !defined $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, 'no correct equal tie markup';
     }
     'no equal tie for call USDJPY';
@@ -369,8 +369,8 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok !$c->pricing_engine->apply_equal_tie_markup, 'can not apply_equal_tie_markup ';
-        ok $c->ask_price, 'can ask price';
+        ok !$c->pricing_engine->apply_equal_tie_markup,                                 'can not apply_equal_tie_markup ';
+        ok $c->ask_price,                                                               'can ask price';
         ok !defined $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, 'no defined correct equal tie markup';
     }
     'no equal tie for call WLDUSD';
@@ -387,7 +387,7 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok $c->ask_price, 'can ask price';
+        ok $c->ask_price,                                                               'can ask price';
         ok !defined $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, 'undefined apply_equal_tie_markup';
     }
     'no equal tie for R_100';

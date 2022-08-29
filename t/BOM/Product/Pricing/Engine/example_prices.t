@@ -17,7 +17,7 @@ use Format::Util::Numbers qw/roundcommon/;
 
 use Postgres::FeedDB::Spot::Tick;
 
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory              qw( produce_contract );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::MarketData qw(create_underlying);

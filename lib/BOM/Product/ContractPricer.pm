@@ -5,8 +5,8 @@ use warnings;
 
 use JSON::MaybeXS;
 use Math::Util::CalculatedValue::Validatable;
-use List::Util qw(max);
-use List::MoreUtils qw(none all);
+use List::Util            qw(max);
+use List::MoreUtils       qw(none all);
 use Format::Util::Numbers qw/financialrounding/;
 
 use Price::Calculator;
@@ -91,7 +91,7 @@ has [
     qw(q_rate
         r_rate
         pricing_mu
-        )
+    )
 ] => (
     is         => 'rw',
     lazy_build => 1,
@@ -110,7 +110,7 @@ Currently, we have BOM::Product::Role::Binary and BOM::Product::Role::NonBinary 
 has [
     qw( bid_price
         theo_price
-        )
+    )
 ] => (
     is         => 'ro',
     init_arg   => undef,
@@ -163,7 +163,7 @@ has greek_engine => (
 
 has [qw(
         pricing_new
-        )
+    )
 ] => (
     is         => 'ro',
     isa        => 'Bool',

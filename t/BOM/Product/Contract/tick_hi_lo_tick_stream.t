@@ -14,9 +14,9 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::Runtime;
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 use Test::BOM::UnitTestPrice;
 
@@ -72,8 +72,8 @@ subtest 'tick highlow tick stream' => sub {
 
     $args->{selected_tick} = 2;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 90, 'contract for selected tick = 2 is expired';
-    is scalar @{$contract->tick_stream}, 2, 'Only first two ticks are stored';
+    is $contract->close_tick->{quote},   90, 'contract for selected tick = 2 is expired';
+    is scalar @{$contract->tick_stream}, 2,  'Only first two ticks are stored';
 
     $args->{selected_tick} = 3;
     $contract = produce_contract($args);
@@ -108,13 +108,13 @@ subtest 'tick highlow tick stream' => sub {
 
     $args->{selected_tick} = 2;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 90, 'contract for selected tick = 2 is expired';
-    is scalar @{$contract->tick_stream}, 2, 'Only first two ticks are stored';
+    is $contract->close_tick->{quote},   90, 'contract for selected tick = 2 is expired';
+    is scalar @{$contract->tick_stream}, 2,  'Only first two ticks are stored';
 
     $args->{selected_tick} = 3;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 80, 'contract for selected tick = 3 is expired';
-    is scalar @{$contract->tick_stream}, 3, 'Only first three ticks are stored';
+    is $contract->close_tick->{quote},   80, 'contract for selected tick = 3 is expired';
+    is scalar @{$contract->tick_stream}, 3,  'Only first three ticks are stored';
 
     $args->{selected_tick} = 4;
     $contract = produce_contract($args);
@@ -139,18 +139,18 @@ subtest 'tick highlow tick stream' => sub {
 
     $args->{selected_tick} = 1;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 150, 'contract for selected tick = 1 is expired';
-    is scalar @{$contract->tick_stream}, 4, 'Only first 4 ticks are stored';
+    is $contract->close_tick->{quote},   150, 'contract for selected tick = 1 is expired';
+    is scalar @{$contract->tick_stream}, 4,   'Only first 4 ticks are stored';
 
     $args->{selected_tick} = 2;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 90, 'contract for selected tick = 2 is expired';
-    is scalar @{$contract->tick_stream}, 2, 'Only first two ticks are stored';
+    is $contract->close_tick->{quote},   90, 'contract for selected tick = 2 is expired';
+    is scalar @{$contract->tick_stream}, 2,  'Only first two ticks are stored';
 
     $args->{selected_tick} = 3;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 80, 'contract for selected tick = 3 is expired';
-    is scalar @{$contract->tick_stream}, 3, 'Only first three ticks are stored';
+    is $contract->close_tick->{quote},   80, 'contract for selected tick = 3 is expired';
+    is scalar @{$contract->tick_stream}, 3,  'Only first three ticks are stored';
 
     $args->{selected_tick} = 4;
     $contract = produce_contract($args);
@@ -176,18 +176,18 @@ subtest 'tick highlow tick stream' => sub {
 
     $args->{selected_tick} = 1;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 150, 'contract for selected tick = 1 is expired';
-    is scalar @{$contract->tick_stream}, 4, 'Only first 4 ticks are stored';
+    is $contract->close_tick->{quote},   150, 'contract for selected tick = 1 is expired';
+    is scalar @{$contract->tick_stream}, 4,   'Only first 4 ticks are stored';
 
     $args->{selected_tick} = 2;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 90, 'contract for selected tick = 2 is expired';
-    is scalar @{$contract->tick_stream}, 2, 'Only first two ticks are stored';
+    is $contract->close_tick->{quote},   90, 'contract for selected tick = 2 is expired';
+    is scalar @{$contract->tick_stream}, 2,  'Only first two ticks are stored';
 
     $args->{selected_tick} = 3;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 80, 'contract for selected tick = 3 is expired';
-    is scalar @{$contract->tick_stream}, 3, 'Only first three ticks are stored';
+    is $contract->close_tick->{quote},   80, 'contract for selected tick = 3 is expired';
+    is scalar @{$contract->tick_stream}, 3,  'Only first three ticks are stored';
 
     $args->{selected_tick} = 4;
     $contract = produce_contract($args);
@@ -196,8 +196,8 @@ subtest 'tick highlow tick stream' => sub {
 
     $args->{selected_tick} = 5;
     $contract = produce_contract($args);
-    is $contract->close_tick->{quote}, 60, 'contract for selected tick = 5 is expired';
-    is scalar @{$contract->tick_stream}, 5, 'All available ticks';
+    is $contract->close_tick->{quote},   60, 'contract for selected tick = 5 is expired';
+    is scalar @{$contract->tick_stream}, 5,  'All available ticks';
 
 };
 

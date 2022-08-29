@@ -6,8 +6,8 @@ use warnings;
 use Test::MockTime::HiRes;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 use Date::Utility;
 use Test::More;
@@ -167,9 +167,9 @@ subtest 'shortcodes' => sub {
         my $c = produce_contract($args);
         delete $args->{current_tick};
         note('input: ' . $json->encode($args));
-        is $c->shortcode, $expected_shortcode, 'compare shortcode for input';
-        is $c->shortcode(1), $expected_shortcode_w_curr, 'compare shortcode with currency for input';
-        is $c->get_relative_shortcode, $relative_shortcode, 'relative shortcode is correct';
+        is $c->shortcode,              $expected_shortcode,        'compare shortcode for input';
+        is $c->shortcode(1),           $expected_shortcode_w_curr, 'compare shortcode with currency for input';
+        is $c->get_relative_shortcode, $relative_shortcode,        'relative shortcode is correct';
     }
 
     restore_time();

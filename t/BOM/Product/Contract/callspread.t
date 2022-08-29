@@ -8,7 +8,7 @@ use Test::Exception;
 use Test::FailWarnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -33,15 +33,15 @@ subtest 'config' => sub {
         date_start    => $now,
         date_pricing  => $now,
     });
-    is $c->longcode->[0], 'Win up to [_7] [_6] if [_1]\'s exit tick is between [_5] and [_4] at [_3] after [_2].';
+    is $c->longcode->[0],    'Win up to [_7] [_6] if [_1]\'s exit tick is between [_5] and [_4] at [_3] after [_2].';
     is $c->longcode->[2][0], 'contract start time';
-    ok !$c->is_binary, 'non-binary';
-    ok $c->two_barriers,       'two barriers';
-    is $c->pricing_code,       'CALLSPREAD',    'pricing code is CALLSPREAD';
-    is $c->display_name,       'Call Spread',   'display name is Call Spread';
-    is $c->category_code,      'callputspread', 'category code is callputspread';
-    is $c->payout_type,        'non-binary',    'payout type is non-binary';
-    is $c->payouttime,         'end',           'payout time is end';
+    ok !$c->is_binary,   'non-binary';
+    ok $c->two_barriers, 'two barriers';
+    is $c->pricing_code,  'CALLSPREAD',    'pricing code is CALLSPREAD';
+    is $c->display_name,  'Call Spread',   'display name is Call Spread';
+    is $c->category_code, 'callputspread', 'category code is callputspread';
+    is $c->payout_type,   'non-binary',    'payout type is non-binary';
+    is $c->payouttime,    'end',           'payout time is end';
     isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
     isa_ok $c->high_barrier,   'BOM::Product::Contract::Strike';
     isa_ok $c->low_barrier,    'BOM::Product::Contract::Strike';
@@ -61,11 +61,11 @@ subtest 'ask/bid price' => sub {
         payout        => 100,
     };
     my $c = produce_contract($args);
-    is $c->multiplier, 9.56022944550669, 'multiplier is 9.56022944550669';
-    is $c->pricing_engine->theo_price, 49.9992383481483, 'theo price 49.9992383481483';
-    is $c->commission_per_unit, 0.599990860177779, '';
-    cmp_ok $c->ask_price,       '==', 50.6, 'correct ask price';
-    cmp_ok $c->bid_price,       '==', 49.4, 'correct bid price';
+    is $c->multiplier,                 9.56022944550669,  'multiplier is 9.56022944550669';
+    is $c->pricing_engine->theo_price, 49.9992383481483,  'theo price 49.9992383481483';
+    is $c->commission_per_unit,        0.599990860177779, '';
+    cmp_ok $c->ask_price, '==', 50.6, 'correct ask price';
+    cmp_ok $c->bid_price, '==', 49.4, 'correct bid price';
 };
 
 done_testing();

@@ -10,7 +10,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 my $now = Date::Utility->new('2016-05-11 01:00:00');

@@ -7,7 +7,7 @@ use Test::More;
 use Test::Exception;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory              qw(produce_contract);
 use Test::Fatal;
 
 subtest 'single contract' => sub {

@@ -8,11 +8,11 @@ use Test::More;
 use Test::Exception;
 use Test::Fatal;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Config::Runtime;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use Finance::Contract::Longcode   qw(shortcode_to_parameters);
 use Date::Utility;
 
 my $now    = Date::Utility->new(time);
@@ -44,13 +44,13 @@ subtest 'config' => sub {
     my $c = produce_contract($args);
 
     isa_ok $c, 'BOM::Product::Contract::Accu';
-    is $c->code,              'ACCU',        'code ACCU';
-    is $c->category_code,     'accumulator', 'category accumulator';
+    is $c->code,          'ACCU',        'code ACCU';
+    is $c->category_code, 'accumulator', 'category accumulator';
     ok $c->is_path_dependent, 'path dependent';
-    is $c->tick_count,        927,  'tick count is 927';
-    is $c->ticks_to_expiry,   927,  'ticks to expiry is 927';
-    is $c->max_duration,      1000, 'max duration is 1000';
-    is $c->ask_price,         1,    'ask_price is 1';
+    is $c->tick_count,      927,  'tick count is 927';
+    is $c->ticks_to_expiry, 927,  'ticks to expiry is 927';
+    is $c->max_duration,    1000, 'max duration is 1000';
+    is $c->ask_price,       1,    'ask_price is 1';
     ok !$c->pricing_engine,      'pricing_engine is undef';
     ok !$c->pricing_engine_name, 'pricing_engine_name is undef';
     ok !$c->payout,              'payout is not defined';
@@ -112,7 +112,7 @@ subtest 'barrier' => sub {
         is $c->low_barrier->as_absolute,       '99.96',    'low barrier as_absolute is correct';
         is $c->high_barrier->supplied_barrier, '100.0366', 'high supplied_barrier is correct';
         is $c->high_barrier->as_absolute,      '100.04',   'high barrier as_absolute is correct';
-        is $c->basis_spot, '100.00', 'basis_spot is correct';
+        is $c->basis_spot,                     '100.00',   'basis_spot is correct';
     };
 
     subtest 'non-pricing_new & no entry_tick' => sub {
@@ -134,7 +134,7 @@ subtest 'barrier' => sub {
         $args->{tick_size_barrier} = 0.02;
 
         my $c = produce_contract($args);
-        is $c->current_spot, '90.00', 'current_spot is 90.00';
+        is $c->current_spot,      '90.00',         'current_spot is 90.00';
         is $c->entry_tick->epoch, $now->epoch + 1, 'correct entry_tick';
         ok !$c->low_barrier,  'no low_barrier';
         ok !$c->high_barrier, 'no high_barrier';
@@ -150,13 +150,13 @@ subtest 'barrier' => sub {
         $args->{tick_size_barrier} = 0.02;
 
         my $c = produce_contract($args);
-        is $c->current_spot, '92.00', 'current_spot is 92.00';
+        is $c->current_spot,                   '92.00',         'current_spot is 92.00';
         is $c->entry_tick->epoch,              $now->epoch + 1, 'correct entry_tick';
-        is $c->low_barrier->supplied_barrier,  '88.2',  'low supplied_barrier is correct';
-        is $c->low_barrier->as_absolute,       '88.20', 'low barrier as_absolute is correct';
-        is $c->high_barrier->supplied_barrier, '91.8',  'high supplied_barrier is correct';
-        is $c->high_barrier->as_absolute,      '91.80', 'high barrier as_absolute is correct';
-        is $c->basis_spot, '90', 'basis_spot is correct';
+        is $c->low_barrier->supplied_barrier,  '88.2',          'low supplied_barrier is correct';
+        is $c->low_barrier->as_absolute,       '88.20',         'low barrier as_absolute is correct';
+        is $c->high_barrier->supplied_barrier, '91.8',          'high supplied_barrier is correct';
+        is $c->high_barrier->as_absolute,      '91.80',         'high barrier as_absolute is correct';
+        is $c->basis_spot,                     '90',            'basis_spot is correct';
     };
 
     $args->{date_pricing} = $now;
@@ -242,7 +242,7 @@ subtest 'take_profit' => sub {
         };
         $c = produce_contract($args);
         ok !$c->is_valid_to_buy, 'invalid to buy';
-        is $c->primary_validation_error->message, 'too many decimal places';
+        is $c->primary_validation_error->message,                'too many decimal places';
         is $c->primary_validation_error->message_to_client->[0], 'Only [_1] decimal places allowed.', 'Only [_1] decimal places allowed.';
         is $c->primary_validation_error->message_to_client->[1], '2';
     };
@@ -253,17 +253,17 @@ subtest 'take_profit' => sub {
         };
         $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->take_profit->{amount}, '26.97';
+        is $c->take_profit->{amount},      '26.97';
         is $c->take_profit->{date}->epoch, $c->date_pricing->epoch;
-        is $c->target_payout, '126.97';
+        is $c->target_payout,              '126.97';
 
         $args->{limit_order} = {
             take_profit => '50',
         };
         $c = produce_contract($args);
-        is $c->take_profit->{amount}, '50';
+        is $c->take_profit->{amount},      '50';
         is $c->take_profit->{date}->epoch, $c->date_pricing->epoch;
-        is $c->target_payout, '150';
+        is $c->target_payout,              '150';
     };
 
     subtest 'non-pricing new' => sub {
@@ -276,9 +276,9 @@ subtest 'take_profit' => sub {
             }};
         $c = produce_contract($args);
         ok !$c->pricing_new, 'non pricing_new';
-        is $c->take_profit->{amount}, '5.11';
+        is $c->take_profit->{amount},      '5.11';
         is $c->take_profit->{date}->epoch, $now->epoch;
-        is $c->target_payout, '105.11';
+        is $c->target_payout,              '105.11';
 
         delete $args->{limit_order};
     };

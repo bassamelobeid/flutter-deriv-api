@@ -11,9 +11,9 @@ use JSON::MaybeXS;
 use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
@@ -72,15 +72,15 @@ subtest 'range' => sub {
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Range';
-        is $c->code,          'RANGE';
-        is $c->pricing_code,  'RANGE';
+        is $c->code,         'RANGE';
+        is $c->pricing_code, 'RANGE';
         cmp_ok $c->ask_price, '==', 0.5;
         is roundcommon(0.001, $c->pricing_vol), 0.177;
-        is $c->sentiment, 'low_vol';
+        is $c->sentiment,                       'low_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine,        'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
+        isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 
@@ -110,7 +110,7 @@ subtest 'range' => sub {
         $args->{is_valid_exit_tick} = 1;
         $c                          = produce_contract($args);
         ok $c->is_expired, 'expired';
-        ok !$c->hit_tick, 'no hit tick';
+        ok !$c->hit_tick,  'no hit tick';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
         delete $args->{exit_tick};
         delete $args->{is_valid_exit_tick};
@@ -128,8 +128,8 @@ subtest 'up or down' => sub {
         is $c->sentiment,    'high_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine,        'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
+        isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 
@@ -157,7 +157,7 @@ subtest 'up or down' => sub {
         $c = produce_contract($args);
         ok $c->is_expired, 'expired';
         ok $c->entry_tick, 'entry tick';
-        ok !$c->hit_tick, 'No hit tick';
+        ok !$c->hit_tick,  'No hit tick';
         cmp_ok $c->value, '==', 0.00, 'zero payout';
         $args->{high_barrier} = 'S10P';
         $args->{date_start}   = $now->plus_time_interval('2m');

@@ -9,9 +9,9 @@ use Test::Exception;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 initialize_realtime_ticks_db();
 
@@ -52,7 +52,7 @@ subtest 'intraday' => sub {
         ok !$c->is_valid_to_sell, 'not valid to sell';
         is $c->primary_validation_error->message, 'exit tick is inconsistent';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
     };
 
     subtest 'EXPIRYMISS - date_pricing == date_expiry with consistent exit tick lower than low barrier = full payout' => sub {
@@ -149,7 +149,7 @@ subtest 'multiday' => sub {
         ok !$c->is_valid_to_sell, 'not valid to sell';
         is $c->primary_validation_error->message, 'exit tick is inconsistent';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
     };
 
     subtest 'EXPIRYMISS - expired with OHLC data' => sub {
@@ -162,7 +162,7 @@ subtest 'multiday' => sub {
         ok $c->expiry_daily, 'multi-day contract';
         ok $c->is_expired,   'is expired';
         is $c->exit_tick->quote, 100, 'exit tick is 100';
-        ok $c->is_valid_to_sell, 'valid to sell';
+        ok $c->is_valid_to_sell,             'valid to sell';
         ok !$c->waiting_for_settlement_tick, 'waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss - because close in between high barrier and low barrier';

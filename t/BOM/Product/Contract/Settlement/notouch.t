@@ -10,9 +10,9 @@ use Test::MockModule;
 
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 initialize_realtime_ticks_db();
 
@@ -43,8 +43,8 @@ subtest 'tick expiry' => sub {
         is $c->barrier->as_absolute, '100.10', 'barrier is 100.10';
         is $c->exit_tick->quote,     101,      'exit tick is 101';
         is $c->hit_tick->quote,      101,      'hit tick is 101';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -57,8 +57,8 @@ subtest 'tick expiry' => sub {
         is $c->barrier->as_absolute, '100.10', 'barrier is 100.10';
         is $c->exit_tick->quote,     100.1,    'exit tick is 100.1';
         is $c->hit_tick->quote,      100.1,    'hit tick is 100.1';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -74,8 +74,8 @@ subtest 'tick expiry' => sub {
         is $c->barrier->as_absolute, '100.10', 'barrier is 100.10';
         ok !$c->exit_tick, 'exit tick is undefined';
         is $c->hit_tick->quote, 100.1, 'hit tick is 100.1';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -87,9 +87,9 @@ subtest 'tick expiry' => sub {
         is $c->entry_tick->quote,    100,      'entry tick is 100';
         is $c->barrier->as_absolute, '100.10', 'barrier is 100.10';
         is $c->exit_tick->quote,     99,       'exit tick is 99';
-        ok !$c->hit_tick, 'hit tick is undefined';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok !$c->hit_tick,                    'hit tick is undefined';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, $c->payout, 'win';
@@ -112,13 +112,13 @@ subtest 'intraday' => sub {
             [99,  $now->epoch + 2,   $symbol],
             [100, $now->epoch + 301, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->plus_time_interval($args->{duration} . '1s')});
-        ok $c->is_expired, 'is expired';
+        ok $c->is_expired,         'is expired';
         ok !$c->ok_through_expiry, 'not ok through expiry';
         ok !$c->is_valid_to_sell,  'not valid to sell';
         ok !$c->hit_tick,          'no hit tick';
         is $c->primary_validation_error->message, 'inconsistent close for period';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
     };
 
     subtest 'NOTOUCH - Does not touch the barrier and ok through expiry. Contract will be settled as a win.' => sub {
@@ -129,8 +129,8 @@ subtest 'intraday' => sub {
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->plus_time_interval($args->{duration} . '1s')});
         ok $c->is_expired,        'is expired';
         ok $c->ok_through_expiry, 'ok through expiry';
-        ok !$c->hit_tick, 'no hit tick';
-        ok $c->is_valid_to_sell, 'valid to sell';
+        ok !$c->hit_tick,         'no hit tick';
+        ok $c->is_valid_to_sell,  'valid to sell';
         is $c->value, $c->payout, 'win';
     };
 
@@ -140,7 +140,7 @@ subtest 'intraday' => sub {
             [100.1, $now->epoch + 2,                         $symbol],
             [100,   $now->plus_time_interval('5m1s')->epoch, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->plus_time_interval('2s')});
-        ok $c->is_expired, 'is expired';
+        ok $c->is_expired,         'is expired';
         ok !$c->ok_through_expiry, 'not ok through expiry';
         is $c->hit_tick->quote, 100.1, 'hit tick is 100.1';
         ok $c->is_valid_to_sell, 'valid to sell';
@@ -166,7 +166,7 @@ subtest 'multiday' => sub {
         ok !$c->is_valid_to_sell, 'not valid to sell';
         is $c->primary_validation_error->message, 'exit tick is inconsistent';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
     };
 
     subtest 'NOTOUCH - consistent exit tick after expiry' => sub {
@@ -179,7 +179,7 @@ subtest 'multiday' => sub {
         ok $c->expiry_daily, 'multi-day contract';
         ok $c->is_expired,   'is expired';
         ok $c->hit_tick,     'has hit tick';
-        is $c->hit_tick->quote, '102', 'hit tick is 102';
+        is $c->hit_tick->quote, '102',           'hit tick is 102';
         is $c->hit_tick->epoch, $now->epoch + 2, 'hit tick epoch is correct';
 
         $c = produce_contract({
@@ -191,7 +191,7 @@ subtest 'multiday' => sub {
         ok $c->expiry_daily, 'multi-day contract';
         ok $c->is_expired,   'is expired';
         ok $c->hit_tick,     'has hit tick';
-        is $c->hit_tick->quote, '102', 'hit tick is 102';
+        is $c->hit_tick->quote, '102',           'hit tick is 102';
         is $c->hit_tick->epoch, $now->epoch + 2, 'hit tick epoch is correct';
     };
 
@@ -204,10 +204,10 @@ subtest 'multiday' => sub {
         ok $c->expiry_daily, 'multi-day contract';
         ok $c->is_expired,   'is expired';
         is $c->hit_tick->quote, 101, 'hit tick is 101';
-        ok $c->ok_through_expiry, 'ok through expiry';
-        ok !$c->is_valid_to_sell, 'valid to sell';
+        ok $c->ok_through_expiry,           'ok through expiry';
+        ok !$c->is_valid_to_sell,           'valid to sell';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
             [100, $now->epoch + 1,                                                 $symbol],
             [101, $now->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch, $symbol],
@@ -219,7 +219,7 @@ subtest 'multiday' => sub {
         is $c->hit_tick->quote, 101, 'hit tick is 101';
         ok $c->ok_through_expiry, 'ok through expiry';
         ok $c->is_valid_to_sell,  'valid to sell';
-        is $c->value,             0, 'loss - because high > barrier';
+        is $c->value, 0, 'loss - because high > barrier';
     };
 };
 

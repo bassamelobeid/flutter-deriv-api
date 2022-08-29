@@ -15,7 +15,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Product::ContractFactory qw( produce_contract );
-use Finance::Contract::Longcode qw(
+use Finance::Contract::Longcode   qw(
     shortcode_to_parameters
 );
 

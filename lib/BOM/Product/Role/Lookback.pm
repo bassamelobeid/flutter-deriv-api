@@ -4,7 +4,7 @@ use Moose::Role;
 with 'BOM::Product::Role::NonBinary';
 
 use Time::Duration::Concise;
-use List::Util qw(min max first);
+use List::Util            qw(min max first);
 use Format::Util::Numbers qw(financialrounding);
 use Math::BigFloat;
 use LandingCompany::Commission qw(get_underlying_base_commission);

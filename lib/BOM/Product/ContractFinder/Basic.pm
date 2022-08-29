@@ -6,7 +6,7 @@ use warnings;
 use POSIX qw(floor);
 use Date::Utility;
 use Time::Duration::Concise;
-use VolSurface::Utils qw(get_strike_for_spot_delta);
+use VolSurface::Utils   qw(get_strike_for_spot_delta);
 use Number::Closest::XS qw(find_closest_numbers_around);
 use Quant::Framework;
 use Cache::LRU;
@@ -49,7 +49,8 @@ sub decorate {
                     push @trade_dates, $date;
                 }
                 $o->{forward_starting_options} = [
-                    map { {
+                    map {
+                        {
                             date  => Date::Utility->new($_->{open})->truncate_to_day->epoch,
                             open  => $_->{open},
                             close => $_->{close},

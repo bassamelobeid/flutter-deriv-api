@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory                qw(produce_contract);
 use Test::More;
 use Test::MockModule;
 use Test::Warn;
@@ -52,7 +52,7 @@ subtest 'monday mornings intraday' => sub {
             [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
         });
     $c = produce_contract($args);
-    ok $c->pricing_vol, 'no warnings';
+    ok $c->pricing_vol,                             'no warnings';
     ok !$c->empirical_volsurface->validation_error, 'no error if we have enough ticks';
 };
 

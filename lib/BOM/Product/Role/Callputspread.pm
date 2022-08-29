@@ -5,9 +5,9 @@ use Moose::Role;
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd', 'BOM::Product::Role::NonBinary';
 
 use LandingCompany::Commission qw(get_underlying_base_commission);
-use Format::Util::Numbers qw/financialrounding/;
-use List::Util qw(min);
-use List::MoreUtils qw(any);
+use Format::Util::Numbers      qw/financialrounding/;
+use List::Util                 qw(min);
+use List::MoreUtils            qw(any);
 use Pricing::Engine::Callputspread;
 use YAML::XS qw(LoadFile);
 

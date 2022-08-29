@@ -7,11 +7,11 @@ use Test::More;
 use Test::Exception;
 use Test::Fatal;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Config::Runtime;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use Finance::Contract::Longcode   qw(shortcode_to_parameters);
 use Date::Utility;
 
 my $now    = Date::Utility->new;
@@ -55,9 +55,9 @@ subtest 'hit barrier' => sub {
     $c = produce_contract($args);
     ok $c->is_expired, 'has expired';
     ok $c->hit_tick,   'has hit_tick';
-    is $c->hit_tick->epoch, $now->epoch + 2, 'currect hit tick';
+    is $c->hit_tick->epoch, $now->epoch + 2,       'currect hit tick';
     is $c->hit_tick->epoch, $c->close_tick->epoch, 'hit tick == close tick';
-    is $c->value, '0', 'current value';
+    is $c->value,           '0',                   'current value';
     ok $c->is_valid_to_sell, 'valid to sell';
 };
 
@@ -88,8 +88,8 @@ subtest 'hit take profit' => sub {
     );
 
     $c = produce_contract($args);
-    ok $c->is_expired,       'has expired';
-    is $c->value,            '102.01', 'current value';
+    ok $c->is_expired, 'has expired';
+    is $c->value, '102.01', 'current value';
     ok $c->is_valid_to_sell, 'valid to sell';
 
     delete $args->{date_pricing};
@@ -116,8 +116,8 @@ subtest 'hit take profit and barrier at the same time' => sub {
     ok $c->hit_tick,   'has hit_tick';
     ok $c->exit_tick,  'has exit_tick';
     is $c->hit_tick->epoch, $c->close_tick->epoch, 'exit tick == close tick';
-    is $c->hit_tick->epoch, $now->epoch + 4, 'currect hit tick';
-    is $c->value, '0', 'current value';
+    is $c->hit_tick->epoch, $now->epoch + 4,       'currect hit tick';
+    is $c->value,           '0',                   'current value';
 
     delete $args->{limit_order};
 };
@@ -135,9 +135,9 @@ subtest 'hit tick expiry' => sub {
     my $c = produce_contract($args);
     ok $c->is_expired, 'has expired';
     ok $c->exit_tick,  'has exit_tick';
-    ok !$c->hit_tick, 'no hit_tick';
+    ok !$c->hit_tick,  'no hit_tick';
     is $c->exit_tick->epoch, $c->close_tick->epoch, 'exit tick == close tick';
-    is $c->value, '102.01', 'current value';
+    is $c->value,            '102.01',              'current value';
     ok $c->is_valid_to_sell, 'valid to sell';
 };
 
@@ -153,9 +153,9 @@ subtest 'hit tick expiry and barrier at the same time' => sub {
     $args->{date_pricing} = $now->plus_time_interval('4s');
 
     my $c = produce_contract($args);
-    ok $c->is_expired,       'has expired';
-    ok $c->exit_tick,        'has exit_tick';
-    is $c->value,            '0', 'current value';
+    ok $c->is_expired, 'has expired';
+    ok $c->exit_tick,  'has exit_tick';
+    is $c->value, '0', 'current value';
     ok $c->is_valid_to_sell, 'valid to sell';
 
     delete $args->{limit_order};

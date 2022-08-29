@@ -9,7 +9,7 @@ use Test::Exception;
 use Test::Warnings;
 use Test::MockModule;
 use File::Spec;
-use BOM::Product::ContractFactory qw( produce_contract);
+use BOM::Product::ContractFactory                qw( produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 subtest 'Proper form' => sub {

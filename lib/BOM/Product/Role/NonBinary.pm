@@ -5,9 +5,9 @@ use Moose::Role;
 requires 'theo_price', 'base_commission', 'multiplier', 'minimum_bid_price';
 
 use BOM::Config;
-use List::Util qw(max min);
+use List::Util            qw(max min);
 use Format::Util::Numbers qw/financialrounding/;
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util          qw(looks_like_number);
 
 override '_build_bid_price' => sub {
     my $self = shift;

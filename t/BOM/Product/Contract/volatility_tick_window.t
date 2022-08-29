@@ -10,7 +10,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 my $now = Date::Utility->new('2019-06-20');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

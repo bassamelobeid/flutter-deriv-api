@@ -12,9 +12,9 @@ use Test::Exception;
 use Test::Memory::Cycle;
 use Test::MockModule;
 
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis    qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory              qw(produce_contract);
 use LandingCompany::Registry;
 use Date::Utility;
 use Finance::Underlying;

@@ -14,7 +14,7 @@ use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 my $now = Date::Utility->new('2017-09-07');
 my $qc  = BOM::Config::QuantsConfig->new(
@@ -81,8 +81,8 @@ subtest 'match/mismatch condition for commission adjustment' => sub {
 
     $args->{underlying} = 'frxGBPJPY';
     my $c = produce_contract($args);
-    is $c->barrier_tier, 'OTM_max', 'barrier tier is OTM_max';
-    is $c->pricing_engine->event_markup->amount, 0, 'zero markup if no matching config';
+    is $c->barrier_tier,                         'OTM_max', 'barrier tier is OTM_max';
+    is $c->pricing_engine->event_markup->amount, 0,         'zero markup if no matching config';
     $args->{underlying} = 'frxUSDJPY';
     $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0.25, '0.25 markup for matching both underlying & contract type config';
@@ -157,8 +157,8 @@ subtest 'barrier tier' => sub {
     $args->{product_type} = 'basic';
     my $c = produce_contract(+{%$args, barrier => 'S0P'});
     ok $c->is_atm_bet, 'is atm';
-    is $c->barrier_tier, 'ATM', 'barrier tier is ATM';
-    is $c->pricing_engine->event_markup->amount, 0.01, '0.01 of commission applied to ATM';
+    is $c->barrier_tier,                         'ATM', 'barrier tier is ATM';
+    is $c->pricing_engine->event_markup->amount, 0.01,  '0.01 of commission applied to ATM';
 };
 
 subtest 'bias long' => sub {

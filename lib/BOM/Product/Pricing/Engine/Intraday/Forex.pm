@@ -4,9 +4,9 @@ use Moose;
 extends 'BOM::Product::Pricing::Engine';
 with 'BOM::Product::Pricing::Engine::Role::RiskMarkup';
 
-use List::Util qw(max min sum first);
+use List::Util      qw(max min sum first);
 use List::MoreUtils qw(any);
-use Array::Utils qw(:all);
+use Array::Utils    qw(:all);
 
 use BOM::Market::DataDecimate;
 use Volatility::Seasonality;

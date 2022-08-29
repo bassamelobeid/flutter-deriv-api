@@ -9,9 +9,9 @@ use Test::Exception;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 initialize_realtime_ticks_db();
 
@@ -38,10 +38,10 @@ subtest 'tick expiry' => sub {
     subtest 'CALL - exit tick higher than entry tick will be settled as win' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch + 1, $symbol], [101, $now->epoch + 2, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('2s')});
-        ok $c->entry_tick,       'entry tick is defined';
-        ok $c->exit_tick,        'exit tick is defined';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->entry_tick,                   'entry tick is defined';
+        ok $c->exit_tick,                    'exit tick is defined';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, $c->payout, 'win';
@@ -50,10 +50,10 @@ subtest 'tick expiry' => sub {
     subtest 'CALL - exit tick equal to entry tick will be settled as loss' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch + 1, $symbol], [100, $now->epoch + 2, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('2s')});
-        ok $c->entry_tick,       'entry tick is defined';
-        ok $c->exit_tick,        'exit tick is defined';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->entry_tick,                   'entry tick is defined';
+        ok $c->exit_tick,                    'exit tick is defined';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -62,10 +62,10 @@ subtest 'tick expiry' => sub {
     subtest 'CALL - exit tick lower to entry tick will be settled as loss' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch + 1, $symbol], [99, $now->epoch + 2, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('2s')});
-        ok $c->entry_tick,       'entry tick is defined';
-        ok $c->exit_tick,        'exit tick is defined';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->entry_tick,                   'entry tick is defined';
+        ok $c->exit_tick,                    'exit tick is defined';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -89,7 +89,7 @@ subtest 'intraday' => sub {
         ok !$c->is_valid_to_sell, 'not valid to sell';
         is $c->primary_validation_error->message, 'exit tick is inconsistent';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
     };
 
     subtest 'CALL - date_pricing == date_expiry with consistent exit tick lower than entry spot' => sub {
@@ -137,7 +137,7 @@ subtest 'multiday' => sub {
         ok !$c->is_valid_to_sell, 'not valid to sell';
         is $c->primary_validation_error->message, 'exit tick is inconsistent';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
     };
 
     subtest 'CALL - expired with OHLC data' => sub {
@@ -150,7 +150,7 @@ subtest 'multiday' => sub {
         ok $c->expiry_daily, 'multi-day contract';
         ok $c->is_expired,   'is expired';
         is $c->exit_tick->quote, 100, 'exit tick is 100';
-        ok $c->is_valid_to_sell, 'valid to sell';
+        ok $c->is_valid_to_sell,             'valid to sell';
         ok !$c->waiting_for_settlement_tick, 'waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss - because close == barrier';

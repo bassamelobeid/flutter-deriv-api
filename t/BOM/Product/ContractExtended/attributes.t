@@ -4,18 +4,18 @@ use warnings;
 use Test::Most;
 use Test::Exception;
 use Test::Warnings qw/warning/;
-use Scalar::Util qw( looks_like_number );
+use Scalar::Util   qw( looks_like_number );
 use Test::MockModule;
 use File::Spec;
 use Date::Utility;
 
-use BOM::Product::ContractFactory qw( produce_contract );
-use Finance::Contract::Longcode qw( shortcode_to_parameters );
+use BOM::Product::ContractFactory              qw( produce_contract );
+use Finance::Contract::Longcode                qw( shortcode_to_parameters );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::MarketData qw(create_underlying_db);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData                              qw(create_underlying_db);
+use BOM::MarketData                              qw(create_underlying);
 use BOM::MarketData::Types;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

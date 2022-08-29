@@ -8,7 +8,7 @@ use Test::MockModule;
 use File::Spec;
 
 use Date::Utility;
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory                qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use Pricing::Engine::EuropeanDigitalSlope;
@@ -200,7 +200,7 @@ subtest 'Intraday::Forex' => sub {
 subtest 'Slope' => sub {
     plan tests => 6;
 
-    ok $expiry_range->ask_probability->amount > 0, 'probability > 0';
+    ok $expiry_range->ask_probability->amount > 0,  'probability > 0';
     ok $expiry_range->ask_probability->amount <= 1, 'probability <= 1';
     #We expect risk_markup, CALL and PUT
     is scalar keys %{$expiry_range->debug_information}, 4;

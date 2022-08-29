@@ -7,9 +7,9 @@ use Test::More;
 use Test::FailWarnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use Format::Util::Numbers qw(roundnear);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use Format::Util::Numbers                        qw(roundnear);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use Test::Fatal;
@@ -240,7 +240,7 @@ subtest 'invalid amount_type' => sub {
 
     my $error = exception { produce_contract($args); };
     isa_ok $error, 'BOM::Product::Exception';
-    is $error->error_code, 'InvalidInput', 'correct error code';
+    is $error->error_code,             'InvalidInput', 'correct error code';
     is $error->message_to_client->[0], '[_1] is not a valid input for contract type [_2].';
     is $error->message_to_client->[1], 'basis';
     is $error->message_to_client->[2], 'LBHIGHLOW';
@@ -309,7 +309,7 @@ subtest 'lookback expiry conditions' => sub {
             }) for ([102, $now->epoch + 1], [103, $now->epoch + 2], [104, $now->epoch + 59]);
         my $c = produce_contract($args);
         ok !$c->is_atm_bet, 'non-ATM contract';
-        ok $c->is_expired, 'contract is expired';
+        ok $c->is_expired,  'contract is expired';
         is $c->exit_tick->quote, 104, 'exit tick is present';
         ok !$c->is_valid_exit_tick, 'not valid exit tick because we are still waiting for the next tick';
         is $c->value, 0, 'value is ' . 0;
@@ -327,8 +327,8 @@ subtest 'lookback expiry conditions' => sub {
         ok $c->is_expired, 'contract is expired';
         is $c->exit_tick->quote, 104, 'exit tick present';
         ok $c->is_valid_exit_tick, 'exit tick is valid';
-        is $c->value,            $test_case->[1], 'value is ' . $test_case->[1];
-        cmp_ok $c->bid_price,    '==', $test_case->[1], 'bid price ' . $test_case->[1];
+        is $c->value, $test_case->[1], 'value is ' . $test_case->[1];
+        cmp_ok $c->bid_price, '==', $test_case->[1], 'bid price ' . $test_case->[1];
         ok $c->is_valid_to_sell, 'valid to sell';
     }
 };

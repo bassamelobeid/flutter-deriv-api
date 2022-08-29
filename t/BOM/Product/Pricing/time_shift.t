@@ -7,7 +7,7 @@ use Test::More;
 use Test::FailWarnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;

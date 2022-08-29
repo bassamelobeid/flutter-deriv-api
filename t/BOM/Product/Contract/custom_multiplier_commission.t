@@ -14,7 +14,7 @@ use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use Test::MockModule;
 
 my $mock = Test::MockModule->new('BOM::Config::QuantsConfig');

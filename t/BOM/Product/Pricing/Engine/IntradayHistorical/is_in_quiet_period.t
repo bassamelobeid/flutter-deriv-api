@@ -7,8 +7,8 @@ use Test::More;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -29,7 +29,7 @@ subtest 'is_in_quiet_period' => sub {
     };
     my $c = produce_contract($contract_args);
     ok $c->is_in_quiet_period($traded_start->minus_time_interval('1s')), 'quiet period if it is 1 second before traded period';
-    ok !$c->is_in_quiet_period($traded_start), 'not in quiet period if it is in the actively traded period';
+    ok !$c->is_in_quiet_period($traded_start),                           'not in quiet period if it is in the actively traded period';
     is $c->pricing_engine->long_term_average_vol, 0.07, '7% long term average vol for non-quiet period';
     $c = produce_contract({
             %$contract_args,

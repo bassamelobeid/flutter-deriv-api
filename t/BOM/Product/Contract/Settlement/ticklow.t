@@ -9,9 +9,9 @@ use Test::Exception;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 initialize_realtime_ticks_db();
 
@@ -40,9 +40,9 @@ subtest 'tick expiry' => sub {
         my $c = eval { produce_contract({%$args, date_pricing => $now->plus_time_interval('2s')}) };
         is $c->entry_tick->quote, 100,   'entry tick is 100';
         is $c->hit_tick->quote,   99.99, 'hit tick is 99.99';
-        ok !$c->lowest_tick, 'lowest tick is undefined';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok !$c->lowest_tick,                 'lowest tick is undefined';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -54,9 +54,9 @@ subtest 'tick expiry' => sub {
         my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('2s')});
         is $c->entry_tick->quote, 99.99, 'entry tick is 99.99';
         is $c->hit_tick->quote,   99.99, 'hit tick is 99.99';
-        ok !$c->lowest_tick, 'lowest tick is undefined';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok !$c->lowest_tick,                 'lowest tick is undefined';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -74,8 +74,8 @@ subtest 'tick expiry' => sub {
         is $c->entry_tick->quote, 100.1, 'entry tick is 100.1';
         ok !$c->hit_tick, 'hit tick is undefined';
         is $c->lowest_tick->quote, 100.1, 'lowest tick is 100.1';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, $c->payout, 'win';
@@ -93,8 +93,8 @@ subtest 'tick expiry' => sub {
         is $c->entry_tick->quote, 100.01, 'entry tick is 100.01';
         ok !$c->hit_tick, 'hit tick is undefined';
         is $c->lowest_tick->quote, 99.09, 'lowest tick is 99.09';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, $c->payout, 'win';
@@ -112,8 +112,8 @@ subtest 'tick expiry' => sub {
         is $c->entry_tick->quote,  100.1,  'entry tick is 100.1';
         is $c->hit_tick->quote,    100.09, 'hit tick is 100.09';
         is $c->lowest_tick->quote, 100.08, 'lowest tick is 100.08';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';

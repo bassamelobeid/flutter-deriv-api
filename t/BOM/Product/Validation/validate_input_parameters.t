@@ -6,15 +6,15 @@ use Test::Warnings;
 use Test::Fatal;
 
 use Date::Utility;
-use Scalar::Util qw(blessed);
+use Scalar::Util                  qw(blessed);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config::Runtime;
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 use Test::MockModule;
 use Postgres::FeedDB::Spot::Tick;
@@ -185,7 +185,7 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
         produce_contract($bet_params2)
     };
     is $error->message_to_client->[0], 'Barrier cannot be zero.', 'message_to_client - Barrier cannot be zero.';
-    is $error->details->{field}, 'barrier', 'correct error details';
+    is $error->details->{field},       'barrier',                 'correct error details';
 
     $bet_params2->{barrier} = 101;
     $c = produce_contract($bet_params2);
@@ -226,7 +226,7 @@ subtest 'invalid barrier for tick expiry' => sub {
     $bet_params->{date_start}   = $now;
     delete $bet_params->{exit_tick};
     $c = produce_contract($bet_params);
-    ok $c->tick_expiry, 'tick expiry';
+    ok $c->tick_expiry,      'tick expiry';
     ok !$c->is_valid_to_buy, 'invalid to buy for frxUSDJPY';
     like($c->primary_validation_error->{message}, qr/Intend to buy tick expiry contract/, 'tick expiry barrier check');
     is $c->primary_validation_error->{details}->{field}, 'barrier2', 'error detials is not correct';
@@ -279,7 +279,7 @@ subtest 'invalid payout currency' => sub {
     $c = produce_contract($bet_params);
     my $error = exception { $c->is_valid_to_buy };
     is $error->message_to_client->[0], 'Invalid payout currency', 'message_to_client - Invalid payout currency';
-    is $error->details->{field}, 'currency', 'error details is correct';
+    is $error->details->{field},       'currency',                'error details is correct';
 };
 
 subtest 'stable crypto as payout currency' => sub {
@@ -382,7 +382,7 @@ subtest "Minimum multiplier for very small numbers should not be shown in scient
     my $exception = exception {
         produce_contract($bet_params);
     };
-    is $exception->{error_code}, 'MinimumMultiplier';
+    is $exception->{error_code},    'MinimumMultiplier';
     is $exception->{error_args}[0], '0.00005000';
 };
 

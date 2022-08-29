@@ -6,7 +6,7 @@ use warnings;
 use Test::More;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
@@ -50,22 +50,22 @@ subtest 'pricing new - general' => sub {
     is $c->ask_price,  100, 'ask_price is 100';
     ok !$c->take_profit, 'take_profit is undef';
     isa_ok $c->stop_out, 'BOM::Product::LimitOrder';
-    is $c->stop_out->order_type, 'stop_out';
+    is $c->stop_out->order_type,        'stop_out';
     is $c->stop_out->order_date->epoch, $c->date_pricing->epoch;
-    is $c->stop_out->order_amount,  -100;
-    is $c->stop_out->basis_spot,    '100.00';
-    is $c->stop_out->barrier_value, '110.00';
+    is $c->stop_out->order_amount,      -100;
+    is $c->stop_out->basis_spot,        '100.00';
+    is $c->stop_out->barrier_value,     '110.00';
 
     $args->{limit_order} = {
         'take_profit' => 50,
     };
     $c = produce_contract($args);
     isa_ok $c->take_profit, 'BOM::Product::LimitOrder';
-    is $c->take_profit->order_type, 'take_profit';
+    is $c->take_profit->order_type,        'take_profit';
     is $c->take_profit->order_date->epoch, $c->date_pricing->epoch;
-    is $c->take_profit->order_amount,  50;
-    is $c->take_profit->basis_spot,    '100.00';
-    is $c->take_profit->barrier_value, '95.00';
+    is $c->take_profit->order_amount,      50;
+    is $c->take_profit->basis_spot,        '100.00';
+    is $c->take_profit->barrier_value,     '95.00';
 
     $args->{limit_order} = {
         'take_profit' => 0,
@@ -107,11 +107,11 @@ subtest 'non-pricing new' => sub {
         }};
 
     $c = produce_contract($args);
-    is $c->stop_out->order_type, 'stop_out';
+    is $c->stop_out->order_type,        'stop_out';
     is $c->stop_out->order_date->epoch, $c->date_start->epoch;
-    is $c->stop_out->order_amount,  -100;
-    is $c->stop_out->basis_spot,    '100.00';
-    is $c->stop_out->barrier_value, '110.00';
+    is $c->stop_out->order_amount,      -100;
+    is $c->stop_out->basis_spot,        '100.00';
+    is $c->stop_out->barrier_value,     '110.00';
 };
 
 subtest 'shortcode' => sub {
@@ -144,9 +144,9 @@ subtest 'deal cancellation' => sub {
     };
 
     my $c = produce_contract($args);
-    is $c->cancellation_price, 4.48, 'cost of cancellation is 4.48';
+    is $c->cancellation_price,         4.48,                                  'cost of cancellation is 4.48';
     is $c->cancellation_expiry->epoch, $now->plus_time_interval('1h')->epoch, 'cancellation expiry is correct';
-    is $c->ask_price, 104.48, 'ask price is 104.48';
+    is $c->ask_price,                  104.48,                                'ask price is 104.48';
 
     delete $args->{cancellation};
     $c = produce_contract($args);

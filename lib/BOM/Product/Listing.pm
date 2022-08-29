@@ -11,7 +11,7 @@ use Brands;
 use BOM::Config::MT5;
 use Brands::Countries;
 use JSON::MaybeXS qw(decode_json);
-use List::Util qw(uniq first);
+use List::Util    qw(uniq first);
 use Finance::Underlying::Market::Registry;
 use Finance::Underlying::SubMarket::Registry;
 use Finance::Underlying;

@@ -32,7 +32,7 @@ $mocked_o->mock('is_asian_hours', sub { return 1 });
 subtest 'error check' => sub {
     lives_ok {
         my $res = get_symbols();
-        ok !$res->{error}, 'no error';
+        ok !$res->{error},  'no error';
         ok $res->{symbols}, 'returns symbol list';
         is $res->{symbols}->@*, 88, '88 active symbols';
     }
@@ -47,7 +47,7 @@ subtest 'error check' => sub {
             landing_company_name => 'svg',
             country_code         => 'xx'
         });
-        ok !$res->{error}, 'no error';
+        ok !$res->{error},  'no error';
         ok $res->{symbols}, 'returns symbol list';
         is $res->{symbols}->@*, 84, '84 active symbols';
     }
@@ -59,7 +59,7 @@ subtest 'error check' => sub {
             country_code         => 'id',
             app_id               => 123
         });
-        ok !$res->{error}, 'no error';
+        ok !$res->{error},  'no error';
         ok $res->{symbols}, 'returns symbol list';
         is $res->{symbols}->@*, 84, '84 active symbols';
     }

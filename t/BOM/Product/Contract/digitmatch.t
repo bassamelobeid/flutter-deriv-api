@@ -7,8 +7,8 @@ use Test::More tests => 2;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -39,11 +39,11 @@ subtest 'digits test it all' => sub {
         is $c->pricing_code,    'DIGITMATCH';
         is $c->sentiment,       'match';
         is $c->other_side_code, 'DIGITDIFF';
-        is $c->category->code, 'digits';
+        is $c->category->code,  'digits';
         is_deeply $c->supported_expiries, ['tick'];
         isa_ok $c, 'BOM::Product::Contract::Digitmatch';
         is $c->pricing_engine_name, 'Pricing::Engine::Digits';
-        isa_ok $c->greek_engine,    'BOM::Product::Pricing::Greeks::ZeroGreek';
+        isa_ok $c->greek_engine, 'BOM::Product::Pricing::Greeks::ZeroGreek';
         ok $c->tick_expiry;
         is $c->tick_count,      5;
         is $c->ticks_to_expiry, 5;

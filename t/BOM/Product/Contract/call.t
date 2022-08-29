@@ -11,9 +11,9 @@ use Cache::RedisDB;
 use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 use BOM::Config::Redis;
 use Test::MockModule;
 use BOM::Config::Runtime;
@@ -104,10 +104,10 @@ subtest 'call variations' => sub {
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        is $c->code,        'CALL';
-        ok $c->is_intraday, 'is intraday';
+        is $c->code, 'CALL';
+        ok $c->is_intraday,   'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
-        cmp_ok $c->ask_price,      '==', 6.48, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 6.48, 'correct ask price';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
         cmp_ok $c->barrier->as_absolute, '==', 76.900, 'correct absolute barrier';
@@ -116,12 +116,12 @@ subtest 'call variations' => sub {
     'generic';
     lives_ok {
         my $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c,                 'BOM::Product::Contract::Call';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c,                      'BOM::Product::Contract::Call';
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{duration}     = '10m';
@@ -129,7 +129,7 @@ subtest 'call variations' => sub {
         $args->{date_start}   = $now->plus_time_interval('20m');
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        ok $c->is_forward_starting,     'forward starting';
+        ok $c->is_forward_starting, 'forward starting';
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{date_pricing} = $now;
@@ -137,12 +137,12 @@ subtest 'call variations' => sub {
         $args->{duration}     = '15m';
         $args->{barrier}      = 'S10P';
         $c                    = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c,                 'BOM::Product::Contract::Call';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c,                      'BOM::Product::Contract::Call';
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
     }
     'pricing engine selection';
@@ -217,13 +217,13 @@ subtest 'pips size changes' => sub {
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        is $c->code,               'CALL';
-        ok $c->is_intraday,        'is intraday';
+        is $c->code, 'CALL';
+        ok $c->is_intraday, 'is intraday';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         cmp_ok $c->barrier->as_absolute, 'eq', '0.99360', 'correct absolute barrier (it will be pipsized) ';
         cmp_ok $c->entry_tick->quote,    'eq', '0.9936',  'correct entry tick';
-        cmp_ok $c->current_spot, 'eq', '0.99360', 'correct current spot (it will be pipsized)';
-        cmp_ok $c->ask_price,    'eq', '6.50',    'correct ask price';
+        cmp_ok $c->current_spot,         'eq', '0.99360', 'correct current spot (it will be pipsized)';
+        cmp_ok $c->ask_price,            'eq', '6.50',    'correct ask price';
         $args->{date_pricing} = $now->plus_time_interval('10m');
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxAUDCAD',
@@ -239,8 +239,8 @@ subtest 'pips size changes' => sub {
         ok $c->is_expired, 'expired';
         ok $c->exit_tick,  'has exit tick';
         ok $c->exit_tick->quote > $c->barrier->as_absolute;
-        cmp_ok $c->value, '==', $c->payout, 'full payout';
-        cmp_ok $c->exit_tick->quote, 'eq', '0.9939', 'correct exit tick';
+        cmp_ok $c->value,            '==', $c->payout, 'full payout';
+        cmp_ok $c->exit_tick->quote, 'eq', '0.9939',   'correct exit tick';
 
     }
     'variable checking';

@@ -23,7 +23,7 @@ use Finance::Underlying::SubMarket;
 use Finance::Contract::Category;
 use Finance::Underlying::Market::Registry;
 use Finance::Underlying::SubMarket::Registry;
-use List::UtilsBy qw(sort_by);
+use List::UtilsBy   qw(sort_by);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config::Chronicle;

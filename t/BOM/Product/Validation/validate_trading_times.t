@@ -7,14 +7,14 @@ use Test::More tests => 6;
 use Test::Warnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
 
 use BOM::Config::Runtime;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use Test::MockModule;
 use BOM::Config::Chronicle;
 use Quant::Framework;
@@ -136,7 +136,7 @@ subtest 'trading hours' => sub {
     $args->{date_start}   = $hsi_open->minus_time_interval('10m');
     $c                    = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
-    ok !$c->is_valid_to_buy, 'not valid to buy';
+    ok !$c->is_valid_to_buy,    'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client},
         ['The market must be open at the start time. Try out the Synthetic Indices which are always open.']);
     is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
@@ -207,18 +207,18 @@ subtest 'intraday must be same day' => sub {
     $bet_params->{disable_trading_at_quiet_period} = 0;
     my $c = produce_contract($bet_params);
     ok $c->underlying->intradays_must_be_same_day, 'intraday must be same day';
-    ok $c->is_valid_to_buy, 'valid to buy';
+    ok $c->is_valid_to_buy,                        'valid to buy';
     $bet_params->{duration} = '2h1s';
     $c = produce_contract($bet_params);
     ok $c->underlying->intradays_must_be_same_day, 'intraday must be same day';
-    ok !$c->is_valid_to_buy, 'not valid to buy';
+    ok !$c->is_valid_to_buy,                       'not valid to buy';
     like(($c->primary_validation_error)[0]->{message}, qr/Intraday duration must expire on same day/, 'throws error');
     is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
 
     $bet_params->{underlying} = 'R_100';
     $c = produce_contract($bet_params);
     ok !$c->underlying->intradays_must_be_same_day, 'intraday can cross day';
-    ok $c->is_valid_to_buy, 'valid to buy';
+    ok $c->is_valid_to_buy,                         'valid to buy';
 };
 
 subtest 'too many holiday for multiday indices contracts' => sub {

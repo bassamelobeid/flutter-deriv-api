@@ -5,14 +5,14 @@ use Test::More;
 use Test::Warnings;
 use Test::MockModule;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
 
 use BOM::Config::Runtime;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Config::Chronicle;
 use Quant::Framework;
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
@@ -100,7 +100,7 @@ subtest 'date start blackouts' => sub {
     };
     my $c = produce_contract($bet_params);
     ok !$c->underlying->sod_blackout_start, 'no start of day blackout';
-    ok $c->is_valid_to_buy, 'valid to buy';
+    ok $c->is_valid_to_buy,                 'valid to buy';
 
     my $one_second_before_close = $weekday->plus_time_interval('1d')->minus_time_interval('1s');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -118,7 +118,7 @@ subtest 'date start blackouts' => sub {
     $bet_params->{current_tick} = $usdjpy_weekday_tick;
     $c                          = produce_contract($bet_params);
     ok !$c->underlying->eod_blackout_start, 'no end of day blackout';
-    ok $c->is_valid_to_buy, 'valid to buy';
+    ok $c->is_valid_to_buy,                 'valid to buy';
 
     note('Testing date_start blackouts for frxAUDUSD tick expiry contract');
     my $few_second_before_close = $weekday->plus_time_interval('2d')->minus_time_interval('2m');
@@ -649,8 +649,8 @@ subtest 'rollover blackout' => sub {
     });
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_sell, 'not valid to sell';
-    is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.', 'message to client';
-    is $c->primary_validation_error->message, 'resale not available for non-atm from rollover to end of day', 'message';
+    is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.',                      'message to client';
+    is $c->primary_validation_error->message,                'resale not available for non-atm from rollover to end of day', 'message';
 
     $bet_params->{underlying} = 'R_100';
     $c = produce_contract($bet_params);

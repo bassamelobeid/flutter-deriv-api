@@ -9,9 +9,9 @@ use Test::Exception;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Product::ContractFactory                qw(produce_contract);
 
 initialize_realtime_ticks_db();
 
@@ -47,8 +47,8 @@ subtest 'tick expiry' => sub {
         is $c->entry_tick->quote,    100,      'entry tick is 100';
         is $c->barrier->as_absolute, '100.00', 'barrier is 100.00';
         is $c->exit_tick->quote,     99.98,    'exit tick is 99.98';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -66,8 +66,8 @@ subtest 'tick expiry' => sub {
         is $c->entry_tick->quote,    100,     'entry tick is 100';
         is $c->barrier->as_absolute, '99.89', 'barrier is 99.89';
         is $c->exit_tick->quote,     98.98,   'exit tick is 98.98';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -85,8 +85,8 @@ subtest 'tick expiry' => sub {
         is $c->entry_tick->quote,    100,     'entry tick is 100';
         is $c->barrier->as_absolute, '99.89', 'barrier is 99.89';
         is $c->exit_tick->quote,     99.89,   'exit tick is 99.89';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, 0, 'loss';
@@ -104,8 +104,8 @@ subtest 'tick expiry' => sub {
         is $c->entry_tick->quote,    100,     'entry tick is 100';
         is $c->barrier->as_absolute, '99.89', 'barrier is 99.89';
         is $c->exit_tick->quote,     99.9,    'exit tick is 99.9';
-        ok $c->is_expired,       'contract is expired';
-        ok $c->is_valid_to_sell, 'is valid to sell';
+        ok $c->is_expired,                   'contract is expired';
+        ok $c->is_valid_to_sell,             'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
         ok !$c->require_manual_settlement,   'does not require manual settlement';
         is $c->value, $c->payout, 'win';
@@ -129,7 +129,7 @@ subtest 'intraday' => sub {
         ok !$c->is_valid_to_sell, 'not valid to sell';
         is $c->primary_validation_error->message, 'exit tick is inconsistent';
         ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        ok !$c->require_manual_settlement,  'does not require manual settlement';
     };
 
     subtest 'RESETCALL - resets at 2m30s after contract start and exit tick is lower than barrier. Contract is settled as a loss' => sub {

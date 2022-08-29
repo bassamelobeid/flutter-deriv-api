@@ -7,12 +7,12 @@ use Test::More;
 use Test::Exception;
 use Test::Fatal;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Config::Runtime;
 
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::Product::ContractFactory qw(produce_contract);
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use Finance::Contract::Longcode   qw(shortcode_to_parameters);
 use Date::Utility;
 use Test::MockModule;
 
@@ -75,22 +75,22 @@ subtest 'pricing new - general' => sub {
     is $c->ask_price,  100, 'ask_price is 100';
     ok !$c->take_profit, 'take_profit is undef';
     isa_ok $c->stop_out, 'BOM::Product::LimitOrder';
-    is $c->stop_out->order_type, 'stop_out';
+    is $c->stop_out->order_type,        'stop_out';
     is $c->stop_out->order_date->epoch, $c->date_pricing->epoch;
-    is $c->stop_out->order_amount,  -100;
-    is $c->stop_out->basis_spot,    '100.00';
-    is $c->stop_out->barrier_value, '90.00';
+    is $c->stop_out->order_amount,      -100;
+    is $c->stop_out->basis_spot,        '100.00';
+    is $c->stop_out->barrier_value,     '90.00';
 
     $args->{limit_order} = {
         'take_profit' => 50,
     };
     $c = produce_contract($args);
     isa_ok $c->take_profit, 'BOM::Product::LimitOrder';
-    is $c->take_profit->order_type, 'take_profit';
+    is $c->take_profit->order_type,        'take_profit';
     is $c->take_profit->order_date->epoch, $c->date_pricing->epoch;
-    is $c->take_profit->order_amount,  50;
-    is $c->take_profit->basis_spot,    '100.00';
-    is $c->take_profit->barrier_value, '105.00';
+    is $c->take_profit->order_amount,      50;
+    is $c->take_profit->basis_spot,        '100.00';
+    is $c->take_profit->barrier_value,     '105.00';
 
     $args->{limit_order} = {
         'take_profit' => 0,
@@ -132,11 +132,11 @@ subtest 'non-pricing new' => sub {
         }};
 
     $c = produce_contract($args);
-    is $c->stop_out->order_type, 'stop_out';
+    is $c->stop_out->order_type,        'stop_out';
     is $c->stop_out->order_date->epoch, $c->date_start->epoch;
-    is $c->stop_out->order_amount,  -100;
-    is $c->stop_out->basis_spot,    '100.00';
-    is $c->stop_out->barrier_value, '90.00';
+    is $c->stop_out->order_amount,      -100;
+    is $c->stop_out->basis_spot,        '100.00';
+    is $c->stop_out->barrier_value,     '90.00';
 };
 
 subtest 'shortcode' => sub {
@@ -236,10 +236,10 @@ subtest 'deal cancellation' => sub {
     };
 
     my $c = produce_contract($args);
-    is $c->cancellation_price, 4.48, 'cost of cancellation is 4.48';
+    is $c->cancellation_price,         4.48,                                  'cost of cancellation is 4.48';
     is $c->cancellation_expiry->epoch, $now->plus_time_interval('1h')->epoch, 'cancellation expiry is correct';
-    is $c->ask_price, 104.48, 'ask price is 104.48';
-    ok !$c->is_cancelled, 'not cancelled';
+    is $c->ask_price,                  104.48,                                'ask price is 104.48';
+    ok !$c->is_cancelled,      'not cancelled';
     ok $c->is_valid_to_cancel, 'valid to cancel';
 
     delete $args->{cancellation};
@@ -324,7 +324,7 @@ SKIP: {
         $args->{limit_order}->{take_profit} = 0.000001;
         $c = produce_contract($args);
         ok !$c->is_valid_to_buy, 'invalid to buy';
-        is $c->primary_validation_error->message, 'too many decimal places', 'message - too many decimal places';
+        is $c->primary_validation_error->message,                'too many decimal places', 'message - too many decimal places';
         is $c->primary_validation_error->message_to_client->[0], 'Only [_1] decimal places allowed.';
         is $c->primary_validation_error->message_to_client->[1], 2;
     };
@@ -344,7 +344,7 @@ SKIP: {
         };
         my $c = produce_contract($args);
         ok !$c->is_valid_to_buy, 'invalid to buy';
-        is $c->primary_validation_error->message, 'stop loss too high', 'message - stop loss too high';
+        is $c->primary_validation_error->message,                'stop loss too high', 'message - stop loss too high';
         is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
         is $c->primary_validation_error->message_to_client->[1], '10.00';
 
@@ -364,7 +364,7 @@ SKIP: {
         $c = produce_contract($args);
 
         ok !$c->is_valid_to_buy, 'invalid to buy';
-        is $c->primary_validation_error->message, 'stop loss too high', 'message - stop loss too high';
+        is $c->primary_validation_error->message,                'stop loss too high', 'message - stop loss too high';
         is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
         is $c->primary_validation_error->message_to_client->[1], '9.00';
 
@@ -373,7 +373,7 @@ SKIP: {
         $args->{limit_order}->{stop_loss} = 0.09;
         $c = produce_contract($args);
         ok !$c->is_valid_to_buy, 'invalid to buy';
-        is $c->primary_validation_error->message, 'stop loss too low', 'message - stop loss too low';
+        is $c->primary_validation_error->message,                'stop loss too low', 'message - stop loss too low';
         is $c->primary_validation_error->message_to_client->[0], 'Please enter a stop loss amount that\'s higher than [_1].';
         is $c->primary_validation_error->message_to_client->[1], '0.10';
 
@@ -385,7 +385,7 @@ SKIP: {
         $args->{limit_order}->{stop_loss} = 0.11;
         $c                                = produce_contract($args);
         ok !$c->is_valid_to_buy, 'invalid to buy';
-        is $c->primary_validation_error->message, 'stop loss lower than pnl', 'message - stop loss lower than pnl';
+        is $c->primary_validation_error->message,                'stop loss lower than pnl', 'message - stop loss lower than pnl';
         is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss must be higher than commission ([_1]).';
         is $c->primary_validation_error->message_to_client->[1], '0.50';
     };
@@ -419,7 +419,7 @@ subtest 'entry tick inconsistency check' => sub {
     };
     my $c = produce_contract($args);
     ok $c->entry_tick, 'entry tick is defined';
-    is $c->entry_tick->epoch, $now->epoch - 1, 'entry tick epoch is one second before date start';
+    is $c->entry_tick->epoch,     $now->epoch - 1,    'entry tick epoch is one second before date start';
     is $c->entry_tick->quote + 0, $c->basis_spot + 0, 'entry tick is same as basis spot';
 };
 
@@ -457,14 +457,14 @@ subtest 'close tick inconsistency check' => sub {
 
         $c = produce_contract($args);
         ok $c->close_tick, 'close tick is defined';
-        is $c->close_tick->epoch, $now->epoch + 1, 'close epoch is correct';
-        is $c->close_tick->quote + 0, 102, 'close quote is correct';
+        is $c->close_tick->epoch,     $now->epoch + 1, 'close epoch is correct';
+        is $c->close_tick->quote + 0, 102,             'close quote is correct';
 
         $args->{sell_price} = 140;
         $c = produce_contract($args);
         ok $c->close_tick, 'close tick is defined';
-        is $c->close_tick->epoch, $now->epoch + 2, 'close epoch is correct';
-        is $c->close_tick->quote + 0, 104, 'close quote is correct';
+        is $c->close_tick->epoch,     $now->epoch + 2, 'close epoch is correct';
+        is $c->close_tick->quote + 0, 104,             'close quote is correct';
     };
 
     subtest 'hit order' => sub {
@@ -501,8 +501,8 @@ subtest 'close tick inconsistency check' => sub {
         };
         my $c = produce_contract($args);
         ok $c->close_tick, 'close tick is defined';
-        is $c->close_tick->epoch, $now->epoch + 1, 'close epoch is correct';
-        is $c->close_tick->quote + 0, 102, 'close quote is correct';
+        is $c->close_tick->epoch,     $now->epoch + 1, 'close epoch is correct';
+        is $c->close_tick->quote + 0, 102,             'close quote is correct';
     };
 };
 
@@ -534,7 +534,7 @@ subtest 'sell at a loss on active deal cancellation' => sub {
         cancellation => '1h',
     };
     my $c = produce_contract($args);
-    ok $c->current_pnl < 0, 'negative pnl';
+    ok $c->current_pnl < 0,   'negative pnl';
     ok !$c->is_valid_to_sell, 'invalid to sell';
     is $c->primary_validation_error->message, 'cancel is better', 'message - cancel is better';
     is $c->primary_validation_error->message_to_client,
@@ -543,12 +543,12 @@ subtest 'sell at a loss on active deal cancellation' => sub {
 
     $args->{date_pricing} = $now->epoch + 3;
     $c = produce_contract($args);
-    ok $c->current_pnl > 0, 'positive pnl';
+    ok $c->current_pnl > 0,  'positive pnl';
     ok $c->is_valid_to_sell, 'valid to sell when pnl is positive';
 
     $args->{date_pricing} = $now->epoch + 3601;
     $c = produce_contract($args);
-    ok $c->current_pnl < 0, 'negative pnl';
+    ok $c->current_pnl < 0,  'negative pnl';
     ok $c->is_valid_to_sell, 'valid to sell with negative pnl after expiry of deal cancellation';
 };
 
@@ -776,7 +776,7 @@ subtest 'deal cancellation with TP and blackout condition' => sub {
     $args->{multiplier} = 50;
     $c                  = produce_contract($args);
     ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'deal cancellation blackout period', 'message';
+    is $c->primary_validation_error->message,                'deal cancellation blackout period',                     'message';
     is $c->primary_validation_error->message_to_client->[0], 'Deal cancellation is not available from [_1] to [_2].', 'message to client';
     is $c->primary_validation_error->message_to_client->[1], '2020-11-02 21:00:00',                                   'message to client';
     is $c->primary_validation_error->message_to_client->[2], '2020-11-02 23:59:59',                                   'message to client';
@@ -976,25 +976,25 @@ subtest 'variable stop out for jump indices' => sub {
         };
         my $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->stop_out_level, 40, 'stop out level 10 for multiplier 500';
+        is $c->stop_out_level,          40,      'stop out level 10 for multiplier 500';
         is $c->stop_out->barrier_value, "99.88", 'stop out barrie value 99.100';
 
         $args->{multiplier} = 100;
         $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->stop_out_level, 10, 'stop out level 10 for multiplier 100';
+        is $c->stop_out_level,          10,      'stop out level 10 for multiplier 100';
         is $c->stop_out->barrier_value, "99.10", 'stop out barrie value 99.10';
 
         $args->{multiplier} = 200;
         $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->stop_out_level, 20, 'stop out level 20 for multiplier 200';
+        is $c->stop_out_level,          20,      'stop out level 20 for multiplier 200';
         is $c->stop_out->barrier_value, "99.60", 'stop out barrie value 99.60';
 
         $args->{multiplier} = 1000;
         $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->stop_out_level, 50, 'stop out level 50 for multiplier 1000';
+        is $c->stop_out_level,          50,      'stop out level 50 for multiplier 1000';
         is $c->stop_out->barrier_value, "99.95", 'stop out barrie value 99.95';
     };
 
@@ -1020,18 +1020,18 @@ subtest 'variable stop out for jump indices' => sub {
             },
         };
         my $c = produce_contract($args);
-        is $c->stop_out_level, 40, 'stop out level 40 for multiplier 500';
+        is $c->stop_out_level,          40,      'stop out level 40 for multiplier 500';
         is $c->stop_out->barrier_value, "99.82", 'stop out barrie value 99.82';
         ok $c->is_expired, 'expired';
-        is $c->hit_type,   'stop_out';
+        is $c->hit_type, 'stop_out';
 
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'JD10'], [98.9, $now->epoch + 1, 'JD10']);
         $c = produce_contract($args);
-        is $c->stop_out_level, 40, 'stop out level 40 for multiplier 100';
+        is $c->stop_out_level,          40,      'stop out level 40 for multiplier 100';
         is $c->stop_out->barrier_value, "99.82", 'stop out barrie value 99.100';
         ok $c->is_expired, 'expired';
-        is $c->hit_type,   'stop_out';
-        is $c->value,      '0.00', 'contract value 0. Does not lose more than stake';
+        is $c->hit_type, 'stop_out';
+        is $c->value, '0.00', 'contract value 0. Does not lose more than stake';
     };
 };
 
@@ -1154,25 +1154,25 @@ subtest 'variable stop out for crash/boom indices' => sub {
         };
         my $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->stop_out_level, 10, 'stop out level 10 for multiplier 100';
+        is $c->stop_out_level,          10,       'stop out level 10 for multiplier 100';
         is $c->stop_out->barrier_value, "99.100", 'stop out barrie value 99.100';
 
         $args->{multiplier} = 200;
         $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->stop_out_level, 20, 'stop out level 20 for multiplier 200';
+        is $c->stop_out_level,          20,       'stop out level 20 for multiplier 200';
         is $c->stop_out->barrier_value, "99.600", 'stop out barrie value 99.600';
 
         $args->{multiplier} = 300;
         $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->stop_out_level, 30, 'stop out level 30 for multiplier 300';
+        is $c->stop_out_level,          30,       'stop out level 30 for multiplier 300';
         is $c->stop_out->barrier_value, "99.767", 'stop out barrie value 99.767';
 
         $args->{multiplier} = 400;
         $c = produce_contract($args);
         ok $c->is_valid_to_buy, 'valid to buy';
-        is $c->stop_out_level, 50, 'stop out level 50 for multiplier 400';
+        is $c->stop_out_level,          50,       'stop out level 50 for multiplier 400';
         is $c->stop_out->barrier_value, "99.875", 'stop out barrie value 99.875';
     };
 
@@ -1198,19 +1198,19 @@ subtest 'variable stop out for crash/boom indices' => sub {
             },
         };
         my $c = produce_contract($args);
-        is $c->stop_out_level, 10, 'stop out level 10 for multiplier 100';
+        is $c->stop_out_level,          10,       'stop out level 10 for multiplier 100';
         is $c->stop_out->barrier_value, "99.100", 'stop out barrie value 99.100';
         ok $c->is_expired, 'expired';
-        is $c->hit_type,   'stop_out';
-        is $c->value,      '5.00', 'contract value 5.00';
+        is $c->hit_type, 'stop_out';
+        is $c->value, '5.00', 'contract value 5.00';
 
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'CRASH1000'], [98.9, $now->epoch + 1, 'CRASH1000']);
         $c = produce_contract($args);
-        is $c->stop_out_level, 10, 'stop out level 10 for multiplier 100';
+        is $c->stop_out_level,          10,       'stop out level 10 for multiplier 100';
         is $c->stop_out->barrier_value, "99.100", 'stop out barrie value 99.100';
         ok $c->is_expired, 'expired';
-        is $c->hit_type,   'stop_out';
-        is $c->value,      '0.00', 'contract value 0. Does not lose more than stake';
+        is $c->hit_type, 'stop_out';
+        is $c->value, '0.00', 'contract value 0. Does not lose more than stake';
     };
 };
 

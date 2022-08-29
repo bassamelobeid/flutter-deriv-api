@@ -10,7 +10,7 @@ use Date::Utility;
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory                qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Config::Runtime;

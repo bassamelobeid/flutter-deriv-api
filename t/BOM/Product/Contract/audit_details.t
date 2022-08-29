@@ -30,8 +30,8 @@ my $args   = {
 };
 subtest 'no audit details' => sub {
     my $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
-    ok !$c->exit_tick,  'no exit tick';
+    ok !$c->is_expired,       'not expired';
+    ok !$c->exit_tick,        'no exit tick';
     ok !%{$c->audit_details}, 'no audit details';
 };
 
@@ -108,9 +108,9 @@ subtest 'sold after start' => sub {
         is_sold      => 1,
         date_pricing => $args->{date_start}->plus_time_interval('1s'),
     });
-    ok $c->is_sold, 'is sold';
+    ok $c->is_sold,     'is sold';
     ok !$c->is_expired, 'no expired';
-    ok $c->entry_tick, 'entry tick is defined';
+    ok $c->entry_tick,  'entry tick is defined';
     my $expected = $json->decode(
         '{"contract_start":[{"epoch":"1507593598","tick":"99.998","tick_display_value":"99.998"},{"epoch":"1507593599","tick":"99.999","tick_display_value":"99.999"},{"epoch":"1507593600","name":["Start Time"],"flag":"highlight_time"},{"flag":"highlight_tick","epoch":"1507593601","name":["Entry Spot"],"tick":"100.001","tick_display_value":"100.001"},{"epoch":"1507593602","tick":"100.002","tick_display_value":"100.002"}]}'
     );
@@ -126,9 +126,9 @@ subtest 'forward starting sold after start' => sub {
         date_pricing               => $args->{date_start}->plus_time_interval('1s'),
         starts_as_forward_starting => 1
     });
-    ok $c->is_sold, 'is sold';
+    ok $c->is_sold,     'is sold';
     ok !$c->is_expired, 'no expired';
-    ok $c->entry_tick, 'entry tick is defined';
+    ok $c->entry_tick,  'entry tick is defined';
     my $expected = $json->decode(
         '{"contract_start":[{"epoch":"1507593598","tick":"99.998","tick_display_value":"99.998"},{"flag":"highlight_tick","epoch":"1507593599","name":["Entry Spot"],"tick":"99.999","tick_display_value":"99.999"},{"epoch":"1507593600","name":["Start Time"],"flag":"highlight_time"},{"epoch":"1507593601","tick":"100.001","tick_display_value":"100.001"},{"epoch":"1507593602","tick":"100.002","tick_display_value":"100.002"}]}'
     );
@@ -142,8 +142,8 @@ subtest 'path dependent hit' => sub {
     my @before = map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before);
     my $c = produce_contract($args);
-    ok $c->is_expired, 'is expired';
-    ok $c->hit_tick,   'hit tick is defined';
+    ok $c->is_expired,           'is expired';
+    ok $c->hit_tick,             'hit tick is defined';
     ok !$c->is_after_settlement, 'before settlement time';
     my $expected = $json->decode(
         '{"contract_start":[{"epoch":"1507593598","tick":"99.998","tick_display_value":"99.998"},{"epoch":"1507593599","tick":"99.999","tick_display_value":"99.999"},{"epoch":"1507593600","name":["Start Time"],"flag":"highlight_time"},{"flag":"highlight_tick","epoch":"1507593601","name":["Entry Spot"],"tick":"100.001","tick_display_value":"100.001"},{"epoch":"1507593602","tick":"100.002","tick_display_value":"100.002"}],"contract_end":[{"epoch":"1507593602","name":["Exit Spot"],"flag":"highlight_tick","tick":"100.002","tick_display_value":"100.002"}]}'
@@ -159,8 +159,8 @@ subtest 'path dependent expires unhit' => sub {
     my @after  = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before, @after);
     my $c = produce_contract($args);
-    ok $c->is_expired, 'is expired';
-    ok !$c->hit_tick, 'hit tick is defined';
+    ok $c->is_expired,          'is expired';
+    ok !$c->hit_tick,           'hit tick is defined';
     ok $c->is_after_settlement, 'before settlement time';
     my $expected = $json->decode(
         '{"contract_start":[{"epoch":"1507593598","tick":"99.998","tick_display_value":"99.998"},{"epoch":"1507593599","tick":"99.999","tick_display_value":"99.999"},{"epoch":"1507593600","name":["Start Time"],"flag":"highlight_time"},{"flag":"highlight_tick","epoch":"1507593601","name":["Entry Spot"],"tick":"100.001","tick_display_value":"100.001"},{"epoch":"1507593602","tick":"100.002","tick_display_value":"100.002"},{"epoch":"1507594498","tick":"99.998","tick_display_value":"99.998"}],"contract_end":[{"epoch":"1507593602","tick":"100.002","tick_display_value":"100.002"},{"epoch":"1507594498","tick":"99.998","tick_display_value":"99.998"},{"flag":"highlight_tick","epoch":"1507594499","name":["Exit Spot"],"tick":"99.999","tick_display_value":"99.999"},{"epoch":"1507594500","name":["End Time"],"flag":"highlight_time"},{"epoch":"1507594501","tick":"100.001","tick_display_value":"100.001"},{"epoch":"1507594502","tick":"100.002","tick_display_value":"100.002"}]}'

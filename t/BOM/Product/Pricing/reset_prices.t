@@ -6,7 +6,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers         qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::Runtime;
 use LandingCompany::Registry;

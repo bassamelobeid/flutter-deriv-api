@@ -8,11 +8,11 @@ use BOM::Product::Exception;
 use BOM::Product::Static;
 use Format::Util::Numbers qw(financialrounding);
 use Scalar::Util::Numeric qw(isint);
-use YAML::XS qw(LoadFile);
-use POSIX qw(floor ceil);
-use List::Util qw(min max);
-use BOM::Config::Quants qw(maximum_stake_limit);
-use JSON::MaybeXS qw(decode_json);
+use YAML::XS              qw(LoadFile);
+use POSIX                 qw(floor ceil);
+use List::Util            qw(min max);
+use BOM::Config::Quants   qw(maximum_stake_limit);
+use JSON::MaybeXS         qw(decode_json);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 

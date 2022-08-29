@@ -8,8 +8,8 @@ use Test::Warnings;
 
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -76,7 +76,7 @@ subtest 'call variations' => sub {
         isa_ok $c, 'BOM::Product::Contract::Pute';
         is $c->code,            'PUTE';
         is $c->other_side_code, 'CALL';
-        ok $c->is_intraday,     'is intraday';
+        ok $c->is_intraday,   'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
@@ -86,12 +86,12 @@ subtest 'call variations' => sub {
     'generic';
     lives_ok {
         my $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Pute';
+        isa_ok $c,                 'BOM::Product::Contract::Pute';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Pute';
+        isa_ok $c,                 'BOM::Product::Contract::Pute';
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{duration}     = '10m';
@@ -100,19 +100,19 @@ subtest 'call variations' => sub {
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Pute';
         ok $c->is_forward_starting, 'forward starting';
-        isa_ok $c->pricing_engine,  'Pricing::Engine::EuropeanDigitalSlope';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{date_pricing} = $now;
         $args->{date_start}   = $now;
         $args->{duration}     = '15m';
         $args->{barrier}      = 'S0P';
         $c                    = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Pute';
+        isa_ok $c,                 'BOM::Product::Contract::Pute';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Pute';
+        isa_ok $c,                 'BOM::Product::Contract::Pute';
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
     }
     'pricing engine selection';

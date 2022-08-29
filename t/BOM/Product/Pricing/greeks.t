@@ -8,7 +8,7 @@ use Test::MockModule;
 use File::Spec;
 
 use Date::Utility;
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory                qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
