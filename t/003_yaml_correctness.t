@@ -5,7 +5,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-use Cwd qw(abs_path);
+use Cwd            qw(abs_path);
 use File::Basename qw(dirname);
 use File::Find;
 use YAML::XS qw(LoadFile);

@@ -16,7 +16,7 @@ with 'App::Base::Script';
 use BOM::MarketDataAutoUpdater::Forex;
 use BOM::MarketDataAutoUpdater::Indices;
 use BOM::MarketDataAutoUpdater::Flat;
-use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
+use Getopt::Long                        qw(GetOptions :config no_auto_abbrev no_ignore_case);
 use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period);
 
 sub documentation {
