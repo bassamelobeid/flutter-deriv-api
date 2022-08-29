@@ -21,7 +21,7 @@ use warnings;
 # delete the hash at some time with as much precision as you would have Redis do it.
 
 use BOM::Transaction::Limits::SyncLoss;
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use Log::Any::Adapter qw(DERIV),
     stdout    => 'text',
     log_level => 'info';

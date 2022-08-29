@@ -6,13 +6,13 @@ use warnings;
 use Moo;
 use Error::Base;
 use List::Util qw(min max first any);
-use YAML::XS qw(LoadFile);
+use YAML::XS   qw(LoadFile);
 use JSON::MaybeXS;
 
-use Format::Util::Numbers qw/financialrounding/;
+use Format::Util::Numbers            qw/financialrounding/;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Database::Helper::RejectedTrade;
-use BOM::Platform::Context qw(localize request);
+use BOM::Platform::Context        qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract );
 use Locale::Country::Extra;
 use BOM::Database::ClientDB;

@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use Log::Any::Adapter qw(DERIV),
     stderr    => 'json',
     log_level => 'info';

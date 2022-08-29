@@ -17,13 +17,13 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 
-use BOM::Test::ContractTestHelper qw(close_all_open_contracts);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init :exclude_bet_market_setup);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::ContractTestHelper                qw(close_all_open_contracts);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init :exclude_bet_market_setup);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Helper::QuantsConfig qw(create_config delete_all_config);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw(create_client top_up);
+use BOM::Test::Helper::QuantsConfig              qw(create_config delete_all_config);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 

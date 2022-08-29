@@ -20,13 +20,13 @@ use Date::Utility;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 use Math::Util::CalculatedValue::Validatable;
-use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Product::ContractFactory                qw( produce_contract );
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(top_up);
-use Format::Util::Numbers qw/formatnumber financialrounding/;
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw(top_up);
+use Format::Util::Numbers                        qw/formatnumber financialrounding/;
 
 use BOM::MarketData qw(create_underlying);
 
@@ -226,7 +226,7 @@ subtest 'test lookbacks slippage', sub {
 
         $error = $txn->buy;
         is $txn->price_slippage, financialrounding('price', $contract->currency, $txn->price - $contract->ask_price), 'price slippage recorded';
-        is $error, undef, 'case 2 no error';
+        is $error,               undef,                                                                               'case 2 no error';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -268,7 +268,7 @@ subtest 'test lookbacks slippage', sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage,          financialrounding('price', $contract->currency, $contract->allowed_slippage + 0.01);
+        is $txn->price_slippage, financialrounding('price', $contract->currency, $contract->allowed_slippage + 0.01);
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -361,7 +361,7 @@ subtest 'test callputspread slippage' => sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage,          financialrounding('price', $contract->currency, $contract->allowed_slippage + 0.01);
+        is $txn->price_slippage, financialrounding('price', $contract->currency, $contract->allowed_slippage + 0.01);
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -441,7 +441,7 @@ subtest 'test CALL (binary) slippage' => sub {
         });
 
         $error = $txn->buy;
-        is $error->{-type},                'PriceMoved';
+        is $error->{-type}, 'PriceMoved';
         like $error->{-message_to_client}, qr/The underlying market has moved too much since you priced the contract. The contract price has changed/;
 
         $price = $contract->ask_price + ($contract->allowed_slippage * $contract->payout + 0.01);
@@ -458,7 +458,7 @@ subtest 'test CALL (binary) slippage' => sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage,          '0.61';
+        is $txn->price_slippage, '0.61';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
@@ -517,8 +517,8 @@ subtest 'test CALL (binary) slippage' => sub {
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
         subtest 'case 2 fmb row', sub {
-            is $fmb->{buy_price} + 0, $contract->ask_price, 'buy_price';
-            is $fmb->{payout_price} + 0, $payout, 'payout_price';
+            is $fmb->{buy_price} + 0,    $contract->ask_price, 'buy_price';
+            is $fmb->{payout_price} + 0, $payout,              'payout_price';
             ok $fmb->{short_code} =~ /$payout/, 'properly saved payout in shortcode';
         };
 
@@ -551,7 +551,7 @@ subtest 'test CALL (binary) slippage' => sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage,          '0.61';
+        is $txn->price_slippage, '0.61';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
@@ -687,7 +687,7 @@ subtest 'test (binary) sell slippage' => sub {
     ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
     is $fmb->{sell_price} + 0, $price, 'sell price is correct';
-    is $txn->price_slippage, '0.59', 'correct price slippage';
+    is $txn->price_slippage,   '0.59', 'correct price slippage';
 
     $txn = BOM::Transaction->new({
         client        => $cl,
@@ -715,8 +715,8 @@ subtest 'test (binary) sell slippage' => sub {
     ok !$txn->sell, 'sell with no error';
     ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
-    is $fmb->{sell_price} + 0, $price, 'sell price is correct';
-    is $txn->price_slippage, '-0.59', 'correct price slippage';
+    is $fmb->{sell_price} + 0, $price,  'sell price is correct';
+    is $txn->price_slippage,   '-0.59', 'correct price slippage';
 
     $txn = BOM::Transaction->new({
         client        => $cl,

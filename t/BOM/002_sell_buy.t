@@ -16,10 +16,10 @@ use BOM::Database::DataMapper::Account;
 use BOM::User;
 use BOM::User::Client;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use BOM::Product::ContractFactory                qw( produce_contract make_similar_contract );
+use Finance::Contract::Longcode                  qw(shortcode_to_parameters);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Transaction;
 use Test::MockModule;
 

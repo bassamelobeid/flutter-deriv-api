@@ -24,12 +24,12 @@ use Date::Utility;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 use Math::Util::CalculatedValue::Validatable;
-use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Product::ContractFactory                qw( produce_contract );
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(top_up);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw(top_up);
 use BOM::Platform::Client::IDAuthentication;
 
 use BOM::MarketData qw(create_underlying_db);
@@ -319,17 +319,17 @@ subtest 'buy a bet', sub {
 
         subtest 'transaction row', sub {
             plan tests => 12;
-            cmp_ok $trx->{id},      '>', 0, 'id';
-            is $trx->{account_id},  $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -3.2, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 3.2, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,           'account_id';
+            is $trx->{action_type},             'buy',                  'action_type';
+            is $trx->{amount} + 0,              -3.2,                   'amount';
+            is $trx->{balance_after} + 0,       5000 - 3.2,             'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
             is $trx->{remark},                  undef,                  'remark';
-            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
-            is $trx->{source},                  19, 'source';
+            is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
+            is $trx->{source},                  19,                     'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
@@ -337,20 +337,20 @@ subtest 'buy a bet', sub {
 
         subtest 'fmb row', sub {
             plan tests => 19;
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'touch_bet', 'bet_class';
-            is $fmb->{bet_type},   'ONETOUCH',  'bet_type';
-            is $fmb->{buy_price} + 0, 3.2, 'buy_price';
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,             'account_id';
+            is $fmb->{bet_class},     'touch_bet',              'bet_class';
+            is $fmb->{bet_type},      'ONETOUCH',               'bet_type';
+            is $fmb->{buy_price} + 0, 3.2,                      'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is !$fmb->{is_expired}, !0, 'is_expired';
-            is !$fmb->{is_sold},    !0, 'is_sold';
+            is !$fmb->{is_expired},  !0,    'is_expired';
+            is !$fmb->{is_sold},     !0,    'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark},   qr/\btrade\[3\.20000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                   'sell_price';
-            is $fmb->{sell_time},  undef,                   'sell_time';
+            like $fmb->{remark}, qr/\btrade\[3\.20000\]/, 'remark';
+            is $fmb->{sell_price}, undef, 'sell_price';
+            is $fmb->{sell_time},  undef, 'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/ONETOUCH_R_50_100.00_/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
@@ -362,9 +362,9 @@ subtest 'buy a bet', sub {
 
         subtest 'chld row', sub {
             plan tests => 3;
-            is $chld->{absolute_barrier},        undef, 'absolute_barrier';
+            is $chld->{absolute_barrier},        undef,      'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{prediction},              undef, 'prediction';
+            is $chld->{prediction},              undef,      'prediction';
         };
 
         # note explain $qv1;
@@ -373,13 +373,13 @@ subtest 'buy a bet', sub {
             plan tests => 3;
             is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
-            is $qv1->{trade} + 0, 3.2, 'trade';
+            is $qv1->{trade} + 0,               3.2,        'trade';
         };
 
         is $txn->contract_id,             $fmb->{id},            'txn->contract_id';
         is $txn->transaction_id,          $trx->{id},            'txn->transaction_id';
         is $txn->balance_after,           $trx->{balance_after}, 'txn->balance_after';
-        is $txn->execute_at_better_price, 0, 'txn->execute_at_better_price';
+        is $txn->execute_at_better_price, 0,                     'txn->execute_at_better_price';
     }
     'survived';
 };

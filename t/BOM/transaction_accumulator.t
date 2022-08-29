@@ -11,11 +11,11 @@ use ExpiryQueue;
 
 use Data::Dumper;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(top_up create_client);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client                    qw(top_up create_client);
 
 use Guard;
 use Crypt::NamedKeys;
@@ -216,39 +216,39 @@ subtest 'buy ACCU', sub {
 
         subtest 'transaction row', sub {
             plan tests => 12;
-            cmp_ok $trx->{id},      '>', 0, 'id';
-            is $trx->{account_id},  $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -100, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 100, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,           'account_id';
+            is $trx->{action_type},             'buy',                  'action_type';
+            is $trx->{amount} + 0,              -100,                   'amount';
+            is $trx->{balance_after} + 0,       5000 - 100,             'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
             is $trx->{remark},                  undef,                  'remark';
-            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
-            is $trx->{source},                  19, 'source';
+            is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
+            is $trx->{source},                  19,                     'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
         subtest 'fmb row', sub {
             plan tests => 18;
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'accumulator', 'bet_class';
-            is $fmb->{bet_type},   'ACCU',        'bet_type';
-            is $fmb->{buy_price} + 0, 100, 'buy_price';
-            is $fmb->{expiry_daily}, $contract->expiry_daily, 'expiry_daily';
-            is $fmb->{expiry_time},  undef, 'expiry_time';
-            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is $fmb->{is_expired},   0,     'is_expired';
-            is $fmb->{is_sold},      0,     'is_sold';
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,            'account_id';
+            is $fmb->{bet_class},     'accumulator',           'bet_class';
+            is $fmb->{bet_type},      'ACCU',                  'bet_type';
+            is $fmb->{buy_price} + 0, 100,                     'buy_price';
+            is $fmb->{expiry_daily},  $contract->expiry_daily, 'expiry_daily';
+            is $fmb->{expiry_time},   undef,                   'expiry_time';
+            is $fmb->{fixed_expiry},  undef,                   'fixed_expiry';
+            is $fmb->{is_expired},    0,                       'is_expired';
+            is $fmb->{is_sold},       0,                       'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             #TODO: This test would pass after implementing offerings
             # like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
-            is $fmb->{sell_price},      undef,    'sell_price';
-            is $fmb->{sell_time},       undef,    'sell_time';
-            is $fmb->{settlement_time}, undef,    'settlement_time';
-            like $fmb->{short_code},    qr/ACCU/, 'short_code';
+            is $fmb->{sell_price},      undef, 'sell_price';
+            is $fmb->{sell_time},       undef, 'sell_time';
+            is $fmb->{settlement_time}, undef, 'settlement_time';
+            like $fmb->{short_code}, qr/ACCU/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
             is $fmb->{tick_count},        undef,   'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
@@ -256,8 +256,8 @@ subtest 'buy ACCU', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id},    $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
-            is $chld->{'take_profit_order_date'},   undef, 'take_profit_order_date is undef';
+            is $chld->{'take_profit_order_amount'}, undef,      'take_profit_order_amount is undef';
+            is $chld->{'take_profit_order_date'},   undef,      'take_profit_order_date is undef';
         };
 
     }
@@ -284,40 +284,40 @@ subtest 'sell a bet', sub {
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
 
         subtest 'transaction row', sub {
-            cmp_ok $trx->{id},      '>', 0, 'id';
-            is $trx->{account_id},  $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'sell', 'action_type';
-            is $trx->{amount} + 0, $contract->bid_price + 0, 'amount';
-            is $trx->{balance_after} + 0, 4999.01, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $trx->{payment_id},              undef,                  'payment_id';
-            is $trx->{quantity},                1,                      'quantity';
-            is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
-            is $trx->{remark},                  undef,                  'remark';
-            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
-            is $trx->{source},                  23, 'source';
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,             'account_id';
+            is $trx->{action_type},             'sell',                   'action_type';
+            is $trx->{amount} + 0,              $contract->bid_price + 0, 'amount';
+            is $trx->{balance_after} + 0,       4999.01,                  'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},               'financial_market_bet_id';
+            is $trx->{payment_id},              undef,                    'payment_id';
+            is $trx->{quantity},                1,                        'quantity';
+            is $trx->{referrer_type},           'financial_market_bet',   'referrer_type';
+            is $trx->{remark},                  undef,                    'remark';
+            is $trx->{staff_loginid},           $cl->loginid,             'staff_loginid';
+            is $trx->{source},                  23,                       'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
         subtest 'fmb row', sub {
             plan tests => 18;
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'accumulator', 'bet_class';
-            is $fmb->{bet_type},   'ACCU',        'bet_type';
-            is $fmb->{buy_price} + 0, 100, 'buy_price';
-            is $fmb->{expiry_daily}, $contract->expiry_daily, 'expiry_daily';
-            is $fmb->{expiry_time},  undef, 'expiry_time';
-            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is $fmb->{is_expired},   0,     'is_expired';
-            ok $fmb->{is_sold},      'is_sold';
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,            'account_id';
+            is $fmb->{bet_class},     'accumulator',           'bet_class';
+            is $fmb->{bet_type},      'ACCU',                  'bet_type';
+            is $fmb->{buy_price} + 0, 100,                     'buy_price';
+            is $fmb->{expiry_daily},  $contract->expiry_daily, 'expiry_daily';
+            is $fmb->{expiry_time},   undef,                   'expiry_time';
+            is $fmb->{fixed_expiry},  undef,                   'fixed_expiry';
+            is $fmb->{is_expired},    0,                       'is_expired';
+            ok $fmb->{is_sold}, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             #TODO: This test would pass after implementing offerings
             # like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
-            is $fmb->{settlement_time}, undef,    'settlement_time';
-            like $fmb->{short_code},    qr/ACCU/, 'short_code';
+            is $fmb->{settlement_time}, undef, 'settlement_time';
+            like $fmb->{short_code}, qr/ACCU/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
             is $fmb->{tick_count},        undef,   'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
@@ -375,47 +375,47 @@ subtest 'buy ACCU with take profit', sub {
 
         subtest 'transaction row', sub {
             plan tests => 12;
-            cmp_ok $trx->{id},      '>', 0, 'id';
-            is $trx->{account_id},  $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -100, 'amount';
-            is $trx->{balance_after} + 0, 4999.01 - 100, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,           'account_id';
+            is $trx->{action_type},             'buy',                  'action_type';
+            is $trx->{amount} + 0,              -100,                   'amount';
+            is $trx->{balance_after} + 0,       4999.01 - 100,          'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
             is $trx->{remark},                  undef,                  'remark';
-            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
-            is $trx->{source},                  19, 'source';
+            is $trx->{staff_loginid},           $cl->loginid,           'staff_loginid';
+            is $trx->{source},                  19,                     'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
         subtest 'fmb row', sub {
             plan tests => 18;
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'accumulator', 'bet_class';
-            is $fmb->{bet_type},   'ACCU',        'bet_type';
-            is $fmb->{buy_price} + 0, 100, 'buy_price';
-            is $fmb->{expiry_daily}, $contract->expiry_daily, 'expiry_daily';
-            is $fmb->{expiry_time},  undef, 'expiry_time';
-            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is $fmb->{is_expired},   0,     'is_expired';
-            is $fmb->{is_sold},      0,     'is_sold';
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,            'account_id';
+            is $fmb->{bet_class},     'accumulator',           'bet_class';
+            is $fmb->{bet_type},      'ACCU',                  'bet_type';
+            is $fmb->{buy_price} + 0, 100,                     'buy_price';
+            is $fmb->{expiry_daily},  $contract->expiry_daily, 'expiry_daily';
+            is $fmb->{expiry_time},   undef,                   'expiry_time';
+            is $fmb->{fixed_expiry},  undef,                   'fixed_expiry';
+            is $fmb->{is_expired},    0,                       'is_expired';
+            is $fmb->{is_sold},       0,                       'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             #TODO: This test would pass after implementing offerings
             # like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
-            is $fmb->{sell_price},      undef,    'sell_price';
-            is $fmb->{sell_time},       undef,    'sell_time';
-            is $fmb->{settlement_time}, undef,    'settlement_time';
-            like $fmb->{short_code},    qr/ACCU/, 'short_code';
+            is $fmb->{sell_price},      undef, 'sell_price';
+            is $fmb->{sell_time},       undef, 'sell_time';
+            is $fmb->{settlement_time}, undef, 'settlement_time';
+            like $fmb->{short_code}, qr/ACCU/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
             is $fmb->{tick_count},        undef,   'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
         };
 
         subtest 'chld row', sub {
-            is $chld->{financial_market_bet_id},    $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{take_profit_order_amount},   5,    'take_profit_order_amount is 5';
+            is $chld->{financial_market_bet_id},  $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{take_profit_order_amount}, 5,          'take_profit_order_amount is 5';
             cmp_ok $chld->{take_profit_order_date}, "eq", $fmb->{start_time}, 'take_profit_order_date is correctly set';
         };
     }
@@ -447,40 +447,40 @@ subtest 'sell a bet with take profit', sub {
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
 
         subtest 'transaction row', sub {
-            cmp_ok $trx->{id},      '>', 0, 'id';
-            is $trx->{account_id},  $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'sell', 'action_type';
-            is $trx->{amount} + 0, $contract->bid_price + 0, 'amount';
-            is $trx->{balance_after} + 0, 4998.02, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $trx->{payment_id},              undef,                  'payment_id';
-            is $trx->{quantity},                1,                      'quantity';
-            is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
-            is $trx->{remark},                  undef,                  'remark';
-            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
-            is $trx->{source},                  23, 'source';
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id},              $acc_usd->id,             'account_id';
+            is $trx->{action_type},             'sell',                   'action_type';
+            is $trx->{amount} + 0,              $contract->bid_price + 0, 'amount';
+            is $trx->{balance_after} + 0,       4998.02,                  'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id},               'financial_market_bet_id';
+            is $trx->{payment_id},              undef,                    'payment_id';
+            is $trx->{quantity},                1,                        'quantity';
+            is $trx->{referrer_type},           'financial_market_bet',   'referrer_type';
+            is $trx->{remark},                  undef,                    'remark';
+            is $trx->{staff_loginid},           $cl->loginid,             'staff_loginid';
+            is $trx->{source},                  23,                       'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
         subtest 'fmb row', sub {
             plan tests => 18;
-            cmp_ok $fmb->{id},     '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class},  'accumulator', 'bet_class';
-            is $fmb->{bet_type},   'ACCU',        'bet_type';
-            is $fmb->{buy_price} + 0, 100, 'buy_price';
-            is $fmb->{expiry_daily}, $contract->expiry_daily, 'expiry_daily';
-            is $fmb->{expiry_time},  undef, 'expiry_time';
-            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is $fmb->{is_expired},   0,     'is_expired';
-            ok $fmb->{is_sold},      'is_sold';
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id},    $acc_usd->id,            'account_id';
+            is $fmb->{bet_class},     'accumulator',           'bet_class';
+            is $fmb->{bet_type},      'ACCU',                  'bet_type';
+            is $fmb->{buy_price} + 0, 100,                     'buy_price';
+            is $fmb->{expiry_daily},  $contract->expiry_daily, 'expiry_daily';
+            is $fmb->{expiry_time},   undef,                   'expiry_time';
+            is $fmb->{fixed_expiry},  undef,                   'fixed_expiry';
+            is $fmb->{is_expired},    0,                       'is_expired';
+            ok $fmb->{is_sold}, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             #TODO: This test would pass after implementing offerings
             # like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
-            is $fmb->{settlement_time}, undef,    'settlement_time';
-            like $fmb->{short_code},    qr/ACCU/, 'short_code';
+            is $fmb->{settlement_time}, undef, 'settlement_time';
+            like $fmb->{short_code}, qr/ACCU/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
             is $fmb->{tick_count},        undef,   'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';

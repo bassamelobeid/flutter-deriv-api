@@ -7,11 +7,11 @@ use Test::MockModule;
 
 use BOM::User;
 use BOM::Transaction;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Test::Helper::Client qw(create_client);
+use BOM::Product::ContractFactory                qw(produce_contract);
+use BOM::Test::Helper::Client                    qw(create_client);
 
 my $fmb_mock = Test::MockModule->new('BOM::Database::Helper::FinancialMarketBet');
 
