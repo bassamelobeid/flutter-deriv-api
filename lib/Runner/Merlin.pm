@@ -131,13 +131,11 @@ sub _calculate_results {
         $string .= "\n";
 
         $full_report_file->append($string);
-        push @output, \@output_array;
+        push @output,                                             \@output_array;
         push @{$analysis_mid_diffs->{$base_or_num}->{$bet_type}}, $mid_diff;
     }
 
     my $analysis_result = $self->_generates_and_saves_analysis_report($analysis_mid_diffs);
-    my $record_num      = scalar(@output);
-
     return $analysis_result;
 }
 

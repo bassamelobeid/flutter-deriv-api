@@ -5,7 +5,7 @@ use Moose;
 with 'App::Base::Script';
 
 use TAP::Harness;
-use YAML::XS qw(LoadFile);
+use YAML::XS   qw(LoadFile);
 use Test::More qw(no_plan);
 use Test::MockModule;
 use File::Spec;
@@ -119,7 +119,7 @@ has 'test_suite' => (
 sub _build_test_suite {
     my $self = shift;
 
-    my $which = $self->getOption('which');
+    my $which       = $self->getOption('which');
     my @what_to_run = ($which eq 'all') ? ('merlin', 'sdfx', 'sdeq', 'ovra',) : split ',', $which;
 
     return \@what_to_run;

@@ -6,7 +6,7 @@ use lib ("/home/git/regentmarkets/bom/t/BOM/Product");
 use List::Util qw(max sum min);
 use Path::Tiny;
 use Text::CSV;
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory                qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use CSVParser::Superderivatives_EQ;
 use Test::MockModule;

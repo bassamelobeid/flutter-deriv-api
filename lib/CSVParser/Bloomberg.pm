@@ -29,7 +29,7 @@ use SetupDatasetTestFixture;
 use Date::Utility;
 use BOM::MarketData::Fetcher::VolSurface;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData   qw(create_underlying);
 use Try::Tiny;
 use Postgres::FeedDB::Spot::Tick;
 use YAML::CacheLoader qw(LoadFile);
@@ -439,14 +439,12 @@ sub get_csv_line {
         . $self->payout_currency . ',' . "Gmt" . ',';
     $line .= $self->cut_off_time . ',';
 
-    my ($base_numeraire, $bb_tv);
+    my ($base_numeraire);
     $self->_get_underlying_bloomberg =~ /(\w{3})(\w{3})/;
     if ($self->payout_currency eq $1) {
         $base_numeraire = 'base';
-        $bb_tv          = $fields->[$header->{'Theo. Value Ccy1'}] / 100;
     } elsif ($self->payout_currency eq $2) {
         $base_numeraire = 'numeraire';
-        $bb_tv          = $fields->[$header->{'Theo. Value Ccy2'}] / 100;
     }
     $line .=
           $base_numeraire . ','
