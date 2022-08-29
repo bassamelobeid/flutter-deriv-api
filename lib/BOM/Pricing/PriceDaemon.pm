@@ -6,11 +6,11 @@ use warnings;
 use DataDog::DogStatsd::Helper qw/stats_histogram stats_inc stats_count stats_timing/;
 use Encode;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
-use JSON::MaybeUTF8 qw(:v1);
-use List::Util qw(first);
-use Log::Any qw( $log );
-use Scalar::Util qw(blessed);
-use Time::HiRes ();
+use JSON::MaybeUTF8             qw(:v1);
+use List::Util                  qw(first);
+use Log::Any                    qw( $log );
+use Scalar::Util                qw(blessed);
+use Time::HiRes                 ();
 use Syntax::Keyword::Try;
 use Finance::Underlying;
 use Finance::Contract::Longcode qw(

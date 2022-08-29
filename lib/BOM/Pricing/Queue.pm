@@ -11,7 +11,7 @@ no indirect;
 
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use LWP::Simple 'get';
-use List::UtilsBy qw(extract_by);
+use List::UtilsBy   qw(extract_by);
 use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use Future::AsyncAwait;
@@ -455,7 +455,7 @@ async sub send_stats {
     await Future->needs_all(    #
         map {                   #
             $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_})
-            } sort keys %queued    #
+        } sort keys %queued     #
     );
 }
 

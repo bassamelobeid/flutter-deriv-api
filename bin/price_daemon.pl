@@ -109,7 +109,7 @@ while (1) {
 sub _warmup {
     use Volatility::Seasonality;
     use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-    use BOM::MarketData qw( create_underlying_db);
+    use BOM::MarketData               qw( create_underlying_db);
 
     my $start = time;
     Volatility::Seasonality::warmup_cache();

@@ -50,7 +50,7 @@ has [qw(parameters shortcode currency)] => (
 has [qw(
         pricing_engine_name
         pricing_engine
-        )
+    )
 ] => (
     is         => 'ro',
     lazy_build => 1,
