@@ -8,7 +8,7 @@ use Test::Most;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_consumer_groups_request/;
-use Net::EmptyPort qw(empty_port);
+use Net::EmptyPort    qw(empty_port);
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -127,7 +127,7 @@ my $buy_error = $t->await::buy({
     buy   => 1,
     price => 1
 });
-is $buy_error->{msg_type}, 'buy';
+is $buy_error->{msg_type},      'buy';
 is $buy_error->{error}->{code}, 'InvalidContractProposal';
 
 my $ask_price = $proposal->{proposal}->{ask_price};
@@ -372,7 +372,7 @@ subtest 'buy contract with wrong proposal' => sub {
         buy   => $uuid,
         price => 1
     });
-    is $buy_error->{msg_type}, 'buy';
+    is $buy_error->{msg_type},      'buy';
     is $buy_error->{error}->{code}, 'InvalidContractProposal';
 
 };

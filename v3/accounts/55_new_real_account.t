@@ -346,7 +346,7 @@ subtest 'Address validation' => sub {
     my $cli = BOM::User::Client->new({loginid => $res->{new_account_real}->{client_id}});
     is $cli->address_line_1, $cli_details->{address_line_1}, 'Expected address line 1';
     is $cli->address_line_2, $cli_details->{address_line_2}, 'Expected address line 2';
-    is $cli->address_state,  'SP', 'Address state name is converted to state code';
+    is $cli->address_state,  'SP',                           'Address state name is converted to state code';
 };
 
 sub create_vr_account {

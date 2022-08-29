@@ -7,8 +7,8 @@ use Test::MockObject;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper qw(test_schema build_wsapi_test);
-use BOM::Test::Helper::Utility qw(random_email_address);
+use BOM::Test::Helper                          qw(test_schema build_wsapi_test);
+use BOM::Test::Helper::Utility                 qw(random_email_address);
 
 use BOM::Platform::Token::API;
 use BOM::User;

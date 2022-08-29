@@ -9,13 +9,13 @@ use Path::Tiny;
 use Data::Dumper;
 # we need this import here so the market-data db will be fresh for the test
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase   qw(:init);
 use Date::Utility;
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Config::Redis;
-use BOM::Test::Helper qw/build_wsapi_test/;
+use BOM::Test::Helper                qw/build_wsapi_test/;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 populate_exchange_rates();

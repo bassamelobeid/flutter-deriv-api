@@ -8,7 +8,7 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData   qw(create_underlying);
 use BOM::MarketData::Types;
 use Quant::Framework;
 use BOM::Config::Chronicle;
@@ -91,7 +91,7 @@ subtest 'call_ticks_history' => sub {
         $res = decode_json_utf8($t->message->[1]);
         is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed';
     } else {
-        is $res->{msg_type}, 'ticks_history', 'Result type should be history';
+        is $res->{msg_type},      'ticks_history',  'Result type should be history';
         is $res->{error}->{code}, 'MarketIsClosed', 'The market is presently closed';
     }
 

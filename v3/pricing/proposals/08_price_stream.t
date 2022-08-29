@@ -9,7 +9,7 @@ use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
+use BOM::Test::Helper                          qw/test_schema build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 

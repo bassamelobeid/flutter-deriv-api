@@ -6,14 +6,14 @@ use Test::Deep;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
-use Net::EmptyPort qw(empty_port);
+use Net::EmptyPort    qw(empty_port);
 use Test::MockModule;
 use Data::Dumper;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase   qw(:init);
 
 use await;
 
@@ -81,8 +81,8 @@ delete $req->{cancellation};
 $res = $t->await::proposal($req);
 
 if (my $proposal = $res->{proposal}) {
-    ok $proposal->{id}, 'Should return id';
-    ok $proposal->{limit_order}->{stop_out}, 'has stop out';
+    ok $proposal->{id},                                      'Should return id';
+    ok $proposal->{limit_order}->{stop_out},                 'has stop out';
     ok $proposal->{limit_order}->{stop_out}->{value},        'has stop out barrier value';
     ok $proposal->{limit_order}->{stop_out}->{display_name}, 'has stop out display_name';
 } else {
@@ -95,11 +95,11 @@ $req->{limit_order} = {
 $res = $t->await::proposal($req);
 
 if (my $proposal = $res->{proposal}) {
-    ok $proposal->{id}, 'Should return id';
-    ok $proposal->{limit_order}->{stop_out}, 'has stop out';
-    ok $proposal->{limit_order}->{stop_out}->{value},        'has stop out barrier value';
-    ok $proposal->{limit_order}->{stop_out}->{display_name}, 'has stop out display_name';
-    ok $proposal->{limit_order}->{take_profit}, 'has take profit';
+    ok $proposal->{id},                                         'Should return id';
+    ok $proposal->{limit_order}->{stop_out},                    'has stop out';
+    ok $proposal->{limit_order}->{stop_out}->{value},           'has stop out barrier value';
+    ok $proposal->{limit_order}->{stop_out}->{display_name},    'has stop out display_name';
+    ok $proposal->{limit_order}->{take_profit},                 'has take profit';
     ok $proposal->{limit_order}->{take_profit}->{value},        'has take profit barrier value';
     ok $proposal->{limit_order}->{take_profit}->{display_name}, 'has take profit display_name';
 } else {
@@ -114,16 +114,16 @@ $req->{limit_order} = {
 $res = $t->await::proposal($req);
 
 if (my $proposal = $res->{proposal}) {
-    ok $proposal->{id}, 'Should return id';
-    ok $proposal->{limit_order}->{stop_out}, 'has stop out';
-    ok $proposal->{limit_order}->{stop_out}->{value},        'has stop out barrier value';
-    ok $proposal->{limit_order}->{stop_out}->{display_name}, 'has stop out display_name';
-    ok $proposal->{limit_order}->{take_profit}, 'has take profit';
+    ok $proposal->{id},                                         'Should return id';
+    ok $proposal->{limit_order}->{stop_out},                    'has stop out';
+    ok $proposal->{limit_order}->{stop_out}->{value},           'has stop out barrier value';
+    ok $proposal->{limit_order}->{stop_out}->{display_name},    'has stop out display_name';
+    ok $proposal->{limit_order}->{take_profit},                 'has take profit';
     ok $proposal->{limit_order}->{take_profit}->{value},        'has take profit barrier value';
     ok $proposal->{limit_order}->{take_profit}->{display_name}, 'has take profit display_name';
-    ok $proposal->{limit_order}->{stop_loss}, 'has stop loss';
-    ok $proposal->{limit_order}->{stop_loss}->{value},        'has take profit barrier value';
-    ok $proposal->{limit_order}->{stop_loss}->{display_name}, 'has take profit display_name';
+    ok $proposal->{limit_order}->{stop_loss},                   'has stop loss';
+    ok $proposal->{limit_order}->{stop_loss}->{value},          'has take profit barrier value';
+    ok $proposal->{limit_order}->{stop_loss}->{display_name},   'has take profit display_name';
 } else {
     diag Dumper($res);
 }
@@ -143,8 +143,8 @@ $req->{multiplier} = 100;
 $res               = $t->await::proposal($req);
 
 if (my $proposal = $res->{proposal}) {
-    ok $proposal->{id}, 'Should return id';
-    ok $proposal->{limit_order}->{stop_out}, 'has stop out';
+    ok $proposal->{id},                               'Should return id';
+    ok $proposal->{limit_order}->{stop_out},          'has stop out';
     ok $proposal->{limit_order}->{stop_out}->{value}, 'has stop out barrier value';
 } else {
     diag Dumper($res);

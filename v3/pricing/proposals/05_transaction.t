@@ -12,7 +12,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8                            qw(:v1);
 use await;
 
 my $t = build_wsapi_test();
@@ -92,8 +92,8 @@ is $response->{subscription}->{id}, $uuid, 'The same subscription id';
 test_schema('transaction', $response);
 
 $response = $t->await::forget_all({forget_all => 'transaction'});
-is scalar @{$response->{forget_all}}, 1, 'Correct number of ids';
-is $response->{forget_all}->[0], $uuid, 'Correct id value';
+is scalar @{$response->{forget_all}}, 1,     'Correct number of ids';
+is $response->{forget_all}->[0],      $uuid, 'Correct id value';
 test_schema('forget_all', $response);
 
 done_testing();

@@ -5,7 +5,7 @@ use Test::Deep;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/build_wsapi_test/;
+use BOM::Test::Helper                qw/build_wsapi_test/;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Encode;
 

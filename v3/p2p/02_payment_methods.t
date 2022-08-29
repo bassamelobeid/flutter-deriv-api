@@ -34,8 +34,8 @@ $app_config->set({
         'payments.p2p.payment_method_countries' => $json->encode({
                 bank_transfer => {mode => 'exclude'},
                 other         => {mode => 'exclude'}})});
-$app_config->set({'payments.p2p.payment_methods_enabled' => 1});
-$app_config->set({'payments.p2p.transaction_verification_countries' => []});
+$app_config->set({'payments.p2p.payment_methods_enabled'                => 1});
+$app_config->set({'payments.p2p.transaction_verification_countries'     => []});
 $app_config->set({'payments.p2p.transaction_verification_countries_all' => 0});
 
 my $t = build_wsapi_test();

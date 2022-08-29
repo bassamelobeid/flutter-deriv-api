@@ -10,7 +10,7 @@ use await;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw(top_up);
+use BOM::Test::Helper::Client                  qw(top_up);
 use BOM::Test::Helper::P2P;
 use BOM::User::Client;
 use BOM::Platform::Token::API;

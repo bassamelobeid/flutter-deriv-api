@@ -4,13 +4,13 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
-use Scalar::Util qw( looks_like_number );
+use Scalar::Util    qw( looks_like_number );
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use Mojo::IOLoop;
 use Syntax::Keyword::Try;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper qw(build_wsapi_test call_instrospection test_schema);
+use BOM::Test::Helper                          qw(build_wsapi_test call_instrospection test_schema);
 use BOM::Config::Redis;
 
 use BOM::Test::Script::RpcRedis;
@@ -77,7 +77,7 @@ subtest 'Dynamic category timeouts' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
     my $request = {authorize => $token};
     ok my $response = send_request($request, 'authorize');
-    ok !$response->{error}, 'There is no error in response';
+    ok !$response->{error},             'There is no error in response';
     ok $response = pop @queue_requests, 'Request was handled via consumer groups backend';
     is_deeply $response->{args}, $request, "Request and Response's args are equal";
 
@@ -110,7 +110,7 @@ subtest 'Dynamic category timeouts' => sub {
     $rpc_redis = BOM::Test::Script::RpcRedis->new('mt5');
 
     ok $response = send_request($params, 'mt5_new_account');
-    ok !$response->{error}, 'There is no error in response';
+    ok !$response->{error},             'There is no error in response';
     ok $response = pop @queue_requests, 'Request was handled via consumer groups backend';
     is_deeply $response->{args}, $params, "Request and Response's args are equal";
 

@@ -3,7 +3,7 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::FailWarnings;
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8   qw(:v1);
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 
 my $t = build_wsapi_test();

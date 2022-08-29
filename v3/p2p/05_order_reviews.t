@@ -10,7 +10,7 @@ use await;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw(top_up);
+use BOM::Test::Helper::Client                  qw(top_up);
 use BOM::Test::Helper::P2P;
 use BOM::User::Client;
 use BOM::Platform::Token::API;
@@ -29,14 +29,14 @@ my $client_escrow = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $client_escrow->account('USD');
 
-$app_config->set({'payments.p2p.enabled'                  => 1});
-$app_config->set({'system.suspend.p2p'                    => 0});
-$app_config->set({'payments.p2p.available'                => 1});
-$app_config->set({'payments.p2p.restricted_countries'     => []});
-$app_config->set({'payments.p2p.available_for_currencies' => ['usd']});
-$app_config->set({'payments.p2p.escrow'                   => [$client_escrow->loginid]});
-$app_config->set({'payments.p2p.review_period'            => 2});
-$app_config->set({'payments.p2p.transaction_verification_countries' => []});
+$app_config->set({'payments.p2p.enabled'                                => 1});
+$app_config->set({'system.suspend.p2p'                                  => 0});
+$app_config->set({'payments.p2p.available'                              => 1});
+$app_config->set({'payments.p2p.restricted_countries'                   => []});
+$app_config->set({'payments.p2p.available_for_currencies'               => ['usd']});
+$app_config->set({'payments.p2p.escrow'                                 => [$client_escrow->loginid]});
+$app_config->set({'payments.p2p.review_period'                          => 2});
+$app_config->set({'payments.p2p.transaction_verification_countries'     => []});
 $app_config->set({'payments.p2p.transaction_verification_countries_all' => 0});
 
 BOM::Test::Helper::P2P::bypass_sendbird();

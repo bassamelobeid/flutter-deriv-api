@@ -12,9 +12,9 @@ BEGIN {
     $ENV{PERL_FUTURE_DEBUG} = 1;
 }
 
-use JSON::MaybeUTF8 qw/decode_json_utf8 encode_json_utf8/;
+use JSON::MaybeUTF8   qw/decode_json_utf8 encode_json_utf8/;
 use BOM::Test::Helper qw/build_wsapi_test create_test_user/;
-use Digest::MD5 qw/md5_hex/;
+use Digest::MD5       qw/md5_hex/;
 use Net::Async::Webservice::S3;
 use List::Util qw[min];
 
@@ -99,7 +99,7 @@ subtest 'Invalid s3 config' => sub {
     is $error->{code}, 'UploadDenied', 'Upload should fail for invalid s3 config';
 
     my $req = $upload_info{req};
-    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
+    is $res->{req_id}, $req->{req_id}, 'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
 };
 
@@ -236,7 +236,7 @@ subtest 'Invalid document_format' => sub {
     my $res = $t->await::document_upload($req);
     ok $res->{error}, 'Error for wrong document_format';
 
-    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
+    is $res->{req_id}, $req->{req_id}, 'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
 };
 
@@ -379,9 +379,9 @@ sub upload_ok {
     my ($call_type, $upload_id, $req, $res) = @upload_info{qw/call_type upload_id req res/};
     my $success = $res->{document_upload};
 
-    is $success->{upload_id},   $upload_id, 'upload id is correct';
-    is $success->{call_type},   $call_type, 'call_type is correct';
-    is_deeply $res->{echo_req}, $req,       'echo_req should contain the original request';
+    is $success->{upload_id}, $upload_id, 'upload id is correct';
+    is $success->{call_type}, $call_type, 'call_type is correct';
+    is_deeply $res->{echo_req}, $req, 'echo_req should contain the original request';
 
     return %upload_info;
 }
@@ -400,10 +400,10 @@ sub request_upload {
         #   to spoof the size so the upload isn't disallowed at the start.
     };
     my $res = $ws->await::document_upload($req);
-    is $res->{error},              undef, 'No error in response' or diag explain $res->{error};
-    is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
+    is $res->{error},  undef,          'No error in response' or diag explain $res->{error};
+    is $res->{req_id}, $req->{req_id}, 'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
-    ok $res->{document_upload},    'Returns document_upload (for none-duplicate files)';
+    ok $res->{document_upload}, 'Returns document_upload (for none-duplicate files)';
 
     my $upload_id = $res->{document_upload} ? $res->{document_upload}->{upload_id} : undef;
     my $call_type = $res->{document_upload} ? $res->{document_upload}->{call_type} : undef;
@@ -425,7 +425,7 @@ sub upload {
     my $res = send_chunks($data, %upload_info);
     my $req = $upload_info{req};
 
-    is $res->{req_id},             $req->{req_id},      'binary payload req_id is unchanged';
+    is $res->{req_id}, $req->{req_id}, 'binary payload req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'binary payload passthrough is unchanged';
 
     return (
@@ -454,8 +454,8 @@ sub document_upload_ok {
 
     my $success = $upload_info{res}->{document_upload};
 
-    is $success->{status},   'success', 'File is successfully uploaded';
-    is $success->{size},     length $data, 'file size is correct';
+    is $success->{status},   'success',      'File is successfully uploaded';
+    is $success->{size},     length $data,   'file size is correct';
     is $success->{checksum}, md5_hex($data), 'checksum is correct';
 
     return %upload_info;

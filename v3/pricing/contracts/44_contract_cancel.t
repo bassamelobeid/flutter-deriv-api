@@ -8,12 +8,12 @@ use Test::Most;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 
-use BOM::Test::Helper qw/test_schema build_wsapi_test/;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Helper                            qw/test_schema build_wsapi_test/;
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
 use await;
 use Date::Utility;

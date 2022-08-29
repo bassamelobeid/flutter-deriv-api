@@ -4,7 +4,7 @@ use Test::More;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use BOM::Test::Helper        qw/test_schema build_wsapi_test/;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 
 use BOM::Database::Model::OAuth;
@@ -104,7 +104,7 @@ ok($res->{api_token});
 is scalar(@{$res->{api_token}->{tokens}}), 1, '1 token';
 $test_token = $res->{api_token}->{tokens}->[0];
 is $test_token->{display_name}, 'Test';
-ok $test_token->{last_used},    'last_used is ok';
+ok $test_token->{last_used}, 'last_used is ok';
 test_schema('api_token', $res);
 
 $t->await::api_token({

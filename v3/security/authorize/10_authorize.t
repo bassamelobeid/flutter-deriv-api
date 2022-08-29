@@ -37,7 +37,7 @@ test_schema('balance', $balance);
 ## test with faked token
 my $faked_token = 'ABCDABCDABCDABCDABCDABCDABCDABCDABCDABCDABCDABCD';
 my $authorize   = $t->await::authorize({authorize => $faked_token});
-is $authorize->{msg_type}, 'authorize';
+is $authorize->{msg_type},      'authorize';
 is $authorize->{error}->{code}, 'InvalidToken';
 test_schema('authorize', $authorize);
 
@@ -63,25 +63,25 @@ $user->add_client($client);
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $authorize = $t->await::authorize({authorize => $token});
-is $authorize->{msg_type}, 'authorize';
+is $authorize->{msg_type},             'authorize';
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 is $authorize->{authorize}->{user_id}, $user_id;
 is $authorize->{authorize}->{country}, 'id', 'return correct country';
 test_schema('authorize', $authorize);
-is $stash->{loginid},              $loginid, 'Test stash data';
-is $stash->{email},                $email,   'Should store email to stash';
-is $stash->{token},                $token,   'Should store token to stash';
-is $stash->{token_type},           'oauth_token', 'Should store token_type to stash';
-is_deeply $stash->{scopes},        [qw/read admin trade payments/], 'Should store token_scopes to stash';
-ok $stash->{account_id},           'Should store to account_id stash';
-ok $stash->{country},              'Should store country to stash';
-ok $stash->{currency},             'Should store currency to stash';
-ok $stash->{landing_company_name}, 'Should store landing_company_name to stash';
-ok exists $stash->{is_virtual}, 'Should store is_virtual to stash';
+is $stash->{loginid},    $loginid,      'Test stash data';
+is $stash->{email},      $email,        'Should store email to stash';
+is $stash->{token},      $token,        'Should store token to stash';
+is $stash->{token_type}, 'oauth_token', 'Should store token_type to stash';
+is_deeply $stash->{scopes}, [qw/read admin trade payments/], 'Should store token_scopes to stash';
+ok $stash->{account_id},                   'Should store to account_id stash';
+ok $stash->{country},                      'Should store country to stash';
+ok $stash->{currency},                     'Should store currency to stash';
+ok $stash->{landing_company_name},         'Should store landing_company_name to stash';
+ok exists $stash->{is_virtual},            'Should store is_virtual to stash';
 ok !$authorize->{authorize}->{account_id}, 'Shouldnt return account_id';
-is $authorize->{authorize}->{preferred_language}, $stash->{language}, 'preferred language set correctly';
-is scalar @{$authorize->{authorize}->{account_list}}, 1, 'correct number of corresponding account';
+is $authorize->{authorize}->{preferred_language},     $stash->{language}, 'preferred language set correctly';
+is scalar @{$authorize->{authorize}->{account_list}}, 1,                  'correct number of corresponding account';
 
 ## it's ok after authorize
 $balance = $t->await::balance({balance => 1});
