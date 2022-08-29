@@ -19,6 +19,7 @@ use Test::Exception;
 use Test::Vars;
 use Test::Strict;
 use Test::PerlTidy;
+use Perl::Tidy::Sweetened;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
 use Test::Builder qw();
 use Pod::Coverage;
@@ -27,9 +28,8 @@ use Test::Pod::Coverage;
 use Array::Utils qw(intersect);
 use BOM::Test::CheckJsonMaybeXS;
 use BOM::Test::LocalizeSyntax qw(check_localize_string_structure);
-use YAML::XS qw(LoadFile);
+use YAML::XS                  qw(LoadFile);
 use Data::Dumper;
-$Data::Dumper::Maxdepth = 1;
 
 # This module is imported in .proverc already. Here we import it again to disable end_test
 # because `end test` will make test fail with the error of plan number
@@ -146,7 +146,7 @@ sub check_syntax {
 
         diag("syntax check on $file:");
         if ($file =~ /^lib\/.+[.]pm\z/) {
-            critic_ok($file);
+            critic_ok($file, 'test perlcritic');
             vars_ok($file, ignore_vars => ['@(Object::Pad/slots)']);
             BOM::Test::CheckJsonMaybeXS::file_ok($file);
         }
@@ -175,7 +175,21 @@ Check Test::PerlTidy for perl files
 sub check_tidy {
     my ($check_files, $skipped_files) = @_;
     my $test = Test::Builder->new;
+    ## no critic (ProhibitNoWarnings)
+    no warnings 'redefine';
+    my $origin_perltidy = \&Perl::Tidy::perltidy;
 
+    *Perl::Tidy::perltidy = sub {
+        print STDERR "calling mocked perltidy\n";
+        my @caller = caller(1);
+        if ($caller[3] eq 'Test::PerlTidy::is_file_tidy') {
+            print STDERR "will call sweeten\n";
+            return Perl::Tidy::Sweetened::perltidy(@_);
+        } else {
+            print STDERR "will call origin perltidy\n";
+            return $origin_perltidy->(@_);
+        }
+    };
     diag("start checking tidy...");
     $Test::PerlTidy::MUTE = 1;
     foreach my $file (@$check_files) {
@@ -187,6 +201,7 @@ sub check_tidy {
             $test->ok(Test::PerlTidy::is_file_tidy($file, '/home/git/regentmarkets/cpan/rc/.perltidyrc'), "$file: is_file_tidy");
         }
     }
+    *Perl::Tidy::perltidy = $origin_perltidy;
 }
 
 =head2 check_yaml
@@ -296,7 +311,7 @@ sub check_pod_coverage {
         my @naked_updated_sub = intersect(@naked_sub, @updated_subs);
         ok !@naked_updated_sub, "check pod coverage for $module";
 
-        diag("$module naked_sub: " . Dumper(\@naked_sub) . 'updated_subs: ' . Dumper(\@updated_subs));
+        diag("$module naked_sub: @naked_sub updated_subs: @updated_subs");
         if (scalar @naked_updated_sub) {
             diag("The private subroutine start with '_' will be ignored.");
             diag('Please add pod document for the following subroutines:');
@@ -331,6 +346,7 @@ sub _get_updated_subs {
         # @@ -182,4 +187,13 @@ sub is_skipped_file {
         if (/^[^-#]*?@@.+\s[+](\d+).+@@ .*?sub\s(\w+)\s/) {
             if ($pm_subs && $pm_subs->{$2}) {
+                local $Data::Dumper::Maxdepth = 1;
                 diag("$2 change start $1 " . Dumper($pm_subs->{$2}));
                 # $1 is the number of change start, but with 2 lines extra context
                 # if the changed lines is greater than end, it means the sub is not really changed

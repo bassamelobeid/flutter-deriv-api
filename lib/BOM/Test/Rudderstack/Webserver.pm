@@ -1,8 +1,3 @@
-package BOM::Test::Rudderstack::Webserver;
-
-use strict;
-use warnings;
-
 use Object::Pad;
 
 =head1 Rudderstack_Webserver
@@ -20,7 +15,7 @@ use Object::Pad;
 
 =cut
 
-class BOM::Test::Rudderstack::Webserver : isa(IO::Async::Notifier);
+class BOM::Test::Rudderstack::Webserver :isa(IO::Async::Notifier);
 
 use Future::AsyncAwait;
 use Syntax::Keyword::Try;
@@ -30,10 +25,10 @@ use JSON::MaybeUTF8 qw(:v1);
 use Unicode::UTF8;
 use Scalar::Util qw(refaddr blessed);
 use curry;
-use Carp qw(croak);
+use Carp  qw(croak);
 use POSIX qw/strftime/;
 
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use Log::Any::Adapter qw(DERIV),
     stderr    => 'json',
     log_level => 'error';
@@ -52,7 +47,7 @@ has $server;
 
 =cut
 
-method configure_unknown(%args) {
+method configure_unknown (%args) {
     $port   = $args{port};
     $server = $args{server};
     delete $args{$_} foreach qw/port server/;
@@ -107,7 +102,7 @@ async method handle {
 
 =cut
 
-method validates($body) {
+method validates ($body) {
     for my $attribute ('event', 'userId', 'sentAt', 'context', 'properties') {
         die {
             code => 400,
@@ -122,7 +117,7 @@ method validates($body) {
 
 =cut
 
-method record($body) {
+method record ($body) {
     my $prefix   = strftime("%Y%m%d%R", localtime);
     my $suffix   = $body->{event} // 'Identify_Request';
     my $filename = PATH . "$prefix-CustomerIO_$suffix.html";
@@ -139,7 +134,7 @@ method record($body) {
 
 =cut
 
-method respond($req, $data) {
+method respond ($req, $data) {
     my $response = HTTP::Response->new($data->{code});
     $response->add_content(encode_json_utf8([$data->{msg}]));
     $response->content_type("application/json");
@@ -153,7 +148,7 @@ method respond($req, $data) {
 
 =cut
 
-method fail($req, $error) {
+method fail ($req, $error) {
     if (ref($error) eq 'HASH') {
         my $body_params = decode_json_utf8($req->body || '{}');
         my $filename    = PATH . time . "-CustomerIO_error-" . ($body_params->{event} ? $body_params->{event} : $error->{code}) . ".html";
