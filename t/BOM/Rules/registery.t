@@ -12,7 +12,7 @@ use Test::MockObject;
 use BOM::Rules::Registry qw(rule get_rule get_action);
 
 subtest 'Rules registery' => sub {
-    like exception { rule() }, qr/Rule name is required but missing/, 'Rule name is required';
+    like exception { rule() },            qr/Rule name is required but missing/,        'Rule name is required';
     like exception { rule('test_rule') }, qr/No code associated with rule 'test_rule'/, 'Rule code is required';
     my $test_rule = rule(
         'test_rule' => {
@@ -37,13 +37,13 @@ subtest 'Rules registery' => sub {
         });
     is $test_rule2->name,        'test_rule2',                    'Rule name is correct';
     is $test_rule2->description, 'This rule is for testing only', 'Rule description is correctly set';
-    is $test_rule2->code,        \&test_sub, 'Rule code is correctly set';
+    is $test_rule2->code,        \&test_sub,                      'Rule code is correctly set';
     isa_ok $test_rule2->apply(), 'BOM::Rules::Result', 'Rule code is correctly invoked';
 
     subtest 'Get rule' => sub {
         like exception { get_rule() }, qr/Rule name cannot be empty/, 'Rule name is required';
-        is get_rule('test_rule'), $test_rule, 'Correct rule is returned';
-        is get_rule('invalid name'), undef, 'Empty result for non-existing rules';
+        is get_rule('test_rule'),    $test_rule, 'Correct rule is returned';
+        is get_rule('invalid name'), undef,      'Empty result for non-existing rules';
     }
 };
 

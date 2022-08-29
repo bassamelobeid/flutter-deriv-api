@@ -17,7 +17,7 @@ use Locale::Country;
 use Text::Trim qw(trim);
 
 use BOM::Platform::Context qw(localize request);
-use BOM::Rules::Registry qw(rule);
+use BOM::Rules::Registry   qw(rule);
 
 rule 'profile.date_of_birth_complies_minimum_age' => {
     description => "Fails if the date of birth (read from args, falling back to context client's) complies with the minimum age of residence country",

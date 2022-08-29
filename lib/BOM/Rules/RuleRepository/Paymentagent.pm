@@ -13,9 +13,9 @@ This modules declares rules and regulations applied on paymentagents and clients
 use strict;
 use warnings;
 
-use List::Util qw(none any first sum max);
+use List::Util                       qw(none any first sum max);
 use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
-use Format::Util::Numbers qw(financialrounding);
+use Format::Util::Numbers            qw(financialrounding);
 use Date::Utility;
 
 use BOM::Rules::Registry qw(rule);

@@ -14,9 +14,9 @@ use strict;
 use warnings;
 
 use LandingCompany::Registry;
-use BOM::Rules::Registry qw(rule);
+use BOM::Rules::Registry   qw(rule);
 use BOM::Platform::Context qw(request);
-use List::Util qw(none);
+use List::Util             qw(none);
 
 rule 'trading_account.should_match_landing_company' => {
     description => 'Checks whether there is a valid landing company account for the given trading account creation params',

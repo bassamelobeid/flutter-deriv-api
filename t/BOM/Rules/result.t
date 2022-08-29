@@ -10,10 +10,10 @@ subtest 'object initialization' => sub {
     my $result;
 
     lives_ok { $result = BOM::Rules::Result->new() } 'object created successfully';
-    is $result->has_failure,         0, 'initial value is correct for `has_failure`';
+    is $result->has_failure, 0, 'initial value is correct for `has_failure`';
     is_deeply $result->passed_rules, [], 'initial value is correct for `passed_rules`';
     is_deeply $result->failed_rules, [], 'initial value is correct for `failed_rules`';
-    is_deeply $result->errors, {}, 'initial value is correct for `errors`';
+    is_deeply $result->errors, {},   'initial value is correct for `errors`';
 };
 
 subtest 'append_failure' => sub {
@@ -60,13 +60,13 @@ subtest 'append_success' => sub {
     lives_ok { $result->append_success('rule 1') } 'success 1 appended';
     is $result->has_failure, 0, 'has_failure not changed correctly';
     is_deeply $result->failed_rules, [], 'failed_rule is empty correctly';
-    is_deeply $result->errors, {}, 'errors is empty correctly';
+    is_deeply $result->errors, {},   'errors is empty correctly';
     is_deeply $result->passed_rules, ['rule 1'], 'passed_rules is updated as expectation';
 
     lives_ok { $result->append_success('rule 2') } 'failure 2 appended';
     is $result->has_failure, 0, 'has_failure is still 0 correctly';
     is_deeply $result->failed_rules, [], 'failed_rule is not updated correctly';
-    is_deeply $result->errors, {}, 'errors has not updated correctly';
+    is_deeply $result->errors, {},   'errors has not updated correctly';
     is_deeply $result->passed_rules, ['rule 1', 'rule 2'], 'new value is appended to passed_rules as expectation';
 };
 
@@ -162,7 +162,7 @@ subtest 'merge test 3' => sub {
 
     is $result_merged->has_failure, 0, 'has_failure is 0 correctly';
     is_deeply $result_merged->failed_rules, [], 'failed_rule is empty correctly';
-    is_deeply $result_merged->errors, {}, 'errors is empty correctly';
+    is_deeply $result_merged->errors, {},   'errors is empty correctly';
     is_deeply $result_merged->passed_rules, ['rule 1', 'rule 2', 'rule 3', 'rule 4'], 'passed_rules values are correct';
 };
 

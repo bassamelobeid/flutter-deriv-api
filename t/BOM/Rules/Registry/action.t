@@ -60,10 +60,10 @@ subtest 'Verification' => sub {
     undef @rule_args;
     lives_ok { $result = $action->verify($context, 'args') } 'Success retrun value';
     is ref $result, 'BOM::Rules::Result', 'the reference type is correct';
-    is_deeply \@rule_args, [$rule1, $context, 'args', $rule2, $context, 'args'], 'Context and args are correctly passed to rule codes';
-    is_deeply $result->failed_rules, [], 'failed rules are same as expectation';
-    is_deeply $result->passed_rules, ['rule1', 'rule2'], 'passed rules are same as expectation';
-    is $result->has_failure,         0, 'has not failures same as expectation';
+    is_deeply \@rule_args,           [$rule1, $context, 'args', $rule2, $context, 'args'], 'Context and args are correctly passed to rule codes';
+    is_deeply $result->failed_rules, [],                                                   'failed rules are same as expectation';
+    is_deeply $result->passed_rules, ['rule1', 'rule2'],                                   'passed rules are same as expectation';
+    is $result->has_failure, 0, 'has not failures same as expectation';
 
     $context = BOM::Rules::Context->new(stop_on_failure => 1);
 

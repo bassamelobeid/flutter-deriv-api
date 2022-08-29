@@ -7,7 +7,7 @@ use Test::Exception;
 use Test::MockModule;
 use Test::MockTime qw(set_fixed_time restore_time);
 use Syntax::Keyword::Try;
-use Format::Util::Numbers qw(financialrounding);
+use Format::Util::Numbers            qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 
