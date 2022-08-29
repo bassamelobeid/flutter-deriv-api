@@ -29,7 +29,7 @@ use Try::Tiny;
 use Date::Utility;
 use Getopt::Long;
 use List::Util qw(min);
-use Log::Any qw($log);
+use Log::Any   qw($log);
 use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'warning';
 
 # This is since the inception of JOIN_DATE on MyAffiliates.

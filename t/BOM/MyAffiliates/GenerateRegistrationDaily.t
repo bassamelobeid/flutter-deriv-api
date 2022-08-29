@@ -9,7 +9,7 @@ use Brands;
 
 use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 
 subtest 'client with no promocode' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

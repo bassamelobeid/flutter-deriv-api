@@ -4,7 +4,7 @@ use warnings;
 use Test::More (tests => 5);
 use Test::Warnings;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 use BOM::MyAffiliates::ActivityReporter;
 
 my $day_one = '2011-03-08 12:59:59';
