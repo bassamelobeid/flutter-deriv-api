@@ -15,9 +15,9 @@ This module implements methods to easily load and save global compliance-related
 =cut
 
 use Format::Util::Numbers qw(financialrounding);
-use List::Util qw(any uniq);
-use Scalar::Util qw(looks_like_number);
-use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
+use List::Util            qw(any uniq);
+use Scalar::Util          qw(looks_like_number);
+use JSON::MaybeUTF8       qw(decode_json_utf8 encode_json_utf8);
 
 use BOM::Config::Runtime;
 

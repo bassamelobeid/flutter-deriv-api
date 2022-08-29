@@ -17,7 +17,7 @@ use BOM::Config;
 use BOM::Config::Runtime;
 use LandingCompany::Registry;
 use JSON::MaybeUTF8 qw(:v1);
-use List::Util qw(any);
+use List::Util      qw(any);
 
 =head2 available_countries
 

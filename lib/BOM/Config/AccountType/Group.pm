@@ -1,4 +1,5 @@
 use Object::Pad;
+
 class BOM::Config::AccountType::Group;
 
 =head1 NAME
@@ -23,9 +24,32 @@ use constant SERVICES => {
         qw/trade link_to_accounts transfer_without_link p2p fiat_cashier crypto_cashier get_commissions paymentagent_transfer paymentagent_withdraw/)
 };
 
+=head1 METHODS -  accessors
 
-has $name     : reader;
+=head2 name
+
+Return the name of the account type group (role)
+
+=cut
+
+has $name : reader;
+
+=head2 services
+
+Returns the list of services available for the current group
+
+=cut
+
 has $services : reader;
+
+=head2 services_lookup
+
+An auxiliary lookup table that includes all services in the current group
+
+Note: It's created for speeding up service lookups needed within internal methods.  It's recommended to use `I<supports_service>  for service lookup everywhere else.
+
+=cut
+
 has $services_lookup : reader;
 
 =head2 supports_service
@@ -50,9 +74,19 @@ method supports_service {
     return defined $services_lookup->{$service} ? 1 : 0;
 }
 
-=head2 BUILD
+=head2 new
 
 Class constructor.
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<name> - a string that represent group name 
+
+=item * C<services> - an array ref of the services accessible for the group
+
+=back
 
 =cut
 

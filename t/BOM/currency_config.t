@@ -5,9 +5,9 @@ use Test::More;
 use Test::Fatal;
 use Test::MockModule;
 use JSON::MaybeUTF8;
-use Format::Util::Numbers qw(get_min_unit financialrounding);
+use Format::Util::Numbers            qw(get_min_unit financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
-use List::Util qw(max);
+use List::Util                       qw(max);
 
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
@@ -444,9 +444,9 @@ subtest 'Check Types of Suspension' => sub {
 
     subtest 'Only when cryptocurrency deposit is suspended' => sub {
         $app_config->system->suspend->cryptocurrencies_deposit(['BTC']);
-        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended('BTC'), 'Deposit for cryptocurrency is suspended';
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended('BTC'),       'Deposit for cryptocurrency is suspended';
         ok !(BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended('BTC')), 'Withdrawal for cryptocurrency is not suspended';
-        ok !(BOM::Config::CurrencyConfig::is_crypto_cashier_suspended()), 'Cryptocashier is not suspended';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_cashier_suspended()),                  'Cryptocashier is not suspended';
         $app_config->system->suspend->cryptocurrencies_deposit([]);
     };
 
@@ -454,7 +454,7 @@ subtest 'Check Types of Suspension' => sub {
         $app_config->system->suspend->cryptocurrencies_withdrawal(['BTC']);
         ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended('BTC'), 'Withdrawal for cryptocurrency is suspended';
         ok !(BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended('BTC')), 'Deposit for cryptocurrency is not suspended';
-        ok !(BOM::Config::CurrencyConfig::is_crypto_cashier_suspended()), 'Cryptocashier is not suspended';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_cashier_suspended()),               'Cryptocashier is not suspended';
         $app_config->system->suspend->cryptocurrencies_withdrawal([]);
     };
 
@@ -472,7 +472,7 @@ subtest 'Check Types of Suspension' => sub {
 
     subtest 'Only when currency is experimental' => sub {
         $app_config->system->suspend->experimental_currencies(['USB']);
-        ok BOM::Config::CurrencyConfig::is_experimental_currency("USB"), 'Currency USB is experimental';
+        ok BOM::Config::CurrencyConfig::is_experimental_currency("USB"),    'Currency USB is experimental';
         ok !(BOM::Config::CurrencyConfig::is_experimental_currency("UST")), 'Currency UST is not experimental';
         $app_config->system->suspend->experimental_currencies([]);
     };
@@ -480,8 +480,8 @@ subtest 'Check Types of Suspension' => sub {
 
 subtest 'currency config' => sub {
     my $offerings_config = BOM::Config::Runtime->instance->get_offerings_config('sell');
-    is $offerings_config->{action}, 'sell', 'get_offerings_config for sell';
-    is BOM::Config::CurrencyConfig::local_currency_for_country('ca'), 'CAD', 'local_currency_for_country';
+    is $offerings_config->{action},                                   'sell', 'get_offerings_config for sell';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('ca'), 'CAD',  'local_currency_for_country';
 };
 
 subtest 'rare currencies config' => sub {

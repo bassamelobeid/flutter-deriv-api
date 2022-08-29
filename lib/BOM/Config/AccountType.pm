@@ -1,4 +1,5 @@
 use Object::Pad;
+
 class BOM::Config::AccountType;
 
 =head1 NAME
@@ -11,23 +12,112 @@ A class representing a an account type. Each account type belongs to a specific 
 
 =cut
 
-
 use List::Util qw(any uniq);
 use LandingCompany::Registry;
 use BOM::Config;
 
-has $name                           : reader;
-has $category                       : reader;
-has $groups                         : reader;
-has $services                       : reader;
-has $services_lookup                : reader;
-has $is_demo                        : reader;
+=head1 METHODS - Accessors
+
+=head2 name
+
+Returns the name of account type
+
+=cut
+
+has $name : reader;
+
+=head2 category
+
+Returns the category of account type
+
+=cut
+
+has $category : reader;
+
+=head2 groups
+
+Returns groups (roles) of account type
+
+=cut
+
+has $groups : reader;
+
+=head2 services
+
+Returns services accessible to account type
+
+=cut
+
+has $services : reader;
+
+=head2 services_lookup
+
+An auxiliary lookup table that includes all services in the account type's B<groups>.
+
+Note: It's created for speeding up service lookups needed within internal methods.  It's recommended to use `I<supports_service>  for service lookup everywhere else.
+
+=cut
+
+has $services_lookup : reader;
+
+=head2 is_demo
+
+Returns a bool value to indicate the account type is demo or not
+
+=cut
+
+has $is_demo : reader;
+
+=head2 linkable_to_different_currency
+
+A boolean flag that tells if the account type can be linked to a wallet with a different currency. The value is false for wallet account types, because they are not linkable to any other wallet.
+
+=cut
+
 has $linkable_to_different_currency : reader;
-has $linkable_wallet_types          : reader;
-has $currencies                     : reader;
-has $currency_types                 : reader;
-has $currencies_by_landing_company  : reader;
-has $type_broker_codes              : reader;
+
+=head2 linkable_wallet_types
+
+Returns a list of wallet types linkable to the account type. The value I<all> indicates that all wallet types are linkable (which the case for most of the account types). This list should be empty for all wallet account types.
+
+=cut
+
+has $linkable_wallet_types : reader;
+
+=head2 currencies
+
+Returns the currencies allowed for the account type. The list is empty if there is no such limitation.
+
+
+=cut
+
+has $currencies : reader;
+
+=head2 currency_types
+
+Returns the currency types allowed for the account type. The list is empty if there is no such limitation.
+
+=cut
+
+has $currency_types : reader;
+
+=head2 currencies_by_landing_company
+
+Returns a hash-ref of available currencies per landing company. It's a combination of account type currency limitations introduced by B<currencies> and B<currency_types> and the availability of currencies in landing companies.
+
+=cut
+
+has $currencies_by_landing_company : reader;
+
+=head2 type_broker_codes
+
+Returns a hash-ref of account type's broker codes per landing company. It's usually inherited from the I<account category>, but some account types (like B<affiliate>) override it in their configuration.
+
+=cut
+
+has $type_broker_codes : reader;
+
+=head1 METHODS
 
 =head2 supports_service
 
@@ -84,11 +174,45 @@ method broker_codes {
     return keys $type_broker_codes->%* ? $type_broker_codes : $self->category->broker_codes // {};
 }
 
+=head2  new
+
+create account type objects
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<name> - a string that represent the name of account type
+
+=item * C<category> - a L<BOM::config::AccountType::Category> object that represent category
+
+=item * C<is_demo> - a bool that indicate it is a demo or not
+
+=item * C<linkable_to_different_currency> - a bool that indicate it is linkable to a wallet with a different currency
+
+=item * C<groups> - an array ref of groups (roles)
+
+=item * C<linkable_wallet_types> - an array ref of wallet types allowed for linkage (if there's such limitation)
+
+=item * C<currency_types> - an array ref of currency types allowed (if there's such limitation)
+
+=item * C<currencies> - an array ref of allowed currencies (if there's such limitation)
+
+=item * C<broker_code> - an hash ref of broker codes per landing company, if the account type overrides the broker codes of it's B<category>.
+
+=item * C<currencies_by_landing_company> - an hash ref representing the currencies allowed per landing company (if applicable)
+
+=back
+
+Return account type object
+
+=cut
+
 BUILD {
     my %args = @_;
 
     $args{$_} //= 0  for (qw/is_demo linkable_to_different_currency/);
-    $args{$_} //= [] for (qw/gorups linkable_wallet_types currency_types currencies/);
+    $args{$_} //= [] for (qw/groups linkable_wallet_types currency_types currencies/);
     $args{$_} //= {} for (qw/broker_codes currencies_by_landing_company/);
 
     $name     = $args{name};
@@ -111,7 +235,7 @@ BUILD {
         die "Invalid group in account type $category_name-$name" unless ref($group) eq 'BOM::Config::AccountType::Group';
     }
 
-    $services        = [sort {$a cmp $b} uniq map { $_->services->@* } $args{groups}->@* ];
+    $services        = [sort { $a cmp $b } uniq map { $_->services->@* } $args{groups}->@*];
     $services_lookup = +{map { $_ => 1 } @$services};
 
     my @all_real_wallets =
@@ -128,7 +252,7 @@ BUILD {
 
         die "Demo account type $category_name-$name is linked to non-demo wallet $wallet_type" if $args{is_demo} && $wallet_type ne 'demo';
     }
-    @linkable_wallet_types = @all_real_wallets if any {$_ eq 'all'} $args{linkable_wallet_types}->@*;
+    @linkable_wallet_types = @all_real_wallets if any { $_ eq 'all' } $args{linkable_wallet_types}->@*;
 
     $args{linkable_wallet_types} = \@linkable_wallet_types;
 
@@ -149,12 +273,12 @@ BUILD {
 
         for my $currency ($args{currencies_by_landing_company}->{$company_name}->@*) {
             die "Invalid currency $currency in account type $category_name-$name 's landing company limited currencies for $company_name"
-                unless any {$_ eq $currency} (keys $landing_company->legal_allowed_currencies->%*);
+                unless any { $_ eq $currency } (keys $landing_company->legal_allowed_currencies->%*);
         }
     }
 
     (
-        $groups,                 $type_broker_codes, $is_demo,    $linkable_to_different_currency,
+        $groups,                $type_broker_codes, $is_demo,    $linkable_to_different_currency,
         $linkable_wallet_types, $currency_types,    $currencies, $currencies_by_landing_company
         )
         = @args{

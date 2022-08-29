@@ -165,7 +165,7 @@ subtest 'category class' => sub {
     ok $category = BOM::Config::AccountType::Category->new(%args), 'Category object is successfully created';
     is $category->name, 'my_category', 'name is correct';
     cmp_bag $category->brands, ['binary'], 'brand is correct';
-    is_deeply $category->broker_codes, {svg => ['CRW']}, 'broker codes are correct';
+    is_deeply $category->broker_codes,  {svg     => ['CRW']},       'broker codes are correct';
     is_deeply $category->account_types, {my_type => $account_type}, 'account types are correct';
 
     $mock_account_type->unmock_all;
@@ -187,24 +187,24 @@ subtest 'account type class' => sub {
     $args{category} = BOM::Config::AccountType::Registry->category_by_name('wallet');
     ok $account_type = BOM::Config::AccountType->new(%args), 'Account type created with the minimum args required';
 
-    is $account_type->name,                           'my_type', 'Name is correct';
-    is $account_type->category_name,                  'wallet',  'Category name is correct';
+    is $account_type->name,                           'my_type',                                                      'Name is correct';
+    is $account_type->category_name,                  'wallet',                                                       'Category name is correct';
     is $account_type->category,                       BOM::Config::AccountType::Registry->category_by_name('wallet'), 'Category object is correct';
-    is $account_type->is_demo,                        0, 'account type is not demo';
+    is $account_type->is_demo,                        0,                                                              'account type is not demo';
     is $account_type->linkable_to_different_currency, 0, 'it is not linkable to a different currency';
 
     is_deeply $account_type->brands,   ['deriv'], 'Brands are the same as the category';
-    is_deeply $account_type->groups,   [], 'Groups are empty';
-    is_deeply $account_type->services, [], 'Services are empty (no group)';
+    is_deeply $account_type->groups,   [],        'Groups are empty';
+    is_deeply $account_type->services, [],        'Services are empty (no group)';
     is_deeply $account_type->broker_codes,
         {
         svg         => ['CRW'],
         maltainvest => ['MFW']
         },
         'Broker codes are the same as the category';
-    is_deeply $account_type->linkable_wallet_types, [], 'No linkable wallet types';
-    is_deeply $account_type->currencies,            [], 'No limited currency';
-    is_deeply $account_type->currency_types,        [], 'Currency type is not limited';
+    is_deeply $account_type->linkable_wallet_types,             [], 'No linkable wallet types';
+    is_deeply $account_type->currencies,                        [], 'No limited currency';
+    is_deeply $account_type->currency_types,                    [], 'Currency type is not limited';
     is_deeply $account_type->currencies_by_landing_company, {}, 'Currency is not limited by landing company';
 
     # other args

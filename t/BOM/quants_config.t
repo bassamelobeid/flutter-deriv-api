@@ -38,7 +38,7 @@ subtest 'save_config' => sub {
     my $saved = $qc->chronicle_reader->get('quants_config', 'commission')->{test};
     is_deeply $saved->{contract_type},   [split ',', $args->{contract_type}],   'contract_type matches';
     is_deeply $saved->{currency_symbol}, [split ',', $args->{currency_symbol}], 'currency_symbol matches';
-    is $saved->{ITM_1},                  $args->{ITM_1}, 'ITM_1 matches';
+    is $saved->{ITM_1}, $args->{ITM_1}, 'ITM_1 matches';
 };
 
 subtest 'delete_config' => sub {
@@ -182,7 +182,7 @@ subtest 'multiplier_config' => sub {
     ok $qc->get_multiplier_config(undef,         'R_100'),     'get_multiplier_config common';
     my $args = $qc->get_multiplier_config_default();
     ok $qc->save_config('multiplier_config::common::R_10', $args->{common}{R_10}), 'multiplier_config saved';
-    ok !BOM::Config::Chronicle::clear_connections(), 'clear_connections';
+    ok !BOM::Config::Chronicle::clear_connections(),                               'clear_connections';
 };
 
 subtest 'create custom deal cancellation config' => sub {

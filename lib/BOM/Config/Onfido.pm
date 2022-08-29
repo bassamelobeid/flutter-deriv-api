@@ -14,7 +14,7 @@ A module that consists methods to get config data related to Onfido.
 
 =cut
 
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8        qw(:v1);
 use Locale::Codes::Country qw(country_code2code);
 
 use BOM::Config;

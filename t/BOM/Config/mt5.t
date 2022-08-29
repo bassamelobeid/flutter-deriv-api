@@ -81,7 +81,7 @@ subtest 'server by id' => sub {
     );
 
     my $server = $mt5_obj->server_by_id();
-    ok exists $server->{$server_type}, 'server id exists';
+    ok exists $server->{$server_type},              'server id exists';
     ok exists $server->{$server_type}{geolocation}, 'geolocation exists';
 
     is $server->{$server_type}{geolocation}{region},   'Europe',  'undef if server id is not that we know of';

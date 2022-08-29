@@ -59,7 +59,8 @@ subtest 'restricted_countries' => sub {
     $config->available(1);
     $config->restricted_countries([]);
 
-    cmp_deeply(BOM::Config::P2P::available_countries,
+    cmp_deeply(
+        BOM::Config::P2P::available_countries,
         {
             aa => 'aa country',
             bb => 'bb country',
@@ -74,7 +75,8 @@ subtest 'restricted_countries' => sub {
     $config->available(1);
     $config->restricted_countries(['aa', 'bb']);
 
-    cmp_deeply(BOM::Config::P2P::available_countries,
+    cmp_deeply(
+        BOM::Config::P2P::available_countries,
         {
 
             cc => 'cc country'
@@ -92,7 +94,8 @@ subtest 'advert_config' => sub {
     $config->restricted_countries(['bb', 'cc']);
     $config->country_advert_config('{}');
 
-    cmp_deeply(BOM::Config::P2P::advert_config,
+    cmp_deeply(
+        BOM::Config::P2P::advert_config,
         {
             aa => {
                 float_ads          => 'disabled',
@@ -110,7 +113,8 @@ subtest 'advert_config' => sub {
         '{ "aa": { "float_ads": "enabled", "max_rate_range": 88, "manual_quote": 1.23, "manual_quote_epoch" : 1234, "deactivate_fixed" : "2030-01-01" } }'
     );
 
-    cmp_deeply(BOM::Config::P2P::advert_config,
+    cmp_deeply(
+        BOM::Config::P2P::advert_config,
         {
             aa => {
                 float_ads          => 'enabled',

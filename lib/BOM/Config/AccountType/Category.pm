@@ -1,6 +1,6 @@
 use Object::Pad;
-class BOM::Config::AccountType::Category;
 
+class BOM::Config::AccountType::Category;
 
 =head1 NAME
 
@@ -15,13 +15,73 @@ A class representing a an account category.
 use List::Util qw(any);
 use Brands;
 
+=head1 METHODS - Accessors
 
+=head2 name
 
-has $name          : reader;
-has $broker_codes  : reader;
+Returns the name of account category
+
+=cut
+
+has $name : reader;
+
+=head2 broker_codes
+
+Returns a hash-ref containing the broker codes per landing company.
+
+=cut
+
+has $broker_codes : reader;
+
+=head2 account_types
+
+Returns account types included in the current category as a hash ref of name:L<BOM::Config::AccountType> pairs
+
+=cut
+
 has $account_types : reader;
-has $brands        : reader;
-has $groups        : reader;
+
+=head2 brands
+
+Returns a list of brands that the account type is available for
+
+=cut
+
+has $brands : reader;
+
+=head2 groups
+
+Returns groups (roles) of the account category. These groups are shared among all included account types and appear in their list of B<groups>.
+
+=cut
+
+has $groups : reader;
+
+=head1 METHODS
+
+=head2 new
+
+Create account category object
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<name> -  a string that represent the name of account category
+
+=item * C<groups> - an arrayref of L<BOM::Config::AccountType::Group> objects (or roles)
+
+=item * C<brands> - an arrayref of brand names within which the category is activated.
+
+=item * C<broker_codes> - a hashref of broker_codes per landing company
+
+=item * C<account_types> -contains all included account types a hashref of name : L<BOM::Config::AccountType> pairs
+
+=back
+
+Returns a L<BOM::config::AccountType::Category> object
+
+=cut
 
 BUILD {
     my %args = @_;
@@ -46,7 +106,8 @@ BUILD {
         my $account_type = $args{account_types}->{$type_name};
 
         die "Invalid object for the account type $type_name in category $name" unless ref($account_type) eq 'BOM::Config::AccountType';
-        die "Incorrect account type name $type_name in category $name - correct name is: ". $account_type->name unless $type_name eq $account_type->name;
+        die "Incorrect account type name $type_name in category $name - correct name is: " . $account_type->name
+            unless $type_name eq $account_type->name;
         die "Invalid category name " . $account_type->category_name . " found in account type $type_name. The expected category name was $name"
             unless $name eq $account_type->category_name;
     }

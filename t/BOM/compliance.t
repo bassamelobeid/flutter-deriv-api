@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::Fatal;
-use List::Util qw(first);
+use List::Util      qw(first);
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 
 use BOM::Config::Compliance;
