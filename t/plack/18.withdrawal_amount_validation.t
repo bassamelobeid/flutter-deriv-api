@@ -4,8 +4,8 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use APIHelper qw(balance deposit withdrawal_validate update_payout);
-use JSON::MaybeUTF8 qw(:v1);
+use APIHelper                                  qw(balance deposit withdrawal_validate update_payout);
+use JSON::MaybeUTF8                            qw(:v1);
 use BOM::User::Client;
 use Test::MockModule;
 

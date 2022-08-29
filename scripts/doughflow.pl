@@ -5,7 +5,7 @@ use Log::Any qw($log);
 use Getopt::Long 'GetOptions';
 use Digest::MD5 qw/md5_hex/;
 use Mojo::UserAgent;
-use XML::Simple qw(:strict);
+use XML::Simple     qw(:strict);
 use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::User::Client;

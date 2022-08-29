@@ -9,7 +9,7 @@ use parent qw(Plack::Component);
 use Plack::Request;
 use Plack::Response;
 use JSON::MaybeUTF8 qw(:v1);
-use Scalar::Util qw/blessed/;
+use Scalar::Util    qw/blessed/;
 use Syntax::Keyword::Try;
 use Log::Dispatch::File;
 use Log::Dispatch::Screen;

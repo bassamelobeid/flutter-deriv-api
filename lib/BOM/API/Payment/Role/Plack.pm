@@ -7,7 +7,7 @@ use Plack::Request;
 use Scalar::Util qw( looks_like_number );
 use XML::Simple;
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8            qw(:v1);
 
 has 'env' => (
     is       => 'ro',

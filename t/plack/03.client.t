@@ -49,12 +49,12 @@ subtest 'Handle invalid XML' => sub {
 
     my $req = request_xml('POST', '/transaction/payment/doughflow/deposit', $boggus_xml_content);
 
-    is $req->code,      422,                      'Expected 422 for XML message with &';
+    is $req->code, 422, 'Expected 422 for XML message with &';
     like $req->content, qr/Unprocessable entity/, 'Expected Unprocessable entity as message';
 
     $req = request_xml('POST', '/transaction/payment/doughflow/deposit', $buggy_xml_content);
 
-    is $req->code,      422,                      'Expected 422 for XML message with <!-- -->';
+    is $req->code, 422, 'Expected 422 for XML message with <!-- -->';
     like $req->content, qr/Unprocessable entity/, 'Expected Unprocessable entity as message';
 };
 
@@ -72,7 +72,7 @@ subtest 'Handle invalid JSON' => sub {
 
     my $req = request_json('POST', '/transaction/payment/doughflow/deposit', $invalid_json_content);
 
-    is $req->code,      422,                      'Expected 422 for invalid JSON message';
+    is $req->code, 422, 'Expected 422 for invalid JSON message';
     like $req->content, qr/Unprocessable entity/, 'Expected Unprocessable entity as message';
 };
 
@@ -91,7 +91,7 @@ subtest 'Handle invalid Content Type' => sub {
         content_type => 'text/x-yaml'
     });
 
-    is $req->code,      415,                        'Expected 415 for invalid content type';
+    is $req->code, 415, 'Expected 415 for invalid content type';
     like $req->content, qr/Unsupported Media Type/, 'Expected Unsupported Media Type as message';
 };
 

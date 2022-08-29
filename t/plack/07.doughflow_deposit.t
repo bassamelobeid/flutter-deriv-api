@@ -15,7 +15,7 @@ use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 
-use APIHelper qw/ balance deposit request decode_json /;
+use APIHelper   qw/ balance deposit request decode_json /;
 use Digest::SHA qw/sha256_hex/;
 
 # mock datadog
@@ -41,7 +41,7 @@ subtest 'Successful attempt' => sub {
         transaction_id => 94575934,
     );
 
-    is $req->code,      201,                                  'Correct created status code';
+    is $req->code, 201, 'Correct created status code';
     like $req->content, qr/<opt>\s*<data><\/data>\s*<\/opt>/, 'Correct content';
 
     my $current_balance = balance $loginid;
@@ -55,8 +55,8 @@ subtest 'Successful attempt' => sub {
     $req = request 'GET', $location;
 
     my $body = decode_json $req->content;
-    is $body->{client_loginid}, $loginid, "{client_loginid} is present and correct in response body";
-    is $body->{type}, 'deposit', '{type} is present and correct in response body';
+    is $body->{client_loginid}, $loginid,  "{client_loginid} is present and correct in response body";
+    is $body->{type},           'deposit', '{type} is present and correct in response body';
 };
 
 subtest 'Wrong trace id' => sub {
@@ -96,7 +96,7 @@ subtest 'Duplicate transaction' => sub {
         payment_processor => $payment_processor,
     );
 
-    is $req->code,      400,                                'Correct bad request status code';
+    is $req->code, 400, 'Correct bad request status code';
     like $req->content, qr/Detected duplicate transaction/, 'Correspond error message to duplicate transaction';
 
     is balance($loginid), $current_balance, 'Correct unchanged balance';
@@ -249,7 +249,7 @@ subtest 'PA withdrawal is disabled on deposit' => sub {
         transaction_id => 94575935,
     );
 
-    is $req->code,      201,                                  'Correct created status code';
+    is $req->code, 201, 'Correct created status code';
     like $req->content, qr/<opt>\s*<data><\/data>\s*<\/opt>/, 'Correct content';
 
     my $current_balance = balance $cli->loginid;
@@ -264,7 +264,7 @@ subtest 'PA withdrawal is disabled on deposit' => sub {
 
     my $body = decode_json $req->content;
     is $body->{client_loginid}, $cli->loginid, "{client_loginid} is present and correct in response body";
-    is $body->{type}, 'deposit', '{type} is present and correct in response body';
+    is $body->{type},           'deposit',     '{type} is present and correct in response body';
 
     ok !BOM::User::Client->new({loginid => $cli->loginid})->status->pa_withdrawal_explicitly_allowed,
         'PA witdrawal status was removed from client account';
