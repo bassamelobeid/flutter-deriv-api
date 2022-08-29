@@ -21,6 +21,9 @@ This script is used to prepare a test environment and create and start a C<BOM::
 
 # Mock WebService::SendBird
 BOM::Test::Helper::P2P::bypass_sendbird();
+use Test::MockModule;
+my $time_mock = Test::MockModule->new('App::Config::Chronicle');
+$time_mock->mock('refresh_interval', sub { 1 });
 
 my $redis_cfg = BOM::Config::Redis::redis_config('rpc', 'write');
 my $consumer  = BOM::RPC::Transport::Redis->new(
