@@ -16,7 +16,7 @@
 
 use strict;
 use warnings;
-use YAML qw/LoadFile/;
+use YAML           qw/LoadFile/;
 use File::ShareDir ();
 
 my $l = LoadFile(File::ShareDir::dist_file('Finance-Underlying', 'underlyings.yml'));

@@ -6,7 +6,7 @@ use Test::Warnings;
 use Test::Exception;
 use BOM::Database::DataMapper::Base;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 
 my $base;

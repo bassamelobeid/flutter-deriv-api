@@ -6,8 +6,8 @@
 
 use strict;
 use warnings;
-use Getopt::Long qw( GetOptions );
-use File::Path qw( make_path remove_tree );
+use Getopt::Long   qw( GetOptions );
+use File::Path     qw( make_path remove_tree );
 use Time::Duration qw( duration );
 
 our $VERSION = '1.01';

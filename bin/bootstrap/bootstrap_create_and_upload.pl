@@ -7,11 +7,11 @@
 
 use strict;
 use warnings;
-use Getopt::Long qw( GetOptions );
-use Sys::Hostname qw( hostname );
-use File::Path qw( make_path remove_tree );
-use Path::Tiny qw( path );
-use Time::Duration qw( duration );
+use Getopt::Long          qw( GetOptions );
+use Sys::Hostname         qw( hostname );
+use File::Path            qw( make_path remove_tree );
+use Path::Tiny            qw( path );
+use Time::Duration        qw( duration );
 use Format::Util::Numbers qw( commas );
 
 our $VERSION = '3.12';

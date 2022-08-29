@@ -64,8 +64,8 @@ is $is_confirmed, 1, 'confirmed after confirm_scope';
 my ($access_token, $exp) = $m->store_access_token_only($test_appid, $test_loginid);
 ok $access_token;
 my ($result_loginid, $t, $ua_fp) = @{$m->get_token_details($access_token)}{qw/loginid creation_time ua_fingerprint/};
-is $result_loginid, $test_loginid, 'got correct loginid from token';
-is $m->get_app_id_by_token($access_token), $test_appid, 'get_app_id_by_token';
+is $result_loginid,                        $test_loginid, 'got correct loginid from token';
+is $m->get_app_id_by_token($access_token), $test_appid,   'get_app_id_by_token';
 
 my @scopes = $m->get_scopes_by_access_token($access_token);
 is_deeply([sort @scopes], ['payments', 'read', 'trade'], 'scopes are right');
@@ -164,8 +164,8 @@ subtest 'revoke tokens by loginid and app_id' => sub {
             my ($access_token) = $m->store_access_token_only($app_id, $loginid);
             ok $access_token;
             ($result_loginid, $t, $ua_fp) = @{$m->get_token_details($access_token)}{qw/loginid creation_time ua_fingerprint/};
-            is $result_loginid, $loginid, 'correct loginid from token details';
-            is $m->get_app_id_by_token($access_token), $app_id, 'get_app_id_by_token';
+            is $result_loginid,                        $loginid, 'correct loginid from token details';
+            is $m->get_app_id_by_token($access_token), $app_id,  'get_app_id_by_token';
         }
     }
 
@@ -192,7 +192,7 @@ subtest 'revoke tokens by loginid and app_id' => sub {
         # Backoffice impersonate app id = 4, exclude in ->has_other_login_sessions
         my ($bo_token) = $m->store_access_token_only(4, $loginid);
         @cnt = $m->dbic->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
-        is $cnt[0], 1, "BO access tokens [$loginid]";
+        is $cnt[0],                                  1, "BO access tokens [$loginid]";
         isnt $m->has_other_login_sessions($loginid), 1, "$loginid has NO oauth token, beside for BO impersonate";
     }
 };
@@ -414,8 +414,8 @@ subtest 'refresh_token' => sub {
     my $retreived_token            = $m->get_refresh_tokens_by_user_app_id($user_id, $app_id);
     my $retreived_token_by_user_id = $m->get_refresh_tokens_by_user_id($user_id);
 
-    is scalar $retreived_token->@*, scalar @tokens / 2, 'retreived both correctly';
-    is scalar $retreived_token_by_user_id->@*, @tokens, 'tokens retreived by user id correctly';
+    is scalar $retreived_token->@*,            scalar @tokens / 2, 'retreived both correctly';
+    is scalar $retreived_token_by_user_id->@*, @tokens,            'tokens retreived by user id correctly';
 
     $m->revoke_refresh_tokens_by_user_app_id($user_id, $app_id);
     $retreived_token = $m->get_refresh_tokens_by_user_app_id($user_id, $app_id);
@@ -451,7 +451,7 @@ subtest 'refresh_token' => sub {
 
         $runs = 0;
         is $m->generate_refresh_token($test_user_id, $test_app->{app_id}, 16, 600, 5), undef, 'Give up';
-        is $runs, 6, 'Original attempt + 5 retries';
+        is $runs,                                                                      6,     'Original attempt + 5 retries';
 
         $db_mock->mock(
             'run',
@@ -465,7 +465,7 @@ subtest 'refresh_token' => sub {
 
         $runs = 0;
         is $m->generate_refresh_token($test_user_id, $test_app->{app_id}, 16, 600, 5), 'ok', 'Got a token after retry';
-        is $runs, 2, '2 runs';
+        is $runs,                                                                      2,    '2 runs';
 
         $db_mock->unmock_all;
         $oauth_mock->unmock_all;
