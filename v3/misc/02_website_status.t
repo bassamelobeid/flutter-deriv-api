@@ -101,8 +101,7 @@ $t   = $t->send_ok({json => {forget => $uuid}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
 is $res->{forget}, 1, 'Successfully forgotten';
 
-# we set refresh_interval=>1 in bom-test/bin/binary_rpc_redis_for_test.pl
-# wait app-cconfig refresh
+# set app-config refresh_interval=>1 in bom-test/bin/binary_rpc_redis_for_test.pl
 sleep 1.1;
 $t   = $t->send_ok({json => {website_status => 1}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
