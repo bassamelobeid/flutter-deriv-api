@@ -138,7 +138,7 @@ subtest 'successful verification' => sub {
         'confirm ok'
     );
 
-    ok !BOM::Platform::Token->new({token => $code})->token, 'token was deleted';
+    ok !BOM::Platform::Token->new({token => $code})->token,                  'token was deleted';
     ok !$redis->exists('P2P::ORDER::VERIFICATION_HISTORY::' . $order->{id}), 'histroy key was deleted';
     ok !$redis->exists('P2P::ORDER::VERIFICATION_ATTEMPT::' . $order->{id}), 'attempts key was deleted';
     is $client->p2p_order_info(id => $order->{id})->{verification_pending}, 0, 'order info verification pending is now 0';

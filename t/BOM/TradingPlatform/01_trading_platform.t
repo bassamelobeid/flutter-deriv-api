@@ -42,7 +42,7 @@ subtest 'Instantiate trading platform' => sub {
         is ref($trading_platform), $class, "Correct class for $platform" if $class;
         ok $trading_platform->isa('BOM::TradingPlatform'), "$platform is a valid BOM::TradingPlatform implementation" if $class;
 
-        ok $error, "$platform should die" unless $lives;
+        ok $error,                                                "$platform should die"             unless $lives;
         ok $error =~ qr/\bUnknown trading platform: $platform\b/, "$platform death cause is correct" unless $lives;
     }
 };

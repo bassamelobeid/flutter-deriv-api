@@ -101,7 +101,7 @@ do {
 
 for my $order (values %orders) {
 
-    my ($id,    $amount) = $order->@{qw/id amount/};
+    my ($id, $amount) = $order->@{qw/id amount/};
     my ($buyer, $seller) =
         $order->{order_type} eq 'buy'
         ? ($order->{client_loginid}, $order->{advertiser_loginid})

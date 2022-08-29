@@ -6,7 +6,7 @@ use Test::Fatal;
 use Test::Exception;
 use Test::Deep;
 use Test::MockModule;
-use Test::MockTime qw(set_fixed_time restore_time);
+use Test::MockTime  qw(set_fixed_time restore_time);
 use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::User::Client;
@@ -152,8 +152,8 @@ subtest 'validaton' => sub {
         'client can create review at end of period'
     );
 
-    is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     0, 'client cannot review again';
-    is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable}, 1, 'advertiser can review after client reviewed';
+    is $client->p2p_order_info(id => $order->{id})->{is_reviewable},       0,     'client cannot review again';
+    is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable},   1,     'advertiser can review after client reviewed';
     is $redis->zscore($review_key, $order->{id} . '|' . $client->loginid), undef, 'order removed from redis key for client';
     ok $redis->zscore($review_key, $order->{id} . '|' . $advertiser->loginid), 'order not removed from redis key for advertiser';
 
@@ -168,8 +168,8 @@ subtest 'validaton' => sub {
         'advertiser can create review at end of period'
     );
 
-    is $client->p2p_order_info(id => $order->{id})->{is_reviewable},     0, 'client cannot review again';
-    is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable}, 0, 'advertiser cannot review again';
+    is $client->p2p_order_info(id => $order->{id})->{is_reviewable},           0,     'client cannot review again';
+    is $advertiser->p2p_order_info(id => $order->{id})->{is_reviewable},       0,     'advertiser cannot review again';
     is $redis->zscore($review_key, $order->{id} . '|' . $advertiser->loginid), undef, 'order removed from redis key for advertiser';
     is $redis->zscore($review_key, $order->{id} . '|' . $client->loginid),     undef, 'order removed from redis key for client';
 

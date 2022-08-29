@@ -25,9 +25,9 @@ $client_mock->mock(
 
 cmp_deeply($client->payment_type_totals(), [], 'no payments yet',);
 
-is $set_db{replica}, 1, 'replica was set';
-is $set_db{write},   1, 'write was set';
-is $client->get_db, 'write', 'db remains write';
+is $set_db{replica}, 1,       'replica was set';
+is $set_db{write},   1,       'write was set';
+is $client->get_db,  'write', 'db remains write';
 
 $client->smart_payment(
     payment_type => 'affiliate_reward',

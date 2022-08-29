@@ -525,7 +525,7 @@ subtest 'Buyer tries to place an order for an advert of another country' => sub 
     };
     is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
 
-    ok $escrow->account->balance == 0, 'The escrow balance did not change';
+    ok $escrow->account->balance == 0,           'The escrow balance did not change';
     ok $advertiser->account->balance == $amount, 'The advertiser balance did not change';
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -865,7 +865,7 @@ subtest 'Order view permissions' => sub {
     ok $client1->p2p_order_info(id  => $order->{id}), "order_info: cannot see own order";
     ok !$client2->p2p_order_info(id => $order->{id}), "order_info: cannot see other client's orders";
 
-    ok $client1->p2p_order_list(id => $order->{id}), "order_list: cannot see own order";
+    ok $client1->p2p_order_list(id  => $order->{id}),     "order_list: cannot see own order";
     ok !$client2->p2p_order_list(id => $order->{id})->@*, "order_list: cannot see other client's orders";
 
     BOM::Test::Helper::P2P::reset_escrow();

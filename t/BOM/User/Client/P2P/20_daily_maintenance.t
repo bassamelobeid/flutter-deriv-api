@@ -55,7 +55,7 @@ subtest 'archive old ads' => sub {
     $config->archive_ads_days(0);
     BOM::User::Script::P2PDailyMaintenance->new->run;
     ok $advertiser->p2p_advert_info(id => $advert->{id})->{is_active}, 'ad is not deactivated when config days is 0';
-    ok !$emissions->{p2p_archived_ad}, 'Ad not yet archived';
+    ok !$emissions->{p2p_archived_ad},                                 'Ad not yet archived';
 
     $emissions = {};
     $config->archive_ads_days(5);

@@ -6,7 +6,7 @@ use warnings;
 use Test::More qw( no_plan );
 use Test::MockTime;
 use Test::Exception;
-use Math::Round qw( round );
+use Math::Round                                qw( round );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::User::Client;

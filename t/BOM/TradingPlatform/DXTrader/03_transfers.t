@@ -105,7 +105,7 @@ subtest 'deposits' => sub {
         'expected result fields'
     );
 
-    cmp_ok $client->account->balance, '==', 0, 'client balance decreased';
+    cmp_ok $client->account->balance,               '==', 0,      'client balance decreased';
     cmp_ok $dxtrader->get_accounts->[0]->{balance}, '==', $dxbal, 'dxtrade account balance increased';
 
     my ($details) = $client->db->dbic->dbh->selectrow_array('select details from transaction.transaction_details where transaction_id = ?',
@@ -187,8 +187,8 @@ subtest 'withdrawals' => sub {
     );
 
     is $client->user->daily_transfer_count('dxtrade'), 2, 'Daily transfer counter increased';
-    cmp_ok $dxtrader->get_accounts->[0]->{balance}, '==', 0, 'dxtrade account balance decreased';
-    cmp_ok $client->account->balance, '==', $localbal, 'client balance increased';
+    cmp_ok $dxtrader->get_accounts->[0]->{balance}, '==', 0,         'dxtrade account balance decreased';
+    cmp_ok $client->account->balance,               '==', $localbal, 'client balance increased';
 
     my ($details) = $client->db->dbic->dbh->selectrow_array('select details from transaction.transaction_details where transaction_id = ?',
         undef, $wd->{transaction_id});

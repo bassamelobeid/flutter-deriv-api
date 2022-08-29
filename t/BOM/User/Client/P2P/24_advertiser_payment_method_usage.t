@@ -59,13 +59,13 @@ subtest 'adverts' => sub {
         payment_method_ids => [keys %methods],
     );
 
-    cmp_deeply $advert->{payment_method_names}, ['Method 1', 'Method 2'], 'payment method names from advert create';
-    cmp_deeply $advert->{payment_method_details}, \%methods, 'payment method details from advert create';
+    cmp_deeply $advert->{payment_method_names},   ['Method 1', 'Method 2'], 'payment method names from advert create';
+    cmp_deeply $advert->{payment_method_details}, \%methods,                'payment method details from advert create';
 
     $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
     my $ad_info = $client->p2p_advert_info(id => $advert->{id});
-    cmp_deeply $ad_info->{payment_method_names}, ['Method 1', 'Method 2'], 'payment method names when a method is disbled in country';
-    cmp_deeply $ad_info->{payment_method_details}, \%methods, 'payment method details when a method is disbled in country';
+    cmp_deeply $ad_info->{payment_method_names},   ['Method 1', 'Method 2'], 'payment method names when a method is disbled in country';
+    cmp_deeply $ad_info->{payment_method_details}, \%methods,                'payment method details when a method is disbled in country';
     BOM::Test::Helper::P2P::create_payment_methods();    # reset
 
     is exception {
@@ -73,12 +73,12 @@ subtest 'adverts' => sub {
             update => {
                 $methods_by_tag{m1} => {is_enabled => 0},
                 $methods_by_tag{m2} => {is_enabled => 0}}
-            )->%*
+        )->%*
     }, undef, 'can disable methods';
 
     $ad_info = $client->p2p_advert_info(id => $advert->{id});
-    cmp_deeply $ad_info->{payment_method_names}, ['Method 2'], 'payment method names';
-    cmp_deeply $ad_info->{payment_method_details}, \%methods, 'payment method details';
+    cmp_deeply $ad_info->{payment_method_names},   ['Method 2'], 'payment method names';
+    cmp_deeply $ad_info->{payment_method_details}, \%methods,    'payment method details';
 
     my $otherclient = BOM::Test::Helper::P2P::create_advertiser;
     $ad_info = $otherclient->p2p_advert_info(id => $advert->{id});

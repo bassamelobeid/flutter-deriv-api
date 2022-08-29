@@ -6,8 +6,8 @@ use warnings;
 use Test::More;
 use Test::Fatal;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client top_up);
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
+use BOM::Test::Helper::Client                  qw( create_client top_up);
+use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
 use BOM::Database::Helper::FinancialMarketBet;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 

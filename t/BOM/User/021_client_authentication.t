@@ -8,7 +8,7 @@ use Test::Warn;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client top_up );
+use BOM::Test::Helper::Client                  qw( create_client top_up );
 use BOM::Test::Email;
 use Syntax::Keyword::Try;
 use BOM::User::Client;
@@ -99,7 +99,7 @@ subtest 'Authenticate MLT and MF' => sub {
     ok $client_mf->status->allow_document_upload,  "MF is allowed to upload document";
     mailbox_clear();
     $client_mlt->set_authentication('ID_DOCUMENT', {status => 'pass'});
-    ok $client_mf->get_authentication('ID_DOCUMENT'), "MF has ID_DOCUMENT";
+    ok $client_mf->get_authentication('ID_DOCUMENT'),                "MF has ID_DOCUMENT";
     ok mailbox_search(subject => qr/New authenticated MF from MLT/), qq/CS get an email to check TIN and MIFIR/;
     $client_mlt = BOM::User::Client->new({loginid => $client_mlt->loginid});
     $client_mf  = BOM::User::Client->new({loginid => $client_mf->loginid});
@@ -117,7 +117,7 @@ subtest 'Authenticate MLT and MF' => sub {
     $mlt_user->add_client($client_mf2);
     mailbox_clear();
     $client_mf2->sync_authentication_from_siblings;
-    ok $client_mf2->get_authentication('ID_NOTARIZED'), "Authenticated MF based on MLT has ID_NOTARIZED";
+    ok $client_mf2->get_authentication('ID_NOTARIZED'),              "Authenticated MF based on MLT has ID_NOTARIZED";
     ok mailbox_search(subject => qr/New authenticated MF from MLT/), qq/CS get an email to check TIN and MIFIR/;
 };
 
@@ -136,11 +136,11 @@ subtest 'set_authentication_and_status' => sub {
 
     $client_cr1->set_authentication_and_status('NEEDS_ACTION', 'Sarah Aziziyan');
     ok $client_cr1->get_authentication('ID_DOCUMENT'), "Client has NEEDS_ACTION";
-    ok $client_cr1->status->allow_document_upload, "Client is allowed to upload document";
+    ok $client_cr1->status->allow_document_upload,     "Client is allowed to upload document";
 
     $client_cr1->set_authentication_and_status('ID_DOCUMENT', 'Sarah Aziziyan');
     ok $client_cr1->get_authentication('ID_DOCUMENT'), "Client has ID_DOCUMENT";
-    ok !$client_cr1->status->allow_document_upload, "Authenticated client is not allowed to upload document";
+    ok !$client_cr1->status->allow_document_upload,    "Authenticated client is not allowed to upload document";
 
     $client_cr1->set_authentication_and_status('ID_NOTARIZED', 'Sarah Aziziyan');
     ok $client_cr1->get_authentication('ID_NOTARIZED'), "Client has ID_NOTARIZED";

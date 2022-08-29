@@ -7,9 +7,9 @@ use Test::MockModule;
 use Scalar::Util qw/looks_like_number/;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
-use List::Util qw/all uniq/;
-use Array::Utils qw(intersect array_minus unique);
+use BOM::Test::Helper::Client                  qw( create_client );
+use List::Util                                 qw/all uniq/;
+use Array::Utils                               qw(intersect array_minus unique);
 
 my $categories = [{
         category             => 'POI',
@@ -204,8 +204,8 @@ for ($categories->@*) {
     subtest $category => sub {
         ok defined $doctypes{$category}->{types}, "$category has types";
         is ref($doctypes{$category}->{types}), 'HASH', "$category types is a hashref";
-        ok defined $doctypes{$category}->{priority},    "$category has a priority";
-        ok defined $doctypes{$category}->{description}, "$category has a description";
+        ok defined $doctypes{$category}->{priority},            "$category has a priority";
+        ok defined $doctypes{$category}->{description},         "$category has a description";
         ok looks_like_number($doctypes{$category}->{priority}), "$category priority looks like a number";
         is $doctypes{$category}->{expiration_strategy}, $expiration_strategy, "$category has the $expiration_strategy expiration strategy defined"
             if defined $expiration_strategy;
@@ -251,7 +251,7 @@ for ($categories->@*) {
                 my $sides = [keys $doctypes{$category}->{types}->{$doctype}->{sides}->%*];
                 cmp_bag $sides, [qw/front back/], "$doctype is a two sided doctype" if $two_sided->{$doctype};
                 cmp_bag $sides, [qw/photo/],      "$doctype is a photo doctype"     if $photo->{$doctype};
-                cmp_bag $sides, [], "$doctype is sideless" if !$two_sided->{$doctype} && !$photo->{$doctype};
+                cmp_bag $sides, [],               "$doctype is sideless"            if !$two_sided->{$doctype} && !$photo->{$doctype};
             }
         };
 

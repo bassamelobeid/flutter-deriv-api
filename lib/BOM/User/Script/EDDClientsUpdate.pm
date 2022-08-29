@@ -5,7 +5,7 @@ use warnings;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Config;
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email   qw(send_email);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Event::Emitter;
 use Syntax::Keyword::Try;

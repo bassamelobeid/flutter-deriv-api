@@ -120,7 +120,7 @@ subtest 'allow_paymentagent_withdrawal' => sub {
     subtest '2- visa - CFT NOT Blocked - ' => sub {
 
         #set the country of residence to a non blocked CFT country
-        $client_usd1->residence('in');                                                             # non blocked CFT country
+        $client_usd1->residence('in');    # non blocked CFT country
         $client_usd1->save();
 
         # PA sends money to client

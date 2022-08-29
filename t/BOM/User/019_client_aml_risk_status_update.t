@@ -7,14 +7,14 @@ use Test::MockModule;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 use BOM::Test::Helper::FinancialAssessment;
 
 use BOM::User;
 use BOM::User::Client;
 use BOM::User::Script::AMLClientsUpdate;
 use BOM::User::Password;
-use BOM::User::FinancialAssessment qw(update_financial_assessment);
+use BOM::User::FinancialAssessment   qw(update_financial_assessment);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 populate_exchange_rates();
 
@@ -106,7 +106,7 @@ subtest 'aml risk becomes high CR landing company' => sub {
     is $client_cr->status->withdrawal_locked->{reason},     'Pending authentication or FA';
     is $client_cr->status->allow_document_upload->{reason}, 'BECOME_HIGH_RISK';
 
-    ok !$client_cr2->status->withdrawal_locked, "sibling account is not withdrawal_locked";
+    ok !$client_cr2->status->withdrawal_locked,    "sibling account is not withdrawal_locked";
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
 
     $expected_db_rows = [];
@@ -237,8 +237,8 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     update_financial_assessment($user, {});
     undef $client_cr->{financial_assessment};
     is $client_cr->is_financial_assessment_complete, 0, 'FA is not complete';
-    is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
-    ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-locked (fa is incomplete)';
+    is @called_for_clients,                          1, 'update_status_after_auth_fa called automatically by financial assessment';
+    ok $client_cr->status->withdrawal_locked,      'client is still withdrawal-locked (fa is incomplete)';
     ok !$client_cr->status->allow_document_upload, 'client has not allow_document_upload, (authenticated)';
     undef @called_for_clients;
 
@@ -353,7 +353,7 @@ subtest 'AML risk update' => sub {
     is exception { $c->aml_risk_update() }, undef, 'AML risk update is executed without any error';
     $client_cr->load;
     is $client_cr->aml_risk_classification, 'low', 'Risk classification is low: no deposits yet';
-    is scalar @emails, 0, 'No email is sent';
+    is scalar @emails,                      0,     'No email is sent';
 
     subtest 'transaction thresholds' => sub {
 
@@ -379,28 +379,28 @@ subtest 'AML risk update' => sub {
         $c->aml_risk_update();
         $client_cr->load;
         is $client_cr->aml_risk_classification, 'low', 'Risk classification is low: balance less than threshold';
-        is scalar @emails, 0, 'No email is sent';
+        is scalar @emails,                      0,     'No email is sent';
 
         BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 1);
         update_payment_dates($client_cr);
         $c->aml_risk_update();
         $client_cr->load;
         is $client_cr->aml_risk_classification, 'standard', 'Risk classification changed to standard: balance crossed the standard threshold';
-        is scalar @emails, 0, 'No email is sent for standard risk level';
+        is scalar @emails,                      0,          'No email is sent for standard risk level';
 
         BOM::Test::Helper::Client::top_up($client_cr, 'EUR', 10);
         update_payment_dates($client_cr);
         $c->aml_risk_update();
         $client_cr->load;
         is $client_cr->aml_risk_classification, 'high', 'Risk classification changed to high: balance crossed the high threshold';
-        is scalar @emails, 1, 'An email is sent for the high risk client';
+        is scalar @emails,                      1,      'An email is sent for the high risk client';
 
         my $mail    = $emails[0];
         my $user_id = $user_cr->id;
         like $mail->{subject}, qr/Daily AML risk update/, 'email subject is correct';
         my $loginid = $client_cr->loginid;
         ok $mail->{message}->[0] =~ qr/$loginid/, 'loginids is found in email content';
-        ok $mail->{message}->[0] !~ qr/MF\d/, 'No MF loginid found in email content';
+        ok $mail->{message}->[0] !~ qr/MF\d/,     'No MF loginid found in email content';
     };
 
     subtest 'jurisdiction ratings' => sub {
@@ -430,7 +430,7 @@ subtest 'AML risk update' => sub {
         $client_mf->load;
         is $client_cr->aml_risk_classification, 'low', 'CR risk classification is not changed';
         is $client_mf->aml_risk_classification, 'low', 'MF risk classification is not changed';
-        is scalar @emails, 0, 'No email is sent';
+        is scalar @emails,                      0,     'No email is sent';
 
         $mock_landing_company->redefine(jurisdiction_risk_ratings => 1);
 
@@ -448,7 +448,7 @@ subtest 'AML risk update' => sub {
         like $mail->{subject}, qr/Daily AML risk update/, 'email subject is correct';
         my $loginid = $client_mf->loginid;
         ok $mail->{message}->[0] =~ qr/$loginid/, 'loginids is found in email content';
-        ok $mail->{message}->[0] !~ qr/CR\d/, 'No CR loginid found in email content';
+        ok $mail->{message}->[0] !~ qr/CR\d/,     'No CR loginid found in email content';
 
         $mock_landing_company->unmock_all;
         $mock_config->unmock_all;

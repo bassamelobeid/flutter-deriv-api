@@ -126,7 +126,7 @@ subtest "check inactive orders" => sub {
 
     @correct_statuses = grep { $_->{status} =~ $inactive_statuses } $orders->@*;
 
-    ok scalar $orders->@* == $expected_inactive, "Inactive orders number is correct";
+    ok scalar $orders->@* == $expected_inactive,       "Inactive orders number is correct";
     ok scalar $orders->@* == scalar @correct_statuses, "All active order have correct status";
 };
 

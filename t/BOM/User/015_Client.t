@@ -1,8 +1,8 @@
 use strict;
 use warnings;
 
-use Test::More qw(no_plan);
-use Test::Fatal qw(lives_ok);
+use Test::More                                 qw(no_plan);
+use Test::Fatal                                qw(lives_ok);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::User::Client;

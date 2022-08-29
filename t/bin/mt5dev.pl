@@ -7,7 +7,7 @@ use Syntax::Keyword::Try;
 use IO::Async::Loop;
 use Future::AsyncAwait;
 
-use Log::Any qw($log);
+use Log::Any     qw($log);
 use Getopt::Long qw(GetOptions);
 
 use BOM::User;
@@ -35,8 +35,8 @@ my $loop = IO::Async::Loop->new;
 $loop->new_future;
 
 sub create_client {
-    my (%args) = @_;
-    my $email = delete($args{email}) or die 'need email';
+    my (%args)          = @_;
+    my $email           = delete($args{email}) or die 'need email';
     my $password        = delete($args{password}) // 'binary123';
     my $balance         = delete($args{balance})  // 100;
     my $currency        = delete($args{currency}) // 'USD';

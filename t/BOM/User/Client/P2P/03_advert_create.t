@@ -6,7 +6,7 @@ use Test::Fatal;
 use Test::Exception;
 use Test::Deep;
 use Test::MockModule;
-use List::Util qw(pairs);
+use List::Util      qw(pairs);
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
 
@@ -198,9 +198,9 @@ subtest 'Updating advertiser fields' => sub {
 
     my $advertiser_info = $advertiser->p2p_advertiser_info;
 
-    ok $advertiser_info->{is_approved},  'advertiser is approved';
-    is $advertiser_info->{name},         $params{name}, 'advertiser name';
-    ok $advertiser_info->{is_listed},    'advertiser is listed';
+    ok $advertiser_info->{is_approved}, 'advertiser is approved';
+    is $advertiser_info->{name}, $params{name}, 'advertiser name';
+    ok $advertiser_info->{is_listed}, 'advertiser is listed';
     is $advertiser_info->{chat_user_id}, 'dummy', 'advertiser chat user_id';
 
     cmp_deeply(
@@ -864,7 +864,7 @@ subtest 'p2p_advert_info' => sub {
     my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 50);
 
     is $client->p2p_advert_info(id => -1), undef, 'non existant ad id returns undef';
-    is $client->p2p_advert_info(), undef, 'missing id param returns undef';
+    is $client->p2p_advert_info(),         undef, 'missing id param returns undef';
 
     subtest 'use_client_limits' => sub {
 

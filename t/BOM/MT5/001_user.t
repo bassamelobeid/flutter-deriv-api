@@ -9,7 +9,7 @@ use Test::MockModule;
 use Test::Fatal;
 
 use Syntax::Keyword::Try;
-use Scope::Guard qw(guard);
+use Scope::Guard    qw(guard);
 use Locale::Country qw(country2code);
 
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -91,7 +91,7 @@ subtest 'MT5 Circuit Breaker' => sub {
         my $redis_keys_value = $circuit_breaker->_get_keys_value();
         is $redis_keys_value->{failure_count}, 22, 'Fail counter count is updated';
         ok $redis_keys_value->{last_failure_time}, 'Last failure time is updated';
-        ok $circuit_breaker->_is_circuit_open(), "Circuit is open";
+        ok $circuit_breaker->_is_circuit_open(),   "Circuit is open";
     }
 
     # Update the circuit status to half open again

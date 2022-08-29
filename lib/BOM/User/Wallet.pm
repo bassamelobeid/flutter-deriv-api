@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Format::Util::Numbers qw/formatnumber/;
-use List::Util qw(all);
+use List::Util            qw(all);
 
 use LandingCompany::Wallet;
 use LandingCompany::Registry;

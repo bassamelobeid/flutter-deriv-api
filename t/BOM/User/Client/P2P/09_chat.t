@@ -52,8 +52,8 @@ subtest 'create_advertiser' => sub {
                         'expires_at'    => (time + 7200) * 1000,
                     }]);
         });
-    is $client->p2p_advertiser_create(%params)->{chat_user_id}, $user_id, 'advertiser create chat user id';
-    is $client->p2p_advertiser_info()->{chat_user_id}, $user_id, 'advertiser info chat user id';
+    is $client->p2p_advertiser_create(%params)->{chat_user_id},          $user_id, 'advertiser create chat user id';
+    is $client->p2p_advertiser_info()->{chat_user_id},                   $user_id, 'advertiser info chat user id';
     is $client->p2p_advertiser_update(is_approved => 1)->{chat_user_id}, $user_id, 'advertiser update chat user id';
 };
 
@@ -71,7 +71,7 @@ subtest 'chat_token' => sub {
 
     $mock_sb_user->mock('issue_session_token', sub { die });
     my $resp = $client->p2p_chat_token();
-    is $resp->{token}, 'dummy', 'token not reissued';
+    is $resp->{token},       'dummy', 'token not reissued';
     is $resp->{expiry_time}, $expiry, 'correct expiry time';
     delete $client->{_p2p_advertiser_cached};
 
@@ -90,22 +90,22 @@ subtest 'chat_token' => sub {
         });
 
     $resp = $client->p2p_chat_token();
-    is $resp->{token}, $token, 'token not reissued';
+    is $resp->{token},       $token,      'token not reissued';
     is $resp->{expiry_time}, $expiry + 1, 'correct expiry time';
     delete $client->{_p2p_advertiser_cached};
 
-    is $last_event{type}, 'p2p_advertiser_updated', 'event emitted';
-    is $last_event{data}->{client_loginid}, $client->loginid, 'event client loginid';
+    is $last_event{type},                   'p2p_advertiser_updated', 'event emitted';
+    is $last_event{data}->{client_loginid}, $client->loginid,         'event client loginid';
 
     $advertiser = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
-    is $advertiser->{chat_token}, $token, 'token is stored';
+    is $advertiser->{chat_token},        $token,      'token is stored';
     is $advertiser->{chat_token_expiry}, $expiry + 1, 'token expiry is stored';
 
     $mock_sb_user->mock('issue_session_token', sub { die });
     is $client->p2p_chat_token()->{token}, $token, 'stored token is returned';
     delete $client->{_p2p_advertiser_cached};
 
-    is $client->p2p_advertiser_info()->{chat_token}, $token, 'stored token returned from p2p_advertiser_info';
+    is $client->p2p_advertiser_info()->{chat_token},                   $token, 'stored token returned from p2p_advertiser_info';
     is $client->p2p_advertiser_update(is_approved => 1)->{chat_token}, $token, 'stored token returned from p2p_advertiser_update';
 };
 
@@ -142,10 +142,10 @@ subtest 'create chat' => sub {
 
     my $resp = $advertiser->p2p_chat_create(order_id => $order->{id});
     is $resp->{channel_url}, $channel_url, 'got channel url';
-    is $resp->{order_id}, $order->{id}, 'got order id';
+    is $resp->{order_id},    $order->{id}, 'got order id';
 
-    is $last_event{type}, 'p2p_order_updated', 'event emitted';
-    is $last_event{data}->{order_id}, $order->{id}, 'event order id';
+    is $last_event{type},                   'p2p_order_updated',  'event emitted';
+    is $last_event{data}->{order_id},       $order->{id},         'event order id';
     is $last_event{data}->{client_loginid}, $advertiser->loginid, 'event client loginid';
 
     is $client->p2p_order_info(id => $order->{id})->{chat_channel_url}, $channel_url, 'channel url saved';

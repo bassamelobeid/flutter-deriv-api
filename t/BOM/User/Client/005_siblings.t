@@ -55,7 +55,7 @@ subtest 'arguments are checked before using' => sub {
     my $usd_client  = create_client($user, 'USD');
     my $status_code = 'disabled';
 
-    dies_ok sub { $usd_client->copy_status_to_siblings() }, 'Without arguments';
+    dies_ok sub { $usd_client->copy_status_to_siblings() },             'Without arguments';
     dies_ok sub { $usd_client->copy_status_to_siblings($status_code) }, 'Without staff name';
 
     my $usd_client_loginid = $usd_client->loginid;
@@ -117,7 +117,7 @@ subtest 'copy_status_to_all_accounts' => sub {
     $usd_client->status->set($status_code, 'user01', 'reason');
 
     # prerequisites
-    ok $usd_client->status->$status_code,    "USD client has been set with $status_code";
+    ok $usd_client->status->$status_code, "USD client has been set with $status_code";
     is $btc_client->status->$status_code,    undef, "BTC client has NOT been set with $status_code";
     is $eth_client->status->$status_code,    undef, "ETH client has NOT been set with $status_code";
     is $usd_vr_client->status->$status_code, undef, "USD VRTC client has NOT been set with $status_code";
@@ -205,7 +205,7 @@ subtest 'clear_status_and_sync_to_all_accounts' => sub {
     ok $usd_client->status->$status_code,    "USD client has been set with $status_code";
     ok $btc_client->status->$status_code,    "BTC client has been set with $status_code";
     ok $usd_vr_client->status->$status_code, "USD VRTC client has been set with $status_code";
-    is $eth_client->status->$status_code,    undef, "ETH client is not set with status $status_code";
+    is $eth_client->status->$status_code, undef, "ETH client is not set with status $status_code";
     # /prerequisites
 
     cmp_bag(

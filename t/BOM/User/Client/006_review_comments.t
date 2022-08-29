@@ -3,7 +3,7 @@ use warnings;
 use Test::More;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 use Test::Fatal;
 use Test::MockModule;
 use Date::Utility;
@@ -38,8 +38,8 @@ subtest 'Get comments' => sub {
     ok $comment_id, 'Comment is added';
 
     my $res2 = $client->get_comments();
-    is scalar($res2->@*), 1, "Get one added comment";
-    is $res2->[0]{id},      $comment_id, 'Comment id is correct';
+    is scalar($res2->@*),   1,              "Get one added comment";
+    is $res2->[0]{id},      $comment_id,    'Comment id is correct';
     is $res2->[0]{comment}, 'Test comment', 'Comment text is correct';
     is $res2->[0]{author},  'test',         'Comment author is correct';
 
@@ -134,7 +134,7 @@ subtest 'Fetch comments from all siblings' => sub {
     my $comments = [map { $_->{client_loginid} } $client->get_all_comments()->@*];
 
     is scalar @$comments, $total, 'Expected number of comments';
-    is $db_hits, 5, 'Only 5 DB hits (same broker code siblings shared the db hit)';
+    is $db_hits,          5,      'Only 5 DB hits (same broker code siblings shared the db hit)';
     cmp_deeply $comments, $expected, 'Got the expected order';
 
     $client_mock->unmock_all;

@@ -15,10 +15,10 @@ use JSON::MaybeXS;
 use Date::Utility;
 use Cache::RedisDB;
 
-use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use ExchangeRates::CurrencyConverter           qw/in_usd convert_currency/;
+use BOM::Test::Data::Utility::UnitTestRedis    qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::Test::Helper::ExchangeRates           qw/populate_exchange_rates/;
 use Future;
 
 use BOM::User;

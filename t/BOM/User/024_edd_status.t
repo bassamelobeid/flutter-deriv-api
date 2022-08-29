@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Deep qw(cmp_deeply);
+use Test::Deep                                 qw(cmp_deeply);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 

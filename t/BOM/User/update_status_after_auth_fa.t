@@ -6,7 +6,7 @@ use Test::MockModule;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 use BOM::Test::Helper::FinancialAssessment;
 
 use BOM::User::Client;
@@ -95,7 +95,7 @@ subtest 'Social responsibility status removal' => sub {
 
     ok !$client_mlt->status->unwelcome, "Status was removed for the MLT client";
     ok !$client_mx->status->unwelcome,  "Status was removed for the MX client";
-    ok $client_mx2->status->unwelcome, "Status was not removed for the MX2 client with another reason";
+    ok $client_mx2->status->unwelcome,  "Status was not removed for the MX2 client with another reason";
 
     $mocked_client->unmock_all();
 };

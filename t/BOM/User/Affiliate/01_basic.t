@@ -25,7 +25,7 @@ subtest 'initial methods' => sub {
 
     ok !$client->is_affiliate, 'is_affiliate false';
     ok !$client->is_wallet,    'is_wallet false';
-    ok $client->can_trade, 'can_trade true';
+    ok $client->can_trade,     'can_trade true';
 
     my $affiliate;
     lives_ok {
@@ -35,8 +35,8 @@ subtest 'initial methods' => sub {
 
     isa_ok $affiliate, 'BOM::User::Affiliate', 'from get_client_instance()';
     ok $affiliate->is_affiliate, 'is_affiliate true';
-    ok !$affiliate->is_wallet, 'is_wallet false';
-    ok !$affiliate->can_trade, 'can_trade false';
+    ok !$affiliate->is_wallet,   'is_wallet false';
+    ok !$affiliate->can_trade,   'can_trade false';
     is $affiliate->landing_company->short, 'dsl', 'Expected landing company';
 };
 

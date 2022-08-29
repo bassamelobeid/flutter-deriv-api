@@ -1256,14 +1256,14 @@ subtest 'is_document_expiry_check_required' => sub {
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         $mocked_client->mock('fully_authenticated', sub { return 0 });
         ok !$test_client_cr->landing_company->documents_expiration_check_required, 'Unregulated landing company does require expiration check';
-        ok $test_client_cr->aml_risk_classification ne 'high', 'Account aml risk is not high';
+        ok $test_client_cr->aml_risk_classification ne 'high',                     'Account aml risk is not high';
         # Now we are sure execution flow reaches our new fully_authenticated condition
         ok !$test_client_cr->fully_authenticated,               'Account is not fully authenticated';
         ok !$test_client_cr->is_document_expiry_check_required, "Not fully authenticated CR account doesn't have to check documents expiry";
 
         $mocked_client->mock('fully_authenticated', sub { return 1 });
 
-        ok $test_client_cr->fully_authenticated, 'Account is fully authenticated';
+        ok $test_client_cr->fully_authenticated,                'Account is fully authenticated';
         ok !$test_client_cr->is_document_expiry_check_required, "Fully authenticated CR account does not have to check documents expiry";
         $mocked_client->unmock_all;
     };
@@ -1282,8 +1282,8 @@ subtest 'is_document_expiry_check_required' => sub {
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         $mocked_client->mock('fully_authenticated', sub { return 0 });
         ok $test_client_cr->landing_company->documents_expiration_check_required, 'Regulated company does require expiration check';
-        ok $test_client_cr->aml_risk_classification ne 'high', 'Account aml risk is not high';
-        ok !$test_client_cr->fully_authenticated, 'Account is not fully authenticated';
+        ok $test_client_cr->aml_risk_classification ne 'high',                    'Account aml risk is not high';
+        ok !$test_client_cr->fully_authenticated,                                 'Account is not fully authenticated';
         ok $test_client_cr->is_document_expiry_check_required, "Not fully authenticated regulated account does have to check documents expiry";
 
         $mocked_client->mock('fully_authenticated', sub { return 1 });
@@ -1362,7 +1362,7 @@ subtest 'false profile info' => sub {
     my $mocked_client = Test::MockModule->new('BOM::User::Client');
     $mocked_client->mock('locked_for_false_profile_info', sub { return 1 });
 
-    ok $client->needs_poi_verification, 'POI is requrired because for false profile info';
+    ok $client->needs_poi_verification,  'POI is requrired because for false profile info';
     ok !$client->needs_poa_verification, 'POA is not requrired for false profile info';
 };
 
@@ -1423,7 +1423,7 @@ subtest 'First Deposit' => sub {
 
         ok !$test_client->status->shared_payment_method, 'Not SPM';
         ok !$test_client->status->age_verification,      'Not age verified';
-        ok !$test_client->fully_authenticated, 'Not fully authenticated';
+        ok !$test_client->fully_authenticated,           'Not fully authenticated';
         ok $test_client->is_verification_required(check_authentication_status => 1),
             'Verification required due to deposits on an unauthenticated MLT account';
         ok $test_client->needs_poi_verification, 'POI is needed for unauthenticated MLT account after first deposit';
@@ -1467,7 +1467,7 @@ subtest 'First Deposit' => sub {
 
         ok !$test_client->status->shared_payment_method, 'Not SPM';
         ok !$test_client->status->age_verification,      'Not age verified';
-        ok !$test_client->fully_authenticated, 'Not fully authenticated';
+        ok !$test_client->fully_authenticated,           'Not fully authenticated';
         ok $test_client->is_verification_required(check_authentication_status => 1),
             'Verification required due to deposits on an unauthenticated MF account';
         ok $test_client->needs_poi_verification, 'POI is needed for unauthenticated MLT account after first deposit';
@@ -1503,11 +1503,11 @@ subtest 'Sign up' => sub {
         $test_client->binary_user_id($user->id);
 
         $uploaded = {};
-        ok !$test_client->status->age_verification, 'Not age verified';
-        ok !$test_client->fully_authenticated, 'Not fully authenticated';
+        ok !$test_client->status->age_verification,                                  'Not age verified';
+        ok !$test_client->fully_authenticated,                                       'Not fully authenticated';
         ok $test_client->is_verification_required(check_authentication_status => 1), 'Unauthenticated MX account needs verification';
-        ok $test_client->needs_poi_verification, 'POI is needed for unauthenticated MX account without deposits';
-        ok $test_client->needs_poa_verification, 'POA is needed for unauthenticated MX account without deposits';
+        ok $test_client->needs_poi_verification,                                     'POI is needed for unauthenticated MX account without deposits';
+        ok $test_client->needs_poa_verification,                                     'POA is needed for unauthenticated MX account without deposits';
     };
 };
 

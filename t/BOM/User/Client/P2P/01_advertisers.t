@@ -61,7 +61,7 @@ subtest 'advertiser Registration' => sub {
 
     my $advertiser_info = $client->p2p_advertiser_info;
     ok !$advertiser_info->{is_approved}, "advertiser not approved";
-    ok $advertiser_info->{is_listed}, "advertiser adverts are listed";
+    ok $advertiser_info->{is_listed},    "advertiser adverts are listed";
     cmp_ok $advertiser_info->{name}, 'eq', $advertiser_name, "advertiser name";
 
     is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
@@ -74,7 +74,7 @@ subtest 'advertiser already age verified' => sub {
     $client->status->set('age_verification', 'system', 'testing');
     ok $client->p2p_advertiser_create(name => 'age_verified already')->{is_approved};
     ok $client->p2p_advertiser_info->{is_approved}, 'advertiser is approved';
-    ok !$client->status->allow_document_upload, 'allow_document_upload status not present';
+    ok !$client->status->allow_document_upload,     'allow_document_upload status not present';
 };
 
 subtest 'Duplicate advertiser Registration' => sub {
@@ -108,8 +108,8 @@ subtest 'Updating advertiser fields' => sub {
     my $advertiser_info = $advertiser->p2p_advertiser_info;
 
     ok $advertiser_info->{is_approved}, 'advertiser is approved';
-    is $advertiser_info->{name},        $advertiser_name, 'advertiser name';
-    ok $advertiser_info->{is_listed},   'advertiser is listed';
+    is $advertiser_info->{name}, $advertiser_name, 'advertiser name';
+    ok $advertiser_info->{is_listed}, 'advertiser is listed';
 
     cmp_deeply(
         exception {

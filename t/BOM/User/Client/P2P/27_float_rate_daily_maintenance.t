@@ -57,7 +57,7 @@ subtest 'deactivate fixed ads notice' => sub {
     $redis->hset($key, "$country:deactivate_fixed", $date);
     undef $emitted_events;
     BOM::User::Script::P2PDailyMaintenance->new->run;
-    ok !$emitted_events, 'no events emitted if advertiser has no ads';
+    ok !$emitted_events,                                    'no events emitted if advertiser has no ads';
     ok !$redis->hexists($key, "$country:deactivate_fixed"), 'redis key removed';
 
     my (undef, $advert) = BOM::Test::Helper::P2P::create_advert(
@@ -146,7 +146,7 @@ subtest 'ad deactivation' => sub {
     $redis->hset($key, "$country:fixed_ads", 'disabled');
     undef $emitted_events;
     BOM::User::Script::P2PDailyMaintenance->new->run;
-    ok !$emitted_events, 'no events emitted if advertiser has no ads';
+    ok !$emitted_events,                             'no events emitted if advertiser has no ads';
     ok !$redis->hexists($key, "$country:float_ads"), 'redis key removed';
 
     $config->country_advert_config(

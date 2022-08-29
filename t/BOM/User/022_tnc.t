@@ -35,7 +35,7 @@ ok !$client_cr->is_tnc_approval_required, 'real client does not need tnc if lc d
 
 $mock_lc->mock(tnc_required => sub { 1 });
 ok $client_cr->is_tnc_approval_required, 'real client needs tnc if lc does';
-is $client_cr->accepted_tnc_version, '', 'No tnc accepted yet';
+is $client_cr->accepted_tnc_version,      '',                     'No tnc accepted yet';
 is $client_cr->user->current_tnc_version, 'Version 1 2020-01-01', 'correct version from config and brand';
 
 $client_cr->user->set_tnc_approval();

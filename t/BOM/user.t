@@ -8,7 +8,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-use Test::Deep qw(cmp_deeply);
+use Test::Deep     qw(cmp_deeply);
 use Test::Warnings qw(warning);
 use Test::MockModule;
 use Path::Tiny;
@@ -205,7 +205,7 @@ subtest 'user clients' => sub {
         disabled
         self_closed
         enabled
-    );
+        );
 
     $user->add_client($clients{$_}) for keys %clients;
 
@@ -214,15 +214,15 @@ subtest 'user clients' => sub {
     $clients{self_closed}->status->set('disabled', 'system', 'test');
 
     my @clients = $user->clients;
-    is scalar @clients, 1, 'Only one enabled account';
+    is scalar @clients,      1,                          'Only one enabled account';
     is $clients[0]->loginid, $clients{enabled}->loginid, 'correct enabled client loginid';
 
     @clients = $user->clients(include_disabled => 1);
-    is scalar @clients, 3, 'All clients are returned';
+    is scalar @clients,      3,                          'All clients are returned';
     is $clients[0]->loginid, $clients{enabled}->loginid, 'enabled client is placed at the begining of the list';
 
     @clients = $user->clients(include_self_closed => 1);
-    is scalar @clients, 2, 'Two clients are returned';
+    is scalar @clients,      2,                              'Two clients are returned';
     is $clients[0]->loginid, $clients{enabled}->loginid,     'enabled client is placed at the begining of the list';
     is $clients[1]->loginid, $clients{self_closed}->loginid, 'correct  self-closed loginid';
 };
@@ -242,7 +242,7 @@ subtest 'accounts_by_category' => sub {
         disabled
         duplicated
         self_excluded
-    );
+        );
 
     $user_by_category->add_client($clients{$_}) for keys %clients;
 
@@ -407,7 +407,7 @@ subtest 'User Login' => sub {
         is $failed_login->{fail_count}, 6, 'failed login attempts';
 
         $status = $user->login(%args);
-        ok !$status->{success}, 'Too many bad login attempts, cannot login';
+        ok !$status->{success},                                                     'Too many bad login attempts, cannot login';
         ok $status->{error} =~ 'Sorry, you have already had too many unsuccessful', "Correct error for too many wrong attempts";
 
         $user->dbic->run(
@@ -701,12 +701,12 @@ subtest 'test update totp' => sub {
         lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => 'xyz') } 'do reenable and update';
         is($user->secret_key, $new_secret_key, 'secret_key is not changed becuase 2FA was already enabled');
         ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are not revoked';
-        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 'refresh tokens are not revoked';
+        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*,  'refresh tokens are not revoked';
 
         lives_ok { $user->update_totp_fields(secret_key => 'xyz') } 'update  secret key when 2FA is enabled';
         is($user->secret_key, $new_secret_key, 'secret_key is not changed becuase 2FA was enabled');
         ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are not revoked';
-        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 'refresh tokens are not revoked';
+        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*,  'refresh tokens are not revoked';
     };
 
     subtest 'disable 2FA' => sub {
@@ -726,12 +726,12 @@ subtest 'test update totp' => sub {
         lives_ok { $user->update_totp_fields(is_totp_enabled => 0, secret_key => 'xyz') } 'do reenable and update';
         is($user->secret_key, 'xyz', 'secret_key is changed becuase 2FA was disabled');
         ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are not revoked';
-        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 'refresh tokens are not revoked';
+        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*,  'refresh tokens are not revoked';
 
         lives_ok { $user->update_totp_fields(secret_key => $new_secret_key) } 'update  secret key when 2FA is enabled';
         is($user->secret_key, $new_secret_key, 'secret_key changed becuase 2FA was disabled');
         ok $oauth->has_other_login_sessions($client_vr->loginid), 'Login sessions are not revoked';
-        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*, 'refresh tokens are not revoked';
+        ok $oauth->get_refresh_tokens_by_user_id($user->id)->@*,  'refresh tokens are not revoked';
     };
 
     $oauth->revoke_tokens_by_loginid($_->loginid) for ($user->clients);
@@ -869,7 +869,7 @@ subtest 'test get_financial_assessment' => sub {
     ok $client_mx->get_financial_assessment,  'Financial assessment for client MX exists (returned whole object)';
     ok $client_mlt->get_financial_assessment, 'Financial assessment for client MLT exists (returned whole object)';
 
-    ok !$client_mx->get_financial_assessment('jibbabi'), 'Field does not exist for financial assessment for client MX';
+    ok !$client_mx->get_financial_assessment('jibbabi'),    'Field does not exist for financial assessment for client MX';
     ok $client_mlt->get_financial_assessment('net_income'), 'Field exists for financial assessment for client MLT';
 
 };
@@ -1138,8 +1138,8 @@ subtest 'update email' => sub {
     is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
 
     my $new_email = 'AN_email@anywhere.com';
-    is $user->update_email($new_email), 1, 'user email changed is OK';
-    is $user->email, lc $new_email, 'user\'s email was updated';
+    is $user->update_email($new_email), 1,             'user email changed is OK';
+    is $user->email,                    lc $new_email, 'user\'s email was updated';
 
     for my $loginid (qw/CR10000 CR10001 CR10013/, $client_vr->loginid) {
         my $client = BOM::User::Client->new({
@@ -1206,9 +1206,9 @@ subtest 'Populate users table on signup' => sub {
     my $mt5_logins = $user->loginid_details;
 
     is $mt5_logins->{$loginid}->{loginid},      $loginid, "Got correct 'loginid' value";
-    is $mt5_logins->{$loginid}->{platform},     "mt5",  "Got correct 'platform' value";
-    is $mt5_logins->{$loginid}->{account_type}, "demo", "Got correct 'account_type' value";
-    is $mt5_logins->{$loginid}->{currency},     "USD",  "Got correct 'currency' value";
+    is $mt5_logins->{$loginid}->{platform},     "mt5",    "Got correct 'platform' value";
+    is $mt5_logins->{$loginid}->{account_type}, "demo",   "Got correct 'account_type' value";
+    is $mt5_logins->{$loginid}->{currency},     "USD",    "Got correct 'currency' value";
     cmp_deeply $mt5_logins->{$loginid}->{attributes}, {test => 'test'}, "Got correct 'attributes' value";
 };
 

@@ -37,7 +37,7 @@ $client->payment_doughflow(
 my $advertiser = $client->p2p_advertiser_create(name => 'bob');
 is $advertiser->{withdrawal_limit}, '400.00', 'withdrawal_limit returned for advertiser_create';
 
-is $client->p2p_advertiser_info->{withdrawal_limit}, '400.00', 'withdrawal_limit returned from advertiser_info';
+is $client->p2p_advertiser_info->{withdrawal_limit},     '400.00', 'withdrawal_limit returned from advertiser_info';
 is $client->p2p_advertiser_update()->{withdrawal_limit}, '400.00', 'withdrawal_limit returned from advertiser_update (no changes)';
 is $client->p2p_advertiser_update(contact_info => 'y')->{withdrawal_limit}, '400.00',
     'withdrawal_limit returned from advertiser_update (actual update)';

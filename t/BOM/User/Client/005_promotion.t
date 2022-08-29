@@ -4,7 +4,7 @@ use Test::More;
 use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 use Test::Exception tests => 2;
 
 subtest create_promotion => sub {
