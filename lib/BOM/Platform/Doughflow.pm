@@ -15,7 +15,7 @@ use strict;
 use warnings;
 
 use JSON::MaybeXS;
-use List::MoreUtils qw(any uniq);
+use List::MoreUtils            qw(any uniq);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Time::Moment;
 

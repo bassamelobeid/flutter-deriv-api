@@ -6,8 +6,8 @@ use warnings;
 no indirect;
 
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
-use JSON::MaybeUTF8 qw(:v1);
-use Log::Any qw($log);
+use JSON::MaybeUTF8            qw(:v1);
+use Log::Any                   qw($log);
 use RedisDB;
 use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);

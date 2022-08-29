@@ -8,7 +8,7 @@ use IO::Async::Loop;
 use BOM::Platform::Script::DevExpertsAPIService::Dxsca;
 use Net::Async::HTTP;
 use IO::Async::Loop;
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8   qw(:v1);
 use Log::Any::Adapter qw(TAP);
 
 my $loop = IO::Async::Loop->new;

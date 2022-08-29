@@ -58,7 +58,7 @@ subtest 'get_risk_profile' => sub {
     my $rp = BOM::Platform::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'medium_risk', 'medium risk as default for major pairs';
     my $limit = $rp->custom_profiles;
-    is scalar(@$limit), 1, 'only one profile';
+    is scalar(@$limit),             1,                            'only one profile';
     is $limit->[0]->{name},         'major_pairs_turnover_limit', 'correct name';
     is $limit->[0]->{risk_profile}, 'medium_risk',                'risk_profile is medium';
     is $limit->[0]->{submarket},    'major_pairs',                'submarket specific';
@@ -69,7 +69,7 @@ subtest 'get_risk_profile' => sub {
     $rp = BOM::Platform::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'no_business', 'no business overrides default risk_profile';
     $limit = $rp->custom_profiles;
-    is scalar(@$limit), 2, 'only one profile';
+    is scalar(@$limit),             2,                            'only one profile';
     is $limit->[1]->{name},         'major_pairs_turnover_limit', 'correct name';
     is $limit->[1]->{risk_profile}, 'medium_risk',                'risk_profile is medium';
     is $limit->[1]->{submarket},    'major_pairs',                'submarket specific';
@@ -94,7 +94,7 @@ subtest 'get_risk_profile' => sub {
     $rp = BOM::Platform::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'low_risk', 'low risk is default for volatility index';
     $limit = $rp->custom_profiles;
-    is scalar(@$limit), 1, 'only one profile';
+    is scalar(@$limit),             1,                                'only one profile';
     is $limit->[0]->{name},         'synthetic_index_turnover_limit', 'correct name';
     is $limit->[0]->{risk_profile}, 'low_risk',                       'risk_profile is low';
     is $limit->[0]->{market},       'synthetic_index',                'market specific';
@@ -156,8 +156,8 @@ subtest 'turnover limit parameters' => sub {
     my $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'tick');
     is $rp->contract_info->{expiry_type}, 'tick', 'tick expiry';
     my $param = $rp->get_turnover_limit_parameters;
-    is $param->[0]->{name},        'test custom', 'correct name';
-    is $param->[0]->{limit},       0,             'turnover limit correctly set to zero';
+    is $param->[0]->{name},  'test custom', 'correct name';
+    is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{tick_expiry}, 'tick_expiry set to 1';
     my $symbols = [
         '1HZ100V', '1HZ10V', '1HZ25V',  '1HZ50V',  '1HZ75V',   'BOOM1000', 'BOOM500', 'CRASH1000', 'CRASH500', 'RDBEAR',
@@ -180,9 +180,9 @@ subtest 'turnover limit parameters' => sub {
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
     is $rp->contract_info->{expiry_type}, 'daily', 'daily expiry';
     $param = $rp->get_turnover_limit_parameters;
-    is $param->[0]->{name},         'test custom', 'correct name';
-    is $param->[0]->{limit},        0,             'turnover limit correctly set to zero';
-    ok $param->[0]->{daily},        'daily set to 1';
+    is $param->[0]->{name},  'test custom', 'correct name';
+    is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
+    ok $param->[0]->{daily}, 'daily set to 1';
     cmp_bag $param->[0]->{symbols}, $symbols, 'correct symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"underlying_symbol": "R_100,R_10", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
@@ -192,9 +192,9 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{name},  'test custom', 'correct name';
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{daily}, 'daily set to 1';
-    is scalar(@{$param->[0]->{symbols}}), 2, '2 symbols selected';
-    is $param->[0]->{symbols}->[0], 'R_100', 'first symbol is R_100';
-    is $param->[0]->{symbols}->[1], 'R_10',  'first symbol is R_10';
+    is scalar(@{$param->[0]->{symbols}}), 2,       '2 symbols selected';
+    is $param->[0]->{symbols}->[0],       'R_100', 'first symbol is R_100';
+    is $param->[0]->{symbols}->[1],       'R_10',  'first symbol is R_10';
 
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "synthetic_index", "expiry_type": "ultra_short", "risk_profile": "no_business", "name": "test custom ultra_short"}}');
@@ -203,7 +203,7 @@ subtest 'turnover limit parameters' => sub {
     $param = $rp->get_turnover_limit_parameters;
     is $param->[0]->{name},  'test custom ultra_short', 'correct name';
     is $param->[0]->{limit}, 0,                         'turnover limit correctly set to zero';
-    ok !$param->[0]->{daily}, 'daily set to 0';
+    ok !$param->[0]->{daily},      'daily set to 0';
     ok $param->[0]->{ultra_short}, 'daily set to 1';
     cmp_bag $param->[0]->{symbols}, $symbols, 'correct symbols selected';
 };
@@ -503,7 +503,7 @@ subtest 'Zero non-binary contract limit for lookbacks' => sub {
 
     my $non_binary_limits_params = $rp->get_non_binary_limit_parameters;
     my $limit                    = $rp->custom_profiles;
-    is scalar(@$limit), 2, 'Two riskd profile';
+    is scalar(@$limit),       2,             'Two riskd profile';
     is $rp->get_risk_profile, 'no_business', 'Lookback contracts risk profile is set to no_business';
     is_deeply $non_binary_limits_params,
         [{
@@ -527,14 +527,14 @@ subtest 'Disable based on landing company' => sub {
     );
 
     my $rp_svg = BOM::Platform::RiskProfile->new(%args);
-    is scalar($rp_svg->custom_profiles->@*), 2, 'Our riskd profile and base profile';
-    is $rp_svg->get_risk_profile, 'no_business', 'no_business for callput in svg';
+    is scalar($rp_svg->custom_profiles->@*), 2,             'Our riskd profile and base profile';
+    is $rp_svg->get_risk_profile,            'no_business', 'no_business for callput in svg';
 
     my %iom_args = %args;
     $iom_args{landing_company} = 'iom';
     my $rp_iom = BOM::Platform::RiskProfile->new(%iom_args);
-    is scalar($rp_iom->custom_profiles->@*), 1, 'There is just one base risk profile';
-    is $rp_iom->get_risk_profile, 'low_risk', 'There is no risk profile defined for iom';
+    is scalar($rp_iom->custom_profiles->@*), 1,          'There is just one base risk profile';
+    is $rp_iom->get_risk_profile,            'low_risk', 'There is no risk profile defined for iom';
 };
 
 done_testing();

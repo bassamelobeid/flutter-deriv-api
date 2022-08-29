@@ -8,7 +8,7 @@ use BOM::User::Client;
 use BOM::User;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 
 my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 

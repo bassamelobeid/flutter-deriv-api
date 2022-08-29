@@ -32,7 +32,7 @@ my $client_loginid = $m->get_token_details($token, 1)->{loginid};
 is $client_loginid, $test_loginid;
 
 my $tokens = $m->get_tokens_by_loginid($test_loginid);
-is scalar @$tokens, 1;
+is scalar @$tokens,              1;
 is $tokens->[0]->{token},        $token;
 is $tokens->[0]->{display_name}, 'Test Token';
 is_deeply [sort @{$tokens->[0]->{scopes}}], ['admin', 'payments', 'read'];

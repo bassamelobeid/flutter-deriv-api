@@ -2,7 +2,7 @@ use Test::More;
 use Test::MockModule;
 use Test::Deep;
 
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
+use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Client::AntiFraud;
 use BOM::User::PaymentRecord;

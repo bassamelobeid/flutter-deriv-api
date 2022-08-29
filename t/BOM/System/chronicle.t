@@ -6,7 +6,7 @@ use Test::More tests => 8;
 use Test::Exception;
 use Test::Warnings;
 use Time::HiRes;
-use Time::Local ();
+use Time::Local                                  ();
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Config::Chronicle;
 use Date::Utility;
@@ -24,7 +24,7 @@ my $d_old = {
     sample3 => [9, 12, 13]};
 
 my $first_save_epoch = time;
-is $writer->set("vol_surface", "frxUSDJPY", $d, Date::Utility->new), 1, "data is stored without problem";
+is $writer->set("vol_surface", "frxUSDJPY",     $d,     Date::Utility->new),    1, "data is stored without problem";
 is $writer->set("vol_surface", "frxUSDJPY-old", $d_old, Date::Utility->new(0)), 1, "data is stored without problem when specifying recorded date";
 
 my $old_data = $reader->get_for("vol_surface", "frxUSDJPY-old", 0);

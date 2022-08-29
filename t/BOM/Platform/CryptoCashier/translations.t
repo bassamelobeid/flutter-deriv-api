@@ -8,7 +8,7 @@ use Test::Fatal;
 use Test::Mojo;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client top_up);
+use BOM::Test::Helper::Client                  qw( create_client top_up);
 use BOM::Platform::CryptoCashier::Iframe::Controller;
 use BOM::Config::Runtime;
 use BOM::User::Client;

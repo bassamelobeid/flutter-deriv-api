@@ -21,8 +21,8 @@ An interface to CloseIO service. Handle API communications and some internal act
 
 use HTTP::Tiny;
 use JSON::MaybeUTF8 qw( decode_json_utf8 );
-use Log::Any qw( $log );
-use MIME::Base64 qw( encode_base64 );
+use Log::Any        qw( $log );
+use MIME::Base64    qw( encode_base64 );
 use Text::Trim;
 use URI;
 

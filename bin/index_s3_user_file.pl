@@ -7,7 +7,7 @@ use Amazon::S3;
 use Cache::LRU;
 use Getopt::Long;
 use JSON::MaybeXS qw{encode_json decode_json};
-use Log::Any qw{$log};
+use Log::Any      qw{$log};
 use Syntax::Keyword::Try;
 use YAML::XS qw{LoadFile};
 
@@ -102,7 +102,7 @@ sub desk_flow {
 sub get_user_email_list {
     my ($file_name, $file_content) = @_;
 
-    my @customer_href = split /\//, $file_content->{_links}->{customer}->{href};
+    my @customer_href      = split /\//, $file_content->{_links}->{customer}->{href};
     my $customer_file_name = "desk/customer/$customer_href[-1].json";
 
     my @email_list;

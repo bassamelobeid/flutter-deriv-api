@@ -3,12 +3,12 @@ use strict;
 use warnings;
 
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
-use Future::Utils qw(fmap_void);
-use List::Util qw(any min);
+use Future::Utils              qw(fmap_void);
+use List::Util                 qw(any min);
 use IO::Async::Loop;
 use Net::Async::Redis;
 use Future::AsyncAwait;
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use Log::Any::Adapter qw(DERIV),
     stderr    => 'json',
     log_level => 'info';
@@ -213,7 +213,8 @@ ping_circuit();
 $log->info($server . ' queue monitoring active');
 
 Future->wait_any(
-    map { (
+    map {
+        (
             async sub {
                 my ($code) = @_;
                 while (1) {

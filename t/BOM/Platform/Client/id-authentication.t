@@ -98,10 +98,10 @@ subtest 'MLT accounts' => sub {
 
         $v->run_authentication;
 
-        ok !$v->client->fully_authenticated, 'Not fully authenticated';
+        ok !$v->client->fully_authenticated,      'Not fully authenticated';
         ok !$v->client->status->age_verification, 'Not age verified';
-        ok $v->client->status->unwelcome, 'Is unwelcome';
-        ok !$v->client->status->cashier_locked, 'Not cashier_locked';
+        ok $v->client->status->unwelcome,         'Is unwelcome';
+        ok !$v->client->status->cashier_locked,   'Not cashier_locked';
     };
     subtest 'Age verified prior to run_authentication' => sub {
         my $user_client_mlt = BOM::User->create(
@@ -118,7 +118,7 @@ subtest 'MLT accounts' => sub {
 
         $v->run_authentication;
 
-        ok !$v->client->fully_authenticated, 'Not fully authenticated';
+        ok !$v->client->fully_authenticated,    'Not fully authenticated';
         ok !$v->client->status->unwelcome,      'Not unwelcome';
         ok !$v->client->status->cashier_locked, 'Not cashier_locked';
     };
@@ -142,7 +142,7 @@ subtest 'MF accounts' => sub {
         $v->run_authentication;
 
         ok !$v->client->fully_authenticated, 'Not fully authenticated';
-        ok $v->client->status->unwelcome, "Unwelcome";
+        ok $v->client->status->unwelcome,    "Unwelcome";
     };
     subtest "Authenticated prior to run_authentication" => sub {
         my $user_client_mf = BOM::User->create(
@@ -162,7 +162,7 @@ subtest 'MF accounts' => sub {
         $v->run_authentication;
 
         ok $v->client->fully_authenticated, 'Fully authenticated';
-        ok !$v->client->status->unwelcome, "Not unwelcome";
+        ok !$v->client->status->unwelcome,  "Not unwelcome";
     };
 };
 

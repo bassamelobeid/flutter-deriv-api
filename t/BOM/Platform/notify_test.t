@@ -103,7 +103,7 @@ sub test_notify {
         my $loginid = $test->{acc}->client_loginid;
         subtest 'testing result for ' . $loginid . ' transaction ' . $test->{txn}->{id}, sub {
             my $note = $notifications{$test->{txn}->{id}};
-            isnt $note, undef, 'found notification';
+            isnt $note,                undef, 'found notification';
             is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
             for my $name (qw/account_id action_type amount balance_after financial_market_bet_id transaction_time/) {
                 is $note->{$name}, $test->{txn}->{$name}, "note{$name} eq txn{$name}";

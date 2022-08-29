@@ -11,7 +11,7 @@ use Brands;
 use BOM::Platform::Client::Sanctions;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client                  qw( create_client );
 
 my $sanction_result = {
     matched      => 1,
@@ -73,7 +73,7 @@ subtest 'Account types and broker codes' => sub {
         );
 
         is $checker->check(), undef, "result is empty when no match is found - $broker";
-        is $email_args, undef, 'No email is sent - $broker';
+        is $email_args,       undef, 'No email is sent - $broker';
 
         $sanction_result->{matched} = 1;
         is $checker->check(), 'test list', "matched list is reutrned - $broker";
@@ -86,7 +86,7 @@ subtest 'Account types and broker codes' => sub {
             skip_email => 1
         );
         is $checker->check(), 'test list', "matched list is reutrned - $broker";
-        is $email_args, undef, 'Email is skipped - $broker';
+        is $email_args,       undef,       'Email is skipped - $broker';
 
         #authenticate the client
         $checker = BOM::Platform::Client::Sanctions->new(
@@ -95,7 +95,7 @@ subtest 'Account types and broker codes' => sub {
         );
         $cl->set_authentication('ID_DOCUMENT', {status => 'pass'});
         is $checker->check(), undef, "result is empty when if client is authenticated by default - $broker";
-        is $email_args, undef, 'No email is sent for authenticated clients by default - $broker';
+        is $email_args,       undef, 'No email is sent for authenticated clients by default - $broker';
 
         # recheck_authentication option
         $checker = BOM::Platform::Client::Sanctions->new(
@@ -112,7 +112,7 @@ subtest 'Account types and broker codes' => sub {
         client => $client_vr,
         brand  => $brand
     )->check();
-    is $result , undef, 'Sanction check is  skipped for virtual accounts';
+    is $result ,    undef, 'Sanction check is  skipped for virtual accounts';
     is $email_args, undef, 'No email is sent';
 };
 
@@ -142,7 +142,7 @@ sub test_sanctions_email {
 
     is $email_args->{from},    $brand->emails('system'),     'Sending email address is corect';
     is $email_args->{to},      $brand->emails('compliance'), 'Receiving email address is corect';
-    is $email_args->{subject}, $expected_subject, 'Emain subject is correct';
+    is $email_args->{subject}, $expected_subject,            'Emain subject is correct';
     like $email_args->{message}->[0], qr($loginid.*$name.*\n.*$sanction_result->{list}), 'Email body is correct';
     is $email_args->{message}->[1], $comment // '', 'Email comments are correct';
 }

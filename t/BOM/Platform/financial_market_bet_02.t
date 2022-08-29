@@ -304,8 +304,8 @@ subtest 'more validation', sub {
         $cl = create_client;
 
         top_up $cl, 'USD', 10000;
-        isnt + ($acc_usd = $cl->account), undef, 'got USD account';
-        is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
+        isnt + ($acc_usd = $cl->account),          undef, 'got USD account';
+        is +   ($bal     = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
     }
     'setup new client';
 
@@ -424,8 +424,8 @@ subtest 'more validation', sub {
 
         # note explain $res;
         $bal += $unsold_bets * 30;
-        is 0 + @$res, $unsold_bets, "sold $unsold_bets out of $total_bets bets ($sold_bets was already sold)";
-        is $res->[0]->{txn}->{balance_after} + 0, $bal, 'balance_after';
+        is 0 + @$res,                             $unsold_bets, "sold $unsold_bets out of $total_bets bets ($sold_bets was already sold)";
+        is $res->[0]->{txn}->{balance_after} + 0, $bal,         'balance_after';
     }
     "batch-sell $unsold_bets bets";
 };
@@ -440,8 +440,8 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            isnt + ($acc_usd = $cl->account), undef, 'got USD account';
-            is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
+            isnt + ($acc_usd = $cl->account),          undef, 'got USD account';
+            is +   ($bal     = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
         }
         'setup new client';
 
@@ -778,8 +778,8 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            isnt + ($acc_usd = $cl->account), undef, 'got USD account';
-            is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
+            isnt + ($acc_usd = $cl->account),          undef, 'got USD account';
+            is +   ($bal     = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
         }
         'setup new client';
 
@@ -960,8 +960,8 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            isnt + ($acc_usd = $cl->account), undef, 'got USD account';
-            is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
+            isnt + ($acc_usd = $cl->account),          undef, 'got USD account';
+            is +   ($bal     = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
         }
         'setup new client';
 
@@ -1142,8 +1142,8 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            isnt + ($acc_usd = $cl->account), undef, 'got USD account';
-            is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
+            isnt + ($acc_usd = $cl->account),          undef, 'got USD account';
+            is +   ($bal     = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
         }
         'setup new client';
 
@@ -1392,27 +1392,27 @@ subtest 'batch_buy', sub {
         my $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = shift @$res;
-            isnt $r, undef, 'got result hash';
+            isnt $r,                undef,    'got result hash';
             is $r->{loginid},       $loginid, 'found loginid';
-            is $r->{e_code},        undef, 'e_code is undef';
-            is $r->{e_description}, undef, 'e_description is undef';
-            isnt $r->{fmb},         undef, 'got FMB';
-            isnt $r->{txn},         undef, 'got TXN';
+            is $r->{e_code},        undef,    'e_code is undef';
+            is $r->{e_description}, undef,    'e_description is undef';
+            isnt $r->{fmb},         undef,    'got FMB';
+            isnt $r->{txn},         undef,    'got TXN';
 
             my $fmb = $r->{fmb};
             is $fmb->{account_id}, $acc->id, 'fmb account id matches';
 
             my $txn = $r->{txn};
             $buy_trx_ids->{$txn->{id}} = 1;
-            is $txn->{account_id},              $acc->id, 'txn account id matches';
+            is $txn->{account_id},              $acc->id,               'txn account id matches';
             is $txn->{referrer_type},           'financial_market_bet', 'txn referrer_type is financial_market_bet';
-            is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount},                  '-20.00',  'txn amount';
-            is $txn->{balance_after},           '4980.00', 'txn balance_after';
-            is $txn->{staff_loginid},           '#CL001',  'txn staff_loginid';
+            is $txn->{financial_market_bet_id}, $fmb->{id},             'txn fmb id matches';
+            is $txn->{amount},                  '-20.00',               'txn amount';
+            is $txn->{balance_after},           '4980.00',              'txn balance_after';
+            is $txn->{staff_loginid},           '#CL001',               'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
-            isnt $note, undef, 'found notification';
+            isnt $note,                undef, 'found notification';
             is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
             for my $name (qw/account_id action_type amount balance_after financial_market_bet_id transaction_time/) {
                 is $note->{$name}, $txn->{$name}, "note{$name} eq txn{$name}";
@@ -1426,39 +1426,39 @@ subtest 'batch_buy', sub {
         $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = shift @$res;
-            isnt $r, undef, 'got result hash';
-            is $r->{loginid},         $loginid, 'found loginid';
-            is $r->{e_code},          'BI003',                  'e_code is BI003';
+            isnt $r,          undef,    'got result hash';
+            is $r->{loginid}, $loginid, 'found loginid';
+            is $r->{e_code},  'BI003',  'e_code is BI003';
             like $r->{e_description}, qr/insufficient balance/, 'e_description mentions insufficient balance';
-            is $r->{fmb},             undef,                    'no FMB';
-            is $r->{txn},             undef,                    'no TXN';
+            is $r->{fmb}, undef, 'no FMB';
+            is $r->{txn}, undef, 'no TXN';
         };
 
         $acc     = $acc3;
         $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = shift @$res;
-            isnt $r, undef, 'got result hash';
+            isnt $r,                undef,    'got result hash';
             is $r->{loginid},       $loginid, 'found loginid';
-            is $r->{e_code},        undef, 'e_code is undef';
-            is $r->{e_description}, undef, 'e_description is undef';
-            isnt $r->{fmb},         undef, 'got FMB';
-            isnt $r->{txn},         undef, 'got TXN';
+            is $r->{e_code},        undef,    'e_code is undef';
+            is $r->{e_description}, undef,    'e_description is undef';
+            isnt $r->{fmb},         undef,    'got FMB';
+            isnt $r->{txn},         undef,    'got TXN';
 
             my $fmb = $r->{fmb};
             is $fmb->{account_id}, $acc->id, 'fmb account id matches';
 
             my $txn = $r->{txn};
             $buy_trx_ids->{$txn->{id}} = 1;
-            is $txn->{account_id},              $acc->id, 'txn account id matches';
+            is $txn->{account_id},              $acc->id,               'txn account id matches';
             is $txn->{referrer_type},           'financial_market_bet', 'txn referrer_type is financial_market_bet';
-            is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount},                  '-20.00',  'txn amount';
-            is $txn->{balance_after},           '9980.00', 'txn balance_after';
-            is $txn->{staff_loginid},           '#CL001',  'txn staff_loginid';
+            is $txn->{financial_market_bet_id}, $fmb->{id},             'txn fmb id matches';
+            is $txn->{amount},                  '-20.00',               'txn amount';
+            is $txn->{balance_after},           '9980.00',              'txn balance_after';
+            is $txn->{staff_loginid},           '#CL001',               'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
-            isnt $note, undef, 'found notification';
+            isnt $note,                undef, 'found notification';
             is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
             for my $name (qw/account_id action_type amount balance_after financial_market_bet_id transaction_time/) {
                 is $note->{$name}, $txn->{$name}, "note{$name} eq txn{$name}";
@@ -1475,29 +1475,29 @@ subtest 'batch_buy', sub {
         # note explain $res;
         is ref $res, 'ARRAY';
         my $r = shift @$res;
-        is ref $r, 'HASH';
+        is ref $r,      'HASH';
         isnt $r->{fmb}, undef, 'got FMB';
         isnt $r->{txn}, undef, 'got TXN';
         ok $buy_trx_ids->{$r->{buy_tr_id}}, 'got buy transaction id';
         is $r->{txn}{financial_market_bet_id}, $r->{fmb}{id}, 'txn fmb id matches';
-        is $r->{txn}{amount}, '18.00', 'txn amount';
+        is $r->{txn}{amount},                  '18.00',       'txn amount';
         ok $r->{loginid}, 'got login id';
 
         $r = shift @$res;
         is ref $r, 'HASH';
-        ok $r->{fmb},           'got FMB';
-        ok $r->{txn},           'got TXN';
+        ok $r->{fmb}, 'got FMB';
+        ok $r->{txn}, 'got TXN';
         is $r->{e_code},        'BI050',              'got error code';
         is $r->{e_description}, 'Contract not found', 'got error description';
-        ok $r->{loginid},       'got login id';
+        ok $r->{loginid}, 'got login id';
 
         $r = shift @$res;
-        is ref $r, 'HASH';
+        is ref $r,      'HASH';
         isnt $r->{fmb}, undef, 'got FMB';
         isnt $r->{txn}, undef, 'got TXN';
         ok $buy_trx_ids->{$r->{buy_tr_id}}, 'got buy transaction id';
         is $r->{txn}{financial_market_bet_id}, $r->{fmb}{id}, 'txn fmb id matches';
-        is $r->{txn}{amount}, '18.00', 'txn amount';
+        is $r->{txn}{amount},                  '18.00',       'txn amount';
         ok $r->{loginid}, 'got login id';
 
     }

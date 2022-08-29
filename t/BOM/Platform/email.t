@@ -4,7 +4,7 @@ use Test::More;
 use Test::Deep;
 use Email::Sender::Transport::Test;
 use Test::MockModule;
-use Test::Warnings qw(warning);
+use Test::Warnings         qw(warning);
 use BOM::Platform::Context qw(request);
 use Email::Address::UseXS;
 use Email::MIME::Attachment::Stripper;
@@ -64,8 +64,8 @@ subtest 'no use template' => sub {
     ok(send_email($args));
     my @deliveries = $transport->deliveries;
     my $email      = $deliveries[-1]{email};
-    is $email->get_body, "line1\r\nline2=\r\n", 'message joined';
-    is $email->get_header('Subject'), 'hello world', 'remove continuous spaces';
+    is $email->get_body,              "line1\r\nline2=\r\n", 'message joined';
+    is $email->get_header('Subject'), 'hello world',         'remove continuous spaces';
 };
 
 subtest 'with template' => sub {
@@ -124,18 +124,18 @@ subtest 'with language args' => sub {
     ok(send_email($args));
     my @deliveries = $transport->deliveries;
     my $email      = $deliveries[-1]{email};
-    like $email->get_header('Subject'), qr{Email belum diberikan.}s, 'email subject has localized language';
-    like $email->get_body, qr{https://deriv.com/id/help-centre/}s, 'email urls has localized language';
-    like $email->get_body, qr{Keamanan dan privasi}s,              'email content has localized language';
-    like $email->get_body, qr{Akun ini telah dibatalkan.}s,        'email title has localized language';
+    like $email->get_header('Subject'), qr{Email belum diberikan.}s,            'email subject has localized language';
+    like $email->get_body,              qr{https://deriv.com/id/help-centre/}s, 'email urls has localized language';
+    like $email->get_body,              qr{Keamanan dan privasi}s,              'email content has localized language';
+    like $email->get_body,              qr{Akun ini telah dibatalkan.}s,        'email title has localized language';
 
     ok(send_email($args));
     @deliveries = $transport->deliveries;
     $email      = $deliveries[-1]{email};
-    like $email->get_header('Subject'), qr{Email not given.}s, 'email subject has default language';
-    like $email->get_body, qr{https://deriv.com/en/help-centre/}s, 'email urls has default language';
-    like $email->get_body, qr{Security and privacy}s,              'email content has default language';
-    like $email->get_body, qr{This account has been disabled.}s,   'email title has default language';
+    like $email->get_header('Subject'), qr{Email not given.}s,                  'email subject has default language';
+    like $email->get_body,              qr{https://deriv.com/en/help-centre/}s, 'email urls has default language';
+    like $email->get_body,              qr{Security and privacy}s,              'email content has default language';
+    like $email->get_body,              qr{This account has been disabled.}s,   'email title has default language';
 };
 
 done_testing();

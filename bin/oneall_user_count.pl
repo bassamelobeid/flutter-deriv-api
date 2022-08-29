@@ -10,9 +10,9 @@ use HTTP::Cookies;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use JSON::MaybeXS;
 use YAML::XS;
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use Log::Any::Adapter qw(Stdout), log_level => 'info';
-use POSIX qw(strftime);
+use POSIX             qw(strftime);
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';

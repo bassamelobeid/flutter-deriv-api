@@ -9,7 +9,7 @@ use DBD::Pg;
 use IO::Select;
 use Syntax::Keyword::Try;
 use JSON::MaybeXS;
-use Log::Any qw($log);
+use Log::Any             qw($log);
 use BOM::Platform::Email qw(send_email);
 use Brands;
 

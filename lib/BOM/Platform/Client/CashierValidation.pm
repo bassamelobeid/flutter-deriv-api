@@ -16,16 +16,16 @@ no indirect;
 
 use Date::Utility;
 use ExchangeRates::CurrencyConverter qw( convert_currency );
-use Format::Util::Numbers qw( get_min_unit financialrounding );
-use List::Util qw( any none );
-use Scalar::Util qw( looks_like_number );
+use Format::Util::Numbers            qw( get_min_unit financialrounding );
+use List::Util                       qw( any none );
+use Scalar::Util                     qw( looks_like_number );
 use Syntax::Keyword::Try;
 
 use LandingCompany::Registry;
 
 use BOM::Config::CurrencyConfig;
 use BOM::Platform::Utility qw(error_map create_error);
-use Log::Any qw( $log );
+use Log::Any               qw( $log );
 use BOM::Platform::Event::Emitter;
 use BOM::Database::ClientDB;
 

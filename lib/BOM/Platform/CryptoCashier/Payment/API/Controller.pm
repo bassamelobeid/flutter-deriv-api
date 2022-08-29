@@ -2,7 +2,7 @@ package BOM::Platform::CryptoCashier::Payment::API::Controller;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Format::Util::Numbers qw(financialrounding);
-use Scalar::Util qw(blessed);
+use Scalar::Util          qw(blessed);
 use Syntax::Keyword::Try;
 use Log::Any qw($log);
 
