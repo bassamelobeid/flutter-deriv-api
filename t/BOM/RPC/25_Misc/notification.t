@@ -83,8 +83,8 @@ subtest 'Notification - authenntication events' => sub {
 
     $redis->del($pending_key);
     is_deeply $c->tcall($method, $params), {status => 1}, 'Expected response';
-    is scalar @emit_args, 2, 'Correct number of event args';
-    is $emit_args[0], 'ready_for_authentication', 'Emitted event name is correct';
+    is scalar @emit_args, 2,                          'Correct number of event args';
+    is $emit_args[0],     'ready_for_authentication', 'Emitted event name is correct';
     is_deeply $emit_args[1],
         {
         loginid      => $test_client->loginid,
@@ -98,8 +98,8 @@ subtest 'Notification - authenntication events' => sub {
     $params->{args}->{args}->{documents} = [10, 11];
     undef @emit_args;
     is_deeply $c->tcall($method, $params), {status => 1}, 'Expected response';
-    is scalar @emit_args, 2, 'Correct number of event args';
-    is $emit_args[0], 'ready_for_authentication', 'Emitted event name is correct';
+    is scalar @emit_args, 2,                          'Correct number of event args';
+    is $emit_args[0],     'ready_for_authentication', 'Emitted event name is correct';
     is_deeply $emit_args[1],
         {
         loginid      => $test_client->loginid,

@@ -120,9 +120,9 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{style}         = 'ticks';
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $result->{type}, 'history', 'Result type should be history';
-    is scalar(@{$result->{data}->{history}->{times}}),  47, 'It should return all ticks between start and end';
-    is scalar(@{$result->{data}->{history}->{prices}}), 47, 'It should return all ticks between start and end';
+    is $result->{type},                                 'history', 'Result type should be history';
+    is scalar(@{$result->{data}->{history}->{times}}),  47,        'It should return all ticks between start and end';
+    is scalar(@{$result->{data}->{history}->{prices}}), 47,        'It should return all ticks between start and end';
 
     $params->{args}->{count} = 10;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
@@ -146,7 +146,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{start} = $end->epoch;
     $params->{args}->{end}   = $end->epoch;
     $result                  = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$result->{data}->{history}->{times}}, 1, 'It should return one tick when start == end';
+    is @{$result->{data}->{history}->{times}},   1,           'It should return one tick when start == end';
     is $result->{data}->{history}->{times}->[0], $end->epoch, 'It should return correct tick when start == end time';
 
     $params->{args}->{end}   = 'invalid';
@@ -178,15 +178,15 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{count} = 10;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is $rpc_ct->result->{data}->{history}->{times}->[0], 1331708391, 'It should start at 10s from now';
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 10, 'It should return 10 ticks';
+    is @{$rpc_ct->result->{data}->{history}->{times}},   10,         'It should return 10 ticks';
 
     $params->{args}->{style}       = "candles";
     $params->{args}->{count}       = 4000;
     $params->{args}->{granularity} = 5;
     $result                        = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is substr($result->{data}->{candles}->[-3]->{low}, -1), '0', 'Quote with zero at end should be pipsized';
-    is @{$result->{data}->{candles}}, 3941, 'It should return 3941 candles (due to missing ticks)';
-    is $result->{data}->{candles}->[0]->{epoch}, $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
+    is substr($result->{data}->{candles}->[-3]->{low}, -1), '0',                      'Quote with zero at end should be pipsized';
+    is @{$result->{data}->{candles}},                       3941,                     'It should return 3941 candles (due to missing ticks)';
+    is $result->{data}->{candles}->[0]->{epoch},            $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
 
     $params->{args}->{style}         = 'ticks';
     $params->{args}->{ticks_history} = 'OTC_HSI';
@@ -303,7 +303,7 @@ subtest 'history data style' => sub {
 
     $params->{args}->{count} = 1;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$result->{data}->{candles}}, 1, 'It should return one last candle';
+    is @{$result->{data}->{candles}},            1,                'It should return one last candle';
     is $result->{data}->{candles}->[-1]->{open}, $end_candle_open, 'It should return one last candle';
 };
 

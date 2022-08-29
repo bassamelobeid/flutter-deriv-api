@@ -10,11 +10,11 @@ use Date::Utility;
 use Data::Dumper;
 
 use BOM::Pricing::v3::Contract;
-use BOM::Platform::Context qw (request);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Platform::Context                       qw (request);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::RPC::QueueClient;
 use BOM::Config::Redis;
 use ExpiryQueue;
@@ -109,7 +109,7 @@ subtest 'contract_update' => sub {
     };
     my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
-    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok $buy_res->{contract_id},                  'contract is bought successfully with contract id';
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
 
     $cancel_params->{args}->{cancel} = $buy_res->{contract_id};
@@ -122,7 +122,7 @@ subtest 'contract_update' => sub {
     $buy_params->{args}->{price}                       = 104.35;
     $buy_res                                           = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
-    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok $buy_res->{contract_id},                  'contract is bought successfully with contract id';
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
     sleep 1;
     $cancel_params->{args}->{cancel} = $buy_res->{contract_id};
@@ -148,7 +148,7 @@ subtest 'contract_update' => sub {
 
     $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
-    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok $buy_res->{contract_id},                  'contract is bought successfully with contract id';
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
     sleep 1;
     $cancel_params->{args}->{cancel} = $buy_res->{contract_id};
@@ -188,7 +188,7 @@ subtest 'forex major pair - frxAUDJPY' => sub {
     $mock_date->mock('hour' => sub { return 20 });
     my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
-    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok $buy_res->{contract_id},                  'contract is bought successfully with contract id';
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
 
     sleep 1;

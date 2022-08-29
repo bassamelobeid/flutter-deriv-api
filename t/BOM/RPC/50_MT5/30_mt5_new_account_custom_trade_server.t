@@ -152,8 +152,8 @@ subtest 'use default routing rule if server is not provided' => sub {
 
     note('no server as user input');
     my $res = $c->call_ok($method, $params)->has_no_error->result;
-    is $res->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'}, 'defaulted to account on real->p01_ts01';
-    is $res->{account_type}, 'financial', 'financial';
+    is $res->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'}, 'defaulted to account on real->p01_ts01';
+    is $res->{account_type}, 'financial',                                              'financial';
 };
 
 sub _add_affiliate_account {

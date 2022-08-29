@@ -6,8 +6,8 @@ use warnings;
 use Date::Utility;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/formatnumber roundcommon/;
-use JSON::MaybeUTF8 qw(encode_json_utf8);
-use List::Util qw/none/;
+use JSON::MaybeUTF8       qw(encode_json_utf8);
+use List::Util            qw/none/;
 
 use BOM::RPC::Registry '-dsl';
 

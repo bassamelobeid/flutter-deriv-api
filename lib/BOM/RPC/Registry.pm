@@ -6,7 +6,7 @@ use warnings;
 
 use Carp;
 
-use Sub::Util qw(set_subname);
+use Sub::Util    qw(set_subname);
 use Scalar::Util qw(blessed);
 
 use Struct::Dumb qw(readonly_struct);

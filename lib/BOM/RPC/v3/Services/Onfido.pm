@@ -19,7 +19,7 @@ no indirect;
 
 use DataDog::DogStatsd::Helper qw(stats_timing);
 use IO::Async::Loop;
-use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
+use JSON::MaybeUTF8        qw(encode_json_utf8 decode_json_utf8);
 use Locale::Codes::Country qw(country_code2code);
 use Time::HiRes;
 use List::Util qw(all any);
@@ -216,7 +216,7 @@ sub _get_onfido_applicant {
                 fixup => sub {
                     $_->do(
                         'select users.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
-                        undef,            $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
+                        undef, $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
                         $applicant->href, $client->user_id
                     );
                 });

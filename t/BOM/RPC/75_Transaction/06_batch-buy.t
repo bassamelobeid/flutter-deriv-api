@@ -7,8 +7,8 @@ use Test::More;
 use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Utility;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use Test::BOM::RPC::Contract;
@@ -139,23 +139,23 @@ subtest 'normal contract', sub {
     my @error_keys = (qw/code message_to_client/);
 
     for my $k (@differing) {
-        isnt $result->[0]->{$k}, undef, "got 1st $k";
-        isnt $result->[1]->{$k}, undef, "got 2nd $k";
+        isnt $result->[0]->{$k}, undef,              "got 1st $k";
+        isnt $result->[1]->{$k}, undef,              "got 2nd $k";
         isnt $result->[0]->{$k}, $result->[1]->{$k}, 'and they differ';
     }
 
     for my $k (@equal) {
-        isnt $result->[0]->{$k}, undef, "got 1st $k";
-        isnt $result->[1]->{$k}, undef, "got 2nd $k";
+        isnt $result->[0]->{$k}, undef,              "got 1st $k";
+        isnt $result->[1]->{$k}, undef,              "got 2nd $k";
         is $result->[0]->{$k},   $result->[1]->{$k}, 'and they equal';
     }
 
-    is $result->[2]->{code},                'InsufficientBalance',                      'token[2]: InsufficientBalance';
-    like $result->[2]->{message_to_client}, qr/Your account balance/,                   'token[2]: Insufficent  Balance  Message';
-    is $result->[3]->{code},                'PermissionDenied',                         'token[3]: PermissionDenied';
-    is $result->[3]->{message_to_client},   'Permission denied, requires trade scope.', 'token[3]: Permission Denied Message';
-    is $result->[4]->{code},                'InvalidToken',                             'token[4]: InvalidToken';
-    is $result->[4]->{message_to_client},   'Invalid token',                            'token[4]: Invalid Token Message';
+    is $result->[2]->{code}, 'InsufficientBalance', 'token[2]: InsufficientBalance';
+    like $result->[2]->{message_to_client}, qr/Your account balance/, 'token[2]: Insufficent  Balance  Message';
+    is $result->[3]->{code},              'PermissionDenied',                         'token[3]: PermissionDenied';
+    is $result->[3]->{message_to_client}, 'Permission denied, requires trade scope.', 'token[3]: Permission Denied Message';
+    is $result->[4]->{code},              'InvalidToken',                             'token[4]: InvalidToken';
+    is $result->[4]->{message_to_client}, 'Invalid token',                            'token[4]: Invalid Token Message';
 
     $balances[0] -= $result->[0]->{buy_price};
     $balances[1] -= $result->[1]->{buy_price};
@@ -163,8 +163,8 @@ subtest 'normal contract', sub {
 
     is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
     is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
-    is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
-    is_deeply [sort keys %{$result->[3]}], [sort 'token', @error_keys], 'got only expected keys for [3]';
+    is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys],        'got only expected keys for [2]';
+    is_deeply [sort keys %{$result->[3]}], [sort 'token', @error_keys],        'got only expected keys for [3]';
 
     # note explain $result;
 };

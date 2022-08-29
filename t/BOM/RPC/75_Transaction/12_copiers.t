@@ -18,11 +18,11 @@ use BOM::Platform::Copier;
 use BOM::User::Password;
 use BOM::Product::ContractFactory qw( produce_contract );
 
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Helper::Client qw( create_client top_up );
+use BOM::Test::Helper::Client                    qw( create_client top_up );
 use BOM::Test::RPC::QueueClient;
 
 use Test::BOM::RPC::Contract;
@@ -181,7 +181,7 @@ subtest 'Copy trading statistics with no deposits for the current month' => sub 
 
     my $statistics_response = copytrading_statistics($CR_client)->{monthly_profitable_trades};
     is $statistics_response->{"$past_year-$past_month"}, sprintf("%.4f", 0), "deposit ok for past month";
-    isnt $statistics_response->{"$year-$month"},         undef, 'not undef for current month';
+    isnt $statistics_response->{"$year-$month"},         undef,              'not undef for current month';
     isnt $statistics_response->{"$year-$month"},         sprintf("%.4f", 0), 'has only trades';
 
 };

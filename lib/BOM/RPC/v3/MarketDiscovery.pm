@@ -6,9 +6,9 @@ use warnings;
 use BOM::RPC::Registry '-dsl';
 
 use BOM::User::Client;
-use BOM::Platform::Context qw (localize request);
-use List::UtilsBy qw(sort_by);
-use BOM::Product::Offerings::TradingSymbol qw(get_symbols);
+use BOM::Platform::Context                   qw (localize request);
+use List::UtilsBy                            qw(sort_by);
+use BOM::Product::Offerings::TradingSymbol   qw(get_symbols);
 use BOM::Product::Offerings::TradingContract qw(get_contracts);
 use BOM::Product::ContractFinder::Basic;
 

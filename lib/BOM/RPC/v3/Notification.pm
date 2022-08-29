@@ -14,7 +14,7 @@ use Syntax::Keyword::Try;
 use BOM::User::Client;
 use BOM::RPC::Registry '-dsl';
 
-use BOM::RPC::v3::Utility qw(log_exception);
+use BOM::RPC::v3::Utility  qw(log_exception);
 use BOM::Platform::Context qw (localize request);
 use BOM::Config::Runtime;
 use BOM::User;

@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::Database::Model::OAuth;
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData                         qw(create_underlying);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use Postgres::FeedDB;

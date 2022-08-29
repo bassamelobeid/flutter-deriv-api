@@ -778,7 +778,7 @@ subtest 'country=za; creates financial account with existing gaming account whil
         },
     };
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
-    is $result->{account_type}, 'gaming', 'account_type=gaming';
+    is $result->{account_type}, 'gaming',                                             'account_type=gaming';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'created in group real\p01_ts02\synthetic\svg_std_usd\01';
 
     note("disable real->p01_ts02 API calls.");
@@ -787,8 +787,8 @@ subtest 'country=za; creates financial account with existing gaming account whil
     $params->{args}{account_type}     = 'financial';
     $params->{args}{mt5_account_type} = 'financial';
     my $financial = $c->call_ok($method, $params)->has_no_error->result;
-    is $financial->{account_type}, 'financial', 'account_type=financial';
-    is $financial->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_std_usd'}, 'created in group real\p01_ts01\financial\svg_std_usd';
+    is $financial->{account_type}, 'financial',                                              'account_type=financial';
+    is $financial->{login},        'MTR' . $accounts{'real\p01_ts01\financial\svg_std_usd'}, 'created in group real\p01_ts01\financial\svg_std_usd';
 };
 
 subtest 'country=au, financial account' => sub {
@@ -820,12 +820,12 @@ subtest 'country=au, financial account' => sub {
         },
     };
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
-    is $result->{account_type}, 'financial', 'account_type=financial';
+    is $result->{account_type}, 'financial',                                           'account_type=financial';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_std-lim_usd'}, 'created in group real\p01_ts01\financial\svg_std-lim_usd';
 
     $params->{args}->{account_type} = 'demo';
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
-    is $result->{account_type}, 'demo', 'account_type=demo';
+    is $result->{account_type}, 'demo',                                                'account_type=demo';
     is $result->{login}, 'MTD' . $accounts{'demo\p01_ts01\financial\svg_std-lim_usd'}, 'created in group demo\p01_ts01\financial\svg_std-lim_usd';
 
     $params->{args}->{account_type}     = 'financial';
@@ -1042,7 +1042,7 @@ subtest 'bvi/vanuatu fully authenticated' => sub {
 
     #verified in brasil and high risk
     my $result = $c->call_ok($method, $client_params)->has_no_error('financial account successfully created BVI A book')->result;
-    is $result->{account_type}, 'financial', 'account_type is financial';
+    is $result->{account_type}, 'financial',                                          'account_type is financial';
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std-hr_usd'}, 'created in group real\p01_ts01\financial\bvi_std-hr_usd';
 
     $client_params->{args}->{company} = 'vanuatu';
@@ -1055,8 +1055,8 @@ subtest 'bvi/vanuatu fully authenticated' => sub {
     $client_params->{args}->{mt5_account_type} = '';
     $client_params->{args}->{company}          = 'bvi';
     $result = $c->call_ok($method, $client_params)->has_no_error('gaming account successfully created BVI')->result;
-    is $result->{account_type}, 'gaming', 'account_type is gaming';
-    is $result->{login}, 'MTR' . $accounts{'real\p01_ts04\synthetic\bvi_std_usd'}, 'created in group real\p01_ts01\synthetic\bvi_std_usd';
+    is $result->{account_type}, 'gaming',                                                 'account_type is gaming';
+    is $result->{login},        'MTR' . $accounts{'real\p01_ts04\synthetic\bvi_std_usd'}, 'created in group real\p01_ts01\synthetic\bvi_std_usd';
 
 };
 

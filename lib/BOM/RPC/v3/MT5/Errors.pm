@@ -5,7 +5,7 @@ use warnings;
 
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize request);
-use List::Util qw(any);
+use List::Util             qw(any);
 
 # error codes that should always be returned
 use constant OVERRIDE_ERROR_CODES => [qw(FinancialAssessmentRequired)];

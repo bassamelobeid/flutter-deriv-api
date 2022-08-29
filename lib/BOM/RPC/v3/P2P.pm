@@ -16,9 +16,9 @@ use warnings;
 
 no indirect;
 use Syntax::Keyword::Try;
-use JSON::MaybeUTF8 qw(:v1);
+use JSON::MaybeUTF8            qw(:v1);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use List::Util qw (any none);
+use List::Util                 qw (any none);
 
 use BOM::User::Client;
 use BOM::Platform::Context qw (localize request);
@@ -29,7 +29,7 @@ use BOM::User;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Rules::Engine;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
-use Format::Util::Numbers qw/financialrounding formatnumber/;
+use Format::Util::Numbers            qw/financialrounding formatnumber/;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -45,7 +45,7 @@ use constant RESTRICTED_CLIENT_STATUSES => [qw(
         cashier_locked
         withdrawal_locked
         no_withdrawal_or_trading
-        )];
+    )];
 
 # Standard error codes for any P2P calls.
 our %ERROR_MAP = do {

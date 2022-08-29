@@ -15,17 +15,17 @@ use JSON::MaybeXS;
 use Syntax::Keyword::Try;
 use WWW::OneAll;
 use Date::Utility;
-use Array::Utils qw( intersect );
-use List::Util qw(  any  sum0  first  min  uniq  none  );
-use Digest::SHA qw( hmac_sha256_hex );
-use Text::Trim qw( trim );
+use Array::Utils    qw( intersect );
+use List::Util      qw(  any  sum0  first  min  uniq  none  );
+use Digest::SHA     qw( hmac_sha256_hex );
+use Text::Trim      qw( trim );
 use JSON::MaybeUTF8 qw( decode_json_utf8 );
 use URI;
 
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment);
 use LandingCompany::Registry;
-use Format::Util::Numbers qw/formatnumber financialrounding/;
+use Format::Util::Numbers            qw/formatnumber financialrounding/;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 
 use BOM::RPC::Registry '-dsl';
@@ -33,11 +33,11 @@ use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility qw(longcode log_exception get_verification_uri);
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
-use BOM::Transaction::History qw(get_transaction_history);
-use BOM::Platform::Context qw (localize request);
+use BOM::Transaction::History       qw(get_transaction_history);
+use BOM::Platform::Context          qw (localize request);
 use BOM::Platform::Client::CashierValidation;
 use BOM::Config::Runtime;
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email  qw(send_email);
 use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::User;
 use BOM::Platform::Account::Real::default;
@@ -784,8 +784,8 @@ rpc balance => sub {
             account_id                      => $sibling->account->id,
             demo_account                    => $sibling->is_virtual ? 1 : 0,
             type                            => 'deriv',
-            currency_rate_in_total_currency =>
-                convert_currency(1, $sibling->account->currency_code, $total_currency),    # This rate is used for the future stream
+            currency_rate_in_total_currency => convert_currency(1, $sibling->account->currency_code, $total_currency)
+            ,    # This rate is used for the future stream
             status => 1,
         };
     }
@@ -819,8 +819,8 @@ rpc balance => sub {
                     converted_amount                => formatnumber('amount', $total_currency,          $converted),
                     demo_account                    => $is_demo,
                     type                            => 'mt5',
-                    currency_rate_in_total_currency =>
-                        convert_currency(1, $mt5_account->{currency}, $total_currency),    # This rate is used for the future stream
+                    currency_rate_in_total_currency => convert_currency(1, $mt5_account->{currency}, $total_currency)
+                    ,    # This rate is used for the future stream
                     status => 1,
                 };
             }
@@ -1956,7 +1956,7 @@ sub _send_update_account_settings_email {
         [localize('Citizen'),   $citizen_country,       _contains_any($updated_fields, 'citizen')]);
 
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) // $_ } split /,/, ($current_client->tax_residence || '');
-    my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
+    my $pob_country      = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
 
     push @email_updated_fields,
         (

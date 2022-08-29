@@ -3,11 +3,11 @@ use strict;
 use warnings;
 
 use Future::Utils qw(fmap_void);
-use List::Util qw(min);
+use List::Util    qw(min);
 use IO::Async::Loop;
 use Net::Async::Redis;
 use Future::AsyncAwait;
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use Log::Any::Adapter qw(DERIV),
     stderr    => 'text',
     log_level => 'info';

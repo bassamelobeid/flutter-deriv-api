@@ -75,7 +75,7 @@ subtest 'change email' => sub {
 
     $user->update_has_social_signup(1);
     my $email_token = join '-', $new_email, $test_client->binary_user_id;
-    my $code = BOM::Platform::Token->new({
+    my $code        = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
             created_for => 'request_email'

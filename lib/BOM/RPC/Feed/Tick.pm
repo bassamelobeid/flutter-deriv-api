@@ -16,7 +16,7 @@ use Moo;
 use IO::Async::Loop;
 use IO::Async::Stream;
 use Future::AsyncAwait;
-use Log::Any qw($log);
+use Log::Any        qw($log);
 use JSON::MaybeUTF8 qw(:v1);
 use Time::Moment;
 use Finance::Underlying;

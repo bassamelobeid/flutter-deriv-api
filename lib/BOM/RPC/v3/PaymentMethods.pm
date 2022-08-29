@@ -22,7 +22,7 @@ use BOM::Config;
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
 
-use BOM::Platform::Context qw(localize request);
+use BOM::Platform::Context   qw(localize request);
 use BOM::Platform::Doughflow qw(get_payment_methods);
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;

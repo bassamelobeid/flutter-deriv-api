@@ -8,9 +8,9 @@ use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_user_transfer_limits);
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates populate_exchange_rates_db);
-use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
+use BOM::Test::Data::Utility::UnitTestRedis    qw(initialize_user_transfer_limits);
+use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates populate_exchange_rates_db);
+use BOM::Test::Helper::Token                   qw(cleanup_redis_tokens);
 use BOM::Test::RPC::QueueClient;
 use Test::BOM::RPC::Accounts;
 use BOM::User;

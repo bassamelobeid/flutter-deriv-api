@@ -221,8 +221,8 @@ subtest 'call with non-empty args' => sub {
 
     ok $email_args, 'An email is sent';
     my $brand = request->brand;
-    is $email_args->{from},    $brand->emails('system'),      'email source is correct';
-    is $email_args->{to},      $brand->emails('pa_livechat'), 'email receiver is correct';
+    is $email_args->{from},    $brand->emails('system'),                                     'email source is correct';
+    is $email_args->{to},      $brand->emails('pa_livechat'),                                'email receiver is correct';
     is $email_args->{subject}, "Payment agent application submitted by " . $client->loginid, 'Email subject is correct';
 
     for my $key (keys %$expected_values) {

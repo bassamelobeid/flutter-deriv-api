@@ -10,9 +10,9 @@ use Test::FailWarnings;
 use Test::Warn;
 
 use MojoX::JSON::RPC::Client;
-use POSIX qw/ ceil /;
+use POSIX                            qw/ ceil /;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
-use Format::Util::Numbers qw/financialrounding get_min_unit formatnumber/;
+use Format::Util::Numbers            qw/financialrounding get_min_unit formatnumber/;
 use JSON::MaybeUTF8;
 
 use BOM::User::Client;
@@ -1152,7 +1152,7 @@ subtest 'transfer with fees' => sub {
         # fiat to crypto. exchange rate is 4000 for BTC
         my $fee_percent     = $usd_btc_fee;
         my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
-        cmp_ok $transfer_amount, '>=', get_min_unit('BTC'), 'Transfered amount is not less than minimum unit';
+        cmp_ok $transfer_amount,                         '>=', get_min_unit('BTC'),  'Transfered amount is not less than minimum unit';
         cmp_ok $client_cr_btc->default_account->balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
         cmp_ok $client_cr_usd->default_account->balance, '==', 1000 - $amount, 'non-pa to non-pa(USD to BTC), correct balance, exact amount deducted';
 
@@ -1254,7 +1254,7 @@ subtest 'transfer with fees' => sub {
         my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_ust->loginid, 'Transaction successful';
 
-        cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd - $amount, 'From account deducted correctly';
+        cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd - $amount,                   'From account deducted correctly';
         cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust + $expected_transfer_amount, 'To account credited correctly';
     };
 
@@ -1277,7 +1277,7 @@ subtest 'transfer with fees' => sub {
         my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
-        cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
+        cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount,                   'From account deducted correctly';
         cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd + $expected_transfer_amount, 'To account credited correctly';
 
     };

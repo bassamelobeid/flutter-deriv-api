@@ -9,7 +9,7 @@ use Test::BOM::RPC::QueueClient;
 use Scalar::Util qw/looks_like_number/;
 use BOM::Platform::Token::API;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Email qw(:no_event);
+use BOM::Test::Email                           qw(:no_event);
 use BOM::Test::Helper::Token;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();

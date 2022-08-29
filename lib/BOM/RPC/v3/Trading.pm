@@ -9,7 +9,7 @@ use Log::Any qw($log);
 use Syntax::Keyword::Try;
 use BOM::TradingPlatform;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Email qw (send_email);
+use BOM::Platform::Email   qw (send_email);
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Token;
 use BOM::Platform::Utility;
@@ -827,7 +827,7 @@ sub get_dxtrade_server_list {
         $countries->dx_company_for_country(
             country      => $client->residence,
             account_type => $_
-            ) ne 'none'
+        ) ne 'none'
     } qw/gaming financial/;
 
     return Future->done([]) unless @market_types;

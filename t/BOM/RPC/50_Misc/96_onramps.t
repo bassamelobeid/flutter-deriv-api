@@ -5,11 +5,11 @@ use Test::Deep;
 use Test::Exception;
 use Test::MockModule;
 use Test::MockObject;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);
 use BOM::RPC::v3::Services::Onramp;
 use BOM::Config;
-use Digest::SHA qw(hmac_sha256_hex);
+use Digest::SHA     qw(hmac_sha256_hex);
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use LandingCompany::Registry;
 

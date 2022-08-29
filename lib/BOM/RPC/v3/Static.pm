@@ -16,16 +16,16 @@ use warnings;
 
 no indirect;
 
-use List::Util qw( min max any uniq);
+use List::Util    qw( min max any uniq);
 use List::UtilsBy qw(nsort_by);
-use Time::HiRes ();
+use Time::HiRes   ();
 
 use LandingCompany::Registry;
-use Format::Util::Numbers qw/financialrounding/;
+use Format::Util::Numbers      qw/financialrounding/;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
-use Unicode::UTF8 qw(decode_utf8);
-use JSON::MaybeXS qw(decode_json);
-use POSIX qw( floor );
+use Unicode::UTF8              qw(decode_utf8);
+use JSON::MaybeXS              qw(decode_json);
+use POSIX                      qw( floor );
 
 use BOM::RPC::Registry '-dsl';
 
@@ -93,7 +93,8 @@ rpc residence_list => sub {
                 services => {
                     idv => {
                         documents_supported => +{
-                            map { (
+                            map {
+                                (
                                     $_ => {
                                         display_name => localize($idv_docs_supported->{$_}->{display_name}),
                                         format       => $idv_docs_supported->{$_}->{format},

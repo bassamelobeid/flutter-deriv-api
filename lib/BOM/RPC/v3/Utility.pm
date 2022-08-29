@@ -16,8 +16,8 @@ no indirect;
 
 use Syntax::Keyword::Try;
 use Date::Utility;
-use YAML::XS qw(LoadFile);
-use List::Util qw( any  uniqstr  shuffle  minstr  none  first);
+use YAML::XS      qw(LoadFile);
+use List::Util    qw( any  uniqstr  shuffle  minstr  none  first);
 use List::UtilsBy qw(bundle_by);
 use JSON::MaybeXS qw{encode_json};
 use URI;
@@ -26,14 +26,14 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc stats_gauge);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
 use Format::Util::Numbers qw/formatnumber/;
-use JSON::MaybeUTF8 qw/encode_json_utf8 decode_json_utf8/;
+use JSON::MaybeUTF8       qw/encode_json_utf8 decode_json_utf8/;
 
 use Quant::Framework;
 use LandingCompany::Registry;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use Finance::Underlying;
 
-use BOM::Platform::Context qw(localize request);
+use BOM::Platform::Context        qw(localize request);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Redis;
@@ -44,7 +44,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Token::API;
 use BOM::Platform::Token;
 use BOM::Platform::Email qw(send_email);
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData      qw(create_underlying);
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Platform::Utility;
@@ -298,7 +298,7 @@ sub site_limits {
     return $limits;
 }
 
-sub client_error() {
+sub client_error () {
     return create_error({
             code              => 'InternalServerError',
             message_to_client => localize('Sorry, an error occurred while processing your request.')});
@@ -801,7 +801,7 @@ Helper function for recording time elapsed via statsd.
 
 =cut
 
-sub _timed(&@) {    ## no critic (ProhibitSubroutinePrototypes)
+sub _timed (&@) {    ## no critic (ProhibitSubroutinePrototypes)
     my ($code, $k, @args) = @_;
     my $start = Time::HiRes::time();
     my $exception;

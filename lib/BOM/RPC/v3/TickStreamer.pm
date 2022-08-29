@@ -200,7 +200,8 @@ sub _candles {
     }
 
     return [
-        map { {
+        map {
+            {
                 epoch => $_->epoch + 0,
                 open  => $ul->pipsized_value($_->open),
                 high  => $ul->pipsized_value($_->high),

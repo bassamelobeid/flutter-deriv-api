@@ -8,7 +8,7 @@ use Test::Warnings qw(warning);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Email qw(:no_event);
+use BOM::Test::Email                           qw(:no_event);
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Token::API;
 use BOM::Database::Model::AccessToken;

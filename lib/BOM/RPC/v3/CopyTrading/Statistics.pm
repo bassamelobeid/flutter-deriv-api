@@ -14,12 +14,12 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::DataMapper::Copier;
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData        qw(create_underlying);
 use BOM::Platform::Context qw (localize);
 use BOM::Config::Redis;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::RPC::v3::Utility qw(log_exception);
-use Log::Any qw($log);
+use BOM::RPC::v3::Utility         qw(log_exception);
+use Log::Any                      qw($log);
 
 rpc copytrading_statistics => sub {
     my $params = shift->{args};
@@ -120,7 +120,7 @@ rpc copytrading_statistics => sub {
             $current_month_profit = sprintf("%.4f", ((($balance_after + $withdrawal) - ($balance_before + $deposit)) / ($balance_before + $deposit)));
         }
         $result_hash->{monthly_profitable_trades}->{$date} = $current_month_profit;
-        push @sorted_monthly_profits, $current_month_profit;
+        push @sorted_monthly_profits,                              $current_month_profit;
         push @{$result_hash->{yearly_profitable_trades}->{$year}}, $current_month_profit;
     }
     for my $year (keys %{$result_hash->{yearly_profitable_trades}}) {

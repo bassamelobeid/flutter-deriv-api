@@ -9,7 +9,7 @@ use Convert::Base32;
 use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::Registry '-dsl';
-use BOM::RPC::v3::Utility qw(log_exception);
+use BOM::RPC::v3::Utility  qw(log_exception);
 use BOM::Platform::Context qw (localize request);
 use BOM::User;
 use BOM::User::AuditLog;

@@ -5,7 +5,7 @@ use warnings;
 use feature 'state';
 use Scalar::Util qw(blessed);
 use BOM::Transaction;
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData                         qw(create_underlying);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use Postgres::FeedDB;

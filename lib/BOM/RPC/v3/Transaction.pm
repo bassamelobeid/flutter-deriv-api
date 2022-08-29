@@ -7,7 +7,7 @@ use Syntax::Keyword::Try;
 use Encode;
 use JSON::MaybeXS;
 use Scalar::Util qw(blessed);
-use Time::HiRes qw();
+use Time::HiRes  qw();
 
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 

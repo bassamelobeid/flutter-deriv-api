@@ -188,7 +188,7 @@ subtest $method => sub {
     is $result->{account_list}[0]->{loginid}, $test_client->loginid;
     is $result->{account_list}[1]->{loginid}, $self_excluded_client->loginid;
     is $result->{account_list}[2]->{loginid}, $test_client_disabled->loginid;
-    is scalar(@{$result->{account_list}}), 3;
+    is scalar(@{$result->{account_list}}),    3;
 
     cmp_deeply($result, $expected_result, 'result is correct');
 

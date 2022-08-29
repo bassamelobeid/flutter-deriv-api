@@ -18,11 +18,11 @@ no indirect;
 use curry;
 use IO::Async::Stream;
 use Future::AsyncAwait;
-use Log::Any qw($log);
+use Log::Any        qw($log);
 use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_gauge stats_event);
-use BOM::RPC::v3::Utility qw(log_exception);
+use BOM::RPC::v3::Utility      qw(log_exception);
 
 use BOM::RPC::Feed::Sendfile;
 

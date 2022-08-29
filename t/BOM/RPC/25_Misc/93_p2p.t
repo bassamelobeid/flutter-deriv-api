@@ -6,7 +6,7 @@ use Test::More;
 use Test::Mojo;
 use Test::Deep;
 use Test::MockModule;
-use Test::MockTime qw(set_absolute_time restore_time);
+use Test::MockTime                             qw(set_absolute_time restore_time);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
@@ -578,16 +578,16 @@ subtest 'Order list pagination' => sub {
 
     $param->{args} = {limit => 1};
     my $res2 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
-    cmp_ok scalar(@{$res2->{list}}), '==', 1, 'got 1 order with limit 1';
-    cmp_ok $res2->{list}[0]{id}, 'eq', $first_order->{id}, 'got correct order id with limit 1';
+    cmp_ok scalar(@{$res2->{list}}), '==', 1,                  'got 1 order with limit 1';
+    cmp_ok $res2->{list}[0]{id},     'eq', $first_order->{id}, 'got correct order id with limit 1';
 
     $param->{args} = {
         limit  => 1,
         offset => 1
     };
     my $res3 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
-    cmp_ok scalar(@{$res3->{list}}), '==', 1, 'got 1 order with limit 1 and offest 1';
-    cmp_ok $res3->{list}[0]{id}, 'eq', $second_order->{id}, 'got correct order id with limit 1 and offset 1';
+    cmp_ok scalar(@{$res3->{list}}), '==', 1,                   'got 1 order with limit 1 and offest 1';
+    cmp_ok $res3->{list}[0]{id},     'eq', $second_order->{id}, 'got correct order id with limit 1 and offset 1';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -657,9 +657,9 @@ subtest 'Order dispute (type buy)' => sub {
         dispute_reason => 'seller_not_released',
     };
     my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
-    is $res->{status}, 'disputed', 'Order status is disputed';
-    is $res->{dispute_details}->{dispute_reason}, 'seller_not_released', 'Dispute reason is properly set';
-    is $res->{dispute_details}->{disputer_loginid}, $client->loginid, 'Client is the disputer';
+    is $res->{status},                              'disputed',            'Order status is disputed';
+    is $res->{dispute_details}->{dispute_reason},   'seller_not_released', 'Dispute reason is properly set';
+    is $res->{dispute_details}->{disputer_loginid}, $client->loginid,      'Client is the disputer';
 
     subtest 'Error scenarios for dispute' => sub {
         $params->{args} = {id => $order->{id} * -1};
@@ -745,8 +745,8 @@ subtest 'Dispute edge cases' => sub {
                 dispute_reason => 'buyer_overpaid',
             };
             my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
-            is $res->{status}, 'disputed', 'Order status is disputed';
-            is $res->{dispute_details}->{dispute_reason}, 'buyer_overpaid', 'Dispute reason is properly set';
+            is $res->{status},                              'disputed',       'Order status is disputed';
+            is $res->{dispute_details}->{dispute_reason},   'buyer_overpaid', 'Dispute reason is properly set';
             is $res->{dispute_details}->{disputer_loginid}, $client->loginid, 'Client is the disputer';
         }
     }
@@ -774,8 +774,8 @@ subtest 'Order dispute (type sell)' => sub {
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
     my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
-    is $res->{status}, 'disputed', 'Order status is disputed';
-    is $res->{dispute_details}->{dispute_reason}, 'buyer_overpaid', 'Dispute reason is properly set';
+    is $res->{status},                              'disputed',           'Order status is disputed';
+    is $res->{dispute_details}->{dispute_reason},   'buyer_overpaid',     'Dispute reason is properly set';
     is $res->{dispute_details}->{disputer_loginid}, $advertiser->loginid, 'Advertiser is the disputer';
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -801,8 +801,8 @@ subtest 'Advertiser stats' => sub {
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
     my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
-    is $res->{status}, 'disputed', 'Order status is disputed';
-    is $res->{dispute_details}->{dispute_reason}, 'buyer_overpaid', 'Dispute reason is properly set';
+    is $res->{status},                              'disputed',           'Order status is disputed';
+    is $res->{dispute_details}->{dispute_reason},   'buyer_overpaid',     'Dispute reason is properly set';
     is $res->{dispute_details}->{disputer_loginid}, $advertiser->loginid, 'Advertiser is the disputer';
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -945,8 +945,8 @@ subtest 'p2p_ping and online tracking' => sub {
 
     set_absolute_time(2000);
     my $res = $c->call_ok(p2p_ping => {token => $client_token})->has_no_system_error->result;
-    is $res, 'pong', 'result is pong';
-    is $redis->zscore('P2P::USERS_ONLINE', $client->loginid), 2000, 'online time is set in redis';
+    is $res,                                                  'pong', 'result is pong';
+    is $redis->zscore('P2P::USERS_ONLINE', $client->loginid), 2000,   'online time is set in redis';
 
     set_absolute_time(2099);
     $c->call_ok(p2p_advertiser_info => {token => $client_token});

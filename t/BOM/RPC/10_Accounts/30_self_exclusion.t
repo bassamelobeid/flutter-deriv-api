@@ -5,7 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Email::Address::UseXS;
-use BOM::Test::Email qw(:no_event);
+use BOM::Test::Email                           qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::User;
@@ -370,10 +370,10 @@ subtest 'get and set self_exclusion' => sub {
 
     $test_client->load();
     my $self_excl = $test_client->get_self_exclusion;
-    is $self_excl->max_balance,            9998, 'set correct in db';
+    is $self_excl->max_balance,            9998,                         'set correct in db';
     is $self_excl->exclude_until,          $exclude_until . 'T00:00:00', 'exclude_until in db is right';
-    is $self_excl->timeout_until,          $timeout_until->epoch, 'timeout_until is right';
-    is $self_excl->session_duration_limit, 1440, 'all good';
+    is $self_excl->timeout_until,          $timeout_until->epoch,        'timeout_until is right';
+    is $self_excl->session_duration_limit, 1440,                         'all good';
 
     # Client has no balance
     mailbox_clear();
@@ -590,7 +590,7 @@ subtest 'Set self-exclusion - CR clients' => sub {
             # test less than maximum value
             my $value = $base_value - 1;
             $params->{args}->{$field} = $value;
-            is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
+            is $c->tcall($method,              $params)->{status},          1,      "RPC called successfully with value $value - $field";
             is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value, "get_self_exclusion returns the same value $value - $field";
             # test more than maximum value
             my $value_plus = $base_value + 1;
@@ -639,13 +639,13 @@ subtest 'Set self-exclusion - regulated landing companies' => sub {
         my $value = $arg_values{$field} // 1001;
         $params->{args}->{$field} = $value;
 
-        is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
+        is $c->tcall($method,              $params)->{status},          1,      "RPC called successfully with value $value - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value, "get_self_exclusion returns the same value $value - $field";
 
         my $value_minus = $value - 1;
         my $minimum     = $field =~ 'max_open_bets|session_duration_limit' ? 1 : 0;
         $params->{args}->{$field} = $value_minus;
-        is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value minus one - $field";
+        is $c->tcall($method,              $params)->{status},          1,            "RPC called successfully with value minus one - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value_minus, "get_self_exclusion returns value $value_minus - $field";
 
         $params->{args}->{$field} = $value;
@@ -665,7 +665,7 @@ subtest 'Set self-exclusion - regulated landing companies' => sub {
     for my $field (qw/exclude_until timeout_until/) {
         my $value = $arg_values{$field};
         $params->{args}->{$field} = $value;
-        is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
+        is $c->tcall($method,              $params)->{status},     1,      "RPC called successfully with value $value - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
 
         like $c->tcall($method, $params)->{error}->{message_to_client}, qr/You have chosen to exclude yourself from trading on our website until/,

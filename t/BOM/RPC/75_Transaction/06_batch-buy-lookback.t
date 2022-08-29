@@ -7,8 +7,8 @@ use Test::More;
 use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Utility;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use Test::BOM::RPC::Contract;
@@ -138,14 +138,14 @@ subtest 'trying to buy multiple lookback contracts', sub {
     my @error_keys = (qw/code message_to_client/);
 
     for my $k (@differing) {
-        isnt $result->[0]->{$k}, undef, "got 1st $k";
-        isnt $result->[1]->{$k}, undef, "got 2nd $k";
+        isnt $result->[0]->{$k}, undef,              "got 1st $k";
+        isnt $result->[1]->{$k}, undef,              "got 2nd $k";
         isnt $result->[0]->{$k}, $result->[1]->{$k}, 'and they differ';
     }
 
     for my $k (@equal) {
-        isnt $result->[0]->{$k}, undef, "got 1st $k";
-        isnt $result->[1]->{$k}, undef, "got 2nd $k";
+        isnt $result->[0]->{$k}, undef,              "got 1st $k";
+        isnt $result->[1]->{$k}, undef,              "got 2nd $k";
         is $result->[0]->{$k},   $result->[1]->{$k}, 'and they equal';
     }
 
@@ -158,8 +158,8 @@ subtest 'trying to buy multiple lookback contracts', sub {
 
     is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
     is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
-    is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
-    is_deeply [sort keys %{$result->[3]}], [sort 'token', @error_keys], 'got only expected keys for [3]';
+    is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys],        'got only expected keys for [2]';
+    is_deeply [sort keys %{$result->[3]}], [sort 'token', @error_keys],        'got only expected keys for [3]';
 
     # note explain $result;
 };

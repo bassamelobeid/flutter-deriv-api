@@ -83,13 +83,13 @@ subtest 'balance with mt5 disabled' => sub {
                 balance => 1,
                 account => 'all'
             }});
-    ok $result->{accounts}, 'accounts exists';
-    ok $result->{accounts}{$test_loginid}{status},   'account status is ok';
+    ok $result->{accounts},                        'accounts exists';
+    ok $result->{accounts}{$test_loginid}{status}, 'account status is ok';
     is $result->{accounts}{$test_loginid}{currency}, 'USD',     'account currency is USD';
     is $result->{accounts}{$test_loginid}{balance},  '1000.00', 'account balance is 1000.00';
     is $result->{accounts}{$test_loginid}{type},     'deriv',   'account type is deriv';
     # mt5
-    ok $result->{accounts}{MTR41000001}{status},   'account status is ok';
+    ok $result->{accounts}{MTR41000001}{status}, 'account status is ok';
     is $result->{accounts}{MTR41000001}{currency}, 'USD',     'account currency is USD';
     is $result->{accounts}{MTR41000001}{balance},  '1234.00', 'account balance is 1234.00';
     is $result->{accounts}{MTR41000001}{type},     'mt5',     'account type is mt5';
@@ -111,7 +111,7 @@ subtest 'balance with mt5 disabled' => sub {
                 account => 'all'
             }});
 
-    ok $result->{accounts}{$test_loginid}{status},   'account status is ok';
+    ok $result->{accounts}{$test_loginid}{status}, 'account status is ok';
     is $result->{accounts}{$test_loginid}{currency}, 'USD',     'account currency is USD';
     is $result->{accounts}{$test_loginid}{balance},  '1000.00', 'account balance is 1000.00';
     is $result->{accounts}{$test_loginid}{type},     'deriv',   'account type is deriv';
@@ -144,7 +144,7 @@ subtest 'balance with mt5 disabled' => sub {
                 account => 'all'
             }});
 
-    ok $result->{accounts}{$test_loginid}{status},   'account status is ok';
+    ok $result->{accounts}{$test_loginid}{status}, 'account status is ok';
     is $result->{accounts}{$test_loginid}{currency}, 'USD',     'account currency is USD';
     is $result->{accounts}{$test_loginid}{balance},  '1000.00', 'account balance is 1000.00';
     is $result->{accounts}{$test_loginid}{type},     'deriv',   'account type is deriv';
@@ -154,7 +154,7 @@ subtest 'balance with mt5 disabled' => sub {
     is $result->{accounts}{MTR41000001}{balance},  '0.00', 'account balance is 0.00';
     is $result->{accounts}{MTR41000001}{type},     'mt5',  'account type is mt5';
 
-    ok $result->{accounts}{MTR1001016}{status},   'account status is 1';
+    ok $result->{accounts}{MTR1001016}{status}, 'account status is 1';
     is $result->{accounts}{MTR1001016}{currency}, 'USD',     'account currency is USD';
     is $result->{accounts}{MTR1001016}{balance},  '1234.00', 'account balance is 1234.00';
     is $result->{accounts}{MTR1001016}{type},     'mt5',     'account type is mt5';

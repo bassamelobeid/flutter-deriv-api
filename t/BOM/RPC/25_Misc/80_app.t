@@ -5,7 +5,7 @@ no indirect;
 
 use Test::More;
 use Test::Deep;
-use Test::Warnings qw(warnings);
+use Test::Warnings    qw(warnings);
 use BOM::Test::Helper qw/create_test_user/;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

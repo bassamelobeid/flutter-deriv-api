@@ -7,7 +7,7 @@ use Test::Deep;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
-use Test::Fatal qw(lives_ok exception);
+use Test::Fatal    qw(lives_ok exception);
 use Test::MockTime qw(set_fixed_time restore_time);
 
 use Date::Utility;
@@ -190,9 +190,9 @@ subtest $method => sub {
 
     is $user->{utm_source},         'google.com',                 'utm registered as expected';
     is $user->{gclid_url},          'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
-    is $user->{date_first_contact}, $date_first_contact, 'date first contact value returned as expected';
-    is $user->{signup_device},      'mobile', 'signup_device value returned as expected';
-    is $user->{email_consent},      1,        'email consent for new account is 1 for residence under svg';
+    is $user->{date_first_contact}, $date_first_contact,          'date first contact value returned as expected';
+    is $user->{signup_device},      'mobile',                     'signup_device value returned as expected';
+    is $user->{email_consent},      1,                            'email consent for new account is 1 for residence under svg';
     is_deeply decode_json_utf8($user->{utm_data}), $expected_utm_data, 'utm data registered as expected';
 
     my ($resp_loginid, $t, $uaf) =
@@ -499,7 +499,7 @@ subtest $method => sub {
         )->result_value_is(sub { shift->{landing_company_shortcode} },
             'svg', 'It should return new account data if one of the account is marked as duplicate');
         $new_loginid = $rpc_ct->result->{client_id};
-        ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
+        ok $new_loginid =~ /^CR\d+$/,       'new CR loginid';
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
         # check disabled case
         my $disabled_client = BOM::User::Client->new({loginid => $new_loginid});
@@ -615,8 +615,8 @@ subtest $method => sub {
 
         ok(defined($cl_btc->binary_user_id), 'BTC client has a binary user id');
         ok(defined($cl_usd->binary_user_id), 'USD client has a binary_user_id');
-        is $cl_btc->binary_user_id, $cl_usd->binary_user_id, 'Both BTC and USD clients have the same binary user id';
-        is $cl_btc->non_pep_declaration_time, '2018-01-01 00:00:00', 'Pep self-declaration time is the same for CR siblings';
+        is $cl_btc->binary_user_id,           $cl_usd->binary_user_id, 'Both BTC and USD clients have the same binary user id';
+        is $cl_btc->non_pep_declaration_time, '2018-01-01 00:00:00',   'Pep self-declaration time is the same for CR siblings';
 
         $params->{args}->{currency} = 'BTC';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create another crypto currency account with same currency')
@@ -1030,8 +1030,8 @@ subtest $method => sub {
         isnt(keys %$result, 0, 'MF client has financial assessment set');
 
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
-        ok $cl->status->age_verification, 'age verification synced between mx and mf.';
-        ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';
+        ok $cl->status->age_verification,   'age verification synced between mx and mf.';
+        ok $cl->non_pep_declaration_time,   'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';
         cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
     };
 

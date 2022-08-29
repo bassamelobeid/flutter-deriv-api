@@ -10,9 +10,9 @@ use Test::MockModule;
 
 use Format::Util::Numbers qw/formatnumber/;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Database::Model::OAuth;
 
@@ -198,8 +198,8 @@ subtest 'app_markup' => sub {
             rpc_time
     ));
     is_deeply([sort keys %$result], [sort @expected_keys], 'result keys is ok');
-    is $payout, $result->{payout}, "contract and transaction payout are equal";
-    is $result->{buy_price}, $ask_price, "ideally contract ask_price is same as buy_price";
+    is $payout,              $result->{payout}, "contract and transaction payout are equal";
+    is $result->{buy_price}, $ask_price,        "ideally contract ask_price is same as buy_price";
 
     delete $params->{args}->{price};
 

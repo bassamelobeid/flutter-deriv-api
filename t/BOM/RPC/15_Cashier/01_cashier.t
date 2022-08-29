@@ -7,19 +7,19 @@ use Test::MockModule;
 use Email::Address::UseXS;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use LandingCompany::Registry;
-use BOM::Test::Email qw(:no_event);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Email                             qw(:no_event);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);
-use BOM::Test::Helper::Utility qw(random_email_address);
-use BOM::Test::Helper::Client qw( top_up );
+use BOM::Test::Helper::Utility                   qw(random_email_address);
+use BOM::Test::Helper::Client                    qw( top_up );
 use BOM::Test::RPC::QueueClient;
 use BOM::User;
 use LWP::UserAgent;
 require Test::NoWarnings;
 
 use BOM::Config::Redis;
-use JSON::MaybeXS qw(encode_json decode_json);
-use Format::Util::Numbers qw/financialrounding/;
+use JSON::MaybeXS                    qw(encode_json decode_json);
+use Format::Util::Numbers            qw/financialrounding/;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 populate_exchange_rates();
 

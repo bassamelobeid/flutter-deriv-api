@@ -7,8 +7,8 @@ use Test::Mojo;
 use Test::MockModule;
 use List::Util;
 use Encode;
-use JSON::MaybeUTF8 qw(encode_json_utf8);
-use Encode qw(encode);
+use JSON::MaybeUTF8                            qw(encode_json_utf8);
+use Encode                                     qw(encode);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Platform::Token::API;
@@ -678,9 +678,9 @@ subtest 'get account status' => sub {
 
                 my $documents              = $test_client->documents->uploaded();
                 my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
-                ok !$test_client->fully_authenticated, 'Not fully authenticated';
+                ok !$test_client->fully_authenticated,     'Not fully authenticated';
                 ok $test_client->status->age_verification, 'Age verified';
-                ok $is_poi_already_expired, 'POI expired';
+                ok $is_poi_already_expired,                'POI expired';
                 $result = $c->tcall($method, {token => $token_mx});
 
                 cmp_deeply(
@@ -1056,9 +1056,9 @@ subtest 'get account status' => sub {
                 $test_client_cr->save;
                 my $documents              = $test_client_cr->documents->uploaded();
                 my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
-                ok !$test_client_cr->fully_authenticated, 'Not fully authenticated';
+                ok !$test_client_cr->fully_authenticated,     'Not fully authenticated';
                 ok $test_client_cr->status->age_verification, 'Age verified';
-                ok $is_poi_already_expired, 'POI expired';
+                ok $is_poi_already_expired,                   'POI expired';
                 $result = $c->tcall($method, {token => $token_cr});
 
                 cmp_deeply(
@@ -1163,8 +1163,8 @@ subtest 'get account status' => sub {
 
                 # This test would be useless if this company authentication is mandatory
                 ok !$test_client_cr->landing_company->is_authentication_mandatory, 'Authentication is not mandatory';
-                ok $test_client_cr->documents->expired(), 'Client expiry is required';
-                ok $test_client_cr->fully_authenticated, 'Account is fully authenticated';
+                ok $test_client_cr->documents->expired(),                          'Client expiry is required';
+                ok $test_client_cr->fully_authenticated,                           'Account is fully authenticated';
                 $result = $c->tcall($method, {token => $token_cr});
 
                 cmp_deeply(
@@ -1485,8 +1485,8 @@ subtest 'get account status' => sub {
 
         subtest 'futher resubmission allowed' => sub {
             my $result = $c->tcall($method, {token => $token_cr});
-            cmp_deeply $result->{authentication}->{needs_verification}, noneof(qw/document identity/), 'Make sure needs verification is empty';
-            cmp_deeply $result->{status}, noneof(qw/allow_document_upload/), 'Make sure allow_document_upload is off';
+            cmp_deeply $result->{authentication}->{needs_verification}, noneof(qw/document identity/),     'Make sure needs verification is empty';
+            cmp_deeply $result->{status},                               noneof(qw/allow_document_upload/), 'Make sure allow_document_upload is off';
 
             subtest 'poi resubmission' => sub {
                 $test_client_cr->status->set('allow_poi_resubmission', 'test', 'test');
@@ -1851,9 +1851,9 @@ subtest 'get account status' => sub {
 
                 my $documents              = $test_client_mlt->documents->uploaded();
                 my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
-                ok !$test_client_mlt->fully_authenticated, 'Not fully authenticated';
+                ok !$test_client_mlt->fully_authenticated,     'Not fully authenticated';
                 ok $test_client_mlt->status->age_verification, 'Age verified';
-                ok $is_poi_already_expired, 'POI expired';
+                ok $is_poi_already_expired,                    'POI expired';
                 $result = $c->tcall($method, {token => $token_mlt});
                 cmp_deeply(
                     $result,
@@ -2176,9 +2176,9 @@ subtest 'get account status' => sub {
 
                 my $documents              = $test_client_mx->documents->uploaded();
                 my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
-                ok !$test_client_mx->fully_authenticated, 'Not fully authenticated';
+                ok !$test_client_mx->fully_authenticated,     'Not fully authenticated';
                 ok $test_client_mx->status->age_verification, 'Age verified';
-                ok $is_poi_already_expired, 'POI expired';
+                ok $is_poi_already_expired,                   'POI expired';
                 $result = $c->tcall($method, {token => $token_mx});
 
                 cmp_deeply(

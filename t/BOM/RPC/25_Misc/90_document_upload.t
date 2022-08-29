@@ -7,9 +7,9 @@ use Test::Warn;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use List::Util qw( all any );
+use List::Util                   qw( all any );
 use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
-use Array::Utils qw(array_minus);
+use Array::Utils                 qw(array_minus);
 use Test::MockModule;
 use BOM::Test::RPC::QueueClient;
 
@@ -466,7 +466,7 @@ subtest 'Lifetime valid' => sub {
             }})->has_no_error->result;
 
     my ($document) = $mx_client->client_authentication_document;
-    ok $document->lifetime_valid, 'Document uploaded is lifetime valid';
+    ok $document->lifetime_valid,   'Document uploaded is lifetime valid';
     ok !$document->expiration_date, 'Expiration date is empty';
 
     subtest 'POA' => sub {
@@ -608,8 +608,8 @@ subtest 'Proof of ownership upload' => sub {
     is $poo->{status}, 'uploaded', 'POO has been uploaded';
 
     my ($doc_id) = @{$poo->{documents}};
-    is $doc_id, $document->id, 'POO has been bound to the document';
-    is $poo->{payment_method_details}->{some}, 'thing', 'Detail succesfully attached';
+    is $doc_id,                                $document->id, 'POO has been bound to the document';
+    is $poo->{payment_method_details}->{some}, 'thing',       'Detail succesfully attached';
 };
 
 #########################################################

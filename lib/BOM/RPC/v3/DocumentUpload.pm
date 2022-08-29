@@ -168,8 +168,7 @@ sub validate_input {
     return $args->{reason} if $status    and $status eq 'failure';
     return 'virtual'       if $client->is_virtual;
 
-    my $error =
-        validate_expiration_date($args->{expiration_date}) // validate_id_and_exp_date({$args->%*, client => $client})
+    my $error = validate_expiration_date($args->{expiration_date}) // validate_id_and_exp_date({$args->%*, client => $client})
         // validate_proof_of_ownership({%$args{qw/proof_of_ownership document_type/}, %$params{qw/client/}});
 
     return $error;

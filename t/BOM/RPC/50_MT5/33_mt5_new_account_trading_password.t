@@ -143,8 +143,8 @@ subtest 'mt5 new account - has trading password' => sub {
     subtest 'can create new mt5 account when using the correct trading password' => sub {
         $params->{args}->{mainPassword} = $details{password}{main};
         my $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
-        is $result->{account_type}, 'financial', 'account_type=financial';
-        is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_std_usd'}, 'created in group real\p01_ts01\financial\svg_std_usd';
+        is $result->{account_type}, 'financial',                                              'account_type=financial';
+        is $result->{login},        'MTR' . $accounts{'real\p01_ts01\financial\svg_std_usd'}, 'created in group real\p01_ts01\financial\svg_std_usd';
     };
 };
 

@@ -22,22 +22,22 @@ result to the channel specified by Producer.
 =cut
 
 use JSON::MaybeUTF8 qw( encode_json_utf8 decode_json_utf8 );
-use List::Util qw( pairmap );
-use Carp qw( croak );
+use List::Util      qw( pairmap );
+use Carp            qw( croak );
 use Syntax::Keyword::Try;
 use Storable qw( dclone );
 
 use Algorithm::Backoff;
 use DataDog::DogStatsd::Helper qw( stats_timing stats_inc );
-use Log::Any qw( $log );
-use Net::Domain qw( hostname );
+use Log::Any                   qw( $log );
+use Net::Domain                qw( hostname );
 use Path::Tiny;
 use RedisDB;
 use Time::HiRes qw( sleep );
 use Time::Moment;
 
 use BOM::Platform::Context qw( localize );
-use BOM::RPC ();
+use BOM::RPC               ();
 use BOM::RPC::Registry;
 
 use constant CONSUMER_GROUP        => 'processors';

@@ -12,9 +12,9 @@ use BOM::User::Password;
 use BOM::User;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use Scalar::Util qw/looks_like_number/;
+use Scalar::Util                               qw/looks_like_number/;
 use Email::Address::UseXS;
-use Digest::SHA qw(hmac_sha256_hex);
+use Digest::SHA      qw(hmac_sha256_hex);
 use BOM::Test::Email qw(:no_event);
 use Test::BOM::RPC::QueueClient;
 

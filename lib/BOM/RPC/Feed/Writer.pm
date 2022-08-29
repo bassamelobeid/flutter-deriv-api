@@ -36,7 +36,7 @@ use JSON::MaybeUTF8 qw(:v1);
 use BOM::Config::Redis;
 use Finance::Underlying;
 use Path::Tiny;
-use Fcntl qw(:seek);
+use Fcntl    qw(:seek);
 use Log::Any qw($log);
 use Time::Moment;
 

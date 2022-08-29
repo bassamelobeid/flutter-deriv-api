@@ -1,9 +1,9 @@
 #!/etc/rmg/bin/perl
 
 use strict;
-use Getopt::Long qw( GetOptions );
+use Getopt::Long      qw( GetOptions );
 use Log::Any::Adapter qw(DERIV), stdout => 'text';
-use Log::Any qw($log);
+use Log::Any          qw($log);
 use BOM::Database::Model::OAuth;
 use BOM::RPC::v3::Utility;
 

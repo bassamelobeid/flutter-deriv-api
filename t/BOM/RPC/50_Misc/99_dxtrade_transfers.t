@@ -5,7 +5,7 @@ use Test::More;
 use Test::Mojo;
 use Test::Deep;
 use Test::MockModule;
-use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates populate_exchange_rates_db);
+use BOM::Test::Helper::ExchangeRates           qw(populate_exchange_rates populate_exchange_rates_db);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::Platform::Token::API;

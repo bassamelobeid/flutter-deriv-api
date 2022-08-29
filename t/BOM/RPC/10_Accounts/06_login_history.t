@@ -59,10 +59,10 @@ $c->call_ok($method, $params)->has_error->error_message_is('This account is unav
 $test_client->status->clear_disabled;
 
 my $res = $c->call_ok($method, $params)->result;
-is scalar(@{$res->{records}}), 1, 'got correct number of login history records';
+is scalar(@{$res->{records}}),          1,                   'got correct number of login history records';
 is $res->{records}->[0]->{action},      'logout',            'login history record has action key';
 is $res->{records}->[0]->{environment}, 'dummy environment', 'login history record has environment key';
-ok $res->{records}->[0]->{time},        'login history record has time key';
+ok $res->{records}->[0]->{time}, 'login history record has time key';
 
 #create 100 history items for testing the limit
 for (1 .. 100) {

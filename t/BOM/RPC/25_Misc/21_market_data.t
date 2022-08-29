@@ -50,9 +50,9 @@ subtest 'exchange rates' => sub {
 
     $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}})->has_no_system_error->has_no_error->result;
 
-    ok $result->{date}, "Date tag";
+    ok $result->{date},                                               "Date tag";
     ok $result->{base_currency} && $base eq $result->{base_currency}, "Base currency";
-    ok $result->{rates}, 'Rates tag';
+    ok $result->{rates},                                              'Rates tag';
     if (exists $result->{rates}) {
         ok(!exists $result->{rates}->{$base}, "Base currency not included in rates");
     }

@@ -13,11 +13,11 @@ use Date::Utility;
 use Data::Dumper;
 
 use BOM::Pricing::v3::Contract;
-use BOM::Platform::Context qw (request);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Platform::Context                       qw (request);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::RPC::QueueClient;
 use BOM::Test::Helper::Client qw(top_up);
 use BOM::Config::Redis;
@@ -124,7 +124,7 @@ subtest 'contract_update' => sub {
     };
     my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
-    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok $buy_res->{contract_id},                  'contract is bought successfully with contract id';
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
 
     $update_params->{args}->{contract_id} = $buy_res->{contract_id};
@@ -228,7 +228,7 @@ subtest 'forex major pair - frxAUDJPY [VRTC]' => sub {
     };
     my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
-    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok $buy_res->{contract_id},                  'contract is bought successfully with contract id';
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
 
     my $update_params = {

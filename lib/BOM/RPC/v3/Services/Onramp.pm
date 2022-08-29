@@ -14,7 +14,7 @@ use strict;
 use warnings;
 
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
-use Digest::SHA qw(hmac_sha256_hex);
+use Digest::SHA     qw(hmac_sha256_hex);
 use Net::Async::HTTP;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::CryptoCashier::API;
