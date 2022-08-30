@@ -35,7 +35,6 @@ my $token_cr    = $token_model->create_token($client_cr->loginid, 'test token');
 my $idv_model = BOM::User::IdentityVerification->new(user_id => $client_cr->binary_user_id);
 
 subtest 'identity_verification_document_add' => sub {
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
     my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
     my $mock_emitter   = Test::MockModule->new('BOM::Platform::Event::Emitter');
 
@@ -43,22 +42,6 @@ subtest 'identity_verification_document_add' => sub {
     $mock_emitter->mock(
         emit => sub {
             push @raised_events, shift;
-        });
-
-    $mock_countries->mock(
-        'is_idv_supported' => sub {
-            my (undef, $country) = @_;
-            return 1 if $country eq 'ng';
-            return 0;
-        });
-
-    $mock_countries->mock(
-        'get_idv_config' => sub {
-            my (undef, $country) = @_;
-            return {
-                provider       => 'smile_identity',
-                document_types => {bvn => {format => '^[0-9]+$'}}} if $country eq 'ng';
-            return '';
         });
 
     my $params = {
@@ -96,8 +79,8 @@ subtest 'identity_verification_document_add' => sub {
 
     $params->{args} = {
         issuing_country => 'ng',
-        document_type   => 'bvn',
-        document_number => '01test',
+        document_type   => 'drivers_license',
+        document_number => 'WRONG NUMBER',
     };
     $c->call_ok('identity_verification_document_add', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidDocumentNumber', 'Invalid document number.');
@@ -106,8 +89,8 @@ subtest 'identity_verification_document_add' => sub {
 
     $params->{args} = {
         issuing_country => 'ng',
-        document_type   => 'bvn',
-        document_number => '01',
+        document_type   => 'drivers_license',
+        document_number => 'ABC000000000',
     };
     $c->call_ok('identity_verification_document_add', $params)
         ->has_no_system_error->has_error->error_code_is('AlreadyAgeVerified', 'age already verified');
@@ -167,21 +150,80 @@ subtest 'identity_verification_document_add' => sub {
 
     $mocked_client->unmock_all();
 
+    $mock_idv_model->mock(
+        'get_claimed_documents',
+        [{
+                status => 'verified',
+            },
+            {
+                status => 'failed',
+            },
+            {status => 'rejected'}]);
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('ClaimedDocument', "client is not allowed to use this document since it's already claimed");
+
+    $mock_idv_model->mock(
+        'get_claimed_documents',
+        [{
+                status => 'failed',
+            },
+            {
+                status => 'failed',
+            },
+            {status => 'pending'}]);
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('ClaimedDocument', "client is not allowed to use this document since it's already claimed");
+
+    $client_cr->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
+    $mock_idv_model->mock(
+        'get_claimed_documents',
+        [{
+                status => 'failed',
+            },
+            {
+                status => 'failed',
+            },
+            {status => 'rejected'}]);
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
+
+    $mock_idv_model->unmock_all();
+
+    $params->{args} = {
+        issuing_country => 'ke',
+        document_type   => 'passport',
+        document_number => 'G00000000',
+    };
     $client_cr->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
     $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
 
+    $params->{args} = {
+        issuing_country => 'br',
+        document_type   => 'cpf',
+        document_number => '000.000.000-00',
+    };
     $client_cr->status->upsert('allow_document_upload', 'system', 'Anything else');
     $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
 
+    $params->{args} = {
+        issuing_country => 'gh',
+        document_type   => 'drivers_license',
+        document_number => 'B0000000',
+    };
     $client_cr->status->upsert('allow_document_upload', 'system', 'CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT');
     $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
 
-    is scalar @raised_events, 3, 'three events have raised';
-    is_deeply \@raised_events, ['identity_verification_requested', 'identity_verification_requested', 'identity_verification_requested'],
+    is scalar @raised_events, 4, 'three events have raised';
+    is_deeply \@raised_events,
+        ['identity_verification_requested', 'identity_verification_requested', 'identity_verification_requested', 'identity_verification_requested'],
         'the raised events are correct';
 
     @raised_events = ();
 
+    $params->{args} = {
+        issuing_country => 'zw',
+        document_type   => 'national_id',
+        document_number => '00000000A00',
+    };
     $client_cr->status->upsert('allow_document_upload', 'system', 'CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT');
     $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error->result;
 

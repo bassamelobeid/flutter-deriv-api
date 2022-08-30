@@ -3,6 +3,8 @@ package BOM::RPC::v3::IdentityVerification;
 use strict;
 use warnings;
 
+use List::Util qw( any );
+
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Utility;
@@ -92,6 +94,18 @@ rpc identity_verification_document_add => sub {
             code              => 'IdentityVerificationDisallowed',
             message_to_client => localize("This method of verification is not allowed. Please try another method.")}
     ) if BOM::RPC::v3::Utility::is_idv_disallowed($client);
+
+    my $claimed_documents = $idv_model->get_claimed_documents({
+            issuing_country => $issuing_country,
+            number          => $document_number,
+            type            => $document_type
+        }) // [];
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'ClaimedDocument',
+            message_to_client => localize(
+                "This document number was already submitted for a different account. It seems you have an account with us that doesn't need further verification. Please contact us via live chat if you need help."
+            )}) if any { $_->{status} eq 'verified' or $_->{status} eq 'pending' } @$claimed_documents;
 
     $idv_model->add_document({
         issuing_country => $issuing_country,
