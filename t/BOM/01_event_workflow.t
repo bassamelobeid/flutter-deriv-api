@@ -133,7 +133,8 @@ subtest 'process - generic jobs' => sub {
                 account_opening_existing self_tagging_affiliates request_payment_withdraw
                 verify_email_closed_account_other verify_email_closed_account_reset_password
                 verify_email_closed_account_account_opening account_verification_for_pending_payout
-                pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast crypto_cashier_transaction_updated/
+                pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast crypto_cashier_transaction_updated
+                update_loginid_status/
         ),
         'Correct number of actions that can be emitted'
     );

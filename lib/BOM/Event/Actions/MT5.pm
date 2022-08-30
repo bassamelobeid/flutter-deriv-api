@@ -639,4 +639,39 @@ sub mt5_archived_account_reset_trading_password {
     }
 }
 
+=head2 update_loginid_status
+
+Update the loginid.status in users DB.
+
+=over 4
+
+=item * C<loginid> - user's login id
+
+=item * C<binary_user_id> - user's binary user id
+
+=item * C<status_code> - status code. It follows the users.loginid_status enum. Can pass undef value to set the loginid.status column to NULL
+
+=back
+
+=cut
+
+sub update_loginid_status {
+    my $args = shift;
+
+    die 'Must provide loginid'        unless $args->{loginid};
+    die 'Must provide binary_user_id' unless $args->{binary_user_id};
+
+    try {
+        my $user_db = BOM::Database::UserDB::rose_db();
+
+        $user_db->dbic->run(
+            fixup => sub {
+                $_->do('SELECT users.update_loginid_status(?,?,?)', undef, $args->{loginid}, $args->{binary_user_id}, $args->{status_code});
+            });
+
+    } catch ($e) {
+        $log->errorf("update_loginid_status [%s]: Unable to set loginid.status due to error: %s", Time::Moment->now, $e);
+    }
+}
+
 1;
