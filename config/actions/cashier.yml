@@ -91,6 +91,7 @@ paymentagent_withdraw:
         loginid: loginid_client
       ruleset:
         - paymentagent.pa_allowed_in_landing_company
+        - client.is_not_internal_client
         - trading_account.should_complete_financial_assessment # better to be renamed - it is not exclusive to trading accounts
     - type: group
       rule_group: cashier_validation

@@ -248,4 +248,17 @@ rule 'client.account_is_not_empty' => {
     },
 };
 
+rule 'client.is_not_internal_client' => {
+    description => "Checks if the client is internal and fails if it's the case.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $client = $context->client($args);
+
+        $self->fail('InternalClient', params => [$args->{loginid}]) if $client->status->internal_client;
+
+        return 1;
+    },
+};
+
 1;

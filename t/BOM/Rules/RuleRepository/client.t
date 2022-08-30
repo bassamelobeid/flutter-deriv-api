@@ -552,4 +552,24 @@ subtest $rule_name => sub {
     ok $rule_engine->apply_rules($rule_name, %args), 'Test passes when currency is set';
 };
 
+$rule_name = 'client.is_not_internal_client';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    $client->status->setnx('internal_client', 'system', 'test');
+
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'correct error when loginid is missing';
+
+    my %args = (loginid => $client->loginid);
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'InternalClient',
+        rule       => $rule_name,
+        params     => [$client->loginid],
+        },
+        'correct error when client is an internal agent';
+
+    $client->status->clear_internal_client;
+    ok $rule_engine->apply_rules($rule_name, %args), 'Rule is applied when client is not an internal agent';
+};
+
 done_testing();
