@@ -280,6 +280,48 @@ sub _get_token {
     return $code;
 }
 
+my $create_vr3 = {
+    new_account_virtual => 1,
+    client_password     => 'Ac0+-_:@.',
+    residence           => 'es',
+    verification_code   => 'laskdjfalsf12081231',
+    email_consent       => 0,
+    affiliate_token     => 'testtoken',
+};
+
+my $email3 = 'test3@binary.com';
+
+subtest 'create Virtual account wihtout affiliate token for spain' => sub {
+    my $res = $t->await::verify_email({
+        verify_email => $email3,
+        type         => 'account_opening'
+    });
+    is($res->{verify_email}, 1, 'verify_email OK');
+    test_schema('verify_email', $res);
+
+    $res = $t->await::verify_email({
+        verify_email => $email3,
+        type         => 'account_opening'
+    });
+    is($res->{verify_email}, 1, 'verify_email OK');
+
+    $create_vr3->{verification_code} = _get_token($email3);
+    $create_vr3->{affiliate_token} = "";
+
+    $res = $t->await::new_account_virtual($create_vr3);
+
+    is($res->{msg_type}, 'new_account_virtual');
+    ok($res->{new_account_virtual});
+    test_schema('new_account_virtual', $res);
+
+    like($res->{new_account_virtual}->{client_id}, qr/^VRTC/, 'got VRTC client');
+    is($res->{new_account_virtual}->{currency}, 'USD', 'got currency');
+    cmp_ok($res->{new_account_virtual}->{balance}, '==', '10000', 'got balance');
+
+    my $user = BOM::User->new(email => $email3);
+    ok !$user->email_consent, 'Email consent flag not set';
+};
+
 $t->finish_ok;
 
 done_testing;
