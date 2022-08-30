@@ -6804,14 +6804,16 @@ sub get_pow_status {
 
     # order matters
 
+    return 'locked' if $is_pending && $is_pending >= 3;
+
+    return 'pending' if $is_pending || $is_uploaded;
+
     return 'verified' if $is_verified;
 
     # limit the allowed documents uploaded to be rejected with a max of 3
     return 'locked' if $is_rejected && $is_rejected >= 3;
 
     return 'rejected' if $is_rejected;
-
-    return 'pending' if $is_pending || $is_uploaded;
 
     return 'none';
 }
