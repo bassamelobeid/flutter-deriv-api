@@ -123,9 +123,6 @@ use constant SR_30_DAYS_EXP => 86400 * 30;
 use constant APPLICANT_CHECK_LOCK_PREFIX => 'ONFIDO::APPLICANT_CHECK_LOCK::';
 use constant APPLICANT_CHECK_LOCK_TTL    => 30;
 
-# Onfido Dynamic Limit
-my $app_config = BOM::Config::Runtime->instance->app_config;
-
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
     passport                                     => 'passport',
@@ -556,6 +553,7 @@ async sub ready_for_authentication {
             die "Onfido authentication requests limit ${\ONFIDO_REQUEST_PER_USER_LIMIT} is hit by $loginid (to be expired in $time_to_live seconds).";
 
         }
+        my $app_config = BOM::Config::Runtime->instance->app_config;
         $app_config->check_for_update;
         my $onfido_request_limit = $app_config->system->onfido->global_daily_limit;
 
@@ -1642,6 +1640,7 @@ async sub _send_email_notification_for_poa {
 sub _send_email_onfido_check_exceeded_cs {
     my $request_count = shift;
     my $brand         = request->brand;
+    my $app_config    = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update;
     my $onfido_request_limit = $app_config->system->onfido->global_daily_limit;
 
