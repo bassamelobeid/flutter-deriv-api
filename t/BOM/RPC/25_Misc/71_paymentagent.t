@@ -1114,6 +1114,12 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         is($res->{error}{message_to_client}, "Payment agent transfers are temporarily unavailable in the client's country of residence.", $test);
         BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
 
+        $test = 'Withdraw fails if client is internal';
+        $Alice->status->setnx('internal_client', 'system', 'test');
+        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        is($res->{error}{message_to_client}, "This feature is not allowed for internal clients.", $test);
+        $Alice->status->clear_internal_client;
+
         ## (validate_payment)
 
         $test = 'Withdrawal fails if amount exceeds client balance';
