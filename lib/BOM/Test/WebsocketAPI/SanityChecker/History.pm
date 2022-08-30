@@ -23,7 +23,7 @@ A collection of sanity checks for history, its called from within the C<SanityCh
 =cut
 
 use Test::More;
-use List::Util qw(first);
+use List::Util      qw(first);
 use List::MoreUtils qw(first_index);
 
 =head1 METHODS

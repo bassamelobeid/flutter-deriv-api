@@ -28,8 +28,8 @@ will be shared between instances, and that can't work with expected values.
 
 use parent qw(IO::Async::Notifier);
 
-use Log::Any qw($log);
-use List::Util qw(shuffle uniq reduce first);
+use Log::Any        qw($log);
+use List::Util      qw(shuffle uniq reduce first);
 use List::MoreUtils qw(first_index);
 use JSON::MaybeUTF8 qw(:v1);
 use Test::More;
@@ -38,8 +38,8 @@ use Future::Utils qw(fmap0);
 
 use BOM::Test;
 use Binary::API::Mapping::Response;
-use BOM::Test::WebsocketAPI::Redis qw/redis_feed_master ws_redis_master redis_transaction redis_p2p/;
-use BOM::Test::WebsocketAPI::Data qw( publish_data publish_methods );
+use BOM::Test::WebsocketAPI::Redis      qw/redis_feed_master ws_redis_master redis_transaction redis_p2p/;
+use BOM::Test::WebsocketAPI::Data       qw( publish_data publish_methods );
 use BOM::Test::WebsocketAPI::Parameters qw( test_params );
 
 our %handlers;

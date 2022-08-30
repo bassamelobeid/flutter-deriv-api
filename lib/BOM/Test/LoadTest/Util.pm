@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Proc::ProcessTable;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
-use feature qw(state);
+use feature                    qw(state);
 use Exporter 'import';
 our @EXPORT_OK = qw(dd_memory_and_time);
 

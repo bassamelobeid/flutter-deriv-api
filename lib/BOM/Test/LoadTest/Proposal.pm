@@ -1,8 +1,9 @@
 use Object::Pad;
+
 class BOM::Test::LoadTest::Proposal;
 
 use Future::Utils qw(fmap0);
-use Log::Any qw($log);
+use Log::Any      qw($log);
 use Future;
 use IO::Async::Loop;
 use Binary::API;
@@ -11,7 +12,7 @@ use Future::AsyncAwait;
 use DateTime;
 use JSON::MaybeXS;
 use Syntax::Keyword::Try;
-use List::Util qw(uniq);
+use List::Util   qw(uniq);
 use Array::Utils qw(intersect);
 
 use constant TIMEOUT => 10;
@@ -102,7 +103,7 @@ Returns integer 1 when complete
 
 =cut
 
-method run_tests() {
+method run_tests () {
 
     my $main_connection =
         $self->create_connection($args{end_point}, $args{app_id}, $args{token});
@@ -152,7 +153,7 @@ Returns a L<Future>
 
 =cut
 
-method test_length_timer($test_duration = 0) {
+method test_length_timer ($test_duration = 0) {
     my $test_run_length;
     if ($test_duration) {
         $test_run_length = $loop->delay_future(after => $test_duration)->on_done(sub { $log->info('finished after ' . $test_duration); });
@@ -178,7 +179,7 @@ Returns a L<Future>
 
 =cut
 
-method create_subscriptions($connection_number) {
+method create_subscriptions ($connection_number) {
     $log->info('Connection Number ' . $connection_number);
     my $connection =
         $self->create_connection($args{end_point}, $args{app_id}, $args{token});
@@ -215,7 +216,7 @@ Returns a L<Net::Async::BinaryWS>
 
 =cut
 
-method create_connection($end_point, $app_id, $token) {
+method create_connection ($end_point, $app_id, $token) {
 
     $loop->add(
         my $connection = Net::Async::BinaryWS->new(
@@ -267,7 +268,7 @@ Returns an Array with two items first is the number portion of the duration, sec
 
 =cut
 
-method durations($min, $max) {
+method durations ($min, $max) {
 
     # min and max look like 1d , 2m etc
     my (($min_amount, $min_unit), ($max_amount, $max_unit)) =
@@ -328,7 +329,7 @@ Returns an integer between min and max.
 
 =cut
 
-method random_generator($min, $max) {
+method random_generator ($min, $max) {
     return int(rand($max - $min) + $min);
 
 }
@@ -353,7 +354,7 @@ Returns a HashRef of L<Binary::API::AvailableContracts> keyed by symbol and then
 
 =cut
 
-method get_contracts_for($connection, $symbols) {
+method get_contracts_for ($connection, $symbols) {
     my %contracts_for;
 
     my $contracts_for_requests = fmap0 {
@@ -392,7 +393,7 @@ Returns an array of currently active symbols as string  ['R_10','R_100', ....]
 
 =cut
 
-method get_active_symbols($connection, $markets_to_use) {
+method get_active_symbols ($connection, $markets_to_use) {
     my $assets = $connection->api->active_symbols(
         product_type => 'basic',
     )->on_fail(
@@ -403,7 +404,7 @@ method get_active_symbols($connection, $markets_to_use) {
     my %market_check = map { $_ => 1 } @$markets_to_use;
     my @active_symbols =
         map  { $_->symbol }
-        grep { $_->exchange_is_open and not $_->is_trading_suspended and (!scalar(@$markets_to_use) or defined($market_check{$_->market})) }
+        grep { $_->exchange_is_open and not $_->is_trading_suspended and (not scalar(@$markets_to_use) or defined($market_check{$_->market})) }
         $assets->body->symbols;
 
     return \@active_symbols;
@@ -430,7 +431,7 @@ If we cant do a valid duration then the result will be [0,0]
 
 =cut
 
-method forex_duration_adjustments(%attrs) {
+method forex_duration_adjustments (%attrs) {
 
     my $min                 = $attrs{min};
     my $max                 = $attrs{max};
@@ -477,14 +478,13 @@ Returns a HashRef of proposal attributes.
 
 =cut
 
-method get_params($contract_type, $symbol) {
+method get_params ($contract_type, $symbol) {
 
     if (!defined($contracts_for->{$symbol}->{$contract_type})) {
         return undef;
     }
-    
 
-    my $contract   = $contracts_for->{$symbol}->{$contract_type};
+    my $contract = $contracts_for->{$symbol}->{$contract_type};
     return $self->get_params_mult_up_down($contract) if $contract_type eq 'MULTUP' or $contract_type eq 'MULTDOWN';
     my $market     = $contract->market;
     my $sub_market = $contract->submarket;
@@ -523,10 +523,10 @@ method get_params($contract_type, $symbol) {
     };
 
     my $contract_params = {
-        PUT      => $put_call,
-        CALL     => $put_call,
-        PUTE     => $pute_calle,
-        CALLE    => $pute_calle,
+        PUT   => $put_call,
+        CALL  => $put_call,
+        PUTE  => $pute_calle,
+        CALLE => $pute_calle,
     };
 
     if ($market =~ /^(forex|basket_index|commodities|indices)$/) {
@@ -547,16 +547,16 @@ method get_params($contract_type, $symbol) {
     return $contract_params->{$contract_type};
 }
 
-method get_params_mult_up_down($contract){
+method get_params_mult_up_down ($contract) {
     return {
-        amount => 1 + int(rand(200)),
-        basis => "stake",
+        amount        => 1 + int(rand(200)),
+        basis         => "stake",
         contract_type => $contract->contract_type,
-        currency => "USD",
+        currency      => "USD",
         duration_unit => "s",
-        multiplier => $contract->data->{multiplier_range}->[int(rand(scalar($contract->data->{multiplier_range}->@*)))],
-        product_type => "basic",
-        symbol => $contract->underlying_symbol,
+        multiplier    => $contract->data->{multiplier_range}->[int(rand(scalar($contract->data->{multiplier_range}->@*)))],
+        product_type  => "basic",
+        symbol        => $contract->underlying_symbol,
     };
 }
 
@@ -579,19 +579,19 @@ Returns a L<Future>
 
 =cut
 
-method subscribe($connection, $connection_number) {
+method subscribe ($connection, $connection_number) {
     my $sub;
     my $first  = 1;
     my $future = $loop->new_future;
     my $symbol =
         $active_symbols->[int(rand(scalar($active_symbols->@*)))];
     # TODO modify & cache this types accoring to the returned value
-    my @possible_contract_types = qw(PUT CALL PUTE CALLE MULTUP MULTDOWN);
+    my @possible_contract_types  = qw(PUT CALL PUTE CALLE MULTUP MULTDOWN);
     my @available_contract_types = keys $contracts_for->{$symbol}->%*;
     #$log->info("available contract type @available_contract_types");
     my @contract_types = intersect(@possible_contract_types, @available_contract_types);
     die "possible available contract types is none for symbol $symbol" unless @contract_types;
-    my $contract_type  = $contract_types[int(rand(@contract_types))];
+    my $contract_type = $contract_types[int(rand(@contract_types))];
     $log->info("Subscribing to $symbol using using connection number $connection_number contract type $contract_type");
     my $params      = $self->get_params($contract_type, $symbol);
     my $retry_count = 0;
@@ -656,7 +656,7 @@ method all_markets {
         sub {
             $log->warn('Get Active Symbols Failed  Message: ' . shift->body->message);
         })->get;
-    my @markets = sort {$a cmp $b} uniq map { $_->market } grep { $_->exchange_is_open and not $_->is_trading_suspended } $assets->body->symbols;
+    my @markets = sort { $a cmp $b } uniq map { $_->market } grep { $_->exchange_is_open and not $_->is_trading_suspended } $assets->body->symbols;
 
     return @markets;
 
