@@ -425,6 +425,11 @@ sub create_virtual_account {
         type     => $args->{type},
     };
 
+    # Clients from Spain and portugal are not allowed to signup via affiliate links hence we are removing their token.
+    if ($args->{affiliate_token} && (lc($args->{residence}) eq 'pt' || lc($args->{residence}) eq 'es')) {
+        $args->{affiliate_token} = "";
+    }
+
     $account_args->{details}->{myaffiliates_token} = $args->{affiliate_token} if $args->{affiliate_token};
 
     my $regex_validation = {qr{^utm_.+} => qr{^[\w\s\.\-_]{1,100}$}};
