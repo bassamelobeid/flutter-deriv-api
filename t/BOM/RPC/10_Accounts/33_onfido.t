@@ -5,11 +5,13 @@ use Test::MockModule;
 use Test::More;
 use BOM::RPC::v3::Services;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use Test::BOM::RPC::QueueClient;
 use Test::Mojo;
 use HTTP::Response;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
+use constant ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX => 'ONFIDO::SDK::TOKEN::';
 
 subtest 'onfido validation errors' => sub {
     subtest 'invalid postal code' => sub {
@@ -101,6 +103,74 @@ subtest 'onfido validation errors' => sub {
 
         is $res->{error}->{code}, 'ApplicantError', 'Generic applicant error';
     };
+};
+
+subtest 'onfido dos websocket api' => sub {
+    my $redis       = BOM::Config::Redis::redis_replicated_write();
+    my $counter     = 0;
+    my $onfido_mock = Test::MockModule->new('WebService::Async::Onfido');
+
+    $onfido_mock->mock(
+        'sdk_token',
+        sub {
+            $counter += 1;
+            return Future->done({token => 'doge'});
+        });
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email          => 'emailtest1@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($client);
+    $client->binary_user_id($user->id);
+    $client->user($user);
+    $client->save;
+    $client->place_of_birth('br');
+    $client->residence('br');
+    $client->save;
+
+    my $args = {
+        service  => 'onfido',
+        referrer => 'https://www.binary.com/'
+    };
+    my $m     = BOM::Platform::Token::API->new;
+    my $token = $m->create_token($client->loginid, 'test token 123');
+
+    my $c   = Test::BOM::RPC::QueueClient->new();
+    my $res = $c->tcall(
+        'service_token',
+        {
+            token => $token,
+            args  => $args
+        });
+    $res = $c->tcall(
+        'service_token',
+        {
+            token => $token,
+            args  => $args
+        });
+    $res = $c->tcall(
+        'service_token',
+        {
+            token => $token,
+            args  => $args
+        });
+    $res = $c->tcall(
+        'service_token',
+        {
+            token => $token,
+            args  => $args
+        });
+
+    is $counter, 1, 'The counter should be 1';
+    ## check if redis indeed has the cached token (doge)
+    is $redis->get(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id), 'doge', 'Token set correctly';
+    # check if the redis key indeed has a ttl
+    ok $redis->ttl(ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX . $client->binary_user_id) > 0, 'TTL set';
+
 };
 
 done_testing();
