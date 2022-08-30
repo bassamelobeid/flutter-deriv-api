@@ -2,18 +2,18 @@
 use strict;
 use warnings;
 use Test::Most;
-use Test::Warnings qw(warnings);
+use Test::Warnings        qw(warnings);
 use Test::MockTime::HiRes qw(set_relative_time);
 use Date::Utility;
 
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use BOM::Pricing::v3::Contract;
-use BOM::Platform::Context qw (request);
+use BOM::Platform::Context        qw (request);
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData               qw(create_underlying);
 use BOM::Test::RPC::QueueClient;
 
 my $now = Date::Utility->new('2005-09-21 06:46:00');

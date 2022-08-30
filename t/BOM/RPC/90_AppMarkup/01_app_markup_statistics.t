@@ -9,8 +9,8 @@ use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 
 use BOM::Test::Data::Utility::UnitTestDatabase;
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase          qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase          qw(:init);
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::RPC::QueueClient;
 use BOM::Platform::Token::API;
@@ -97,15 +97,15 @@ subtest 'Initialization' => sub {
         my $loginid  = $client->loginid;
         my $loginid1 = $client->loginid . '1';
         my @binds;
-        push @binds, $app->{app_id},  $loginid, $loginid;
-        push @binds, $app->{app_id},  $loginid, $loginid;
-        push @binds, $app1->{app_id}, $loginid, $loginid;
-        push @binds, $app1->{app_id}, $loginid, $loginid;
-        push @binds, $app->{app_id},  $loginid, $loginid1;
-        push @binds, $app->{app_id},  $loginid, $loginid1;
-        push @binds, $app1->{app_id}, $loginid, $loginid1;
-        push @binds, $app1->{app_id}, $loginid, $loginid1;
-        push @binds, 999, $loginid1, $loginid;
+        push @binds, $app->{app_id},  $loginid,  $loginid;
+        push @binds, $app->{app_id},  $loginid,  $loginid;
+        push @binds, $app1->{app_id}, $loginid,  $loginid;
+        push @binds, $app1->{app_id}, $loginid,  $loginid;
+        push @binds, $app->{app_id},  $loginid,  $loginid1;
+        push @binds, $app->{app_id},  $loginid,  $loginid1;
+        push @binds, $app1->{app_id}, $loginid,  $loginid1;
+        push @binds, $app1->{app_id}, $loginid,  $loginid1;
+        push @binds, 999,             $loginid1, $loginid;
 
         $collector_db->run(
             ping => sub {
