@@ -145,7 +145,7 @@ read_csv_row_and_callback(
                     }
                 } catch ($e) {
                     $error = $e;
-                    $log->errorf('%s faild to retrive client - %s', $login_id, $error);
+                    $log->errorf('%s failed to retrieve client - %s', $login_id, $error);
                     last;
                 }
                 $row{name} = $client->full_name;
