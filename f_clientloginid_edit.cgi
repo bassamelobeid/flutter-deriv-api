@@ -106,6 +106,7 @@ if (my $error_message = write_operation_error()) {
 
 my %doc_types_categories = $client->documents->categories->%*;
 my @poi_doctypes         = $client->documents->poi_types->@*;
+my @pow_doctypes         = $client->documents->pow_types->@*;
 my @dateless_doctypes    = $client->documents->dateless_types->@*;
 my @expirable_doctypes   = $client->documents->expirable_types->@*;
 my %document_type_sides  = $client->documents->sided_types->%*;
@@ -267,11 +268,36 @@ if ($input{document_list}) {
             }
         } else {
             $doc->status($new_doc_status);
-            $full_msg .= (
-                $doc->save
-                ? "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been <b>$new_doc_status</b>!</div>"
-                : "<div class=\"notify notify--warning\"><b>ERROR:</b> did not update <b>$file_name</b> record from db</div>"
-            );
+            if (!$doc->save) {
+                $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:</b> did not update <b>$file_name</b> record from db</div>";
+            } else {
+                my $is_pow_document = any { $_ eq $doc->{document_type} } @pow_doctypes;
+                $full_msg .= "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been <b>$new_doc_status</b>!</div>";
+                if ($is_pow_document && $new_doc_status eq 'rejected') {
+                    my $dbic = BOM::Database::ClientDB->new({
+                            client_loginid => $loginid,
+                            operation      => 'backoffice_replica',
+                        })->db->dbic;
+                    if (!$dbic) {
+                        $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:</b>[$0] cannot create connection</div>";
+                        print $full_msg;
+                        code_exit_BO();
+                    }
+
+                    my $count_rejected = $dbic->run(
+                        fixup => sub {
+                            $_->selectrow_array(
+                                'SELECT COUNT(*) FROM betonmarkets.client_authentication_document 
+                            WHERE client_loginid = ? AND status = ? AND document_type = ANY(?)',
+                                undef, $loginid, $new_doc_status, \@pow_doctypes
+                            );
+                        });
+
+                    if ($count_rejected > 2) {
+                        $client->status->clear_allow_document_upload();
+                    }
+                }
+            }
         }
     }
     print $full_msg;
