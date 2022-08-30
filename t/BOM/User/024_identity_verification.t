@@ -394,6 +394,47 @@ subtest 'get document check detail' => sub {
     qr/document_id/, 'missing document_id';
 };
 
+subtest 'get claimed documents' => sub {
+    my ($document1, $document2, $claims);
+
+    lives_ok {
+        $document1 = $idv_model_ccr->add_document({
+            issuing_country => 'ir',
+            number          => '125',
+            type            => 'nin',
+            expiration_date => '2099-01-01'
+        });
+    }
+    'document added successfully';
+
+    lives_ok {
+        $document2 = $idv_model_cmf->add_document({
+            issuing_country => 'ir',
+            number          => '125',
+            type            => 'nin',
+            expiration_date => '2099-01-01'
+        });
+    }
+    'document added successfully';
+
+    lives_ok {
+        $claims = $idv_model_nx->get_claimed_documents({
+            issuing_country => 'ir',
+            number          => '125',
+            type            => 'nin'
+        });
+    }
+    'claimed docs details fetched';
+
+    is scalar @$claims, 2, 'fetched claimed docs number is correct';
+
+    throws_ok {
+        local $SIG{__WARN__} = undef;
+        $idv_model_ccr->get_claimed_documents();
+    }
+    qr/issuing_country/, 'missing issuing_country';
+};
+
 subtest 'Submissions Left' => sub {
     is $idv_model_ccr->submissions_left($client_mf), 3, 'Expected submissions left';
 };

@@ -39,17 +39,17 @@ Add document row filled by provided info by user
 
 =over 4
 
-=item * C<$issuing_country> - the id of document to which this record belongs
+=item * C<$issuing_country> - the document issuing country
 
-=item * C<$document_number> - the status of check
+=item * C<$document_number> - the number of document, can be letters and numbers or combination of them
 
-=item * C<$document_type> - the message for status
+=item * C<$document_type> - the type of document
 
 =item * C<$expiration_date> - nullable, the document expiry date
 
 =back
 
-Returns void.
+Returns arrayref.
 
 =cut
 
@@ -78,6 +78,55 @@ sub add_document {
             });
     } catch ($e) {
         die sprintf("Failed while adding document due to '%s'", $e);
+    }
+
+    return;
+}
+
+=head2 get_claimed_documents
+
+Gets a list of documents with the same criteria but might uploaded by different users.
+
+=over 4
+
+=item * C<$issuing_country> - the document issuing country
+
+=item * C<$document_number> - the number of document, can be letters and numbers or combination of them
+
+=item * C<$document_type> - the type of document
+
+=back
+
+Returns arrayref or undef
+
+=cut
+
+sub get_claimed_documents {
+    my ($self, $args) = @_;
+
+    my ($issuing_country, $document_number, $document_type) = @{$args}{
+        qw/
+            issuing_country   number            type
+            /
+    };
+
+    die 'issuing_country is required' unless $issuing_country;
+    die 'document_number is required' unless $document_number;
+    die 'document_type is required'   unless $document_type;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref(
+                    'SELECT * FROM idv.get_claimed_documents(?::TEXT, ?::TEXT, ?::TEXT)',
+                    {Slice => {}},
+                    $issuing_country, $document_type, $document_number
+                );
+            });
+    } catch ($e) {
+        die sprintf("Failed while getting claimed documents due to '%s'", $e);
     }
 
     return;
