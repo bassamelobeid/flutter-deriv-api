@@ -16,7 +16,7 @@ use BOM::CTC::Database;
 use BOM::CTC::Daemon;
 
 our @EXPORT_OK =
-    qw( wait_miner deploy_erc20_test_contract set_pending deploy_batch_withdrawal_test_contract top_up_eth_batch_withdrawal_contract create_loginid);
+    qw( wait_miner deploy_erc20_test_contract set_pending deploy_batch_withdrawal_test_contract top_up_eth_batch_withdrawal_contract create_loginid deploy_batch_balance_test_contract deploy_all_erc20_test_contracts);
 
 =head2 wait_miner
 
@@ -186,6 +186,39 @@ sub deploy_batch_withdrawal_test_contract {
     # here we need to set the contract address into Redis, since
     # we will use this contract in the tests
     $currency->set_batch_withdrawal_contract_address($contract->contract_address);
+
+    return $contract->contract_address;
+}
+
+sub deploy_batch_balance_test_contract {
+    my $currency = BOM::CTC::Currency->new(currency_code => 'ETH');
+    my $path     = "/home/git/regentmarkets/bom-test/resources/batch_balance";
+
+    my $bytecode = path($path . ".bytecode")->slurp();
+    $bytecode =~ s/[\x0D\x0A]+//g;
+
+    my $decoded_abi = path($path . ".abi")->slurp();
+
+    my $contract = $currency->rpc_client->contract({
+        contract_abi => $decoded_abi,
+        from         => $currency->account_config->{account}->{address},
+        # The default contract gas is lower that what we need to deploy this contract
+        # so we need manually specify the maximum amount of gas needed to deploy the
+        # contract, this not means that we will use this entire gas, but the estimation
+        # of the node generally it's bigger than what it will really use.
+        # the number 4_000_000 we get from the tests, being enough to deploy this contract.
+        gas => 4000000,
+    });
+
+    # 0 here means that we will unlock this account until geth be restarted
+    $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address},
+        $currency->account_config->{account}->{passphrase}, 0);
+
+    # the number 35 here is the time in seconds that we will wait to the contract be
+    # deployed, for the tests since we are using a private node this works fine, this
+    # will be removed on the future when we make the ethereum client async.
+    my $response = $contract->invoke_deploy($bytecode)->get_contract_address(35);
+    $contract->contract_address($response->get->response);
 
     return $contract->contract_address;
 }
