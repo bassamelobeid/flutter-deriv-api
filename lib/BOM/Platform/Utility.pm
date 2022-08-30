@@ -266,6 +266,7 @@ sub error_map {
         CryptoWithdrawalMaxReached      =>
             localize('You have reached the maximum withdrawal limit of [_1] [_2]. Please authenticate your account to make unlimited withdrawals.'),
         CryptoWithdrawalNotAuthenticated => localize('Please authenticate your account to proceed with withdrawals.'),
+        InternalClient                   => localize('This feature is not allowed for internal clients.'),
     };
 }
 
