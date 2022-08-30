@@ -307,7 +307,7 @@ async sub _calculate_page {
                         cfd_provider => $deal->{provider},
                         currency     => $deal->{currency}));
 
-                $log->errorf("No exchange rate found for %s (%s)", $deal->{payment_currency} . '-' . $target_currency, $deal->{provider});
+                $log->errorf("No exchange rate found with deal %s for %s (%s)" , $deal->{id}, $deal->{currency} . '-' . $target_currency, $deal->{provider});
                 return;
             }
 
