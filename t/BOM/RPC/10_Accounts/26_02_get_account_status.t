@@ -696,6 +696,49 @@ subtest 'Proof of Income' => sub {
                     expiry_date => undef,
                     format      => "png",
                     id          => 123,
+                    status      => "pending",
+                    type        => "brokerage_statement",
+                    },
+            },
+            is_pending  => 1,
+            is_rejected => 2,
+        },
+    };
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{authentication}->{income}, {status => 'pending'}, 'Expected proof of income to be pending';
+    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'proof of funds documents need to be provided';
+
+    $documents_uploaded = {
+        proof_of_income => {
+            documents => {
+                $client->loginid
+                    . '_brokerage_statement.1319_back' => {
+                    expiry_date => undef,
+                    format      => "png",
+                    id          => 123,
+                    status      => "rejected",
+                    type        => "brokerage_statement",
+                    },
+            },
+            is_pending  => 1,
+            is_rejected => 3,
+        },
+    };
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{income}, {status => 'pending'}, 'Expected proof of income to be pending';
+    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'proof of funds documents need to be provided';
+
+    $documents_uploaded = {
+        proof_of_income => {
+            documents => {
+                $client->loginid
+                    . '_brokerage_statement.1319_back' => {
+                    expiry_date => undef,
+                    format      => "png",
+                    id          => 123,
                     status      => "rejected",
                     type        => "brokerage_statement",
                     },
@@ -706,8 +749,8 @@ subtest 'Proof of Income' => sub {
 
     $result = $c->tcall('get_account_status', {token => $token});
 
-    cmp_deeply $result->{authentication}->{income}, {status => 'locked'}, 'Expected proof of incometo be locked';
-    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'proof of funds documents need to be provided from  BO';
+    cmp_deeply $result->{authentication}->{income}, {status => 'locked'}, 'Expected proof of income to be pending';
+    cmp_bag $result->{authentication}->{needs_verification}, ['income'], 'proof of funds documents need to be provided';
 };
 subtest 'backtest for Onfido disabled country' => sub {
     my $test_client_disabled_country = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
