@@ -1840,7 +1840,9 @@ sub get_client_details {
 
     my $user = $client->user;
 
-    if ((any { $_ =~ /^MF/ } $user->bom_loginids) and !BOM::Backoffice::Auth0::has_authorisation([qw/CSRegulated IT Compliance Payments/])) {
+    if ((any { $_ =~ /^MF/ } $user->bom_loginids)
+        and !BOM::Backoffice::Auth0::has_authorisation([qw/CSRegulated IT Compliance Payments Marketing-EU/]))
+    {
         print "<p class='notify notify--danger'>ERROR: You cannot view this client's profile. </p>";
         code_exit_BO(
             qq[<form action="$self_post" method="get">
