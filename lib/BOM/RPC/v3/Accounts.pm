@@ -1645,7 +1645,6 @@ rpc get_settings => sub {
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
             : ())};
 
-    my $dxtrade_suspend = BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend;
     my @clients = grep { not $_->is_virtual } $user->clients(include_disabled => 0);
     my ($real_client) = sort { $b->date_joined cmp $a->date_joined } @clients;
 
@@ -1674,8 +1673,7 @@ rpc get_settings => sub {
             allow_copiers                  => $client->allow_copiers // 0,
             non_pep_declaration            => $client->non_pep_declaration_time ? 1 : 0,
             client_tnc_status              => $client->accepted_tnc_version,
-            request_professional_status    => $client->status->professional_requested                            ? 1 : 0,
-            dxtrade_user_exception         => (any { $user->email eq $_ } $dxtrade_suspend->user_exceptions->@*) ? 1 : 0,
+            request_professional_status    => $client->status->professional_requested ? 1 : 0,
             is_authenticated_payment_agent =>
                 ($client->payment_agent and $client->payment_agent->status and $client->payment_agent->status eq 'authorized') ? 1 : 0,
             %$settings,
