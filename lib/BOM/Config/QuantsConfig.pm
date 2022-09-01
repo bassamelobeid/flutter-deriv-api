@@ -214,12 +214,12 @@ sub get_multiplier_config {
     my ($default_config, $cache_key);
 
     # landing company can be undefined if user is not logged in
-    if (defined $landing_company_short and my $config = $default_multiplier_config->{$landing_company_short}) {
+    if (defined $landing_company_short and my $config = get_multiplier_config_default()->{$landing_company_short}) {
         $default_config = $config->{$underlying_symbol};
         $cache_key      = $landing_company_short;
     } else {
         $cache_key      = 'common';
-        $default_config = $default_multiplier_config->{$cache_key}{$underlying_symbol};
+        $default_config = get_multiplier_config_default()->{$cache_key}{$underlying_symbol};
     }
 
     my $redis_key       = join('::', MULTIPLIER_CONFIG, $cache_key, $underlying_symbol);
