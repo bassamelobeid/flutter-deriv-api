@@ -180,17 +180,13 @@ sub check_tidy {
     my $origin_perltidy = \&Perl::Tidy::perltidy;
 
     *Perl::Tidy::perltidy = sub {
-        print STDERR "calling mocked perltidy\n";
         my @caller = caller(1);
         if ($caller[3] eq 'Test::PerlTidy::is_file_tidy') {
-            print STDERR "will call sweeten\n";
             return Perl::Tidy::Sweetened::perltidy(@_);
         } else {
-            print STDERR "will call origin perltidy\n";
             return $origin_perltidy->(@_);
         }
     };
-    diag("start checking tidy...");
     $Test::PerlTidy::MUTE = 1;
     foreach my $file (@$check_files) {
         chomp $file;
