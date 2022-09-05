@@ -138,7 +138,6 @@ subtest 'new affiliate account' => sub {
     my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->result;
 
     is $result->{affiliate_id}, 1;
-
 };
 
 done_testing();

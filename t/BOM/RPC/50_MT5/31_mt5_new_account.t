@@ -357,7 +357,7 @@ subtest 'real & demo split on account creation' => sub {
 
 SKIP: {
     skip "Technical account creation for Affiliates is not ready yet.";
-    subtest 'open mt5 account from AFF client' => sub {
+    subtest 'open mt5 account from CRA client' => sub {
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(0);
 
         my $password = 'Abcd33!@';
