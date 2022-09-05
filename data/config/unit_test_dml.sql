@@ -16,6 +16,7 @@ SET search_path = audit, pg_catalog;
 SET search_path = betonmarkets, pg_catalog;
 
 COPY broker_code (broker_code) FROM stdin;
+CRA
 CBET
 VRT
 MLT
@@ -112,6 +113,7 @@ CR0101	160	super_secret_password	Johny	NoPhone1	nophone@regentmarkets.com	t	CR	a
 CR0102	162	super_secret_password	Johny	NoPhone2	nophone@regentmarkets.com	t	CR	au	au	Mr	add1	add2	addcity	addstate	addpostcode	+	2017-05-01	empty_environment	Mother's maiden name	MOM	no_restriction	m	cash_password	1985-01-01	yes	no comment	\N	f	f	\N	\N	\N	\N	t	\N 	2017-09-13 
 CR0103	163	super_secret_password	Johny	NoPhone3	nophone@regentmarkets.com	t	CR	au	au	Mr	add1	add2	addcity	addstate	addpostcode	abc	2017-05-01	empty_environment	Mother's maiden name	MOM	no_restriction	m	cash_password	1985-01-01	yes	no comment	\N	f	f	\N	\N	\N	\N	t	\N 	2017-06-13 
 CR0111	164	super_secret_password	Mathew	NoLastName	dummy@regentmarkets.com	t	CR	au	au	Mr	add1	add2	addcity	addstate	addpostcode	abc	2017-05-01	empty_environment	Mother's maiden name	MOM	no_restriction	m	cash_password	1985-01-01	yes	no comment	\N	f	f	\N	\N	\N	\N	t	\N 	2020-05-04
+CRA0733	165	super_secret_password	Shantanu	Patil	shan@regentmarkets.com	t	CRA	au	au	Mr	add1	add2	addcity	addstate	addpostcode	abc	2017-05-01	empty_environment	Mother's maiden name	MOM	no_restriction	m	cash_password	1985-01-01	yes	no comment	\N	f	f	\N	\N	\N	\N	t	\N 	2020-05-04
 \.
 
 SET search_path = transaction, pg_catalog;
