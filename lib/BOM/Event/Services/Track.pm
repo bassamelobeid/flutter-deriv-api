@@ -153,7 +153,7 @@ my %EVENT_PROPERTIES = (
     withdrawal_rejected         => [qw(first_name reason remark)],
     account_deactivated         => [qw(name brand)],
     request_edd_document_upload => [qw(first_name email login_url expiry_date live_chat_url)],
-    p2p_order_confirm_verify    => [qw(verification_url order_id order_amount buyer_name code)],
+    p2p_order_confirm_verify    => [qw(verification_url order_id order_amount order_currency buyer_name code live_chat_url password_reset_url)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
