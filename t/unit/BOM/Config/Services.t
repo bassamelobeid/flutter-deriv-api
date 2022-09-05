@@ -97,7 +97,7 @@ subtest 'identify_vetification.yml integrity check' => sub {
         'providers' => {
             'smile_identity' => {
                 'selfish'     => 0,
-                'portal_base' => 'https://portal.smileidentity.com/partner/job_results/%s?env=production'
+                'portal_base' => 'https://portal.smileidentity.com/partner/job_results/production/%s'
             },
             'derivative_wealth' => {'selfish' => 0},
             'zaig'              => {
