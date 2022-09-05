@@ -36,8 +36,13 @@ subtest 'partner_account_opening test' => sub {
                 warn "Code is incorrect"  unless ($args->{code} eq "test_code");
                 warn "Email is incorrect" unless ($args->{email} eq "some_username");
             });
+        my $existing_user = BOM::User->new(
+            email => 'test@email.com',
+        );
+        my $response = BOM::RPC::v3::Services::CellxpertService::verify_email("some_username", $verification, $existing_user);
+        is $response, undef;
 
-        my $response = BOM::RPC::v3::Services::CellxpertService::verify_email("some_username", $verification, "en");
+        $response = BOM::RPC::v3::Services::CellxpertService::verify_email("some_username", $verification, 0);
         is $response, undef;
 
         $mocked_event_emitter->unmock_all();

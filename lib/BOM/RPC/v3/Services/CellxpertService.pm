@@ -42,15 +42,38 @@ Verify Email from RPC and returns {status=>1} if email is not alreayd exist else
 
 =item * C<verification> - verification object to create data for email template
 
+=item * C<existing_user> - if user exists in our DB then this field contains L<BOM::Client::User> object otherwise it is null
+
 =back
 
 =cut
 
 sub verify_email {
-    my ($username, $verification) = @_;
+    my ($username, $verification, $existing_user, $language) = @_;
     try {
-        my $is_username_available = $cx->is_username_available($username)->get;
-        if ($is_username_available) {
+        if ($existing_user) {
+            my $data = $verification->{account_opening_existing}->();
+            BOM::Platform::Event::Emitter::emit(
+                'account_opening_existing',
+                {
+                    loginid    => $existing_user->get_default_client->loginid,
+                    properties => {
+                        code               => $data->{template_args}->{code} // '',
+                        language           => $language,
+                        login_url          => $data->{template_args}->{login_url}          // '',
+                        password_reset_url => $data->{template_args}->{password_reset_url} // '',
+                        live_chat_url      => $data->{template_args}->{live_chat_url}      // '',
+                        verification_url   => $data->{template_args}->{verification_url}   // '',
+                        email              => $data->{template_args}->{email}              // '',
+                    },
+                });
+        } else {
+            my $is_username_available = $cx->is_username_available($username)->get;
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'CXUsernameExists',
+                    message_to_client => 'A user with this email already exists'
+                }) unless $is_username_available;
+
             my $data = $verification->{account_opening_new}->();
             BOM::Platform::Event::Emitter::emit(
                 'account_opening_new',
@@ -60,19 +83,14 @@ sub verify_email {
                     email            => $username,
                     live_chat_url    => $data->{template_args}->{live_chat_url} // '',
                 });
-            return;
-        } else {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'CXUsernameExists',
-                message_to_client => 'A user with this email already exists'
-            });
         }
+        return;
     } catch ($e) {
         $log->errorf("Error while verifying email for CellXpert signup: $e");
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'CXRuntimeError',
-                message_to_client => 'Could not register user'
-            })
+            code              => 'CXRuntimeError',
+            message_to_client => 'Could not register user'
+        });
     }
 }
 
