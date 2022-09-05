@@ -666,7 +666,7 @@ subtest 'create affiliate' => sub {
                 from_client => $vr_client,
                 user        => $user,
                 details     => {
-                    broker_code              => 'AFF',
+                    broker_code              => 'CRA',
                     type                     => 'affiliate',
                     email                    => 'afftest@binary.com',
                     client_password          => 'okcomputer',
@@ -683,9 +683,9 @@ subtest 'create affiliate' => sub {
                 },
             });
     }
-    'create AFF acc';
+    'create CRA acc';
 
-    isa_ok $aff->{client}, 'BOM::User::Affiliate', 'Expected package for AFF';
+    isa_ok $aff->{client}, 'BOM::User::Affiliate', 'Expected package for CRA';
 };
 
 sub create_vr_acc {
