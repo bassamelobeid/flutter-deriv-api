@@ -5606,11 +5606,12 @@ sub _p2p_db_error_handler {
 sub validate_payment {
     my ($self, %args) = @_;
 
-    my $currency     = $args{currency} || die "no currency\n";
-    my $amount       = $args{amount}   || die "no amount\n";
-    my $action_type  = $amount > 0 ? 'deposit' : 'withdrawal';
-    my $payment_type = $args{payment_type} // '';
-    my $rule_engine  = $args{rule_engine};
+    my $currency           = $args{currency} || die "no currency\n";
+    my $amount             = $args{amount}   || die "no amount\n";
+    my $action_type        = $amount > 0 ? 'deposit' : 'withdrawal';
+    my $payment_type       = $args{payment_type} // '';
+    my $rule_engine        = $args{rule_engine};
+    my $action_to_validate = $args{action_to_validate} // 'validate_payment';
 
     # validate expects 'deposit'/'withdraw' so if action_type is 'withdrawal' should be replaced to 'withdraw'
     my $validation = BOM::Platform::Client::CashierValidation::check_availability($self, $action_type);
@@ -5623,7 +5624,7 @@ sub validate_payment {
 
     try {
         $rule_engine->verify_action(
-            'validate_payment',
+            $action_to_validate,
             loginid             => $self->loginid,
             currency            => $currency,
             action              => $action_type,
