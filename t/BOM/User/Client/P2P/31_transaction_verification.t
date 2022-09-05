@@ -24,6 +24,10 @@ my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock(emit => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
+my $frontend_urls;
+my $mock_brand = Test::MockModule->new('Brands');
+$mock_brand->mock(frontend_url => sub { push $frontend_urls->{$_[1]}->@*, @_[2 .. 3]; 'dummy' });
+
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 my $redis  = BOM::Config::Redis->redis_p2p_write;
 $redis->del('P2P::ORDER::VERIFICATION_PENDING');
@@ -64,7 +68,11 @@ $config->transaction_verification_countries([]);
 subtest 'successful verification' => sub {
 
     # needs to be done before creating client object
-    BOM::Platform::Context::request(BOM::Platform::Context::Request->new({language => 'ES'}));
+    BOM::Platform::Context::request(
+        BOM::Platform::Context::Request->new({
+                language => 'ES',
+                app_id   => $app_id
+            }));
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
         type => 'sell',
@@ -78,6 +86,7 @@ subtest 'successful verification' => sub {
     $client->p2p_order_confirm(id => $order->{id});
 
     undef $emitted_events;
+    undef $frontend_urls;
 
     cmp_deeply(
         exception { $advertiser->p2p_order_confirm(id => $order->{id}, source => $app_id) },
@@ -91,12 +100,15 @@ subtest 'successful verification' => sub {
         $emitted_events,
         {
             p2p_order_confirm_verify => [{
-                    loginid          => $advertiser->loginid,
-                    code             => re('\w{6}'),
-                    order_id         => $order->{id},
-                    order_amount     => $order->{amount},
-                    buyer_name       => $order->{client_details}->{name},
-                    verification_url => "$verification_uri?action=p2p_order_confirm&order_id=$order->{id}&code=$code&lang=ES",
+                    loginid            => $advertiser->loginid,
+                    code               => re('\w{6}'),
+                    order_id           => $order->{id},
+                    order_amount       => $order->{amount},
+                    order_currency     => $advertiser->currency,
+                    buyer_name         => $order->{client_details}->{name},
+                    verification_url   => "$verification_uri/p2p?action=p2p_order_confirm&order_id=$order->{id}&code=$code&lang=ES",
+                    live_chat_url      => 'dummy',
+                    password_reset_url => 'dummy',
                 }
             ],
             p2p_order_updated => [{
@@ -105,6 +117,27 @@ subtest 'successful verification' => sub {
                 }]
         },
         'p2p_order_confirm_verify event emitted',
+    );
+
+    cmp_deeply(
+        $frontend_urls,
+        {
+            live_chat => [
+                $app_id,
+                {
+                    app_id   => $app_id,
+                    language => 'ES'
+                }
+            ],
+            lost_password => [
+                $app_id,
+                {
+                    source   => $app_id,
+                    language => 'ES'
+                }
+            ],
+        },
+        'expected front end url requests'
     );
 
     is $client->p2p_order_info(id => $order->{id})->{verification_pending}, 1, 'order info verification pending is 1';

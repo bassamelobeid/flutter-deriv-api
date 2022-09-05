@@ -4322,7 +4322,7 @@ sub _p2p_order_confirm_verification {
         }
 
         my $url = BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($param{source});
-        $url .= "?action=p2p_order_confirm&order_id=$order_id&code=$code&lang=" . request->language if $url;
+        $url .= "/p2p?action=p2p_order_confirm&order_id=$order_id&code=$code&lang=" . request->language if $url;
 
         BOM::Platform::Event::Emitter::emit(
             p2p_order_confirm_verify => {
@@ -4331,7 +4331,18 @@ sub _p2p_order_confirm_verification {
                 code             => $code,
                 order_id         => $order_id,
                 order_amount     => $order->{amount},
+                order_currency   => $order->{account_currency},
                 buyer_name       => $order->{advert_type} eq 'buy' ? $order->{advertiser_name} : $order->{client_name},
+                live_chat_url    => request->brand->live_chat_url({
+                        app_id   => request->app_id,
+                        language => request->language
+                    }
+                ),
+                password_reset_url => request->brand->password_reset_url({
+                        source   => request->app_id,
+                        language => request->language
+                    }
+                ),
             });
 
         BOM::Platform::Event::Emitter::emit(
