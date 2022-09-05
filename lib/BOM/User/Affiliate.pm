@@ -11,7 +11,7 @@ Uses same arguments as BOM::User::Client.
 
 Example usage:
 
-    BOM::User::Affiliate->new({loginid => 'AFF000001'});
+    BOM::User::Affiliate->new({loginid => 'CRA000001'});
 
 =cut
 

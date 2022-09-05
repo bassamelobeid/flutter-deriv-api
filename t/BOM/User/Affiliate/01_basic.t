@@ -13,13 +13,13 @@ subtest 'initial methods' => sub {
 
     lives_ok {
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'AFF',
+            broker_code => 'CRA',
             email       => 'affiliate@deriv.com',
         });
     }
-    'AFF client can be created';
+    'CRA client can be created';
 
-    ok $client->loginid =~ /^AFF[0-9]+$/, 'Expected broker code';
+    ok $client->loginid =~ /^CRA[0-9]+$/, 'Expected broker code';
 
     isa_ok $client, 'BOM::User::Client', 'from create_client()';
 
@@ -31,7 +31,7 @@ subtest 'initial methods' => sub {
     lives_ok {
         $affiliate = $client->get_client_instance($client->loginid);
     }
-    'AFF client can be retrieved';
+    'CRA client can be retrieved';
 
     isa_ok $affiliate, 'BOM::User::Affiliate', 'from get_client_instance()';
     ok $affiliate->is_affiliate, 'is_affiliate true';
@@ -47,7 +47,7 @@ subtest 'create from user' => sub {
     );
 
     my $aff = $user->create_affiliate(
-        broker_code              => 'AFF',
+        broker_code              => 'CRA',
         email                    => 'afftest@binary.com',
         client_password          => 'okcomputer',
         residence                => 'br',

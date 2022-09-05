@@ -134,7 +134,7 @@ Rescind accounts according to parameters.
 
 =over 4
 
-=item * Cdesc> human readable description of the criteria.
+=item * C<desc> human readable description of the criteria.
 
 =item * C<statuses> account must have one of these statuses
 

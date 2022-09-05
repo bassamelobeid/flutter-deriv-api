@@ -10,7 +10,7 @@ use BOM::User::Affiliate;
 
 subtest 'set and get' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'AFF',
+        broker_code => 'CRA',
         email       => 'affiliate@deriv.com',
     });
 
