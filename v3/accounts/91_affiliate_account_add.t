@@ -38,7 +38,7 @@ my %details = (
     username              => "johndoe"
 );
 
-my $lc = LandingCompany::Registry->by_broker('AFF');
+my $lc = LandingCompany::Registry->by_broker('CRA');
 
 subtest 'new affiliate account' => sub {
     # create VR acc
