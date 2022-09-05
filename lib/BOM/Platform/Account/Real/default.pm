@@ -152,7 +152,14 @@ sub set_allow_document_upload {
     # well, prioritise citizen over residence.
     my $country_code = $client->citizen || $client->residence;
     if (request()->brand->countries_instance->has_mt_regulated_company_for_country($country_code)) {
-        $client->status->upsert('allow_document_upload', 'system', 'MARKED_AS_NEEDS_ACTION');
+
+        # If client country code is Non IDV supported and broker code is CR
+        if ((!request()->brand->countries_instance->is_idv_supported($country_code)) && $client->broker_code eq 'CR') {
+            $client->status->upsert('allow_document_upload', 'system', 'CR_CREATION_FOR_NON_IDV_COUNTRIES');
+        } else {
+            $client->status->upsert('allow_document_upload', 'system', 'MARKED_AS_NEEDS_ACTION');
+        }
+
     }
 
     return;
