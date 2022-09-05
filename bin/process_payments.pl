@@ -87,6 +87,8 @@ my @invalid_lines;
 my $line_number;
 my %client_to_be_processed;
 my $is_transaction_id_required = 0;
+my $payment_validating_action  = 'validate_affiliate_payment';
+
 read_csv_row_and_callback(
     \@payment_lines,
     sub {
@@ -160,7 +162,14 @@ read_csv_row_and_callback(
                 }
 
                 my $rule_engine = BOM::Rules::Engine->new(client => $client);
-                try { $client->validate_payment(currency => $currency, amount => $signed_amount, rule_engine => $rule_engine) } catch ($e) {
+                try {
+                    $client->validate_payment(
+                        action_to_validate => $payment_validating_action,
+                        currency           => $currency,
+                        amount             => $signed_amount,
+                        rule_engine        => $rule_engine
+                    )
+                } catch ($e) {
                     $error = $e->{message_to_client}
                 };
                 last if $error;
@@ -204,14 +213,15 @@ read_csv_row_and_callback(
                     $log->infof('Making payment for %s %s as %s from %s (%s %s)',
                         $currency, $signed_amount, $payment_type, $staff, $payment_processor, $trace_id);
                     $trx = $client->smart_payment(
-                        currency          => $currency,
-                        amount            => $signed_amount,
-                        payment_type      => $payment_type,
-                        remark            => $statement_comment,
-                        staff             => $staff,
-                        payment_processor => $payment_processor,
-                        trace_id          => $trace_id,
-                        rule_engine       => BOM::Rules::Engine->new(client => $client),
+                        currency           => $currency,
+                        amount             => $signed_amount,
+                        payment_type       => $payment_type,
+                        remark             => $statement_comment,
+                        staff              => $staff,
+                        payment_processor  => $payment_processor,
+                        trace_id           => $trace_id,
+                        rule_engine        => BOM::Rules::Engine->new(client => $client),
+                        action_to_validate => $payment_validating_action
                     );
                 } catch ($e) {
                     $err = ref $e eq 'HASH' ? $e->{message_to_client} : $e;
