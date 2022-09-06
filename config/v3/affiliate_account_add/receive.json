@@ -45,6 +45,10 @@
                     "description": "Registered country of the created affiliate.",
                     "type": "string"
                 },
+                "date_of_birth": {
+                    "description": "Birth date of user trying to register",
+                    "type": "string"
+                },
                 "first_name": {
                     "description": "First name of the created affiliate.",
                     "type": "string"

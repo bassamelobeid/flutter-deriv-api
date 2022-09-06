@@ -10,6 +10,7 @@
     "required": [
         "affiliate_account_add",
         "country",
+        "date_of_birth",
         "first_name",
         "last_name",
         "non_pep_declaration",
@@ -55,6 +56,11 @@
             "description": "Country of legal citizenship, 2-letter country code.",
             "type": "string",
             "pattern": "^([a-z]{2})?$"
+        },
+        "date_of_birth": {
+            "description": "Birth date of user trying to register",
+            "type": "string",
+            "pattern": "^[0-9]{4}-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|3[0-1])$"
         },
         "first_name": {
             "description": "The official first name of the affiliate. Within 2-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
