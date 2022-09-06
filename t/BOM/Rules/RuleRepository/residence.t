@@ -134,6 +134,9 @@ subtest 'residence.account_type_is_available_for_real_account_opening' => sub {
     $args->{account_type} = 'trading';
     is exception { $rule_engine->apply_rules($rule_name, %$args) }, undef, 'No error for trading account type';
 
+    $args->{account_type} = 'affiliate';
+    is exception { $rule_engine->apply_rules($rule_name, %$args) }, undef, 'No error for affiliate account type';
+
     $args->{account_type} = 'wallet';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {

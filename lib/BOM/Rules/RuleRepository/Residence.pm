@@ -66,6 +66,7 @@ rule 'residence.account_type_is_available_for_real_account_opening' => {
 
         die 'Account type is required' unless $args->{account_type};
         return 1 if $args->{account_type} eq 'trading';
+        return 1 if $args->{account_type} eq 'affiliate';
 
         my $countries_instance = $context->brand($args)->countries_instance;
 
