@@ -80,13 +80,6 @@ $mt5_mock->mock(
         return $mt5_mock->original('create_user')->(@_);
     });
 
-my $platform_token_mock = Test::MockModule->new('BOM::Platform::Token');
-$platform_token_mock->mock(
-    'email',
-    sub {
-        return 'mock@email.com';
-    });
-
 my $mock_cellxpert_server = Test::MockModule->new('WebService::Async::Cellxpert');
 $mock_cellxpert_server->mock(
     'register_affiliate',
@@ -101,10 +94,10 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
-subtest 'new affiliate account' => sub {
+subtest 'new affiliate account wrong country and state' => sub {
     my $password = 'Abcd33!@';
     my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'new_aff' . rand(999) . '@binary.com' . 'USD';
+    my $email    = 'new_aff' . rand(999) . '@binary.com';
     my $user     = BOM::User->create(
         email          => $email,
         password       => $hash_pwd,
@@ -116,28 +109,77 @@ subtest 'new affiliate account' => sub {
         residence   => 'br',
     });
 
-    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+    my $code = BOM::Platform::Token->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => 'partner_account_opening',
+        })->token;
 
     $params->{args} = {
         affiliate_account_add => 1,
-        address_city          => "Timbuktu",
-        address_line_1        => "Askia Mohammed Bvd,",
-        address_postcode      => "QXCQJW",
-        address_state         => "Tombouctou",
-        country               => "ml",
+        address_city          => "city",
+        address_line_1        => "address line 1",
+        address_postcode      => "someCode",
+        address_state         => "somewhere",
+        country               => "at",
+        date_of_birth         => "1992-01-02",
         first_name            => "John",
         last_name             => "Doe",
         non_pep_declaration   => 1,
         password              => "S3creTp4ssw0rd",
         phone                 => "+72443598863",
         tnc_accepted          => 1,
-        username              => "johndoe",
-        verification_code     => "132435"
+        verification_code     => $code
     };
 
-    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->result;
+    $rpc_ct->call_ok('affiliate_account_add', $params)->has_error->error_code_is('InvalidState', 'Error should return');
+};
 
-    is $result->{affiliate_id}, 1;
+subtest 'new affiliate account cellXpert die with CXRuntime error' => sub {
+    $mock_cellxpert_server->unmock_all();
+    $mock_cellxpert_server->redefine(
+        'register_affiliate',
+        sub {
+            return Future->fail("some strange error here");
+        });
+    my $password = 'Abcd33!@';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'new_aff' . rand(999) . '@binary.com';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'br',
+    });
+
+    my $code = BOM::Platform::Token->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => 'partner_account_opening',
+        })->token;
+
+    $params->{args} = {
+        affiliate_account_add => 1,
+        address_city          => "Timbuktu",
+        address_line_1        => "Askia Mohammed Bvd,",
+        address_postcode      => "QXCQJW",
+        address_state         => "Nouaceur",
+        country               => "ma",
+        date_of_birth         => "1992-01-02",
+        first_name            => "John",
+        last_name             => "Doe",
+        non_pep_declaration   => 1,
+        password              => "S3creTp4ssw0rd",
+        phone                 => "+72443598863",
+        tnc_accepted          => 1,
+        verification_code     => $code
+    };
+
+    $rpc_ct->call_ok('affiliate_account_add', $params)->has_error->error_code_is('CXRuntimeError', 'Error should return');
 };
 
 done_testing();

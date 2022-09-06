@@ -69,16 +69,31 @@ subtest 'affiliate_account_add test' => sub {
 
     };
 
+    subtest 'register_affiliate unsuccessful gerenal error' => sub {
+        $mocked_cellxpert_service->redefine(
+            'register_affiliate',
+            sub {
+                my $username = shift;
+                return Future->fail("Some weird error happens from cx side");
+            });
+
+        my $response = BOM::RPC::v3::Services::CellxpertService::affiliate_account_add("some_username", "first_name", "last_name", 1, 1, "password");
+        is $response->{code}, "CXRuntimeError";
+
+        $mocked_cellxpert_service->unmock_all();
+
+    };
+
     subtest 'register_affiliate unsuccessful' => sub {
         $mocked_cellxpert_service->redefine(
             'register_affiliate',
             sub {
                 my $username = shift;
-                return Future->fail();
+                return Future->fail("Email already exist");
             });
 
         my $response = BOM::RPC::v3::Services::CellxpertService::affiliate_account_add("some_username", "first_name", "last_name", 1, 1, "password");
-        is $response->{error}->{code}, "CXRuntimeError";
+        is $response->{code}, "AlreadyRegistered";
 
         $mocked_cellxpert_service->unmock_all();
 

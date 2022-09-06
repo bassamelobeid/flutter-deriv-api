@@ -393,7 +393,8 @@ sub create_virtual_account {
         my $verification_code = $args->{verification_code};
         $args->{email} = BOM::Platform::Token->new({token => $verification_code})->email unless $args->{email};
 
-        $error = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $args->{email}, 'account_opening')->{error};
+        $args->{account_created_for} //= 'account_opening';
+        $error = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $args->{email}, $args->{account_created_for})->{error};
         die $error if $error;
 
         $error = BOM::RPC::v3::Utility::check_password({
@@ -935,9 +936,10 @@ Will return the following data:
 rpc "affiliate_account_add",
     auth => [],
     sub {
-    my $params = shift;
-    my ($client, $args) = @{$params}{qw/client args/};
-    $log->tracef("Invoked affiliate_account_add for:\n%s \n%s", $client, $args);
+    my $params   = shift;
+    my $args     = $params->{args};
+    my $broker   = 'AFF';
+    my $response = {};
 
     my ($verification_code, $first_name, $last_name, $non_pep_declaration, $tnc_accepted, $password) =
         @{$args}{qw/verification_code first_name last_name non_pep_declaration tnc_accepted password/};
@@ -949,8 +951,136 @@ rpc "affiliate_account_add",
             message_to_client => 'Can not get email from token',
         });
     }
-    return BOM::RPC::v3::Services::CellxpertService::affiliate_account_add($email, $first_name, $last_name, $non_pep_declaration, $tnc_accepted,
+    my $cx_response =
+        BOM::RPC::v3::Services::CellxpertService::affiliate_account_add($email, $first_name, $last_name, $non_pep_declaration, $tnc_accepted,
         $password);
+
+    if ($cx_response->{code} eq "CXRuntimeError") {
+        return BOM::RPC::v3::Utility::create_error($cx_response);
+    }
+
+    $args->{token_details} = delete $params->{token_details};
+    $args->{type} //= 'trading';    # affiliate demo account will always be trading if not specified.
+
+    if ($args->{type} eq 'wallet' && BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize("Wallet account creation is currently suspended."),
+        });
+    }
+
+    if ($args->{token_details} and not $args->{verification_code}) {
+        my $scopes = $args->{token_details}->{scopes};
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidToken',
+                message_to_client => localize("The token is invalid, requires 'admin' scope.")}) unless (any { $_ eq 'admin' } @$scopes);
+    }
+
+    my ($client, $account);
+    try {
+        $args->{ip}                  = $params->{client_ip} // '';
+        $args->{environment}         = request()->login_env($params);
+        $args->{source}              = $params->{source};
+        $args->{client_password}     = $args->{password};
+        $args->{residence}           = $args->{country};
+        $args->{account_created_for} = "partner_account_opening";
+
+        # Todo: This fields are temprary set and should get from future FE forms that not yet implemented
+        $args->{affiliate_plan}            = "turnover";
+        $args->{accept_risk}               = 1;
+        $args->{source_of_wealth}          = "trading";
+        $args->{salutation}                = "Mrs";
+        $args->{citizen}                   = $args->{country};
+        $args->{tax_residence}             = $args->{country};
+        $args->{tax_identification_number} = "111-222-333";
+        $args->{account_opening_reason}    = "affiliate";
+        $args->{payment_method}            = "bank_transfer";
+
+        # Pre-set email if client is authorized
+        if ($args->{token_details}) {
+            my $user = BOM::User->new(loginid => $args->{token_details}->{loginid});
+            $args->{email} = $user->{email};
+        }
+
+        $client  = create_virtual_account($args);
+        $account = $client->default_account;
+
+        my $oauth_model = BOM::Database::Model::OAuth->new;
+        my $refresh_token;
+
+        # this is the first account of the user
+        if (scalar $client->user->clients == 1) {
+            $refresh_token = $oauth_model->generate_refresh_token($client->binary_user_id, $params->{source});
+        }
+
+        $response->{demo} = {
+            client_id   => $client->loginid,
+            email       => $client->email,
+            currency    => $account->currency_code(),
+            balance     => formatnumber('amount', $account->currency_code(), $account->balance),
+            oauth_token => _create_oauth_token($params->{source}, $client->loginid),
+            type        => $args->{type},
+            $refresh_token ? (refresh_token => $refresh_token) : (),
+        };
+    } catch ($e) {
+        my $error_map = BOM::RPC::v3::Utility::error_map();
+        my $error->{code} = $e;
+        $error = $e->{error} // $e if (ref $e eq 'HASH');
+        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
+        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
+                details           => $error->{details}});
+    };
+
+    # now we can start creating real account in CRA
+    # TODO: check client residence country for EU/UK
+
+    try {
+        my $countries_instance = request()->brand->countries_instance;
+        my $gaming_company     = $countries_instance->gaming_company_for_country($client->residence);
+        unless ($gaming_company) {
+            # for CR countries like Australia (au) where only financial market is available.
+            $gaming_company = $countries_instance->financial_company_for_country($client->residence) // '';
+            return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $gaming_company;
+        }
+
+        my $result = create_new_real_account(
+            client          => $client,
+            args            => $args,
+            account_type    => 'affiliate',
+            broker_code     => $broker,
+            market_type     => 'affiliate',
+            environment     => request()->login_env($params),
+            ip              => $params->{client_ip} // '',
+            source          => $params->{source},
+            landing_company => $gaming_company
+        );
+        return $result if exists $result->{error};
+
+        my $new_client = $result->{client};
+
+        $response->{real} = {
+            client_id                 => $new_client->loginid,
+            landing_company           => $new_client->landing_company->name,
+            landing_company_shortcode => $new_client->landing_company->short,
+            oauth_token               => $response->{oauth_token},
+            $args->{currency} ? (currency => $new_client->currency) : (),
+        };
+    } catch ($e) {
+        my $error_map = BOM::RPC::v3::Utility::error_map();
+        my $error->{code} = $e;
+        $error = $e->{error} // $e if (ref $e eq 'HASH');
+        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
+        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
+                details           => $error->{details}});
+    }
+
+    return $response;
     };
 
 =head2 _compute_affiliate_token

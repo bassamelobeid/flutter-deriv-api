@@ -86,7 +86,7 @@ sub verify_email {
         }
         return;
     } catch ($e) {
-        $log->errorf("Error while verifying email for CellXpert signup: $e");
+        $log->error("Error in verify_email CellxpertService.pm: $e");
         return BOM::RPC::v3::Utility::create_error({
             code              => 'CXRuntimeError',
             message_to_client => 'Could not register user'
@@ -129,13 +129,19 @@ sub affiliate_account_add {
             AgreedToTermsAndConditions => $tnc_accepted,
             AgreedToPrivacyPolicy      => $non_pep_declaration,
         )->get;
-        return {affiliate_id => int($aff_id)};
+        return {
+            code         => "SuccessRegister",
+            affiliate_id => int($aff_id)};
     } catch ($e) {
-        $log->errorf("Error during affiliate registration: %s", $e);
-        return BOM::RPC::v3::Utility::create_error({
+        if ($e =~ m/already exist/) {
+            return {
+                code => "AlreadyRegistered",
+            };
+        }
+        return {
             code              => "CXRuntimeError",
-            message_to_client => "Could not register user"
-        });
+            message_to_client => $e
+        };
     }
 }
 
