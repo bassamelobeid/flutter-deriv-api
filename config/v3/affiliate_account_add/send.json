@@ -58,7 +58,7 @@
             "pattern": "^([a-z]{2})?$"
         },
         "date_of_birth": {
-            "description": "Birth date of user trying to register",
+            "description": "Birth date of affiliate user trying to register",
             "type": "string",
             "pattern": "^[0-9]{4}-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|3[0-1])$"
         },

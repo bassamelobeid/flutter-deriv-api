@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Affiliate: Register (response)",
-    "description": "A message with created affiliate details",
+    "description": "A message with affiliate user trying to register details",
     "type": "object",
     "required": [
         "echo_req",
@@ -10,17 +10,14 @@
     "properties": {
         "affiliate_account_add": {
             "title": "affiliate_account_add",
-            "description": "The information of the created affiliate user.",
+            "description": "The information of the affiliate user trying to register.",
             "type": "object",
             "additionalProperties": false,
             "required": [
-                "affiliate_id"
+                "demo",
+                "real"
             ],
             "properties": {
-                "address_city": {
-                    "description": "City name",
-                    "type": "string"
-                },
                 "address_line_1": {
                     "description": "First line of address.",
                     "type": "string"
@@ -49,6 +46,10 @@
                     "description": "Birth date of user trying to register",
                     "type": "string"
                 },
+                "demo": {
+                    "description": "Demo(VRTC) created account details",
+                    "type": "object"
+                },
                 "first_name": {
                     "description": "First name of the created affiliate.",
                     "type": "string"
@@ -68,6 +69,10 @@
                 "phone": {
                     "description": "Registered phone number of the created affiliate.",
                     "type": "string"
+                },
+                "real": {
+                    "description": "Real created account details",
+                    "type": "object"
                 },
                 "tnc_accepted": {
                     "description": "Terms and conditions acceptance status of the created affiliate.",
