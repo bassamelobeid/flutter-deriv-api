@@ -108,7 +108,8 @@ use constant FORGED_DOCUMENT_EMAIL_LOCK                        => 'FORGED::EMAIL
 use constant TTL_FORGED_DOCUMENT_EMAIL_LOCK                    => 600;
 use constant PAYMENT_ACCOUNT_LIMIT_REACHED_TTL                 => 86400;                                                    # one day
 use constant PAYMENT_ACCOUNT_LIMIT_REACHED_KEY                 => 'PAYMENT_ACCOUNT_LIMIT_REACHED';
-
+use constant ONFIDO_DAILY_LIMIT_FLAG                           => 'ONFIDO_DAILY_LIMIT_FLAG::';
+use constant SECONDS_IN_DAY                                    => 86400;
 # Redis TTLs
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;                                                          # 10 days in seconds
 
@@ -504,6 +505,7 @@ everything should be ready to do the verification step.
 
 async sub ready_for_authentication {
     my ($args) = @_;
+    my $tags = [];
 
     try {
         my $loginid = $args->{loginid}
@@ -521,6 +523,11 @@ async sub ready_for_authentication {
 
         my $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
+
+        my $country     = $client->place_of_birth // $client->residence;
+        my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
+        $tags = ["country:$country_tag"];
+        DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.dispatch', {tags => $tags});
 
         # We want to increment the resubmission counter when the resubmission flag is active.
 
@@ -544,6 +551,7 @@ async sub ready_for_authentication {
         $user_request_count //= 0;
 
         if (!$args->{is_pending} && $user_request_count > ONFIDO_REQUEST_PER_USER_LIMIT) {
+            DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.user_limit', {tags => $tags});
             $log->debugf('No check performed as client %s exceeded daily limit of %d requests.', $loginid, ONFIDO_REQUEST_PER_USER_LIMIT);
             my $time_to_live = await $redis_events_write->ttl(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id);
 
@@ -551,23 +559,17 @@ async sub ready_for_authentication {
                 if ($time_to_live < 0);
 
             die "Onfido authentication requests limit ${\ONFIDO_REQUEST_PER_USER_LIMIT} is hit by $loginid (to be expired in $time_to_live seconds).";
-
         }
         my $app_config = BOM::Config::Runtime->instance->app_config;
         $app_config->check_for_update;
         my $onfido_request_limit = $app_config->system->onfido->global_daily_limit;
 
         if ($request_count >= $onfido_request_limit) {
-            # NOTE: We do not send email again if we already send before
-            my $redis_data = encode_json_utf8({
-                creation_epoch => Date::Utility->new()->epoch,
-                has_email_sent => 1
-            });
+            my $today        = Date::Utility->new()->date_yyyymmdd;
+            my $acquire_lock = await $redis_events_write->set(ONFIDO_DAILY_LIMIT_FLAG . $today, 1, 'EX', SECONDS_IN_DAY, 'NX');
 
-            my $send_email_flag = await $redis_events_write->hsetnx(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_CHECK_EXCEEDED_KEY, $redis_data);
-
-            if ($send_email_flag) {
-                _send_email_onfido_check_exceeded_cs($request_count);
+            if ($acquire_lock) {
+                DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.global_daily_limit_reached');
             }
 
             die 'We exceeded our Onfido authentication check request per day';
@@ -578,6 +580,8 @@ async sub ready_for_authentication {
         await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
         if ($resubmission_flag) {
+            DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.resubmission', {tags => $tags});
+
             # The following redis keys block email sending on client verification failure. We might clear them for resubmission
             my @delete_on_resubmission = (BOM::Event::Actions::Common::ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,);
 
@@ -595,11 +599,19 @@ async sub ready_for_authentication {
 
         await _save_request_context($applicant_id);
 
-        await Future->wait_any(
-            $loop->timeout_future(after => VERIFICATION_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.') }),
+        my $res = await Future->wait_any(
+            $loop->timeout_future(after => VERIFICATION_TIMEOUT)
+                ->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.'); return undef }),
 
             _check_applicant($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client, $args->{documents}));
+
+        if ($res) {
+            DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.success', {tags => $tags});
+        } else {
+            DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.failure', {tags => $tags});
+        }
     } catch ($e) {
+        DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.failure', {tags => $tags});
         $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
         exception_logged();
     }
@@ -612,6 +624,7 @@ async sub client_verification {
     my $brand = request->brand;
 
     $log->debugf('Client verification with %s', $args);
+    DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.dispatch');
 
     try {
         my $url = $args->{check_url};
@@ -624,10 +637,14 @@ async sub client_verification {
             applicant_id => $applicant_id,
         );
 
+        my $result = $check->result;
+
+        my @common_datadog_tags = (sprintf('check:%s', $result));
+
         await _restore_request($applicant_id, $check->tags);
 
         try {
-            my $result = $check->result;
+            my $age_verified;
             # Map to something that can be standardised across other systems
             my $check_status = {
                 clear        => 'pass',
@@ -648,6 +665,10 @@ async sub client_verification {
             my $client = BOM::User::Client->new({loginid => $loginid})
                 or die 'Could not instantiate client for login ID ' . $loginid;
             $log->debugf('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
+
+            my $country     = $client->place_of_birth // $client->residence;
+            my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
+            push @common_datadog_tags, sprintf("country:$country_tag");
 
             # release the applicant check lock
             # release the get_account_status pending lock
@@ -673,6 +694,8 @@ async sub client_verification {
             my $args = await $redis_events_write->get($pending_key);
 
             if (($check_status ne 'pass') and $args) {
+                DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.resend', {tags => [@common_datadog_tags]});
+
                 $log->debugf('Onfido check failed. Resending the last pending request: %s', $args);
                 BOM::Platform::Event::Emitter::emit(ready_for_authentication => decode_json_utf8($args));
             }
@@ -706,10 +729,14 @@ async sub client_verification {
                 my ($last_report) = @reports;
                 $last_report //= {};
 
+                push @common_datadog_tags, sprintf("report:%s", $last_report->result);
+#
                 my $minimum_accepted_age = $last_report->{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result};
                 my $underage_detected    = defined $minimum_accepted_age && $minimum_accepted_age ne 'clear';
 
                 if ($underage_detected) {
+                    DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.underage_detected', {tags => [@common_datadog_tags]});
+
                     BOM::Event::Actions::Common::handle_under_age_client($client, 'Onfido');
                 }
                 # Extract all clear documents to check consistency between DOBs
@@ -743,14 +770,21 @@ async sub client_verification {
 
                     if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
                         await check_onfido_rules({
-                            loginid  => $client->loginid,
-                            check_id => $check_id
+                            loginid      => $client->loginid,
+                            check_id     => $check_id,
+                            datadog_tags => \@common_datadog_tags,
                         });
 
-                        BOM::Event::Actions::Common::set_age_verification($client, 'Onfido');
+                        if ($age_verified = BOM::Event::Actions::Common::set_age_verification($client, 'Onfido')) {
+                            DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.age_verification',
+                                {tags => [@common_datadog_tags]});
+                        }
                     } else {
+                        DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.underage_detected', {tags => [@common_datadog_tags]});
                         BOM::Event::Actions::Common::handle_under_age_client($client, 'Onfido');
                     }
+                } else {
+                    DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.dob_not_reported', {tags => [@common_datadog_tags]});
                 }
 
                 # Update expiration_date and document_id of each document in DB
@@ -789,16 +823,25 @@ async sub client_verification {
                         }
                     }
                 }
+
+                if (!$age_verified) {
+                    DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.not_verified', {tags => [@common_datadog_tags]});
+                }
+
+                DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.success');
                 return;
             } catch ($e) {
+                DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
                 $log->errorf('An error occurred while retrieving reports for client %s check %s: %s', $loginid, $check->id, $e);
                 die $e;
             }
         } catch ($e) {
+            DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
             $log->errorf('Failed to do verification callback - %s', $e);
             die $e;
         }
     } catch ($e) {
+        DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
         $log->errorf('Exception while handling client verification result: %s', $e);
         exception_logged();
     }
@@ -925,6 +968,8 @@ Takes the following named parameters:
 
 =item * C<check_id> - the id of the onfido check (optional, if not given will try to get the last one from db).
 
+=item * C<datadog_tags> - (optional) tags to send send along the DD metrics.
+
 =back
 
 The following side effects could happen on rules engine verification error:
@@ -974,13 +1019,37 @@ async sub check_onfido_rules {
 
                 # If the user had this status but now is clear then age verification is due,
                 # we should alse ensure the aren't other rejection reasons.
-                BOM::Event::Actions::Common::set_age_verification($client, 'Onfido')
-                    if $poi_name_mismatch && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0;
+                if ($poi_name_mismatch && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0) {
+                    if (BOM::Event::Actions::Common::set_age_verification($client, 'Onfido')) {
+                        my $tags = $args->{datadog_tags};
+
+                        if ($tags) {
+                            DataDog::DogStatsd::Helper::stats_inc(
+                                'event.onfido.client_verification.age_verification',
+                                {
+                                    tags => $tags,
+                                });
+                        }
+                    }
+                }
+
             } catch ($e) {
                 my $error_code = '';
                 $error_code = $e->{error_code} // '' if ref($e) eq 'HASH';
                 $client->status->setnx('poi_name_mismatch', 'system', "Name in client details and Onfido report don't match")
                     if $error_code eq 'NameMismatch';
+
+                my $tags = $args->{datadog_tags};
+
+                if ($tags) {
+                    if ($error_code eq 'NameMismatch') {
+                        DataDog::DogStatsd::Helper::stats_inc(
+                            'event.onfido.client_verification.name_mismatch',
+                            {
+                                tags => $tags,
+                            });
+                    }
+                }
             }
         }
     }
@@ -1637,34 +1706,6 @@ async sub _send_email_notification_for_poa {
     return undef;
 }
 
-sub _send_email_onfido_check_exceeded_cs {
-    my $request_count = shift;
-    my $brand         = request->brand;
-    my $app_config    = BOM::Config::Runtime->instance->app_config;
-    $app_config->check_for_update;
-    my $onfido_request_limit = $app_config->system->onfido->global_daily_limit;
-
-    my $system_email         = $brand->emails('system');
-    my @email_recipient_list = ($brand->emails('support'), $brand->emails('compliance_alert'));
-    my $website_name         = $brand->website_name;
-    my $email_subject        = 'Onfido request count limit exceeded';
-    my $email_template       = "\
-        <p><b>IMPORTANT: We exceeded our Onfido authentication check request per day..</b></p>
-        <p>We have sent about $request_count requests which exceeds (" . $onfido_request_limit . "\)
-        our own request limit per day with Onfido server.</p>
-        Team $website_name
-        ";
-
-    my $email_status =
-        Email::Stuffer->from($system_email)->to(@email_recipient_list)->subject($email_subject)->html_body($email_template)->send();
-    unless ($email_status) {
-        $log->warn('failed to send Onfido check exceeded email.');
-        return 0;
-    }
-
-    return 1;
-}
-
 =head2 _send_email_onfido_unsupported_country_cs
 
 Send email to CS when Onfido does not support the client's country.
@@ -2065,12 +2106,18 @@ async sub _upload_documents {
 
 async sub _check_applicant {
     my ($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client, $documents) = @_;
+    my $res;
 
     # Open a mutex lock to avoid race conditions.
     # It's very unlikely that we would want to perform more than one check on the same binary_user_id
     # for whatever reason within a short timeframe. Note this lock will be released when
     # we get a webhook push from Onfido letting us know the check is ready or expire timeout.
     return unless BOM::Platform::Redis::acquire_lock(APPLICANT_CHECK_LOCK_PREFIX . $client->binary_user_id, APPLICANT_CHECK_LOCK_TTL);
+
+    my $country     = $client->place_of_birth // $client->residence;
+    my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
+    my $tags        = ["country:$country_tag"];
+    DataDog::DogStatsd::Helper::stats_inc('event.onfido.check_applicant.dispatch', {tags => $tags});
 
     try {
         my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
@@ -2132,7 +2179,9 @@ async sub _check_applicant {
         )->on_done(
             sub {
                 my ($check) = @_;
+                DataDog::DogStatsd::Helper::stats_inc('event.onfido.check_applicant.success', {tags => $tags});
                 BOM::User::Onfido::store_onfido_check($applicant_id, $check);
+                $res = 1;
             });
 
         await $future_applicant_check;
@@ -2145,11 +2194,14 @@ async sub _check_applicant {
         }
 
     } catch ($e) {
+        DataDog::DogStatsd::Helper::stats_inc('event.onfido.check_applicant.failure', {tags => $tags});
+
         $log->errorf('An error occurred while processing Onfido verification for %s : %s', $client->loginid, $e);
         exception_logged();
     }
 
     await Future->needs_all(_update_onfido_check_count($redis_events_write));
+    return $res;
 }
 
 async sub _update_onfido_check_count {

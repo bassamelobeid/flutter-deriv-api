@@ -51,7 +51,7 @@ It takes the following arguments:
 
 =back
 
-Returns undef.
+Returns C<1> on success, C<undef> otherwise.
 
 =cut
 
@@ -101,7 +101,7 @@ sub set_age_verification {
     }
     BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client => $client});
 
-    return undef;
+    return 1;
 }
 
 =head2 _send_CS_email_POA_pending

@@ -263,14 +263,16 @@ subtest 'set_age_verification' => sub {
             @emissions    = [];
             $p2p_trace    = {};
             mailbox_clear();
+
             undef @emissions;
-            BOM::Event::Actions::Common::set_age_verification($client, $provider);
+            my $res = BOM::Event::Actions::Common::set_age_verification($client, $provider);
 
             my @mailbox = BOM::Test::Email::email_list();
             my $emails  = +{map { $_->{subject} => 1 } @mailbox};
             $client->status->_build_all;
 
             if ($side_effects->{age_verification}) {
+                ok $res;
                 ok $client->status->age_verification, 'Age verified';
                 is_deeply \@emissions,
                     [
@@ -290,6 +292,7 @@ subtest 'set_age_verification' => sub {
                     'Verified notitication sent to CR client';
                 undef @emissions;
             } else {
+                ok !$res;
                 ok !$client->status->age_verification, 'Age status not verified';
                 ok !exists $emissions[0],              'Verified notitication not sent to CR client';
             }
