@@ -17,6 +17,7 @@ use Email::Address::UseXS;
 use Digest::SHA      qw(hmac_sha256_hex);
 use BOM::Test::Email qw(:no_event);
 use Test::BOM::RPC::QueueClient;
+use Test::Warnings qw(warning);
 
 sub get_values {
     my $in = shift;
@@ -200,6 +201,27 @@ subtest 'landing company details' => sub {
 
 $method = 'service_token';
 subtest 'service_token validation' => sub {
+    my $accounts_mock = Test::MockModule->new('BOM::RPC::v3::Accounts');
+    my @metrics;
+
+    $accounts_mock->mock(
+        'stats_inc',
+        sub {
+            push @metrics, @_;
+            return 1;
+        });
+
+    my $services_mock = Test::MockModule->new('BOM::RPC::v3::Services');
+    my $service_token_future;
+
+    $services_mock->mock(
+        'service_token',
+        sub {
+            return $service_token_future if $service_token_future;
+
+            return $services_mock->original('service_token')->(@_);
+        });
+
     $test_client->place_of_birth('');
     $test_client->residence('');
     $test_client->save;
@@ -217,6 +239,68 @@ subtest 'service_token validation' => sub {
             args  => $args
         });
     is($res->{error}->{code}, 'MissingPersonalDetails', "Onfido returns expected error for missing birth & residence");
+    cmp_deeply + {@metrics},
+        +{
+        'rpc.onfido.service_token.dispatch' => {tags => ['country:']},
+        'rpc.onfido.service_token.failure'  => {tags => ['country:']},
+        },
+        'Expected datadog metrics';
+
+    # successful call
+    $service_token_future = Future->done({
+        token => 'abc',
+    });
+
+    @metrics         = ();
+    $args->{country} = 'br';
+    $res             = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+
+    cmp_deeply $res, +{onfido => {token => 'abc'}};
+
+    cmp_deeply + {@metrics},
+        +{
+        'rpc.onfido.service_token.dispatch' => {tags => ['country:BRA']},
+        'rpc.onfido.service_token.success'  => {tags => ['country:BRA']},
+        },
+        'Expected datadog metrics';
+
+    # failure
+    $service_token_future = Future->done({
+        error => 'unsupported country',
+    });
+
+    @metrics = ();
+    $args->{country} = 'cw';
+    warning {
+        $res = $c->tcall(
+            $method,
+            {
+                token => $token,
+                args  => $args
+            });
+    };
+
+    cmp_deeply $res,
+        +{
+        error => {
+            message_to_client => 'Sorry, an error occurred while processing your request.',
+            code              => 'InternalServerError'
+        }};
+
+    cmp_deeply + {@metrics},
+        +{
+        'rpc.onfido.service_token.dispatch' => {tags => ['country:CUW']},
+        'rpc.onfido.service_token.failure'  => {tags => ['country:CUW']},
+        },
+        'Expected datadog metrics';
+
+    $accounts_mock->unmock_all;
+    $services_mock->unmock_all;
 
     $args = {service => 'banxa'};
     $res  = $c->tcall(

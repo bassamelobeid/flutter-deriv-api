@@ -70,7 +70,7 @@ use BOM::Rules::Engine;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 
 use Locale::Country;
-use DataDog::DogStatsd::Helper qw(stats_gauge);
+use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 
 use constant DEFAULT_STATEMENT_LIMIT         => 100;
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
@@ -2517,12 +2517,19 @@ async_rpc service_token => sub {
         }
 
         if ($service eq 'onfido') {
-            my $referrer = $args->{referrer} // $params->{referrer};
-            my $country  = $args->{country}  // $params->{country};
+            my $referrer    = $args->{referrer} // $params->{referrer};
+            my $country     = $args->{country}  // $params->{country} // $client->place_of_birth // $client->residence;
+            my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
+            my $tags        = ["country:$country_tag"];
 
             # The requirement for the format of <referrer> is https://*.<DOMAIN>/*
             # as stated in https://documentation.onfido.com/#generate-web-sdk-token
             $referrer =~ s/(\/\/).*?(\..*?)(\/|$).*/$1\*$2\/\*/g;
+            stats_inc(
+                'rpc.onfido.service_token.dispatch',
+                {
+                    tags => $tags,
+                });
 
             push @service_futures,
                 BOM::RPC::v3::Services::service_token(
@@ -2536,8 +2543,18 @@ async_rpc service_token => sub {
                 sub {
                     my ($result) = @_;
                     if ($result->{error}) {
+                        stats_inc(
+                            'rpc.onfido.service_token.failure',
+                            {
+                                tags => $tags,
+                            });
                         return Future->fail($result->{error});
                     } else {
+                        stats_inc(
+                            'rpc.onfido.service_token.success',
+                            {
+                                tags => $tags,
+                            });
                         return Future->done({
                             token   => $result->{token},
                             service => 'onfido',
