@@ -26,11 +26,14 @@ Returns Mojolicious http response to onfido with `failed` or `ok`.
 
 sub check {
     my ($self) = @_;
+    stats_inc('webhook.onfido.dispatch');
+
     try {
         my $req       = $self->req;
         my $validated = $self->validate_signature($req);
         # Mostly this happens when we manually check webhook from onfido end. in that case signatures are missing.
         unless ($validated) {
+            stats_inc('webhook.onfido.invalid_signature');
             $self->render(text => 'failed');
             return;
         }
@@ -39,11 +42,14 @@ sub check {
         $log->debugf('Received check %s from Onfido', $check);
 
         unless (($check->{payload}{action} // '') eq 'check.completed') {
+            stats_inc('webhook.onfido.unexpected_action');
             $log->warnf('Unexpected check action, ignoring: %s', $check->{payload}{action});
             return $self->render(text => 'ok');
         }
 
         my $obj = $check->{payload}{object};
+        stats_inc('webhook.onfido.success');
+
         $log->debugf('Emitting client_verification event for %s (status %s)', $obj->{href}, $obj->{status},);
         BOM::Platform::Event::Emitter::emit(
             client_verification => {
@@ -52,6 +58,7 @@ sub check {
             });
         $self->render(text => 'ok');
     } catch ($e) {
+        stats_inc('webhook.onfido.failure');
         $log->errorf('Failed - %s', $e);
         $self->render(text => 'failed');
     }

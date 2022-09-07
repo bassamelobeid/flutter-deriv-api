@@ -48,7 +48,8 @@ $t->ua->on(
 $check_mock->mock(
     'stats_inc',
     sub {
-        push @metrics, @_;
+        push @metrics, @_ if scalar @_ == 2;
+        push @metrics, @_, undef if scalar @_ == 1;
         return 1;
     });
 
@@ -70,7 +71,13 @@ subtest 'No signature request' => sub {
     $log->clear();
     $t->post_ok('/', json => $payload)->status_is(200)->content_is('failed');
 
-    cmp_deeply + {@metrics}, +{'bom.platform' => {tags => ['onfido.signature.header.notfound']}}, 'Expected dd metrics';
+    cmp_deeply + {@metrics},
+        +{
+        'webhook.onfido.dispatch'          => undef,
+        'webhook.onfido.invalid_signature' => undef,
+        'bom.platform'                     => {tags => ['onfido.signature.header.notfound']}
+        },
+        'Expected dd metrics';
 
     cmp_bag $log->msgs,
         [{
@@ -95,7 +102,12 @@ subtest 'Old challenge failure' => sub {
     $log->clear();
     $t->post_ok('/', json => $payload)->status_is(200)->content_is('failed');
 
-    cmp_deeply + {@metrics}, +{}, 'Expected dd metrics';
+    cmp_deeply + {@metrics},
+        +{
+        'webhook.onfido.dispatch' => undef,
+        'webhook.onfido.failure'  => undef,
+        },
+        'Expected dd metrics';
 
     cmp_bag $log->msgs,
         [{
@@ -125,8 +137,13 @@ subtest 'Old challenge success' => sub {
     $emissions = {};
     $t->post_ok('/', json => $payload)->status_is(200)->content_is('ok');
 
-    cmp_deeply + {@metrics}, +{}, 'Expected dd metrics';
-    cmp_deeply $emissions,   +{}, 'Expected emissions';
+    cmp_deeply + {@metrics},
+        +{
+        'webhook.onfido.dispatch'          => undef,
+        'webhook.onfido.unexpected_action' => undef,
+        },
+        'Expected dd metrics';
+    cmp_deeply $emissions, +{}, 'Expected emissions';
 
     cmp_bag $log->msgs,
         [{
@@ -163,8 +180,13 @@ subtest 'New challenge failure' => sub {
     $emissions = {};
     $t->post_ok('/', json => $payload)->status_is(200)->content_is('failed');
 
-    cmp_deeply + {@metrics}, +{}, 'Expected dd metrics';
-    cmp_deeply $emissions,   +{}, 'Expected emissions';
+    cmp_deeply + {@metrics},
+        +{
+        'webhook.onfido.dispatch' => undef,
+        'webhook.onfido.failure'  => undef,
+        },
+        'Expected dd metrics';
+    cmp_deeply $emissions, +{}, 'Expected emissions';
 
     cmp_bag $log->msgs,
         [{
@@ -197,7 +219,12 @@ subtest 'New challenge success' => sub {
     $log->clear();
     $t->post_ok('/', json => $payload)->status_is(200)->content_is('ok');
 
-    cmp_deeply + {@metrics}, +{}, 'Expected dd metrics';
+    cmp_deeply + {@metrics},
+        +{
+        'webhook.onfido.dispatch' => undef,
+        'webhook.onfido.success'  => undef,
+        },
+        'Expected dd metrics';
     cmp_deeply $emissions,
         +{
         client_verification => {
