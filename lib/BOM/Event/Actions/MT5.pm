@@ -473,7 +473,7 @@ async sub link_myaff_token_to_mt5 {
     die "Could not link client $client_mt5_login to agent $ib_affiliate_id" unless $updated_user;
     die $updated_user->{error} if $updated_user->{error};
 
-    $log->infof("Successfully linked client %s to affiliate %s", $client_mt5_login, $ib_affiliate_id);
+    $log->debugf("Successfully linked client %s to affiliate %s", $client_mt5_login, $ib_affiliate_id);
 }
 
 =head2 _get_ib_affiliate_id_from_token
@@ -524,7 +524,10 @@ sub _get_ib_affiliate_id_from_token {
     $ib_affiliate_id = $myaffiliate_id if $mt5_custom_var[0];
 
     # If we are receiving anything other than the affiliate id then the token was not parsed successfully
-    die "Affiliate ID is not a number, getting '" . $ib_affiliate_id . "' instead" unless Scalar::Util::looks_like_number($ib_affiliate_id);
+    die "Unable to get Affiliate ID for $myaffiliate_id" unless $ib_affiliate_id;
+
+    die "Affiliate ID is not a number, getting '$ib_affiliate_id' instead"
+        if ($ib_affiliate_id && !Scalar::Util::looks_like_number($ib_affiliate_id));
 
     return $ib_affiliate_id;
 }

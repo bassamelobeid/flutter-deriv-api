@@ -410,11 +410,11 @@ async sub stream_process_loop {
                     $log->error($e);
                     stats_inc($stream . ".processed.failure");
                     await $self->_ack_message($stream, $id);
+                    exception_logged();
                     next ITEM;
                 }
-                $log->warnf("Event '%s' from '%s' has failed to process. The initial error was : %s. Will reprocess the event",
+                $log->debugf("Event '%s' from '%s' has failed to process. The initial error was : %s. Will reprocess the event",
                     $decoded_data->{type}, $stream, $e);
-                stats_inc($stream . '.retried_job');
             } finally {
                 $processed_job = 1;
             }
@@ -474,8 +474,8 @@ async sub items_to_reprocess {
                         next ITEM;
                     }
 
-                    $log->infof("Reprocessing event '%s' from '%s', attempt # %s/%s", $decoded_info->{type}, $stream, $retry_count,
-                        NUMBER_OF_RETRIES);
+                    $log->debugf("Reprocessing event '%s' from '%s', attempt # %s/%s",
+                        $decoded_info->{type}, $stream, $retry_count, NUMBER_OF_RETRIES);
 
                     my @items =
                         map { {stream => $stream, id => $_->[0]->[0], event => $_->[0]->[1]->[1], retry_count => $retry_count} } $claimed_item;
@@ -627,7 +627,7 @@ async sub process_job {
         } else {
             $error_msg = $log->debugf('Failed to process data (%s) - %s', $cleaned_data, $e);
         }
-        exception_logged();
+
         # This one's less clear cut than other failure cases:
         # we *do* expect occasional failures from processing,
         # and normally that does not imply everything is broken.
