@@ -104,7 +104,7 @@ sub _msg {
 }
 
 sub _master_db_connections {
-    my @conn = ('vr01', 'cr01', 'mx01', 'mf01', 'mlt01', 'vrdw01', 'dw01');
+    my @conn = ('vr01', 'cr01', 'mx01', 'mf01', 'mlt01', 'crw01', 'vrw01', 'mfw01');
     if ($ENV{BOM_TEST_ON_QA}) {
         # Unit test env, specific only to QA:
         @conn = ('cr01_test');
