@@ -28,6 +28,7 @@ use BOM::Platform::Context qw(localize);
 use BOM::RPC::v3::Services;
 use BOM::RPC::v3::Utility;
 use BOM::Config::Onfido;
+use BOM::User::Onfido;
 
 use constant ONFIDO_APPLICANT_KEY_PREFIX           => 'ONFIDO::APPLICANT::ID::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS        => qw(address_postcode residence);
@@ -218,7 +219,7 @@ sub _get_onfido_applicant {
         return $onfido->applicant_get(applicant_id => $applicant_id);
     }
 
-    return $onfido->applicant_create(%{_client_onfido_details($client, $country)})->then(
+    return $onfido->applicant_create(%{BOM::User::Onfido::applicant_info($client, $country)})->then(
         sub {
             my $applicant = shift;
 
@@ -234,40 +235,6 @@ sub _get_onfido_applicant {
 
             return Future->done($applicant);
         });
-}
-
-=head2 _client_onfido_details
-
-Generate the list of client personal details needed for Onfido API.
-
-=over 4
-
-=item * C<client> - the client to generate the details for
-
-=back
-
-=cut
-
-sub _client_onfido_details {
-    my ($client, $country) = @_;
-
-    my $details = {
-        (map { $_ => $client->$_ } qw(first_name last_name email)),
-        dob => $client->date_of_birth,
-    };
-
-    # Add address info if the required fields not empty
-    $details->{addresses} = [{
-            building_number => $client->address_line_1,
-            street          => $client->address_line_2 // $client->address_line_1,
-            town            => $client->address_city,
-            state           => $client->address_state,
-            postcode        => $client->address_postcode,
-            country         => uc(country_code2code($country, 'alpha-2', 'alpha-3')),
-        }]
-        if all { length $client->$_ } ONFIDO_ADDRESS_REQUIRED_FIELDS;
-
-    return $details;
 }
 
 1;
