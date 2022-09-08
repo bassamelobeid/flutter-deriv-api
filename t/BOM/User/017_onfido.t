@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 11;
+use Test::More tests => 12;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Warn;
@@ -104,8 +104,10 @@ subtest 'store & get onfido live photo' => sub {
     is_deeply([sort keys %$result], [sort map { $_->id } @photos], 'the result of get photo ok');
 };
 
+my ($doc1, $doc2);
+
 subtest 'store & get onfido document' => sub {
-    my $doc1 = $onfido->document_upload(
+    $doc1 = $onfido->document_upload(
         applicant_id    => $app1->id,
         filename        => "document1.png",
         type            => 'passport',
@@ -113,7 +115,7 @@ subtest 'store & get onfido document' => sub {
         data            => 'This is passport',
         side            => 'front',
     )->get;
-    my $doc2 = $onfido->document_upload(
+    $doc2 = $onfido->document_upload(
         applicant_id    => $app1->id,
         filename        => "document2.png",
         type            => 'driving_licence',
@@ -134,25 +136,25 @@ my $check;
 subtest 'store & update & fetch check ' => sub {
     $check = $onfido->applicant_check(
         applicant_id => $app1->id,
-        type         => 'standard',
-        reports      => [
-            {name => 'document'},
-            {
-                name    => 'facial_similarity',
-                variant => 'standard'
-            }
-        ],
-        tags                       => ['tag1', 'tag2'],
+        # We don't want Onfido to start emailing people
+        suppress_form_emails => 1,
+        # Used for reporting and filtering in the web interface
+        tags => ['tag1', 'tag2'],
+        # On v3 we need to specify the array of documents
+        document_ids => [$doc1->id, $doc2->id],
+        # On v3 we need to specify the report names
+        report_names               => [qw/document facial_similarity_photo/],
         suppress_from_email        => 0,
-        async                      => 1,
         charge_applicant_for_check => 0,
     )->get;
     $check->{status} = 'in_progress';
     lives_ok { BOM::User::Onfido::store_onfido_check($app1->id, $check); } 'Storing onfido check should pass';
     my $result;
     lives_ok { $result = BOM::User::Onfido::get_latest_onfido_check($test_client->binary_user_id); } 'get latest onfido check should pass';
-    is($result->{id},     $check->id,    'get latest onfido check result ok');
-    is($result->{status}, 'in_progress', 'the status of check is in_progress');
+
+    is($result->{id},       $check->id,    'get latest onfido check result ok');
+    is($result->{status},   'in_progress', 'the status of check is in_progress');
+    is($result->{api_type}, 'deprecated',  'type got deprecated in v3');
     $check->{status} = 'complete';
     lives_ok { BOM::User::Onfido::update_onfido_check($check) } 'update check ok';
     lives_ok { $result = BOM::User::Onfido::get_latest_onfido_check($test_client->binary_user_id); } 'get check again';
@@ -950,10 +952,75 @@ subtest 'get consider reasons' => sub {
             $log->contains_ok(qr/Unexpected Onfido request when pending flag is still alive/, 'warning log ok');
         };
 
+        $emission = {};
+        $redis->del($pending_key);
+        ok BOM::User::Onfido::ready_for_authentication(
+            $test_client,
+            {
+                documents  => ['S3', 'X', 'Y'],
+                staff_name => 'test'
+            }
+            ),
+            'ready for auth';
+
+        cmp_deeply $emission,
+            {
+            ready_for_authentication => {
+                loginid      => $test_client->loginid,
+                applicant_id => $applicant_id,
+                documents    => ['S3', 'X', 'Y'],
+                staff_name   => 'test',
+            },
+            },
+            'Expected event emitted';
+
         $emit_mocker->unmock_all;
     };
 
     # Finish it
 
     $onfido_mock->unmock_all;
+};
+
+subtest 'applicant info' => sub {
+    $test_client->first_name('Maria');
+    $test_client->last_name('Juana');
+    $test_client->date_of_birth('1969-04-20');
+    $test_client->email('maria+juana@test.com');
+    $test_client->save;
+    cmp_deeply BOM::User::Onfido::applicant_info($test_client, 'gb'),
+        +{
+        first_name => 'Maria',
+        last_name  => 'Juana',
+        dob        => '1969-04-20',
+        email      => 'maria+juana@test.com',
+        address    => {
+            street          => 301,
+            state           => 'LA',
+            town            => 'Beverly Hills',
+            country         => 'GBR',
+            postcode        => 232323,
+            building_number => 'Civic Center'
+        },
+        location => {country_of_residence => 'IDN'},
+        },
+        'Expected applicant info';
+
+    cmp_deeply BOM::User::Onfido::applicant_info($test_client),
+        +{
+        first_name => 'Maria',
+        last_name  => 'Juana',
+        dob        => '1969-04-20',
+        email      => 'maria+juana@test.com',
+        address    => {
+            street          => 301,
+            state           => 'LA',
+            town            => 'Beverly Hills',
+            country         => 'CHN',
+            postcode        => 232323,
+            building_number => 'Civic Center'
+        },
+        location => {country_of_residence => 'IDN'},
+        },
+        'Expected applicant info';
 };

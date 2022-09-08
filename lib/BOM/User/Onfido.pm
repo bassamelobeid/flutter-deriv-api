@@ -15,7 +15,7 @@ use Date::Utility;
 use JSON::MaybeUTF8            qw(decode_json_utf8 encode_json_utf8);
 use Locale::Codes::Country     qw(country_code2code);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use List::Util                 qw(first uniq);
+use List::Util                 qw(first uniq all);
 use BOM::Config::Redis;
 use BOM::Platform::Event::Emitter;
 use Log::Any qw($log);
@@ -23,6 +23,7 @@ use Log::Any qw($log);
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 use constant ONFIDO_REQUEST_PENDING_PREFIX  => 'ONFIDO::REQUEST::PENDING::PER::USER::';
 use constant ONFIDO_REQUEST_PENDING_TTL     => 86400;                                     # one day in second
+use constant ONFIDO_ADDRESS_REQUIRED_FIELDS => qw(address_postcode residence);
 
 =head2 store_onfido_applicant
 
@@ -118,7 +119,7 @@ sub store_onfido_check {
                     $applicant_id,
                     Date::Utility->new($check->created_at)->datetime_yyyymmdd_hhmmss,
                     $check->href,
-                    $check->type,
+                    'deprecated',
                     $check->status,
                     $check->result,
                     $check->results_uri,
@@ -775,12 +776,14 @@ sub ready_for_authentication {
 
     my $user_applicant = get_user_onfido_applicant($client->binary_user_id);
     my $documents      = $args->{documents};
+    my $staff_name     = $args->{staff_name};
 
     BOM::Platform::Event::Emitter::emit(
         ready_for_authentication => {
             loginid      => $client->loginid,
             applicant_id => $user_applicant->{id},
-            defined $documents ? (documents => $documents) : (),
+            defined $documents  ? (documents  => $documents)  : (),
+            defined $staff_name ? (staff_name => $staff_name) : (),
         });
 
     return 1;
@@ -836,6 +839,55 @@ sub maybe_pending {
     return 'pending' if BOM::Config::Onfido::is_country_supported($country_code);
 
     return 'none';
+}
+
+=head2 applicant_info
+
+Gets the current client applicant info needed by `applicant_create`` and `applicant_update`
+Onfido API endpoints.
+
+It takes the following:
+
+=over 4
+
+=item * C<$client> - the instance of L<BOM::User::Client>
+
+=item * C<$country> - (optional) 2 letters country.
+
+=back
+
+A hashref compatible with applicant create and applicant update endpoints. https://documentation.onfido.com/#applicant-object
+
+=cut
+
+sub applicant_info {
+    my ($client, $country) = @_;
+
+    my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
+
+    $country //= uc($client->place_of_birth || $client->residence);
+
+    my $details = {
+        (map { $_ => $client->$_ } qw(first_name last_name email)),
+        dob => $client->date_of_birth,
+    };
+
+    # Add address info if the required fields not empty
+    $details->{address} = {
+        building_number => $client->address_line_1,
+        street          => $client->address_line_2 // $client->address_line_1,
+        town            => $client->address_city,
+        state           => $client->address_state,
+        postcode        => $client->address_postcode,
+        country         => uc(country_code2code($country, 'alpha-2', 'alpha-3')),
+        }
+        if all { length $client->$_ } ONFIDO_ADDRESS_REQUIRED_FIELDS;
+
+    $details->{location} = {
+        country_of_residence => $residence,
+    };
+
+    return $details;
 }
 
 1;
