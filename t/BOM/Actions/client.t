@@ -564,11 +564,17 @@ subtest "ready for run authentication" => sub {
             return Ryu::Source->new;
         });
 
+    my @applicant_documents = (
+        WebService::Async::Onfido::Document->new(id => 'aaa'),
+        WebService::Async::Onfido::Document->new(id => 'bbb'),
+        WebService::Async::Onfido::Document->new(id => 'ccc'),
+    );
     $ryu_mock->mock(
         'as_list',
         sub {
-            return Future->done(1, 2, 3);
+            return Future->done(@applicant_documents);
         });
+
     $test_client->status->clear_age_verification;
     $loop->add(my $services = BOM::Event::Services->new);
     my $redis        = $services->redis_events_write();
@@ -579,6 +585,7 @@ subtest "ready for run authentication" => sub {
         BOM::Event::Actions::Client::ready_for_authentication({
                 loginid      => $test_client->loginid,
                 applicant_id => $applicant_id,
+                documents    => [qw/aaa bbb ccc/],
             })->get;
 
         cmp_deeply + {@metrics},
@@ -593,6 +600,7 @@ subtest "ready for run authentication" => sub {
     "ready_for_authentication no exception";
 
     $check = $onfido->check_list(applicant_id => $applicant_id)->as_arrayref->get->[0];
+
     ok($check, "there is a check");
     my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
         fixup => sub {
@@ -608,18 +616,18 @@ subtest "ready for run authentication" => sub {
 
     subtest 'consecutive calls to ready_for_authentication' => sub {
         my $lock_mock = Test::MockModule->new('BOM::Platform::Redis');
-        my $lock;
+        my $lock_attempts;
+        my $locked;
         $lock_mock->mock(
             'acquire_lock',
             sub {
-                $lock = $lock_mock->original('acquire_lock')->(@_);
-                return $lock;
-            });
-        $lock_mock->mock(
-            'release_lock',
-            sub {
-                $lock = 0;
-                return $lock_mock->original('release_lock')->(@_);
+                my $res;
+
+                if ($res = $lock_mock->original('acquire_lock')->(@_)) {
+                    $locked++;
+                }
+                $lock_attempts++;
+                return $res;
             });
         my $consecutive_cli = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
@@ -648,7 +656,6 @@ subtest "ready for run authentication" => sub {
             'applicant_check',
             sub {
                 $checks_counter++;
-                ok $lock, 'lock acquired';
 
                 return $onfido_mocker->original('applicant_check')->(@_);
             });
@@ -658,6 +665,7 @@ subtest "ready for run authentication" => sub {
             my $f = BOM::Event::Actions::Client::ready_for_authentication({
                 loginid      => $consecutive_cli->loginid,
                 applicant_id => $consecutive_applicant->id,
+                documents    => [qw/aaa bbb ccc/],
             });
             return $f;
         };
@@ -669,6 +677,8 @@ subtest "ready for run authentication" => sub {
                 my $checks = $onfido->check_list(applicant_id => $consecutive_applicant->id)->as_arrayref->get;
                 is scalar @$checks, $checks_counter, 'Expected checks counter';
                 is $checks_counter, 1,               'One check done';
+                is $locked,         1,               'One lock have gone through';
+                is $lock_attempts,  20,              'Many lock attempts';
 
                 cmp_deeply + {@metrics},
                     +{
@@ -690,8 +700,57 @@ subtest "ready for run authentication" => sub {
 };
 
 my $services;
+my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
+my $ryu_mock      = Test::MockModule->new('Ryu::Source');
+my $ryu_data      = {
+    photo_list    => [WebService::Async::Onfido::Document->new(id => 'test'),],
+    document_list => [WebService::Async::Onfido::Document->new(id => 'aaa'), WebService::Async::Onfido::Document->new(id => 'bbb'),],
+};
+my $ryu_pointer;
+
+$onfido_mocker->mock(
+    'photo_list',
+    sub {
+        $ryu_pointer = 'photo_list';
+        return Ryu::Source->new;
+    });
+
+$onfido_mocker->mock(
+    'document_list',
+    sub {
+        $ryu_pointer = 'document_list';
+        return Ryu::Source->new;
+    });
+
+$ryu_mock->mock(
+    'as_list',
+    sub {
+        if ($ryu_pointer && exists $ryu_data->{$ryu_pointer}) {
+            my @data = $ryu_data->{$ryu_pointer}->@*;
+            $ryu_pointer = undef;
+            return Future->done(@data);
+        }
+
+        return $ryu_mock->original('as_list')->(@_);
+    });
+
+# there is a misconception about hrefs https://developers.onfido.com/guide/api-versioning-policy#webhook-events
+# API's href will be `v3.4/`
+# Webhooks' href are just `v3/`
+my $check_href = $check->{href} =~ s/3\.4/3/r;
+
 subtest "client_verification" => sub {
     my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my $dd_bag   = {};
+
+    $dog_mock->mock(
+        'stats_histogram',
+        sub {
+            my ($what, $value) = @_;
+            $dd_bag->{$what} = $value;
+            return;
+        });
+
     my @metrics;
     $dog_mock->mock(
         'stats_inc',
@@ -733,10 +792,15 @@ subtest "client_verification" => sub {
     is scalar @$keys, 1, 'Lock acquired';
 
     lives_ok {
+        $dd_bag  = {};
         @metrics = ();
-        BOM::Event::Actions::Client::client_verification({
-                check_url => $check->{href},
-            })->get;
+        BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+
+        cmp_deeply $dd_bag,
+            {
+            'event.onfido.client_verification.reported_documents' => 3,
+            },
+            'Expected DD histogram sent';
 
         cmp_deeply + {@metrics},
             +{
@@ -782,9 +846,13 @@ subtest "client_verification" => sub {
                 return 'consider';
             });
 
+        # we support v2 and v3 check hrefs
+        # TODO: remove this line when ONFIDO sadness stops
+        $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
+
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
-                check_url => $check->{href},
+                check_url => $check_href,
             })->get;
         cmp_deeply + {@metrics},
             +{
@@ -821,7 +889,7 @@ subtest "client_verification" => sub {
         lives_ok {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
-                    check_url => $check->{href},
+                    check_url => $check_href,
                 })->get;
             cmp_deeply + {@metrics},
                 +{
@@ -843,7 +911,7 @@ subtest "client_verification" => sub {
         lives_ok {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
-                    check_url => $check->{href},
+                    check_url => $check_href,
                 })->get;
             cmp_deeply + {@metrics},
                 +{
@@ -888,7 +956,7 @@ subtest "Uninitialized date of birth" => sub {
     lives_ok {
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
-                check_url => $check->{href},
+                check_url => $check_href,
             })->get;
 
         cmp_deeply + {@metrics},
@@ -967,7 +1035,7 @@ subtest "document upload request context" => sub {
     lives_ok {
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
-                check_url => $check->{href},
+                check_url => $check_href,
             })->get;
         cmp_deeply + {@metrics},
             +{
@@ -992,7 +1060,7 @@ subtest "document upload request context" => sub {
     lives_ok {
         @metrics = ();
         BOM::Event::Actions::Client::client_verification({
-                check_url => $check->{href},
+                check_url => $check_href,
             })->get;
         cmp_deeply + {@metrics},
             +{
@@ -1050,14 +1118,13 @@ subtest 'client_verification after upload document himself' => sub {
         email      => $test_client2->email,
         dob        => '1980-01-22',
         country    => 'GBR',
-        addresses  => [{
-                building_number => '100',
-                street          => 'Main Street',
-                town            => 'London',
-                postcode        => 'SW4 6EH',
-                country         => 'GBR',
-            }
-        ],
+        address    => {
+            building_number => '100',
+            street          => 'Main Street',
+            town            => 'London',
+            postcode        => 'SW4 6EH',
+            country         => 'GBR',
+        },
     )->get;
 
     $dbic->run(
@@ -1098,6 +1165,7 @@ subtest 'client_verification after upload document himself' => sub {
         BOM::Event::Actions::Client::ready_for_authentication({
                 loginid      => $test_client2->loginid,
                 applicant_id => $applicant_id2,
+                documents    => [qw/aaa bbb test/],
             })->get;
         cmp_deeply + {@metrics},
             +{
@@ -2255,7 +2323,7 @@ subtest 'onfido resubmission' => sub {
             return ({
                 'status'       => 'in_progress',
                 'stamp'        => '2020-10-01 16:09:35.785807',
-                'href'         => '/v2/applicants/7FC678E6-0400-11EB-98D4-92B97BD2E76D/checks/7FEEF47E-0400-11EB-98D4-92B97BD2E76D',
+                'href'         => '/v3.4/checks/7FEEF47E-0400-11EB-98D4-92B97BD2E76D',
                 'api_type'     => 'express',
                 'id'           => '7FEEF47E-0400-11EB-98D4-92B97BD2E76D',
                 'download_uri' => 'https://onfido.com/dashboard/pdf/information_requests/<REQUEST_ID>',
@@ -2375,7 +2443,7 @@ subtest 'onfido resubmission' => sub {
         lives_ok {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
-                    check_url => $check->{href},
+                    check_url => $check_href,
                 })->get;
             cmp_deeply + {@metrics},
                 +{
@@ -3701,7 +3769,7 @@ subtest 'Underage detection' => sub {
         lives_ok {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
-                    check_url => $check->{href},
+                    check_url => $check_href,
                 })->get;
             cmp_deeply + {@metrics},
                 +{
@@ -3771,7 +3839,7 @@ subtest 'Underage detection' => sub {
             lives_ok {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
-                        check_url => $check->{href},
+                        check_url => $check_href,
                     })->get;
                 cmp_deeply + {@metrics},
                     +{
@@ -3824,7 +3892,7 @@ subtest 'Underage detection' => sub {
             lives_ok {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
-                        check_url => $check->{href},
+                        check_url => $check_href,
                     })->get;
                 cmp_deeply + {@metrics},
                     +{
@@ -3876,7 +3944,7 @@ subtest 'Underage detection' => sub {
         lives_ok {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
-                    check_url => $check->{href},
+                    check_url => $check_href,
                 })->get;
             cmp_deeply + {@metrics},
                 +{
@@ -3945,7 +4013,7 @@ subtest 'Underage detection' => sub {
 
             lives_ok {
                 BOM::Event::Actions::Client::client_verification({
-                        check_url => $check->{href},
+                        check_url => $check_href,
                     })->get;
             }
             'the event made it alive!';
@@ -3989,7 +4057,7 @@ subtest 'Underage detection' => sub {
             lives_ok {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
-                        check_url => $check->{href},
+                        check_url => $check_href,
                     })->get;
                 cmp_deeply + {@metrics},
                     +{
@@ -4043,7 +4111,7 @@ subtest 'Underage detection' => sub {
         lives_ok {
             @metrics = ();
             BOM::Event::Actions::Client::client_verification({
-                    check_url => $check->{href},
+                    check_url => $check_href,
                 })->get;
             cmp_deeply + {@metrics},
                 +{
@@ -4098,7 +4166,7 @@ subtest 'Underage detection' => sub {
             lives_ok {
                 @metrics = ();
                 BOM::Event::Actions::Client::client_verification({
-                        check_url => $check->{href},
+                        check_url => $check_href,
                     })->get;
 
                 cmp_deeply + {@metrics},

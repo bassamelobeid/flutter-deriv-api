@@ -23,6 +23,7 @@ use Locale::Country qw/code2country/;
 use Ryu::Source;
 use HTTP::Response;
 use WebService::Async::Onfido::Applicant;
+use WebService::Async::Onfido::Document;
 use BOM::Platform::Redis;
 use Future;
 
@@ -516,12 +517,21 @@ subtest 'Forged documents email' => sub {
 };
 
 subtest 'Applicant Check' => sub {
+    $test_client->residence('br');
+    $test_client->save;
+
     my $ryu_mock = Test::MockModule->new('Ryu::Source');
 
     $onfido_mocker->mock(
         'photo_list',
         sub {
             return Ryu::Source->new;
+        });
+
+    $onfido_mocker->mock(
+        'applicant_update',
+        sub {
+            return Future->done();
         });
 
     $ryu_mock->mock(
@@ -544,8 +554,10 @@ subtest 'Applicant Check' => sub {
 
     $log->clear();
     release_onfido_lock();
-    BOM::Event::Actions::Client::_check_applicant(undef, BOM::Event::Actions::Client::_onfido(),
-        'mocked-applicant-id', undef, $test_client->loginid, undef, undef, $test_client)->get;
+    BOM::Event::Actions::Client::_check_applicant({
+            client       => $test_client,
+            applicant_id => 'mocked-applicant-id',
+            documents    => [qw/abc/]})->get;
     $log->contains_ok(qr/applicant mocked-applicant-id does not have live photos/, 'expected log found');
 
     my %request;
@@ -553,39 +565,94 @@ subtest 'Applicant Check' => sub {
         'applicant_check',
         sub {
             (undef, %request) = @_;
+
             my $res = HTTP::Response->new(422);
             $res->content('{"error":"awful result"}');
             return Future->fail('something awful', undef, $res);
         });
 
+    my @applicant_documents = (
+        WebService::Async::Onfido::Document->new(id => 'aaa'),
+        WebService::Async::Onfido::Document->new(id => 'bbb'),
+        WebService::Async::Onfido::Document->new(id => 'ccc'),
+    );
+
     $ryu_mock->mock(
         'as_list',
         sub {
-            return Future->done(1, 2, 3);
+            return Future->done(@applicant_documents);
         });
 
     $log->clear();
     release_onfido_lock();
-    BOM::Event::Actions::Client::_check_applicant(undef, BOM::Event::Actions::Client::_onfido(),
-        'mocked-applicant-id', 'CR', $test_client->loginid, 'BRA', undef, $test_client)->get;
+
+    BOM::Event::Actions::Client::_check_applicant({
+            client       => $test_client,
+            applicant_id => 'mocked-applicant-id',
+        })->get;
+    $log->contains_ok(qr/documents not specified/, 'expected log found');
+
+    $log->clear();
+    release_onfido_lock();
+
+    BOM::Event::Actions::Client::_check_applicant({
+            client       => $test_client,
+            applicant_id => 'mocked-applicant-id',
+            documents    => [qw/aaa bbb ccc ddd/],
+        })->get;
+    $log->contains_ok(qr/too many documents/, 'expected log found');
+
+    $log->clear();
+    release_onfido_lock();
+
+    BOM::Event::Actions::Client::_check_applicant({
+            client       => $test_client,
+            applicant_id => 'mocked-applicant-id',
+            documents    => [qw/aaa bbb ddd/],
+        })->get;
+    $log->contains_ok(qr/invalid documents/, 'expected log found');
+
+    $log->clear();
+    release_onfido_lock();
+
+    BOM::Event::Actions::Client::_check_applicant({
+            client       => $test_client,
+            applicant_id => 'mocked-applicant-id',
+            documents    => [qw/aaa bbb ccc/],
+        })->get;
     $log->contains_ok(qr/An error occurred while processing Onfido verification for/, 'expected log found');
 
     cmp_deeply \%request,
         {
         suppress_form_emails => 1,
-        type                 => 'express',
         tags                 => ['automated', 'CR', $test_client->loginid, 'BRA', 'brand:deriv'],
-        async                => 1,
         applicant_id         => 'mocked-applicant-id',
-        reports              => [{
-                name => 'document',
-            },
-            {
-                name    => 'facial_similarity',
-                variant => 'standard'
-            }]
+        document_ids         => [qw/aaa bbb ccc/],
+        report_names         => [qw/document facial_similarity_photo/],
         },
         'Expected request for applicant check';
+
+    $log->clear();
+    release_onfido_lock();
+
+    BOM::Event::Actions::Client::_check_applicant({
+            client       => $test_client,
+            applicant_id => 'mocked-applicant-id',
+            staff_name   => 'test',
+        })->get;
+    $log->contains_ok(qr/An error occurred while processing Onfido verification for/, 'expected log found');
+
+    cmp_deeply \%request,
+        {
+        suppress_form_emails => 1,
+        tags                 => ['staff:test', 'CR', $test_client->loginid, 'BRA', 'brand:deriv'],
+        applicant_id         => 'mocked-applicant-id',
+        report_names         => [qw/document facial_similarity_photo/],
+        },
+        'Expected request for applicant check (from BO)';
+
+    $log->clear();
+    release_onfido_lock();
 
     $event_mocker->unmock('_update_onfido_check_count');
     $event_mocker->unmock('_update_onfido_user_check_count');

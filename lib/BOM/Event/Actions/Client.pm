@@ -35,7 +35,7 @@ use Syntax::Keyword::Try;
 use Template::AutoFilter;
 use Time::HiRes;
 use Text::Levenshtein::XS;
-use Array::Utils qw(intersect);
+use Array::Utils qw(intersect array_minus);
 use Scalar::Util qw(blessed);
 use Text::Trim   qw(trim);
 use WebService::MyAffiliates;
@@ -101,7 +101,6 @@ use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX  => 'ONFIDO::UNSUP
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
 use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT}                 // 24 * 60 * 60;
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
-use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 use constant ONFIDO_UPLOAD_TIMEOUT_SECONDS                     => 30;
 use constant SR_CHECK_TIMEOUT                                  => 5;
 use constant FORGED_DOCUMENT_EMAIL_LOCK                        => 'FORGED::EMAIL::LOCK::';
@@ -516,8 +515,7 @@ async sub ready_for_authentication {
         my ($broker) = $loginid =~ /^([A-Z]+)\d+$/
             or die 'could not extract broker code from login ID';
 
-        my $loop   = IO::Async::Loop->new;
-        my $onfido = _onfido();
+        my $loop = IO::Async::Loop->new;
 
         $log->debugf('Processing ready_for_authentication event for %s (applicant ID %s)', $loginid, $applicant_id);
 
@@ -534,8 +532,6 @@ async sub ready_for_authentication {
         my $resubmission_flag = $client->status->allow_poi_resubmission;
         $resubmission_flag = 0 unless BOM::User::Onfido::get_latest_onfido_check($client->binary_user_id);
         $client->propagate_clear_status('allow_poi_resubmission');
-
-        my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
 
         my ($request_count, $user_request_count);
         my $redis_events_write = _redis_events_write();
@@ -603,7 +599,12 @@ async sub ready_for_authentication {
             $loop->timeout_future(after => VERIFICATION_TIMEOUT)
                 ->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.'); return undef }),
 
-            _check_applicant($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client, $args->{documents}));
+            _check_applicant({
+                    client       => $client,
+                    documents    => $args->{documents},
+                    staff_name   => $args->{staff_name},
+                    applicant_id => $applicant_id,
+                }));
 
         if ($res) {
             DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.success', {tags => $tags});
@@ -630,14 +631,21 @@ async sub client_verification {
         my $url = $args->{check_url};
         $log->debugf('Had client verification result %s with check URL %s', $args->{status}, $args->{check_url});
 
-        my ($applicant_id, $check_id) = $url =~ m{/applicants/([^/]+)/checks/([^/]+)} or die 'no check ID found';
+        my ($check_id) = $url =~ m{/v3/checks/([^/]+)};
+
+        # Onfido Sadness. It seems on live we are still getting the old format
+        # with v2. We will make the code version agnostic until further notice.
+
+        (undef, $check_id) = $url =~ m{/v2/applicants/([^/]+)/checks/([^/]+)} unless $check_id;
+
+        die 'no check ID found' unless $check_id;
 
         my $check = await _onfido()->check_get(
-            check_id     => $check_id,
-            applicant_id => $applicant_id,
+            check_id => $check_id,
         );
 
-        my $result = $check->result;
+        my $applicant_id = $check->applicant_id;
+        my $result       = $check->result;
 
         my @common_datadog_tags = (sprintf('check:%s', $result));
 
@@ -683,6 +691,7 @@ async sub client_verification {
             $new_applicant_flag ? BOM::User::Onfido::store_onfido_check($applicant_id, $check) : BOM::User::Onfido::update_onfido_check($check);
 
             my @all_report = await $check->reports->as_list;
+
             for my $each_report (@all_report) {
                 BOM::User::Onfido::store_onfido_report($check, $each_report);
             }
@@ -878,12 +887,21 @@ async sub _store_applicant_documents {
 
     # Build hash index for onfido document id to report.
     my %report_for_doc_id;
+    my $reported_documents = 0;
     for my $report (@{$check_reports}) {
-        $facial_similarity_report = $report if $report->name eq 'facial_similarity';
-        next unless $report->name eq 'document';
-        push @documents, map { $_->{id} } @{$report->documents};
-        $report_for_doc_id{$_->{id}} = $report for @{$report->documents};
+        if ($report->name eq 'facial_similarity_photo') {
+            $facial_similarity_report = $report;
+            # we can assume there is a selfie, note that `documents` is not particularly useful on this kind of report
+            $reported_documents++;
+        } elsif ($report->name eq 'document') {
+            my @report_documents = @{$report->documents};
+            $reported_documents += scalar @report_documents;
+            push @documents, map { $_->{id} } @report_documents;
+            $report_for_doc_id{$_->{id}} = $report for @report_documents;
+        }
     }
+
+    DataDog::DogStatsd::Helper::stats_histogram('event.onfido.client_verification.reported_documents', $reported_documents);
 
     foreach my $document_id (@documents) {
         # Fetch each document individually by applicant/id
@@ -1259,7 +1277,7 @@ async sub sync_onfido_details {
         return unless $applicant_id;
 
         # Instantiate client and onfido object
-        my $client_details_onfido = _client_onfido_details($client);
+        my $client_details_onfido = BOM::User::Onfido::applicant_info($client);
 
         $client_details_onfido->{applicant_id} = $applicant_id;
 
@@ -1449,7 +1467,7 @@ async sub _get_onfido_applicant {
         }
 
         my $start     = Time::HiRes::time();
-        my $applicant = await $onfido->applicant_create(%{_client_onfido_details($client)});
+        my $applicant = await $onfido->applicant_create(%{BOM::User::Onfido::applicant_info($client)});
         my $elapsed   = Time::HiRes::time() - $start;
         # saving data into onfido_applicant table
         BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id) if $applicant;
@@ -1931,34 +1949,6 @@ sub social_responsibility_check {
     return undef;
 }
 
-=head2 _client_onfido_details
-
-Generate the list of client personal details needed for Onfido API
-
-=cut
-
-sub _client_onfido_details {
-    my $client = shift;
-
-    my $details = {
-        (map { $_ => $client->$_ } qw(first_name last_name email)),
-        dob => $client->date_of_birth,
-    };
-
-    # Add address info if the required fields not empty
-    $details->{addresses} = [{
-            building_number => $client->address_line_1,
-            street          => $client->address_line_2 // $client->address_line_1,
-            town            => $client->address_city,
-            state           => $client->address_state,
-            postcode        => $client->address_postcode,
-            country         => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
-        }]
-        if all { length $client->$_ } ONFIDO_ADDRESS_REQUIRED_FIELDS;
-
-    return $details;
-}
-
 async sub _get_applicant_and_file {
     my (%args) = @_;
 
@@ -2105,7 +2095,14 @@ async sub _upload_documents {
 }
 
 async sub _check_applicant {
-    my ($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client, $documents) = @_;
+    my ($args) = @_;
+    my ($client, $applicant_id, $documents, $staff_name) = @{$args}{qw/client applicant_id documents staff_name/};
+
+    my $onfido             = _onfido();
+    my $broker             = $client->broker_code;
+    my $loginid            = $client->loginid;
+    my $residence          = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
+    my $redis_events_write = _redis_events_write();
     my $res;
 
     # Open a mutex lock to avoid race conditions.
@@ -2120,6 +2117,20 @@ async sub _check_applicant {
     DataDog::DogStatsd::Helper::stats_inc('event.onfido.check_applicant.dispatch', {tags => $tags});
 
     try {
+        # On v3.4, the applicant needs location in order to perform checks
+        # make sure the applicant has a proper location before attempting a check
+        # https://developers.onfido.com/guide/api-v3-to-v3.4-migration-guide#location
+
+        await $onfido->applicant_update(
+            applicant_id => $applicant_id,
+            location     => BOM::User::Onfido::applicant_info($client)->{location},
+        );
+
+        $documents //= [];
+        my $document_count = scalar $documents->@*;
+
+        die 'documents not specified' if !$document_count && !$staff_name;
+
         my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
 
         # logs do often report 422 errors, this may be due to lack of live photo uploaded,
@@ -2127,38 +2138,37 @@ async sub _check_applicant {
         # our `applicant_check` call is buggy, otherwise we'll keep digging.
         die "applicant $applicant_id does not have live photos" unless scalar @live_photos;
 
+        # skip validation if the events was emitted from the BO
+        # BO cannot specify documents, so it will use the last uploaded docs
+        unless ($staff_name) {
+            my @live_photo_ids = map { $_->id } @live_photos;
+            my ($selfie) = intersect(@live_photo_ids, $documents->@*);
+
+            die 'invalid live photo' unless $selfie;
+
+            # valid document count interval [2,3] (there should be a selfie + some document picture)
+            die 'documents not specified' if $document_count < 2;
+            die 'too many documents'      if $document_count > 3;
+
+            # grab all the applicant's documents id
+            my $onfido_docs = [$selfie, map { $_->id } await $onfido->document_list(applicant_id => $applicant_id)->as_list];
+
+            # all the documents coming from the args must belong to this applicant
+            # in other words, the args documents must be a subset of the applicant docs
+            die 'invalid documents' if array_minus($documents->@*, $onfido_docs->@*);
+        }
+
         my $error_type;
         my %request = (
             applicant_id => $applicant_id,
             # We don't want Onfido to start emailing people
             suppress_form_emails => 1,
             # Used for reporting and filtering in the web interface
-            tags => ['automated', $broker, $loginid, $residence, 'brand:' . request->brand->name],
-            # Note that there are additional report types which are not currently useful:
-            # - proof_of_address - only works for UK documents
-            # - street_level - involves posting a letter and requesting the user enter
-            # a verification code on the Onfido site
-            # plus others that would require the feature to be enabled on the account:
-            # - identity
-            # - watchlist
-            # that onfido will use to compare photo uploaded
-            # If document ids as specified, they will be included in request. Otherwise Onfido will check for the most recently uploaded docs
-            # https://documentation.onfido.com/v2/#request-body-parameters-report
-            reports => [{
-                    name => 'document',
-                    $documents ? (documents => $documents) : ()
-                },
-                {
-                    name    => 'facial_similarity',
-                    variant => 'standard',
-                },
-            ],
-            # async flag if true will queue checks for processing and
-            # return a response immediately
-            async => 1,
-            # The type is always "express" since we are sending data via API.
-            # https://documentation.onfido.com/#check-types
-            type => 'express',
+            tags => [$staff_name ? 'staff:' . $staff_name : 'automated', $broker, $loginid, $residence, 'brand:' . request->brand->name],
+            # On v3 we need to specify the array of documents
+            $staff_name ? () : (document_ids => $documents),
+            # On v3 we need to specify the report names
+            report_names => [qw/document facial_similarity_photo/],
         );
 
         my $future_applicant_check = $onfido->applicant_check(%request)->on_fail(
