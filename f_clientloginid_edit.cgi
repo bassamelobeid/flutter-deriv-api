@@ -183,7 +183,11 @@ if (defined $input{run_onfido_check}) {
         code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
     }
 
-    BOM::User::Onfido::ready_for_authentication($client);
+    BOM::User::Onfido::ready_for_authentication(
+        $client,
+        {
+            staff_name => $clerk,    # this will hint bom-events to bypass document validations as we dont have that info from BO
+        });
 
     print "<p class=\"notify\">Onfido trigger request sent.</p>";
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
