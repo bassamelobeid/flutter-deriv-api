@@ -53,14 +53,14 @@ subtest "asset_index" => sub {
         "frxAUDJPY",
         "AUD/JPY",
         [
-            ["callput",       "Higher/Lower",               "1d", "365d"],
-            ["callput",       "Rise/Fall",                  "5t", "365d"],
-            ["touchnotouch",  "Touch/No Touch",             "1d", "365d"],
-            ["endsinout",     "Ends Between/Ends Outside",  "1d", "365d"],
-            ["staysinout",    "Stays Between/Goes Outside", "1d", "365d"],
-            ["callputequal",  "Rise/Fall Equal",            "3m", "365d"],
-            ["callputspread", "Call Spread/Put Spread",     "3m", "2h"],
-            ["multiplier",    "Multiply Up/Multiply Down",  "",   ""],       # logged out will be default to virtual
+            ["callput",       "Higher/Lower",               "1d",  "365d"],
+            ["callput",       "Rise/Fall",                  "10t", "365d"],
+            ["touchnotouch",  "Touch/No Touch",             "1d",  "365d"],
+            ["endsinout",     "Ends Between/Ends Outside",  "1d",  "365d"],
+            ["staysinout",    "Stays Between/Goes Outside", "1d",  "365d"],
+            ["callputequal",  "Rise/Fall Equal",            "3m",  "365d"],
+            ["callputspread", "Call Spread/Put Spread",     "3m",  "2h"],
+            ["multiplier",    "Multiply Up/Multiply Down",  "",    ""],       # logged out will be default to virtual
         ]];
 
     note "asset_index malta landing_company";
@@ -90,15 +90,9 @@ subtest "trading_durations" => sub {
         data      => [{
                 trade_durations => [{
                         durations => [{
-                                display_name => "Ticks",
-                                max          => 10,
-                                min          => 5,
-                                name         => "ticks"
-                            },
-                            {
                                 display_name => "Minutes",
                                 max          => 1440,
-                                min          => 1,
+                                min          => 5,
                                 name         => "m"
                             },
                             {
