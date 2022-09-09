@@ -3,6 +3,7 @@ use warnings;
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
+use Test::MockModule;
 use APIHelper qw(request decode_json);
 
 my $loginid = 'CR0011';
@@ -55,5 +56,18 @@ $r = request(
         currency_code  => 'ZZZ',
     });
 is $r->code, 400, 'wrong currency_code';
+
+my $mock_client = Test::MockModule->new('BOM::User::Client');
+$mock_client->redefine(balance_for_doughflow => 99);
+
+$r = request(
+    'GET',
+    '/account',
+    {
+        client_loginid => $loginid,
+        currency_code  => 'USD',
+    });
+
+is decode_json($r->content)->{balance}, '99.00', '$client->balance_for_doughflow is used for balance';
 
 done_testing();

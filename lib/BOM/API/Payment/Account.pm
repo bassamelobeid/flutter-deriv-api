@@ -29,7 +29,7 @@ sub account_GET {
     return {
         client_loginid => $client->loginid,
         currency_code  => $currency_code,
-        balance        => formatnumber('amount', $currency_code, $account->balance),
+        balance        => formatnumber('amount', $currency_code, $client->balance_for_doughflow),
         limit          => formatnumber('amount', $currency_code, $client->get_limit_for_account_balance),
     };
 }
