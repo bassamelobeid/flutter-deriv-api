@@ -271,8 +271,10 @@ subtest 'Payment withdraw' => sub {
 
     subtest 'payment agent restrictions' => sub {
         my $mock_pa = Test::MockObject->new;
-        $mock_pa->mock(status           => sub { 'authorized' });
-        $mock_pa->mock(services_allowed => sub { return [] });
+        $mock_pa->mock(status                       => sub { 'authorized' });
+        $mock_pa->mock(services_allowed             => sub { return [] });
+        $mock_pa->mock(sibling_payment_agents       => sub { return () });
+        $mock_pa->mock(cashier_withdrawable_balance => sub { return {available => 0, commission => 0} });
 
         my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->redefine(get_payment_agent => $mock_pa);
