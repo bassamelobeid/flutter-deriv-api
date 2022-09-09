@@ -1,41 +1,13 @@
 ---
 - data:
   - symbol:
-    - display_name: AUD/JPY
-      name: frxAUDJPY
-    - display_name: AUD/USD
-      name: frxAUDUSD
-    - display_name: EUR/AUD
-      name: frxEURAUD
-    - display_name: EUR/CAD
-      name: frxEURCAD
-    - display_name: EUR/CHF
-      name: frxEURCHF
-    - display_name: EUR/GBP
-      name: frxEURGBP
-    - display_name: EUR/JPY
-      name: frxEURJPY
-    - display_name: EUR/USD
-      name: frxEURUSD
-    - display_name: GBP/AUD
-      name: frxGBPAUD
-    - display_name: GBP/JPY
-      name: frxGBPJPY
-    - display_name: USD/CAD
-      name: frxUSDCAD
-    - display_name: USD/CHF
-      name: frxUSDCHF
-    - display_name: USD/JPY
-      name: frxUSDJPY
+    - display_name: GBP/USD
+      name: frxGBPUSD
     trade_durations:
     - durations:
-      - display_name: Ticks
-        max: 10
-        min: 5
-        name: ticks
       - display_name: Minutes
         max: 1440
-        min: 1
+        min: 5
         name: m
       - display_name: Hours
         max: 24
@@ -63,7 +35,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 3
+        min: 5
         name: m
       - display_name: Hours
         max: 24
@@ -141,13 +113,41 @@
         display_name: Multiply Up/Multiply Down
         name: multiplier
   - symbol:
-    - display_name: GBP/USD
-      name: frxGBPUSD
+    - display_name: AUD/JPY
+      name: frxAUDJPY
+    - display_name: AUD/USD
+      name: frxAUDUSD
+    - display_name: EUR/AUD
+      name: frxEURAUD
+    - display_name: EUR/CAD
+      name: frxEURCAD
+    - display_name: EUR/CHF
+      name: frxEURCHF
+    - display_name: EUR/GBP
+      name: frxEURGBP
+    - display_name: EUR/JPY
+      name: frxEURJPY
+    - display_name: EUR/USD
+      name: frxEURUSD
+    - display_name: GBP/AUD
+      name: frxGBPAUD
+    - display_name: GBP/JPY
+      name: frxGBPJPY
+    - display_name: USD/CAD
+      name: frxUSDCAD
+    - display_name: USD/CHF
+      name: frxUSDCHF
+    - display_name: USD/JPY
+      name: frxUSDJPY
     trade_durations:
     - durations:
+      - display_name: Ticks
+        max: 10
+        min: 10
+        name: ticks
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 1
         name: m
       - display_name: Hours
         max: 24
@@ -175,7 +175,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 3
         name: m
       - display_name: Hours
         max: 24
@@ -1370,7 +1370,7 @@
     - durations:
       - display_name: Ticks
         max: 10
-        min: 5
+        min: 10
         name: ticks
       - display_name: Minutes
         max: 600
@@ -1417,7 +1417,7 @@
     - durations:
       - display_name: Ticks
         max: 10
-        min: 5
+        min: 10
         name: ticks
       - display_name: Minutes
         max: 600

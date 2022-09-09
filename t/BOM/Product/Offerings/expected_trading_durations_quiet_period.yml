@@ -1366,7 +1366,7 @@
     - durations:
       - display_name: Ticks
         max: 10
-        min: 5
+        min: 10
         name: ticks
       - display_name: Minutes
         max: 600
@@ -1413,7 +1413,7 @@
     - durations:
       - display_name: Ticks
         max: 10
-        min: 5
+        min: 10
         name: ticks
       - display_name: Minutes
         max: 600
