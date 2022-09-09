@@ -270,7 +270,9 @@ sub _mt5_listing {
             if ($offerings->{symbols}) {
                 # skip group used for exchange rate conversion.
                 foreach my $path (grep { $_ !~ /^(?:Conversions|Brokeree)/ } map { $_->{Path} } $offerings->{symbols}->@*) {
-                    my ($submarket, $symbol) = split /\\/, $path;
+                    my @split_tokens = split /\\/, $path;
+                    my $submarket    = $split_tokens[0];
+                    my $symbol       = $split_tokens[-1];
 
                     next unless $submarket and $symbol;
                     my $market_obj = $market_registry->get($self->mt5_market_mapper->{$submarket});
