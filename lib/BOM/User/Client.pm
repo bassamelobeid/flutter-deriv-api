@@ -7182,6 +7182,22 @@ sub balance_for_cashier {
     return financialrounding('amount', $self->currency, $result);
 }
 
+=head2 balance_for_doughflow
+
+Returns withdrawable amount. Used for paymentapi /account endpoint.
+
+=cut
+
+sub balance_for_doughflow {
+    my ($self) = @_;
+
+    if (my $pa = $self->get_payment_agent) {
+        return $pa->cashier_withdrawable_balance()->{available};
+    }
+
+    return $self->account->balance;
+}
+
 =head2 propagate_status
 
 This sub performs an C<BOM::User::Status::upsert> of the desired status on
