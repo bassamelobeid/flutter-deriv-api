@@ -408,12 +408,12 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 46,
+            count   => 79,
             comment => 'real groups'
         },
         {
             filter  => {server_type => 'demo'},
-            count   => 24,
+            count   => 27,
             comment => 'demo groups'
         },
         {
@@ -421,7 +421,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'svg'
             },
-            count   => 25,
+            count   => 36,
             comment => 'real svg groups'
         },
         {
@@ -430,7 +430,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'financial'
             },
-            count   => 5,
+            count   => 11,
             comment => 'real svg financial groups'
         },
         {
@@ -439,7 +439,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'synthetic'
             },
-            count   => 20,
+            count   => 25,
             comment => 'real svg synthetic groups'
         },
         {
@@ -447,7 +447,7 @@ subtest 'available_groups' => sub {
                 server_type => 'demo',
                 company     => 'svg'
             },
-            count   => 6,
+            count   => 9,
             comment => 'demo svg groups'
         },
         {
@@ -456,7 +456,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'financial'
             },
-            count   => 3,
+            count   => 6,
             comment => 'demo svg financial groups'
         },
         {
@@ -635,7 +635,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'bvi'
             },
-            count   => 11,
+            count   => 17,
             comment => 'real bvi groups'
         },
         {
@@ -644,7 +644,7 @@ subtest 'available_groups' => sub {
                 company     => 'bvi',
                 market_type => 'financial'
             },
-            count   => 6,
+            count   => 7,
             comment => 'real bvi financial groups'
         },
         {
@@ -653,7 +653,7 @@ subtest 'available_groups' => sub {
                 company     => 'bvi',
                 market_type => 'synthetic'
             },
-            count   => 5,
+            count   => 10,
             comment => 'real bvi synthetic groups'
         },
         {

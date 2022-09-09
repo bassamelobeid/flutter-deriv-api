@@ -383,12 +383,13 @@ sub available_groups {
     my ($self, $params, $allow_multiple_subgroup) = @_;
 
     # some mapping to match the mt5 group naming convention
-    $params->{subgroup}    = 'std'       if $params->{sub_group}   and $params->{sub_group} eq 'standard';
+    $params->{sub_group}   = 'std'       if $params->{sub_group}   and $params->{sub_group} eq 'standard';
     $params->{market_type} = 'synthetic' if $params->{market_type} and $params->{market_type} eq 'gaming';
 
-    my $allow_multi = $allow_multiple_subgroup ? '(-|_)' : '_';
+    my $allow_multi = $allow_multiple_subgroup ? '(-|_)' : '';
     $params->{$_} //= '\w+' foreach qw(server_type server_key market_type company sub_group);
     $params->{sub_group} .= $allow_multi;
+
     return grep { $_ =~ /^$params->{server_type}\\$params->{server_key}\\$params->{market_type}\\$params->{company}_$params->{sub_group}/ }
         sort { $a cmp $b } keys $self->groups_config->%*;
 }
