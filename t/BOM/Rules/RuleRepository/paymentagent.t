@@ -4,18 +4,14 @@ use warnings;
 use Test::Most;
 use Test::Fatal;
 use Test::MockModule;
-use Test::Warnings        qw(warning);
-use Test::MockTime        qw( set_absolute_time restore_time);
-use Format::Util::Numbers qw(financialrounding);
-
-use ExchangeRates::CurrencyConverter qw/in_usd/;
-
-use ExchangeRates::CurrencyConverter qw/in_usd/;
-use Format::Util::Numbers            qw(financialrounding);
-
+use Test::Warnings                             qw(warning);
+use Test::MockTime                             qw( set_absolute_time restore_time);
+use Format::Util::Numbers                      qw(financialrounding);
+use ExchangeRates::CurrencyConverter           qw/in_usd/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
 use BOM::Rules::RuleRepository::Paymentagent;
+use BOM::Test::Helper::Client;
 
 my $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -142,33 +138,42 @@ subtest $rule_name => sub {
 
     $args{underlying_action} = 'paymentagent_transfer';
     $args{loginid_client}    = $pa_client->loginid;
-    ok exception { $rule_engine->apply_rules($rule_name, %args) }, 'paymentagent_tarnsfer to another PA is blocked';
+    ok exception { $rule_engine->apply_rules($rule_name, %args) }, 'paymentagent_transfer to another PA is blocked';
     $args{loginid_client} = $client->loginid;
-    lives_ok { $rule_engine->apply_rules($rule_name, %args) } "paymentagent_tarnsfer is allowed with a non-PA client";
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } "paymentagent_transfer is allowed with a non-PA client";
 
     subtest 'commission withdrawal' => sub {
-        my $aff_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+
+        my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+        my $limits;
+        $mock_pa->redefine(cashier_withdrawable_balance => sub { $limits });
+
+        my $usd_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
             email       => 'aff1@test.com'
         });
         BOM::User->create(
-            email    => $aff_client->email,
+            email    => $usd_client->email,
             password => 'x'
-        )->add_client($aff_client);
-        $aff_client->account('USD');
-        $aff_client->payment_agent({status => 'authorized'});
-        my $rule_engine = BOM::Rules::Engine->new(client => $aff_client);
+        )->add_client($usd_client);
+        $usd_client->account('USD');
+        $usd_client->payment_agent({
+            payment_agent_name => 'bob1',
+            status             => 'authorized',
+        });
+
+        my $rule_engine = BOM::Rules::Engine->new(client => $usd_client);
 
         my %args = (
             underlying_action => 'doughflow_withdrawal',
-            loginid           => $aff_client->loginid,
+            loginid           => $usd_client->loginid,
         );
 
-        $aff_client->payment_doughflow(
-            amount   => 10,
-            currency => 'USD',
-            remark   => 'x',
-        );
+        $limits = {
+            available  => 0,
+            commission => 0,
+            payouts    => 0,
+        };
 
         is_deeply(
             exception { $rule_engine->apply_rules($rule_name, %args) },
@@ -176,155 +181,78 @@ subtest $rule_name => sub {
                 rule       => $rule_name,
                 error_code => 'ServiceNotAllowedForPA',
             },
-            'PA with doughflow deposits is blocked for doughflow_withdrawal'
+            'Error is ServiceNotAllowedForPA with no available and no commission'
         );
 
-        $aff_client->payment_doughflow(
-            amount   => 10,
-            currency => 'USD',
-            remark   => 'x',
-        );
-
-        $aff_client->payment_affiliate_reward(
-            amount   => 11,
-            currency => 'USD',
-            remark   => 'x',
-        );
-
-        lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Allowed to withdraw affiliate_reward';
+        $limits = {
+            available  => 0,
+            commission => 1,
+            payouts    => 0,
+        };
 
         is_deeply(
             exception { $rule_engine->apply_rules($rule_name, %args, amount => 12) },
             {
                 rule       => $rule_name,
                 error_code => 'PACommisionWithdrawalLimit',
-                params     => ['USD', financialrounding('amount', 'USD', 11)],
+                params     => ['USD', '0.00'],
             },
-            'Cannot withdraw more than commission'
+            'Error is PACommisionWithdrawalLimit when commission was received'
         );
 
-        $aff_client->payment_doughflow(
-            amount   => -11,
-            currency => 'USD',
-            remark   => 'x',
-        );
+        $limits = {
+            available  => 10,
+            commission => 10,
+            payouts    => 0,
+        };
 
         is_deeply(
-            exception { $rule_engine->apply_rules($rule_name, %args) },
+            exception { $rule_engine->apply_rules($rule_name, %args, amount => 10.01) },
             {
                 rule       => $rule_name,
                 error_code => 'PACommisionWithdrawalLimit',
-                params     => ['USD', financialrounding('amount', 'USD', 0)],
+                params     => ['USD', '10.00'],
             },
-            'Different error if received commission in the past'
+            'Error when amount exceeds available'
         );
 
-        $aff_client->payment_mt5_transfer(
-            amount   => 12,
-            currency => 'USD',
-            remark   => 'x',
-        );
+        lives_ok { $rule_engine->apply_rules($rule_name, %args, amount => 10) } 'Allowed to withdraw full amount';
 
-        is_deeply(
-            exception { $rule_engine->apply_rules($rule_name, %args, amount => 12.01) },
-            {
-                rule       => $rule_name,
-                error_code => 'PACommisionWithdrawalLimit',
-                params     => ['USD', financialrounding('amount', 'USD', 12)],
-            },
-            'Correct error with mt5 commision received'
-        );
-
-        lives_ok { $rule_engine->apply_rules($rule_name, %args, amount => 12) } 'Allowed to withdraw mt5_transfer';
-
-        $aff_client->payment_doughflow(
-            amount   => -12,
-            currency => 'USD',
-            remark   => 'x',
-        );
-
-        $aff_client->payment_arbitrary_markup(
-            amount   => 13,
-            currency => 'USD',
-            remark   => 'x',
-        );
-
-        is_deeply(
-            exception { $rule_engine->apply_rules($rule_name, %args, amount => 13.01) },
-            {
-                rule       => $rule_name,
-                error_code => 'PACommisionWithdrawalLimit',
-                params     => ['USD', financialrounding('amount', 'USD', 13)],
-            },
-            'Correct error with api commision received'
-        );
-
-        lives_ok { $rule_engine->apply_rules($rule_name, %args, amount => 13) } 'Allowed to withdraw arbitrary_markup';
-
-        $aff_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        my $usdc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
             email       => 'aff2@test.com'
         });
         BOM::User->create(
-            email    => $aff_client->email,
+            email    => $usdc_client->email,
             password => 'x'
-        )->add_client($aff_client);
-        $aff_client->account('USDC');
-        $aff_client->payment_agent({status => 'authorized'});
-        $rule_engine = BOM::Rules::Engine->new(client => $aff_client);
+        )->add_client($usdc_client);
+        $usdc_client->account('USDC');
+        $usdc_client->payment_agent({
+            payment_agent_name => 'bob2',
+            status             => 'authorized',
+        });
 
-        $aff_client->payment_ctc(
-            amount    => 10,
-            currency  => 'USDC',
-            crypto_id => 1,
-        );
+        $rule_engine = BOM::Rules::Engine->new(client => $usdc_client);
 
         %args = (
             underlying_action => 'crypto_cashier_withdrawal',
-            loginid           => $aff_client->loginid,
+            loginid           => $usdc_client->loginid,
         );
+
+        $limits = {
+            available  => 0,
+            commission => 1,
+            payouts    => 0,
+        };
 
         is_deeply(
-            exception { $rule_engine->apply_rules($rule_name, %args) },
-            {
-                rule       => $rule_name,
-                error_code => 'ServiceNotAllowedForPA',
-            },
-            'PA with crypto deposits is blocked for crypto_cashier_withdrawal'
-        );
-
-        $aff_client->payment_affiliate_reward(
-            amount   => 5,
-            currency => 'USDC',
-            remark   => 'x',
-        );
-
-        is_deeply(
-            exception { $rule_engine->apply_rules($rule_name, %args, amount => 5.01) },
+            exception { $rule_engine->apply_rules($rule_name, %args, amount => 10.01) },
             {
                 rule       => $rule_name,
                 error_code => 'PACommisionWithdrawalLimit',
-                params     => ['USDC', financialrounding('amount', 'USD', 5)],
+                params     => ['USDC', '0.00'],
             },
-            'Cannot withdraw more than affiliate_reward received'
-        );
-
-        lives_ok { $rule_engine->apply_rules($rule_name, %args, amount => 5) } 'Can withdraw full amount';
-
-        $aff_client->payment_ctc(
-            amount    => -5,
-            currency  => 'USDC',
-            crypto_id => 2,
-        );
-
-        is_deeply(
-            exception { $rule_engine->apply_rules($rule_name, %args, amount => 1) },
-            {
-                rule       => $rule_name,
-                error_code => 'PACommisionWithdrawalLimit',
-                params     => ['USDC', financialrounding('amount', 'USD', 0)],
-            },
-            'Limit is zero after withdrawing'
+            'Crypto PA gets PACommisionWithdrawalLimit'
         );
     };
 };

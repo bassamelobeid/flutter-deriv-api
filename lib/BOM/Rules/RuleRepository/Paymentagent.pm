@@ -22,6 +22,7 @@ use BOM::Rules::Registry qw(rule);
 use BOM::Config::PaymentAgent;
 use BOM::Database::ClientDB;
 use BOM::User::Client::PaymentAgent;
+use BOM::User::Client;
 use BOM::Config;
 use BOM::Config::Runtime;
 
@@ -115,23 +116,13 @@ rule 'paymentagent.action_is_allowed' => {
         return 1 if any     { $_ eq $service } ($pa->services_allowed // [])->@*;
 
         if ($service eq 'cashier_withdraw') {
-            my %payment_types = (
-                mt5_transfer     => 'commission',
-                affiliate_reward => 'commission',
-                arbitrary_markup => 'commission',
-                external_cashier => 'payout',
-                crypto_cashier   => 'payout',
-            );
+            my $limits = $pa->cashier_withdrawable_balance;
 
-            my @payment_totals = $pa_client->payment_type_totals(payment_types => [keys %payment_types])->@*;
-            my $commission     = sum map { $_->{deposits} } grep    { $payment_types{$_->{payment_type}} eq 'commission' } @payment_totals;
-            my $payout         = sum map { $_->{withdrawals} } grep { $payment_types{$_->{payment_type}} eq 'payout' } @payment_totals;
-            my $limit          = ($commission // 0) - ($payout // 0);
+            my $available = financialrounding('amount', $pa_client->currency, $limits->{available});
 
-            return 1 if $limit > 0 && abs($args->{amount} // 0) <= $limit;
-            $self->fail('PACommisionWithdrawalLimit',
-                params => [$pa_client->currency, financialrounding('amount', $pa_client->currency, max($limit, 0))])
-                if $commission;
+            return 1 if $available > 0 && abs($args->{amount} // 0) <= $available;
+            $self->fail('PACommisionWithdrawalLimit', params => [$pa_client->currency, $available])
+                if $limits->{commission} > 0;
         }
 
         my %error_mapping = (
