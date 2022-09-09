@@ -221,7 +221,8 @@ sub error_map {
             localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.'),
         PaymentAgentWithdrawSameMethod => localize("To continue withdrawals, please select the same payment method you used to deposit."),
         PaymentAgentJustification      => localize(
-            "To continue withdrawals via payment agents, please get in touch with us via LiveChat and explain the reason for the withdrawal."),
+            "It seems you've not taken full advantage of our trading facilities with the deposit you've made. Before we can enable you to make a withdrawal via a payment agent, we need you to contact us by live chat to explain why you wish to withdraw funds."
+        ),
         PaymentAgentJustificationAdded => localize(
             "We're processing your request to withdraw funds via a payment agent. You'll get to know the status of your request via email within 24 hours."
         ),
