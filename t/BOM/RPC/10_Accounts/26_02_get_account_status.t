@@ -894,6 +894,39 @@ sub upload {
 
     return $client->finish_document_upload($file->{file_id});
 }
+
+subtest 'poi name mismatch on age verified scenario' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+poi_name_mismaatch+age_verified@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+
+    $client->status->setnx('poi_name_mismatch', 'test', 'test');
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    ok((grep { $_ eq 'poi_name_mismatch' } $result->{status}->@*), 'Poi name mismatch reported');
+
+    $client->status->setnx('age_verification', 'test', 'test');
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    ok(!(grep { $_ eq 'poi_name_mismatch' } $result->{status}->@*), 'Poi name mismatch not reported under age verification scenario');
+
+    $client->status->clear_age_verification;
+
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    ok $client->fully_authenticated, 'Client is fully authenticated now';
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    ok(!(grep { $_ eq 'poi_name_mismatch' } $result->{status}->@*), 'Poi name mismatch not reported under fully auth scenario');
+};
+
 $documents_mock->unmock_all;
 $user_mock->unmock_all;
 done_testing();
