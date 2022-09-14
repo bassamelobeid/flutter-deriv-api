@@ -42,9 +42,13 @@ The argument is expected to have the following keys :
 sub yaml_structure_validator {
     my $args            = shift;
     my $expected_config = $args->{expected_config};
-    my $config          = $args->{config}->();
-    my $file_is_array   = $args->{file_is_array};
-    my $function        = svref_2object($args->{config})->GV;
+    my $config;
+    {
+        no strict;
+        $config = $args->{config}->();
+    }
+    my $file_is_array = $args->{file_is_array};
+    my $function      = $args->{config};
     diag($file_is_array) if (exists $args->{file_is_array});
     if (!$file_is_array) {
         my @received_keys = ();
@@ -60,7 +64,7 @@ sub yaml_structure_validator {
                 push @expected_keys, join("|", @_);
             });
         my @differences_keys = array_minus(@expected_keys, @received_keys);
-        cmp_bag(\@differences_keys, [], $function->NAME . ' returns correct structure');
+        cmp_bag(\@differences_keys, [], $function . ' returns correct structure');
         _yaml_array_sub_structure_validator($config, $args->{array_test}) if exists($args->{array_test});
     } else {
         die "Test specified config is array but it was found to be non array!" unless ref($config) eq 'ARRAY';
@@ -79,7 +83,7 @@ sub yaml_structure_validator {
                     push @expected_keys, join("|", @_);
                 });
             my @differences_keys = array_minus(@expected_keys, @received_keys);
-            is(scalar @differences_keys, 0, $function->NAME . ' returns correct structure');
+            is(scalar @differences_keys, 0, $function . ' returns correct structure');
             _yaml_array_sub_structure_validator($line, $args->{array_test}) if exists($args->{array_test});
         }
     }
