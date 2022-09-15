@@ -22,8 +22,9 @@ use List::Util qw(any none);
 use BOM::User;
 use BOM::Database::UserDB;
 
-use constant STATUS           => [qw(active disabled requested outdated)];
-use constant SCREENING_REASON => ('Social Responsibility', 'Payment Agent', 'MT5 Labuan', 'MT5 BVI', 'Affiliate', 'Others');
+use constant STATUS => [qw(active disabled requested outdated)];
+use constant SCREENING_REASON =>
+    ('Social Responsibility', 'Payment Agent', 'MT5 Labuan', 'MT5 BVI', 'MT5 Vanuatu', 'Maltainvest', 'Affiliate', 'Others');
 
 =head2 new
 
