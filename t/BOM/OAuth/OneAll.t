@@ -61,7 +61,7 @@ get '/callback' => sub {
 my $t;
 subtest "check wether client's country of residence is set correctly" => sub {
     $t = Test::Mojo->new('t::BOM::OAuth::OneAll');
-    my ($signup_device, $residence, $email, $brand);
+    my ($signup_device, $residence, $email, $brand, $myaffiliates_token);
 
     #Test case 1: valid residence
     $signup_device = 'mobile';
@@ -125,6 +125,23 @@ subtest "check wether client's country of residence is set correctly" => sub {
         json => {
             'residence'     => $residence,
             'signup_device' => undef
+        });
+
+    #Test case 6: invalid residence with myaffiliates token - signup should be allowed
+    $signup_device      = 'mobile';
+    $residence          = 'es';
+    $email              = 'test' . rand(999) . '@binary.com';
+    $myaffiliates_token = 'sample token';
+    $t->ua->on(
+        start => sub {
+            my ($ua, $tx) = @_;
+            $tx->req->headers->header('X-Client-Country' => $residence);
+        });
+
+    $t->get_ok("/callback?email=$email&signup_device=$signup_device&myaffiliates_token=$myaffiliates_token")->status_is(200)->json_is(
+        json => {
+            'residence'     => $residence,
+            'signup_device' => $signup_device
         });
 };
 

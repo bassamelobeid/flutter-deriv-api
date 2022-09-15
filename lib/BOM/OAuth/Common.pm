@@ -415,6 +415,11 @@ sub create_virtual_account {
         $details->{'signup_device'} = undef;
     }
 
+    # Clients from Spain and portugal are not allowed to signup via affiliate links hence we are removing their token.
+    if (exists $details->{'myaffiliates_token'} && (lc($user_details->{residence}) eq 'pt' || lc($user_details->{residence}) eq 'es')) {
+        $details->{'myaffiliates_token'} = "";
+    }
+
     return BOM::Platform::Account::Virtual::create_account({
         details  => $details,
         utm_data => $utm_data
