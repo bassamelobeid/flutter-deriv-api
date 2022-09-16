@@ -25,7 +25,9 @@ pod_test:
 
 cover:
 	cover -delete
-	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc --ignore-exit -rl t/unit/
+	sed -i '/unexpected OP/,/OP_CUSTOM/d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
+	PERL5OPT='-MBOM::Test -MBOM::Test::Initializations' HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc --ignore-exit -rl  t/BOM/Pricing/ t/unit/
+	cover -report coveralls
 
 unit:
 	@$(PROVE) --norc t/unit
