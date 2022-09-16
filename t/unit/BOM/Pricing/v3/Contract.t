@@ -1,5 +1,7 @@
 use Test::Most;
 use BOM::Pricing::v3::Contract;
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+initialize_realtime_ticks_db();
 
 subtest 'prepare_ask' => sub {
     my $params = {
