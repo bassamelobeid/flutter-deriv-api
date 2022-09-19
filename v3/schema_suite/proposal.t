@@ -7,6 +7,7 @@ use lib "$Bin/../../lib";
 use lib "$Bin";
 
 use BOM::Test::Suite::DSL;
+use BOM::Test::Data::Utility::FeedTestDatabase;
 
 start(
     title             => "proposal.t",
@@ -17,8 +18,17 @@ start(
 # Reconnect in English
 set_language 'EN';
 
-# UNAUTHENTICATED TESTS
+# need to mock these for MULT contracts
+for my $epoch ( 1470744064,1470744072, 1470744088 ){
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $epoch,
+        quote      => 65258.19
+    });
+}
 
+# UNAUTHENTICATED TESTS
+#
 # contract prices are very sensitive to time. Please avoid having anything before these test.
 # invalid duration
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_offerings_validation_error.json', '100', 'ASIANU', 'R_100', '5', 'm';

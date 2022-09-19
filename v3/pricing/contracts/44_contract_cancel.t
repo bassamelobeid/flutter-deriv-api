@@ -66,6 +66,12 @@ subtest 'cancel' => sub {
     is $res->{error}->{code},    'ContractNotFound',                         'error code - ContractNotFound';
     is $res->{error}->{message}, 'Contract not found for contract id: 123.', 'error message - Contract not found for contract id: 123.';
 
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch,
+        quote      => 100,
+    });
+
     my $proposal_res = $t->await::proposal({
         "proposal"      => 1,
         "amount"        => "100",
