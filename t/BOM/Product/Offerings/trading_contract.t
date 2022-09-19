@@ -36,24 +36,25 @@ subtest 'by landing company' => sub {
     };
     subtest 'virtual' => sub {
         my %expected = (
-            'asian'         => 1,
-            'callput'       => 13,
-            'callputequal'  => 7,
-            'digits'        => 5,
-            'endsinout'     => 3,
-            'highlowticks'  => 1,
-            'lookback'      => 2,
-            'multiplier'    => 1,
-            'reset'         => 3,
-            'runs'          => 1,
-            'staysinout'    => 3,
-            'touchnotouch'  => 5,
-            'callputspread' => 3,
+            'asian'         => 2,
+            'callput'       => 14,
+            'callputequal'  => 8,
+            'digits'        => 6,
+            'endsinout'     => 4,
+            'highlowticks'  => 2,
+            'lookback'      => 3,
+            'multiplier'    => 2,
+            'reset'         => 4,
+            'runs'          => 2,
+            'staysinout'    => 4,
+            'touchnotouch'  => 6,
+            'callputspread' => 4,
+            'accumulator'   => 1,
         );
         lives_ok {
             my $contracts = get_contracts($args);
             my %count;
-            my %got = map { $_->{contract_category} => $count{$_->{contract_category}}++ } $contracts->@*;
+            my %got = map { $_->{contract_category} => ++$count{$_->{contract_category}} } $contracts->@*;
             is_deeply(\%got, \%expected, 'contracts received for virtual matched');
         }
         'can get contracts for virtual';
@@ -62,24 +63,25 @@ subtest 'by landing company' => sub {
     subtest 'svg' => sub {
         $args->{landing_company_name} = 'svg';
         my %expected = (
-            'asian'         => 1,
-            'callput'       => 13,
-            'callputequal'  => 7,
-            'digits'        => 5,
-            'endsinout'     => 3,
-            'highlowticks'  => 1,
-            'lookback'      => 2,
-            'multiplier'    => 1,
-            'reset'         => 3,
-            'runs'          => 1,
-            'staysinout'    => 3,
-            'touchnotouch'  => 5,
-            'callputspread' => 3,
+            'asian'         => 2,
+            'callput'       => 14,
+            'callputequal'  => 8,
+            'digits'        => 6,
+            'endsinout'     => 4,
+            'highlowticks'  => 2,
+            'lookback'      => 3,
+            'multiplier'    => 2,
+            'reset'         => 4,
+            'runs'          => 2,
+            'staysinout'    => 4,
+            'touchnotouch'  => 6,
+            'callputspread' => 4,
+            'accumulator'   => 1,
         );
         lives_ok {
             my $contracts = get_contracts($args);
             my %count;
-            my %got = map { $_->{contract_category} => $count{$_->{contract_category}}++ } $contracts->@*;
+            my %got = map { $_->{contract_category} => ++$count{$_->{contract_category}} } $contracts->@*;
             is_deeply(\%got, \%expected, 'contracts received for svg matched');
         }
         'can get contracts fpr svg';
@@ -115,17 +117,17 @@ subtest 'by app id' => sub {
         };
 
         my %expected = (
-            11780 => 36,
-            1411  => 36,
-            16303 => 36,
-            16929 => 36,
+            11780 => 37,
+            1411  => 37,
+            16303 => 37,
+            16929 => 37,
             19111 => 54,
             19112 => 54,
             22168 => 55,
             23789 => 6,
             27315 => 55,
             29864 => 52,
-            30767 => 36,
+            30767 => 37,
             30768 => 55
         );
         my $apps = $deriv->whitelist_apps;

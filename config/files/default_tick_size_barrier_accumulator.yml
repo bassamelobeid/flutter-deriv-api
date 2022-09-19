@@ -30,11 +30,11 @@ R_100:
   growthRate_0.04: 0.000517200619
   growthRate_0.05: 0.000493582528
 1HZ10V:
-  growthRate_0.01: 000.0045868384
-  growthRate_0.02: 000.0041425614
-  growthRate_0.03: 000.0038643309
-  growthRate_0.04: 000.0036571604
-  growthRate_0.05: 000.0034901555
+  growthRate_0.01: 0.000045868384
+  growthRate_0.02: 0.000041425614
+  growthRate_0.03: 0.000038643309
+  growthRate_0.04: 0.000036571604
+  growthRate_0.05: 0.000034901555
 1HZ25V:
   growthRate_0.01: 0.000114671026
   growthRate_0.02: 0.000103564279

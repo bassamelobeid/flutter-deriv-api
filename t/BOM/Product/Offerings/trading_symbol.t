@@ -49,7 +49,7 @@ subtest 'error check' => sub {
         });
         ok !$res->{error},  'no error';
         ok $res->{symbols}, 'returns symbol list';
-        is $res->{symbols}->@*, 84, '84 active symbols';
+        is $res->{symbols}->@*, 86, '86 active symbols';
     }
     'invalid country_code will not throw an error';
 
@@ -61,7 +61,7 @@ subtest 'error check' => sub {
         });
         ok !$res->{error},  'no error';
         ok $res->{symbols}, 'returns symbol list';
-        is $res->{symbols}->@*, 84, '84 active symbols';
+        is $res->{symbols}->@*, 86, '86 active symbols';
     }
     'invalid app_id will not throw an error';
 };
@@ -79,7 +79,7 @@ subtest 'with invalid app id - 123' => sub {
             'au' => 19,
             'be' => 0,
             'bg' => 28,
-            'cn' => 84,
+            'cn' => 86,
             'cy' => 28,
             'cz' => 28,
             'de' => 28,
@@ -95,12 +95,12 @@ subtest 'with invalid app id - 123' => sub {
             'ie' => 28,
             'im' => 0,
             'it' => 28,
-            'jp' => 22,
+            'jp' => 24,
             'lt' => 28,
             'lu' => 28,
             'lv' => 28,
             'nl' => 28,
-            'no' => 22,
+            'no' => 24,
             'pl' => 28,
             'pt' => 28,
             'ro' => 28,
@@ -108,7 +108,7 @@ subtest 'with invalid app id - 123' => sub {
             'sg' => 52,
             'si' => 28,
             'sk' => 28,
-            'tw' => 84,
+            'tw' => 86,
         );
         foreach my $code (keys $countries->%*) {
             my $res = get_symbols({
@@ -127,8 +127,8 @@ subtest 'with invalid app id - 123' => sub {
         my $app_id       = 123;                                               # this will go to default app id offerings
         my %special_case = (
             'au' => 19,
-            'jp' => 22,
-            'no' => 22,
+            'jp' => 24,
+            'no' => 24,
             'sg' => 52,
         );
         foreach my $code (keys $countries->%*) {
@@ -138,7 +138,7 @@ subtest 'with invalid app id - 123' => sub {
                     app_id               => $app_id,
                     country_code         => $code,
                 });
-                my $expected = $special_case{$code} // 84;
+                my $expected = $special_case{$code} // 86;
                 ok $res->{symbols}->@* == $expected, " correct active symbols for $code, got " . scalar($res->{symbols}->@*) . " expected $expected";
             }
         }

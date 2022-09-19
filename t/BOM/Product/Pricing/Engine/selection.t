@@ -94,8 +94,8 @@ subtest 'test everything' => sub {
                 $contract_args = {%$contract_args, %barriers};
             }
 
-            # there's no pricing engine for multiplier
-            next if $contract_args->{bet_type} eq 'MULTUP' or $contract_args->{bet_type} eq 'MULTDOWN';
+            # there's no pricing engine for multiplier and accumulator
+            next if $contract_args->{bet_type} =~ /\bMULTUP\b|\bMULTDOWN\b|\bACCU\b/;
             my $c = produce_contract($contract_args);
 
             next unless exists $expected->{$c->shortcode};
