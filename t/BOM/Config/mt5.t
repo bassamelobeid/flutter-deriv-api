@@ -408,7 +408,7 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 79,
+            count   => 83,
             comment => 'real groups'
         },
         {
@@ -421,7 +421,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'svg'
             },
-            count   => 36,
+            count   => 38,
             comment => 'real svg groups'
         },
         {
@@ -430,7 +430,7 @@ subtest 'available_groups' => sub {
                 company     => 'svg',
                 market_type => 'financial'
             },
-            count   => 11,
+            count   => 13,
             comment => 'real svg financial groups'
         },
         {
@@ -635,7 +635,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'bvi'
             },
-            count   => 17,
+            count   => 19,
             comment => 'real bvi groups'
         },
         {
@@ -644,7 +644,7 @@ subtest 'available_groups' => sub {
                 company     => 'bvi',
                 market_type => 'financial'
             },
-            count   => 7,
+            count   => 9,
             comment => 'real bvi financial groups'
         },
         {
