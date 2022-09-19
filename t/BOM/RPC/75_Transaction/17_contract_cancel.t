@@ -185,6 +185,8 @@ subtest 'forex major pair - frxAUDJPY' => sub {
     $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidtoBuy', 'InvalidtoBuy')
         ->error_message_like(qr/Deal cancellation is not available/, 'Deal cancellation is not available');
 
+    # insert frxAUDJPY ticks for multiplier basis spot
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(['103.50', $now->epoch, 'frxAUDJPY']);
     $mock_date->mock('hour' => sub { return 20 });
     my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
 

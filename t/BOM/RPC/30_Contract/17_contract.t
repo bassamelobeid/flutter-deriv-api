@@ -133,6 +133,9 @@ subtest 'send_ask for non-binary' => sub {
             "multiplier"    => 10
 
         }};
+    # mocking tick_at as the relative time is now year 2058
+    my $mocked = Test::MockModule->new('Quant::Framework::Underlying');
+    $mocked->mock('tick_at' => sub { return Postgres::FeedDB::Spot::Tick->new(quote => 100, epoch => $now->epoch) });
     $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error->result;
 };
 
