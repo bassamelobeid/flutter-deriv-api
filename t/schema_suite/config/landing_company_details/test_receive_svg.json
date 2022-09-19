@@ -267,7 +267,7 @@
          "type" : "array",
          "items" : {
             "type" : "string",
-            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier)$"
+            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier|accumulator)$"
          }
       }
    }

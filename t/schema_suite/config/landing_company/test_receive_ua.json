@@ -45,7 +45,7 @@
             "legal_allowed_contract_categories" : {
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier)$"
+                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier|accumulator)$"
                },
                "type" : "array",
                "minItems" : 6
@@ -462,7 +462,7 @@
                "type" : "array",
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier)$"
+                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier|accumulator)$"
                },
                "minItems" : 6
             },
