@@ -8,7 +8,7 @@
         }
         return true;
     }
-    
+
     var extra_remarks = {
         'external_cashier' : {
             'CREDIT': 'deposit',
@@ -16,16 +16,41 @@
             'WITHDRAWAL_REVERSAL': 'withdrawal_reversal',
         }
     };
-    
+
     function set_remark() {
         var remark = \$("#payment_type option:selected").text();
         var payment_type = \$('#payment_type').val();
         if (!payment_type) remark = '';
         if (payment_type in extra_remarks) {
             var ttype = \$('input:checked').val();
-            remark = remark + ' '+extra_remarks[payment_type][ttype];
+            remark = remark + ' ' + extra_remarks[payment_type][ttype] + ' ';
+            let properties = ["trace_id", "created_by", "payment_method", "payment_processor", "transaction_id"];
+            for (let value of properties){
+                if (\$('#'+value).val() || value === "created_by"){
+                    remark += value + "=" + ( value === "created_by" ? 'INTERNET' : \$('#'+value).val() ) + ' ';
+                }
+            }
         }
         \$('#remark').val(remark);
+    }
+
+    function from_df_remark(remark){
+        let details = remark.split(' ');
+        let payment_type = details.shift();
+        let ttype = details.shift();
+        for (let detail of details){
+            let params = detail.split("=");
+            \$('#'+params[0]).val(params[1]);
+        }
+    }
+
+    let seq = ["0", "10", "100", "500", "1000", "2500", "5000", "10000", "99999"];
+    function get_range(num){
+        for (let i = 0; i <= seq.length - 1; i++){
+            if (( seq[i] <= num ) && ( seq[i+1] >= num )){
+                return seq[i]+'-'+seq[i+1];
+            }
+        }
     }
 
     \$(document).ready(function() {
@@ -36,7 +61,14 @@
         \$('#mdc_reversal' ).click(function(){\$('#payment_debit_credit').text('Confirm reversal')});
         \$('.all_payment_types').hide();
         \$('.all_payment_types input[insist]').removeAttr('required');
-         \$('input[name="ttype"]').click(set_remark);
+        \$('input[name="ttype"]').change(set_remark);
+        \$('input[name="trace_id"]').change(set_remark);
+        \$('input[name="payment_processor"]').change(set_remark);
+        \$('input[name="payment_method"]').change(set_remark);
+        \$('input[name="transaction_id"]').change(set_remark);
+        \$('#amount').change(function(){
+          \$('#amount_range').val(get_range(Number.parseInt(\$('#amount').val())));
+        });
         \$('#payment_type' ).change(function(){
             var payment_type = \$(this).val();
             \$('.all_payment_types').hide();
@@ -47,8 +79,15 @@
             }
             set_remark();
         });
-        
-    })
+
+        \$('#remark').change(function(){
+            \$('.datepick').datepicker({dateFormat: "yy-mm-dd"}).datepicker('setDate', new Date());
+            let remark = \$('#remark').val();
+            if (remark.startsWith("DoughFlow")){
+                from_df_remark(remark);
+            }
+        });
+    });
 </script>
 
 <h3>Confirm a client DEBIT OR CREDIT</h3>
@@ -64,21 +103,21 @@
 <div class="row">
     <div>
         <label>Login ID:</label>
-        <input type="text" name="account" placeholder="required" data-lpignore="true" />
+        <input type="text" id="account" name="account" placeholder="required" data-lpignore="true" />
     </div>
     <div>
         <label>Currency:</label>
-        <select name="currency">
+        <select id="currency" name="currency">
             [% currency_options | none %]
         </select>
     </div>
     <div>
         <label>Amount:</label>
-        <input type="text" name="amount" placeholder="required" data-lpignore="true" />
+        <input type="text" id="amount" name="amount" placeholder="required" data-lpignore="true" />
     </div>
     <div>
         <label>Amount range:</label>
-        <select name="range">
+        <select name="range" id="amount_range">
             <option value="0-10">0-10</option>
             <option value="10-100">10-100</option>
             <option value="100-500">100-500</option>
@@ -106,7 +145,7 @@
             <option value=""                    >--Choose--</option>
             <option value="bank_money_transfer" >Bank Wire</option>
             <option value="affiliate_reward"    >Affiliate Reward</option>
-            <option value="external_cashier"    >Doughflow</option>
+            <option value="external_cashier"    >DoughFlow</option>
             <option value="free_gift"           >Free Gift</option>
             <option value="adjustment_purchase" >Adjustment to Contract Purchase</option>
             <option value="adjustment_sale"     >Adjustment to Contract Sale</option>
@@ -132,19 +171,19 @@
 <div class="row">
     <div class="all_payment_types external_cashier col-stack">
         <label>Trace ID:</label>
-        <input type="number" name="trace_id" insist/>
+        <input type="number" id="trace_id" name="trace_id"/>
     </div>
     <div class="all_payment_types external_cashier credit col-stack">
         <label>Payment processor:</label>
-        <input type="text" name="payment_processor" data-lpignore="true" style="width:134" />
+        <input type="text" id="payment_processor" name="payment_processor" data-lpignore="true" style="width:134" />
     </div>
     <div class="all_payment_types external_cashier credit col-stack">
         <label>Payment method:</label>
-        <input type="text" name="payment_method" data-lpignore="true" style="width:134" />
+        <input type="text" id="payment_method" name="payment_method" data-lpignore="true" style="width:134" />
     </div>
     <div class="all_payment_types external_cashier col-stack">
         <label>Transaction ID:</label>
-        <input type="text" name="transaction_id" data-lpignore="true" />
+        <input type="text" id="transaction_id" name="transaction_id" data-lpignore="true" />
     </div>
     <div class="all_payment_types bank_money_transfer col-stack">
         <label>RMG Bank:</label>
