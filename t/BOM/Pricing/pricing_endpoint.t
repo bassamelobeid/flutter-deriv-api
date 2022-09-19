@@ -25,7 +25,7 @@ my $engine = BOM::Pricing::v4::PricingEndpoint->new({
     currency  => 'USD'
 });
 $engine->parameters->{bet_type} = 'testError';
-dies_ok({$engine->pricing_engine_name}, 'die for wrong bet_type');
+dies_ok { $engine->pricing_engine_name } 'die for wrong bet_type';
 
 done_testing();
 
