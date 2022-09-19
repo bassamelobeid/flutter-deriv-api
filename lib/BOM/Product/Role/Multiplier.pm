@@ -164,8 +164,11 @@ has [qw(basis_spot take_profit stop_loss stop_out)] => (
 sub _build_basis_spot {
     my $self = shift;
 
-    return $self->current_spot if $self->pricing_new;
-
+    my $tick = $self->_tick_accessor->tick_at($self->date_start->epoch, {allow_inconsistent => 1});
+    if ($self->pricing_new) {
+        return $self->underlying->pipsized_value($tick->quote) if defined($tick);
+        return $self->current_spot;
+    }
     # after consistent tick, we should be able to use $underlying->tick_at($self->date_start->epoch);
     return $self->stop_out->basis_spot if $self->stop_out and $self->stop_out->basis_spot;
     return BOM::Product::Exception->throw(
@@ -500,7 +503,6 @@ override '_build_entry_tick' => sub {
     if (abs($self->basis_spot - $tick->quote) < machine_epsilon()) {
         return $tick;
     }
-
     # if it is not the tick at $self->date_start->epoch, it has to be tick 1 second before that
     return $self->underlying->tick_at($self->date_start->epoch - 1);
 };

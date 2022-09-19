@@ -343,6 +343,7 @@ SKIP: {
             },
         };
         my $c = produce_contract($args);
+
         ok !$c->is_valid_to_buy, 'invalid to buy';
         is $c->primary_validation_error->message,                'stop loss too high', 'message - stop loss too high';
         is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
@@ -1346,6 +1347,35 @@ subtest 'dc commision on low leverage indices - Vol300' => sub {
     my $c = produce_contract($args);
     is $c->cancellation_price, '18.03', 'deal cancellation price is as expected.';
 
+};
+
+subtest 'basis entry slippage' => sub {
+    $now = Date::Utility->new;
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100, $now->epoch - 1, 'R_100'],
+        [101, $now->epoch,     'R_100'],
+        [102, $now->epoch + 1, 'R_100']);
+
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now->epoch,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+    };
+
+    my $c = produce_contract($args);
+
+    my $mocked = Test::MockModule->new('BOM::Product::Contract::Multup');
+    $mocked->mock('current_spot', sub { return 102 });    # mocking condition where current spot is at T + 1
+
+    $c->stop_out;
+    $mocked->mock('pricing_new', sub { return 0 });       # mocking condition where pricing_new is false, so entry_spot is not undef
+
+    is $c->basis_spot + 0, $c->entry_tick->quote, "basis_spot matches with entry_tick under normal circumstances";
 };
 
 done_testing();
