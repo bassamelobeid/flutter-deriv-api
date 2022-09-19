@@ -2413,7 +2413,10 @@ sub _get_params_for_expiryqueue {
     $hash->{settlement_epoch} = $contract->date_settlement->epoch if $contract->enqueue_settlement_epoch;
     # if we were to enable back the intraday path dependent, the barrier saved
     # in expiry queue might be wrong, since barrier is set based on next tick.
-    if ($contract->is_path_dependent) {
+    if ($contract->category_code eq 'accumulator') {
+        $hash->{accumulator_epoch} = $contract->date_start->{epoch};
+        $hash->{growth_rate}       = $contract->growth_rate;
+    } elsif ($contract->is_path_dependent) {
         # just check one barrier type since they are not allowed to be different.
         if ($contract->two_barriers) {
             if ($contract->high_barrier->barrier_type eq 'absolute') {
