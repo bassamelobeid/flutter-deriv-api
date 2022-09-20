@@ -160,7 +160,6 @@ my $action_mapping = {
         bonus_approve                                    => \&BOM::Event::Services::Track::bonus_approve,
         bonus_reject                                     => \&BOM::Event::Services::Track::bonus_reject,
         withdrawal_rejected                              => \&BOM::Event::Services::Track::withdrawal_rejected,
-        account_deactivated                              => \&BOM::Event::Services::Track::account_deactivated,
         p2p_order_confirm_verify                         => \&BOM::Event::Services::Track::p2p_order_confirm_verify,
     },
     mt5_retryable => {

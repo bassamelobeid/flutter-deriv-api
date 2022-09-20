@@ -285,7 +285,7 @@ subtest 'user profile change event' => sub {
                 'phone'          => '+15417541233',
                 'citizen'        => 'af',
                 'place_of_birth' => 'af',
-                'residence'      => 'af'
+                'residence'      => 'af',
             },
         }};
     undef @emit_args;
@@ -567,15 +567,17 @@ subtest 'user profile change event track' => sub {
             brand   => 'deriv',
             loginid => $test_client->loginid,
 
-            'address_line_1' => 'street 1',
-            'address_city'   => 'Ambon',
-            'address_state'  => "Balkh",
-            'phone'          => '+15417541233',
-            'citizen'        => 'Afghanistan',
-            'place_of_birth' => 'Afghanistan',
-            'residence'      => 'Afghanistan',
-            'lang'           => 'ID',
-            'loginid'        => $test_client->loginid,
+            'updated_fields' => {
+                'address_line_1' => 'street 1',
+                'address_city'   => 'Ambon',
+                'address_state'  => "Balkh",
+                'phone'          => '+15417541233',
+                'citizen'        => 'Afghanistan',
+                'place_of_birth' => 'Afghanistan',
+                'residence'      => 'Afghanistan',
+            },
+            'lang'    => 'ID',
+            'loginid' => $test_client->loginid,
         }
         },
         'properties are set properly for user profile change event';

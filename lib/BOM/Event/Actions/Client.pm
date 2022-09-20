@@ -1559,16 +1559,10 @@ Called when a client closes their accounts, sends an email to the client and tra
 sub account_closure {
     my $data = shift;
 
-    my $client = BOM::User::Client->new({loginid => $data->{loginid}});
-    my $brand  = request->brand;
-
-    BOM::Platform::Event::Emitter::emit(
-        account_deactivated => {
-            loginid    => $client->loginid,
-            properties => {
-                name  => $client->first_name,
-                brand => $brand->name,
-            }});
+    $data->{name}         = BOM::User::Client->new({loginid => $data->{loginid}})->first_name;
+    $data->{brand}        = request->brand->name;
+    $data->{new_campaign} = 1;
+    track_account_closure($data);
     return 1;
 }
 

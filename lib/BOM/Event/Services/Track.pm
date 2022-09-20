@@ -50,18 +50,15 @@ my %EVENT_PROPERTIES = (
         qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
             is_to_account_pa gateway_code remark time id)
     ],
-    account_closure     => [qw(closing_reason loginids_disabled loginids_failed email_consent)],
+    account_closure     => [qw(new_campaign name brand closing_reason loginids_disabled loginids_failed email_consent)],
     account_reactivated => [qw(first_name needs_poi profile_url resp_trading_url live_chat_url new_campaign)],
     app_registered      => [qw(name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_updated         => [qw(name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_deleted         => [qw(app_id)],
     api_token_created   => [qw(name scopes)],
     api_token_deleted   => [qw(name scopes)],
-    profile_change      => [
-        qw(first_name last_name date_of_birth account_opening_reason address_city address_line_1 address_line_2 address_postcode citizen
-            residence address_state allow_copiers email_consent phone place_of_birth request_professional_status tax_identification_number tax_residence)
-    ],
-    mt5_signup => [
+    profile_change      => [qw(brand updated_fields live_chat_url origin)],
+    mt5_signup          => [
         qw(account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id brand mt5_server mt5_server_location mt5_server_region mt5_server_environment mt5_dashboard_url live_chat_url)
     ],
     mt5_password_changed        => [qw(mt5_loginid)],
@@ -151,7 +148,6 @@ my %EVENT_PROPERTIES = (
     bonus_reject                                => [qw(full_name website contact_url live_chat_url tac_url poi_url)],
     pa_withdraw_confirm         => [qw(email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
     withdrawal_rejected         => [qw(first_name reason remark)],
-    account_deactivated         => [qw(name brand)],
     request_edd_document_upload => [qw(first_name email login_url expiry_date live_chat_url)],
     p2p_order_confirm_verify    => [qw(verification_url order_id order_amount order_currency buyer_name code live_chat_url password_reset_url)],
 );
@@ -192,7 +188,6 @@ my @COMMON_EVENT_METHODS = qw(
     pa_transfer_confirm
     pa_withdraw_confirm
     withdrawal_rejected
-    account_deactivated
     p2p_order_confirm_verify
 );
 
@@ -440,8 +435,12 @@ sub profile_change {
     }
 
     return track_event(
-        event                => 'profile_change',
-        properties           => $properties->{updated_fields},
+        event      => 'profile_change',
+        properties => {
+            updated_fields => $properties->{updated_fields},
+            origin         => $properties->{origin},
+            live_chat_url  => $properties->{live_chat_url},
+        },
         client               => $client,
         traits               => $traits,
         is_identify_required => 1,
@@ -1392,10 +1391,6 @@ It can be called with the following parameters:
 =head2 pa_transfer_confirm
 
 It is triggered for each B<pa_transfer_confirm> event emitted, delivering it to Segment.
-
-=head2 account_deactivated
-
-It is triggered for each B<account_deactivated> event emitted, delivering it to Segment.
 
 =head2 withdrawal_rejected
 

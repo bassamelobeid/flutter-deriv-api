@@ -235,9 +235,9 @@ subtest 'process - tracking jobs' => sub {
                 trading_platform_password_reset_request trading_platform_investor_password_reset_request
                 trading_platform_password_changed trading_platform_password_change_failed
                 trading_platform_investor_password_changed trading_platform_investor_password_change_failed
-                underage_account_closed account_with_false_info_locked self_exclude signup age_verified
-                bonus_approve bonus_reject request_edd_document_upload withdrawal_rejected
-                account_deactivated p2p_order_confirm_verify/
+                underage_account_closed account_with_false_info_locked self_exclude signup
+                age_verified bonus_approve bonus_reject request_edd_document_upload withdrawal_rejected
+                p2p_order_confirm_verify/
         ),
         'Correct number of actions that can be emitted'
     );

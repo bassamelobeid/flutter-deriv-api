@@ -1697,36 +1697,34 @@ subtest 'account closure' => sub {
 
     my $email_args;
     my $mock_client = Test::MockModule->new('BOM::Event::Actions::Client');
-    $mock_client->redefine('send_email', sub { $email_args = shift; });
+    $mock_client->redefine('track_account_closure', sub { $email_args = shift; });
 
-    undef $email_args;
-
-    my $loginid = $test_client->loginid;
-
+    my $loginid   = $test_client->loginid;
     my $call_args = {
         closing_reason    => 'There is no reason',
         loginid           => $loginid,
         loginids_disabled => [$loginid],
         loginids_failed   => [],
-        email_consent     => 0
+        email_consent     => 0,
+        name              => $test_client->first_name,
     };
-    undef @emit_args;
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{account_closure};
     my $result         = $action_handler->($call_args);
 
     ok $result, 'Success result';
-    is_deeply \@emit_args,
-        [
-        'account_deactivated',
+    is_deeply $email_args,
         {
-            loginid    => $loginid,
-            properties => {
-                name  => $test_client->first_name,
-                brand => 'deriv'
-            }}
-        ],
-        'account_deactivated event is emitted';
+        name              => $test_client->first_name,
+        brand             => 'deriv',
+        closing_reason    => 'There is no reason',
+        loginid           => $loginid,
+        loginids_disabled => [$loginid],
+        loginids_failed   => [],
+        email_consent     => 0,
+        new_campaign      => 1
+        },
+        'track_account_closure is called with arguments';
 
     $mock_client->unmock_all;
 };
@@ -1739,9 +1737,6 @@ subtest 'account closure track' => sub {
     );
     request($req);
 
-    my $email_args;
-    my $mock_client = Test::MockModule->new('BOM::Event::Actions::Client');
-
     undef @identify_args;
     undef @track_args;
 
@@ -1752,7 +1747,9 @@ subtest 'account closure track' => sub {
         loginid           => $loginid,
         loginids_disabled => [$loginid],
         loginids_failed   => [],
-        email_consent     => 0
+        email_consent     => 0,
+        name              => $test_client->first_name,
+        new_campaign      => 1
     };
 
     my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{account_closure};
@@ -1772,12 +1769,14 @@ subtest 'account closure track' => sub {
         event      => 'account_closure',
         properties => {
             closing_reason    => 'There is no reason',
+            name              => $test_client->first_name,
             loginid           => $loginid,
             loginids_disabled => [$loginid],
             loginids_failed   => [],
             email_consent     => 0,
             brand             => 'deriv',
             lang              => 'EN',
+            new_campaign      => 1
         },
         },
         'track context and properties are correct.';
@@ -1787,15 +1786,14 @@ subtest 'account closure track' => sub {
 
     $req = BOM::Platform::Context::Request->new(
         brand_name => 'binary',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
     $result = $action_handler->($call_args)->get;
+
     isnt $result,               undef, 'Empty result';
     isnt scalar @identify_args, 0,     'No identify event is triggered when brand is binary';
     isnt scalar @track_args,    0,     'No track event is triggered when brand is binary';
-
-    $mock_client->unmock_all;
 };
 
 subtest 'transfer between accounts event' => sub {
@@ -2707,7 +2705,7 @@ subtest 'account_reactivated for track worker' => sub {
                 first_name       => $test_client->first_name,
                 loginid          => $test_client->loginid,
                 brand            => 'deriv',
-                profile_url      => $brand->profile_url,
+                profile_url      => $brand->profile_url({language => uc(request->language // 'es')}),
                 resp_trading_url => $brand->responsible_trading_url({language => uc(request->language // 'es')}),
                 live_chat_url    => $brand->live_chat_url({language => uc(request->language // 'es')}),
                 needs_poi        => bool(0),

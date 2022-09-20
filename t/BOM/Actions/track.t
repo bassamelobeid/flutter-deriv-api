@@ -253,15 +253,20 @@ subtest 'General event validation - filtering by brand' => sub {
 
         $user->update_email_fields(email_consent => 1);
         ok BOM::Event::Services::Track::track_event(
-            event                => 'profile_change',
-            client               => $test_client,
-            properties           => {email_consent => 1},
+            event      => 'profile_change',
+            client     => $test_client,
+            properties => {
+                updated_fields => {
+                    email_consent => 1,
+                },
+                origin => 'client',
+            },
             is_identify_required => 1,
             brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+
         ok @identify_args, 'Segment identify is invoked';
         ok @track_args,    'Segment track is invoked';
         ($customer, %args) = @track_args;
-
         is_deeply(
             \%args,
             {
@@ -272,10 +277,13 @@ subtest 'General event validation - filtering by brand' => sub {
                 },
                 event      => "profile_change",
                 properties => {
-                    email_consent => 1,
-                    brand         => 'deriv',
-                    lang          => 'ID',
-                    loginid       => $test_client->loginid,
+                    updated_fields => {
+                        email_consent => 1,
+                    },
+                    origin  => 'client',
+                    brand   => 'deriv',
+                    lang    => 'ID',
+                    loginid => $test_client->loginid,
                 },
             },
             'identify context is properly set for profile_change'
@@ -370,9 +378,14 @@ subtest 'General event validation - filtering by brand' => sub {
 
         $user->update_email_fields(email_consent => 1);
         ok BOM::Event::Services::Track::track_event(
-            event                => 'profile_change',
-            client               => $test_client,
-            properties           => {email_consent => 1},
+            event      => 'profile_change',
+            client     => $test_client,
+            properties => {
+                updated_fields => {
+                    email_consent => 1,
+                },
+                origin => 'client',
+            },
             is_identify_required => 1,
             brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
         ok @identify_args, 'Segment identify is invoked';
@@ -389,10 +402,13 @@ subtest 'General event validation - filtering by brand' => sub {
                 },
                 event      => "profile_change",
                 properties => {
-                    brand         => 'deriv',
-                    email_consent => 1,
-                    lang          => 'ID',
-                    loginid       => $test_client->loginid,
+                    brand          => 'deriv',
+                    updated_fields => {
+                        email_consent => 1,
+                    },
+                    origin  => 'client',
+                    lang    => 'ID',
+                    loginid => $test_client->loginid,
                 },
             },
             'identify context is properly set for profile_change'
