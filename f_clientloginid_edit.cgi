@@ -339,7 +339,9 @@ if ($broker eq 'MF') {
             properties => {
                 updated_fields => {
                     mifir_id => $client->mifir_id,
-                }}};
+                },
+                origin => 'system',
+            }};
         BOM::Platform::Event::Emitter::emit('profile_change', $event_args);
     }
 }
