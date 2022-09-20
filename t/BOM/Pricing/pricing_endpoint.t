@@ -1,5 +1,4 @@
 use Test::Most;
-use Test::Exception;
 use BOM::Pricing::v4::PricingEndpoint;
 
 my $tests = {
