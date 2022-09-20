@@ -33,7 +33,7 @@ use constant {
     P2P_USERS_ONLINE_LATEST       => 'P2P::USERS_ONLINE_LATEST',
     P2P_ONLINE_PERIOD             => 90,
     P2P_ORDER_REVIEWABLE_START_AT => 'P2P::ORDER::REVIEWABLE_START_AT',
-    P2P_VERIFICATION_PENDING_KEY  => 'P2P::ORDER::VERIFICATION_PENDING',
+    P2P_VERIFICATION_EVENT_KEY    => 'P2P::ORDER::VERIFICATION_EVENT',
 };
 
 =head1 Name
@@ -131,7 +131,7 @@ sub on_tick {
     $self->find_active_ad_subscriptions;
     $self->process_advertisers_online;
     $self->notify_unreviewable_orders;
-    $self->process_expired_verification_tokens;
+    $self->process_verification_events;
 
     for my $loginid (uniq $self->{advertisers_updated}->@*) {
         BOM::Platform::Event::Emitter::emit(
@@ -333,31 +333,37 @@ sub notify_unreviewable_orders {
     }
 }
 
-=head2 process_expired_verification_tokens
+=head2 process_verification_events
 
-Update orders whose verification tokens just expired, to update verification_pending field.
+Processes multiple events related to order verification which result in order updates.
 
 =cut
 
-sub process_expired_verification_tokens {
+sub process_verification_events {
     my ($self) = @_;
 
     my $redis = $self->{p2p_redis};
 
     $redis->multi;
-    $redis->zrangebyscore(P2P_VERIFICATION_PENDING_KEY, '-Inf', time);
-    $redis->zremrangebyscore(P2P_VERIFICATION_PENDING_KEY, '-Inf', time);
-    my @expired_tokens = $redis->exec->[0]->@*;
+    $redis->zrangebyscore(P2P_VERIFICATION_EVENT_KEY, '-Inf', time);
+    $redis->zremrangebyscore(P2P_VERIFICATION_EVENT_KEY, '-Inf', time);
+    my @items = $redis->exec->[0]->@*;
 
-    for my $item (@expired_tokens) {
-        # Item is P2P_ORDER_ID|CLIENT_LOGINID
-        my ($order_id, $loginid) = split(/\|/, $item);
+    for my $item (@items) {
+        # Item is EVENT|P2P_ORDER_ID|SELLER_LOGINID
+        my ($event, $order_id, $loginid) = split(/\|/, $item);
+
+        next unless ($event // '') =~ /^(REQUEST_BLOCK|TOKEN_VALID|LOCKOUT)$/;
+
+        # update for REQUEST_BLOCK ending should only be sent to the seller
         BOM::Platform::Event::Emitter::emit(
             p2p_order_updated => {
                 order_id       => $order_id,
                 client_loginid => $loginid,
+                self_only      => $event eq 'REQUEST_BLOCK' ? 1 : 0,
             });
-        $log->debugf('Verification token on order %s has expired', $order_id);
+
+        $log->debugf('Processed and removed verification item %s on order %s', $event, $order_id);
     }
 }
 

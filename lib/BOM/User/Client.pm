@@ -2218,25 +2218,24 @@ use constant {
         sell => 'buy',
     },
 
-    P2P_ORDER_DISPUTED_AT         => 'P2P::ORDER::DISPUTED_AT',
-    P2P_ORDER_EXPIRES_AT          => 'P2P::ORDER::EXPIRES_AT',
-    P2P_ORDER_TIMEDOUT_AT         => 'P2P::ORDER::TIMEDOUT_AT',
-    P2P_ORDER_REVIEWABLE_START_AT => 'P2P::ORDER::REVIEWABLE_START_AT',
-    P2P_ADVERTISER_BLOCK_ENDS_AT  => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
-    P2P_STATS_REDIS_PREFIX        => 'P2P::ADVERTISER_STATS',
-    P2P_STATS_TTL_IN_DAYS         => 120,                                   # days after which to prune redis stats
-    P2P_ARCHIVE_DATES_KEY         => 'P2P::AD_ARCHIVAL_DATES',
-    P2P_USERS_ONLINE_KEY          => 'P2P::USERS_ONLINE',
-    P2P_ONLINE_PERIOD             => 90,
-    P2P_TOKEN_MIN_EXPIRY          => 2 * 60 * 60,                           # 2 hours. Sendbird token min expiry
-    P2P_VERIFICATION_TOKEN_EXPIRY => 10 * 60,                               # 10 min
-    P2P_VERIFICATION_MAX_ATTEMPTS => 3,                                     # number of unsucsessful attempts before lockout
-    P2P_VERIFICATION_LOCKOUT_TTL  => 30 * 60,                               # 30 min. Lockout after too many unsucsessful attempts
-    P2P_VERIFICATION_LOCKOUT_KEY  => 'P2P::ORDER::VERIFICATION_LOCKOUT',    # flag to lockout
-    P2P_VERIFICATION_REQUEST_KEY  => 'P2P::ORDER::VERIFICATION_REQUEST',    # flag for rate limit
-    P2P_VERIFICATION_ATTEMPT_KEY  => 'P2P::ORDER::VERIFICATION_ATTEMPT',    # sorted set to track verification failures
-    P2P_VERIFICATION_HISTORY_KEY  => 'P2P::ORDER::VERIFICATION_HISTORY',    # list of verification events for backoffice
-    P2P_VERIFICATION_PENDING_KEY  => 'P2P::ORDER::VERIFICATION_PENDING',    # to maintain verification_pending field of orders
+    P2P_ORDER_DISPUTED_AT             => 'P2P::ORDER::DISPUTED_AT',
+    P2P_ORDER_EXPIRES_AT              => 'P2P::ORDER::EXPIRES_AT',
+    P2P_ORDER_TIMEDOUT_AT             => 'P2P::ORDER::TIMEDOUT_AT',
+    P2P_ORDER_REVIEWABLE_START_AT     => 'P2P::ORDER::REVIEWABLE_START_AT',
+    P2P_ADVERTISER_BLOCK_ENDS_AT      => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
+    P2P_STATS_REDIS_PREFIX            => 'P2P::ADVERTISER_STATS',
+    P2P_STATS_TTL_IN_DAYS             => 120,                                   # days after which to prune redis stats
+    P2P_ARCHIVE_DATES_KEY             => 'P2P::AD_ARCHIVAL_DATES',
+    P2P_USERS_ONLINE_KEY              => 'P2P::USERS_ONLINE',
+    P2P_ONLINE_PERIOD                 => 90,
+    P2P_TOKEN_MIN_EXPIRY              => 2 * 60 * 60,                           # 2 hours. Sendbird token min expiry
+    P2P_VERIFICATION_REQUEST_INTERVAL => 60,                                    # min seconds between order verification requests
+    P2P_VERIFICATION_TOKEN_EXPIRY     => 10 * 60,                               # tokens expire after 10 min
+    P2P_VERIFICATION_MAX_ATTEMPTS     => 3,                                     # number of unsucsessful attempts before lockout
+    P2P_VERIFICATION_LOCKOUT_TTL      => 30 * 60,                               # 30 min lockout after too many unsucsessful attempts
+    P2P_VERIFICATION_ATTEMPT_KEY      => 'P2P::ORDER::VERIFICATION_ATTEMPT',    # sorted set to track verification attempts
+    P2P_VERIFICATION_HISTORY_KEY      => 'P2P::ORDER::VERIFICATION_HISTORY',    # list of verification events for backoffice
+    P2P_VERIFICATION_EVENT_KEY        => 'P2P::ORDER::VERIFICATION_EVENT',      # sorted set of verification events that occur in the future
 
     # Statuses here should match the DB function p2p.is_status_final.
     P2P_ORDER_STATUS => {
@@ -4254,25 +4253,31 @@ sub _p2p_order_confirm_verification {
     return if (not $all_countries) and none { $self->residence eq $_ } @countries;
     return if $all_countries       and any { $self->residence eq $_ } @countries;
 
-    my $order_id     = $order->{id};
-    my $redis        = BOM::Config::Redis->redis_p2p_write;
-    my $attempts_key = P2P_VERIFICATION_ATTEMPT_KEY . "::$order_id";
-    my $lockout_key  = P2P_VERIFICATION_LOCKOUT_KEY . "::$order_id";
-    my $history_key  = P2P_VERIFICATION_HISTORY_KEY . "::$order_id";
-    my $redis_item   = $order_id . '|' . $order->{client_loginid};
+    my $order_id      = $order->{id};
+    my $redis         = BOM::Config::Redis->redis_p2p_write;
+    my $attempts_key  = P2P_VERIFICATION_ATTEMPT_KEY . "::$order_id";
+    my $history_key   = P2P_VERIFICATION_HISTORY_KEY . "::$order_id";
+    my $event_postfix = '|' . $order_id . '|' . $self->loginid;         # note here we use seller loginid, but other places use order client_loginid
 
     # after 3 failures, lockout for 30 min
     if ($redis->zrangebyscore($attempts_key, '-Inf', time)->@* >= P2P_VERIFICATION_MAX_ATTEMPTS) {
-        $redis->set($lockout_key, 1, 'EX', P2P_VERIFICATION_LOCKOUT_TTL);
+        $redis->zadd(P2P_VERIFICATION_EVENT_KEY, time + P2P_VERIFICATION_LOCKOUT_TTL, "LOCKOUT$event_postfix");
+        $redis->zrem(P2P_VERIFICATION_EVENT_KEY, "REQUEST_BLOCK$event_postfix", "TOKEN_VALID$event_postfix");
         $redis->del($attempts_key);
         $redis->rpush($history_key, time . '|30 minute lockout for too many failures');
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_updated => {
+                client_loginid => $self->loginid,
+                order_id       => $order_id,
+            });
     }
 
-    my $ttl = $redis->ttl($lockout_key);
-    if ($ttl > 0) {
+    my $lockout_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "LOCKOUT$event_postfix") // 0;
+    if ($lockout_expiry > time) {
         die +{
             error_code     => 'ExcessiveVerificationFailures',
-            message_params => [ceil($ttl / 60)],
+            message_params => [ceil(($lockout_expiry - time) / 60)],
         };
     }
 
@@ -4288,18 +4293,21 @@ sub _p2p_order_confirm_verification {
 
         unless ($param{dry_run}) {
             $token->delete_token;
-            $redis->zrem(P2P_VERIFICATION_PENDING_KEY, $redis_item);
+            $redis->zrem(P2P_VERIFICATION_EVENT_KEY, "REQUEST_BLOCK$event_postfix", "TOKEN_VALID$event_postfix");
             $redis->rpush($history_key, time . '|Successful verification');
         }
     } else {
         # max 1 request per minute
-        unless ($redis->set(P2P_VERIFICATION_REQUEST_KEY . "::$order_id", 1, 'NX', 'EX', 60)) {
+        my $request_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "REQUEST_BLOCK$event_postfix") // 0;
+        if ($request_expiry > time) {
             $redis->rpushx($history_key, time . '|Too frequent requests for verification email');
             die +{
                 error_code     => 'ExcessiveVerificationRequests',
-                message_params => [$redis->ttl(P2P_VERIFICATION_REQUEST_KEY . "::$order_id")],
+                message_params => [$request_expiry - time],
             };
         }
+
+        $redis->zadd(P2P_VERIFICATION_EVENT_KEY, time + P2P_VERIFICATION_REQUEST_INTERVAL, "REQUEST_BLOCK$event_postfix");
 
         my $code = BOM::Platform::Token->new({
                 email       => $self->email,
@@ -4310,15 +4318,18 @@ sub _p2p_order_confirm_verification {
         my $token_expiry = time + P2P_VERIFICATION_TOKEN_EXPIRY;
         $redis->zadd($attempts_key, $token_expiry, $code);    # record a failed attempt for future, on token expiry
 
-        $redis->zadd(P2P_VERIFICATION_PENDING_KEY, $token_expiry, $redis_item);
+        $redis->zadd(P2P_VERIFICATION_EVENT_KEY, $token_expiry, "TOKEN_VALID$event_postfix");
 
-        if (my $order_expiry = $redis->zscore(P2P_ORDER_EXPIRES_AT, $redis_item)) {    #todo: simplify this when our redis version supports GT flag
-            $redis->zadd(P2P_ORDER_EXPIRES_AT, $token_expiry, $redis_item) if $token_expiry > $order_expiry;
+        # extend order expiry and timeout to match token expiry
+        my $cli_redis_item = $order_id . '|' . $order->{client_loginid};    # these items have order client_loginid not seller loginid
+
+        if (my $order_expiry = $redis->zscore(P2P_ORDER_EXPIRES_AT, $cli_redis_item)) {    #todo: simplify when redis version supports GT flag
+            $redis->zadd(P2P_ORDER_EXPIRES_AT, $token_expiry, $cli_redis_item) if $token_expiry > $order_expiry;
         }
 
-        if (my $order_timedout_at = $redis->zscore(P2P_ORDER_TIMEDOUT_AT, $redis_item)) {
+        if (my $order_timedout_at = $redis->zscore(P2P_ORDER_TIMEDOUT_AT, $cli_redis_item)) {
             my $adjusted_expiry = $token_expiry - ($p2p_config->refund_timeout * 24 * 60 * 60);    # setting is days
-            $redis->zadd(P2P_ORDER_TIMEDOUT_AT, $adjusted_expiry, $redis_item) if $adjusted_expiry > $order_timedout_at;
+            $redis->zadd(P2P_ORDER_TIMEDOUT_AT, $adjusted_expiry, $cli_redis_item) if $adjusted_expiry > $order_timedout_at;
         }
 
         my $url = BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($param{source});
@@ -4703,8 +4714,20 @@ sub _order_details {
             }
         }
 
-        my $verification_ts = $redis->zscore(P2P_VERIFICATION_PENDING_KEY, $order->{id} . '|' . $order->{client_loginid}) // 0;
-        $result->{verification_pending} = $verification_ts > time ? 1 : 0;
+        my (undef, $seller) = $self->_p2p_order_parties($order);
+        my $event_postfix = '|' . $order->{id} . '|' . $seller;
+        my $token_expiry  = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "TOKEN_VALID$event_postfix") // 0;
+        $result->{verification_pending} = $token_expiry > time ? 1 : 0;
+
+        if ($seller eq $self->loginid) {
+            $result->{verification_token_expiry} = $token_expiry if $result->{verification_pending};
+
+            my $request_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "REQUEST_BLOCK$event_postfix") // 0;
+            my $lockout_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "LOCKOUT$event_postfix")       // 0;
+
+            $result->{verification_next_request}  = $request_expiry if $request_expiry > time;
+            $result->{verification_lockout_until} = $lockout_expiry if $lockout_expiry > time;
+        }
 
         push @results, $result;
     }
@@ -5065,7 +5088,7 @@ sub _p2p_order_finalized {
     my $order_id = $order->{id};
     my $redis    = BOM::Config::Redis->redis_p2p_write;
 
-    $redis->del(P2P_VERIFICATION_ATTEMPT_KEY . "::$order_id", P2P_VERIFICATION_HISTORY_KEY . "::$order_id",);
+    $redis->del(P2P_VERIFICATION_ATTEMPT_KEY . "::$order_id", P2P_VERIFICATION_HISTORY_KEY . "::$order_id");
 }
 
 =head2 _p2p_advertiser_cancellations

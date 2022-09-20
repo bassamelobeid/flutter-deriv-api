@@ -119,6 +119,16 @@ subtest 'successful verification' => sub {
         'p2p_order_confirm_verify event emitted',
     );
 
+    my $info = $client->p2p_order_info(id => $order->{id});
+    is $info->{verification_pending}, 1, 'client order info verification pending is 1';
+    ok !exists $info->{verification_next_request}, 'client does not see verification_next_request';
+    ok !exists $info->{verification_token_expiry}, 'client does not see verification_token_expiry';
+
+    $info = $advertiser->p2p_order_info(id => $order->{id});
+    is $info->{verification_pending}, 1, 'advertiser order info verification pending is 1';
+    cmp_ok $info->{verification_next_request}, '<=', time + 60,        'advertiser sees verification_next_request';
+    cmp_ok $info->{verification_token_expiry}, '<=', time + (60 * 10), 'advertiser sees verification_token_expiry';
+
     cmp_deeply(
         $frontend_urls,
         {
@@ -155,9 +165,8 @@ subtest 'successful verification' => sub {
         'dry run ok'
     );
 
-    ok $redis->exists('P2P::ORDER::VERIFICATION_HISTORY::' . $order->{id}), 'histroy key exists';
+    ok $redis->exists('P2P::ORDER::VERIFICATION_HISTORY::' . $order->{id}), 'history key exists';
     ok $redis->exists('P2P::ORDER::VERIFICATION_ATTEMPT::' . $order->{id}), 'attempts key exists';
-    is $client->p2p_order_info(id => $order->{id})->{verification_pending}, 1, 'order info verification pending is still 1';
 
     cmp_deeply(
         $advertiser->p2p_order_confirm(
@@ -174,7 +183,16 @@ subtest 'successful verification' => sub {
     ok !BOM::Platform::Token->new({token => $code})->token,                  'token was deleted';
     ok !$redis->exists('P2P::ORDER::VERIFICATION_HISTORY::' . $order->{id}), 'histroy key was deleted';
     ok !$redis->exists('P2P::ORDER::VERIFICATION_ATTEMPT::' . $order->{id}), 'attempts key was deleted';
-    is $client->p2p_order_info(id => $order->{id})->{verification_pending}, 0, 'order info verification pending is now 0';
+
+    $info = $client->p2p_order_info(id => $order->{id});
+    is $info->{verification_pending}, 0, 'client order info verification pending now 0';
+    ok !exists $info->{verification_next_request}, 'client does not see verification_next_request';
+    ok !exists $info->{verification_token_expiry}, 'client does not see verification_token_expiry';
+
+    $info = $advertiser->p2p_order_info(id => $order->{id});
+    is $info->{verification_pending}, 0, 'advertiser order info verification pending is now 0';
+    ok !exists $info->{verification_next_request}, 'advertiser does not see verification_next_request';
+    ok !exists $info->{verification_token_expiry}, 'advertiser does not see verification_token_expiry';
 };
 
 subtest 'bad verification codes' => sub {
@@ -220,7 +238,7 @@ subtest 'bad verification codes' => sub {
         'cannot retry within 1 min'
     );
 
-    $redis->del('P2P::ORDER::VERIFICATION_REQUEST::' . $order->{id});
+    $redis->zrem('P2P::ORDER::VERIFICATION_EVENT', 'REQUEST_BLOCK|' . $order->{id} . '|' . $advertiser->loginid);
 
     $bad_code = BOM::Platform::Token->new({
             email       => $client->email,
@@ -233,13 +251,15 @@ subtest 'bad verification codes' => sub {
         'cannot use token created for other client'
     );
 
-    $redis->del('P2P::ORDER::VERIFICATION_REQUEST::' . $order->{id});
+    $redis->zrem('P2P::ORDER::VERIFICATION_EVENT', 'REQUEST_BLOCK|' . $order->{id} . '|' . $advertiser->loginid);
 
     cmp_deeply(
         exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => rand()) },
         {error_code => 'InvalidVerificationToken'},
         'cannot use random code'
     );
+
+    undef $emitted_events;
 
     cmp_deeply(
         exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => $good_code) },
@@ -250,7 +270,24 @@ subtest 'bad verification codes' => sub {
         'blocked after 3 failures'
     );
 
-    $redis->del('P2P::ORDER::VERIFICATION_LOCKOUT::' . $order->{id});
+    cmp_deeply(
+        $emitted_events,
+        {
+            p2p_order_updated => [{
+                    client_loginid => $advertiser->loginid,
+                    order_id       => $order->{id},
+                }]
+        },
+        'p2p_order_updated event emitted when blocked'
+    );
+
+    my $info = $advertiser->p2p_order_info(id => $order->{id});
+    cmp_ok $info->{verification_lockout_until}, '<=', time + (60 * 30), 'advertiser sees lockout until';
+    ok !exists $info->{verification_next_request}, 'verification_next_request is not present after block';
+    ok !exists $info->{verification_token_expiry}, 'verification_token_expiry is not present after block';
+    is $info->{verification_pending}, 0, 'verification_pending is false after block';
+
+    $redis->zrem('P2P::ORDER::VERIFICATION_EVENT', 'LOCKOUT|' . $order->{id} . '|' . $advertiser->loginid);
 
     lives_ok { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => $good_code) } 'can confirm after block removed';
 };
@@ -277,7 +314,7 @@ subtest 'token timeout' => sub {
             "confirmation needed for try $_"
         );
 
-        $redis->del('P2P::ORDER::VERIFICATION_REQUEST::' . $order->{id});
+        $redis->zrem('P2P::ORDER::VERIFICATION_EVENT', 'REQUEST_BLOCK|' . $order->{id} . '|' . $advertiser->loginid);
         set_fixed_time(time + 60);
     }
 
@@ -304,9 +341,10 @@ subtest 'token timeout' => sub {
         'blocked when 3 tokens have expired'
     );
 
-    is $redis->ttl('P2P::ORDER::VERIFICATION_LOCKOUT::' . $order->{id}), 30 * 60, 'lockout key ttl is 30 min';
-    ok !$redis->exists('P2P::ORDER::VERIFICATION_ATTEMPT::' . $order->{id}), 'attempt key was cleared';
+    my $lockout_expiry = $redis->zscore('P2P::ORDER::VERIFICATION_EVENT', 'LOCKOUT|' . $order->{id} . '|' . $advertiser->loginid);
+    cmp_ok $lockout_expiry, '<=', time + (30 * 60), 'lockout expiry is 30 min';
 
+    ok !$redis->exists('P2P::ORDER::VERIFICATION_ATTEMPT::' . $order->{id}), 'attempt key was cleared';
 };
 
 subtest 'extend order expiry' => sub {
@@ -329,7 +367,7 @@ subtest 'extend order expiry' => sub {
     is $redis->zscore('P2P::ORDER::EXPIRES_AT', $redis_item), 1200, 'order expiry time was not extended';
 
     set_fixed_time(1000);
-    $redis->del('P2P::ORDER::VERIFICATION_REQUEST::' . $order->{id});
+    $redis->zrem('P2P::ORDER::VERIFICATION_EVENT', 'REQUEST_BLOCK|' . $order->{id} . '|' . $advertiser->loginid);
 
     exception { $advertiser->p2p_order_confirm(id => $order->{id}) };
 
@@ -359,7 +397,7 @@ subtest 'extend order timeout refund' => sub {
     exception { $advertiser->p2p_order_confirm(id => $order->{id}) };
     is $redis->zscore('P2P::ORDER::TIMEDOUT_AT', $redis_item), 10, 'order timedout time was not extended';
 
-    $redis->del('P2P::ORDER::VERIFICATION_REQUEST::' . $order->{id});
+    $redis->zrem('P2P::ORDER::VERIFICATION_EVENT', 'REQUEST_BLOCK|' . $order->{id} . '|' . $advertiser->loginid);
 
     set_fixed_time(86400 - 300);     # 23:55
     exception { $advertiser->p2p_order_confirm(id => $order->{id}) };

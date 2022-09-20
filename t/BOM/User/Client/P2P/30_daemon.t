@@ -31,7 +31,7 @@ set_fixed_time(CORE::time());
 sub clear_redis {
     $p2p_redis->del($_)
         for
-        qw(P2P::ORDER::DISPUTED_AT P2P::ORDER::EXPIRES_AT P2P::ORDER::TIMEDOUT_AT P2P::ADVERTISER::BLOCK_ENDS_AT P2P::USERS_ONLINE P2P::USERS_ONLINE_LATEST P2P::ORDER::REVIEWABLE_START_AT P2P::ORDER::VERIFICATION_PENDING);
+        qw(P2P::ORDER::DISPUTED_AT P2P::ORDER::EXPIRES_AT P2P::ORDER::TIMEDOUT_AT P2P::ADVERTISER::BLOCK_ENDS_AT P2P::USERS_ONLINE P2P::USERS_ONLINE_LATEST P2P::ORDER::REVIEWABLE_START_AT P2P::ORDER::VERIFICATION_EVENT);
 }
 
 subtest 'expired orders' => sub {
@@ -356,19 +356,28 @@ subtest 'order reviews ending' => sub {
     cmp_deeply($p2p_redis->zrange('P2P::ORDER::REVIEWABLE_START_AT', 0, -1), bag('1|CR001', '2|CR002'), 'processed items removed');
 };
 
-subtest 'expired verfication tokens' => sub {
+subtest 'verification events' => sub {
     clear_redis();
     $emitted_events = {};
 
     my $daemon = BOM::User::Script::P2PDaemon->new;
 
     my @items = (
-        time() - 1 => '1|CR001',
-        time()     => '2|CR002',
-        time() + 2 => '3|CR003',
+        time() - 1 => 'REQUEST_BLOCK|1|CR001',
+        time() - 1 => 'TOKEN_VALID|2|CR002',
+        time() - 1 => 'LOCKOUT|3|CR003',
+        time() - 1 => 'XXX|4|CR004',
+        time()     => 'REQUEST_BLOCK|5|CR005',
+        time()     => 'TOKEN_VALID|6|CR006',
+        time()     => 'LOCKOUT|7|CR007',
+        time()     => 'XXX|8|CR008',
+        time() + 1 => 'REQUEST_BLOCK|9|CR009',
+        time() + 1 => 'TOKEN_VALID|10|CR0010',
+        time() + 1 => 'LOCKOUT|11|CR0011',
+        time() + 1 => 'XXX|12|CR0012',
     );
 
-    $p2p_redis->zadd('P2P::ORDER::VERIFICATION_PENDING', @items);
+    $p2p_redis->zadd('P2P::ORDER::VERIFICATION_EVENT', @items);
 
     $daemon->on_tick;
 
@@ -378,17 +387,43 @@ subtest 'expired verfication tokens' => sub {
             p2p_order_updated => bag({
                     order_id       => 1,
                     client_loginid => 'CR001',
+                    self_only      => 1,
                 },
                 {
                     order_id       => 2,
                     client_loginid => 'CR002',
+                    self_only      => 0,
+                },
+                {
+                    order_id       => 3,
+                    client_loginid => 'CR003',
+                    self_only      => 0,
+                },
+                {
+                    order_id       => 5,
+                    client_loginid => 'CR005',
+                    self_only      => 1,
+                },
+                {
+                    order_id       => 6,
+                    client_loginid => 'CR006',
+                    self_only      => 0,
+                },
+                {
+                    order_id       => 7,
+                    client_loginid => 'CR007',
+                    self_only      => 0,
                 },
             )
         },
         'expected p2p_order_updated events emitted'
     );
 
-    cmp_deeply($p2p_redis->zrange('P2P::ORDER::VERIFICATION_PENDING', 0, -1), ['3|CR003'], 'processed items removed');
+    cmp_deeply(
+        $p2p_redis->zrange('P2P::ORDER::VERIFICATION_EVENT', 0, -1),
+        bag('REQUEST_BLOCK|9|CR009', 'TOKEN_VALID|10|CR0010', 'LOCKOUT|11|CR0011', 'XXX|12|CR0012'),
+        'processed items removed'
+    );
 };
 
 done_testing();
