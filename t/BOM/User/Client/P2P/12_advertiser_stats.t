@@ -118,7 +118,6 @@ subtest 'sell ads' => sub {
 
     tt_secs(500);
     $client->p2p_order_confirm(id => $order->{id});
-    $stats_cli->{buy_time_avg} = 500;
     check_stats($advertiser, $stats_adv, 'advertiser stats after buyer confim');
     check_stats($client,     $stats_cli, 'client stats after buyer confirm');
 
@@ -132,6 +131,7 @@ subtest 'sell ads' => sub {
     $stats_cli->{total_turnover}       = $stats_adv->{total_turnover}        = $stats_cli->{buy_orders_amount} = $stats_adv->{sell_orders_amount} =
         $order->{amount};
     $stats_adv->{partner_count} = ++$stats_cli->{partner_count};
+    $stats_cli->{buy_time_avg}  = 500;
     check_stats($advertiser, $stats_adv, 'advertiser stats after seller confim');
     check_stats($client,     $stats_cli, 'client stats after seller confirm');
 
@@ -240,7 +240,6 @@ subtest 'buy ads' => sub {
 
     tt_secs(500);
     $advertiser->p2p_order_confirm(id => $order->{id});
-    $stats_adv->{buy_time_avg} = 500;
     check_stats($advertiser, $stats_adv, 'advertiser stats after buyer confirm');
     check_stats($client,     $stats_cli, 'client stats after buyer confirm');
 
@@ -253,6 +252,7 @@ subtest 'buy ads' => sub {
     $stats_adv->{buy_completion_rate}  = $stats_adv->{total_completion_rate} = '100.0';
     $stats_cli->{total_turnover}       = $stats_adv->{total_turnover}        = '6.00';
     $stats_cli->{sell_orders_amount}   = $stats_adv->{buy_orders_amount}     = '3.00';
+    $stats_adv->{buy_time_avg}         = 500;
     check_stats($advertiser, $stats_adv, 'advertiser stats after seller confirm');
     check_stats($client,     $stats_cli, 'client stats after seller confirm');
 

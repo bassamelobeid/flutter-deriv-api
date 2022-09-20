@@ -2584,7 +2584,10 @@ sub p2p_advert_create {
         my $diff = $param{type} eq 'sell' ? $param{rate} - $market_rate : $market_rate - $param{rate};
         $rate_score = $diff / $market_rate;
     }
-    $self->_p2p_record_stat($self->loginid, 'ADVERT_RATES', $id, $rate_score) if defined $rate_score;
+    $self->_p2p_record_stat(
+        loginid => $self->loginid,
+        stat    => 'ADVERT_RATES',
+        payload => [$id, $rate_score]) if defined $rate_score;
 
     delete $response->{days_until_archive};    # guard against almost impossible race condition
     return $response;
@@ -3426,7 +3429,6 @@ sub p2p_create_order_dispute {
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.create_order_dispute(?, ?, ?)', undef, $id, $dispute_reason, $self->loginid);
         });
-
     unless ($skip_livechat) {
         my $p2p_redis = BOM::Config::Redis->redis_p2p_write();
         $p2p_redis->zadd(P2P_ORDER_DISPUTED_AT, Date::Utility->new()->epoch, join('|', $order->{id}, $self->broker_code));
@@ -3464,15 +3466,13 @@ Takes the following named arguments:
 
 sub p2p_resolve_order_dispute {
     my ($self, %param) = @_;
-
     my ($id, $action, $staff, $fraud) = @param{qw/id action staff fraud/};
 
     my $order = $self->_p2p_orders(id => $id)->[0];
     die "Order not found\n"                                                 unless $order;
     die "Order is in $order->{status} status and cannot be resolved now.\n" unless $order->{status} eq 'disputed';
 
-    my $escrow = $self->p2p_escrow($order->{account_currency}) // die 'No escrow account defined for ' . $order->{account_currency} . "\n";
-
+    my $escrow   = $self->p2p_escrow($order->{account_currency}) // die 'No escrow account defined for ' . $order->{account_currency} . "\n";
     my $txn_time = Date::Utility->new->datetime;
     my $redis    = BOM::Config::Redis->redis_p2p_write();
     my ($buyer, $seller) = $self->_p2p_order_parties($order);
@@ -3481,6 +3481,7 @@ sub p2p_resolve_order_dispute {
     my $advertiser_for_update;
 
     if ($action eq 'refund') {
+        # resolve in favor of seller
         my $buyer_fault = 1;    # this will negatively affect the buyer's completion rate
         $self->db->dbic->run(
             fixup => sub {
@@ -3492,27 +3493,47 @@ sub p2p_resolve_order_dispute {
             # buyer fraud
             $self->_p2p_order_fraud('buy', $order);
         }
-        $self->_p2p_record_stat($buyer, 'BUY_COMPLETION', $id, 0);
+        $self->_p2p_record_stat(
+            loginid => $buyer,
+            stat    => 'BUY_COMPLETION',
+            payload => [$id, 0]);
         $advertiser_for_update = $order->{type} eq 'buy' ? $order->{client_id} : $order->{advertiser_id};
+
     } elsif ($action eq 'complete') {
+        # resolve in favor of buyer
         my $completed_order = $self->db->dbic->run(
             fixup => sub {
                 $_->selectrow_hashref('SELECT p2p.order_complete_v2(?, ?, ?, ?, ?, ?, ?)',
                     undef, $id, $escrow->loginid, 4, $staff, $txn_time, $is_manual, $fraud);
             });
         $self->_p2p_db_error_handler($completed_order);
-        $self->_p2p_record_stat($buyer, 'BUY_COMPLETION', $id, 1);
-        $self->_p2p_record_stat($buyer, 'BUY_COMPLETED',  $id, $amount);
+        $self->_p2p_record_stat(
+            loginid => $buyer,
+            stat    => 'BUY_COMPLETION',
+            payload => [$id, 1]);
+        $self->_p2p_record_stat(
+            loginid => $buyer,
+            stat    => 'BUY_COMPLETED',
+            payload => [$id, $amount]);
         $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $buyer, 1);
         $redis->hincrbyfloat(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $buyer, $amount);
 
         if ($fraud) {
             # seller fraud
-            $self->_p2p_record_stat($seller, 'SELL_COMPLETION', $id, 0);
+            $self->_p2p_record_stat(
+                loginid => $seller,
+                stat    => 'SELL_COMPLETION',
+                payload => [$id, 0]);
             $self->_p2p_order_fraud('sell', $order);
         } else {
-            $self->_p2p_record_stat($seller, 'SELL_COMPLETION', $id, 1);
-            $self->_p2p_record_stat($seller, 'SELL_COMPLETED',  $id, $amount);
+            $self->_p2p_record_stat(
+                loginid => $seller,
+                stat    => 'SELL_COMPLETION',
+                payload => [$id, 1]);
+            $self->_p2p_record_stat(
+                loginid => $seller,
+                stat    => 'SELL_COMPLETED',
+                payload => [$id, $amount]);
             $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $seller, 1);
             $redis->hincrbyfloat(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $seller, $amount);
             $self->_p2p_record_partners($order);
@@ -3523,6 +3544,9 @@ sub p2p_resolve_order_dispute {
     } else {
         die "Invalid action: $action\n";
     }
+
+    # clean up
+    $redis->hdel(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $id);
 
     $self->_p2p_order_finalized($order);
 
@@ -3645,7 +3669,10 @@ sub p2p_expire_order {
 
     if ($hit_timeout_refund) {
         # degrade the buyer's completion rate but don't count as cancel
-        $self->_p2p_record_stat($buyer, 'BUY_COMPLETION', $order_id, 0);
+        $self->_p2p_record_stat(
+            loginid => $buyer,
+            stat    => 'BUY_COMPLETION',
+            payload => [$order_id, 0]);
 
         stats_inc('p2p.order.timeout_refund');
 
@@ -4765,16 +4792,13 @@ Takes the following arguments:
 =cut
 
 sub _p2p_record_stat {
-    my ($self, $loginid, $stat, @payload) = @_;
-
-    my $redis = BOM::Config::Redis->redis_p2p_write();
-
+    my ($self, %param) = @_;
+    my $redis    = BOM::Config::Redis->redis_p2p_write();
     my $prune_ts = Date::Utility->new->minus_time_interval(P2P_STATS_TTL_IN_DAYS . 'd')->epoch;
     my $expiry   = P2P_STATS_TTL_IN_DAYS * 24 * 60 * 60;
-    my $key      = join '::', P2P_STATS_REDIS_PREFIX, $loginid, $stat;
-    my $item     = join '|',  @payload;
-
-    $redis->zadd($key, time, $item);
+    my $key      = join '::', P2P_STATS_REDIS_PREFIX, $param{loginid}, $param{stat};
+    my $item     = join '|',  $param{payload}->@*;
+    $redis->zadd($key, ($param{ts} // time), $item);
     $redis->expire($key, $expiry);
     $redis->zremrangebyscore($key, '-inf', '(' . $prune_ts);
 
@@ -4924,11 +4948,6 @@ sub _p2p_order_buy_confirmed {
     # for calculating release times
     my $redis = BOM::Config::Redis->redis_p2p_write();
     $redis->hset(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $order->{id}, time);
-
-    # for advertiser stats
-    my $confirm_time = time - Date::Utility->new($order->{created_time})->epoch;
-    $self->_p2p_record_stat($self->{loginid}, 'BUY_TIMES', $order->{id}, $confirm_time);
-
     return;
 }
 
@@ -4954,10 +4973,25 @@ sub _p2p_order_completed {
     my $redis = BOM::Config::Redis->redis_p2p();
     my ($id, $amount) = $order->@{qw/id amount/};
 
-    $self->_p2p_record_stat($buyer,  'BUY_COMPLETED',   $id, $amount);
-    $self->_p2p_record_stat($seller, 'SELL_COMPLETED',  $id, $amount);
-    $self->_p2p_record_stat($buyer,  'BUY_COMPLETION',  $id, 1);
-    $self->_p2p_record_stat($seller, 'SELL_COMPLETION', $id, 1);
+    $self->_p2p_record_stat(
+        loginid => $buyer,
+        stat    => 'BUY_COMPLETED',
+        payload => [$id, $amount]);
+
+    $self->_p2p_record_stat(
+        loginid => $seller,
+        stat    => 'SELL_COMPLETED',
+        payload => [$id, $amount]);
+
+    $self->_p2p_record_stat(
+        loginid => $buyer,
+        stat    => 'BUY_COMPLETION',
+        payload => [$id, 1]);
+
+    $self->_p2p_record_stat(
+        loginid => $seller,
+        stat    => 'SELL_COMPLETION',
+        payload => [$id, 1]);
     $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $buyer,  1);
     $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::TOTAL_COMPLETED', $seller, 1);
     $redis->hincrbyfloat(P2P_STATS_REDIS_PREFIX . '::TOTAL_TURNOVER', $buyer,  $amount);
@@ -4965,9 +4999,25 @@ sub _p2p_order_completed {
     $redis->zadd(P2P_ORDER_REVIEWABLE_START_AT, time, $id . '|' . $buyer, time, $id . '|' . $seller);
     $self->_p2p_record_partners($order);
 
-    if (my $buy_confirm_time = $redis->hget(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $id)) {
-        my $elapsed = time - $buy_confirm_time;
-        $self->_p2p_record_stat($seller, 'RELEASE_TIMES', $id, $elapsed);
+    if (my $buy_confirm_epoch = $redis->hget(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $id)) {
+
+        # only record buy and release time if there is no dispute
+        unless ($order->{disputer_loginid}) {
+            # this buy time assumes buyer actually paid when buyer clicked "I've paid"
+            my $buy_time     = $buy_confirm_epoch - Date::Utility->new($order->{created_time})->epoch;
+            my $release_time = time - $buy_confirm_epoch;
+            $self->_p2p_record_stat(
+                loginid => $buyer,
+                stat    => 'BUY_TIMES',
+                payload => [$id, $buy_time],
+                ts      => $buy_confirm_epoch    # ts: stat occurrence will be time buyer clicked "I've paid", not now
+            );
+            $self->_p2p_record_stat(
+                loginid => $seller,
+                stat    => 'RELEASE_TIMES',
+                payload => [$id, $release_time]);
+        }
+
         # clean up
         $redis->hdel(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $id);
     }
@@ -5020,12 +5070,21 @@ sub _p2p_order_cancelled {
     # make sure we are operating on the buyer - bom-events will use client_loginid of the order, which is not always buyer
     my $buyer_client = $buyer_loginid eq $self->loginid ? $self : BOM::User::Client->new({loginid => $buyer_loginid});
 
-    $buyer_client->_p2p_record_stat($buyer_loginid, 'ORDER_CANCELLED', $id, $order->{amount});
-    $buyer_client->_p2p_record_stat($buyer_loginid, 'BUY_COMPLETION',  $id, 0);
+    $buyer_client->_p2p_record_stat(
+        loginid => $buyer_loginid,
+        stat    => 'ORDER_CANCELLED',
+        payload => [$id, $order->{amount}]);
+    $buyer_client->_p2p_record_stat(
+        loginid => $buyer_loginid,
+        stat    => 'BUY_COMPLETION',
+        payload => [$id, 0]);
 
     # manual cancellation
     if ($order->{status} eq 'cancelled') {
-        $buyer_client->_p2p_record_stat($buyer_loginid, 'CANCEL_TIMES', $id, $elapsed);
+        $buyer_client->_p2p_record_stat(
+            loginid => $buyer_loginid,
+            stat    => 'CANCEL_TIMES',
+            payload => [$id, $elapsed]);
     }
 
     my $buyer_advertiser = $buyer_client->_p2p_advertisers(loginid => $buyer_loginid)->[0] // return;
