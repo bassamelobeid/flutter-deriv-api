@@ -1,4 +1,5 @@
 use Test::Most;
+use Test::MockModule;
 use BOM::Pricing::v3::Contract;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
@@ -153,8 +154,16 @@ subtest 'get_ask' => sub {
         "symbol"           => "R_50",
         "streaming_params" => {from_pricer => 1},
     };
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract::Call');
+
+    $mock_contract->mock('is_valid_to_buy', sub { return undef });
+
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-    diag explain $result->{error} if exists $result->{error};
+
+    ok $result->{error}, 'ContractValidationError';
+    $mock_contract->unmock('is_valid_to_buy');
+
+    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
@@ -221,6 +230,7 @@ subtest 'get_ask LBFLOATCALL' => sub {
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
 
     diag explain $result->{error} if exists $result->{error};
+
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
@@ -260,7 +270,7 @@ subtest 'get_ask RESETCALL' => sub {
         "duration"        => "15",
         "duration_unit"   => "m",
         "symbol"          => "R_50",
-        "landing_company" => "virtual",
+        "landing_company" => "svg",
     };
 
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
@@ -291,7 +301,7 @@ subtest 'get_ask RESETCALL' => sub {
             'app_markup_percentage' => 0,
             'proposal'              => 1,
             'date_start'            => ignore(),
-            'landing_company'       => 'virtual',
+            'landing_company'       => 'svg',
             'staking_limits'        => {
                 'min' => '0.35',
                 'max' => 50000
@@ -353,13 +363,18 @@ subtest 'get_ask ONETOUCH' => sub {
         "duration"        => "5",
         "duration_unit"   => "t",
         "symbol"          => "R_50",
-        "landing_company" => "virtual",
+        "landing_company" => "malta",
         "barrier"         => "+0.3054"
     };
 
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
 
+    is $result->{error}{code}, 'OfferingsValidationError', 'Trading is not offered for malta';
+
+    $params->{landing_company} = 'svg';
+    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     diag explain $result->{error} if exists $result->{error};
+
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
@@ -384,7 +399,7 @@ subtest 'get_ask ONETOUCH' => sub {
             'app_markup_percentage' => 0,
             'proposal'              => 1,
             'date_start'            => ignore(),
-            'landing_company'       => 'virtual',
+            'landing_company'       => 'svg',
             'staking_limits'        => {
                 'min' => '0.35',
                 'max' => 50000
