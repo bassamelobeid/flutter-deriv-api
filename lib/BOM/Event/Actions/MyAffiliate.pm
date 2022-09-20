@@ -16,6 +16,7 @@ use BOM::MT5::User::Async;
 use BOM::Event::Utility qw(exception_logged);
 use BOM::Platform::Event::Emitter;
 use List::Util qw(uniq);
+use Path::Tiny qw(path);
 
 use constant AFFILIATE_CHUNK_SIZE => 300;
 
@@ -115,6 +116,79 @@ async sub affiliate_loginids_sync {
     return undef;
 }
 
+=head2 bulk_affiliate_loginids_sync
+
+Process an affiliate loginids by chunks in bulk of affiliate IDs.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<affiliate_loginids> - hash of affiliate ids and its customers loginids
+
+=item * C<action> - sync or clear
+
+=item * C<email> - email to notify when done
+
+=back
+
+Retunrs a L<Future> which resolves to C<undef>
+
+=cut
+
+async sub bulk_affiliate_loginids_sync {
+    my ($data)             = @_;
+    my $action             = $data->{action};
+    my $affiliate_loginids = $data->{affiliate_loginids};
+
+    my (@success, @errors, $affiliate_synced, @success_list, @message, $attachment);
+
+    foreach my $affiliate_id (keys %{$affiliate_loginids}) {
+        @success = ();
+        for my $loginid (@{$affiliate_loginids->{$affiliate_id}}) {
+            try {
+                my $result = await _populate_mt5_affiliate_to_client($loginid, $action eq 'clear' ? undef : $affiliate_id);
+
+                defined @$result[0] ? push(@errors, @$result) : push(@success, $loginid);
+
+            } catch ($e) {
+                push @errors, "$loginid: an error occured: $e";
+                exception_logged();
+            }
+        }
+        if (scalar @success > 0) {
+            $affiliate_synced->{AffiliateID} = $affiliate_id;
+            $affiliate_synced->{CustomerID}  = [@success];
+            push @success_list, $affiliate_synced;
+        }
+    }
+
+    push @message, '<h2>Bulk Affliate synchronization to MT5 summary for ' . $data->{processing_date} . '</h2><br>';
+
+    if (scalar @success_list > 0) {
+        push @message, "<h2>Successfull sync are listed in the CSV attachment below.</h2><br>";
+        my $file_path = $data->{csv_output_folder} . 'bulk-affiliate-sync-' . $data->{processing_date} . '.csv';
+        my @headers   = qw(AffiliateID CustomerID);
+        $attachment = _generate_csv(\@headers, \@success_list, $file_path);
+    }
+
+    if (scalar @errors > 0) {
+        push @message, "<h2>Errors</h2><br>";
+        push(@message, $_ . "<br>") for @errors;
+    }
+
+    send_email({
+        from    => '<no-reply@binary.com>',
+        to      => $data->{email},
+        subject => "Bulk Affliate synchronization to MT5",
+        message => \@message,
+        $attachment ? (attachment => $attachment) : (),
+        email_content_is_html => 1,
+    });
+
+    return undef;
+}
+
 async sub _populate_mt5_affiliate_to_client {
     my ($loginid, $affiliate_id) = @_;
 
@@ -186,6 +260,42 @@ sub _get_clean_loginids {
             map  { s/^deriv_//r }
             map  { $_->{CLIENT_ID} || () } @$customers
     ];
+}
+
+sub _generate_csv {
+    my ($headers, $array_list, $file_path) = @_;
+    my (@csv_rows);
+    my $filename = path($file_path);
+    my $file     = path($filename)->openw_utf8;
+    my $csv      = Text::CSV->new({
+        eol        => "\n",
+        quote_char => undef
+    });
+
+    for my $result ($array_list->@*) {
+        my @result_row;
+        for my $header ($headers->@*) {
+            push @result_row, $result->{$header};
+        }
+        push @csv_rows, \@result_row;
+    }
+
+    $csv->print($file, $headers);
+
+    for my $row (@csv_rows) {
+        my ($affiliate_id, $customers);
+        for my $data_row (@$row) {
+            if (ref($data_row) eq 'ARRAY') {
+                $customers = join("|", @$data_row);
+            } else {
+                $affiliate_id = $data_row;
+            }
+        }
+        my $data = sprintf('%s, %s', $affiliate_id, $customers);
+        $csv->print($file, [$data]);
+    }
+
+    return $filename->canonpath;
 }
 
 1;
