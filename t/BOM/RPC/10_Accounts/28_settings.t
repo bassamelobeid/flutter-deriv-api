@@ -862,15 +862,12 @@ subtest 'set settings' => sub {
 
     isnt($test_client_X_mf->latest_environment, $old_latest_environment, "latest environment updated");
 
-    my $subject = 'Your new Deriv personal details';
-    my $msg     = mailbox_search(
-        email   => $test_client_X_mf->email,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, 'send a email to client');
-    # like($msg->{body}, qr/address line 1, address line 2, address city, Bali/s, 'email content correct');
-    mailbox_clear();
-
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
+        {
+        'address_line_1' => 'address line 1',
+        },
+        "updated fields are correctly sent to track event";
     $params->{args}->{request_professional_status} = 1;
 
     $params->{token} = $token_Y_cr_citizen_AT;
@@ -881,15 +878,11 @@ subtest 'set settings' => sub {
     );
 
     $params->{token} = $token_X_mf;
+    delete $emitted->{profile_change};
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-    $subject = $test_client_X_mf->loginid . ' requested for professional status';
-    $msg     = mailbox_search(
-        email   => 'compliance@deriv.com',
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, 'send a email to client');
-    is_deeply($msg->{to}, ['compliance@deriv.com'], 'email to address is ok');
-    mailbox_clear();
+    is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
+        {request_professional_status => 0},
+        "updated fields are correctly sent to track event";
 
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
