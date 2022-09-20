@@ -212,23 +212,7 @@ sub _handle_acquired {
         $template_path = TEMPLATE_PREFIX_PATH . 'acquired_new_dispute.html.tt';
     }
 
-    my $tt = Template->new(ABSOLUTE => 1);
-    try {
-        $tt->process($template_path, $payload, \my $html);
-        die "Template error: @{[$tt->error]}" if $tt->error;
-        send_email({
-            from                  => 'no-reply@deriv.com',
-            to                    => 'x-cs@deriv.com,x-payops@deriv.com',
-            subject               => $subject,
-            message               => [$html],
-            use_email_template    => 0,
-            email_content_is_html => 1,
-            skip_text2html        => 1,
-        });
-    } catch ($error) {
-        $log->warnf("Error handling an event from 'acquired.com'. Details: $error");
-        exception_logged();
-    }
+    _process_email({template_path => $template_path, data => $payload, subject => $subject, provider => 'acquired.com'});
 
     return undef;
 }
@@ -422,13 +406,40 @@ sub _handle_isignthis {
         $subject = 'New Dispute';
     }
 
+    _process_email({template_path => $template_path, data => $data, subject => $subject, provider => 'iSignThis'});
+
+    return undef;
+}
+
+=head2 _process_email
+
+Format and send the fraud/dispute notification.
+
+=over 4
+
+=item * C<$template_path> - A String with the full path to the template used for the e-mail.
+
+=item * C<$data> - A HASHREF with the data to be used in the e-mail template.
+
+=item * C<$subject> - A String with the e-mail subject.
+
+=item * C<provider> - A string. It contains the provider name.
+
+=back
+
+=cut
+
+sub _process_email {
+    my $args = shift;
+    my ($template_path, $data, $subject, $provider) = @{$args}{qw/template_path data subject provider/};
+
     my $tt = Template->new(ABSOLUTE => 1);
     try {
         $tt->process($template_path, $data, \my $html);
         die "Template error: @{[$tt->error]}" if $tt->error;
         send_email({
             from                  => 'no-reply@deriv.com',
-            to                    => 'x-cs@deriv.com,x-payops@deriv.com',
+            to                    => 'x-payops@deriv.com',
             subject               => $subject,
             message               => [$html],
             use_email_template    => 0,
@@ -436,10 +447,9 @@ sub _handle_isignthis {
             skip_text2html        => 1,
         });
     } catch ($error) {
-        $log->warnf("Error handling an event from 'iSignThis'. Details: $error");
+        $log->warnf("Error handling an event from '$provider'. Details: $error");
         exception_logged();
     }
-
     return undef;
 }
 
