@@ -1,6 +1,8 @@
 use Test::Most;
 use Test::MockModule;
 use BOM::Pricing::v3::Contract;
+use Date::Utility;
+use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
@@ -196,7 +198,6 @@ subtest 'get_ask' => sub {
 
     $params->{symbol} = "invalid symbol";
     $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-    ok $result->{error}, 'error for invalid symbol';
     is $result->{error}{code},              'ContractCreationFailure',                'error code is ContractCreationFailure';
     is $result->{error}{message_to_client}, 'Trading is not offered for this asset.', 'correct message to client';
 
@@ -213,104 +214,7 @@ subtest 'get_ask' => sub {
     );
 };
 
-subtest 'get_ask LBFLOATCALL' => sub {
-
-    my $params = {
-        "proposal"        => 1,
-        "multiplier"      => "100",
-        "contract_type"   => "LBFLOATCALL",
-        "currency"        => "USD",
-        "duration"        => "15",
-        "duration_unit"   => "m",
-        "symbol"          => "R_50",
-        "landing_company" => "virtual",
-        streaming_params  => {from_pricer => 1},
-    };
-
-    my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-
-    diag explain $result->{error} if exists $result->{error};
-
-    ok(delete $result->{spot_time},  'result have spot time');
-    ok(delete $result->{date_start}, 'result have date_start');
-    my $expected = {
-        'display_value'       => '203.00',
-        'ask_price'           => '203.00',
-        'longcode'            => "Win USD 100.00 times Volatility 50 Index's close minus low over the next 15 minutes.",
-        'spot'                => '963.3054',
-        multiplier            => 100,
-        'payout'              => '0',
-        'theo_price'          => '199.145854964839',
-        'date_expiry'         => ignore(),
-        'contract_parameters' => {
-            'deep_otm_threshold'    => '0.025',
-            'duration'              => '15m',
-            'bet_type'              => 'LBFLOATCALL',
-            'underlying'            => 'R_50',
-            'currency'              => 'USD',
-            'base_commission'       => '0.02',
-            'min_commission_amount' => '0.02',
-            'multiplier'            => '100',
-            'app_markup_percentage' => 0,
-            'proposal'              => 1,
-            'date_start'            => ignore(),
-            'landing_company'       => 'virtual'
-        }};
-    cmp_deeply($result, $expected, 'the left values are all right');
-
-};
-
-subtest 'get_ask RESETCALL' => sub {
-    my $params = {
-        "proposal"        => 1,
-        "amount"          => "10",
-        "basis"           => "payout",
-        "contract_type"   => "RESETCALL",
-        "currency"        => "USD",
-        "duration"        => "15",
-        "duration_unit"   => "m",
-        "symbol"          => "R_50",
-        "landing_company" => "svg",
-    };
-
-    my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-
-    diag explain $result->{error} if exists $result->{error};
-    ok(delete $result->{spot_time},  'result have spot time');
-    ok(delete $result->{date_start}, 'result have date_start');
-    my $expected = {
-        'display_value' => '6.38',
-        'ask_price'     => '6.38',
-        'longcode' => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
-
-        'spot'                => '963.3054',
-        'payout'              => '10',
-        skip_streaming        => 1,
-        'date_expiry'         => ignore(),
-        'contract_parameters' => {
-            'deep_otm_threshold'    => '0.025',
-            'barrier'               => 'S0P',
-            'duration'              => '15m',
-            'bet_type'              => 'RESETCALL',
-            'underlying'            => 'R_50',
-            'currency'              => 'USD',
-            'base_commission'       => '0.012',
-            'min_commission_amount' => 0.02,
-            'amount'                => '10',
-            'amount_type'           => 'payout',
-            'app_markup_percentage' => 0,
-            'proposal'              => 1,
-            'date_start'            => ignore(),
-            'landing_company'       => 'svg',
-            'staking_limits'        => {
-                'min' => '0.35',
-                'max' => 50000
-            }}};
-
-    cmp_deeply($result, $expected, 'the left values are all right');
-};
-
-subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
+subtest 'send_ask date_expiry_smaller' => sub {
     my $params = {
         'proposal'         => 1,
         'fixed_expiry'     => 1,
@@ -323,7 +227,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => 1476676000,
         "streaming_params" => {from_pricer => 1},
     };
-    my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    my $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
     is($result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure if start time is in the past');
     is(
         $result->{error}{message_to_client},
@@ -343,7 +247,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'date_start'       => '1476670200',
         "streaming_params" => {from_pricer => 1},
     };
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
 
     is($result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure if start time == expiry time');
     is(
@@ -353,7 +257,79 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
     );
 };
 
-subtest 'get_ask ONETOUCH' => sub {
+subtest 'send_ask LBFLOATCALL' => sub {
+
+    my $params = {
+        "proposal"        => 1,
+        "multiplier"      => "100",
+        "contract_type"   => "LBFLOATCALL",
+        "currency"        => "USD",
+        "duration"        => "15",
+        "duration_unit"   => "m",
+        "symbol"          => "R_50",
+        "landing_company" => "virtual",
+        streaming_params  => {from_pricer => 1},
+    };
+
+    my $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
+
+    ok(delete $result->{spot_time},  'result have spot time');
+    ok(delete $result->{date_start}, 'result have date_start');
+    my $expected = {
+        'display_value'       => '203.00',
+        'ask_price'           => '203.00',
+        'longcode'            => "Win USD 100.00 times Volatility 50 Index's close minus low over the next 15 minutes.",
+        'spot'                => '963.3054',
+        'multiplier'          => 100,
+        'payout'              => '0',
+        'theo_price'          => '199.145854964839',
+        'date_expiry'         => ignore(),
+        'rpc_time'            => ignore(),
+        'contract_parameters' => ignore()};
+    cmp_deeply($result, $expected, 'the left values are all right');
+
+};
+
+subtest 'send_ask RESETCALL' => sub {
+    my $params = {
+        "proposal"        => 1,
+        "amount"          => "10",
+        "basis"           => "payout",
+        "contract_type"   => "RESETCALL",
+        "currency"        => "USD",
+        "duration"        => "15",
+        "duration_unit"   => "m",
+        "symbol"          => "R_50",
+        "landing_company" => "svg",
+        "barrier2"        => 1,
+    };
+
+    my $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
+    is $result->{error}{code}, 'BarrierValidationError', 'BarrierValidationError';
+
+    delete $params->{barrier2};
+
+    my $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
+    diag explain $result->{error} if exists $result->{error};
+    ok(delete $result->{spot_time},  'result have spot time');
+    ok(delete $result->{date_start}, 'result have date_start');
+
+    my $expected = {
+        'display_value' => '6.38',
+        'ask_price'     => '6.38',
+        'longcode' => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
+
+        'spot'                => '963.3054',
+        'payout'              => '10',
+        'skip_streaming'      => 1,
+        'rpc_time'            => ignore(),
+        'date_expiry'         => ignore(),
+        'contract_parameters' => ignore()};
+
+    cmp_deeply($result, $expected, 'the left values are all right');
+};
+
+subtest 'send_ask ONETOUCH' => sub {
     my $params = {
         "proposal"        => 1,
         "amount"          => "100",
@@ -367,24 +343,26 @@ subtest 'get_ask ONETOUCH' => sub {
         "barrier"         => "+0.3054"
     };
 
-    my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    my $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
 
     is $result->{error}{code}, 'OfferingsValidationError', 'Trading is not offered for malta';
 
     $params->{landing_company} = 'svg';
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
     diag explain $result->{error} if exists $result->{error};
 
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '19.76',
-        'ask_price'           => '19.76',
-        'longcode'            => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
-        'skip_streaming'      => 0,
-        'spot'                => '963.3054',
-        'payout'              => '100',
-        'date_expiry'         => ignore(),
+        'display_value'  => '19.76',
+        'ask_price'      => '19.76',
+        'longcode'       => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
+        'skip_streaming' => 0,
+        'spot'           => '963.3054',
+        'payout'         => '100',
+        'date_expiry'    => ignore(),
+        'rpc_time'       => ignore(),
+
         'contract_parameters' => {
             'deep_otm_threshold'    => '0.025',
             'barrier'               => '+0.3054',
@@ -408,7 +386,7 @@ subtest 'get_ask ONETOUCH' => sub {
     cmp_deeply($result, $expected, 'the left values are all right');
 };
 
-subtest 'get_ask MULTUP' => sub {
+subtest 'send_ask MULTUP' => sub {
     my $params = {
         "proposal"      => 1,
         "amount"        => "100",
@@ -431,7 +409,7 @@ subtest 'get_ask MULTUP' => sub {
     cmp_deeply($result->{error}, $expected, 'ContractCreationFailure basis');
 
     $params->{basis} = 'stake';
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
 
     $expected = {
         'code'              => 'ContractCreationFailure',
@@ -442,8 +420,11 @@ subtest 'get_ask MULTUP' => sub {
 
     delete $params->{duration_unit};
     delete $params->{duration};
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
+    my $mocked = Test::MockModule->new('Quant::Framework::Underlying');
+    $mocked->mock('tick_at' => sub { return Postgres::FeedDB::Spot::Tick->new(quote => 100, epoch => Date::Utility->new->epoch) });
 
+    $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
+    note explain $result if $result->{error};
     $expected = {
         'commission'          => '0.50',
         'date_expiry'         => ignore(),
@@ -455,30 +436,11 @@ subtest 'get_ask MULTUP' => sub {
         'skip_streaming'      => 0,
         'spot'                => '65258.19',
         'spot_time'           => ignore(),
+        'rpc_time'            => ignore(),
         'payout'              => 0,
         'display_value'       => '100.00',
-        'contract_parameters' => {
-            'multiplier'            => 10,
-            'underlying'            => 'R_100',
-            'min_commission_amount' => '0.02',
-            'base_commission'       => '0.012',
-            'amount'                => '100',
-            'app_markup_percentage' => 0,
-            'currency'              => 'USD',
-            'deep_otm_threshold'    => '0.025',
-            'amount_type'           => 'stake',
-            'bet_type'              => 'MULTUP',
-            'date_start'            => 0,
-            'proposal'              => 1
-        },
-        'limit_order' => {
-            'stop_out' => {
-                'display_name' => 'Stop out',
-                'order_date'   => ignore(),
-                'value'        => '58765.24',
-                'order_amount' => '-100'
-            }
-        },
+        'contract_parameters' => ignore(),
+        'limit_order'         => ignore(),
     };
 
     cmp_deeply($result, $expected, 'get_ask MULTUP right');
