@@ -166,7 +166,8 @@
                         "type": "string",
                         "enum": [
                             "financial",
-                            "synthetic"
+                            "synthetic",
+                            "all"
                         ]
                     },
                     "name": {
