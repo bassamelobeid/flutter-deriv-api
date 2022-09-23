@@ -47,10 +47,12 @@ subtest 'dxtrader accounts' => sub {
     };
     $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('TradingPlatformError', 'bad params');
 
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->demo(1);
+
     $params->{args} = {
         platform     => 'dxtrade',
         account_type => 'demo',
-        market_type  => 'financial',
+        market_type  => 'all',
         password     => '',
     };
     $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('PasswordRequired', 'bad params');
@@ -58,7 +60,7 @@ subtest 'dxtrader accounts' => sub {
     $params->{args} = {
         platform     => 'dxtrade',
         account_type => 'demo',
-        market_type  => 'financial',
+        market_type  => 'all',
         password     => 'Abcd1234',
         currency     => 'USD',
     };
@@ -73,7 +75,7 @@ subtest 'dxtrader accounts' => sub {
                 loginid    => $client->loginid,
                 properties => {
                     account_type => 'demo',
-                    market_type  => 'financial',
+                    market_type  => 'all',
                     account_id   => $acc->{account_id},
                     login        => $acc->{login},
                     first_name   => $client->first_name,
@@ -116,7 +118,7 @@ subtest 'dxtrader accounts' => sub {
                 'platform'              => 'dxtrade',
                 'account_type'          => 'demo',
                 'landing_company_short' => 'svg',
-                'market_type'           => 'financial',
+                'market_type'           => 'all',
                 'enabled'               => 0,
             }
         ],
@@ -136,7 +138,7 @@ subtest 'dxtrader accounts' => sub {
                 'platform'              => 'dxtrade',
                 'account_type'          => 'demo',
                 'enabled'               => 0,
-                'market_type'           => 'financial'
+                'market_type'           => 'all'
             }
         ],
         'Suspended all server return result with enabled=0'
@@ -266,7 +268,7 @@ subtest 'dxtrade password change' => sub {
         args     => {
             platform     => 'dxtrade',
             account_type => 'demo',
-            market_type  => 'financial',
+            market_type  => 'all',
             password     => 'test',
             currency     => 'USD',
         }};
@@ -334,13 +336,15 @@ subtest 'dxtrade password reset' => sub {
     )->add_client($client);
     $client->account('USD');
 
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->demo(1);
+
     my $params = {
         language => 'EN',
         token    => BOM::Platform::Token::API->new->create_token($client->loginid, 'test token'),
         args     => {
             platform     => 'dxtrade',
             account_type => 'demo',
-            market_type  => 'financial',
+            market_type  => 'all',
             password     => 'Test1234',
             currency     => 'USD',
         }};
@@ -420,6 +424,8 @@ subtest 'new account rules failure scenarios' => sub {
     $user->add_client($client);
 
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->real(0);
 
     my $params = {
         language => 'EN',

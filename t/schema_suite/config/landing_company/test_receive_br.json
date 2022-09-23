@@ -12,7 +12,8 @@
       "mt_gaming_company",
       "mt_financial_company",
       "dxtrade_gaming_company",
-      "dxtrade_financial_company",      
+      "dxtrade_financial_company",
+      "dxtrade_all_company",
       "minimum_age",
       "config",
       "gaming_company",
@@ -1641,6 +1642,242 @@
                      "additionalProperties" : "false",
                      "type" : "object",
                      "description" : "Special conditions for changing sensitive fields"
+                  }
+               }
+            }
+         }
+      },
+      "dxtrade_all_company" : {
+         "additionalProperties" : false,
+         "type" : "object",
+         "required" : [
+            "standard"
+         ], 
+         "properties" : {
+            "standard" : {
+               "type" : "object",
+               "additionalProperties" : false,               
+               "required" : [
+                  "changeable_fields",
+                  "has_reality_check",
+                  "legal_allowed_contract_categories",
+                  "requirements",
+                  "legal_default_currency",
+                  "shortcode",
+                  "support_professional_client",
+                  "name",
+                  "address",
+                  "currency_config",
+                  "country",
+                  "legal_allowed_currencies",
+                  "legal_allowed_markets"
+               ],
+               "properties" : {
+                  "changeable_fields" : {
+                     "type" : "object",
+                     "additionalProperties" : false,
+                     "properties" : {},
+                     "patternProperties" : {
+                        "^.+$" : {
+                           "items" : {
+                              "type" : "string"
+                           },
+                           "type" : "array"
+                        }
+                     }
+                  },
+                  "has_reality_check" : {
+                     "type" : "integer",
+                     "enum" : [
+                        0
+                     ]
+                  },
+                  "legal_allowed_contract_categories" : {
+                     "description" : "Allowed contract types",
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string"
+                     }
+                  },
+                  "requirements" : {
+                     "type" : "object",
+                     "additionalProperties" : false,
+                     "properties" : {},
+                     "patternProperties" : {
+                        "^.+$" : {
+                           "items" : {
+                              "type" : "string"
+                           },
+                           "type" : "array"
+                        }
+                     }
+                  },
+                  "legal_default_currency" : {
+                     "type" : "string",
+                     "description" : "Default account currency"
+                  },
+                  "shortcode" : {
+                     "type" : "string",
+                     "description" : "Landing Company short code"
+                  },
+                  "support_professional_client" : {
+                     "type" : "integer",
+                     "description" : "Flag that indicates whether the landing company supports professional accounts or not"
+                  },
+                  "name" : {
+                     "description" : "Landing Company legal name",
+                     "type" : "string"
+                  },
+                  "address" : {
+                     "description" : "Landing Company address",
+                     "type" : "null"
+                  },
+                  "currency_config" : {
+                     "properties" : {
+                        "forex" : {
+                           "patternProperties" : {
+                              "^[a-zA-Z0-9]{2,20}$" : {
+                                 "type" : "object",
+                                 "additionalProperties" : false,
+                                 "properties" : {
+                                    "max_payout" : {
+                                       "type" : "number",
+                                       "minimum" : 0
+                                    },
+                                    "min_stake" : {
+                                       "type" : "number",
+                                       "minimum" : 0
+                                    }
+                                 },
+                                 "required" : [
+                                    "max_payout",
+                                    "min_stake"
+                                 ]
+                              }
+                           },
+                           "properties" : {},
+                           "additionalProperties" : false,
+                           "type" : "object"
+                        },
+                        "basket_index" : {
+                           "patternProperties" : {
+                              "^[a-zA-Z0-9]{2,20}$" : {
+                                 "type" : "object",
+                                 "additionalProperties" : false,
+                                 "properties" : {
+                                    "max_payout" : {
+                                       "type" : "number",
+                                       "minimum" : 0
+                                    },
+                                    "min_stake" : {
+                                       "type" : "number",
+                                       "minimum" : 0
+                                    }
+                                 },
+                                 "required" : [
+                                    "max_payout",
+                                    "min_stake"
+                                 ]
+                              }
+                           },
+                           "properties" : {},
+                           "additionalProperties" : false,
+                           "type" : "object"
+                        },
+                        "indices" : {
+                           "additionalProperties" : false,
+                           "type" : "object",
+                           "patternProperties" : {
+                              "^[a-zA-Z0-9]{2,20}$" : {
+                                 "additionalProperties" : false,
+                                 "type" : "object",
+                                 "properties" : {
+                                    "max_payout" : {
+                                       "minimum" : 0,
+                                       "type" : "number"
+                                    },
+                                    "min_stake" : {
+                                       "minimum" : 0,
+                                       "type" : "number"
+                                    }
+                                 },
+                                 "required" : [
+                                    "max_payout",
+                                    "min_stake"
+                                 ]
+                              }
+                           },
+                           "properties" : {}
+                        },
+                        "synthetic_index" : {
+                           "properties" : {},
+                           "patternProperties" : {
+                              "^[a-zA-Z0-9]{2,20}$" : {
+                                 "type" : "object",
+                                 "additionalProperties" : false,
+                                 "required" : [
+                                    "max_payout",
+                                    "min_stake"
+                                 ],
+                                 "properties" : {
+                                    "max_payout" : {
+                                       "minimum" : 0,
+                                       "type" : "number"
+                                    },
+                                    "min_stake" : {
+                                       "minimum" : 0,
+                                       "type" : "number"
+                                    }
+                                 }
+                              }
+                           },
+                           "type" : "object",
+                           "additionalProperties" : false
+                        },
+                        "commodities" : {
+                           "patternProperties" : {
+                              "^[a-zA-Z0-9]{2,20}$" : {
+                                 "required" : [
+                                    "max_payout",
+                                    "min_stake"
+                                 ],
+                                 "properties" : {
+                                    "min_stake" : {
+                                       "minimum" : 0,
+                                       "type" : "number"
+                                    },
+                                    "max_payout" : {
+                                       "minimum" : 0,
+                                       "type" : "number"
+                                    }
+                                 },
+                                 "type" : "object",
+                                 "additionalProperties" : false
+                              }
+                           },
+                           "properties" : {},
+                           "additionalProperties" : false,
+                           "type" : "object"
+                        }
+                     }
+                  },
+                  "country" : {
+                     "description" : "Landing Company country of incorporation",
+                     "type" : "string"
+                  },
+                  "legal_allowed_currencies" : {
+                     "items" : {
+                        "type" : "string"
+                     },
+                     "type" : "array",
+                     "description" : "Allowable currencies"
+                  },
+                  "legal_allowed_markets" : {
+                     "items" : {
+                        "type" : "string"
+                     },
+                     "description" : "Allowable markets",
+                     "type" : "array"
                   }
                }
             }

@@ -105,7 +105,7 @@ subtest 'link_wallet' => sub {
             args  => {
                 platform     => 'dxtrade',
                 account_type => 'demo',
-                market_type  => 'financial',
+                market_type  => 'synthetic',
                 password     => $DETAILS{password}{main},
                 currency     => 'USD',
             },

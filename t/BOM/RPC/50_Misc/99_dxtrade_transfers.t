@@ -19,6 +19,7 @@ BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->demo(1);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
@@ -66,7 +67,7 @@ subtest 'platform deposit and withdrawal' => sub {
     $params->{args}  = {
         platform     => 'dxtrade',
         account_type => 'demo',
-        market_type  => 'financial',
+        market_type  => 'all',
         password     => 'Abcd1234',
         currency     => 'USD',
     };
@@ -79,8 +80,8 @@ subtest 'platform deposit and withdrawal' => sub {
         password     => 'Abcd1234',
         currency     => 'USD',
     };
-    $dx_real = $c->call_ok('trading_platform_new_account', $params)->result;
 
+    $dx_real = $c->call_ok('trading_platform_new_account', $params)->result;
     $params->{args} = {
         platform     => 'dxtrade',
         account_type => 'real',

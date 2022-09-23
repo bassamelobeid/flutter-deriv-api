@@ -535,7 +535,7 @@ subtest 'Account closure DXTrader' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            market_type  => 'financial',
+            market_type  => 'synthetic',
             account_type => 'demo',
             password     => 'Abcd1234',
             platform     => 'dxtrade',
@@ -546,6 +546,7 @@ subtest 'Account closure DXTrader' => sub {
     ok $demo_account->{balance} + 0 > 0, 'demo account has balance';
 
     $params->{args}{account_type} = 'real';
+    $params->{args}{market_type}  = 'financial';
     my $real_account    = $c->tcall('trading_platform_new_account', $params);
     my $real_account_id = $real_account->{account_id};
 

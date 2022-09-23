@@ -53,6 +53,8 @@ subtest 'dxtrade' => sub {
         currency     => 'USD',
     };
 
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->real(0);
+
     $c->call_ok('trading_platform_new_account', $params)->has_error->error_code_is('PasswordError')
         ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'weak new password');
@@ -69,7 +71,10 @@ subtest 'dxtrade' => sub {
     $params->{args}{password} = 'Abcd1234';
     my $dx_syn = $c->call_ok('trading_platform_new_account', $params)->has_no_error->result;
 
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->demo(1);
+
     $params->{args}{account_type} = 'demo';
+    $params->{args}{market_type}  = 'all';
     my $dx_demo = $c->call_ok('trading_platform_new_account', $params)->has_no_error->result;
 
     $params->{args}{old_password} = delete $params->{args}{password};
