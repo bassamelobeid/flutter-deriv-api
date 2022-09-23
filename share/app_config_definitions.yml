@@ -1556,6 +1556,20 @@ system:
       description: "Configuration for DXTrade"
       isa: section
       contains:
+        enable_all_market_type:
+          description: "Enable all market type for DXTrade new account creation"
+          isa : section
+          contains:
+            demo:
+              description: "Enable all market type for DXTrade new demo account creation"
+              isa : Bool
+              defaul: 0
+              global: 1
+            real: 
+              description: "Enable all market type for DXTrade new real account creation"
+              isa : Bool
+              defaul: 0
+              global: 1          
         suspend:
           description: "Suspend DXTrade features"
           isa: section
