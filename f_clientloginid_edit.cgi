@@ -1497,6 +1497,9 @@ foreach my $dx_ac ($dx_logins->@*) {
     if (my $details = $loginid_details->{$dx_ac}) {
         my $extra = join '\\', $details->{currency}, grep { $_ } $details->{account_type}, $details->{attributes}->{market_type},
             "dxlogin=" . $details->{attributes}->{login};
+        my $account_status = $details->{status};
+        $account_status = 'disabled' if $account_status eq 'archived';
+        print " (" . $account_status . " )"        if $account_status;
         print " (" . encode_entities($extra) . ")" if $extra;
     }
 
