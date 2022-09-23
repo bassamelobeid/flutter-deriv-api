@@ -909,6 +909,7 @@ subtest 'get_account_by_loginid' => sub {
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->demo(1);
     # try default account (binary/deriv)
     ok $user->get_account_by_loginid($client_vr->{loginid}), 'can find trading account';
 
@@ -935,7 +936,7 @@ subtest 'get_account_by_loginid' => sub {
     $dxtrade_account = $dxtrader->new_account(
         account_type => 'demo',
         password     => 'test',
-        market_type  => 'synthetic',
+        market_type  => 'all',
         currency     => 'USD',
     );
 
@@ -949,6 +950,7 @@ subtest 'link_wallet' => sub {
         wallet_id => $wallet->loginid,
         client_id => $client_vr->loginid
     };
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->real(0);
     # try virtual client <-> virtual wallet
     ok $user->link_wallet_to_trading_account($args), 'can bind virtual wallet to a virtual trading account';
 

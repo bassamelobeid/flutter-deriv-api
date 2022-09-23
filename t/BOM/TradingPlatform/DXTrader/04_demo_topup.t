@@ -15,6 +15,8 @@ $app_config->suspend->wallets(1);
 $app_config->dxtrade->suspend->all(0);
 $app_config->dxtrade->suspend->demo(0);
 $app_config->dxtrade->suspend->real(0);
+$app_config->dxtrade->enable_all_market_type->demo(1);
+$app_config->dxtrade->enable_all_market_type->real(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
 
@@ -35,7 +37,7 @@ my $account = $dxtrader->new_account(
     account_type => 'demo',
     password     => 'test',
     currency     => 'USD',
-    market_type  => 'financial',
+    market_type  => 'all',
 );
 
 is exception {

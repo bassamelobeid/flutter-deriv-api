@@ -19,6 +19,8 @@ use Log::Any                   qw($log);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use BOM::Config::Redis;
 use Time::HiRes qw(gettimeofday tv_interval);
+use BOM::Database::UserDB;
+use Data::Dump 'pp';
 
 =head1 NAME 
 
@@ -49,7 +51,12 @@ use constant {
     DEMO_TOPUP_AMOUNT          => 10000,
     DEMO_TOPUP_MINIMUM_BALANCE => 1000,
     PLATFORM_ID                => 'dxtrade',
-};
+    TRADING_CATEGORY_MAP       => {
+        financial => 'Financials Only',
+        synthetic => 'Synthetics Only',
+        gaming    => 'Synthetics Only',
+        all       => 'CFD'
+    }};
 
 =head2 new
 
@@ -117,7 +124,7 @@ Returns dxtrade account info from our db.
 sub local_accounts {
     my ($self)        = @_;
     my $login_details = $self->client->user->loginid_details;
-    my @accounts      = sort grep { ($_->{platform} // '') eq PLATFORM_ID } values %$login_details;
+    my @accounts      = sort grep { ($_->{platform} // '') eq PLATFORM_ID && !$_->{status} } values %$login_details;
     return @accounts;
 }
 
@@ -154,8 +161,13 @@ sub new_account {
 
     my $server = $args{account_type};    # account_type means a different thing for dxtrade
 
-    my $account_type     = $args{account_type} eq 'real'     ? 'LIVE'            : 'DEMO';
-    my $trading_category = $args{market_type} eq 'financial' ? 'Financials Only' : 'Synthetics Only';
+    die +{
+        error_code     => 'DXInvalidMarketType',
+        message_params => [$server]}
+        unless $self->is_valid_market_type($server, $args{market_type});
+
+    my $account_type     = $args{account_type} eq 'real' ? 'LIVE' : 'DEMO';
+    my $trading_category = TRADING_CATEGORY_MAP->{$args{market_type}};
 
     my $currency = $args{currency};
     my $password = $args{password} or die 'password required';
@@ -272,6 +284,23 @@ sub new_account {
     $account->{login}      = $dxclient->{login};
 
     return $self->account_details($account);
+}
+
+=head2 is_valid_market_type
+
+Checks if market type input is valid based on app config
+
+=cut
+
+sub is_valid_market_type {
+
+    my ($self, $server, $market_type) = @_;
+    my $enable_all_market_type = BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type;
+
+    return 1 if ($market_type eq 'all') == ($enable_all_market_type->$server // 0);
+
+    return 0;
+
 }
 
 =head2 get_new_account_currency
@@ -893,6 +922,19 @@ sub dxtrade_login {
     }
 }
 
+=head2 _get_market_type
+
+Gets the market type given the DerivX Trading Category
+
+=cut
+
+sub _get_market_type {
+    my ($self, $trading_category) = @_;
+    my ($market_type) = grep { TRADING_CATEGORY_MAP->{$_} eq $trading_category } keys TRADING_CATEGORY_MAP->%*;
+    return 'synthetic' if $market_type eq 'gaming';
+    return $market_type;
+}
+
 =head2 account_details
 
 Format account details for websocket response.
@@ -906,7 +948,7 @@ sub account_details {
     my $market_type = '';
     if (exists($account->{categories})) {
         $category    = first { $_->{category} eq 'Trading' } $account->{categories}->@*;
-        $market_type = ($category->{value} eq 'Financials Only' ? 'financial' : 'synthetic') if $category and exists($category->{value});
+        $market_type = $self->_get_market_type($category->{value});
     }
     $market_type             = $account->{market_type} if !exists($category->{value});
     $account->{account_type} = ($account->{account_type} eq 'LIVE' ? 'real' : 'demo') unless any { $account->{account_type} eq $_ } qw(real demo);
@@ -990,6 +1032,89 @@ sub insert_payment_details {
         ping => sub {
             $_->do('INSERT INTO payment.dxtrade_transfer (payment_id, dxtrade_account_id, dxtrade_amount) VALUES (?,?,?)',
                 undef, $payment_id, $account_id, $amount);
+        });
+}
+
+=head2 archive_dx_account
+
+Sets the status to 'TERMINATED' in DerivX and changes the
+'status' field in users.loginid table to 'archived'
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$account_type>: dxtrade account type
+
+=item * C<$financial_account>: account code of the financial account
+
+=back
+
+=cut
+
+sub archive_dx_account {
+    my ($self, $account_type, $financial_account) = @_;
+
+    $self->call_api(
+        server        => $account_type,
+        method        => 'account_update',
+        clearing_code => DX_CLEARING_CODE,
+        account_code  => $financial_account,
+        status        => 'TERMINATED'
+    );
+
+    my $user_db = BOM::Database::UserDB::rose_db();
+
+    $user_db->dbic->run(
+        fixup => sub {
+            $_->do(
+                "UPDATE users.loginid 
+                    SET status = 'archived' 
+                    WHERE loginid = ?",
+                undef,
+                $financial_account
+            );
+        });
+}
+
+=head2 update_details
+
+Updates the 'market_type' attribute to 'all' and sets 'Trading' 
+category to 'CFD'
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$synthetic_account>: account code of the synthetic account
+
+=back
+
+=cut
+
+sub update_details {
+    my ($self, $account_type, $synthetic_account) = @_;
+
+    $self->call_api(
+        server        => $account_type,
+        method        => 'account_category_set',
+        clearing_code => DX_CLEARING_CODE,
+        account_code  => $synthetic_account,
+        category_code => "Trading",
+        value         => "CFD",
+    );
+
+    my $user_db = BOM::Database::UserDB::rose_db();
+
+    $user_db->dbic->run(
+        fixup => sub {
+            $_->do(
+                "UPDATE users.loginid 
+                    SET attributes = jsonb_set(attributes, '{market_type}', '\"all\"') 
+                    WHERE loginid = ?",
+                undef,
+                $synthetic_account
+            );
         });
 }
 

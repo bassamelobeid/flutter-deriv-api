@@ -15,6 +15,8 @@ my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
 $dxconfig->suspend->all(0);
 $dxconfig->suspend->demo(0);
 $dxconfig->suspend->real(0);
+$dxconfig->enable_all_market_type->demo(1);
+$dxconfig->enable_all_market_type->real(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
@@ -44,7 +46,7 @@ ok BOM::User::Password::checkpw('test', $client->user->dx_trading_password), 'DX
 my $acc = $dxtrader->new_account(
     account_type => 'demo',
     password     => 'test',
-    market_type  => 'financial',
+    market_type  => 'all',
     currency     => 'USD',
 );
 

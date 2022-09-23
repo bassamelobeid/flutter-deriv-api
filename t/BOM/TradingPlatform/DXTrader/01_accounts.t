@@ -17,6 +17,9 @@ $dxconfig->suspend->all(0);
 $dxconfig->suspend->demo(0);
 $dxconfig->suspend->real(0);
 
+$dxconfig->enable_all_market_type->demo(0);
+$dxconfig->enable_all_market_type->real(0);
+
 my $dxtrader_mock                 = Test::MockModule->new('BOM::TradingPlatform::DXTrader');
 my $real_account_ids_offset       = undef;
 my $real_account_ids_login_prefix = undef;
@@ -262,32 +265,6 @@ cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'demo')], b
 
 cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'real')], bag(qw/DXR1001 DXR1002/), 'Correct loginids reported');
 
-$real_account_ids_offset = 618;
-
-my $account4 = $dxtrader->new_account(
-    account_type => 'demo',
-    password     => 'test',
-    market_type  => 'financial',
-    currency     => 'USD',
-);
-
-cmp_deeply(
-    $account4,
-    {
-        account_id            => 'DXD1621',
-        account_type          => 'demo',
-        enabled               => 1,
-        balance               => num(10000),
-        currency              => 'USD',
-        display_balance       => '10000.00',
-        login                 => $account1->{login},
-        platform              => 'dxtrade',
-        market_type           => 'financial',
-        landing_company_short => 'svg',
-    },
-    'created 4th account'
-);
-
 subtest 'suspend user exception list' => sub {
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -313,19 +290,6 @@ subtest 'suspend user exception list' => sub {
     $dxconfig->suspend->demo(1);
     $dxconfig->suspend->real(1);
     $dxconfig->suspend->user_exceptions([$client->email]);
-
-    is(
-        exception {
-            $dxtrader->new_account(
-                account_type => 'demo',
-                password     => 'test',
-                market_type  => 'synthetic',
-                currency     => 'USD',
-            )
-        },
-        undef,
-        'create demo account'
-    );
 
     my $account;
     is(
@@ -353,6 +317,21 @@ subtest 'suspend user exception list' => sub {
         },
         undef,
         'deposit'
+    );
+
+    $dxconfig->enable_all_market_type->demo(1);
+
+    is(
+        exception {
+            $dxtrader->new_account(
+                account_type => 'demo',
+                password     => 'test',
+                market_type  => 'all',
+                currency     => 'USD',
+            )
+        },
+        undef,
+        'create demo account'
     );
 };
 

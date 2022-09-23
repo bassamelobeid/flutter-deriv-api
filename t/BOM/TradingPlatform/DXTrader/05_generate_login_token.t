@@ -14,6 +14,8 @@ my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
 $dxconfig->suspend->all(0);
 $dxconfig->suspend->demo(0);
 $dxconfig->suspend->real(0);
+$dxconfig->enable_all_market_type->demo(1);
+$dxconfig->enable_all_market_type->real(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
@@ -37,7 +39,7 @@ cmp_deeply(exception { $dxtrader->generate_login_token('real') }, {error_code =>
 my $account = $dxtrader->new_account(
     account_type => 'demo',
     password     => 'test',
-    market_type  => 'synthetic',
+    market_type  => 'all',
 );
 
 is $dxtrader->generate_login_token('demo'), $account->{login} . '_dummy_token', 'generate token (dummy)';

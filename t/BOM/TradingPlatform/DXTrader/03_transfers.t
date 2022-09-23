@@ -17,6 +17,8 @@ my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
 $dxconfig->suspend->all(0);
 $dxconfig->suspend->demo(0);
 $dxconfig->suspend->real(0);
+$dxconfig->enable_all_market_type->demo(0);
+$dxconfig->enable_all_market_type->real(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
