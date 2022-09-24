@@ -61,23 +61,23 @@ $result = BOM::Pricing::v3::Contract::_build_bid_response({
     is_valid_to_sell   => 1,
     is_valid_to_cancel => 1,
     is_sold            => 1,
-    sell_time          => 1634775300,
+    sell_time          => 1634775100,
 });
 
 my $expected = {
     'barrier_count'              => 1,
     'bid_price'                  => '6.14',
-    'contract_id'                => undef,
+    'contract_id'                => ignore(),
     'contract_type'              => 'RESETCALL',
     'currency'                   => 'USD',
     'current_spot'               => '963.3054',
     'current_spot_display_value' => '963.3054',
-    'current_spot_time'          => 1634775000,
-    'date_expiry'                => 1634775303,
+    'current_spot_time'          => ignore(),
+    'date_expiry'                => ignore(),
     'date_settlement'            => ignore(),
     'date_start'                 => ignore(),
     'display_name'               => 'Volatility 50 Index',
-    'expiry_time'                => 1634775303,
+    'expiry_time'                => ignore(),
     'is_expired'                 => 0,
     'is_forward_starting'        => 0,
     'is_intraday'                => 1,
@@ -87,7 +87,7 @@ my $expected = {
     'is_valid_to_sell'           => 1,
     'longcode'   => 'Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.',
     'payout'     => 10,
-    'shortcode'  => 'RESETCALL_R_50_10.00_1634774403_1634775303_S0P_0',
+    'shortcode'  => ignore(),
     'status'     => 'sold',
     'underlying' => 'R_50'
 };
