@@ -1,17 +1,18 @@
 use Test::Most;
-#use Test::MockTime::HiRes qw(set_absolute_time);
+use Test::MockTime::HiRes qw(set_absolute_time);
 use BOM::Pricing::v3::Contract;
+use BOM::Product::ContractFactory;
 use Test::MockModule;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-#set_absolute_time('2022-10-21T00:00:00Z');
-note "set time to: " . Date::Utility->new->date ." - " . Date::Utility->new->epoch;
+set_absolute_time('2021-10-21T00:00:00Z');
+note "set time to: " . Date::Utility->new->date . " - " . Date::Utility->new->epoch;
 initialize_realtime_ticks_db();
 
 local $SIG{__WARN__} = sub {
     # capture the warn for test
     my $msg = shift;
-     #  note $msg;
+    note $msg;
 
 };
 
@@ -19,35 +20,101 @@ my $params = {
     landing_company => 'svg',
     short_code      => "TEST",
     currency        => 'USD',
-            contract_id     => 1,
-        is_sold         => 0,
-        country_code    => 'cr',
+    contract_id     => 1,
+    is_sold         => 0,
+    country_code    => 'cr',
 };
 
-#my $mock_contract = Test::MockModule->new('BOM::Pricing::v3::Contract');
-
-#$mock_contract->shortcode_to_parameters
-
-
 my $result = BOM::Pricing::v3::Contract::get_bid($params);
-is  $result->{error}->{code} ,'GetProposalFailure' ,$result->{error}->{message_to_client} ;
-$params->{short_code}="TICKHIGH_R_50_100_1619506193_10t_1";
-  #  my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
- # $mock_contract->mock('is_legacy', sub { return 1 });
+is $result->{error}->{code}, 'GetProposalFailure', 'Invalid contract';
 
- $result = BOM::Pricing::v3::Contract::get_bid($params);
- is  $result->{error}->{code} ,'GetProposalFailure' , $result->{error}->{message_to_client} ;
-
-
-$params->{short_code}="DIGITMATCH_R_10_18.18_0_5T_7_0";
+$params->{short_code} = "TICKHIGH_R_50_100_1619506193_10t_1";
 $result = BOM::Pricing::v3::Contract::get_bid($params);
+is $result->{error}->{code}, 'GetProposalFailure', 'create contract error';
 
-is $result->{bid_price} , '1.64', 'check bid_price';
+$params->{short_code} = "DIGITMATCH_R_10_18.18_0_5T_7_0";
+$result = BOM::Pricing::v3::Contract::get_bid($params);
+is $result->{bid_price}, '1.64', 'bid_price';
+ok $result->{contract_id}, 'get_bid';
 
-$params->{short_code}="RUNHIGH_R_100_100.00_1619507455_3T_S0P_0";
- $result = BOM::Pricing::v3::Contract::send_bid($params);
- ok  $result->{rpc_time} ,'send_bid ok' ;
+$result = BOM::Pricing::v3::Contract::send_bid($params);
+ok $result->{rpc_time}, 'send_bid with rpc_time';
 
+$params = {
+    'app_markup_percentage' => 0,
+    'barrier'               => 'S0P',
+    'subscribe'             => 1,
+    'duration'              => '15m',
+    'bet_type'              => 'RESETCALL',
+    'underlying'            => 'R_50',
+    'currency'              => 'USD',
+    'proposal'              => 1,
+    'date_start'            => 0,
+    'amount_type'           => 'payout',
+    'payout'                => '10',
+};
 
+my $contract = BOM::Product::ContractFactory::produce_contract($params);
+
+$result = BOM::Pricing::v3::Contract::_build_bid_response({
+    contract           => $contract,
+    is_valid_to_sell   => 1,
+    is_valid_to_cancel => 1,
+    is_sold            => 1,
+    sell_time          => 1634775300,
+});
+
+my $expected = {
+    'barrier_count'              => 1,
+    'bid_price'                  => '6.14',
+    'contract_id'                => undef,
+    'contract_type'              => 'RESETCALL',
+    'currency'                   => 'USD',
+    'current_spot'               => '963.3054',
+    'current_spot_display_value' => '963.3054',
+    'current_spot_time'          => 1634775000,
+    'date_expiry'                => 1634775303,
+    'date_settlement'            => ignore(),
+    'date_start'                 => ignore(),
+    'display_name'               => 'Volatility 50 Index',
+    'expiry_time'                => 1634775303,
+    'is_expired'                 => 0,
+    'is_forward_starting'        => 0,
+    'is_intraday'                => 1,
+    'is_path_dependent'          => 0,
+    'is_settleable'              => 0,
+    'is_valid_to_cancel'         => 1,
+    'is_valid_to_sell'           => 1,
+    'longcode'   => 'Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.',
+    'payout'     => 10,
+    'shortcode'  => 'RESETCALL_R_50_10.00_1634774403_1634775303_S0P_0',
+    'status'     => 'sold',
+    'underlying' => 'R_50'
+};
+cmp_deeply($result, $expected, 'build_bid_response matches');
+
+$params = {
+    'multiplier'            => 10,
+    'proposal'              => 1,
+    'date_start'            => 0,
+    'currency'              => 'USD',
+    'bet_type'              => 'MULTUP',
+    'amount'                => '100',
+    'app_markup_percentage' => 0,
+    'underlying'            => 'R_100',
+    'amount_type'           => 'stake'
+};
+
+note explain $result;
+
+$contract = BOM::Product::ContractFactory::produce_contract($params);
+$result   = BOM::Pricing::v3::Contract::_build_bid_response({
+    contract           => $contract,
+    is_valid_to_sell   => 1,
+    is_valid_to_cancel => 1,
+});
+is $result->{'underlying'},    'R_100',  'underlying R_100';
+is $result->{'bid_price'},     '100.00', 'bid_price';
+is $result->{'contract_type'}, 'MULTUP', 'contract_type MULTUP';
 
 done_testing;

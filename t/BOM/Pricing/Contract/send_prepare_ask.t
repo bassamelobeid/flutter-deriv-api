@@ -309,7 +309,7 @@ subtest 'send_ask RESETCALL' => sub {
 
     delete $params->{barrier2};
 
-    my $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
+    $result = BOM::Pricing::v3::Contract::send_ask({args => $params});
     diag explain $result->{error} if exists $result->{error};
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
