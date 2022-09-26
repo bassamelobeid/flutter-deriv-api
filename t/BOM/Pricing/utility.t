@@ -36,7 +36,7 @@ subtest 'non_binary_price_adjustment' => sub {
         'multiplier'            => 5
     };
 
-    my $result = BOM::Pricing::v3::Utility::non_binary_price_adjustment($contract_parameters, $response);
+    my $result   = BOM::Pricing::v3::Utility::non_binary_price_adjustment($contract_parameters, $response);
     my $expected = {
         'ask_price'     => '201.19',
         'display_value' => '201.19',
