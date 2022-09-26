@@ -2,7 +2,10 @@ use Test::Most;
 use Test::MockTime::HiRes qw(set_absolute_time);
 use Date::Utility;
 use Test::MockModule;
+use BOM::Test::Initializations;
 use BOM::Pricing::v3::MarketData;
+set_absolute_time('2022-09-04T10:00:00Z');
+note "set time to: " . Date::Utility->new->date . " - " . Date::Utility->new->epoch;
 
 subtest 'set_get_cache' => sub {
 
@@ -11,18 +14,7 @@ subtest 'set_get_cache' => sub {
     is $result , 'test_value', 'get_cache matches';
 };
 
-subtest '_get_digest' => sub {
-    my $result = BOM::Pricing::v3::MarketData::_get_digest();
-    my $expected =
-        '[action-buy;loaded_revision-1664176895;suspend_contract_types-;suspend_markets-sectors;suspend_trading-0;suspend_underlying_symbols-;trading_calendar_revision-0;]';
-    is $result , $expected, '_get_digest matches';
-};
-
 subtest 'trading_times' => sub {
-    note "set time to: " . Date::Utility->new->date . " - " . Date::Utility->new->epoch;
-    _get_cache set_absolute_time('2022-09-04T10:00:00Z');
-    note "set time to: " . Date::Utility->new->date . " - " . Date::Utility->new->epoch;
-
     my $params->{args}->{trading_times} = 'today';
     my $result = BOM::Pricing::v3::MarketData::trading_times($params);
 
