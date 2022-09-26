@@ -2,17 +2,11 @@ use Test::Most;
 use BOM::Pricing::v3::Contract;
 use Test::MockModule;
 
-# use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-# initialize_realtime_ticks_db();
-# Test::MockTime::set_absolute_time('2019-09-10T08:00:00Z');
-
 local $SIG{__WARN__} = sub {
     # capture the warn for test
     my $msg = shift;
-    # note $msg;
 };
 my $mock_contract = Test::MockModule->new('BOM::Pricing::v3::Contract');
-
 
 my $params = {
     landing_company => 'svg',
@@ -65,11 +59,12 @@ my $short_code = BOM::Pricing::v3::Utility::create_relative_shortcode($contract_
 is $short_code, 'MULTUP_R_100_0_18000_S0P_0', 'create_relative_shortcode';
 $params->{short_code} = $short_code;
 
-$result   = BOM::Pricing::v3::Contract::get_contract_details($params);
+$result = BOM::Pricing::v3::Contract::get_contract_details($params);
 
 cmp_deeply($result, $error, 'Cannot create contract MULTUP');
 
-# note "our msg :  $msg ";
-# note "result";
+$result = BOM::Pricing::v3::Contract::localize_template_params(['msg1', 'msg2', ['msg3']]);
+
+cmp_deeply($result, ['msg1', 'msg2', 'msg3'], 'localize_template_params');
 
 done_testing;
