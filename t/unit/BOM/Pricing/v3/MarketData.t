@@ -1,9 +1,8 @@
-use strict;
-use warnings;
-use Test::More;
-use Test::Deep;
-use Test::Exception;
+use Test::Most;
+use Test::MockTime::HiRes qw(set_absolute_time);
+use Date::Utility;
 use Test::MockModule;
+use Test::MockObject;
 
 use BOM::Pricing::v3::MarketData;
 
@@ -28,11 +27,15 @@ $mock_config->mock(
 
 my $mock_self = Test::MockModule->new('BOM::Pricing::v3::MarketData');
 $mock_self->mock(
-    _get_cache           => sub { },
-    _set_cache           => sub { },
-    _get_info_from_token => sub {
-        return ('malta', 'de');
-    });
+    _get_cache => sub { },
+    _set_cache => sub { },
+);
+
+my $client_obj = Test::MockObject->new();
+$client_obj->mock('landing_company', sub { return bless {short => 'malta'} ,'LandingCompany'});
+$client_obj->mock('residence',       sub { return 'de' });
+my $mock_client = Test::MockModule->new('BOM::User::Client');
+$mock_client->mock('new', sub {return $client_obj});
 
 sub _test_asset_index {
     my ($params, $first_entry) = @_;
