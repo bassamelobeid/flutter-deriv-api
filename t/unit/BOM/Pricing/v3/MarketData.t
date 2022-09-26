@@ -32,10 +32,10 @@ $mock_self->mock(
 );
 
 my $client_obj = Test::MockObject->new();
-$client_obj->mock('landing_company', sub { return bless {short => 'malta'} ,'LandingCompany'});
+$client_obj->mock('landing_company', sub { return bless {short => 'malta'}, 'LandingCompany' });
 $client_obj->mock('residence',       sub { return 'de' });
 my $mock_client = Test::MockModule->new('BOM::User::Client');
-$mock_client->mock('new', sub {return $client_obj});
+$mock_client->mock('new', sub { return $client_obj });
 
 sub _test_asset_index {
     my ($params, $first_entry) = @_;
