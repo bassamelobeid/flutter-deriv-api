@@ -119,7 +119,7 @@ version: 2
 workflows:
   build-workflow:
     jobs:
-    - code_coverage:
+    - core_syntax_diff:
         context: perl
   daily:
     jobs:
