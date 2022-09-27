@@ -170,6 +170,7 @@ subtest 'forex major pair - frxAUDJPY' => sub {
         token               => $token,
         contract_parameters => {
             contract_type => 'MULTUP',
+            basis_spot    => 103.50,
             basis         => 'stake',
             amount        => 100,
             multiplier    => 100,
