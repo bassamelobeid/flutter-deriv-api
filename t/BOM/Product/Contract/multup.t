@@ -744,6 +744,43 @@ subtest 'commission multiplier' => sub {
     is $c->commission_multiplier, 1.093,     'commission multiplier is 1.093';
 };
 
+subtest 'commission multiplier for crypto' => sub {
+    $mocked->unmock_all;
+
+    note 'dst time';
+    my $now  = Date::Utility->new('2020-06-09');
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'cryBTCUSD',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+    };
+    my $c = produce_contract($args);
+    is $c->commission,            0.0011715, 'commission is at 0.0011715';
+    is $c->commission_multiplier, 1.1715,    'commission multiplier is 1.1715';
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            recorded_date => $now,
+            events        => [{
+                    impact       => 5,
+                    event_name   => 'Alien invasion',
+                    symbol       => 'USD',
+                    source       => 'test',
+                    release_date => $now->plus_time_interval('1m59s')->epoch
+                }]});
+
+    note "symbol $args->{underlying}";
+    $c = produce_contract($args);
+    is $c->commission,            0.003, 'commission is at 0.003';
+    is $c->commission_multiplier, 3,     'commission multiplier is 3';
+};
+
 subtest 'deal cancellation with TP and blackout condition' => sub {
     my $now = Date::Utility->new('2020-06-05 10:00:00');
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);

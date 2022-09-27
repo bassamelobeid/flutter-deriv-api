@@ -1347,11 +1347,13 @@ my %basket_source_currency = (
         JPY => 1,
     },
 );
+my %crypto_source_currency = (
+    'cryBTCUSD' => $forex_source,
+    'cryETHUSD' => $forex_source,
+);
 
 sub _get_economic_event_commission_multiplier {
     my $self = shift;
-
-    return 0 if $self->underlying->market->name !~ /^(forex|basket_index)$/;
 
     my $for_date    = $self->underlying->for_date;
     my $ee_calendar = Quant::Framework::EconomicEventCalendar->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date));
@@ -1368,6 +1370,8 @@ sub _get_economic_event_commission_multiplier {
         my $currencies;
         if ($self->underlying->market->name eq 'basket_index') {
             $currencies = $basket_source_currency{$self->underlying->symbol};
+        } elsif ($self->underlying->market->name eq 'cryptocurrency') {
+            $currencies = $crypto_source_currency{$self->underlying->symbol};
         } else {
             $currencies = {
                 USD                                       => 1,
