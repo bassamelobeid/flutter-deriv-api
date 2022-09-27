@@ -141,6 +141,7 @@ push @batch_requests, {
         currency_code => $currency,
         keys          => [qw{
                 account_address
+                is_external
                 sweep_max_transfer
                 sweep_min_transfer
                 sweep_reserve_balance
@@ -642,6 +643,7 @@ $tt->process(
     {
         currency              => $currency,
         exchange_rate         => $exchange_rate // 'N.A.',
+        is_external           => $currency_info->{is_external},
         main_address          => $currency_info->{account_address},
         sweep_limit_max       => $currency_info->{sweep_max_transfer},
         sweep_limit_min       => $currency_info->{sweep_min_transfer},
@@ -667,6 +669,7 @@ $tt->process(
         pending_withdrawal_amount => $pending_withdrawal_amount,
         include_new               => $show_new_addresses,
         is_fee_recon              => $fee_recon,
+        is_external               => $currency_info->{is_external},
         errors                    => [@errors],
     }) || die $tt->error() . "\n";
 

@@ -24,11 +24,12 @@
 [% FOREACH currency IN currency_info.keys %]
     <div id="[% currency %]" class="currency-info invisible">
         [% INCLUDE 'backoffice/crypto_cashier/crypto_info.html.tt'
+            is_external           = currency_info.$currency.is_external
             main_address          = currency_info.$currency.main_address
-            exchange_rate         = currency_info.$currency.exchange_rate,
-            sweep_limit_min       = currency_info.$currency.sweep_limit_min,
-            sweep_limit_max       = currency_info.$currency.sweep_limit_max,
-            sweep_reserve_balance = currency_info.$currency.sweep_reserve_balance,
+            exchange_rate         = currency_info.$currency.exchange_rate
+            sweep_limit_min       = currency_info.$currency.sweep_limit_min
+            sweep_limit_max       = currency_info.$currency.sweep_limit_max
+            sweep_reserve_balance = currency_info.$currency.sweep_reserve_balance
         %]
     </div>
 [% END %]

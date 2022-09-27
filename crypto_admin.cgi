@@ -54,6 +54,7 @@ foreach my $currency_code (@all_cryptos) {
             currency_code => $currency_code,
             keys          => [qw{
                     account_address
+                    is_external
                     sweep_max_transfer
                     sweep_min_transfer
                     sweep_reserve_balance
@@ -84,6 +85,7 @@ sub _get_currency_info {
     foreach my $cur (@currency_to_get) {
         my $currency = $currencies_info->{'currency_info_' . $cur};
         $currency_info->{$cur} = {
+            is_external           => $currency->{is_external},
             main_address          => $currency->{account_address},
             exchange_rate         => eval { in_usd(1.0, $cur) } // 'Not Specified',
             sweep_limit_max       => $currency->{sweep_max_transfer},
@@ -125,7 +127,6 @@ $request_type->{gt_get_error_txn} = sub {
         };
     return sub {
         my ($response_bodies) = @_;
-        my $redis_read = BOM::Config::Redis::redis_replicated_read();
 
         my $error = _error_handler($response_bodies, "get_error_withdrawals");
         if ($error) {
@@ -141,6 +142,7 @@ $request_type->{gt_get_error_txn} = sub {
 
         my $error_withdrawals = $response_bodies->{get_error_withdrawals}{transaction_list};
 
+        my $redis_read = BOM::Config::Redis::redis_replicated_read();
         foreach my $txn_record (keys %$error_withdrawals) {
             my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_record);
             $error_withdrawals->{$txn_record}->{approved_by} = $approver;
@@ -780,8 +782,6 @@ Receives the following parameters:
 =back
 
 Returns hashref as {error => $error} or undef.
-
-=back
 
 =cut
 

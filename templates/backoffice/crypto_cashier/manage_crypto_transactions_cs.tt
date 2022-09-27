@@ -127,6 +127,7 @@
                                     [% END %]
                                 [% END %]
                                 [% INCLUDE info title='Payment ID' content=trx.payment_id %]
+                                [% INCLUDE info title='Trace ID'   content=trx.trace_id %]
                                 [% IF trx.type == 'withdrawal'%]
                                     [% INCLUDE info title='Estimated Fee'   content=trx.estimated_fee %]
                                     [% INCLUDE info title='Transaction Fee' content=trx.fee %]
@@ -151,7 +152,7 @@
                                 [% INCLUDE info title='Error' content=trx.error_text %]
                             </td>
                             <td valign="top" align="center">
-                                [% IF trx.type == 'deposit' %]
+                                [% IF trx.type == 'deposit' and !trx.is_external %]
                                     <form method="POST">
                                         <input type="hidden" name="loginID" value="[% loginid %]" />
                                         <input type="hidden" name="trx_id_to_reprocess" value="[% trx.id %]" />

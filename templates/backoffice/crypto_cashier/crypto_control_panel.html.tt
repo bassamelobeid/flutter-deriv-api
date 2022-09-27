@@ -19,6 +19,7 @@
     <br>
     <input type="hidden" name="broker" value="[% broker %]">
 <!-- Recon -->
+    [% IF !is_external %]
         <button type="submit" class="btn btn--primary" name="view_action" value="reconcil">Reconciliation</button>
         <input type="text" name="start_date" class="datepick" value="[% start_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
         <input type="text" name="end_date" class="datepick" value="[% end_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
@@ -28,6 +29,7 @@
             <label for="fee_recon">Show BTC recon</label>
         [% END %]
     <br><br>
+    [% END %]
 <!-- Search -->
         <button type="submit" class="btn btn--primary" name="view_action" value="search">Search</button>
         <select name="search_type">
@@ -37,10 +39,12 @@
         <input type="text" name="search_query" data-lpignore="true" size="40" />
     <br><br>
 <!-- Manual Confirmation -->
+    [% IF !is_external %]
         <button type="submit" class="btn btn--primary" name="view_action" value="reprocess_confirmation">Reprocess address</button>
         <label for="address_to_reprocess">Address</label>
         <input type="text" name="address_to_reprocess" id="address_to_reprocess" data-lpignore="true" size="40" />
     <br><br>
+    [% END %]
 <!-- Deposit -->
     <button type="submit" class="btn btn--primary" name="view_action" value="deposits">Deposit transactions</button>
     <br><br>
@@ -54,16 +58,17 @@
     <button type="submit" class="btn btn--primary" name="view_action" value="auto_reject_insufficient">Auto-reject withdrawals with insufficient balance</button>
     <br><br>
     Pending Client Payouts : <strong> [% pending_withdrawal_amount %] [% currency %] </strong>
-    <br><br>
 <!-- Tools -->
+    [% IF !is_external %]
+    <br><br>
     <button type="submit" class="btn btn--primary" name="view_action" value="run">Run</button>
     <select name="command">
         <option value="getwallet" [% IF cmd == "getwallet" %] selected="selected" [% END %]>Get Wallet Balance</option>
         <option value="getavailablepayout" [% IF cmd == "getavailablepayout" %] selected="selected" [% END %]>Get Available Balance for payout</option>
         <option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get Info</option>
     </select>
+    [% END %]
 </form>
-<br>
 
 <style type="text/css">
     #ddl_crypto_currencies option {

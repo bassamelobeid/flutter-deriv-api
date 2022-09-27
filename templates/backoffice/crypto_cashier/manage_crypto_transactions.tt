@@ -255,6 +255,9 @@
                             <td></td>
                         </tr>
                         <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
+                    [% IF trx.is_external %]
+                        <tr><th tooltip="3rd-party Payment Processor's Identification Number">Trace ID:</th><td>[% trx.trace_id %]</td></tr>
+                    [% END %]
                     [% IF trx.type == 'withdrawal' %]
                         <tr><th>Estimated Fee:</th><td>[% trx.estimated_fee %]</td></tr>
                         <tr><th>Transaction Fee:</th><td>[% trx.fee %]</td></tr>

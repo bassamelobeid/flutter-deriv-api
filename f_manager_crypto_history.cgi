@@ -198,6 +198,8 @@ my $prepare_transaction = sub {
             render_message(0, 'Sorry, We have credit the client account manually for this address before, please contact crypto team for this case.')
             if ($reprocess_info->{manual_credit});
 
+        $info{reprocess}{message}    //= $info{reprocess}{error}{message} // '';
+        $info{reprocess}{is_success} //= 0;
         $reprocess_info->{result} = render_message(@{$info{reprocess}}{qw/ is_success message /}) if ($info{reprocess});
 
         my $make_pagination_url = sub {
