@@ -533,11 +533,12 @@ subtest $method => sub {
         $params->{args}->{email}           = $email;
         $params->{args}->{client_password} = 'verylongDDD1!';
 
-        $params->{args}->{residence}    = 'id';
-        $params->{args}->{utm_source}   = 'google.com';
-        $params->{args}->{utm_medium}   = 'email';
-        $params->{args}->{utm_campaign} = 'spring sale';
-        $params->{args}->{gclid_url}    = 'FQdb3wodOkkGBgCMrlnPq42q8C';
+        $params->{args}->{residence}       = 'id';
+        $params->{args}->{utm_source}      = 'google.com';
+        $params->{args}->{utm_medium}      = 'email';
+        $params->{args}->{utm_campaign}    = 'spring sale';
+        $params->{args}->{gclid_url}       = 'FQdb3wodOkkGBgCMrlnPq42q8C';
+        $params->{args}->{affiliate_token} = 'first';
         delete $params->{args}->{non_pep_declaration};
         %datadog_args = ();
 
@@ -563,8 +564,6 @@ subtest $method => sub {
         $params->{token} = $rpc_ct->result->{oauth_token};
 
         $params->{args}->{currency} = 'USD';
-
-        $params->{args}->{affiliate_token} = 'first';
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create fiat currency account')
             ->result_value_is(sub { shift->{currency} }, 'USD', 'fiat currency account currency is USD');
