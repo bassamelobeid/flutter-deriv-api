@@ -107,16 +107,17 @@ if ($type && $type eq "search") {
         "Blocked",
         "Last update date",
         "Staff",
-        "Creation date"
+        "Creation date",
+        "Categories"
     );
     $csv->combine(@header);
     print $csv->string;
 
     for my $row ($csv_data->@*) {
         my @row_array = (
-            $row->{address},          $row->{currency_code},         $row->{address_report_count},
-            $row->{client_loginid},   $row->{investigation_remarks}, $row->{is_blocked},
-            $row->{last_status_date}, $row->{last_status_update_by}, $row->{insert_date});
+            $row->{address},               $row->{currency_code}, $row->{address_report_count}, $row->{client_loginid},
+            $row->{investigation_remarks}, $row->{is_blocked},    $row->{last_status_date},     $row->{last_status_update_by},
+            $row->{insert_date},           $row->{categories});
         $csv->combine(@row_array);
         print $csv->string;
     }
