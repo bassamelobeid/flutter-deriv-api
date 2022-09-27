@@ -12,8 +12,6 @@ initialize_realtime_ticks_db();
 local $SIG{__WARN__} = sub {
     # capture the warn for test
     my $msg = shift;
-    note $msg;
-
 };
 
 my $params = {
@@ -53,17 +51,14 @@ $params = {
     'amount_type'           => 'payout',
     'payout'                => '10',
 };
-
 my $contract = BOM::Product::ContractFactory::produce_contract($params);
-
-$result = BOM::Pricing::v3::Contract::_build_bid_response({
+$params = {
     contract           => $contract,
     is_valid_to_sell   => 1,
     is_valid_to_cancel => 1,
     is_sold            => 1,
     sell_time          => 1634775100,
-});
-
+};
 my $expected = {
     'barrier_count'              => 1,
     'bid_price'                  => '6.14',
@@ -91,6 +86,7 @@ my $expected = {
     'status'     => 'sold',
     'underlying' => 'R_50'
 };
+$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
 cmp_deeply($result, $expected, 'build_bid_response matches');
 
 $params = {
@@ -104,17 +100,16 @@ $params = {
     'underlying'            => 'R_100',
     'amount_type'           => 'stake'
 };
-
-note explain $result;
-
 $contract = BOM::Product::ContractFactory::produce_contract($params);
-$result   = BOM::Pricing::v3::Contract::_build_bid_response({
+$params   = {
     contract           => $contract,
     is_valid_to_sell   => 1,
     is_valid_to_cancel => 1,
-});
+};
+$result = BOM::Pricing::v3::Contract::_build_bid_response($params);
+ok !$result->{error}, 'build_bid_response for MULTUP';
 is $result->{'underlying'},    'R_100',  'underlying R_100';
-is $result->{'bid_price'},     '100.00', 'bid_price';
+is $result->{'bid_price'},     '100.00', 'bid_price matches';
 is $result->{'contract_type'}, 'MULTUP', 'contract_type MULTUP';
 
 done_testing;
