@@ -18,6 +18,7 @@ no indirect;
 
 use List::Util    qw( min max any uniq);
 use List::UtilsBy qw(nsort_by);
+use Array::Utils  qw(intersect);
 use Time::HiRes   ();
 
 use LandingCompany::Registry;
@@ -373,8 +374,23 @@ rpc website_status => sub {
     };
 
     if (my $p2p_advert_config = BOM::Config::P2P::advert_config()->{$country // ''}) {
-        my $p2p_config    = $app_config->payments->p2p;
-        my $exchange_rate = BOM::User::Utility::p2p_exchange_rate($country);
+        my $p2p_config           = $app_config->payments->p2p;
+        my $exchange_rate        = BOM::User::Utility::p2p_exchange_rate($country);
+        my %all_local_currencies = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
+        my @p2p_countries        = keys BOM::Config::P2P::available_countries()->%*;
+        my @p2p_currencies       = split ',', BOM::Config::Redis->redis_p2p->get('P2P::LOCAL_CURRENCIES');
+        my $local_currency       = BOM::Config::CurrencyConfig::local_currency_for_country($country);
+
+        my @local_currencies;
+        for my $symbol (sort keys %all_local_currencies) {
+            next unless intersect(@p2p_countries, $all_local_currencies{$symbol}->{countries}->@*);
+            push @local_currencies, {
+                symbol       => $symbol,
+                display_name => localize($all_local_currencies{$symbol}->{name}),    # transations added in BOM::Backoffice::Script::ExtraTranslations
+                has_adverts  => (any { $symbol eq $_ } @p2p_currencies) ? 1 : 0,
+                $symbol eq $local_currency ? (is_default => 1) : (),
+            };
+        }
 
         $result->{p2p_config} = {
             $p2p_config->archive_ads_days ? (adverts_archive_period => $p2p_config->archive_ads_days) : (),
@@ -399,6 +415,8 @@ rpc website_status => sub {
             float_rate_offset_limit => $p2p_advert_config->{max_rate_range} / 2,
             $p2p_advert_config->{deactivate_fixed}       ? (fixed_rate_adverts_end_date => $p2p_advert_config->{deactivate_fixed}) : (),
             ($exchange_rate->{source} // '') eq 'manual' ? (override_exchange_rate      => $exchange_rate->{quote})                : (),
+            feature_level    => $p2p_config->feature_level,
+            local_currencies => \@local_currencies,
         };
     }
 

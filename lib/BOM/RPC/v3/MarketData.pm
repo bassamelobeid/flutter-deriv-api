@@ -77,7 +77,7 @@ rpc exchange_rates => sub {
         ## no critic (RequireCheckingReturnValueOfEval)
         eval { $rates_hash{$target_currency} = convert_currency(1, $base_currency, $target_currency) };
     } else {
-        foreach my $currency (uniq(BOM::Config::CurrencyConfig::local_currency_list(), LandingCompany::Registry::all_currencies())) {
+        foreach my $currency (uniq(keys BOM::Config::CurrencyConfig::local_currencies()->%*, LandingCompany::Registry::all_currencies())) {
             next if $currency eq $base_currency;
             ## no critic (RequireCheckingReturnValueOfEval)
             eval { $rates_hash{$currency} = convert_currency(1, $base_currency, $currency) };

@@ -830,7 +830,7 @@ subtest 'P2P Order Info' => sub {
     cmp_deeply $res, {
         chat_channel_url => '',
         rate_display     => '1.00',
-        local_currency   => 'myr',
+        local_currency   => 'IDR',
         amount           => '100.00',
         client_details   => {
             loginid    => $client->loginid,
@@ -839,7 +839,7 @@ subtest 'P2P Order Info' => sub {
             first_name => $client->first_name,
             last_name  => $client->last_name,
         },
-        price_display  => 100,
+        price_display  => '100.00',
         expiry_time    => re('\d+'),
         amount_display => '100.00',
         advert_details => {

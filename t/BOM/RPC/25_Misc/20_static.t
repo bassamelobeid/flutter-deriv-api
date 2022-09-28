@@ -5,9 +5,11 @@ use utf8;
 use Test::Most;
 use Test::Deep;
 use Test::Mojo;
+use Test::MockModule;
 use BOM::Test::RPC::QueueClient;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Format::Util::Numbers            qw/financialrounding/;
 
@@ -367,8 +369,29 @@ subtest 'trading_servers' => sub {
 
 subtest 'p2p_config' => sub {
 
-    my $config     = BOM::Config::Runtime->instance->app_config;
-    my $p2p_config = $config->payments->p2p;
+    my $config        = BOM::Config::Runtime->instance->app_config;
+    my $p2p_config    = $config->payments->p2p;
+    my $mock_currency = Test::MockModule->new('BOM::Config::CurrencyConfig');
+    my %currencies    = (
+        AAA => {
+            name      => 'AAA currency',
+            countries => ['id']
+        },
+        BBB => {
+            name      => 'BBB currency',
+            countries => ['ng', 'br']
+        },
+        CCC => {
+            name      => 'CCC currency',
+            countries => ['au', 'nz']
+        },    # blocked countries for p2p
+    );
+
+    $p2p_config->restricted_countries(['au', 'nz']);
+    #$mock_currency->redefine(local_currencies_details   => sub { \%currencies });
+    %BOM::Config::CurrencyConfig::ALL_CURRENCIES = %currencies;
+    $mock_currency->redefine(local_currency_for_country => sub { return 'AAA' if shift eq 'id' });
+    BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', 'BBB,CCC');
 
     my %vals = (
         adverts_active_limit        => 1,
@@ -389,6 +412,19 @@ subtest 'p2p_config' => sub {
         float_rate_offset_limit     => num(4.1),
         fixed_rate_adverts_end_date => '2012-02-03',
         review_period               => 13,
+        feature_level               => 14,
+        local_currencies            => [{
+                symbol       => 'AAA',
+                display_name => $currencies{AAA}->{name},
+                is_default   => 1,
+                has_adverts  => 0,
+            },
+            {
+                symbol       => 'BBB',
+                display_name => $currencies{BBB}->{name},
+                has_adverts  => 1,
+            },
+        ],
     );
 
     $p2p_config->available(1);
@@ -403,6 +439,7 @@ subtest 'p2p_config' => sub {
     $p2p_config->limits->count_per_day_per_client($vals{order_daily_limit});
     $p2p_config->order_timeout($vals{order_payment_period} * 60);
     $p2p_config->review_period($vals{review_period});
+    $p2p_config->feature_level($vals{feature_level});
     $p2p_config->enabled(1);
     $config->system->suspend->p2p(0);
     $p2p_config->payment_methods_enabled(1);
