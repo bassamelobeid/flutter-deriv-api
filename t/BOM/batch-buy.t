@@ -241,7 +241,12 @@ subtest 'batch-buy success + multisell', sub {
                 next if $m->{code} && $m->{code} eq 'ignore';
                 ok(!$m->{code},                                             'no error');
                 ok($m->{client} && ref $m->{client} eq 'BOM::User::Client', 'check client');
-                is($m->{limits}{max_balance}, $m->{client}->loginid, 'check_limit');
+
+                if ($m->{client}->landing_company->unlimited_balance) {
+                    is($m->{limits}{max_balance}, undef, 'check_limit');
+                } else {
+                    is($m->{limits}{max_balance}, $m->{client}->loginid, 'check_limit');
+                }
             }
         };
 

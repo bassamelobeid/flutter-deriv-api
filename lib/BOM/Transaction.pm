@@ -550,7 +550,9 @@ sub calculate_limits {
 
     # Client related limit set in client's management page in the backoffice.
     # It is normally used to stop trading activities of a client.
-    $limits{max_balance} = $client->get_limit_for_account_balance;
+    $limits{max_balance} = $client->get_limit_for_account_balance
+        unless $client->landing_company->unlimited_balance;
+
     my $lim = $self->calculate_max_open_bets($client);
     $limits{max_open_bets}        = $lim if defined $lim;
     $limits{max_payout_open_bets} = $client->get_limit_for_payout;
@@ -1729,6 +1731,9 @@ In case of an unexpected error, the exception is re-thrown unmodified.
     BI008 => sub {
         my $self   = shift;
         my $client = shift;
+
+        # Do not do anything if customer landing company configuration asked for unlimited balance
+        return if $client->landing_company->unlimited_balance;
 
         my $currency = $self->contract->currency;
         my $limit    = formatnumber('amount', $currency, $client->get_limit_for_account_balance);
