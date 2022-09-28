@@ -307,6 +307,77 @@ subtest 'microservice is unavailable' => sub {
     is_deeply $msgs, ['UNAVAILABLE_MICROSERVICE'], 'message is correct';
 };
 
+subtest 'verify_process - apply side effects' => sub {
+
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
+
+    my $email = 'test_verify_process@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid       => $client->loginid,
+        status        => 'verified',
+        response_hash => {
+            status   => 'verified',
+            messages => ['ADDRESS_VERIFIED']
+        },
+        message => ['ADDRESS_VERIFIED'],
+
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf'
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1988-02-12');
+    $client->save();
+
+    $client->status->set('unwelcome',         'test', 'test');
+    $client->status->set('poi_name_mismatch', 'test', 'test');
+    $client->status->clear_age_verification;
+
+    $verification_status  = 'Verified';
+    $personal_info_status = 'Returned';
+    $personal_info        = {
+        FullName => 'John Doe',
+        DOB      => '1988-02-12',
+    };
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    ok $client->status->age_verification, 'age verified correctly';
+    ok $client->fully_authenticated(),    'client is fully authenticated';
+    is $client->get_authentication('IDV')->{status}, 'pass', 'PoA with IDV';
+
+};
+
 sub _reset_submissions {
     my $user_id = shift;
     my $redis   = BOM::Config::Redis::redis_events();

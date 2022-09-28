@@ -67,7 +67,7 @@ for given client loginid.
 
 =back
 
-Returns undef.
+Returns 1 on sucess or undef on error
 
 =cut
 
@@ -130,111 +130,13 @@ async sub verify_identity {
             });
 
         my ($status, $response_hash, $message) = @result;
-        my $provider_request_body  = $response_hash->{request_body}  // {};
-        my $provider_response_body = $response_hash->{response_body} // {};
-        my $report                 = $response_hash->{report}        // {};
 
-        my @messages = ref $message eq 'ARRAY' ? $message->@* : ($message // ());
-
-        my $refuted_document_handler = async sub {
-            my ($errors) = @_;
-
-            push @messages,
-                _apply_side_effects({
-                    client   => $client,
-                    errors   => $errors,
-                    provider => $provider,
-                });
-            @messages = uniq @messages;
-
-            $idv_model->update_document_check({
-                document_id     => $document->{id},
-                status          => 'refuted',
-                report          => encode_json_text($report),
-                expiration_date => $report->{expiry_date},
-                messages        => \@messages,
-                provider        => $provider,
-                request_body    => encode_json_text($provider_request_body),
-                response_body   => encode_json_text($provider_response_body),
-            });
-
-            await BOM::Event::Services::Track::track_event(
-                event      => 'identity_verification_rejected',
-                loginid    => $client->loginid,
-                properties => {
-                    authentication_url => request->brand->authentication_url,
-                    live_chat_url      => request->brand->live_chat_url,
-                    title              => localize('We were unable to verify your document details'),
-                },
-            );
-        };
-
-        my $verified_document_handler = async sub {
-            $client->status->clear_poi_name_mismatch;
-
-            if (any { $_ eq 'ADDRESS_VERIFIED' } @messages) {
-                $client->set_authentication('IDV', {status => 'pass'});
-                $client->status->clear_unwelcome;
-            }
-
-            BOM::Event::Actions::Common::set_age_verification($client, $provider);
-
-            $idv_model->update_document_check({
-                document_id     => $document->{id},
-                status          => 'verified',
-                provider        => $provider,
-                report          => encode_json_text($report),
-                expiration_date => $report->{expiry_date},
-                request_body    => encode_json_text($provider_request_body),
-                response_body   => encode_json_text($provider_response_body),
-            });
-        };
-
-        my $rule_engine_handler = async sub {
-            my $rule_engine = BOM::Rules::Engine->new(
-                client          => $client,
-                residence       => $client->residence,
-                stop_on_failure => 0
-            );
-
-            my $rules_result = $rule_engine->verify_action(
-                'identity_verification',
-                loginid  => $client->loginid,
-                result   => $report,
-                document => $document,
-            );
-
-            unless ($rules_result->has_failure) {
-                await $verified_document_handler->();
-            } else {
-                await $refuted_document_handler->($rules_result->errors);
-            }
-        };
-
-        if ($status eq RESULT_STATUS->{pass}) {
-            await $rule_engine_handler->();
-        } elsif ($status eq RESULT_STATUS->{verify}) {
-            await $verified_document_handler->();
-        } elsif ($status eq RESULT_STATUS->{reject}) {
-            await $refuted_document_handler->(_messages_to_hashref(@messages));
-        } else {
-            DataDog::DogStatsd::Helper::stats_inc(
-                'event.identity_verification.failure',
-                {
-                    tags => [@common_datadog_tags, sprintf('message:%s', $messages[0] // 'UNKNOWN'),],
-                });
-
-            $idv_model->update_document_check({
-                document_id   => $document->{id},
-                status        => 'failed',
-                messages      => \@messages,
-                provider      => $provider,
-                request_body  => encode_json_text($provider_request_body),
-                response_body => encode_json_text($provider_response_body),
-            });
-
-            $log->infof('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, \@messages);
-        }
+        await verify_process({
+            loginid       => $loginid,
+            status        => $status,
+            response_hash => $response_hash,
+            message       => $message,
+        });
     } catch ($e) {
         $log->errorf('An error occurred while triggering IDV for document %s associated by client %s via provider %s due to %s',
             $document->{id}, $loginid, $provider, $e);
@@ -242,6 +144,161 @@ async sub verify_identity {
         exception_logged();
 
         die $e;    # Keeps event in the queue.
+    }
+
+    return 1;
+}
+
+=head2 verify_process
+
+Handle side-effects for identity verification
+for given client.
+
+=over 4
+
+=item * C<$loginid> - the client's loginid
+
+=item * C<$status> - status from idv provider
+
+=item * C<$response_hash> - response hash from idv provider
+
+=item * C<$message> - message from idv provider
+
+
+=back
+
+Returns 1 on sucess or undef on error
+
+=cut
+
+async sub verify_process {
+    my $args = shift;
+
+    my ($loginid, $status, $response_hash, $message) =
+        @{$args}{qw/loginid status response_hash message/};
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die sprintf("Could not initiate client for loginid: %s", $loginid);
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
+    die sprintf("No submissions left, IDV request has ignored for loginid: %s", $client->loginid) unless $idv_model->submissions_left($client);
+
+    die $log->errorf('Could not trigger IDV, microservice is not enabled.') unless BOM::Config::Services->is_enabled('identity_verification');
+
+    my $document = $idv_model->get_standby_document();
+
+    die 'No standby document found, IDV request skipped.' unless $document;
+
+    my $provider = _get_provider($document->{issuing_country});
+
+    return undef unless $provider;
+
+    my @common_datadog_tags    = (sprintf('provider:%s', $provider), sprintf('country:%s', $document->{issuing_country}));
+    my $provider_request_body  = $response_hash->{request_body}  // {};
+    my $provider_response_body = $response_hash->{response_body} // {};
+    my $report                 = $response_hash->{report}        // {};
+
+    my @messages = ref $message eq 'ARRAY' ? $message->@* : ($message // ());
+
+    my $refuted_document_handler = async sub {
+        my ($errors) = @_;
+
+        push @messages,
+            _apply_side_effects({
+                client   => $client,
+                errors   => $errors,
+                provider => $provider,
+            });
+        @messages = uniq @messages;
+
+        $idv_model->update_document_check({
+            document_id     => $document->{id},
+            status          => 'refuted',
+            report          => encode_json_text($report),
+            expiration_date => $report->{expiry_date},
+            messages        => \@messages,
+            provider        => $provider,
+            request_body    => encode_json_text($provider_request_body),
+            response_body   => encode_json_text($provider_response_body),
+        });
+
+        await BOM::Event::Services::Track::track_event(
+            event      => 'identity_verification_rejected',
+            loginid    => $client->loginid,
+            properties => {
+                authentication_url => request->brand->authentication_url,
+                live_chat_url      => request->brand->live_chat_url,
+                title              => localize('We were unable to verify your document details'),
+            },
+        );
+    };
+
+    my $verified_document_handler = async sub {
+        $client->status->clear_poi_name_mismatch;
+
+        if (any { $_ eq 'ADDRESS_VERIFIED' } @messages) {
+            $client->set_authentication('IDV', {status => 'pass'});
+            $client->status->clear_unwelcome;
+        }
+
+        BOM::Event::Actions::Common::set_age_verification($client, $provider);
+
+        $idv_model->update_document_check({
+            document_id     => $document->{id},
+            status          => 'verified',
+            provider        => $provider,
+            report          => encode_json_text($report),
+            expiration_date => $report->{expiry_date},
+            request_body    => encode_json_text($provider_request_body),
+            response_body   => encode_json_text($provider_response_body),
+        });
+    };
+
+    my $rule_engine_handler = async sub {
+        my $rule_engine = BOM::Rules::Engine->new(
+            client          => $client,
+            residence       => $client->residence,
+            stop_on_failure => 0
+        );
+
+        my $rules_result = $rule_engine->verify_action(
+            'identity_verification',
+            loginid  => $client->loginid,
+            result   => $report,
+            document => $document,
+        );
+
+        unless ($rules_result->has_failure) {
+            await $verified_document_handler->();
+        } else {
+            await $refuted_document_handler->($rules_result->errors);
+        }
+    };
+
+    if ($status eq RESULT_STATUS->{pass}) {
+        await $rule_engine_handler->();
+    } elsif ($status eq RESULT_STATUS->{verify}) {
+        await $verified_document_handler->();
+    } elsif ($status eq RESULT_STATUS->{reject}) {
+        await $refuted_document_handler->(_messages_to_hashref(@messages));
+    } else {
+        DataDog::DogStatsd::Helper::stats_inc(
+            'event.identity_verification.failure',
+            {
+                tags => [@common_datadog_tags, sprintf('message:%s', $messages[0] // 'UNKNOWN'),],
+            });
+
+        $idv_model->update_document_check({
+            document_id   => $document->{id},
+            status        => 'failed',
+            messages      => \@messages,
+            provider      => $provider,
+            request_body  => encode_json_text($provider_request_body),
+            response_body => encode_json_text($provider_response_body),
+        });
+
+        $log->infof('Identity verification for document %s via provider %s get failed due to %s', $document->{id}, $provider, \@messages);
     }
 
     return 1;

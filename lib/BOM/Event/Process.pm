@@ -88,6 +88,7 @@ my $action_mapping = {
         dispute_notification                        => \&BOM::Event::Actions::Client::DisputeNotification::dispute_notification,
         account_reactivated                         => \&BOM::Event::Actions::Client::account_reactivated,
         identity_verification_requested             => \&BOM::Event::Actions::Client::IdentityVerification::verify_identity,
+        identity_verification_processed             => \&BOM::Event::Actions::Client::IdentityVerification::verify_process,
         check_onfido_rules                          => \&BOM::Event::Actions::Client::check_onfido_rules,
         check_name_changes_after_first_deposit      => \&BOM::Event::Actions::Client::check_name_changes_after_first_deposit,
         bulk_authentication                         => \&BOM::Event::Actions::Authentication::bulk_authentication,
