@@ -474,6 +474,20 @@ subtest 'get and set self_exclusion' => sub {
     $test_client_mlt->user->update_trading_password($DETAILS{password}{main});
     my $error = $c->tcall('mt5_new_account', $mt5_params)->{error};
     is $error->{code}, 'MT5NotAllowed', 'error code is MT5NotAllowed';
+
+    # Test for Maximum balance CR account
+    my $new_max_balance = 39999999;
+    $params->{args}->{max_balance} = $new_max_balance;
+    $params->{token} = $token_cr;
+    my $call_response = $c->tcall($method, $params);
+
+    is($call_response->{error},  undef, "No limit for max_balance for CR account");
+    is($call_response->{status}, 1,     "No limit for max_balance - update self_exclusion ok");
+
+    delete $params->{args};
+    is $c->tcall('get_self_exclusion', $params)->{max_balance}, $new_max_balance, 'Correct max_balance are returned which was set higher';
+
+    is($test_client_cr->get_limit_for_account_balance, $new_max_balance, "Correct account balance has returned");
 };
 
 subtest 'deposit limits disabled' => sub {
