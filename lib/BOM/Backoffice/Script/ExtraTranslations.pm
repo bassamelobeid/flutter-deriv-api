@@ -22,6 +22,7 @@ use BOM::OAuth::Static;
 use Finance::Contract::Longcode;
 use BOM::Config::Runtime;
 use BOM::Config;
+use BOM::Config::CurrencyConfig;
 use BOM::Backoffice::Request qw(request);
 use Brands;
 use BOM::Backoffice::Script::CustomerIOTranslation;
@@ -240,7 +241,9 @@ sub add_messages {
     my $fh               = $self->pot_append_fh;
     my @message_mappings = (
         BOM::Product::Static::get_error_mapping(), BOM::Product::Static::get_generic_mapping(),
-        BOM::User::Static::get_error_mapping(),    BOM::OAuth::Static::get_message_mapping());
+        BOM::User::Static::get_error_mapping(),    BOM::OAuth::Static::get_message_mapping(),
+        BOM::Config::CurrencyConfig::local_currencies(),
+    );
 
     foreach my $message_mapping (@message_mappings) {
         foreach my $message (sort keys %$message_mapping) {

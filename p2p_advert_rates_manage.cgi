@@ -60,7 +60,6 @@ if (request()->http_method eq 'POST' and request()->params->{save}) {
             $data->{$_} = $ad_config->{$country}{$_} // $defaults{$_} for qw(float_ads fixed_ads);
         }
         my %changes = map { $country . ':' . $_ => $data->{$_} }
-
             grep { $data->{$_} ne ($ad_config->{$country}->{$_} // $defaults{$_}) } qw(float_ads fixed_ads deactivate_fixed);
 
         $ad_config->{$country}{$_} = $data->{$_} for qw(float_ads fixed_ads deactivate_fixed);
@@ -100,7 +99,7 @@ my $age_format = sub {
     return Time::Duration::Concise->new(interval => $age)->as_concise_string;
 };
 
-my (@rows, @notices);
+my (@rows, @cron_notices, %ads_by_currency, @currency_warnings);
 my $next_cron = Date::Utility->new->truncate_to_day->plus_time_interval('2h30m');
 my $now       = Date::Utility->new;
 $next_cron = $next_cron->plus_time_interval('24h') if $now->seconds_after_midnight > (2.5 * 60 * 60);
@@ -120,11 +119,11 @@ for my $country (sort keys %$p2p_countries) {
         $row->{deactivate_fixed} = $date->date;
         if ($row->{fixed_ads} ne 'disabled' and ($activation{"$country:fixed_ads"} // '') ne 'disabled') {
             if ($next_cron->days_between($date) == 0) {
-                push @notices,
+                push @cron_notices,
                     "Fixed rate ads for $row->{name} will be deactivated because of the set date, and all users who have active ads will be emailed.";
             }
             if ($activation{"$country:deactivate_fixed"} and $date->is_after($now)) {
-                push @notices,
+                push @cron_notices,
                     "Users with active fixed rate ads in $row->{name} will be emailed that fixed rate ads are being disabled on " . $date->date;
             }
         }
@@ -140,24 +139,33 @@ for my $country (sort keys %$p2p_countries) {
             $row->{quote_time} = $dt->datetime;
             $row->{old_quote}  = 1 if $dt->is_before(Date::Utility->new->minus_time_interval('24h'));
         }
+        $ads_by_currency{$currency}{$_}{$row->{$_ . '_ads'} eq 'disabled' ? 1 : 0} = 1 for qw(float fixed);
     }
-    push @rows, $row;
 
-    push @notices, "Fixed rate ads for $row->{name} will be deactivated and all users who have active fixed rate ads will be emailed."
+    push @cron_notices, "Fixed rate ads for $row->{name} will be deactivated and all users who have active fixed rate ads will be emailed."
         if ($activation{"$country:fixed_ads"} // '') eq 'disabled';
 
-    push @notices, "Float rate ads for $row->{name} will be deactivated and all users who have active float rate ads will be emailed."
+    push @cron_notices, "Float rate ads for $row->{name} will be deactivated and all users who have active float rate ads will be emailed."
         if ($activation{"$country:float_ads"} // '') eq 'disabled';
+
+    push @rows, $row;
 }
+
+for my $currency (sort keys %ads_by_currency) {
+    push @currency_warnings, $currency if (grep { keys %$_ > 1 } values $ads_by_currency{$currency}->%*);
+}
+
+my $sort_key = (request()->params->{sort} // '') eq 'currency' ? 'currency' : 'name';
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_advert_rates_manage.tt',
     {
-        rows      => [sort { $a->{name} cmp $b->{name} } @rows],
-        revision  => $app_config->global_revision(),
-        next_cron => $next_cron->datetime,
-        notices   => \@notices,
-        error     => $error,
+        rows              => [sort { $a->{$sort_key} cmp $b->{$sort_key} } @rows],
+        revision          => $app_config->global_revision(),
+        next_cron         => $next_cron->datetime,
+        cron_notices      => \@cron_notices,
+        currency_warnings => \@currency_warnings,
+        error             => $error,
     });
 
 code_exit_BO();

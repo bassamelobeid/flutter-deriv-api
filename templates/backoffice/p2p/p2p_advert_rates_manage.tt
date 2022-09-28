@@ -4,11 +4,20 @@
 
 [% IF error %]<p class="error">[% error %]</p>[% END %]
 
-[% IF notices.size %]
+[% IF cron_notices.size %]
     <p><b>The following actions will occur on the next cron run [% next_cron %]:</b></p><ul>
-    [% FOR notice IN notices %]<li>[% notice %]</li>[% END %]
+    [% FOR notice IN cron_notices %]<li>[% notice %]</li>[% END %]
     </ul><hr>
 [% END %]
+
+[% IF currency_warnings.size %]
+    <p><b>The following currencies have inconsistent float or fixed rate ad visibility which can cause issues for cross border ads.<br/>
+        e.g. users in a country where float rates are disbled will not see float rate ads in other countries.</b></p><ul>
+    [% FOR currency IN currency_warnings %]<li>[% currency %]</li>[% END %]
+    </ul><hr>
+[% END %]
+
+<p>[%IF request.params.sort == 'currency' %]<a href="?sort=country">Sort by country</a>[% ELSE %]<a href="?sort=currency">Sort by currency</a>[% END %]</p>
 
 <table class="small alternate sortable">
     <thead>
@@ -31,7 +40,7 @@
             <input type="text" name="max_rate_range" style="width: 60px; height: 20px;" value="[% country.max_rate_range %]" data-lpignore="true"></input>
         </td>            
         <td>[% IF country.currency %]
-            [% country.currency %]: 
+            <b>[% country.currency %]</b>&nbsp; 
                 [% IF country.p2p_quote %]
                 <span tooltip="Feed quote: [% country.quote %] at [% country.quote_time %]">[% country.p2p_quote %] ([% country.quote_age %] ago)</span>
                 [% ELSE %]no feed[% END %]

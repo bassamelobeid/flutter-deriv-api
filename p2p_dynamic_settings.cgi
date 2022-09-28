@@ -55,6 +55,7 @@ my @setting_keys = qw(
     payments.p2p.review_period
     payments.p2p.transaction_verification_countries
     payments.p2p.transaction_verification_countries_all
+    payments.p2p.feature_level
 );
 
 my $countries_list = request()->brand->countries_instance->countries_list;
