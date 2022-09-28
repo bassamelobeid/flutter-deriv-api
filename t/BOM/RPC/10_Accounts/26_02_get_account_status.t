@@ -881,6 +881,320 @@ subtest 'backtest for Onfido disabled country' => sub {
     $onfido_mock->unmock_all;
 };
 
+subtest 'IDV Validated account' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $user   = BOM::User->create(
+        email    => 'test12345n@binary.com',
+        password => BOM::User::Password::hashpw('asdf12345'),
+    );
+    $user->add_client($client);
+    my $token = $m->create_token($client->loginid, 'test token');
+
+    my $mocked_client = Test::MockModule->new(ref($client));
+    my $ignore_age_verification;
+    my $result;
+    $mocked_client->mock(
+        'ignore_age_verification',
+        sub {
+            return $ignore_age_verification;
+        });
+
+    $ignore_age_verification = 0;
+    $client->status->set('age_verification', 'test', 'test');
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication},
+        +{
+        'needs_verification' => ['income'],
+        'document'           => {'status' => 'none'},
+        'identity'           => {
+            'services' => {
+                'onfido' => {
+                    'status'               => 'none',
+                    'submissions_left'     => 3,
+                    'documents_supported'  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                    'country_code'         => 'IDN',
+                    'is_country_supported' => 1,
+                    'reported_properties'  => {},
+                    'last_rejected'        => []
+                },
+                'idv' => {
+                    'submissions_left'    => 3,
+                    'status'              => 'none',
+                    'last_rejected'       => [],
+                    'reported_properties' => {}
+                },
+                'manual' => {'status' => 'none'}
+            },
+            'status' => 'verified'
+        },
+        'income'   => {'status' => 'locked'},
+        'attempts' => {
+            'latest'  => undef,
+            'history' => [],
+            'count'   => 0
+        },
+        'ownership' => {
+            'status'   => 'none',
+            'requests' => []}
+        },
+        'Expected get account status result when ignoring age verification is off';
+
+    $ignore_age_verification = 1;
+    $result                  = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}, +{
+        'needs_verification' => ['identity', 'income'],
+        'document'           => {'status' => 'none'},
+        'identity'           => {
+            'services' => {
+                'onfido' => {
+                    'status'               => 'none',
+                    'submissions_left'     => 3,
+                    'documents_supported'  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                    'country_code'         => 'IDN',
+                    'is_country_supported' => 1,
+                    'reported_properties'  => {},
+                    'last_rejected'        => []
+                },
+                'idv' => {
+                    'submissions_left'    => 3,
+                    'status'              => 'none',
+                    'last_rejected'       => [],
+                    'reported_properties' => {}
+                },
+                'manual' => {'status' => 'none'}
+            },
+            'status' => 'none'
+        },
+        'income'   => {'status' => 'locked'},
+        'attempts' => {
+            'latest'  => undef,
+            'history' => [],
+            'count'   => 0
+        },
+        'ownership' => {
+
+            'status'   => 'none',
+            'requests' => []}
+        },
+        'Expected get account status result when ignoring age verification is on';
+};
+
+subtest 'IDV Validated, but high_risk manual upload pending' => sub {
+    my $client        = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $mocked_client = Test::MockModule->new(ref($client));
+    $mocked_client->mock(
+        'latest_poi_by',
+        sub {
+            return ('idv');
+        });
+    my $user = BOM::User->create(
+        email    => 'test1234556@binary.com',
+        password => BOM::User::Password::hashpw('asdf12345'),
+    );
+    $user->add_client($client);
+    my $token = $m->create_token($client->loginid, 'test token');
+    my $result;
+
+    my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+
+    $idv_mock->mock(
+        'get_last_updated_document',
+        sub {
+            return {
+                id     => 1,
+                status => 'verified',
+            };
+        });
+
+    $client->status->set('age_verification', 'test', 'test');
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{authentication},
+        +{
+        'needs_verification' => ['income'],
+        'document'           => {'status' => 'none'},
+        'identity'           => {
+            'services' => {
+                'onfido' => {
+                    'status'               => 'none',
+                    'submissions_left'     => 3,
+                    'documents_supported'  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                    'country_code'         => 'IDN',
+                    'is_country_supported' => 1,
+                    'reported_properties'  => {},
+                    'last_rejected'        => []
+                },
+                'idv' => {
+                    'submissions_left'    => 3,
+                    'status'              => 'verified',
+                    'last_rejected'       => [],
+                    'reported_properties' => {}
+                },
+                'manual' => {'status' => 'none'}
+            },
+            'status' => 'verified'
+        },
+        'income'   => {'status' => 'locked'},
+        'attempts' => {
+            'latest'  => undef,
+            'history' => [],
+            'count'   => 0
+        },
+        'ownership' => {
+            'status'   => 'none',
+            'requests' => []}
+        },
+        'Client is IDV verified';
+
+    $client->aml_risk_classification('high');
+    $client->save;
+
+    $result = $c->tcall('get_account_status', {token => $token});
+    cmp_deeply $result->{authentication},
+        +{
+        'needs_verification' => bag(qw/income document identity/),
+        'document'           => {'status' => 'none'},
+        'identity'           => {
+            'services' => {
+                'onfido' => {
+                    'status'               => 'none',
+                    'submissions_left'     => 3,
+                    'documents_supported'  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                    'country_code'         => 'IDN',
+                    'is_country_supported' => 1,
+                    'reported_properties'  => {},
+                    'last_rejected'        => []
+                },
+                'idv' => {
+                    'submissions_left'    => 3,
+                    'status'              => 'verified',
+                    'last_rejected'       => [],
+                    'reported_properties' => {}
+                },
+                'manual' => {'status' => 'none'}
+            },
+            'status' => 'none'
+        },
+        'income'   => {'status' => 'locked'},
+        'attempts' => {
+            'latest'  => undef,
+            'history' => [],
+            'count'   => 0
+        },
+        'ownership' => {
+            'status'   => 'none',
+            'requests' => []}
+        },
+        'Suddenly, the client is marked as AML high risk';
+
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            return {
+                proof_of_identity => {
+                    is_pending => 1,
+                    documents  => {
+                        test => {
+                            test => 1,
+                        }}}};
+        });
+
+    $client->documents->_clear_uploaded;
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication},
+        +{
+        'needs_verification' => bag(qw/income document/),
+        'document'           => {'status' => 'none'},
+        'identity'           => {
+            'services' => {
+                'onfido' => {
+                    'status'               => 'none',
+                    'submissions_left'     => 3,
+                    'documents_supported'  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                    'country_code'         => 'IDN',
+                    'is_country_supported' => 1,
+                    'reported_properties'  => {},
+                    'last_rejected'        => []
+                },
+                'idv' => {
+                    'submissions_left'    => 3,
+                    'status'              => 'verified',
+                    'last_rejected'       => [],
+                    'reported_properties' => {}
+                },
+                'manual' => {'status' => 'pending'}
+            },
+            'status' => 'pending'
+        },
+        'income'   => {'status' => 'none'},
+        'attempts' => {
+            'latest'  => undef,
+            'history' => [],
+            'count'   => 0
+        },
+        'ownership' => {
+            'status'   => 'none',
+            'requests' => []}
+        },
+        'Later, the client manually uploads a POI';
+
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            return {
+                proof_of_identity => {
+                    is_verified => 1,
+                    documents   => {
+                        test => {
+                            test => 1,
+                        }}}};
+        });
+
+    $client->documents->_clear_uploaded;
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication},
+        +{
+        'needs_verification' => bag(qw/income document/),
+        'document'           => {'status' => 'none'},
+        'identity'           => {
+            'services' => {
+                'onfido' => {
+                    'status'               => 'none',
+                    'submissions_left'     => 3,
+                    'documents_supported'  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit'],
+                    'country_code'         => 'IDN',
+                    'is_country_supported' => 1,
+                    'reported_properties'  => {},
+                    'last_rejected'        => []
+                },
+                'idv' => {
+                    'submissions_left'    => 3,
+                    'status'              => 'verified',
+                    'last_rejected'       => [],
+                    'reported_properties' => {}
+                },
+                'manual' => {'status' => 'verified'}
+            },
+            'status' => 'verified'
+        },
+        'income'   => {'status' => 'none'},
+        'attempts' => {
+            'latest'  => undef,
+            'history' => [],
+            'count'   => 0
+        },
+        'ownership' => {
+            'status'   => 'none',
+            'requests' => []}
+        },
+        'Later, CS verifies the document';
+};
+
 sub upload {
     my ($client, $doc) = @_;
 
