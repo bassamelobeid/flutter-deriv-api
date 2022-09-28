@@ -94,6 +94,94 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
+subtest 'new affiliate account successfully created' => sub {
+    my $password = 'Abcd33!@';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'new_aff' . rand(999) . '@binary.com';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'br',
+    });
+
+    my $code = BOM::Platform::Token->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => 'partner_account_opening',
+        })->token;
+
+    $params->{args} = {
+        affiliate_account_add => 1,
+        address_city          => "Timbuktu",
+        address_line_1        => "Askia Mohammed Bvd,",
+        address_postcode      => "QXCQJW",
+        address_state         => "Nouaceur",
+        country               => "ma",
+        date_of_birth         => "1992-01-02",
+        first_name            => "John",
+        last_name             => "Doe",
+        non_pep_declaration   => 1,
+        password              => "S3creTp4ssw0rd",
+        phone                 => "+72443598863",
+        tnc_accepted          => 1,
+        verification_code     => $code
+    };
+
+    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->result;
+
+    ok exists $result->{demo}, "Response has demo account details";
+    ok exists $result->{real}, "Response has real account details";
+};
+
+subtest 'new affiliate account successfully created with EU/UK residence' => sub {
+    my $password = 'Abcd33!@';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'new_aff' . rand(999) . '@binary.com';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'eu',
+    });
+
+    my $code = BOM::Platform::Token->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => 'partner_account_opening',
+        })->token;
+
+    $params->{args} = {
+        affiliate_account_add => 1,
+        address_city          => "Alicante",
+        address_line_1        => "Askia Mohammed Bvd,",
+        address_postcode      => "QXCQJW",
+        address_state         => "Alicante",
+        country               => "es",
+        date_of_birth         => "1992-01-02",
+        first_name            => "John",
+        last_name             => "Doe",
+        non_pep_declaration   => 1,
+        password              => "S3creTp4ssw0rd",
+        phone                 => "+72443598863",
+        tnc_accepted          => 1,
+        verification_code     => $code
+    };
+
+    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->result;
+
+    ok exists $result->{demo}, "Response has demo account details";
+    ok exists $result->{real}, "Response has real account details";
+};
+
 subtest 'new affiliate account wrong country and state' => sub {
     my $password = 'Abcd33!@';
     my $hash_pwd = BOM::User::Password::hashpw($password);
@@ -133,6 +221,56 @@ subtest 'new affiliate account wrong country and state' => sub {
     };
 
     $rpc_ct->call_ok('affiliate_account_add', $params)->has_error->error_code_is('InvalidState', 'Error should return');
+};
+
+subtest 'new affiliate account cellXpert die with AlreadyRegistered email' => sub {
+    $mock_cellxpert_server->unmock_all();
+    $mock_cellxpert_server->redefine(
+        'register_affiliate',
+        sub {
+            return Future->fail("Email already exist");
+        });
+    my $password = 'Abcd33!@';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'new_aff' . rand(999) . '@binary.com';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'br',
+    });
+
+    my $code = BOM::Platform::Token->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => 'partner_account_opening',
+        })->token;
+
+    $params->{args} = {
+        affiliate_account_add => 1,
+        address_city          => "Timbuktu",
+        address_line_1        => "Askia Mohammed Bvd,",
+        address_postcode      => "QXCQJW",
+        address_state         => "Nouaceur",
+        country               => "ma",
+        date_of_birth         => "1992-01-02",
+        first_name            => "John",
+        last_name             => "Doe",
+        non_pep_declaration   => 1,
+        password              => "S3creTp4ssw0rd",
+        phone                 => "+72443598863",
+        tnc_accepted          => 1,
+        verification_code     => $code
+    };
+
+    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->result;
+
+    ok exists $result->{demo}, "Response has demo account details";
+    ok exists $result->{real}, "Response has real account details";
 };
 
 subtest 'new affiliate account cellXpert die with CXRuntime error' => sub {

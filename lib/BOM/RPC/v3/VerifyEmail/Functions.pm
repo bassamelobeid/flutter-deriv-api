@@ -14,6 +14,7 @@ use strict;
 use warnings;
 use BOM::Platform::Event::Emitter;
 use Log::Any qw($log);
+use Email::Valid;
 use Syntax::Keyword::Try;
 use BOM::RPC::v3::Utility;
 use BOM::Rules::Engine;
@@ -559,6 +560,44 @@ sub trading_platform_investor_password_reset {
             });
     }
     return;
+}
+
+=head2 do_verification
+
+This is main method of VerifyEmail that should call after new.
+this will do all input validations and call the related function.
+
+=over 4
+
+=back
+
+=cut
+
+sub do_verification {
+    my ($self) = @_;
+    return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($self->{email});
+
+    my $error = BOM::RPC::v3::Utility::invalid_params($self->{args});
+    return $error if $error;
+
+    $self->create_token();
+    $self->create_email_verification_function();
+    $self->create_existing_user();
+
+    return $self->send_close_account_email() if $self->is_existing_user_closed();
+
+    $self->create_loginid();
+
+    my $response = $self->create_client();
+    return $response unless $response eq "OK";
+
+    my $type = $self->{type};
+
+    die "unknown type $type" unless $self->can($type);
+    my $error_response = $self->$type;
+    return $error_response if ref $error_response eq 'HASH';
+
+    return {status => 1};
 }
 
 1;

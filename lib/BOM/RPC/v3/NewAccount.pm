@@ -6,7 +6,6 @@ use Syntax::Keyword::Try;
 use List::MoreUtils       qw(any);
 use List::Util            qw(minstr);
 use Format::Util::Numbers qw/formatnumber/;
-use Email::Valid;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 use Log::Any qw($log);
@@ -59,30 +58,17 @@ rpc "verify_email",
     my $params              = shift;
     my $verify_email_object = BOM::RPC::v3::VerifyEmail::Functions->new(%{$params});
 
-    return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($verify_email_object->{email});
+    return $verify_email_object->do_verification();
+    };
 
-    my $error = BOM::RPC::v3::Utility::invalid_params($verify_email_object->{args});
-    return $error if $error;
+rpc "verify_email_cellxpert",
+    auth => [],    # unauthenticated
+    sub {
+    my $params = shift;
+    $params->{args}->{verify_email} = $params->{args}->{verify_email_cellxpert};
+    my $verify_email_object = BOM::RPC::v3::VerifyEmail::Functions->new(%{$params});
 
-    $verify_email_object->create_token();
-    $verify_email_object->create_email_verification_function();
-    $verify_email_object->create_existing_user();
-
-    return $verify_email_object->send_close_account_email() if $verify_email_object->is_existing_user_closed();
-
-    $verify_email_object->create_loginid();
-
-    my $response = $verify_email_object->create_client();
-    return $response unless $response eq "OK";
-
-    my $type = $verify_email_object->{type};
-
-    die "unknow type $type" unless $verify_email_object->can($type);
-    my $error_response = $verify_email_object->$type;
-    return $error_response if ref $error_response eq 'HASH';
-
-    return {status => 1};
-
+    return $verify_email_object->do_verification();
     };
 
 sub _update_professional_existing_clients {
@@ -938,7 +924,7 @@ rpc "affiliate_account_add",
     sub {
     my $params   = shift;
     my $args     = $params->{args};
-    my $broker   = 'AFF';
+    my $broker   = 'CRA';
     my $response = {};
 
     my ($verification_code, $first_name, $last_name, $non_pep_declaration, $tnc_accepted, $password) =
