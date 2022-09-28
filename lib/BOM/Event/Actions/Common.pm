@@ -67,7 +67,11 @@ sub set_age_verification {
 
     my $setter = sub {
         my $c = shift;
-        $c->status->setnx($status_code, $staff, $reason);
+        if ($c->is_idv_validated) {
+            $c->status->upsert($status_code, $staff, $reason);
+        } else {
+            $c->status->setnx($status_code, $staff, $reason);
+        }
         $c->status->clear_df_deposit_requires_poi;
     };
 

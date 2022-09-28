@@ -34,10 +34,16 @@ $p2p_mock->mock(
 my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
 my $mocked_poi_name_mismatch;
 my $upsert_calls = {};
+my $is_idv_validated;
 $status_mock->mock(
     'poi_name_mismatch',
     sub {
         return $mocked_poi_name_mismatch;
+    });
+$status_mock->mock(
+    'is_idv_validated',
+    sub {
+        return $is_idv_validated;
     });
 $status_mock->mock(
     'upsert',
@@ -215,6 +221,20 @@ subtest 'set_age_verification' => sub {
                 p2p_advertiser_approval_changed => 1,
             }
         },
+        {
+            title    => 'Should call upsert when IDV verified',
+            email    => 'test5+zaig@binary.com',
+            provider => 'zaig',
+            scenario => {
+                poa_status        => 'none',
+                poi_name_mismatch => 0,
+                is_idv_validated  => 1,
+            },
+            side_effects => {
+                age_verification                => 1,
+                p2p_advertiser_approval_changed => 1,
+            }
+        },
     ];
 
     for my $test ($tests->@*) {
@@ -253,6 +273,17 @@ subtest 'set_age_verification' => sub {
                 $vr->status->set('df_deposit_requires_poi', 'test', 'test');
             }
 
+            # setting up age verification
+            if (exists $scenario->{age_verification}) {
+                $client->status->set('age_verification', 'test', $scenario->{age_verification});
+            }
+            # setting up idv validation
+            if (exists $scenario->{is_idv_validated}) {
+                $is_idv_validated = $scenario->{is_idv_validated};
+            } else {
+                $is_idv_validated = 0;
+            }
+
             $user->add_client($vr);
             $user->add_client($client);
             $user->add_client($client_mlt);
@@ -274,6 +305,10 @@ subtest 'set_age_verification' => sub {
             if ($side_effects->{age_verification}) {
                 ok $res;
                 ok $client->status->age_verification, 'Age verified';
+
+                if (exists $side_effects->{age_verification_reason}) {
+                    is $client->status->reason('age_verification'), $side_effects->{age_verification_reason}, 'Exptected reason for age verification';
+                }
                 is_deeply \@emissions,
                     [
                     'age_verified',
@@ -314,10 +349,12 @@ subtest 'set_age_verification' => sub {
                 ok !exists $emails->{'Pending POA document for: ' . $client->loginid}, 'Pending POA email was not sent';
             }
 
-            if ($side_effects->{upsert_called}) {
-                ok exists $upsert_calls->{age_verification}, 'Upsert called';
-            } else {
-                ok !exists $upsert_calls->{age_verification}, 'Upsert was not called';
+            unless ($scenario->{is_idv_validated}) {
+                if ($side_effects->{upsert_called}) {
+                    ok exists $upsert_calls->{age_verification}, 'Upsert called';
+                } else {
+                    ok !exists $upsert_calls->{age_verification}, 'Upsert was not called';
+                }
             }
 
             if ($side_effects->{p2p_advertiser_approval_changed}) {
