@@ -94,25 +94,31 @@ subtest $rule_name => sub {
 
     cmp_ok $client->account->balance, '==', 1000, 'Client balance is 1000 USD';
     $args{amount} = 4001;
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'BalanceExceeded',
-        rule       => $rule_name,
-        params     => [5000, 'USD']
-        },
-        'Balance will become more than max balance with this payment';
+
+    if (!$client->landing_company->unlimited_balance) {
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+            error_code => 'BalanceExceeded',
+            rule       => $rule_name,
+            params     => [5000, 'USD']
+            },
+            'Balance will become more than max balance with this payment';
+    }
 
     $client->set_exclusion();
     $client->self_exclusion->max_balance(4000);
     $client->save;
     $args{amount} = 3001;
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        error_code => 'SelfExclusionLimitExceeded',
-        rule       => $rule_name,
-        params     => [4000, 'USD']
-        },
-        'Balance cannot exceed self-exclusion limit';
+
+    if (!$client->landing_company->unlimited_balance) {
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+            error_code => 'SelfExclusionLimitExceeded',
+            rule       => $rule_name,
+            params     => [4000, 'USD']
+            },
+            'Balance cannot exceed self-exclusion limit';
+    }
 
     $args{amount} = 3000;
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'It is OK to reach at the limit itself';

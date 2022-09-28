@@ -44,6 +44,9 @@ rule 'deposit.total_balance_limits' => {
         my $amount   = $args->{amount} // die 'Amount is required';
         my $currency = $client->account->currency_code;
 
+        # max balance can be unlimited
+        return 1 if $client->landing_company->unlimited_balance;
+
         my $max_balance = $client->get_limit({'for' => 'account_balance'});
 
         return 1 unless ($amount + $client->account->balance) > $max_balance;
