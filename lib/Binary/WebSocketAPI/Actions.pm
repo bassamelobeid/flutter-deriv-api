@@ -221,6 +221,13 @@ sub actions_config {
             }
         ],
         [
+            'verify_email_cellxpert',
+            {
+                stash_params => [qw/ server_name token /],
+                msg_group    => 'account',
+            }
+        ],
+        [
             'new_account_virtual',
             {
                 stash_params => [qw/ token server_name client_ip user_agent /],
