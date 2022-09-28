@@ -196,9 +196,11 @@ sub approve_all {
     my $to      = 'Affiliates team <x-affiliates@binary.com>';
     my $subject = 'Promo code processing report for ' . Date::Utility->new->date;
 
-    Email::Stuffer->from($from)->to($to)->subject($subject)->html_body($body)->send
-        || $log->warn("Sending email from $from to $to subject $subject failed");
-
+    try {
+        Email::Stuffer->from($from)->to($to)->subject($subject)->html_body($body)->send_or_die;
+    } catch ($e) {
+        $log->warn("Sending email from $from to $to subject $subject failed : $e");
+    }
     return 0;
 }
 
