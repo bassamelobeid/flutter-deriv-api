@@ -841,7 +841,7 @@ sub get_self_exclusion {
     return $excl->[0] if $excl;
 
     $excl = $self->self_exclusion;
-    $self->self_exclusion_cache([$excl]);
+    $self->self_exclusion_cache([$excl]) if defined $excl;
 
     return $excl;
 }
@@ -909,6 +909,7 @@ sub get_limit_for_account_balance {
     push @maxbalances, $fixed_max if defined $fixed_max;
 
     my $self_max_balance = $self->get_self_exclusion ? $self->get_self_exclusion->max_balance : undef;
+
     if (defined($self_max_balance)) {
         push @maxbalances, $self_max_balance;
     }
@@ -924,6 +925,9 @@ Returns the system-wide maximum account balance defined for the client type and 
 
 sub fixed_max_balance {
     my $self = shift;
+
+    # Returns undef if landing company configuration asked for unlimited balance
+    return undef if $self->landing_company->unlimited_balance;
 
     my $max_bal = BOM::Config::client_limits()->{max_balance};
     my $curr    = $self->currency;

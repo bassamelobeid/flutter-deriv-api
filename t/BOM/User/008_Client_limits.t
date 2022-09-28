@@ -147,7 +147,11 @@ subtest 'get limit for account balance' => sub {
         $currency       = $_->{currency};
         $self_exclusion = $_->{self_exclusion};
 
-        is $client->get_limit_for_account_balance, $_->{result}, $_->{test};
+        if ($client->landing_company->unlimited_balance && !$self_exclusion) {
+            is $client->get_limit_for_account_balance, 0, $_->{test};
+        } else {
+            is $client->get_limit_for_account_balance, $_->{result}, $_->{test};
+        }
     }
 
     $client_mock->unmock_all;

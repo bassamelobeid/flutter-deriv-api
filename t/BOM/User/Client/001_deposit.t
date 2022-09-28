@@ -103,26 +103,34 @@ ok(!$client->status->unwelcome, 'CR client still not unwelcome after first-depos
 
 subtest 'max balance messages' => sub {
 
-    is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000) },
-        {
-        code              => 'BalanceExceeded',
-        params            => [300_000, 'USD'],
-        message_to_client => 'This deposit will cause your account balance to exceed your account limit of 300000 USD.'
-        },
-        'cannot deposit an amount that puts client over maximum balance';
+    if ($client->landing_company->unlimited_balance) {
+        ok $client->validate_payment(%deposit, amount => 1_000_000), 'can deposit unlimited balance.';
+    } else {
+        is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000) },
+            {
+            code              => 'BalanceExceeded',
+            params            => [300_000, 'USD'],
+            message_to_client => 'This deposit will cause your account balance to exceed your account limit of 300000 USD.'
+            },
+            'cannot deposit an amount that puts client over maximum balance';
+    }
 
     $client->set_exclusion();
     $client->self_exclusion->max_balance(1000);
     $client->save;
 
-    is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000) },
-        {
-        code              => 'SelfExclusionLimitExceeded',
-        params            => [1000, 'USD'],
-        message_to_client =>
-            "This deposit will cause your account balance to exceed your limit of 1000 USD. To proceed with this deposit, please adjust your self exclusion settings.",
-        },
-        'cannot deposit an amount that puts client over self exclusion max balance.';
+    if ($client->landing_company->unlimited_balance) {
+        ok $client->validate_payment(%deposit, amount => 1_000_000), 'can deposit unlimited balance.';
+    } else {
+        is_deeply exception { $client->validate_payment(%deposit, amount => 1_000_000) },
+            {
+            code              => 'SelfExclusionLimitExceeded',
+            params            => [1000, 'USD'],
+            message_to_client =>
+                "This deposit will cause your account balance to exceed your limit of 1000 USD. To proceed with this deposit, please adjust your self exclusion settings.",
+            },
+            'cannot deposit an amount that puts client over self exclusion max balance.';
+    }
 };
 
 subtest 'GB fund protection' => sub {

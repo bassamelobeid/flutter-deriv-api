@@ -16,7 +16,11 @@ Test::Exception::lives_ok { $client = BOM::User::Client::get_instance({'loginid'
 "Can create client object 'BOM::User::Client::get_instance({'loginid' => CR0030})'";
 
 my $account_balance_limit = $client->get_limit({'for' => 'account_balance'});
-is($account_balance_limit, 300000, 'balance limit = 300000');
+if ($client->landing_company->unlimited_balance) {
+    is($account_balance_limit, 0, 'balance limit = unlimited');
+} else {
+    is($account_balance_limit, 300000, 'balance limit = 300000');
+}
 
 my $daily_turnover_limit = $client->get_limit({'for' => 'daily_turnover'});
 is($daily_turnover_limit, 500000, '50000 by default');
@@ -66,7 +70,11 @@ Test::Exception::lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR00
         });
 
     $account_balance_limit = $client->get_limit({'for' => 'account_balance'});
-    is($account_balance_limit, 300000, 'Correct account balance limit');
+    if ($client->landing_company->unlimited_balance) {
+        is($account_balance_limit, 0, 'Unlimited balance for account');
+    } else {
+        is($account_balance_limit, 300000, 'Correct account balance limit');
+    }
 
     $daily_turnover_limit = $client->get_limit({'for' => 'daily_turnover'});
     is($daily_turnover_limit, 500000, 'Correct turnover limit');
