@@ -1082,7 +1082,7 @@ Returns the 3-character currency code matching the client's residence as defined
 
 =over 4
 
-=item * C<$country> - optional 3-character ISO country code used to override the country
+=item * C<$country> - optional 2-character ISO country code used to override the country
 for the currency mapping, for cases where you want to use citizenship or a specific country
 
 =back
@@ -2660,6 +2660,13 @@ sub p2p_advert_list {
         $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};
     }
 
+    if ($param{local_currency}) {
+        # filter out ads in other countries which don't have compatible payment methods
+        $param{payment_method} //= [keys $self->p2p_payment_methods->%*, 'none'];
+    } else {
+        $param{country} = $self->residence;
+    }
+
     my $list = $self->_p2p_adverts(
         %param,
         is_active              => 1,
@@ -2667,7 +2674,6 @@ sub p2p_advert_list {
         advertiser_is_approved => 1,
         advertiser_is_listed   => 1,
         client_loginid         => $self->loginid,
-        country                => $self->residence,
         account_currency       => $self->currency,
         hide_blocked           => 1,
         filter_rate_type       => 1,
@@ -2797,11 +2803,12 @@ sub p2p_order_create {
         can_order              => 1,
         advertiser_is_approved => 1,
         advertiser_is_listed   => 1,
-        country                => $self->residence,
         account_currency       => $self->currency,
         client_loginid         => $self->loginid,
         filter_rate_type       => 1,
         market_rate            => $market_rate,
+        payment_method         => [keys $self->p2p_payment_methods->%*, 'none']
+        ,    # filter out ads in other countries which don't have compatible payment methods
     )->[0];
 
     die +{error_code => 'AdvertNotFound'} unless $advert and $advert_id;
@@ -3769,7 +3776,17 @@ sub _p2p_convert_advertiser_limits {
 
 =head2 _p2p_adverts
 
-Gets adverts from DB
+Gets adverts from DB. Most params are passed directly to db function p2p.advert_list().
+
+To note:
+
+=over 4
+
+=item * C<payment_method> is an arrayref of payment method names.
+
+=item * C<filter_rate_type> will use residence to filter fixed/float ads.
+
+=back
 
 =cut
 
@@ -3785,6 +3802,7 @@ sub _p2p_adverts {
     $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
     $param{advertiser_name} =~ s/([%_])/\\$1/g if $param{advertiser_name};
     $param{market_rate} //= p2p_exchange_rate($self->residence)->{quote};
+    $param{local_currency} = uc $param{local_currency} if $param{local_currency};
 
     if ($param{filter_rate_type}) {
         my $config = BOM::Config::P2P::advert_config()->{$self->residence} or die +{error_code => 'RestrictedCountry'};
@@ -3801,12 +3819,12 @@ sub _p2p_adverts {
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
                         client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
-                        use_client_limits favourites_only hide_blocked market_rate rate_type/
+                        use_client_limits favourites_only hide_blocked market_rate rate_type local_currency/
                 });
         }) // [];
 }

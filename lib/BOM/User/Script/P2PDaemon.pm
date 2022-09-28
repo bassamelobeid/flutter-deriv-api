@@ -7,8 +7,8 @@ no indirect;
 use IO::Async::Loop;
 use IO::Async::Timer::Periodic;
 use Net::Async::Redis;
-use Time::HiRes;
-use Log::Any qw($log);
+use Time::HiRes qw(gettimeofday tv_interval);
+use Log::Any    qw($log);
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use List::Util                 qw(uniq);
@@ -76,11 +76,23 @@ sub run {
     $loop->watch_signal(INT  => $signal_handler);
     $loop->watch_signal(TERM => $signal_handler);
 
-    my $timer = IO::Async::Timer::Periodic->new(
-        interval => POLLING_INTERVAL,
-        on_tick  => $self->curry::weak::on_tick,
+    my $timer_sec = IO::Async::Timer::Periodic->new(
+        on_tick        => $self->curry::weak::on_sec,
+        interval       => 1,
+        first_interval => tv_interval([gettimeofday], [time + 1]),
+        reschedule     => 'hard',
     );
-    $loop->add($timer);
+
+    $loop->add($timer_sec);
+
+    my $timer_min = IO::Async::Timer::Periodic->new(
+        on_tick        => $self->curry::weak::on_min,
+        interval       => 60,
+        first_interval => tv_interval([gettimeofday], [(int(time / 60) + 1) * 60]),
+        reschedule     => 'hard',
+    );
+
+    $loop->add($timer_min);
 
     my $tx_redis_config = BOM::Config::Redis::redis_config('transaction', 'read');
 
@@ -100,18 +112,19 @@ sub run {
             $sub->events->each($self->curry::weak::on_transaction);
         })->get;
 
-    $timer->start;
+    $timer_sec->start;
+    $timer_min->start;
     $loop->run;
     return 0;
 }
 
-=head2 on_tick
+=head2 on_sec
 
-Fixed interval processing.
+Per second processing.
 
 =cut
 
-sub on_tick {
+sub on_sec {
     my ($self) = @_;
 
     if ($self->{in_progress} and not $self->{in_progress}->is_done) {
@@ -119,7 +132,7 @@ sub on_tick {
         return;
     }
 
-    my $start_tv = [Time::HiRes::gettimeofday];
+    my $start_tv = [gettimeofday];
     $self->{in_progress} = $self->{loop}->new_future;
     $self->{app_config}->check_for_update;
     $self->{advertisers_updated} = [];
@@ -141,7 +154,23 @@ sub on_tick {
     }
 
     $self->{in_progress}->done;
-    stats_timing('p2p.daemon.processing_time', 1000 * Time::HiRes::tv_interval($start_tv));
+    stats_timing('p2p.daemon.processing_time_sec', 1000 * tv_interval($start_tv));
+}
+
+=head2 on_min
+
+Per minute processing.
+
+=cut
+
+sub on_min {
+    my ($self) = @_;
+
+    my $start_tv = [gettimeofday];
+
+    $self->update_local_currencies;
+
+    stats_timing('p2p.daemon.processing_time_sec', 1000 * tv_interval($start_tv));
 }
 
 =head2 process_expired_orders
@@ -365,6 +394,16 @@ sub process_verification_events {
 
         $log->debugf('Processed and removed verification item %s on order %s', $event, $order_id);
     }
+}
+
+=head2 update_local_currencies
+
+Sends event to update available local currencies.
+
+=cut
+
+sub update_local_currencies {
+    BOM::Platform::Event::Emitter::emit(p2p_update_local_currencies => {});
 }
 
 =head2 on_transaction

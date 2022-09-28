@@ -499,38 +499,6 @@ subtest 'Buyer tries to place an order for an advert with a different currency' 
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Buyer tries to place an order for an advert of another country' => sub {
-    my $amount = 100;
-
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
-        amount => $amount,
-        type   => 'sell'
-    );
-
-    my $client = BOM::Test::Helper::Client::create_client();
-    $client->account('USD');
-    $client->residence('ng');
-    $client->p2p_advertiser_create(name => 'test nickname1');
-    $client->p2p_advertiser_update(is_approved => 1);
-    delete $client->{_p2p_advertiser_cached};
-
-    my $err = exception {
-        $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => $amount,
-            expiry      => 7200,
-            rule_engine => $rule_engine,
-        );
-    };
-    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
-
-    ok $escrow->account->balance == 0,           'The escrow balance did not change';
-    ok $advertiser->account->balance == $amount, 'The advertiser balance did not change';
-
-    BOM::Test::Helper::P2P::reset_escrow();
-};
-
 subtest 'Buy adverts' => sub {
     my $amount = 100;
 

@@ -48,7 +48,7 @@ subtest 'expired orders' => sub {
 
     $p2p_redis->zadd('P2P::ORDER::EXPIRES_AT', @items);
 
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     cmp_deeply(
         $emitted_events,
@@ -93,7 +93,7 @@ subtest 'refund timedout orders' => sub {
 
     $p2p_redis->zadd('P2P::ORDER::TIMEDOUT_AT', @items);
 
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     cmp_deeply(
         $emitted_events,
@@ -140,7 +140,7 @@ subtest 'process disputes' => sub {
 
     $p2p_redis->zadd('P2P::ORDER::DISPUTED_AT', @items);
 
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     cmp_deeply(
         $emitted_events,
@@ -179,7 +179,7 @@ subtest 'advertiser blocks ending' => sub {
 
     $p2p_redis->zadd('P2P::ADVERTISER::BLOCK_ENDS_AT', @items);
 
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     cmp_deeply(
         $emitted_events,
@@ -216,7 +216,7 @@ subtest 'advertisers online/offline' => sub {
     );
 
     $p2p_redis->zadd('P2P::USERS_ONLINE', @items);
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     cmp_deeply(
         $emitted_events,
@@ -237,7 +237,7 @@ subtest 'advertisers online/offline' => sub {
 
     $p2p_redis->zadd('P2P::USERS_ONLINE', time() - 91, 'CR001');
     $emitted_events = {};
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     cmp_deeply(
         $emitted_events,
@@ -252,7 +252,7 @@ subtest 'advertisers online/offline' => sub {
 
     $p2p_redis->zadd('P2P::USERS_ONLINE', time(), 'CR004');
     $emitted_events = {};
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     cmp_deeply(
         $emitted_events,
@@ -266,7 +266,7 @@ subtest 'advertisers online/offline' => sub {
     );
 
     $emitted_events = {};
-    $daemon->on_tick;
+    $daemon->on_sec;
     cmp_deeply($emitted_events, {}, 'nothing happens');
 
 };
@@ -286,7 +286,7 @@ subtest 'advert subscriptions' => sub {
     }
     $p2p_redis->get_all_replies;
 
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     my $msg = Test::MockObject->new();
     my $tx_channel;
@@ -333,7 +333,7 @@ subtest 'order reviews ending' => sub {
 
     $p2p_redis->zadd('P2P::ORDER::REVIEWABLE_START_AT', @items);
 
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     cmp_deeply(
         $emitted_events,
@@ -379,7 +379,7 @@ subtest 'verification events' => sub {
 
     $p2p_redis->zadd('P2P::ORDER::VERIFICATION_EVENT', @items);
 
-    $daemon->on_tick;
+    $daemon->on_sec;
 
     cmp_deeply(
         $emitted_events,
@@ -424,6 +424,13 @@ subtest 'verification events' => sub {
         bag('REQUEST_BLOCK|9|CR009', 'TOKEN_VALID|10|CR0010', 'LOCKOUT|11|CR0011', 'XXX|12|CR0012'),
         'processed items removed'
     );
+};
+
+subtest 'update local currencies' => sub {
+    $emitted_events = {};
+    BOM::User::Script::P2PDaemon->new->on_min;
+
+    cmp_deeply($emitted_events->{p2p_update_local_currencies}, [{}], 'p2p_update_local_currencies event emitted');
 };
 
 done_testing();
