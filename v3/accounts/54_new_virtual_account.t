@@ -306,7 +306,7 @@ subtest 'create Virtual account wihtout affiliate token for spain' => sub {
     is($res->{verify_email}, 1, 'verify_email OK');
 
     $create_vr3->{verification_code} = _get_token($email3);
-    $create_vr3->{affiliate_token} = "";
+    $create_vr3->{affiliate_token}   = "";
 
     $res = $t->await::new_account_virtual($create_vr3);
 

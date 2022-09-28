@@ -205,4 +205,9 @@ test_sendrecv_params 'get_available_accounts_to_transfer/test_send.json', 'get_a
 fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
 test_sendrecv 'logout/test_send.json', 'logout/test_receive.json';
 
+# verify_email for cellxpert
+
+test_sendrecv 'verify_email_cellxpert/test_send_to_fail.json', 'verify_email_cellxpert/test_receive_fail.json';
+fail_test_sendrecv 'verify_email_cellxpert/test_send.json', 'verify_email_cellxpert/test_receive_fail.json';
+
 finish;
