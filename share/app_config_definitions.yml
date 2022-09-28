@@ -499,6 +499,11 @@ payments:
           isa: Bool
           global: 1
           default: 0
+        feature_level:
+          isa: Int
+          description: 'Flag to enable new features. Currently, cross border ads are enabled at >= 2.'
+          default: 1
+          global: 1
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section

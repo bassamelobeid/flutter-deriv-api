@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use utf8;
 
 use Test::More;
 use Test::Fatal;
@@ -486,17 +487,44 @@ subtest 'currency config' => sub {
 
 subtest 'rare currencies config' => sub {
     is BOM::Config::CurrencyConfig::local_currency_for_country('aq'), 'AAD', 'local currency for Antarctic';
-    is BOM::Config::CurrencyConfig::local_currency_for_country('cw'), 'USD', 'local currency for Curacao';
-    is BOM::Config::CurrencyConfig::local_currency_for_country('sx'), 'USD', 'local currency for Sint Maarten (Dutch part)';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('cw'), 'ANG', 'local currency for Curacao';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('sx'), 'ANG', 'local currency for Sint Maarten (Dutch part)';
     is BOM::Config::CurrencyConfig::local_currency_for_country('bl'), 'EUR', 'local currency for Saint-Barthemy';
     is BOM::Config::CurrencyConfig::local_currency_for_country('ax'), 'EUR', 'local currency for Aland Islands';
     is BOM::Config::CurrencyConfig::local_currency_for_country('mf'), 'EUR', 'local currency for Saint-Martin (French part)';
     is BOM::Config::CurrencyConfig::local_currency_for_country('an'), 'ANG', 'local currency for Netherlands Antilles';
     is BOM::Config::CurrencyConfig::local_currency_for_country('ss'), 'SSP', 'local currency for South Sudan';
+
+    is BOM::Config::CurrencyConfig::local_currencies()->{BTN}, 'Bhutanese Ngultrum', 'currency name for Bhutan';
+    is BOM::Config::CurrencyConfig::local_currencies()->{MNT}, 'Mongolian Tögrög',   'currency name for Mongolia';
 };
 
 subtest 'undefined currency' => sub {
-    is BOM::Config::CurrencyConfig::local_currency_for_country('wrong'), undef, 'undefined_currency_check';
+    is BOM::Config::CurrencyConfig::local_currency_for_country(undef),   undef, 'undefined country';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('wrong'), undef, 'no currency for country';
+};
+
+subtest 'local currencies' => sub {
+    %BOM::Config::CurrencyConfig::ALL_CURRENCIES = (
+        AAA => {
+            name      => 'AAA currency',
+            countries => ['c1', 'c2'],
+        },
+        BBB => {
+            name      => 'BBB currency',
+            countries => ['c3', 'c4'],
+        },
+    );
+    my $local_currencies = BOM::Config::CurrencyConfig::local_currencies;
+    is $local_currencies->{'AAA'}, 'AAA currency', 'name';
+    is $local_currencies->{'CCC'}, undef,          'no localized name';
+
+    is BOM::Config::CurrencyConfig::local_currency_for_country('c1'), 'AAA', 'currency for country';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('c4'), 'BBB', 'currency for country';
+    is BOM::Config::CurrencyConfig::local_currency_for_country('c5'), undef, 'no currency for country';
+
+    is_deeply(BOM::Config::CurrencyConfig::countries_for_currency('AAA'), ['c1', 'c2'], 'countries for valid currency');
+    is_deeply(BOM::Config::CurrencyConfig::countries_for_currency('XXX'), [],           'countries for invalid currency');
 };
 
 subtest 'get_crypto_payout_auto_update_global_status' => sub {

@@ -3,6 +3,7 @@ package BOM::Config::CurrencyConfig;
 use strict;
 use warnings;
 use feature 'state';
+use utf8;
 no indirect;
 
 =head1 NAME
@@ -23,17 +24,18 @@ A repository of dynamic configurations set on currencies, like their minimum/max
 use JSON::MaybeUTF8;
 use Log::Any                         qw($log);
 use Format::Util::Numbers            qw(get_min_unit financialrounding);
-use ExchangeRates::CurrencyConverter qw/convert_currency/;
-use List::Util                       qw(any max min uniq);
+use ExchangeRates::CurrencyConverter qw(convert_currency);
+use List::Util                       qw(any max min uniq first);
+
 use LandingCompany::Registry;
 
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use Finance::Exchange;
 use Quant::Framework;
+use Locale::Currency;
 use Locale::Object::Currency;
 use Locale::Country;
-use BOM::Config;
 
 use constant MAX_TRANSFER_FEE => 7;
 require Exporter;
@@ -60,38 +62,129 @@ sub app_config {
 }
 
 #We're loading mapping at startup time to avoid interation with my SQLlite at runtime.
-
-our %LOCAL_CURRENCY_FOR_COUNTRY = do {
+our %ALL_CURRENCIES = do {
     # Locale::Object::Currency emits warnings for any countries it does not have configured, since the source for
     # those countries is different from its database we need to silence those here
     local $SIG{__WARN__} = sub { };
 
-    # locale.db is not updated with antarctica dollar currency then instead of change it we create a hash for
-    # saving rare currencies like AAD (antarctica dollar)
-    my %rare_country_currencies = (
-        aq => 'AAD',    # Antarctica
-        cw => 'USD',    # Curacao
-        sx => 'USD',    # Sint Maarten (Dutch part)
-        bl => 'EUR',    # Saint-Barthemy
-        ax => 'EUR',    # Aland Islands
-        mf => 'EUR',    # Saint-Martin (French part)
-        ss => 'SSP',    # South Sudan
+    # override/missing countries in Locale::Object::Currency
+    my %country_currencies = (
+        af => 'AFN',    # Afghanistan
         an => 'ANG',    # Netherlands Antilles
+        aq => 'AAD',    # Antarctica
+        ax => 'EUR',    # Aland Islands
+        az => 'AZN',    # Azerbaijan
+        bg => 'BGN',    # Bulgaria
+        bl => 'EUR',    # Saint-Barthemy
+        bq => 'ANG',    # Curacao (old country code)
+        by => 'BYN',    # Belarus
+        cw => 'ANG',    # Curacao
+        cy => 'EUR',    # Cyprus
+        ec => 'USD',    # Ecuador
+        ee => 'EUR',    # Estonia
+        gh => 'GHS',    # Ghana
+        gq => 'XAF',    # Equatorial Guinea
+        lt => 'EUR',    # Lithuania
+        lv => 'EUR',    # Latvia
+        me => 'EUR',    # Montenegro
+        mf => 'EUR',    # Saint-Martin (French part)
+        mg => 'MGA',    # Madagascar
+        mr => 'MRU',    # Mauritania
+        mt => 'EUR',    # Malta
+        mz => 'MZN',    # Mozambique
+        ro => 'RON',    # Romania
+        rs => 'RSD',    # Serbia
+        sd => 'SDG',    # Sudan
+        si => 'EUR',    # Slovenia
+        sk => 'EUR',    # Slovakia
+        sr => 'SRD',    # Suriname
+        ss => 'SSP',    # South Sudan
+        st => 'STN',    # Sao Tome and Principe
+        sx => 'ANG',    # Sint Maarten (Dutch part)
+        tr => 'TRY',    # Turkey
+        tm => 'TMT',    # Turkmenistan
+        ve => 'VES',    # Venezuela
+        zm => 'ZMW',    # Zambia
+        zw => 'ZWL',    # Zimbabwe
     );
 
-    map {
-        my $country_code = $_;
-        my $currency_code;
-        $currency_code = $rare_country_currencies{lc($country_code)};
-        unless ($currency_code) {
-            my $currency = Locale::Object::Currency->new(country_code => $country_code);
-            if ($currency) {
-                $currency_code = $currency->code;
-            }
+    # Override/missing currency names in Locale::Currency::code2currency().
+    # To be consistent with code2currency(), all currency names are capitalized.
+    my %currency_names = (
+        AAD => 'Antarctic Dollar',
+        AFN => 'Afghan Afghani',
+        ALL => 'Albanian Lek',
+        AOA => 'Angolan Kwanza',
+        BDT => 'Bangladeshi Taka',
+        BTN => 'Bhutanese Ngultrum',
+        BWP => 'Botswana Pula',
+        ERN => 'Eritrean Nakfa',
+        GEL => 'Georgian Lari',
+        GMD => 'Gambian Dalasi',
+        GTQ => 'Guatemalan Quetzal',
+        HNL => 'Honduran Lempira',
+        HRK => 'Croatian Kuna',
+        HTG => 'Haitian Gourde',
+        HUF => 'Hungarian Rorint',
+        IDR => 'Indonesian Rupiah',
+        JPY => 'Japanese Yen',
+        KGS => 'Kyrgyzstani Som',
+        KHR => 'Cambodian Riel',
+        KRW => 'South Korean Won',
+        KZT => 'Kazakhstani Tenge',
+        LSL => 'Lesotho Loti',
+        MKD => 'Macedonian Denar',
+        MMK => 'Myanmar Kyat',
+        MNT => 'Mongolian Tögrög',
+        MOP => 'Macanese Pataca',
+        MRU => 'Mauritanian Ouguiya',
+        MVR => 'Maldivian Rufiyaa',
+        NGN => 'Nigerian Naira',
+        PAB => 'Panamanian Balboa',
+        PEN => 'Peruvian Sol',
+        PGK => 'Papua New Guinean Lina',
+        PLN => 'Polish Złoty',
+        PYG => 'Paraguayan Guaraní',
+        SLL => 'Sierra Leonean Leone',
+        STN => 'São Tomé and Príncipe Dobra',
+        SZL => 'Swazi Lilangeni',
+        THB => 'Thai Baht',
+        TJS => 'Tajikistani Somoni',
+        TOP => 'Tongan Paʻanga',
+        UAH => 'Ukrainian Hryvnia',
+        VES => 'Venezuelan Bolívar Soberano',
+        VND => 'Vietnamese Đồng',
+        VUV => 'Vanuatu Vatu',
+        WST => 'Samoan Tala',
+        ZAR => 'South African Rand',
+    );
+
+    my %result;
+    push $result{$country_currencies{$_}}->{countries}->@*, $_ for keys %country_currencies;
+
+    for my $country (Locale::Country::all_country_codes()) {
+        next if $country_currencies{$country};
+        if (my $cur_obj = Locale::Object::Currency->new(country_code => $country)) {
+            push $result{$cur_obj->code}->{countries}->@*, lc $country;
         }
-        $country_code => $currency_code;
-    } Locale::Country::all_country_codes(), 'an';    # Because an not avaible on Locale::Country::all_country_codes() then we append it.
+    }
+
+    for my $currency (keys %result) {
+        $result{$currency}->{name} = $currency_names{$currency} // code2currency($currency) // $currency;
+    }
+
+    %result;
 };
+
+=head2 local_currencies
+
+Returns all local currencies as hashfref with localized name.
+
+=cut
+
+sub local_currencies {
+    return {map { $_ => $ALL_CURRENCIES{$_}->{name} } keys %ALL_CURRENCIES};
+}
 
 =head2 local_currency_for_country
 
@@ -99,7 +192,7 @@ Takes the following parameters:
 
 =over 4
 
-=item * C<$country_code> - A two letter ISO country code
+=item * C<$country> - A two letter ISO country code
 
 =back
 
@@ -113,24 +206,32 @@ and config database.
 =cut
 
 sub local_currency_for_country {
-    my ($country_code) = @_;
-    return $LOCAL_CURRENCY_FOR_COUNTRY{lc($country_code)};
+    my ($country) = @_;
+
+    return first {
+        any { $_ eq lc($country // '') }
+            $ALL_CURRENCIES{$_}->{countries}->@*
+        }
+        keys %ALL_CURRENCIES;
 }
 
-=head2 local_currency_list
+=head2 countries_for_currency
 
-Get a list of currencies
+Returns arrayref of country codes for a currency.
+Takes the following parameters:
 
-Example:
+=over 4
 
-    my $currency = BOM::Config::Chronicle::local_currency_list('my');
+=item * C<$currency> - currency code
 
-Returns an array of unique local currencies in the world.
+=back
 
 =cut
 
-sub local_currency_list {
-    return uniq grep { $_ } values %LOCAL_CURRENCY_FOR_COUNTRY;
+sub countries_for_currency {
+    my ($country) = @_;
+
+    return $ALL_CURRENCIES{$country} ? $ALL_CURRENCIES{$country}->{countries} : [];
 }
 
 =head2 is_valid_currency
