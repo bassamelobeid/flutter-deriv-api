@@ -49,7 +49,8 @@
                         "sendbird",
                         "banxa",
                         "wyre",
-                        "dxtrade"
+                        "dxtrade",
+                        "pandats"
                     ]
                 },
                 {
@@ -60,7 +61,8 @@
                             "onfido",
                             "sendbird",
                             "banxa",
-                            "wyre"
+                            "wyre",
+                            "pandats"
                         ],
                         "uniqueItems": true
                     }
