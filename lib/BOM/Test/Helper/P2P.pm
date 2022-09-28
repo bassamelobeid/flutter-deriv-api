@@ -82,8 +82,7 @@ sub create_advert {
     $param{rate_type}        //= 'fixed';
     $param{min_order_amount} //= 0.1;
     $param{max_order_amount} //= 100;
-    $param{payment_method}   //= 'bank_transfer';
-    $param{local_currency}   //= 'myr';
+    $param{payment_method}   //= 'bank_transfer' unless ($param{payment_method_ids} or $param{payment_method_names});
 
     $param{payment_info} //= $param{type} eq 'sell' ? 'Bank: 123456' : undef;
     $param{contact_info} //= $param{type} eq 'sell' ? 'Tel: 123456'  : undef;
