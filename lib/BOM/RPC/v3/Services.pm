@@ -21,6 +21,7 @@ use WebService::Async::Onfido;
 
 use BOM::Config;
 use BOM::RPC::v3::Services::Onfido;
+use BOM::RPC::v3::Services::PandaTS;
 
 sub new {
     my ($class) = @_;
@@ -61,6 +62,12 @@ sub service_token {
 
     if ($args->{service} eq 'onfido') {
         return BOM::RPC::v3::Services::Onfido::onfido_service_token($client, $args);
+    }
+
+    if ($args->{service} eq 'pandats') {
+        my $pandats = BOM::RPC::v3::Services::PandaTS->new(client => $client);
+
+        return $pandats->generate_token();
     }
 }
 

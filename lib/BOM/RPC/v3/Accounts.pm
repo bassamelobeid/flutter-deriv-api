@@ -2512,6 +2512,27 @@ async_rpc service_token => sub {
             }
 
         }
+
+        if ($service eq 'pandats') {
+            push @service_futures,
+                BOM::RPC::v3::Services::service_token(
+                $client,
+                {
+                    service => $service,
+                }
+            )->then(
+                sub {
+                    my ($result) = @_;
+                    if ($result->{error}) {
+                        return Future->fail($result->{error});
+                    } else {
+                        return Future->done({
+                            token   => $result->{token},
+                            service => 'pandats',
+                        });
+                    }
+                });
+        }
     }
 
     return Future->needs_all(@service_futures)->then(
