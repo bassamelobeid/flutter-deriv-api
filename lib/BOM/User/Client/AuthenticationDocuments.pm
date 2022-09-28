@@ -171,7 +171,7 @@ sub _build_uploaded {
             my $category = $category_config->{category} // 'other';
             $documents{$category}{documents}{$single_document->file_name} = $doc_structure->($single_document);
 
-            if ($category eq 'proof_of_income') {
+            if ($category eq 'proof_of_income' || $category eq 'proof_of_identity') {
                 $documents{$category}{'is_' . $doc_status} += 1;
             }
 
@@ -224,7 +224,9 @@ sub _build_uploaded {
         # Cancel the is_pending for an age_verified account that does not have verified expired docs
         if ($documents{proof_of_identity}{is_pending}) {
             $documents{proof_of_identity}{is_pending} = 0
-                if $self->client->status->age_verification and not $documents{proof_of_identity}{is_expired};
+                if $self->client->status->age_verification
+                and not $self->client->ignore_age_verification
+                and not $documents{proof_of_identity}{is_expired};
         }
     }
 
@@ -702,6 +704,24 @@ sub _build_provider_types {
     }
 
     return $types;
+}
+
+=head2 verified
+
+Determines whether the documents are in a verified status.
+
+It returns a boolean value.
+
+=cut
+
+sub verified {
+    my ($self) = @_;
+
+    my $poi = $self->uploaded->{proof_of_identity} || return 0;
+
+    return 0 if $poi->{is_expired};
+
+    return $poi->{is_verified};
 }
 
 =head2 pending

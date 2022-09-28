@@ -443,4 +443,40 @@ subtest 'Onfido mapping' => sub {
     cmp_deeply $client->documents->provider_types->{onfido}, $mappings, 'Expected Onfido types mapping';
 };
 
+subtest 'Verified' => sub {
+    # No documents uplaoded
+    is $client->documents->verified, 0, 'should not be verified, no documents uploaded';
+
+    # Should return 0 if poi document is expired
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    my $is_expired;
+    my $is_verified;
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            return {
+                'proof_of_identity' => {
+                    is_expired  => $is_expired,
+                    is_verified => $is_verified,
+                },
+
+            };
+        });
+    $is_expired  = 1;
+    $is_verified = 0;
+    is $client->documents->verified, 0, 'should not be verified, documents expired';
+    $client->documents->_clear_uploaded;
+
+    $is_expired  = 0;
+    $is_verified = 0;
+    is $client->documents->verified, 0, 'should not be verified';
+    $client->documents->_clear_uploaded;
+
+    $is_expired  = 0;
+    $is_verified = 1;
+    is $client->documents->verified, 1, 'should  be verified';
+    $client->documents->_clear_uploaded;
+
+};
+
 done_testing();

@@ -251,6 +251,7 @@ subtest 'documents uploaded' => sub {
             },
             is_expired  => 0,
             is_pending  => 0,
+            is_verified => 2,
             expiry_date => $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
         },
     };
@@ -294,6 +295,7 @@ subtest 'documents uploaded' => sub {
             },
             is_expired  => 0,
             is_pending  => 0,
+            is_verified => 2,
             expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . '.passport.270744441_front.PNG'}{expiry_date},
         },
     };
@@ -624,7 +626,10 @@ subtest 'rejected and uploaded' => sub {
                     'status'      => 'rejected'
                 }
             },
-            'is_pending' => 1
+            'is_pending'  => 1,
+            'is_rejected' => 1,
+            'is_uploaded' => 1
+
         }};
 
     # Note the documents above are expired but they aren't being taken into consideration
@@ -662,6 +667,7 @@ subtest 'rejected and uploaded' => sub {
             'expiry_date' => re('\d+'),
             'is_pending'  => 0,
             'is_expired'  => 1,
+            'is_verified' => 2
         }};
 
     cmp_deeply $client->documents->uploaded(), $expected, 'We got the expected result from documents uploaded when docs are verified';
@@ -691,6 +697,7 @@ subtest 'rejected and uploaded' => sub {
                 }
             },
             'expiry_date' => re('\d+'),
+            'is_verified' => 2,
         }};
 
     cmp_deeply $client->documents->uploaded(), $expected, 'We got the expected result from documents uploaded when docs are verified';
@@ -738,6 +745,8 @@ subtest 'rejected and uploaded' => sub {
                 },
             },
             'expiry_date' => re('\d+'),
+            'is_uploaded' => 1,
+            'is_verified' => 2
         }};
 
     cmp_deeply $client->documents->uploaded(), $expected, 'Fresh documents in needs review make the is_pending flag appear again';
@@ -753,6 +762,7 @@ subtest 'rejected and uploaded' => sub {
             'expiry_date' => re('\d+'),
             'is_expired'  => 0,
             'is_pending'  => 0,
+            'is_verified' => 3,
             'documents'   => {
                 $doc_mapping->{'54321'} => {
                     'format'      => 'PNG',
@@ -791,6 +801,8 @@ subtest 'rejected and uploaded' => sub {
             'expiry_date' => re('\d+'),
             'is_pending'  => 0,
             'is_expired'  => 1,
+            'is_rejected' => 1,
+            'is_verified' => 2,
             'documents'   => {
                 $doc_mapping->{'54321'} => {
                     'format'      => 'PNG',
@@ -883,7 +895,8 @@ subtest 'rejected an accepted' => sub {
                     'status'      => 'uploaded'
                 }
             },
-            'is_pending' => 1
+            'is_pending'  => 1,
+            'is_uploaded' => 2,
         }};
 
     # The documents are left in `uploaded` just like an Onfido consider
@@ -933,6 +946,8 @@ subtest 'rejected an accepted' => sub {
             'is_pending'  => 0,
             'expiry_date' => re('\d+'),
             'is_expired'  => 0,
+            'is_uploaded' => 2,
+            'is_verified' => 1,
 
         }};
     cmp_deeply $client->documents->uploaded(), $expected, 'We got the expected result after Onfido verification';

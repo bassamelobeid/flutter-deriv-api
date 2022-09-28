@@ -232,12 +232,14 @@ Gets the document information which has been updated recently.
 
 sub get_last_updated_document {
     my $self = shift;
+    my $args = shift;
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
     try {
         return $dbic->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM idv.get_last_updated_document(?::BIGINT)', undef, $self->user_id);
+                $_->selectrow_hashref('SELECT * FROM idv.get_last_updated_document(?::BIGINT, ?::BOOL)',
+                    undef, $self->user_id, $args->{only_verified} ? 1 : 0);
             });
     } catch ($e) {
         die sprintf("Failed while getting last IDV updated document, check user_id: %s", $self->user_id);

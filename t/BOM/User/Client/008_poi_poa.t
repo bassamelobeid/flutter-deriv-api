@@ -651,7 +651,47 @@ subtest 'get_poi_status' => sub {
             is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
             is $test_client_cr->get_manual_poi_status, 'verified', 'manual status = verified';
         };
+
+        subtest 'ignore age verification' => sub {
+            my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+            });
+            my $user = BOM::User->create(
+                email          => 'emailtest3333333@email.com',
+                password       => BOM::User::Password::hashpw('asdf12345'),
+                email_verified => 1,
+            );
+            $user->add_client($test_client_cr);
+
+            my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+            my $mocked_status = Test::MockModule->new(ref($test_client_cr->status));
+            my $ignore_age_verification;
+
+            $mocked_client->mock(
+                'get_idv_status',
+                sub {
+                    return 'none';
+                });
+            $mocked_status->mock('age_verification',        sub { return 0 });
+            $mocked_client->mock('fully_authenticated',     sub { return 1 });
+            $mocked_client->mock('ignore_age_verification', sub { return $ignore_age_verification });
+            $uploaded = {
+                proof_of_identity => {
+                    is_expired => 0,
+                    documents  => {},
+                }};
+
+            $ignore_age_verification = 0;
+            is $test_client_cr->get_poi_status, 'verified', 'verified when ignoring age verified is off';
+
+            $ignore_age_verification = 1;
+            is $test_client_cr->get_poi_status, 'none', 'none when ignoring age verified is on';
+
+            $mocked_status->unmock_all;
+        };
+
         $mocked_client->unmock_all;
+
     };
 
     subtest 'Regulated account' => sub {
@@ -758,6 +798,20 @@ subtest 'get_poi_status' => sub {
             is $test_client_mf->get_poi_status, 'verified', 'Client POI status is verified';
             $mocked_client->unmock_all;
         };
+        subtest 'POI status verified by manual' => sub {
+            $mocked_client->mock('fully_authenticated',     sub { return 1 });
+            $mocked_client->mock('get_manual_poi_status',   sub { return 'verified' });
+            $mocked_client->mock('ignore_age_verification', sub { return 1 });
+
+            $uploaded = {
+                proof_of_identity => {
+                    is_expired => 0,
+                    documents  => {},
+                }};
+
+            is $test_client_mf->get_poi_status, 'verified', 'Client POI status is verified by manual';
+            $mocked_client->unmock_all;
+        };
     };
 
     $mocked_onfido->unmock_all;
@@ -790,7 +844,7 @@ subtest 'needs_poa_verification' => sub {
 
             $uploaded = {
                 proof_of_address => {
-                    documents => 'something',
+                    documents => {},
                 }};
 
             $mocked_client->mock(
@@ -839,7 +893,7 @@ subtest 'needs_poa_verification' => sub {
             $mocked_client->mock('is_verification_required', sub { return 0 });
             $uploaded = {
                 proof_of_address => {
-                    documents => 'something',
+                    documents => {},
                 }};
 
             $mocked_client->mock(
@@ -874,7 +928,7 @@ subtest 'needs_poa_verification' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 1 });
             $uploaded = {
                 proof_of_address => {
-                    documents => 'something',
+                    documents => {},
                 }};
 
             $mocked_client->mock(
@@ -919,7 +973,7 @@ subtest 'needs_poa_verification' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 1 });
             $uploaded = {
                 proof_of_address => {
-                    documents => 'something',
+                    documents => {},
                 }};
 
             $mocked_client->mock(
@@ -970,7 +1024,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->mock('age_verification',    sub { return 1 });
             $uploaded = {
                 proof_of_address => {
-                    documents => 'something',
+                    documents => {},
                 }};
             $mocked_client->mock(
                 'binary_user_id' => sub {
@@ -992,7 +1046,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->mock('age_verification',    sub { return 1 });
             $uploaded = {
                 proof_of_identity => {
-                    documents => 'something',
+                    documents => {},
                 }};
             $mocked_client->mock(
                 'binary_user_id' => sub {
@@ -1008,7 +1062,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_client->mock('get_poi_status',           sub { return 'pending' });
             $uploaded = {
                 proof_of_identity => {
-                    documents => 'something',
+                    documents => {},
                 }};
             $onfido_check = undef;
             ok !$test_client_cr->needs_poi_verification, 'POI is not needed as the current status is pending';
@@ -1017,6 +1071,21 @@ subtest 'needs_poi_verification' => sub {
                 $mocked_status->mock('allow_poi_resubmission', sub { return 1 });
                 ok $test_client_cr->needs_poi_verification, 'POI resubmission flags has more weight';
             };
+
+            $mocked_client->unmock_all;
+            $mocked_status->unmock_all;
+        };
+
+        subtest 'Not needed when manual poi verified' => sub {
+            $mocked_client->mock('get_manual_poi_status', sub { return 'verified' });
+            $mocked_client->mock('fully_authenticated',   sub { return 1 });
+            $mocked_status->mock('age_verification',      sub { return 1 });
+            $uploaded = {
+                proof_of_identity => {
+                    documents => {},
+                }};
+
+            ok !$test_client_cr->needs_poi_verification, 'POI is not needed';
 
             $mocked_client->unmock_all;
             $mocked_status->unmock_all;
@@ -1093,7 +1162,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $uploaded = {
                 proof_of_identity => {
-                    documents => 'something',
+                    documents => {},
                 }};
 
             $onfido_check = undef;
@@ -1122,7 +1191,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->mock('age_verification',    sub { return 1 });
             $uploaded = {
                 proof_of_address => {
-                    documents => 'something',
+                    documents => {},
                 }};
             $mocked_client->mock(
                 'binary_user_id' => sub {
@@ -1137,7 +1206,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_client->mock('get_poi_status',           sub { return 'pending' });
             $uploaded = {
                 proof_of_identity => {
-                    documents => 'something',
+                    documents => {},
                 }};
 
             $onfido_check = undef;
@@ -1220,7 +1289,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $uploaded = {
                 proof_of_identity => {
-                    documents => 'something',
+                    documents => {},
                 }};
 
             $onfido_check = undef;
@@ -1238,6 +1307,46 @@ subtest 'needs_poi_verification' => sub {
             $mocked_client->unmock_all;
             $mocked_status->unmock_all;
         };
+    };
+
+    subtest 'when ignoring age verification' => sub {
+        my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+        my $user = BOM::User->create(
+            email          => 'emailtest13@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_cr);
+        my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+        my $mocked_status = Test::MockModule->new(ref($test_client_cr->status));
+        my $ignore_age_verification;
+        $uploaded = {
+            proof_of_identity => {
+                documents => {},
+            }};
+
+        $mocked_client->mock('get_poi_status',          sub { return 'verified' });
+        $mocked_client->mock('fully_authenticated',     sub { return 1 });
+        $mocked_status->mock('age_verification',        sub { return 1 });
+        $mocked_client->mock('ignore_age_verification', sub { return $ignore_age_verification; });
+
+        $mocked_client->mock(
+            'binary_user_id' => sub {
+                return 'mocked';
+            });
+
+        # Test POI, risk low, idv_validated false
+        $ignore_age_verification = 0;
+        ok !$test_client_cr->needs_poi_verification, 'POI is not needed';
+
+        $ignore_age_verification = 1;
+        ok $test_client_cr->needs_poi_verification, 'POI is needed';
+
+        $mocked_client->unmock_all;
+        $mocked_status->unmock_all;
+
     };
 };
 
@@ -1805,6 +1914,7 @@ subtest 'Manual POI status' => sub {
     my $is_document_expiry_check_required;
     my $idv;
     my $onfido;
+    my $ignore_age_verification;
 
     $mocked_client->mock(
         'is_document_expiry_check_required',
@@ -1820,6 +1930,11 @@ subtest 'Manual POI status' => sub {
         'get_onfido_status',
         sub {
             return $onfido;
+        });
+    $mocked_client->mock(
+        'ignore_age_verification',
+        sub {
+            return $ignore_age_verification;
         });
 
     $mocked_status->mock(
@@ -1840,6 +1955,13 @@ subtest 'Manual POI status' => sub {
                     documents  => $documents,
                 },
             };
+        });
+
+    my $verified;
+    $mocked_documents->mock(
+        'verified',
+        sub {
+            return $verified;
         });
 
     my $tests = [{
@@ -1886,13 +2008,42 @@ subtest 'Manual POI status' => sub {
             onfido    => 'none',
             idv       => 'pending',
             documents => {},
-        }];
+        },
+        {
+            status    => 'verified',
+            onfido    => 'none',
+            idv       => 'none',
+            documents => {
+                test => {},
+            },
+            verified                => 0,
+            age_verification        => 1,
+            ignore_age_verification => 0,
+        },
+        {
+            status    => 'verified',
+            onfido    => 'none',
+            idv       => 'none',
+            documents => {
+                test => {},
+            },
+            verified                => 1,
+            age_verification        => 1,
+            ignore_age_verification => 1,
+        }
+        ],
+        ;
 
     for my $test ($tests->@*) {
         my $status;
 
-        ($is_expired, $is_pending, $age_verification, $status, $is_document_expiry_check_required, $onfido, $idv, $documents) =
-            @{$test}{qw/is_expired is_pending age_verification status is_document_expiry_check_required onfido idv documents/};
+        (
+            $is_expired, $is_pending, $age_verification, $status,                  $is_document_expiry_check_required,
+            $onfido,     $idv,        $documents,        $ignore_age_verification, $verified
+            )
+            = @{$test}
+            {qw/is_expired is_pending age_verification status is_document_expiry_check_required onfido idv documents ignore_age_verification verified/
+            };
 
         is $test_client->get_manual_poi_status, $status, "Got the expected status=$status";
     }

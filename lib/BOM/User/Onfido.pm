@@ -145,14 +145,15 @@ You may pass C<limit> = 1 to get only the `latest` one.
 =cut
 
 sub get_latest_onfido_check {
-    my ($user_id, $applicant_id, $limit) = @_;
+    my ($user_id, $applicant_id, $limit, $only_verified) = @_;
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
     try {
         return $dbic->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM users.get_onfido_checks(?::BIGINT, ?::TEXT, ?::BIGINT)', undef, $user_id, $applicant_id, $limit);
+                $_->selectrow_hashref('SELECT * FROM users.get_onfido_checks(?::BIGINT, ?::TEXT, ?::BIGINT, ?::BOOL)',
+                    undef, $user_id, $applicant_id, $limit, $only_verified ? 1 : 0);
             });
     } catch ($e) {
         die "Fail to get Onfido checks in DB: $e . Please check USER_ID: $user_id";
@@ -396,6 +397,7 @@ Returns,
 
 sub get_latest_check {
     my $client = shift;
+    my $args   = shift;
 
     my $country_code               = uc($client->place_of_birth || $client->residence // '');
     my $report_document_sub_result = '';
@@ -412,7 +414,7 @@ sub get_latest_check {
     # if documents are there and we have onfido applicant then
     # check for onfido check status and inform accordingly
     if ($user_applicant) {
-        if ($user_check = get_latest_onfido_check($client->binary_user_id, undef, 1)) {
+        if ($user_check = get_latest_onfido_check($client->binary_user_id, undef, 1, $args->{only_verified})) {
             if (my $check_id = $user_check->{id}) {
                 my $report_check_result = $user_check->{result} // '';
                 $report_document_status = $user_check->{status} // '';

@@ -6971,7 +6971,7 @@ sub get_poi_status {
 
     return 'pending' if $status{pending};
 
-    if ($self->fully_authenticated || $self->status->age_verification) {
+    if (!$self->ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
         # IDV does not have 2nd attempt
         if ($onfido eq 'expired' || $manual eq 'expired') {
             return 'suspected' if $onfido eq 'suspected';
@@ -6990,6 +6990,12 @@ sub get_poi_status {
     return 'rejected' if $status{rejected};
 
     return 'expired' if $status{expired};
+
+    # TODO: remove when latest poi by supports manual
+    # manual status is not reported by latest poi by function, until we bring support for it we may patch it like this
+    if ($self->ignore_age_verification) {
+        return 'verified' if $manual eq 'verified';
+    }
 
     return 'none';
 }
@@ -7092,7 +7098,11 @@ sub get_manual_poi_status {
 
     return 'expired' if $is_poi_expired;
 
-    return 'verified' if $self->status->age_verification;
+    if ($self->status->age_verification) {
+        return 'verified' if $self->documents->verified;
+
+        return 'verified' unless $self->ignore_age_verification;
+    }
 
     return 'rejected';    # if docs are not pending, not age verified, what else could it be?
 }
@@ -7207,6 +7217,12 @@ sub needs_poi_verification {
 
         return 1 if any { $_ eq $self->get_onfido_status() } qw/rejected suspected expired/;
     }
+
+    # TODO: remove when latest poi by supports manual
+    return 0 if $self->get_manual_poi_status eq 'verified';
+
+    # we must ask for POI docs if the age verification status is meant to be ignored
+    return 1 if $self->ignore_age_verification;
 
     return 0;
 }
@@ -7588,19 +7604,21 @@ and the related check as the last element.
 =cut
 
 sub latest_poi_by {
-    my ($self) = @_;
+    my ($self, $args) = @_;
     my @triplets;
 
-    my $onfido_check = BOM::User::Onfido::get_latest_check($self)->{user_check} // {};
+    my $onfido_check = BOM::User::Onfido::get_latest_check($self, $args)->{user_check} // {};
 
     if (my $onfido_created_at = $onfido_check->{created_at}) {
         push @triplets, ['onfido', $onfido_check, Date::Utility->new($onfido_created_at)->epoch];
     }
 
     my $idv = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
-    if (my $idv_document = $idv->get_last_updated_document()) {
+    if (my $idv_document = $idv->get_last_updated_document($args)) {
         if (my $idv_document_check = $idv->get_document_check_detail($idv_document->{id})) {
-            push @triplets, ['idv', $idv_document_check, Date::Utility->new($idv_document_check->{requested_at})->epoch];
+            push @triplets,
+                ['idv', +{$idv_document_check->%*, status => $idv_document->{status}},
+                Date::Utility->new($idv_document_check->{requested_at})->epoch];
         }
     }
 
@@ -7953,6 +7971,64 @@ sub payment_type_totals {
 
     $self->set_db($old_db) unless 'replica' eq $old_db;
     return $result;
+}
+
+=head2 ignore_age_verification
+
+We may want to override or invalidate the age verification under specific circumstances.
+
+Rules:
+
+=over 4
+
+=item * High Risk profile and IDV validated account
+
+=back
+
+It returns 1 when we invalidate the age verification, 0 otherwise.
+
+=cut
+
+sub ignore_age_verification {
+    my ($self) = @_;
+
+    # High risk profiles
+    my $risk = $self->aml_risk_classification // '';
+
+    if ($risk eq 'high') {
+        # Disregard idv authentication under high risk
+        return 1 if $self->is_idv_validated;
+    }
+
+    return 0;
+}
+
+=head2 is_idv_validated 
+
+Check to see if the client has been validated by IDV
+
+Returns 1 if validated else 0.
+
+=cut
+
+sub is_idv_validated {
+    my ($self) = @_;
+
+    # if age verification is set, we will check which subsystem has a verified status
+    # if there are more than one verified subsystems we will take the latest one, a couple lines after this check
+
+    if ($self->status->age_verification) {
+        my ($poi_system) = $self->latest_poi_by({
+            only_verified => 1,
+        });
+
+        return 0 unless $poi_system;
+
+        return 1 if $poi_system eq 'idv';
+    }
+
+    return 0;
+
 }
 
 1;
