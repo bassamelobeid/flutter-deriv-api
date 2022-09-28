@@ -29,11 +29,13 @@ use BOM::User::Onfido;
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
 
+use Time::HiRes;
+use constant APPLICANT_ONFIDO_TIMING => 'ONFIDO::APPLICANT::TIMING::';
+
 use WebService::Async::SmartyStreets::Address;
 use Encode                 qw(encode_utf8);
 use Locale::Codes::Country qw(country_code2code);
 use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8);
-
 my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
     email       => 'vrtc+test1@bin.com',
@@ -587,7 +589,6 @@ subtest "ready for run authentication" => sub {
                 applicant_id => $applicant_id,
                 documents    => [qw/aaa bbb ccc/],
             })->get;
-
         cmp_deeply + {@metrics},
             +{
             'event.onfido.ready_for_authentication.dispatch' => {tags => ['country:COL']},
@@ -776,8 +777,11 @@ subtest "client_verification" => sub {
         'del',
         sub {
             my ($self, $key) = @_;
-            $doc_key   = $key;
-            $db_doc_id = $self->get($key)->get if $key =~ qr/^ONFIDO::DOCUMENT::ID::/;
+
+            if ($key =~ qr/^ONFIDO::DOCUMENT::ID::/) {
+                $doc_key   = $key;
+                $db_doc_id = $self->get($key)->get;
+            }
 
             return $redis_mock->original('del')->(@_);
         });
@@ -801,13 +805,12 @@ subtest "client_verification" => sub {
             'event.onfido.client_verification.reported_documents' => 3,
             },
             'Expected DD histogram sent';
-
         cmp_deeply + {@metrics},
             +{
-            'event.onfido.client_verification.dispatch'         => undef,
-            'event.onfido.client_verification.not_verified'     => {tags => ['check:clear', 'country:COL', 'report:clear']},
-            'event.onfido.client_verification.dob_not_reported' => {tags => ['check:clear', 'country:COL', 'report:clear']},
-            'event.onfido.client_verification.success'          => undef,
+            'event.onfido.client_verification.dispatch'     => undef,
+            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+            'event.onfido.client_verification.success'      => undef,
             },
             'Expected dd metrics';
 
@@ -856,10 +859,10 @@ subtest "client_verification" => sub {
             })->get;
         cmp_deeply + {@metrics},
             +{
-            'event.onfido.client_verification.dispatch'         => undef,
-            'event.onfido.client_verification.not_verified'     => {tags => ['check:clear', 'country:COL', 'report:consider']},
-            'event.onfido.client_verification.dob_not_reported' => {tags => ['check:clear', 'country:COL', 'report:consider']},
-            'event.onfido.client_verification.success'          => undef,
+            'event.onfido.client_verification.dispatch'     => undef,
+            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:consider', 'result:dob_not_reported']},
+            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:consider', 'result:dob_not_reported']},
+            'event.onfido.client_verification.success'      => undef,
             },
             'Expected dd metrics';
 
@@ -893,10 +896,11 @@ subtest "client_verification" => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
-                'event.onfido.client_verification.dispatch'         => undef,
-                'event.onfido.client_verification.not_verified'     => {tags => ['check:clear', 'country:COL', 'report:clear']},
-                'event.onfido.client_verification.dob_not_reported' => {tags => ['check:clear', 'country:COL', 'report:clear']},
-                'event.onfido.client_verification.success'          => undef,
+                'event.onfido.client_verification.dispatch'     => undef,
+                'event.onfido.client_verification.not_verified' =>
+                    {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+                'event.onfido.client_verification.result'  => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+                'event.onfido.client_verification.success' => undef,
                 },
                 'Expected dd metrics';
         }
@@ -915,10 +919,11 @@ subtest "client_verification" => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
-                'event.onfido.client_verification.dispatch'         => undef,
-                'event.onfido.client_verification.not_verified'     => {tags => ['check:clear', 'country:COL', 'report:clear']},
-                'event.onfido.client_verification.dob_not_reported' => {tags => ['check:clear', 'country:COL', 'report:clear']},
-                'event.onfido.client_verification.success'          => undef,
+                'event.onfido.client_verification.dispatch'     => undef,
+                'event.onfido.client_verification.not_verified' =>
+                    {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+                'event.onfido.client_verification.result'  => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+                'event.onfido.client_verification.success' => undef,
                 },
                 'Expected dd metrics';
         }
@@ -958,13 +963,12 @@ subtest "Uninitialized date of birth" => sub {
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
             })->get;
-
         cmp_deeply + {@metrics},
             +{
-            'event.onfido.client_verification.dispatch'      => undef,
-            'event.onfido.client_verification.not_verified'  => {tags => ['check:clear', 'country:COL', 'report:clear']},
-            'event.onfido.client_verification.name_mismatch' => {tags => ['check:clear', 'country:COL', 'report:clear']},
-            'event.onfido.client_verification.success'       => undef,
+            'event.onfido.client_verification.dispatch'     => undef,
+            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch']},
+            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch']},
+            'event.onfido.client_verification.success'      => undef,
             },
             'Expected dd metrics';
     }
@@ -972,6 +976,108 @@ subtest "Uninitialized date of birth" => sub {
 
     $mocked_client->unmock_all();
     $mocked_report->unmock_all();
+    $dog_mock->unmock_all;
+};
+
+subtest "time from ready to verified" => sub {
+    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my @metrics;
+    $dog_mock->mock(
+        'stats_inc',
+        sub {
+            push @metrics, @_, undef if scalar @_ == 1;
+            push @metrics, @_ if scalar @_ == 2;
+            return 1;
+        });
+
+    my $context = {
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => '16000'
+    };
+    my $req = BOM::Platform::Context::Request->new($context);
+    request($req);
+
+    $test_client->status->clear_age_verification;
+
+    $loop->add(my $services = BOM::Event::Services->new);
+    my $redis_r_read  = $services->redis_replicated_read();
+    my $redis_r_write = $services->redis_replicated_write();
+    my $redis_e_read  = $services->redis_events_read();
+
+    lives_ok {
+        @metrics = ();
+        BOM::Event::Actions::Client::ready_for_authentication({
+                loginid      => $test_client->loginid,
+                applicant_id => $applicant_id,
+            })->get;
+        cmp_deeply + {@metrics},
+            +{
+            'event.onfido.ready_for_authentication.dispatch' => {tags => ['country:COL']},
+            'event.onfido.check_applicant.dispatch'          => {tags => ['country:COL']},
+            'event.onfido.check_applicant.failure'           => {tags => ['country:COL']},
+            'event.onfido.ready_for_authentication.failure'  => {tags => ['country:COL']},
+            },
+            'Expected dd metrics';
+    }
+    "ready for authentication emitted without exception";
+
+    my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    ok $applicant_context, 'request context of applicant is present in redis';
+
+    my $lapsed_time_redis = $redis_r_read->exists(APPLICANT_ONFIDO_TIMING . $test_client->binary_user_id);
+    ok $lapsed_time_redis, 'lapsed time exists in redis';
+
+    my $request_start = $redis_e_read->get(APPLICANT_ONFIDO_TIMING . $test_client->binary_user_id)->get;
+
+    $dog_mock->mock(
+        'stats_timing',
+        sub {
+            my ($metric, $timing, $tags) = @_;
+            push @metrics, $metric, $timing, "$metric#tags", $tags;
+            return 1;
+        });
+
+    my $another_context = {
+        app_id     => '123',
+        language   => 'FA',
+        brand_name => 'binary'
+    };
+    my $another_req = BOM::Platform::Context::Request->new($another_context);
+    request($another_req);
+
+    my $request;
+    my $mocked_action = Test::MockModule->new('BOM::Event::Actions::Client');
+    $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return Future->done; });
+
+    lives_ok {
+        @metrics = ();
+        BOM::Event::Actions::Client::client_verification({
+                check_url => $check_href,
+            })->get;
+
+        cmp_deeply + {@metrics},
+            +{
+            'event.onfido.client_verification.dispatch'     => undef,
+            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+            'event.onfido.client_verification.success'      => undef,
+            'event.onfido.callout.timing'                   => re('\w'),
+            'event.onfido.callout.timing#tags'              => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+            },
+            'Expected dd metrics';
+    }
+    "client verification emitted without exception";
+
+    is $context->{brand_name}, $request->brand_name, 'brand name is correct';
+    is $context->{language},   $request->language,   'language is correct';
+    is $context->{app_id},     $request->app_id,     'app id is correct';
+
+    request($another_req);
+
+    $redis_r_write->del(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    $redis_r_write->set(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, ']non json format[');
+
     $dog_mock->unmock_all;
 };
 
@@ -1037,12 +1143,13 @@ subtest "document upload request context" => sub {
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
             })->get;
+
         cmp_deeply + {@metrics},
             +{
-            'event.onfido.client_verification.dispatch'         => undef,
-            'event.onfido.client_verification.dob_not_reported' => {tags => ['check:clear', 'country:COL', 'report:clear']},
-            'event.onfido.client_verification.not_verified'     => {tags => ['check:clear', 'country:COL', 'report:clear']},
-            'event.onfido.client_verification.success'          => undef,
+            'event.onfido.client_verification.dispatch'     => undef,
+            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+            'event.onfido.client_verification.success'      => undef,
             },
             'Expected dd metrics';
     }
@@ -1062,12 +1169,13 @@ subtest "document upload request context" => sub {
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check_href,
             })->get;
+
         cmp_deeply + {@metrics},
             +{
-            'event.onfido.client_verification.dispatch'         => undef,
-            'event.onfido.client_verification.dob_not_reported' => {tags => ['check:clear', 'country:COL', 'report:clear']},
-            'event.onfido.client_verification.not_verified'     => {tags => ['check:clear', 'country:COL', 'report:clear']},
-            'event.onfido.client_verification.success'          => undef,
+            'event.onfido.client_verification.dispatch'     => undef,
+            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+            'event.onfido.client_verification.success'      => undef,
             },
             'Expected dd metrics';
     }
@@ -2445,10 +2553,11 @@ subtest 'onfido resubmission' => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
-                'event.onfido.client_verification.dispatch'         => undef,
-                'event.onfido.client_verification.not_verified'     => {tags => ['check:clear', 'country:COL', 'report:clear']},
-                'event.onfido.client_verification.dob_not_reported' => {tags => ['check:clear', 'country:COL', 'report:clear']},
-                'event.onfido.client_verification.success'          => undef,
+                'event.onfido.client_verification.dispatch'     => undef,
+                'event.onfido.client_verification.not_verified' =>
+                    {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+                'event.onfido.client_verification.result'  => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
+                'event.onfido.client_verification.success' => undef,
                 },
                 'Expected dd metrics';
         }
@@ -4113,9 +4222,9 @@ subtest 'Underage detection' => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
-                'event.onfido.client_verification.dispatch'         => undef,
-                'event.onfido.client_verification.age_verification' => {tags => ['check:clear', 'country:COL', 'report:clear']},
-                'event.onfido.client_verification.success'          => undef,
+                'event.onfido.client_verification.dispatch' => undef,
+                'event.onfido.client_verification.result'   => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:age_verified']},
+                'event.onfido.client_verification.success'  => undef,
                 },
                 'Expected dd metrics';
         }

@@ -122,6 +122,8 @@ use constant SR_30_DAYS_EXP => 86400 * 30;
 # Applicant check lock
 use constant APPLICANT_CHECK_LOCK_PREFIX => 'ONFIDO::APPLICANT_CHECK_LOCK::';
 use constant APPLICANT_CHECK_LOCK_TTL    => 30;
+use constant APPLICANT_ONFIDO_TIMING     => 'ONFIDO::APPLICANT::TIMING::';
+use constant APPLICANT_ONFIDO_TIMING_TTL => 86400;
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -522,6 +524,11 @@ async sub ready_for_authentication {
         my $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
 
+        my $redis_events_write = _redis_events_write();
+        my $request_start      = [Time::HiRes::gettimeofday];
+        await $redis_events_write->setex(APPLICANT_ONFIDO_TIMING . $client->binary_user_id,
+            APPLICANT_ONFIDO_TIMING_TTL, encode_json_utf8($request_start));
+
         my $country     = $client->place_of_birth // $client->residence;
         my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
         $tags = ["country:$country_tag"];
@@ -534,7 +541,6 @@ async sub ready_for_authentication {
         $client->propagate_clear_status('allow_poi_resubmission');
 
         my ($request_count, $user_request_count);
-        my $redis_events_write = _redis_events_write();
         # INCR Onfido check request count in Redis
         await $redis_events_write->connect;
 
@@ -739,7 +745,7 @@ async sub client_verification {
                 $last_report //= {};
 
                 push @common_datadog_tags, sprintf("report:%s", $last_report->result);
-#
+
                 my $minimum_accepted_age = $last_report->{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result};
                 my $underage_detected    = defined $minimum_accepted_age && $minimum_accepted_age ne 'clear';
 
@@ -785,15 +791,17 @@ async sub client_verification {
                         });
 
                         if ($age_verified = BOM::Event::Actions::Common::set_age_verification($client, 'Onfido')) {
-                            DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.age_verification',
-                                {tags => [@common_datadog_tags]});
+                            push @common_datadog_tags, "result:age_verified";
+                            DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
                         }
                     } else {
-                        DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.underage_detected', {tags => [@common_datadog_tags]});
+                        push @common_datadog_tags, "result:underage_detected";
+                        DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
                         BOM::Event::Actions::Common::handle_under_age_client($client, 'Onfido');
                     }
                 } else {
-                    DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.dob_not_reported', {tags => [@common_datadog_tags]});
+                    push @common_datadog_tags, "result:dob_not_reported";
+                    DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
                 }
 
                 # Update expiration_date and document_id of each document in DB
@@ -838,11 +846,24 @@ async sub client_verification {
                 }
 
                 DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.success');
-                return;
             } catch ($e) {
                 DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
                 $log->errorf('An error occurred while retrieving reports for client %s check %s: %s', $loginid, $check->id, $e);
                 die $e;
+            }
+
+            await $redis_events_write->connect;
+
+            my $request_start = await $redis_events_write->get(APPLICANT_ONFIDO_TIMING . $client->binary_user_id);
+
+            if ($request_start) {
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'event.onfido.callout.timing',
+                    (1000 * Time::HiRes::tv_interval(decode_json_utf8($request_start))),
+                    {tags => [@common_datadog_tags,]});
+
+                await $redis_events_write->del(APPLICANT_ONFIDO_TIMING . $client->binary_user_id);
+
             }
         } catch ($e) {
             DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
@@ -1040,10 +1061,10 @@ async sub check_onfido_rules {
                 if ($poi_name_mismatch && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0) {
                     if (BOM::Event::Actions::Common::set_age_verification($client, 'Onfido')) {
                         my $tags = $args->{datadog_tags};
-
+                        push @$tags, "result:age_verified";
                         if ($tags) {
                             DataDog::DogStatsd::Helper::stats_inc(
-                                'event.onfido.client_verification.age_verification',
+                                'event.onfido.client_verification.result',
                                 {
                                     tags => $tags,
                                 });
@@ -1061,8 +1082,9 @@ async sub check_onfido_rules {
 
                 if ($tags) {
                     if ($error_code eq 'NameMismatch') {
+                        push @$tags, 'result:name_mismatch';
                         DataDog::DogStatsd::Helper::stats_inc(
-                            'event.onfido.client_verification.name_mismatch',
+                            'event.onfido.client_verification.result',
                             {
                                 tags => $tags,
                             });
