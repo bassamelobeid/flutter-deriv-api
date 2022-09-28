@@ -110,6 +110,7 @@ my $action_mapping = {
         crypto_cashier_transaction_updated          => \&BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated,
         update_loginid_status                       => \&BOM::Event::Actions::MT5::update_loginid_status,
         bulk_affiliate_loginids_sync                => \&BOM::Event::Actions::MyAffiliate::bulk_affiliate_loginids_sync,
+        p2p_update_local_currencies                 => \&BOM::Event::Actions::P2P::update_local_currencies,
     },
     track => {
         app_deleted                                      => \&BOM::Event::Actions::App::app_deleted,

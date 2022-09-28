@@ -111,7 +111,7 @@ subtest 'p2p order created' => sub {
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
-        local_currency   => 'myr',
+        local_currency   => 'IDR',
         lang             => 'ID'
         },
         'properties are set properly for p2p_order_created event';
@@ -133,7 +133,7 @@ subtest 'p2p order created' => sub {
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
-        local_currency   => 'myr',
+        local_currency   => 'IDR',
         lang             => 'RU'
         },
         'properties are set properly for p2p_order_created event';
@@ -176,7 +176,7 @@ subtest 'p2p order confirmed by buyer' => sub {
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
-        local_currency   => 'myr',
+        local_currency   => 'IDR',
         lang             => 'ID'
         },
         'properties are set properly for p2p_order_buyer_has_paid event';
@@ -198,7 +198,7 @@ subtest 'p2p order confirmed by buyer' => sub {
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
-        local_currency   => 'myr',
+        local_currency   => 'IDR',
         lang             => 'RU'
         },
         'properties are set properly for p2p_order_buyer_has_paid event';
@@ -241,7 +241,7 @@ subtest 'p2p order confirmed by seller' => sub {
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
-        local_currency   => 'myr',
+        local_currency   => 'IDR',
         lang             => 'ID'
         },
         'properties are set properly for p2p_order_seller_has_released event';
@@ -263,7 +263,7 @@ subtest 'p2p order confirmed by seller' => sub {
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
-        local_currency   => 'myr',
+        local_currency   => 'IDR',
         lang             => 'RU'
         },
         'properties are set properly for p2p_order_seller_has_released event';
@@ -308,7 +308,7 @@ subtest 'p2p order cancelled' => sub {
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
-        local_currency   => 'myr',
+        local_currency   => 'IDR',
         lang             => 'ID'
         },
         'properties are set properly for p2p_order_cancelled event';
@@ -330,7 +330,7 @@ subtest 'p2p order cancelled' => sub {
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
-        local_currency   => 'myr',
+        local_currency   => 'IDR',
         lang             => 'RU'
         },
         'properties are set properly for p2p_order_cancelled event';
@@ -380,7 +380,7 @@ subtest 'pending order expired' => sub {
         exchange_rate       => '1.00',
         order_created_at    => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand               => $brand,
-        local_currency      => 'myr',
+        local_currency      => 'IDR',
         lang                => 'EN'
     };
     is $args1->{event}, 'p2p_order_expired', 'Track event name is correct';
@@ -444,7 +444,7 @@ subtest 'confirmed order expired' => sub {
         exchange_rate       => '1.00',
         order_created_at    => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand               => $brand,
-        local_currency      => 'myr',
+        local_currency      => 'IDR',
         lang                => 'EN'
     };
     is $args1->{event}, 'p2p_order_expired', 'Track event name is correct';

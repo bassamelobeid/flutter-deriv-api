@@ -568,6 +568,29 @@ sub advertiser_temp_banned {
     return BOM::Event::Services::Track::p2p_advertiser_temp_banned($data);
 }
 
+=head2 update_local_currencies
+
+Updates redis key for available local currencies.
+Called by p2p daemon every minute.
+
+=cut
+
+sub update_local_currencies {
+
+    my @currencies;
+
+    # if we ever support multiple brokers in P2P, this will need reworking
+    for my $broker (map { $_->broker_codes->@* } grep { $_->p2p_available } LandingCompany::Registry::get_all) {
+        my $clientdb = BOM::Database::ClientDB->new({broker_code => uc $broker}, operation => 'backoffice_replica');
+        push @currencies, $clientdb->db->dbic->run(
+            fixup => sub {
+                $_->selectcol_arrayref('SELECT * FROM p2p.active_local_currencies()');
+            })->@*;
+    }
+
+    BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', join ',', grep { $_ ne 'AAD' } @currencies);
+}
+
 =head2 _track_p2p_order_event
 
 Emits p2p order events to Segment for tracking. It takes the following list of named arguments:
