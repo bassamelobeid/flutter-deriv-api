@@ -1,5 +1,5 @@
 use Test::Most;
-use Test::Warnings qw(warnings);
+use Test::Warnings    qw(warnings);
 use Log::Any::Adapter qw(TAP);
 use Time::HiRes;
 use YAML::XS;
@@ -57,10 +57,11 @@ my @contract_params = ([
 $redis_shared->set($_->[0] => $_->[1]) for @contract_params;
 
 subtest 'parameters_for_contract_id' => sub {
-throws_ok {
- $queue->parameters_for_contract_id(1,'test')->get
-    } qr/Contract parameters/, 'Contract parameters not found';
-    ok $queue->run->isa('IO::Async::Future') , 'BOM::Pricing::Queue run' ;
+    throws_ok {
+        $queue->parameters_for_contract_id(1, 'test')->get
+    }
+    qr/Contract parameters/, 'Contract parameters not found';
+    ok $queue->run->isa('IO::Async::Future'), 'BOM::Pricing::Queue run';
 };
 
 subtest 'normal flow' => sub {
