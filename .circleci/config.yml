@@ -151,3 +151,4 @@ workflows:
             only:
             - master
   version: 2
+
