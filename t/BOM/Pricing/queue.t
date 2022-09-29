@@ -56,14 +56,6 @@ my @contract_params = ([
 ]);
 $redis_shared->set($_->[0] => $_->[1]) for @contract_params;
 
-subtest 'parameters_for_contract_id' => sub {
-    throws_ok {
-        $queue->parameters_for_contract_id(1, 'test')->get
-    }
-    qr/Contract parameters/, 'Contract parameters not found';
-    ok $queue->run->isa('IO::Async::Future'), 'BOM::Pricing::Queue run';
-};
-
 subtest 'normal flow' => sub {
 
     $redis->set($_ => 1) for @keys;
@@ -125,6 +117,14 @@ subtest 'sleeping to next interval' => sub {
             );
         }
     }
+};
+
+subtest 'parameters_for_contract_id' => sub {
+    throws_ok {
+        $queue->parameters_for_contract_id(1, 'test')->get
+    }
+    qr/Contract parameters/, 'Contract parameters not found';
+    ok $queue->run->isa('IO::Async::Future'), 'BOM::Pricing::Queue run';
 };
 
 done_testing;
