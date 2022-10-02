@@ -72,6 +72,8 @@ subtest 'process_job' => sub {
     };
 
     my $result = $daemon->process_job($redis_pricer, $params, $params);
+    note explain $result;
+
     ok $result->{error}, 'process_job error';
     is $result->{'price_daemon_cmd'}, 'price', 'price_daemon_cmd price';
 
@@ -92,6 +94,7 @@ subtest 'process_job' => sub {
 
     $params->{price_daemon_cmd} = 'bid';
     $result = $daemon->process_job($redis_pricer, $params, $params);
+    note explain $result;
     my $expected = {
         'error' => {
             'code'              => 'GetProposalFailure',
