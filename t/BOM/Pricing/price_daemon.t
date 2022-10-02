@@ -72,7 +72,6 @@ subtest 'process_job' => sub {
     };
 
     my $result = $daemon->process_job($redis_pricer, $params, $params);
-    note explain $result;
 
     ok $result->{error}, 'process_job error';
     is $result->{'price_daemon_cmd'}, 'price', 'price_daemon_cmd price';
@@ -94,16 +93,42 @@ subtest 'process_job' => sub {
 
     $params->{price_daemon_cmd} = 'bid';
     $result = $daemon->process_job($redis_pricer, $params, $params);
-    note explain $result;
-    my $expected = {
-        'error' => {
-            'code'              => 'GetProposalFailure',
-            'message_to_client' => 'Sorry, an error occurred while processing your request.'
-        },
-        'price_daemon_cmd' => 'bid',
-        'rpc_time'         => ignore()};
 
-    cmp_deeply($result, $expected, 'command bid with error');
+    my $expected = {
+        'barrier'                    => '7',
+        'barrier_count'              => 1,
+        'bid_price'                  => '1.64',
+        'contract_id'                => undef,
+        'contract_type'              => 'DIGITMATCH',
+        'currency'                   => 'USD',
+        'current_spot'               => '963.305',
+        'current_spot_display_value' => '963.305',
+        'current_spot_time'          => ignore(),
+        'date_expiry'                => ignore(),
+        'date_settlement'            => ignore(),
+        'date_start'                 => ignore(),
+        'display_name'               => 'Volatility 10 Index',
+        'expiry_time'                => ignore(),
+        'is_expired'                 => 0,
+        'is_forward_starting'        => 0,
+        'is_intraday'                => 1,
+        'is_path_dependent'          => 0,
+        'is_settleable'              => 0,
+        'is_sold'                    => 0,
+        'is_valid_to_cancel'         => 0,
+        'is_valid_to_sell'           => 0,
+        'longcode'                   => 'Win payout if the last digit of Volatility 10 Index is 7 after 5 ticks.',
+        'payout'                     => '18.18',
+        'price_daemon_cmd'           => 'bid',
+        'rpc_time'                   => '35.727',
+        'shortcode'                  => 'DIGITMATCH_R_10_18.18_1663754400_5T_7_0',
+        'status'                     => 'open',
+        'tick_count'                 => '5',
+        'tick_stream'                => [],
+        'underlying'                 => 'R_10',
+        'validation_error'           => ignore()};
+
+    cmp_deeply($result, $expected, 'process_job result matches');
 
 };
 
