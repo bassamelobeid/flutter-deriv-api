@@ -15,8 +15,9 @@ use Future::Utils 'fmap1';
 use BOM::MT5::User::Async;
 use BOM::Event::Utility qw(exception_logged);
 use BOM::Platform::Event::Emitter;
-use List::Util qw(uniq);
-use Path::Tiny qw(path);
+use List::Util                 qw(uniq);
+use Path::Tiny                 qw(path);
+use DataDog::DogStatsd::Helper qw(stats_event);
 
 use constant AFFILIATE_CHUNK_SIZE => 300;
 
@@ -90,6 +91,11 @@ Retunrs a L<Future> which resolves to C<undef>
 async sub affiliate_loginids_sync {
     my ($data) = @_;
     my ($affiliate_id, $loginids, $action) = $data->@{qw/affiliate_id loginids action/};
+
+    stats_event(
+        'MyAffiliate Events - affiliate_loginids_sync',
+        sprintf("%s : IB Sync event for Affiliate ID [%s]", Date::Utility->new->datetime_ddmmmyy_hhmmss, $affiliate_id),
+        {alert_type => 'info'});
 
     my @results;
     for my $loginid (@$loginids) {
