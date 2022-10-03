@@ -20,7 +20,7 @@ my $d = decode_json($r->content);
 is $d->{client_loginid}, $loginid, "is $loginid";
 is $d->{currency_code},  'USD',    "is USD";
 ok $d->{balance} >= 0, "balance $d->{balance} >= 0";
-ok $d->{limit} > 0,    "limit $d->{limit} >=0";
+ok $d->{limit} >= 0,   "limit $d->{limit} >=0";
 
 $r = request(
     'GET',
