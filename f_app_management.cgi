@@ -30,30 +30,26 @@ our $redis = BOM::Config::Redis->redis_ws_write();
 sub redis_push {
     my ($app_id, $is_block) = @_;
 
-    $redis->get(
-        'app_id::blocked',
-        sub {
-            my ($redis, $err, $ids) = @_;
-            if ($err) {
-                $log->warn("Error reading blocked app IDs from Redis: $err");
-                return;
-            }
-            return 0 if $ids;
-            my %block_app_ids = %{JSON::MaybeUTF8::decode_json_utf8($ids)};
-            if ($is_block) {
-                $block_app_ids{$app_id} = 1;
-            } else {
-                delete $block_app_ids{$app_id};
-            }
-            $redis->set(
-                'app_id::blocked' => JSON::MaybeUTF8::encode_json_utf8(\%block_app_ids),
-                sub {
-                    my ($redis, $err) = @_;
-                    $log->warn("Redis error when recording blocked app_id - $err");
-                    return;
-                });
-        });
-    return 1;
+    try {
+        my $ids = $redis->get('app_id::blocked');
+
+        my %block_app_ids;
+        if ($ids) {
+
+            %block_app_ids = JSON::MaybeUTF8::decode_json_utf8($ids)->%*;
+        }
+
+        if ($is_block) {
+            $block_app_ids{$app_id} = 1;
+        } else {
+            delete $block_app_ids{$app_id};
+        }
+        $redis->set('app_id::blocked', JSON::MaybeUTF8::encode_json_utf8(\%block_app_ids));
+        return 1;
+    } catch ($e) {
+        $log->warn("Redis error when recording blocked app_id - $e");
+        return 0;
+    }
 }
 
 my $block_app = sub {
