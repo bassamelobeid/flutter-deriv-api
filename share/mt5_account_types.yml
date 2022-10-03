@@ -337,13 +337,13 @@ real\p01_ts01\financial\vanuatu_std-hr_usd:
   sub_account_type: financial
   server: p01_ts01
 
-real\p01_ts01\financial\svg_std-AB_usd: &real_svg_AB_booking
+real\p01_ts01\financial\svg_std-ab_usd: &real_svg_financial_booking
   account_type: real
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
   server: p01_ts01
-real\p01_ts01\financial\svg_std-BA_usd: *real_svg_AB_booking
+real\p01_ts01\financial\svg_std-ba_usd: *real_svg_financial_booking
 
 real\p01_ts01\financial\bvi_std-hr_usd: &real_bvi_financial_financial
   account_type: real
@@ -353,13 +353,13 @@ real\p01_ts01\financial\bvi_std-hr_usd: &real_bvi_financial_financial
   server: p01_ts01
 real\p01_ts01\financial\bvi_std_usd: *real_bvi_financial_financial
 
-real\p01_ts01\financial\bvi_std-AB_usd: &real_bvi_AB_booking
+real\p01_ts01\financial\bvi_std-ab_usd: &real_bvi_financial_booking
   account_type: real
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial
   server: p01_ts01
-real\p01_ts01\financial\bvi_std-BA_usd: *real_bvi_AB_booking
+real\p01_ts01\financial\bvi_std-ba_usd: *real_bvi_financial_booking
 
 real\p01_ts01\synthetic\bvi_std_usd: &real_p01ts01_bvi_synthetics_financial
   account_type: real
