@@ -884,7 +884,7 @@ rpc get_account_status => sub {
         push @$status, 'allow_document_upload';
     }
 
-    push @$status, 'idv_disallowed' if BOM::RPC::v3::Utility::is_idv_disallowed($client);
+    push @$status, 'idv_disallowed' if BOM::User::IdentityVerification::is_idv_disallowed($client);
 
     my $user = $client->user;
 

@@ -93,7 +93,7 @@ rpc identity_verification_document_add => sub {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'IdentityVerificationDisallowed',
             message_to_client => localize("This method of verification is not allowed. Please try another method.")}
-    ) if BOM::RPC::v3::Utility::is_idv_disallowed($client);
+    ) if BOM::User::IdentityVerification::is_idv_disallowed($client);
 
     my $claimed_documents = $idv_model->get_claimed_documents({
             issuing_country => $issuing_country,
