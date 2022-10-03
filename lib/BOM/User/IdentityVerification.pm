@@ -471,4 +471,42 @@ sub get_document_list {
     }
 }
 
+=head2 is_idv_disallowed
+
+Checks whether client allowed to verify identity via IDV based on some business rules
+
+=over 4
+
+=item * C<$client> - The corresponding client instance
+
+=back
+
+Returns bool
+
+=cut
+
+sub is_idv_disallowed {
+    my $client = shift;
+
+    # Only for non-regulated LC
+    return 1 unless $client->landing_company->short eq 'svg';
+
+    return 1 if $client->status->unwelcome;
+
+    return 1 if ($client->aml_risk_classification // '') eq 'high';
+
+    return 1 if $client->status->age_verification;
+    return 1 if $client->status->allow_poi_resubmission;
+
+    if ($client->status->allow_document_upload) {
+        my $manual_status = $client->get_manual_poi_status();
+        return 1 if $manual_status eq 'expired' or $manual_status eq 'rejected';
+
+        my $onfido_status = $client->get_onfido_status();
+        return 1 if $onfido_status eq 'expired' or $onfido_status eq 'rejected';
+    }
+
+    return 0;
+}
+
 1;

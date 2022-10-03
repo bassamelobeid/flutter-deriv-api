@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::MockModule;
 use Log::Any::Test;
 use Log::Any qw($log);
 use Test::Deep;
@@ -452,6 +453,106 @@ subtest 'Reset submissions to zero' => sub {
     is $idv_model_ccr->submissions_left, 2, 'Expected submissions left is correct';
     BOM::User::IdentityVerification::reset_to_zero_left_submissions($user_cr->id);
     is $idv_model_ccr->submissions_left, 0, 'Expected submissions left is reset';
+};
+
+subtest 'is idv disallowed' => sub {
+    my $user_cr = BOM::User->create(
+        email    => 'cr+idv+disalloed@binary.com',
+        password => "hello",
+    );
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user_cr->id,
+    });
+    $user_cr->add_client($client_cr);
+
+    my $mocked_lc = Test::MockModule->new(ref($client_cr->landing_company));
+    my $short;
+
+    $mocked_lc->mock(
+        'short',
+        sub {
+            return $short;
+        });
+
+    my $mocked_cli = Test::MockModule->new(ref($client_cr));
+    my $manual_status;
+    my $onfido_status;
+
+    $mocked_cli->mock(
+        'get_manual_poi_status',
+        sub {
+            return $manual_status;
+        });
+
+    $mocked_cli->mock(
+        'get_onfido_status',
+        sub {
+            return $onfido_status;
+        });
+
+    $short = 'bvi';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Only svg is allowed to use IDV';
+
+    $client_cr->status->set('unwelcome', 'test', 'test');
+
+    $short = 'svg';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for unwelcome clients';
+
+    $client_cr->status->clear_unwelcome();
+
+    $client_cr->status->_build_all();
+
+    $client_cr->aml_risk_classification('high');
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for AML high risk clients';
+
+    $client_cr->aml_risk_classification('low');
+
+    $client_cr->status->set('age_verification', 'test', 'test');
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for age verified clients';
+
+    $client_cr->status->clear_age_verification();
+
+    $client_cr->status->set('allow_poi_resubmission', 'test', 'test');
+
+    $client_cr->status->_build_all();
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for poi resubmissions';
+
+    $client_cr->status->clear_allow_poi_resubmission();
+
+    $client_cr->status->set('allow_document_upload', 'test', 'test');
+
+    $client_cr->status->_build_all();
+
+    $manual_status = 'expired';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for manual poi status expired';
+
+    $manual_status = 'rejected';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for manual poi status rejected';
+
+    $manual_status = 'none';
+
+    $onfido_status = 'expired';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for onfido poi status expired';
+
+    $onfido_status = 'rejected';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'Disallowed for onfido poi status rejected';
+
+    $onfido_status = 'none';
+
+    ok !BOM::User::IdentityVerification::is_idv_disallowed($client_cr), 'IDV is allowed for this client';
+
+    $mocked_lc->unmock_all;
+    $mocked_cli->unmock_all;
 };
 
 done_testing();
