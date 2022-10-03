@@ -101,13 +101,15 @@ sub get_dx_financial_accounts {
 
     foreach my $updated_loginid (@$updated_loginids) {
 
+        $log->infof("Processing %s", $updated_loginid->[0]);
+
         try {
             my $user = BOM::User->new(loginid => $updated_loginid->[0]);
 
             my $main_acc;
 
             foreach my $loginid ($user->loginids) {
-                if ($loginid =~ /^CR|VRTC$/) {
+                if ($loginid =~ /CR|VRTC/) {
                     $main_acc = $loginid;
                     last;
                 }
@@ -133,9 +135,7 @@ sub get_dx_financial_accounts {
             );
         } catch ($e) {
             $log->errorf("An error has occured while processing %s : %s", $updated_loginid->[0], $e);
-            return;
         };
-
     }
 
     $log->infof("Done fetching and updating DerivX %s %s accounts.", $account_type, $market_type);
