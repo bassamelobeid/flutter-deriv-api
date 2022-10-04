@@ -2,6 +2,7 @@
 version: 2
 
 default: &default
+  resource_class: small
   docker:
   - image: regentmarkets/debian-ci:stable
     user: nobody
@@ -42,6 +43,17 @@ alias:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 
 jobs:
+  check_git_message:
+    resource_class: small
+    docker:
+      - image: alpine/git:2.36.2
+        entrypoint: /bin/sh
+    steps:
+    - checkout
+    - run:
+        command: export GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)"; if echo $GIT_COMMIT_DESC|grep -E "\[\s*\bci\b.*]"; then exit 0; else exit 1; fi
+        name: Check git message if it contains the keyword [ci]
+
   syntax_unit:
     <<: *default
     steps:
@@ -335,23 +347,42 @@ workflows:
   version: 2
   build-workflow:
     jobs:
+    - check_git_message
     - syntax_diff_unit:
+        requires:
+        - check_git_message
         context: perl
     - product_contract:
+        requires:
+        - syntax_diff_unit
         context: perl
     - validation:
+        requires:
+        - syntax_diff_unit
         context: perl
     - memory_test:
+        requires:
+        - syntax_diff_unit
         context: perl
     - pricing:
+        requires:
+        - syntax_diff_unit
         context: perl
     - product_others:
+        requires:
+        - syntax_diff_unit
         context: perl
     - benchmark_merlin_ovra:
+        requires:
+        - syntax_diff_unit
         context: perl
     - benchmark_SD:
+        requires:
+        - syntax_diff_unit
         context: perl
     - Pricing-Engine-Tests:
+        requires:
+        - syntax_diff_unit
         context: perl
   daily:
     jobs:
