@@ -1631,7 +1631,7 @@ subtest 'signup event' => sub {
 
 subtest 'wallet signup event' => sub {
     my $virtual_wallet_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code      => 'VRDW',
+        broker_code      => 'VRW',
         email            => 'virtual_wallet@binary.com',
         first_name       => '',
         last_name        => '',
