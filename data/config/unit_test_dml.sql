@@ -49,9 +49,9 @@ VRTJ
 JP
 CH
 VRCH
-DW
-VRDW
-AFF
+CRW
+VRW
+MFW
 \.
 
 --
