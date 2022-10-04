@@ -246,7 +246,7 @@ subtest 'create virtual wallet' => sub {
         test_schema('new_account_virtual', $res);
         test_schema('verify_email',        $res);
 
-        like($res->{new_account_virtual}->{client_id}, qr/^VRDW/, 'got VRDW client');
+        like($res->{new_account_virtual}->{client_id}, qr/^VRW/, 'got VRW client');
         is($res->{new_account_virtual}->{currency}, 'USD', 'got currency');
         cmp_ok($res->{new_account_virtual}->{balance}, '==', '10000', 'got balance');
 
