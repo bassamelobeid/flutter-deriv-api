@@ -96,7 +96,7 @@ categories:
           - USD
         broker_codes:
           virtual:
-            - VRDW 
+            - VRW 
 
   binary:
     broker_codes:
