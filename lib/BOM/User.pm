@@ -77,7 +77,7 @@ use constant {
     MT5_REAL_REGEX       => qr/^MT[R]?(?=\d+$)/,
     MT5_DEMO_REGEX       => qr/^MTD(?=\d+$)/,
     VIRTUAL_REGEX        => qr/^VR[TC|CH]/,
-    VIRTUAL_WALLET_REGEX => qr/^VRDW\d+/,
+    VIRTUAL_WALLET_REGEX => qr/^VRW\d+/,
     DXTRADE_REGEX        => qr/^DX[DR]\d{4,}/,
     DXTRADE_REAL_REGEX   => qr/^DXR(?=\d+$)/,
     DXTRADE_DEMO_REGEX   => qr/^DXD(?=\d+$)/,
@@ -1296,7 +1296,7 @@ Returns error code if a virtual client or a virtual wallet client already exists
 
 sub has_virtual_client {
     my ($self, $is_wallet) = @_;
-    my $vr_clients = first { $_->is_virtual } $self->clients;    # can be vrtc or vrdw
+    my $vr_clients = first { $_->is_virtual } $self->clients;    # can be vrtc or vrw
     my $loginid    = $vr_clients->{loginid};
     if ($loginid) {
         my $client = BOM::User::Client->get_client_instance($loginid);

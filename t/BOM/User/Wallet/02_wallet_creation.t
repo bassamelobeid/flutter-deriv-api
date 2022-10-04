@@ -20,7 +20,7 @@ my $user = BOM::User->create(
 );
 
 my $details = {
-    broker_code              => 'DW',
+    broker_code              => 'CRW',
     currency                 => 'USD',
     payment_method           => 'Skrill',
     salutation               => 'Ms',

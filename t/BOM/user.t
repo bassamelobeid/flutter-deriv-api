@@ -876,7 +876,7 @@ subtest 'test get_financial_assessment' => sub {
 
 subtest 'create_client' => sub {
     my $wallet_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRDW',
+        broker_code => 'VRW',
     });
     is $wallet_client_vr->is_wallet,    1,        'is wallet client instance';
     is $wallet_client_vr->is_affiliate, 0,        'is wallet client instance';
@@ -892,7 +892,7 @@ subtest 'create_client' => sub {
 
 my $wallet;
 subtest 'get_wallet_by_loginid' => sub {
-    $wallet = create_client('VRDW');
+    $wallet = create_client('VRW');
     $wallet->set_default_account('USD');
     $wallet->deposit_virtual_funds('10000');
 
@@ -964,7 +964,7 @@ subtest 'link_wallet' => sub {
     $args->{client_id} = $dxtrade_account->{account_id};
     ok $user->link_wallet_to_trading_account($args), 'can bind virtual wallet to a demo dxtrade account';
 
-    my $wallet_2 = create_client('VRDW');
+    my $wallet_2 = create_client('VRW');
     $wallet_2->set_default_account('USD');
     $user->add_client($wallet_2);
 
@@ -1017,7 +1017,7 @@ subtest 'link_wallet' => sub {
     };
 
     subtest 'get list of linked_accounts for a wallet' => sub {
-        my $new_wallet = create_client('VRDW');
+        my $new_wallet = create_client('VRW');
         $new_wallet->set_default_account('USD');
 
         $user->add_client($new_wallet);

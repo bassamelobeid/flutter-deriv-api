@@ -298,7 +298,7 @@ subtest 'get_siblings_information' => sub {
     $client_disabled->status->set('disabled', 'sysetm', 'test');
     my $disabled_no_currency = create_client($user, undef, broker_code => 'CR');
     $disabled_no_currency->status->set('disabled', 'sysetm', 'test');
-    my $wallet_virtual = create_client($user, 'LTC', broker_code => 'VRDW');
+    my $wallet_virtual = create_client($user, 'LTC', broker_code => 'VRW');
 
     my $all_accounts = {
         $client_real->loginid => {
