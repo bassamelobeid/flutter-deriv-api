@@ -62,6 +62,7 @@ my %EVENT_PROPERTIES = (
         qw(account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id brand mt5_server mt5_server_location mt5_server_region mt5_server_environment mt5_dashboard_url live_chat_url)
     ],
     mt5_password_changed        => [qw(mt5_loginid)],
+    mt5_change_color            => [qw(loginid color)],
     mt5_inactive_notification   => [qw(email name closure_date accounts)],
     mt5_inactive_account_closed => [qw(name title mt5_accounts live_chat_url)],
     document_upload             => [qw(document_type expiration_date file_name id upload_date uploaded_manually_by_staff)],
@@ -144,6 +145,8 @@ my %EVENT_PROPERTIES = (
     authenticated_with_scans                    => [qw(first_name email contact_url live_chat_url)],
     pa_transfer_confirm                         => [qw(loginid email pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
     age_verified                                => [qw(first_name loginid contact_url live_chat_url poi_url)],
+    poa_verification_warning                    => [qw(loginid poa_expiry_date)],
+    poa_verification_expired                    => [qw(loginid)],
     bonus_approve                               => [qw(full_name website contact_url live_chat_url amount currency tac_url)],
     bonus_reject                                => [qw(full_name website contact_url live_chat_url tac_url poi_url)],
     pa_withdraw_confirm         => [qw(email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
@@ -162,6 +165,7 @@ my @COMMON_EVENT_METHODS = qw(
     api_token_deleted
     account_reactivated
     mt5_password_changed
+    mt5_change_color
     app_registered
     app_updated
     app_deleted
@@ -182,6 +186,8 @@ my @COMMON_EVENT_METHODS = qw(
     reset_password_confirmation
     authenticated_with_scans
     age_verified
+    poa_verification_warning
+    poa_verification_expired
     bonus_approve
     bonus_reject
     request_edd_document_upload
@@ -1269,6 +1275,10 @@ It is triggered for each B<account_reactivated> event emitted, delivering the da
 
 It is triggered for each B<mt5_password_changed> event emitted, delivering it to Segment.
 
+=head2 mt5_change_color
+
+It is triggered for each B<mt5_change_color> event emitted, delivering it to Segment.
+
 =head2 app_registered
 
 It is triggered for each B<app_registered> event emitted, delivering it to Segment.
@@ -1403,6 +1413,14 @@ It is triggered for each B<poi_authentication_requested> event emitted, deliveri
 =head2 p2p_order_confirm_verify
 
 It is triggered for each B<p2p_order_confirm_verify> event emitted, delivering it to Segment.
+
+=head2 poa_verification_warning
+
+It is triggered for each B<poa_verification_warning> event emitted, delivering it to Segment.
+
+=head2 poa_verification_expired
+
+It is triggered for each B<poa_verification_expired> event emitted, delivering it to Segment.
 
 =cut
 

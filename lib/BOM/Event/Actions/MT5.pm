@@ -258,6 +258,37 @@ sub new_mt5_signup {
     return BOM::Event::Services::Track::new_mt5_signup(\%track_properties);
 }
 
+=head2 mt5_change_color
+
+Changes the color field for an mt5 client
+Takes the following parameters: 
+
+=over
+
+=item * C<args> - Hash which includes the loginid and the color values, both required.
+
+=back
+
+=cut
+
+async sub mt5_change_color {
+    my $args    = shift;
+    my $loginid = $args->{loginid};
+    my $color   = $args->{color};
+
+    die 'Loginid is required' unless $loginid;
+    die 'Color is required'   unless $color;
+
+    my $user_detail = await BOM::MT5::User::Async::get_user($loginid);
+    $user_detail->{color} = $color;
+    my $updated_user = await BOM::MT5::User::Async::update_user($user_detail);
+
+    die "Could not change client $loginid color to $color" if $updated_user->{color} != $color;
+    die $updated_user->{error}                             if $updated_user->{error};
+
+    return BOM::Event::Services::Track::mt5_change_color($args);
+}
+
 =head2 mt5_password_changed
 
 It is triggered for each B<mt5_password_changed> event emitted.
@@ -336,6 +367,50 @@ sub mt5_inactive_notification {
     foreach => [sort { $a <=> $b } keys $args->{accounts}->%*];
 
     return $futures->then(sub { Future->done(1) });
+}
+
+=head2 poa_verification_warning
+
+Sends email to the client with the passed loginid to remind that his prove of address is not verified
+and that his account will be limited in trading rights in poa_expiry_date
+
+=over 4
+
+=item * C<loginid> - Client loginid
+
+=item * C<poa_expiry_date> - The date that the client will be limited in trading rights in the form of YYYY-MM-DD
+
+=back
+
+=cut
+
+sub poa_verification_warning {
+    my $loginid         = shift;
+    my $poa_expiry_date = shift;
+
+    die 'Loginid is required'         unless $loginid;
+    die 'POA expiry date is required' unless $poa_expiry_date;
+    return BOM::Event::Services::Track::poa_verification_warning({loginid => $loginid, poa_expiry_date => $poa_expiry_date});
+}
+
+=head2 poa_verification_expired
+
+Sends email to the client with the passed loginid to inform that his poa verification is failed and
+he is limited in trading rights
+
+=over 4
+
+=item * C<loginid> - Client loginid
+
+=back
+
+=cut
+
+sub poa_verification_expired {
+    my $loginid = shift;
+
+    die 'Loginid is required' unless $loginid;
+    return BOM::Event::Services::Track::poa_verification_expired({loginid => $loginid});
 }
 
 =head2 mt5_inactive_account_closed

@@ -287,6 +287,26 @@ subtest 'mt5 track event' => sub {
             },
             'properties are set properly for mt5 password change event';
     };
+
+    subtest 'mt5 color change' => sub {
+        my $args = {};
+
+        my $action_handler = BOM::Event::Process->new(category => 'track')->actions->{mt5_change_color};
+
+        like exception { $action_handler->($args)->get; }, qr/Loginid is required/, 'correct exception when loginid is missing';
+
+        $args->{loginid} = 'MT90000';
+        $args->{color}   = 16711680;
+
+        $mocked_mt5->mock('update_user', sub { Future->done({login => "MT90000", color => 123}) });
+        like exception { $action_handler->($args)->get; }, qr/Could not change client MT90000 color to 16711680/,
+            'correct exception when failed to update color field';
+
+        $mocked_mt5->mock('update_user', sub { Future->done({login => "MT90000", color => 16711680}) });
+        my $result = $action_handler->($args)->get;
+        ok $result, 'Success mt5 color change result';
+
+    };
 };
 
 subtest 'sanctions' => sub {
