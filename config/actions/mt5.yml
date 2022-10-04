@@ -1,0 +1,4 @@
+mt5_jurisdiction_validation:
+  description: Contains rules to be applied on mt5 account to check if it is considered active
+  ruleset:
+    - mt5_account.account_poa_status_allowed
