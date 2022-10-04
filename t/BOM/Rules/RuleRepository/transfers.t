@@ -491,7 +491,7 @@ subtest 'rule transfers.wallet_accounts_not_allowed' => sub {
         password => 'TRADING PASS',
     );
     my $wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'DW',
+            broker_code => 'CRW',
             email       => 'wallet_not_allowed@test.deriv',
 
     });
@@ -649,7 +649,7 @@ subtest 'rule transfers.same_landing_companies' => sub {
     ok $rule_engine->apply_rules($rule_name, %$params), 'Landing companies are malta|maltainvest.';
 
     my $wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'DW',
+            broker_code => 'CRW',
             email       => 'wallet_not_allowed@test.deriv',
 
     });

@@ -175,7 +175,7 @@ subtest $rule_name => sub {
 
         lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Wallet with the same currency as the trading account is allowed';
 
-        my $wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'DW'});
+        my $wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW'});
         $wallet->payment_method('Skrill');
         $wallet->set_default_account('USD');
         $wallet->save;
