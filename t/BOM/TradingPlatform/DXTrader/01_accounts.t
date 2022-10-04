@@ -110,7 +110,8 @@ cmp_deeply(
             login         => re('^TEST\d+$'),
             account_code  => $account1->{account_id},
             market_type   => 'synthetic',
-        }
+        },
+        creation_stamp => re('\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d*'),
     },
     'user attributes of first account'
 );
@@ -171,7 +172,8 @@ cmp_deeply(
             client_domain => 'default',
             account_code  => $account2->{account_id},
             market_type   => 'synthetic',
-        }
+        },
+        creation_stamp => re('\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d*'),
     },
     'user attributes of second account'
 );

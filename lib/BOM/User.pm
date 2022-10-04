@@ -144,6 +144,18 @@ sub add_loginid {
     return $self;
 }
 
+sub update_loginid_status {
+    my ($self, $loginid, $status) = @_;
+    croak('need a loginid') unless $loginid;
+
+    $self->dbic->run(
+        ping => sub {
+            $_->do('select users.update_loginid_status(?, ?, ?)', undef, $loginid, $self->{id}, $status);
+        });
+    delete $self->{loginid_details};
+    return $self;
+}
+
 =head2 loginid_details
 
 Get all loginids linked to the user with all fields.
@@ -158,7 +170,7 @@ sub loginid_details {
     my $loginids = $self->dbic->run(
         fixup => sub {
             return $_->selectall_arrayref(
-                'select loginid, platform, account_type, currency, attributes, status from users.get_loginids(?)',
+                'select loginid, platform, account_type, currency, attributes, status, creation_stamp from users.get_loginids(?)',
                 {Slice => {}},
                 $self->{id});
         });
@@ -881,7 +893,7 @@ my $loginids = Reference list of all MT5 accounts associated with current client
 
 Filter the list of MT5 accounts to only get active accounts.
 
-Active account contains status of 'undef'.
+Active account contains status of 'undef, poa_pending, poa_rejected, and poa_failed'.
 Other possible status includes:
     'disabled',
     'migrated_single_email',
@@ -894,7 +906,12 @@ sub filter_active_ids {
     my ($self, $loginids) = @_;
     # Since there are no plans to add "active" to status of active account in DB, current active accounts
     # contain status of 'undef'.
-    return [grep { not defined($self->{loginid_details}{$_}{status}) } @$loginids];
+    my $filter_active = sub {
+        my $status = shift;
+        return 1 if not defined($status) or any { $status eq $_ } qw/poa_pending poa_rejected poa_failed/;
+        return 0;
+    };
+    return [grep { $filter_active->($self->{loginid_details}{$_}{status}) } @$loginids];
 }
 
 =head2 get_mt5_loginids

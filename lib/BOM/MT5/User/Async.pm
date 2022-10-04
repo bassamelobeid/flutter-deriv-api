@@ -99,11 +99,11 @@ sub _get_create_user_fields {
 
 sub _get_user_fields {
     # last array is fields we don't send back to api as of now
-    return (@common_fields, qw/login balance group/, qw/agent rights/);
+    return (@common_fields, qw/login balance group color/, qw/agent rights/);
 }
 
 sub _get_update_user_fields {
-    return (@common_fields, qw/login rights agent/);
+    return (@common_fields, qw/login rights agent color/);
 }
 
 =head2 _get_server_type_by_prefix

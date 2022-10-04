@@ -7018,6 +7018,60 @@ sub get_poi_status {
     return 'none';
 }
 
+=head2 get_poi_status_jurisdiction
+
+Resolves the POI status.
+Infers C<status> from onfido/idv latest check, or returns C<verified> if client already has poi.
+support query by jurisdiction type.
+
+Returns,
+    string for the current POI status, it can be: none, expired, pending, rejected, suspected, verified.
+
+=cut
+
+sub get_poi_status_jurisdiction {
+    my ($self, $jurisdiction) = @_;
+
+    my $manual = $self->get_manual_poi_status();
+    my $idv    = $self->get_idv_status();
+    my $onfido = $self->get_onfido_status();
+    my %poi    = (
+        manual => $manual,
+        idv    => $idv,
+        onfido => $onfido
+    );
+    my %status               = map { $_ => 1 } ($manual, $idv, $onfido);
+    my %allowed_verification = (
+        bvi     => ['idv', 'onfido'],
+        vanuatu => ['onfido']);
+
+    return 'verified' if any { $poi{$_} eq 'verified' } @{$allowed_verification{$jurisdiction}};
+
+    return 'pending' if $status{pending};
+
+    if ($self->fully_authenticated || $self->status->age_verification) {
+        # IDV does not have 2nd attempt
+        if ($onfido eq 'expired' || $manual eq 'expired') {
+            return 'suspected' if $onfido eq 'suspected';
+            return 'rejected'  if $onfido eq 'rejected';
+            return 'rejected'  if $manual eq 'rejected';
+            return 'expired';
+        }
+
+        return 'verified';
+    }
+
+    return 'suspected' if $status{suspected};
+
+    return 'rejected' if $self->status->poi_name_mismatch;
+
+    return 'rejected' if $status{rejected};
+
+    return 'expired' if $status{expired};
+
+    return 'none';
+}
+
 =head2 get_idv_status
 
 Gets the current IDV status of the client.
