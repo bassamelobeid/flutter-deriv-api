@@ -347,7 +347,11 @@ workflows:
   version: 2
   build-workflow:
     jobs:
-    - check_git_message
+    - check_git_message:
+        filters:
+          branches:
+            ignore:
+              - master
     - syntax_diff_unit:
         requires:
         - check_git_message
