@@ -908,7 +908,7 @@ subtest 'country=latam african, financial STP account' => sub {
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
 
-subtest 'restrict creating bvi account if poi status is not verified' => sub {
+subtest 'restrict creating bvi/vanuatu account if poi status is not verified' => sub {
 
     my $new_email  = 'br_poi_not_verified_' . $details{email};
     my $new_client = create_client('CR', undef, {residence => 'br'});
@@ -917,6 +917,7 @@ subtest 'restrict creating bvi account if poi status is not verified' => sub {
     $new_client->email($new_email);
     $new_client->tax_identification_number('1234');
     $new_client->tax_residence('br');
+    $new_client->place_of_birth('br');
     $new_client->account_opening_reason('speculative');
 
     my $user = BOM::User->create(
@@ -947,12 +948,14 @@ subtest 'restrict creating bvi account if poi status is not verified' => sub {
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
     $c->call_ok($method, $client_params)->has_error->error_code_is('AuthenticateAccount');
 
+    $client_params->{args}->{company} = 'vanuatu';
+    $c->call_ok($method, $client_params)->has_error->error_code_is('AuthenticateAccount');
     #my $result = $c->call_ok($method, $client_params)->has_no_error->result;
     #is $result->{account_type}, 'financial', 'account_type=financial';
     #is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std_usd'}, 'created in group real\p01_ts01\financial\bvi_std_usd';
 };
 
-subtest 'bvi if poi status is verified, poa failed' => sub {
+subtest 'bvi/vanuatu if poi status is verified, poa failed' => sub {
 
     my $new_email  = 'br_poi_verified_poa_failed' . $details{email};
     my $new_client = create_client('CR', undef, {residence => 'br'});
@@ -962,6 +965,7 @@ subtest 'bvi if poi status is verified, poa failed' => sub {
     $new_client->tax_identification_number('1234');
     $new_client->tax_residence('br');
     $new_client->account_opening_reason('speculative');
+    $new_client->place_of_birth('br');
 
     my $user = BOM::User->create(
         email    => $new_email,
@@ -998,6 +1002,262 @@ subtest 'bvi if poi status is verified, poa failed' => sub {
         });
     #verified in brasil and standard risk
     $c->call_ok($method, $client_params)->has_error->error_code_is('ExpiredDocumentsMT5');
+
+    $client_params->{args}->{company} = 'vanuatu';
+    $c->call_ok($method, $client_params)->has_error->error_code_is('ExpiredDocumentsMT5');
+
+};
+
+subtest 'bvi/vanuatu if poi status is verified, get_poa_status -> none' => sub {
+
+    my $new_email  = 'br_poi_verified_get_poa_status_none' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'br'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->tax_identification_number('1234');
+    $new_client->tax_residence('br');
+    $new_client->account_opening_reason('speculative');
+    $new_client->place_of_birth('br');
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'red1rectMeToBVI',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+    $new_client->save;
+
+    my $method        = 'mt5_new_account';
+    my $client_params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'br',
+            email            => $new_email,
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    #don't A book the account
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_bvi_financial(0);
+
+    my $user_client_mock = Test::MockModule->new('BOM::User::Client');
+    $user_client_mock->mock(
+        'get_poi_status_jurisdiction',
+        sub {
+            return 'verified';
+        });
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'none';
+        });
+    #verified in brasil and standard risk
+    my $expected_error_msg = 'Failed to create account due to failed Proof of Address with status: none';
+    $c->call_ok($method, $client_params)->has_error->error_message_is($expected_error_msg);
+
+    $client_params->{args}->{company} = 'vanuatu';
+    $c->call_ok($method, $client_params)->has_error->error_message_is($expected_error_msg);
+
+};
+
+subtest 'bvi/vanuatu if poi status is verified, get_poa_status -> pending' => sub {
+
+    my $new_email  = 'br_poi_verified_get_poa_status_pending' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'br'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->tax_identification_number('1234');
+    $new_client->tax_residence('br');
+    $new_client->account_opening_reason('speculative');
+    $new_client->place_of_birth('br');
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'red1rectMeToBVI',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+    $new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $new_client->save;
+
+    my $method        = 'mt5_new_account';
+    my $client_params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'br',
+            email            => $new_email,
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    #don't A book the account
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_bvi_financial(0);
+
+    my $user_client_mock = Test::MockModule->new('BOM::User::Client');
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'pending';
+        });
+
+    my $user_mock = Test::MockModule->new('BOM::User');
+    $user_mock->mock(
+        'update_loginid_status',
+        sub {
+            return 1;
+        });
+
+    my $result = $c->call_ok($method, $client_params)->has_no_error('account (bvi) created successfully with poa as pending')->result;
+    is $result->{account_type}, 'financial',                                              'account type is financial';
+    is $result->{login},        'MTR' . $accounts{'real\p01_ts01\financial\bvi_std_usd'}, 'created in group real\p01_ts01\financial\bvi_std_usd';
+
+    $client_params->{args}->{company} = 'vanuatu';
+    $result = $c->call_ok($method, $client_params)->has_no_error('account (vanuatu) created successfully with poa as pending')->result;
+    is $result->{account_type}, 'financial', 'account type is financial';
+    is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\vanuatu_std-hr_usd'},
+        'created in group real\p01_ts01\financial\vanuatu_std-hr_usd';
+
+};
+
+subtest 'bvi/vanuatu if poi status is verified, get_poa_status -> rejected' => sub {
+
+    my $new_email  = 'br_poi_verified_get_poa_status_rejected' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'br'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->tax_identification_number('1234');
+    $new_client->tax_residence('br');
+    $new_client->account_opening_reason('speculative');
+    $new_client->place_of_birth('br');
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'red1rectMeToBVI',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+    $new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $new_client->save;
+
+    my $method        = 'mt5_new_account';
+    my $client_params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'br',
+            email            => $new_email,
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    #don't A book the account
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_bvi_financial(0);
+
+    my $user_client_mock = Test::MockModule->new('BOM::User::Client');
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'rejected';
+        });
+
+    my $user_mock = Test::MockModule->new('BOM::User');
+    $user_mock->mock(
+        'update_loginid_status',
+        sub {
+            return 1;
+        });
+
+    my $result = $c->call_ok($method, $client_params)->has_no_error('account (bvi) created successfully with poa as pending')->result;
+    is $result->{account_type}, 'financial',                                              'account type is financial';
+    is $result->{login},        'MTR' . $accounts{'real\p01_ts01\financial\bvi_std_usd'}, 'created in group real\p01_ts01\financial\bvi_std_usd';
+
+    $client_params->{args}->{company} = 'vanuatu';
+    $result = $c->call_ok($method, $client_params)->has_no_error('account (vanuatu) created successfully with poa as pending')->result;
+    is $result->{account_type}, 'financial', 'account type is financial';
+    is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\vanuatu_std-hr_usd'},
+        'created in group real\p01_ts01\financial\vanuatu_std-hr_usd';
+
+};
+
+subtest 'bvi/vanuatu if poi status is verified, get_poa_status -> expired' => sub {
+
+    my $new_email  = 'br_poi_verified_get_poa_status_expired' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'br'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->tax_identification_number('1234');
+    $new_client->tax_residence('br');
+    $new_client->account_opening_reason('speculative');
+    $new_client->place_of_birth('br');
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'red1rectMeToBVI',
+    );
+    $user->update_trading_password($details{password}{main});
+    $user->add_client($new_client);
+    $new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $new_client->save;
+
+    my $method        = 'mt5_new_account';
+    my $client_params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'br',
+            email            => $new_email,
+            name             => $details{name},
+            mainPassword     => $details{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    #don't A book the account
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_bvi_financial(0);
+
+    my $user_client_mock = Test::MockModule->new('BOM::User::Client');
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'expired';
+        });
+
+    my $user_mock = Test::MockModule->new('BOM::User');
+    $user_mock->mock(
+        'update_loginid_status',
+        sub {
+            return 1;
+        });
+
+    my $result = $c->call_ok($method, $client_params)->has_no_error('account (bvi) created successfully with poa as pending')->result;
+    is $result->{account_type}, 'financial',                                              'account type is financial';
+    is $result->{login},        'MTR' . $accounts{'real\p01_ts01\financial\bvi_std_usd'}, 'created in group real\p01_ts01\financial\bvi_std_usd';
+
+    $client_params->{args}->{company} = 'vanuatu';
+    $result = $c->call_ok($method, $client_params)->has_no_error('account (vanuatu) created successfully with poa as pending')->result;
+    is $result->{account_type}, 'financial', 'account type is financial';
+    is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\vanuatu_std-hr_usd'},
+        'created in group real\p01_ts01\financial\vanuatu_std-hr_usd';
 
 };
 

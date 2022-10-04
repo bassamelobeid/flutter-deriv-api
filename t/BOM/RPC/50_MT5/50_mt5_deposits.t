@@ -779,6 +779,418 @@ subtest 'labuan deposit' => sub {
     $has_valid_documents = undef;
 };
 
+subtest 'bvi withdrawal' => sub {
+    my $new_email  = 'bvi_withdraw' . $DETAILS{email};
+    my $new_client = create_client('CR', undef, {residence => 'br'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->tax_identification_number('1234');
+    $new_client->tax_residence('br');
+    $new_client->account_opening_reason('speculative');
+    $new_client->place_of_birth('br');
+    $new_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'red1rectMeToBVI',
+    );
+    $user->update_trading_password($DETAILS{password}{main});
+    $user->add_client($new_client);
+    $new_client->save;
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'br',
+            email            => $new_email,
+            name             => $DETAILS{name},
+            mainPassword     => $DETAILS{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'bvi'
+        },
+    };
+
+    my $user_client_mock = Test::MockModule->new('BOM::User::Client');
+    $user_client_mock->mock(
+        'get_poi_status_jurisdiction',
+        sub {
+            return 'verified';
+        });
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'verified';
+        });
+
+    $c->call_ok($method, $params)->has_no_error('no error creating mt5 account');
+    is($c->result->{login},           'MTR' . $ACCOUNTS{'real\p01_ts01\financial\bvi_std_usd'}, 'New bvi account correct login id');
+    is($c->result->{balance},         0,                                                        'Balance is 0 upon creation');
+    is($c->result->{display_balance}, '0.00',                                                   'Display balance is "0.00" upon creation');
+
+    $manager_module->mock(
+        'get_group',
+        sub {
+            return Future->done({
+                'leverage' => 300,
+                'currency' => 'USD',
+                'group'    => 'real\p01_ts01\financial\bvi_std_usd',
+                'company'  => 'Deriv (SVG) LLC'
+            });
+        });
+    $manager_module->mock(
+        'get_user',
+        sub {
+            return Future->done({
+                email   => 'test.account@binary.com',
+                name    => 'Meta traderman',
+                balance => '1234',
+                country => 'Malta',
+                rights  => 482,
+                group   => 'real\p01_ts01\financial\bvi_std_usd',
+                'login' => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\bvi_std_usd'},
+            });
+        });
+
+    my $bom_user_mock     = Test::MockModule->new('BOM::User');
+    my $mock_logindetails = {
+        CR10001 => {
+            account_type   => undef,
+            attributes     => {},
+            creation_stamp => "2022-09-14 07:13:52.727067",
+            currency       => undef,
+            loginid        => "CR10001",
+            platform       => undef,
+            status         => undef,
+        },
+        MTR1001018 => {
+            account_type => "real",
+            attributes   => {
+                account_type    => "real",
+                currency        => "USD",
+                group           => "real\\p01_ts01\\financial\\bvi_std_usd",
+                landing_company => "svg",
+                leverage        => 300,
+                market_type     => "financial",
+            },
+            creation_stamp => "2018-02-10 07:13:52.94334",
+            currency       => "USD",
+            loginid        => "MTR1001018",
+            platform       => "mt5",
+            status         => 'poa_pending',
+        },
+        MTR1001019 => {
+            account_type => "real",
+            attributes   => {
+                account_type    => "real",
+                currency        => "USD",
+                group           => "real\\p01_ts01\\financial\\bvi_std_usd",
+                landing_company => "svg",
+                leverage        => 300,
+                market_type     => "financial",
+            },
+            creation_stamp => "2018-02-09 07:13:52.94334",
+            currency       => "USD",
+            loginid        => "MTR1001019",
+            platform       => "mt5",
+            status         => 'poa_pending',
+        },
+        MTR1001017 => {
+            account_type => "real",
+            attributes   => {
+                account_type    => "real",
+                currency        => "USD",
+                group           => "real\\p01_ts01\\financial\\vanuatu_std_usd",
+                landing_company => "svg",
+                leverage        => 300,
+                market_type     => "financial",
+            },
+            creation_stamp => "2018-02-01 07:13:52.94334",
+            currency       => "USD",
+            loginid        => "MTR1001017",
+            platform       => "mt5",
+            status         => 'poa_pending',
+        },
+    };
+    $bom_user_mock->mock(
+        'loginid_details',
+        sub {
+            $mock_logindetails;
+        });
+
+    $method = "mt5_withdrawal";
+    $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\bvi_std_usd'},
+            to_binary => $new_client->loginid,
+            amount    => 50,
+        },
+    };
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+    $has_valid_documents = 1;
+    my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('bvi'); });
+
+    # verified POA, false positive poa_failed, pass.
+    $mock_logindetails->{MTR1001018}->{status} = 'poa_failed';
+    $c->call_ok($method, $params)->has_no_error('withdrawal - verified POA, false positive poa_failed, pass');
+
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'pending';
+        });
+
+    $mock_logindetails->{MTR1001018}->{status} = 'poa_pending';
+    # pending POA, within grace period, pass.
+    $c->call_ok($method, $params)->has_no_error('withdrawal - pending POA, within grace period, pass');
+
+    # pending POA, last day grace period, pass.
+    $mock_logindetails->{MTR1001018}->{creation_stamp} = '2018-02-05 07:13:52.94334';
+    $c->call_ok($method, $params)->has_no_error('withdrawal - pending POA, last day grace period, pass');
+
+    # pending POA, post grace period, fail.
+    $mock_logindetails->{MTR1001018}->{creation_stamp} = '2018-02-04 07:13:52.94334';
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
+        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+
+    # pending POA, poa_failed, fail.
+    $mock_logindetails->{MTR1001018}->{creation_stamp} = '2018-02-10 07:13:52.94334';
+    $mock_logindetails->{MTR1001018}->{status}         = 'poa_failed';
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
+        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+
+    $mock_logindetails->{MTR1001018}->{status} = 'poa_pending';
+    # pending POA, mixed BVI and Vanuatu where vanuatu expired don't affect BVI within grace period, pass.
+    $c->call_ok($method, $params)
+        ->has_no_error('withdrawal - pending POA, mixed BVI and Vanuatu where vanuatu expired dont affect BVI within grace period, pass');
+
+    # pending POA, multiple MT5 within grace period, pass
+    $c->call_ok($method, $params)
+        ->has_no_error('withdrawal - pending POA, mixed BVI and Vanuatu where vanuatu expired dont affect BVI within grace period, pass');
+
+    # pending POA, selected MT5 within grace period but first account expired, fail
+    $mock_logindetails->{MTR1001019}->{creation_stamp} = '2018-02-04 07:13:52.94334';
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
+        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+
+    $manager_module->unmock('get_user', 'get_group');
+    $user_client_mock->unmock('get_poi_status_jurisdiction', 'get_poa_status');
+    $bom_user_mock->unmock('loginid_details');
+};
+
+subtest 'vanuatu withdrawal' => sub {
+    my $new_email  = 'vanuatu_withdraw' . $DETAILS{email};
+    my $new_client = create_client('CR', undef, {residence => 'br'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+    $new_client->tax_identification_number('1234');
+    $new_client->tax_residence('br');
+    $new_client->account_opening_reason('speculative');
+    $new_client->place_of_birth('br');
+    $new_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 'red1rectMeToBVI',
+    );
+    $user->update_trading_password($DETAILS{password}{main});
+    $user->add_client($new_client);
+    $new_client->save;
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        token => $token,
+        args  => {
+            account_type     => 'financial',
+            country          => 'br',
+            email            => $new_email,
+            name             => $DETAILS{name},
+            mainPassword     => $DETAILS{password}{main},
+            leverage         => 1000,
+            mt5_account_type => 'financial',
+            company          => 'vanuatu'
+        },
+    };
+
+    my $user_client_mock = Test::MockModule->new('BOM::User::Client');
+    $user_client_mock->mock(
+        'get_poi_status_jurisdiction',
+        sub {
+            return 'verified';
+        });
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'verified';
+        });
+
+    $c->call_ok($method, $params)->has_no_error('no error creating mt5 account');
+    is($c->result->{login},           'MTR' . $ACCOUNTS{'real\p01_ts01\financial\vanuatu_std-hr_usd'}, 'New vanuatu account correct login id');
+    is($c->result->{balance},         0,                                                               'Balance is 0 upon creation');
+    is($c->result->{display_balance}, '0.00',                                                          'Display balance is "0.00" upon creation');
+
+    $manager_module->mock(
+        'get_group',
+        sub {
+            return Future->done({
+                'leverage' => 300,
+                'currency' => 'USD',
+                'group'    => 'real\p01_ts01\financial\vanuatu_std-hr_usd',
+                'company'  => 'Deriv (SVG) LLC'
+            });
+        });
+    $manager_module->mock(
+        'get_user',
+        sub {
+            return Future->done({
+                email   => 'test.account@binary.com',
+                name    => 'Meta traderman',
+                balance => '1234',
+                country => 'Malta',
+                rights  => 482,
+                group   => 'real\p01_ts01\financial\vanuatu_std-hr_usd',
+                'login' => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\vanuatu_std-hr_usd'},
+            });
+        });
+
+    my $bom_user_mock     = Test::MockModule->new('BOM::User');
+    my $mock_logindetails = {
+        CR10002 => {
+            account_type   => undef,
+            attributes     => {},
+            creation_stamp => "2022-09-14 07:13:52.727067",
+            currency       => undef,
+            loginid        => "CR10002",
+            platform       => undef,
+            status         => undef,
+        },
+        MTR1001020 => {
+            account_type => "real",
+            attributes   => {
+                account_type    => "real",
+                currency        => "USD",
+                group           => "real\\p01_ts01\\financial\\vanuatu_std_usd",
+                landing_company => "svg",
+                leverage        => 300,
+                market_type     => "financial",
+            },
+            creation_stamp => "2018-02-13 07:13:52.94334",
+            currency       => "USD",
+            loginid        => "MTR1001020",
+            platform       => "mt5",
+            status         => 'poa_pending',
+        },
+        MTR1001019 => {
+            account_type => "real",
+            attributes   => {
+                account_type    => "real",
+                currency        => "USD",
+                group           => "real\\p01_ts01\\financial\\vanuatu_std_usd",
+                landing_company => "svg",
+                leverage        => 300,
+                market_type     => "financial",
+            },
+            creation_stamp => "2018-02-11 07:13:52.94334",
+            currency       => "USD",
+            loginid        => "MTR1001019",
+            platform       => "mt5",
+            status         => 'poa_pending',
+        },
+        MTR1001017 => {
+            account_type => "real",
+            attributes   => {
+                account_type    => "real",
+                currency        => "USD",
+                group           => "real\\p01_ts01\\financial\\bvi_std_usd",
+                landing_company => "svg",
+                leverage        => 300,
+                market_type     => "financial",
+            },
+            creation_stamp => "2018-02-01 07:13:52.94334",
+            currency       => "USD",
+            loginid        => "MTR1001017",
+            platform       => "mt5",
+            status         => 'poa_pending',
+        },
+    };
+    $bom_user_mock->mock(
+        'loginid_details',
+        sub {
+            $mock_logindetails;
+        });
+
+    $method = "mt5_withdrawal";
+    $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\vanuatu_std-hr_usd'},
+            to_binary => $new_client->loginid,
+            amount    => 50,
+        },
+    };
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+    $has_valid_documents = 1;
+    my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('vanuatu'); });
+
+    # verified POA, false positive poa_failed, pass.
+    $mock_logindetails->{MTR1001020}->{status} = 'poa_failed';
+    $c->call_ok($method, $params)->has_no_error('withdrawal - verified POA, false positive poa_failed, pass');
+
+    $user_client_mock->mock(
+        'get_poa_status',
+        sub {
+            return 'pending';
+        });
+
+    $mock_logindetails->{MTR1001020}->{status} = 'poa_pending';
+    # pending POA, within grace period, pass.
+    $c->call_ok($method, $params)->has_no_error('withdrawal - pending POA, within grace period, pass');
+
+    # pending POA, last day grace period, pass.
+    $mock_logindetails->{MTR1001020}->{creation_stamp} = '2018-02-10 07:13:52.94334';
+    $c->call_ok($method, $params)->has_no_error('withdrawal - pending POA, last day grace period, pass');
+
+    # pending POA, post grace period, fail.
+    $mock_logindetails->{MTR1001020}->{creation_stamp} = '2018-02-09 07:13:52.94334';
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
+        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+
+    # pending POA, poa_failed, fail.
+    $mock_logindetails->{MTR1001020}->{creation_stamp} = '2018-02-13 07:13:52.94334';
+    $mock_logindetails->{MTR1001020}->{status}         = 'poa_failed';
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
+        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+
+    $mock_logindetails->{MTR1001020}->{status} = 'poa_pending';
+    # pending POA, mixed BVI and Vanuatu where vanuatu expired don't affect BVI within grace period, pass.
+    $c->call_ok($method, $params)
+        ->has_no_error('withdrawal - pending POA, mixed BVI and Vanuatu where vanuatu expired dont affect BVI within grace period, pass');
+
+    # pending POA, multiple MT5 within grace period, pass
+    $c->call_ok($method, $params)
+        ->has_no_error('withdrawal - pending POA, mixed BVI and Vanuatu where vanuatu expired dont affect BVI within grace period, pass');
+
+    # pending POA, selected MT5 within grace period but first account expired, fail
+    $mock_logindetails->{MTR1001019}->{creation_stamp} = '2018-02-09 07:13:52.94334';
+    $c->call_ok($method, $params)->has_error('Withdrawal failed.')
+        ->error_message_like(qr/Proof of Address verification failed. Withdrawal operation suspended./);
+
+    $manager_module->unmock('get_user', 'get_group');
+    $user_client_mock->unmock('get_poi_status_jurisdiction', 'get_poa_status');
+    $bom_user_mock->unmock('loginid_details');
+};
+
 $documents_mock->unmock_all;
 
 # reset

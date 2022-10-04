@@ -1227,6 +1227,7 @@ rpc transfer_between_accounts => sub {
                     mt5_group    => $mt5_acc->{group},
                     currency     => $mt5_acc->{currency},
                     demo_account => ($mt5_acc->{account_type} eq 'demo') ? 1 : 0,
+                    status       => $mt5_acc->{status},
                     };
             }
         }

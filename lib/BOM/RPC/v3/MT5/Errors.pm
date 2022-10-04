@@ -109,6 +109,8 @@ my %category_message_mapping = do {
         ExpiredDocumentsMT5   => localize(
             'Your identity documents have expired. Visit your account profile to submit your valid documents and create your MT5 Financial STP account.'
         ),
+        NewAccountPOAFailed   => localize('Failed to create account due to failed Proof of Address with status: [_1]'),
+        POAVerificationFailed => localize('Proof of Address verification failed. Withdrawal operation suspended.'),
     );
 };
 

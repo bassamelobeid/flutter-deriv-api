@@ -670,7 +670,8 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
             currency     => 'USD',
             account_type => 'mt5',
             mt5_group    => 'real\p01_ts01\financial\svg_std_usd',
-            demo_account => 0
+            demo_account => 0,
+            status       => undef
         },
         {
             loginid      => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'},
@@ -678,7 +679,8 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
             currency     => 'USD',
             account_type => 'mt5',
             mt5_group    => 'real\p01_ts01\financial\labuan_stp_usd',
-            demo_account => 0
+            demo_account => 0,
+            status       => undef
         },
     );
     $params->{args} = {accounts => 'all'};
