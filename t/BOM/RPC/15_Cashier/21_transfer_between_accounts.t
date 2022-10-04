@@ -1102,10 +1102,10 @@ subtest 'Transfer between virtual accounts' => sub {
         broker_code => 'VRTC',
     });
     my $client_vdw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRDW',
+        broker_code => 'VRW',
     });
     my $client_vdw2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRDW',
+        broker_code => 'VRW',
     });
 
     my $user = BOM::User->create(

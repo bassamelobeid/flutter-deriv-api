@@ -86,7 +86,7 @@ $test_client_vr->email($DETAILS{email});
 $test_client_vr->set_default_account('USD');
 $test_client_vr->save;
 
-my $test_wallet_vr = create_client('VRDW');
+my $test_wallet_vr = create_client('VRW');
 $test_wallet_vr->email($DETAILS{email});
 $test_wallet_vr->set_default_account('USD');
 $test_wallet_vr->save;

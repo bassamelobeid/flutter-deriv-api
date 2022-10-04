@@ -315,7 +315,7 @@ subtest $method => sub {
     subtest 'authorize with linked wallet' => sub {
         # create wallet
         my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRDW',
+            broker_code => 'VRW',
             date_joined => '2021-06-06 23:59:59'
         });
         $vr_wallet->email($email);
@@ -385,28 +385,6 @@ subtest $method => sub {
                     'is_disabled'          => '0',
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
-                    'loginid'              => $vr_wallet->loginid,
-                    'account_type'         => 'wallet',
-                    'wallet'               => {
-                        linked_to => [{
-                                account_id => $test_client_vr->loginid,
-                                balance    => '10000.00',
-                                currency   => 'USD',
-                                platform   => 'deriv'
-                            }
-                        ],
-                        account_id     => $vr_wallet->loginid,
-                        payment_method => $vr_wallet->payment_method,
-                        balance        => '10000.00',
-                        currency       => 'USD'
-                    },
-                    'created_at' => '1623023999'
-                },
-                {
-                    'currency'             => 'USD',
-                    'is_disabled'          => '0',
-                    'is_virtual'           => '1',
-                    'landing_company_name' => 'virtual',
                     'loginid'              => $test_client_vr->loginid,
                     'account_type'         => 'trading',
                     'trading'              => {
@@ -421,6 +399,28 @@ subtest $method => sub {
                         balance    => '10000.00',
                         currency   => 'USD',
                         platform   => 'deriv'
+                    },
+                    'created_at' => '1623023999'
+                },
+                {
+                    'currency'             => 'USD',
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '1',
+                    'landing_company_name' => 'virtual',
+                    'loginid'              => $vr_wallet->loginid,
+                    'account_type'         => 'wallet',
+                    'wallet'               => {
+                        linked_to => [{
+                                account_id => $test_client_vr->loginid,
+                                balance    => '10000.00',
+                                currency   => 'USD',
+                                platform   => 'deriv'
+                            }
+                        ],
+                        account_id     => $vr_wallet->loginid,
+                        payment_method => $vr_wallet->payment_method,
+                        balance        => '10000.00',
+                        currency       => 'USD'
                     },
                     'created_at' => '1623023999'
                 },
@@ -462,7 +462,6 @@ subtest $method => sub {
         };
         cmp_deeply($c->call_ok($method, $params)->has_no_error->result,
             $expected_result, 'result is correct - upgradeable even if authenticated by a virtual token');
-
         # call authorize for a wallet account
         my $token_wallet = $oauth->store_access_token_only(1, $vr_wallet->loginid);
         $params->{token} = $token_wallet;
@@ -481,7 +480,7 @@ subtest $method => sub {
                 'currency'                 => 'USD',
                 'landing_company_name'     => 'virtual',
                 'is_virtual'               => '1',
-                'broker'                   => 'VRDW',
+                'broker'                   => 'VRW',
             },
             'currency'                      => 'USD',
             'local_currencies'              => {IDR => {fractional_digits => 2}},
@@ -512,28 +511,6 @@ subtest $method => sub {
                     'is_disabled'          => '0',
                     'is_virtual'           => '1',
                     'landing_company_name' => 'virtual',
-                    'loginid'              => $vr_wallet->loginid,
-                    'account_type'         => 'wallet',
-                    'wallet'               => {
-                        linked_to => [{
-                                account_id => $test_client_vr->loginid,
-                                balance    => '10000.00',
-                                currency   => 'USD',
-                                platform   => 'deriv'
-                            }
-                        ],
-                        account_id     => $vr_wallet->loginid,
-                        payment_method => $vr_wallet->payment_method,
-                        balance        => '10000.00',
-                        currency       => $vr_wallet->currency
-                    },
-                    'created_at' => '1623023999'
-                },
-                {
-                    'currency'             => 'USD',
-                    'is_disabled'          => '0',
-                    'is_virtual'           => '1',
-                    'landing_company_name' => 'virtual',
                     'loginid'              => $test_client_vr->loginid,
                     'account_type'         => 'trading',
                     'trading'              => {
@@ -548,6 +525,28 @@ subtest $method => sub {
                         balance    => '10000.00',
                         currency   => 'USD',
                         platform   => 'deriv'
+                    },
+                    'created_at' => '1623023999'
+                },
+                {
+                    'currency'             => 'USD',
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '1',
+                    'landing_company_name' => 'virtual',
+                    'loginid'              => $vr_wallet->loginid,
+                    'account_type'         => 'wallet',
+                    'wallet'               => {
+                        linked_to => [{
+                                account_id => $test_client_vr->loginid,
+                                balance    => '10000.00',
+                                currency   => 'USD',
+                                platform   => 'deriv'
+                            }
+                        ],
+                        account_id     => $vr_wallet->loginid,
+                        payment_method => $vr_wallet->payment_method,
+                        balance        => '10000.00',
+                        currency       => $vr_wallet->currency
                     },
                     'created_at' => '1623023999'
                 },

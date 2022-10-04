@@ -35,7 +35,7 @@ BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
 
 subtest 'virtual account' => sub {
 
-    subtest 'create VRTC, then add VRDW' => sub {
+    subtest 'create VRTC, then add VRW' => sub {
         my $email = 'trading@binary.com';
 
         my $params = {};
@@ -92,12 +92,12 @@ subtest 'virtual account' => sub {
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully after the country settings was changed');
         $new_loginid = $rpc_ct->result->{client_id};
-        ok $new_loginid =~ /^VRDW\d+/, 'new VRDW loginid';
+        ok $new_loginid =~ /^VRW\d+/, 'new VRW loginid';
 
         BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
     };
 
-    subtest 'create VRDW, then add VRTC' => sub {
+    subtest 'create VRW, then add VRTC' => sub {
         my $email = 'wallet@binary.com';
 
         my $params = {};
@@ -136,7 +136,7 @@ subtest 'virtual account' => sub {
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully');
         my $new_loginid = $rpc_ct->result->{client_id};
-        ok $new_loginid =~ /^VRDW\d+/, 'new VRDW loginid';
+        ok $new_loginid =~ /^VRW\d+/, 'new VRW loginid';
 
         $params->{args}->{type} = 'trading';
         delete $params->{args}->{verification_code};
@@ -200,7 +200,7 @@ subtest 'virtual account' => sub {
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('account created successfully');
         my $new_loginid = $rpc_ct->result->{client_id};
-        ok $new_loginid =~ /^VRDW\d+/, 'new VRDW loginid';
+        ok $new_loginid =~ /^VRW\d+/, 'new VRW loginid';
 
         subtest 'duplicate wallet' => sub {
             delete $params->{args}->{residence};
@@ -217,7 +217,7 @@ subtest 'virtual account' => sub {
 
 subtest 'virtual account topup' => sub {
     my $virtual_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRDW',
+        broker_code => 'VRW',
     });
     $virtual_wallet->email('test@binary.com');
     $virtual_wallet->set_default_account('USD');

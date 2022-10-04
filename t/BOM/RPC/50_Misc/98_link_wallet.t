@@ -38,7 +38,7 @@ $vr_client->email($email);
 $vr_client->save;
 
 my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRDW',
+    broker_code => 'VRW',
 });
 $vr_wallet->set_default_account('USD');
 $vr_wallet->email($email);
@@ -120,7 +120,7 @@ subtest 'link_wallet' => sub {
 
     subtest 'cannot rebind to another wallet' => sub {
         my $vr_wallet_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRDW',
+            broker_code => 'VRW',
         });
         $vr_wallet_2->set_default_account('USD');
         $user->add_client($vr_wallet_2);
@@ -147,7 +147,7 @@ subtest 'link_wallet' => sub {
         $user->add_client($vr_client);
 
         my $eur_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRDW',
+            broker_code => 'VRW',
         });
         $eur_wallet->set_default_account('EUR');
         $eur_wallet->email($email);
@@ -164,11 +164,11 @@ subtest 'link_wallet' => sub {
     };
 
     subtest 'invalid loginids' => sub {
-        $params->{args}->{wallet_id} = 'VRDW1001';
+        $params->{args}->{wallet_id} = 'VRW1001';
         is($c->tcall($method, $params)->{error}{code}, 'InvalidWalletAccount', 'correct error code for invalid wallet loginid');
 
         my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRDW',
+            broker_code => 'VRW',
         });
         $user->add_client($vr_wallet);
 

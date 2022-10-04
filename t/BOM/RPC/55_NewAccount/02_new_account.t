@@ -1285,7 +1285,7 @@ subtest $method => sub {
         $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return wallet landing company');
 
         my $new_loginid = $rpc_ct->result->{client_id};
-        ok $new_loginid =~ /^DW\d+/, 'new DW loginid';
+        ok $new_loginid =~ /^CRW\d+/, 'new CRW loginid';
         is $emit_data->{properties}->{type},    'wallet', 'type=wallet';
         is $emit_data->{properties}->{subtype}, 'real',   'subtype=real';
 

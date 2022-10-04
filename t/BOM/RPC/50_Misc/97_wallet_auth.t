@@ -25,7 +25,7 @@ my $def = def(%params);
 my $client   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 my $token_cr = BOM::Platform::Token::API->new->create_token($client->loginid, 'test');
 
-my $wallet       = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'DW'});
+my $wallet       = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW'});
 my $token_wallet = BOM::Platform::Token::API->new->create_token($wallet->loginid, 'test');
 
 subtest 'client and runtime checks' => sub {

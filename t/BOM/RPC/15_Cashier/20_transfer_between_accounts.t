@@ -1928,7 +1928,7 @@ subtest 'MT5' => sub {
 
     subtest 'transfer between virtual wallet and demo account is allowed' => sub {
         my $test_wallet_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRDW',
+            broker_code => 'VRW',
         });
         $test_wallet_vr->set_default_account('USD');
         $user->add_client($test_wallet_vr);
