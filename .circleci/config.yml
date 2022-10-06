@@ -51,9 +51,13 @@ jobs:
     steps:
     - checkout
     - run:
-        command: export GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)"; if echo $GIT_COMMIT_DESC|grep -E "\[\s*\bci\b.*]"; then exit 0; else exit 1; fi
+        command: |
+          if [[ -n "$CIRCLE_PULL_REQUEST" && $CIRCLE_BRANCH != "master" ]]; then
+            export GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)"; if echo $GIT_COMMIT_DESC|grep -E "\[\s*\bci\b.*]"; then exit 0; else echo "need tag [ci] to trigger tests"; exit 1; fi
+          else
+            echo "This is not a pull request, Branch: $CIRCLE_BRANCH"
+          fi
         name: Check git message if it contains the keyword [ci]
-
   syntax_unit:
     <<: *default
     steps:
