@@ -194,7 +194,11 @@ version: 2
 workflows:
   build-workflow:
     jobs:
-    - check_git_message
+    - check_git_message:
+      filters:
+        branches:
+          ignore:
+            - master
     - syntax_diff:
         requires:
         - check_git_message
