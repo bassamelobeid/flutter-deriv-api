@@ -45,12 +45,23 @@ alias:
   image: regentmarkets/debian-ci:stable
   user: nobody
 default: &6
+  resource_class: small
   docker:
   - *debian-ci
   - *redis6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-rpc
 jobs:
+  check_git_message:
+    resource_class: small
+    docker:
+      - image: alpine/git:2.36.2
+        entrypoint: /bin/sh
+    steps:
+    - checkout
+    - run:
+        command: export GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)"; if echo $GIT_COMMIT_DESC | grep -E "\[\s*\bci\b.*]"; then exit 0; else exit 1; fi
+        name: Check git message if it contains the keyword [ci]
   schema:
     <<: *6
     steps:
@@ -83,7 +94,20 @@ jobs:
         name: unit tests
     - store_test_results:
         path: /var/tmp/test-output
-  schemas_syntax_diff:
+  syntax_diff:
+      <<: *6
+      steps:
+      - *1
+      - *2
+      - run:
+          <<: *5
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make syntax_diff
+          name: Code structure and syntax
+      - store_test_results:
+          path: /var/tmp/test-output
+  schemas_unit:
     <<: *6
     steps:
     - *1
@@ -97,9 +121,6 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make json_schemas
         name: Run json_schemas tests
-    - run:
-        command: make syntax_diff
-        name: Code structure and syntax
     - run:
         command: make unit
         name: unit tests
@@ -173,11 +194,22 @@ version: 2
 workflows:
   build-workflow:
     jobs:
+    - check_git_message
+    - syntax_diff:
+        requires:
+        - check_git_message
+        context: perl
+    - schemas_unit:
+        requires:
+        - syntax_diff
+        context: perl
     - core1:
+        requires:
+        - syntax_diff
         context: perl
     - core2:
-        context: perl
-    - schemas_syntax_diff:
+        requires:
+        - syntax_diff
         context: perl
   daily:
     jobs:
