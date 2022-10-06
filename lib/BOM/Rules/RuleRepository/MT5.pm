@@ -34,8 +34,11 @@ rule 'mt5_account.account_poa_status_allowed' => {
         my %loginid_details  = %{$args->{loginid_details}};
         my $error_message    = 'POAVerificationFailed';
         my $mt5_jurisdiction = $new_mt5_jurisdiction;
-        ($mt5_jurisdiction) = $loginid_details{$mt5_id}->{attributes}->{group} =~ m/(bvi|vanuatu)/g
-            if defined $mt5_id and exists $loginid_details{$mt5_id};
+
+        if (defined $mt5_id and exists $loginid_details{$mt5_id}) {
+            return 1 unless defined $loginid_details{$mt5_id}->{attributes}->{group};
+            ($mt5_jurisdiction) = $loginid_details{$mt5_id}->{attributes}->{group} =~ m/(bvi|vanuatu)/g;
+        }
 
         return 1 if $client->get_poa_status() eq 'verified';
 
