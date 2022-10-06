@@ -1,13 +1,6 @@
-#!/usr/bin/env perl
-use strict;
-use warnings;
-
 use Test::Most;
-use Test::Exception;
-use Test::Warnings qw(warnings);
-
+use Test::Warnings    qw(warnings);
 use Log::Any::Adapter qw(TAP);
-
 use Time::HiRes;
 use YAML::XS;
 use RedisDB;
@@ -124,6 +117,14 @@ subtest 'sleeping to next interval' => sub {
             );
         }
     }
+};
+
+subtest 'parameters_for_contract_id' => sub {
+    throws_ok {
+        $queue->parameters_for_contract_id(1, 'test')->get
+    }
+    qr/Contract parameters/, 'Contract parameters not found';
+    ok $queue->run->isa('IO::Async::Future'), 'BOM::Pricing::Queue run';
 };
 
 done_testing;
