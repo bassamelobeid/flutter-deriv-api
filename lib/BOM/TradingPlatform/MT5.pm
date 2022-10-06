@@ -322,7 +322,10 @@ Returns a list of available trading accounts for a given user.
 sub available_accounts {
     my ($self, $args) = @_;
 
-    die 'CountryCodeRequired' unless $args->{country_code};
+    unless ($args->{country_code}) {
+        $log->errorf("CountryCodeRequired Exception > Client ID: %s, Binary User ID: %s", $self->client->loginid, $self->client->binary_user_id);
+        die 'CountryCodeRequired';
+    }
 
     # If brand is not provided, it will default to deriv.
     my $brand = $args->{brand} // Brands->new;
