@@ -55,12 +55,18 @@ jobs:
   check_git_message:
     resource_class: small
     docker:
-      - image: alpine/git:2.36.2
-        entrypoint: /bin/sh
+    - image: alpine/git:2.36.2
+      entrypoint: /bin/sh
     steps:
     - checkout
     - run:
-        command: export GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)"; if echo $GIT_COMMIT_DESC | grep -E "\[\s*\bci\b.*]"; then exit 0; else exit 1; fi
+        command: |
+          if [[ -n "$CIRCLE_PULL_REQUEST" && $CIRCLE_BRANCH != "master" ]]; then
+            export GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)";
+            if echo $GIT_COMMIT_DESC | grep -E "\[\s*\bci\b.*]"; then exit 0; else exit 1; fi
+          else
+            exit 0
+          fi
         name: Check git message if it contains the keyword [ci]
   schema:
     <<: *6
@@ -95,18 +101,18 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   syntax_diff:
-      <<: *6
-      steps:
-      - *1
-      - *2
-      - run:
-          <<: *5
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make syntax_diff
-          name: Code structure and syntax
-      - store_test_results:
-          path: /var/tmp/test-output
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make syntax_diff
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
   schemas_unit:
     <<: *6
     steps:
@@ -194,11 +200,7 @@ version: 2
 workflows:
   build-workflow:
     jobs:
-    - check_git_message:
-      filters:
-        branches:
-          ignore:
-            - master
+    - check_git_message
     - syntax_diff:
         requires:
         - check_git_message
