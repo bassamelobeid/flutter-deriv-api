@@ -23,31 +23,41 @@ my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 
 my $clientID           = uc(request()->param('login_id') // '');
 my $action             = request()->param('untrusted_action');
-my $removed            = request()->param('removed');
 my $client_status_type = request()->param('untrusted_action_type');
-my $reason             = request()->param('untrusted_reason') // '';
-my $additional_info    = request()->param('additional_info');
-my $p2p_approved       = request()->param('p2p_approved');
+my $reason             = request()->param('untrusted_reason');
+my $operation          = request()->param('status_op');
+my $status_checked     = request()->param('status_checked') // [];
+$status_checked = [$status_checked] unless ref($status_checked);
+my $additional_info = request()->param('additional_info');
+my $p2p_approved    = request()->param('p2p_approved');
 
 if (my $error_message = write_operation_error()) {
     print_error_and_exit($error_message);
 }
 
-# check invalid reason
-print_error_and_exit("Reason is not specified.") if ($reason =~ /SELECT A REASON/);
+$clientID || code_exit_BO('Login ID is mandatory.', "UNTRUSTED/DISABLE CLIENT", redirect());
 
-# check invalid action
-print_error_and_exit("The action to perform is not specified.") if (!$client_status_type || $client_status_type =~ /SELECT AN ACTION/);
+# check invalid Operation
+if (!$operation || $operation =~ /SELECT AN OPERATION/) {
+    print_error_and_exit("Operation is not specified.");
+}
 
-my $file_path = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/";
+# check invalid Action
+if (!($#{$status_checked} + 1) && (!$client_status_type || $client_status_type =~ /SELECT AN ACTION/)) {
+    print_error_and_exit("Action is not specified.");
+}
+
+# check invalid Reason
+if ($client_status_type && $client_status_type !~ /SELECT AN ACTION/ && $reason =~ /SELECT A REASON/) {
+    print_error_and_exit("Reason is not specified.");
+}
+
 my $file_name = "$broker.$client_status_type";
 
 # append the input text if additional infomation exist
 $reason = ($additional_info) ? $reason . ' - ' . $additional_info : $reason;
-
 local $\ = "\n";
 my ($printline, @invalid_logins);
-
 $clientID || code_exit_BO('Login ID is mandatory.', "UNTRUSTED/DISABLE CLIENT", redirect());
 
 Bar("UNTRUSTED/DISABLE CLIENT");
@@ -67,7 +77,9 @@ foreach my $login_id (split(/\s+/, $clientID)) {
     );
 
     # DISABLED/CLOSED CLIENT LOGIN
-    if ($client_status_type eq 'disabledlogins') {
+    if ($client_status_type =~ /SELECT AN ACTION/) {
+        #Skip (it's just a check)
+    } elsif ($client_status_type eq 'disabledlogins') {
         if ($action eq 'insert_data') {
             #should check portfolio
             if (@{get_open_contracts($client)}) {
@@ -121,7 +133,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         }
     }
 
-    # print success/fail message
+    $printline //= '';
     print $printline;
 
     if ($printline =~ /SUCCESS/) {
@@ -148,6 +160,16 @@ foreach my $login_id (split(/\s+/, $clientID)) {
     }
 
     p2p_advertiser_approval_check($client, request()->params);
+
+    my $status_op_summary = status_op_processor(
+        $client,
+        {
+            status_op             => $operation,
+            status_checked        => $status_checked,
+            untrusted_action_type => $client_status_type
+        });
+
+    print $status_op_summary if $status_op_summary;
 }
 
 if (scalar @invalid_logins > 0) {
@@ -194,9 +216,8 @@ sub redirect {
 }
 
 sub execute_set_status {
-    my $params = shift;
-    my $client = $params->{client};
-
+    my $params           = shift;
+    my $client           = $params->{client};
     my $encoded_login_id = link_for_clientloginid_edit($client->loginid);
     my $encoded_reason   = encode_entities($params->{reason});
     my $encoded_clerk    = encode_entities($params->{clerk});
@@ -272,4 +293,3 @@ sub notify_submission_of_documents_for_pending_payout {
                 date  => $due_date->date_ddmmyyyy,
             }});
 }
-

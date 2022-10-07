@@ -1,15 +1,64 @@
 [%# if redirect from client details page %]
-[% IF show_notification %]
-<div class="grd-margin-bottom" style="color: blue;">
-    This line has already exist in <b>[% encoded_broker %].[% selected_untrusted_action %]</b> file.
-    <br />
-    To change the reason, kindly select from the dropdown selection list below and click 'Go'.
-    <br />
-</div>
-[% END %]
+    [% IF show_notification %]
+        <div class="grd-margin-bottom" style="color: blue;">
+            This line has already exist in <b>[% encoded_broker %].[% selected_untrusted_action %]</b> file.
+            <br />
+            To change the reason, kindly select from the dropdown selection list below and click 'Go'.
+            <br />
+        </div>
+    [% END %]
 
 <form action="[% edit_url %]" method=post>
-    <table>
+    [% IF untrusted_statuses %]
+        <table>
+                <thead>
+                    <tr>
+                        <th>&nbsp;</th>
+                        <th>Status</th>
+                        <th>Reason/Info</th>
+                        <th>Staff</th>
+                        <th>Sync</th>
+                        <th>Last modified date</th>
+                    </tr>   
+                </thead>
+                <tbody>
+                [% FOREACH status IN untrusted_statuses %]
+                    <tr>
+                        <td align="center"> 
+                            <input type="checkbox" name="status_checked" value="[% status.code %]" />
+                        </td>
+                        <td align="left">
+                            <strong style="font-size: 1.3rem !important; color:[% status.warning %]">
+                                [% status.section %]
+                            </strong>
+                        </td>
+                        <td>
+                            <b>
+                                [% status.reason %]
+                            </b>
+                        </td>
+                        <td>
+                            <b>
+                                [% status.clerk %]
+                            </b>
+                        </td>
+                        <td>
+                            <b>
+                                [% status.siblings_summary %]
+                            </b>
+                        </td>
+                        <td>
+                            <b>
+                                [% status.last_modified_date %]
+                            </b>
+                        </td>
+                    </tr>
+                [% END %]
+            </tbody>
+         </table>
+         <br>
+    [% END %]
+<table>
     [% IF show_login %]
         <tr>
             <td><label>Login ID:</label></td>
@@ -52,12 +101,27 @@
                 <input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)" data-lpignore="true" />
             </td>
         </tr>
+        <tr>
+        <td><label>OPERATION:</label></td>
+        <td>
+            <select id="status_op" name="status_op">
+                    <option  value=''>------------------- SELECT AN OPERATION -------------------</option>
+                    [% IF untrusted_statuses  %]
+                        <option  value='remove'> Remove From Current LoginId</option>
+                        <option  value='remove_siblings'> Remove From Current/Siblings Real Accounts </option>
+                        <option  value='remove_accounts'> Remove From Current/Siblings (Included Virtuals) </option>
+                    [% END %] 
+                    <option  value='add'> Apply On Current LoginId</option>
+                    <option  value='sync'> Apply On Current/Siblings Real Accounts </option>
+                    <option  value='sync_accounts'> Apply On Current/Siblings (Included Virtuals) </option>
+            </select>
+            <input type="hidden" name="broker" value="[% broker %]">
+            <input type="hidden" name="untrusted_action" value="insert_data">
+            <input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
+             <input type="submit" class="btn btn--primary" value="Save">
+        </td>
+     </tr>
     </table>
-
-    <input type="hidden" name="broker" value="[% broker %]">
-    <input type="hidden" name="untrusted_action" value="insert_data">
-    <input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
-    <input type="submit" class="btn btn--primary" value="Save">
 </form>
 
 [% IF show_untrusted %]

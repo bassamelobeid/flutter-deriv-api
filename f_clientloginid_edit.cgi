@@ -1292,9 +1292,6 @@ if (@client_comments) {
 }
 
 Bar("$loginid STATUSES", {nav_link => "STATUSES"});
-if (my $statuses = build_client_warning_message($loginid)) {
-    print $statuses;
-}
 
 p2p_advertiser_approval_check($client, request()->params);
 
@@ -1302,16 +1299,42 @@ p2p_advertiser_approval_check($client, request()->params);
 my $p2p_advertiser = $client->_p2p_advertiser_cached;
 my $p2p_approved   = $p2p_advertiser ? $p2p_advertiser->{is_approved} : '';
 
+my @statuses;
+###############################################
+## UNTRUSTED SECTION
+###############################################
+my %client_statuses =
+    map { $_ => $client->status->$_ } @{$client->status->all};
+for my $type (get_untrusted_types()->@*) {
+    my $code             = $type->{code};
+    my $siblings_summary = siblings_status_summary($client, $code) =~ s/(<span>|<\/span>)//gr;
+    if (my $status = $client->status->$code) {
+        delete $client_statuses{$type->{code}};
+        push(
+            @statuses,
+            {
+                clerk              => $status->{staff_name},
+                reason             => $status->{reason},
+                warning            => 'var(--color-red)',
+                code               => $code,
+                section            => $type->{comments},
+                siblings_summary   => $siblings_summary,
+                last_modified_date => $status->{last_modified_date} // ''
+            });
+    }
+}
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
     {
-        edit_url     => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons      => get_untrusted_client_reason(),
-        broker       => $broker,
-        clientid     => $loginid,
-        actions      => [sort { $a->{comments} cmp $b->{comments} } @{get_untrusted_types()}],
-        actions_hash => get_untrusted_types_hashref(),
-        p2p_approved => $p2p_approved,
+        edit_url           => request()->url_for('backoffice/untrusted_client_edit.cgi'),
+        reasons            => get_untrusted_client_reason(),
+        untrusted_statuses => [@statuses],
+        broker             => $broker,
+        clientid           => $loginid,
+        actions            => [sort { $a->{comments} cmp $b->{comments} } @{get_untrusted_types()}],
+        actions_hash       => get_untrusted_types_hashref(),
+        p2p_approved       => $p2p_approved,
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 # Show Self-Exclusion link

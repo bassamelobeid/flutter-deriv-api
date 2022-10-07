@@ -892,14 +892,7 @@ sub build_client_warning_message {
             . '<th>Sync</th>'
             . '<th>Last modified date</th>'
             . '</tr></thead><tbody>';
-        my $trusted_section;
         foreach my $output_rows (@output) {
-            if (   $output_rows->{'editlink'} =~ /trusted_action_type=(\w+)/
-                or $output_rows->{'removelink'} =~ /trusted_action_type=(\w+)/)
-            {
-                $trusted_section = $1;
-            }
-
             $output .= '<tr>'
                 . '<td align="center">'
                 . '<input type="checkbox" name="status_checked" value="'
@@ -953,22 +946,6 @@ sub build_client_warning_message {
         $output .= '<input type="hidden" name="p2p_approved" value="' . $p2p_approved . '">';
         $output .= '</div>';
         $output .= '</form>';
-
-        $output .= qq~
-        <script type="text/javascript" language="javascript">
-            function append_dccode(linkobj)
-            {
-                var dcc_staff_id = 'dcc_staff_'+linkobj.id;
-                var dcc_id       = 'dcc_'+linkobj.id;
-
-                var dccstaff = \$('#'+dcc_staff_id).val();
-                var dcc      = \$('#'+dcc_id).val();
-
-                linkobj.href.replace(/\&dcstaff.+/,'');
-                linkobj.href = linkobj.href + '&dccstaff=' + dccstaff + '&dcc=' + dcc;
-            }
-        </script>
-        ~;
     }
 
     return $output;
@@ -1009,10 +986,31 @@ Returns a summary to print out or undef if nothing happened.
 =cut
 
 sub status_op_processor {
+
     my ($client, $input) = @_;
     my $status_op      = $input->{status_op};
     my $status_checked = $input->{status_checked} // [];
     $status_checked = [$status_checked] unless ref($status_checked);
+    my $client_status_type = $input->{untrusted_action_type};
+    my $status_map         = {
+        disabledlogins            => 'disabled',
+        lockcashierlogins         => 'cashier_locked',
+        unwelcomelogins           => 'no_withdrawal_or_trading',
+        nowithdrawalortrading     => 'no_withdrawal_or_trading',
+        lockwithdrawal            => 'withdrawal_locked',
+        lockmt5withdrawal         => 'mt5_withdrawal_locked',
+        duplicateaccount          => 'duplicate_account',
+        allowdocumentupload       => 'allow_document_upload',
+        internalclient            => 'internal_client',
+        notrading                 => 'no_trading',
+        sharedpaymentmethod       => 'shared_payment_method',
+        cryptoautorejectdisabled  => 'crypto_auto_reject_disabled',
+        cryptoautoapprovedisabled => 'crypto_auto_approve_disabled',
+    };
+
+    if ($client_status_type && $client_status_type !~ /SELECT AN ACTION/) {
+        push(@$status_checked, $client_status_type);
+    }
 
     return undef unless $status_op;
     return undef unless scalar $status_checked->@*;
@@ -1047,6 +1045,7 @@ sub status_op_processor {
                         "<div class='notify'><b>SUCCESS :</b><&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from siblings:<b>$siblings</b></div>";
                 }
             } elsif ($status_op eq 'sync' or $status_op eq 'sync_accounts') {
+                $status = $status_map->{$status} ? $status_map->{$status} : $status;
                 my $updated_client_loginids =
                     $client->copy_status_to_siblings($status, BOM::Backoffice::Auth0::get_staffname(), $status_op eq 'sync_accounts');
                 my $siblings = join ', ', $updated_client_loginids->@*;
