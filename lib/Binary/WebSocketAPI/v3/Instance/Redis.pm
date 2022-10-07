@@ -23,7 +23,7 @@ use Scalar::Util qw(looks_like_number);
 use List::Util   qw(any);
 use Log::Any     qw($log);
 
-=head2 redis_feed_master
+=head2 redis_feed_replica
 
 redis for feed data
 
@@ -60,9 +60,9 @@ redis for exchange rates pub/sub
 # Add entries here if a new Redis instance is available, this will then be accessible
 # via a function of the same name.
 my $servers = {
-    redis_feed_master => {
+    redis_feed_replica => {
         config => '/etc/rmg/redis-feed.yml',
-        user   => 'master-read',
+        user   => 'replica-read',
     },
     redis_transaction => {
         config => '/etc/rmg/redis-transaction.yml',

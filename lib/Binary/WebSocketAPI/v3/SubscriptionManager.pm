@@ -14,7 +14,7 @@ use Scalar::Util               qw(refaddr weaken);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_dec);
 use Binary::WebSocketAPI::v3::Subscription;
 use Binary::WebSocketAPI::v3::Instance::Redis qw(
-    redis_feed_master
+    redis_feed_replica
     redis_pricer
     redis_pricer_subscription
     redis_transaction
@@ -93,7 +93,7 @@ return redis instance
 =cut
 
 my $config = {
-    redis_feed_master_manager         => sub { return redis_feed_master() },
+    redis_feed_master_manager         => sub { return redis_feed_replica() },
     redis_pricer_manager              => sub { return redis_pricer() },
     redis_pricer_subscription_manager => sub { return redis_pricer_subscription() },
     redis_transaction_manager         => sub { return redis_transaction() },
