@@ -66,6 +66,7 @@ my $config = {
         InvalidNonBinaryPrice          => 'Contract price cannot be zero.',
         InvalidStake                   => 'Invalid stake/payout.',
         InvalidExpiry                  => 'Invalid input (duration or date_expiry) for this contract type ([_1]).',
+        InvalidAccumulatorGrowthRate   => 'GrowthRate value [_1] is not in this allowable list: [_2].',
         MarketIsClosed                 => 'This market is presently closed.',
         MarketIsClosedTryVolatility    => 'This market is presently closed. Try out the Synthetic Indices which are always open.',
         MarketNotOpen                  => 'The market must be open at the start time.',

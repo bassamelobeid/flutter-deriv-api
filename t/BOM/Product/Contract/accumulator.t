@@ -7,9 +7,9 @@ use utf8;
 use Test::More;
 use Test::Exception;
 use Test::Fatal;
+use JSON::MaybeXS                                qw(decode_json);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
-use BOM::Config::Runtime;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Finance::Contract::Longcode   qw(shortcode_to_parameters);
@@ -26,6 +26,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 
+my $symbol_config = decode_json(
+    '{"max_payout": { "USD": 10000, "AUD": 10000, "GBP": 10000, "EUR": 10000 , "BTC": 0.15, 
+      "ETH": 2.5, "LTC": 45, "BUSD": 10000, "DAI": 10000, "EURS": 10000, "IDK": 138950, "PAX": 10000, "TUSD": 10000, 
+      "USB": 10000, "USDC": 10000, "USDK": 10000, "UST": 10000, "eUSDT": 10000, "tUSDT": 10000},
+      "max_duration_coefficient": 10, "growth_start_step": 1,
+      "growth_rate": [0.01, 0.02, 0.03, 0.04, 0.05] }'
+);
+
 my $args = {
     bet_type          => 'ACCU',
     underlying        => $symbol,
@@ -36,8 +44,8 @@ my $args = {
     growth_rate       => 0.01,
     currency          => 'USD',
     growth_frequency  => 1,
-    growth_start_step => 1,
     tick_size_barrier => 0.02,
+    symbol_config     => $symbol_config,
 };
 
 subtest 'config' => sub {
@@ -48,18 +56,37 @@ subtest 'config' => sub {
     is $c->code,          'ACCU',        'code ACCU';
     is $c->category_code, 'accumulator', 'category accumulator';
     ok $c->is_path_dependent, 'path dependent';
-    is $c->tick_count,      927,  'tick count is 927';
-    is $c->ticks_to_expiry, 927,  'ticks to expiry is 927';
-    is $c->max_duration,    1000, 'max duration is 1000';
-    is $c->ask_price,       1,    'ask_price is 1';
+    is $c->tick_count,        927,   'tick count is 927';
+    is $c->ticks_to_expiry,   927,   'ticks to expiry is 927';
+    is $c->max_duration,      1000,  'max duration is 1000';
+    is $c->ask_price,         1,     'ask_price is 1';
+    is $c->growth_start_step, 1,     'growth_start_step is 1';
+    is $c->max_payout,        10000, 'max_payout is 10000';
     ok !$c->pricing_engine,      'pricing_engine is undef';
     ok !$c->pricing_engine_name, 'pricing_engine_name is undef';
     ok !$c->payout,              'payout is not defined';
     ok !$c->take_profit,         'take_profit is not defined';
 };
 
+subtest 'growth rate validation' => sub {
+    $args->{growth_rate} = undef;
+    my $error = exception { produce_contract($args) };
+
+    is $error->message_to_client->[0], 'Missing required contract parameters ([_1]).', 'growth_rate should be defined';
+    is $error->message_to_client->[1], 'growth_rate';
+
+    $args->{growth_rate} = 0.09;
+    $error = exception { produce_contract($args) };
+
+    is $error->message_to_client->[0], 'GrowthRate value [_1] is not in this allowable list: [_2].', 'growth_rate should be in the range';
+    is $error->message_to_client->[1], 0.09;
+    is_deeply($error->message_to_client->[2], [0.01, 0.02, 0.03, 0.04, 0.05]);
+
+};
+
 subtest 'have duration in user input' => sub {
-    $args->{duration} = '10t';
+    $args->{duration}    = '10t';
+    $args->{growth_rate} = 0.01;
 
     my $error = exception { produce_contract($args) };
     is $error->message_to_client->[0], 'Invalid input (duration or date_expiry) for this contract type ([_1]).',

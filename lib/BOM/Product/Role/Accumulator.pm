@@ -10,7 +10,7 @@ use Format::Util::Numbers qw(financialrounding);
 use Scalar::Util::Numeric qw(isint);
 use YAML::XS              qw(LoadFile);
 use POSIX                 qw(floor ceil);
-use List::Util            qw(min max);
+use List::Util            qw(any min max);
 use BOM::Config::Quants   qw(maximum_stake_limit);
 use JSON::MaybeXS         qw(decode_json);
 
@@ -34,6 +34,15 @@ sub BUILD {
         BOM::Product::Exception->throw(
             error_code => 'MissingRequiredContractParams',
             error_args => ['growth_rate'],
+            details    => {field => 'basis'},
+        );
+    }
+
+    my $allowable_growth_rate = $self->symbol_config->{growth_rate};
+    unless (any { $_ == $self->growth_rate } @$allowable_growth_rate) {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidAccumulatorGrowthRate',
+            error_args => [$self->growth_rate, $self->symbol_config->{growth_rate}],
             details    => {field => 'basis'},
         );
     }
@@ -64,17 +73,56 @@ has growth_frequency => (
     default => 1,
 );
 
+=head2 symbol_config
+
+Symbol config set in BackOffice
+
+=cut
+
+has symbol_config => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 _build_symbol_config 
+
+Initilazing symbol config
+
+=cut
+
+sub _build_symbol_config {
+    my $self = shift;
+
+    my $lc          = (defined $self->landing_company and $self->landing_company ne 'virtual') ? $self->landing_company : 'common';
+    my $symbol      = $self->underlying->symbol;
+    my $all_records = decode_json($self->app_config->get("quants.accumulator.symbol_config.$lc.$symbol"));
+    my $key         = _closest_key_to_value($all_records, $self->date_start->epoch);
+
+    return $all_records->{$key};
+}
+
 =head2 growth_start_step
 
 the number of tick after which payout starts to grow
 
 =cut
 
-#TODO : read value from BO
 has growth_start_step => (
-    is      => 'ro',
-    default => 1,
+    is         => 'ro',
+    lazy_build => 1,
 );
+
+=head2 _build_growth_start_step
+
+fetching the config for growth_start_step
+
+=cut
+
+sub _build_growth_start_step {
+    my $self = shift;
+
+    return $self->symbol_config->{growth_start_step};
+}
 
 =head2 take_profit
 
@@ -159,9 +207,7 @@ initializing max_duration
 sub _build_max_duration {
     my $self = shift;
 
-    my $all_records = decode_json $self->app_config->quants->accumulator->max_duration_coefficient;
-    my $key         = _closest_key_to_value($all_records, $self->date_start->epoch);
-    my $coefficient = $all_records->{$key};
+    my $coefficient = $self->symbol_config->{max_duration_coefficient};
     return floor($coefficient / $config->{loss_probability}{"growthRate_" . $self->growth_rate});
 }
 
@@ -193,10 +239,7 @@ initializing max_payout
 sub _build_max_payout {
     my $self = shift;
 
-    my $all_records = decode_json $self->app_config->quants->accumulator->max_payout;
-    my $key         = _closest_key_to_value($all_records, $self->date_start->epoch);
-    #TODO : only records for fiat are stored, values for cryptocurrencies should calculated based on USD
-    return $all_records->{$key}{$self->currency};
+    return $self->symbol_config->{max_payout}->{$self->currency};
 }
 
 =head2 _build_tick_count
@@ -488,7 +531,6 @@ sub _validate_maximum_stake {
     my $self = shift;
 
     my $default_max_stake = maximum_stake_limit($self->currency, $self->landing_company, $self->underlying->market->name, $self->category->code);
-    #TODO : add BO tool for setting max stake
     if ($self->_user_input_stake > $default_max_stake) {
         return {
             message           => 'maximum stake limit',
