@@ -701,30 +701,6 @@ sub is_experimental_currency {
     return any { $currency eq $_ } app_config()->system->suspend->experimental_currencies->@*;
 }
 
-=head2 get_crypto_withdrawal_min_usd
-
-To get the minimum withdrawal amount for currency.
-
-Takes the following argument(s)
-
-=over 4
-
-=item * C<$currency> - Currency code
-
-=back
-
-Returns the C<crypto_withdrawal_min_usd> for the currency.
-
-=cut
-
-sub get_crypto_withdrawal_min_usd {
-    my $currency = shift;
-
-    my $minimum_withdrawal_config = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.withdrawal.min_usd'));
-
-    return $minimum_withdrawal_config->{$currency};
-}
-
 =head2 get_crypto_payout_auto_update_global_status
 
 Get the global status of crypto auto approve or auto reject from backoffice dynamic settings
