@@ -3115,4 +3115,42 @@ rpc get_available_accounts_to_transfer => sub {
             }]};
 };
 
+rpc "unsubscribe_email",
+    auth => [],    # unauthenticated
+    sub {
+    my $params = shift;
+
+    my $checksum       = $params->{args}->{checksum};
+    my $binary_user_id = $params->{args}->{binary_user_id};
+
+    my $user;
+    try {
+        $user = BOM::User->new(id => $binary_user_id);
+    } catch {
+        log_exception();
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidUser',
+                message_to_client => localize('Your User ID appears to be invalid.')});
+    }
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidUserid',
+            message_to_client => localize('Your User ID appears to be invalid.')}) unless $user;
+
+    my $generated_checksum = BOM::User::Utility::generate_email_unsubscribe_checksum($binary_user_id, $user->email);
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidChecksum',
+            message_to_client => localize('The security hash used in your request appears to be invalid.')}) unless $generated_checksum eq $checksum;
+
+    # Remove email consents for the user on request
+    $user->update_email_fields(email_consent => 0);
+
+    return {
+        email_unsubscribe_status => $user->email_consent ? 0 : 1,
+        binary_user_id           => $binary_user_id,
+    };
+
+    };
+
 1;
