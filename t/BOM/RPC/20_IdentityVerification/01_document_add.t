@@ -47,7 +47,11 @@ subtest 'identity_verification_document_add' => sub {
     my $params = {
         token    => $token_cr,
         language => 'EN',
-    };
+        args     => {
+            issuing_country => 'ng',
+            document_type   => 'type',
+            document_number => 'number',
+        }};
 
     $c->call_ok('identity_verification_document_add', $params)
         ->has_no_system_error->has_error->error_code_is('NoAuthNeeded',
@@ -62,17 +66,9 @@ subtest 'identity_verification_document_add' => sub {
     $mock_idv_model->unmock('submissions_left');
 
     $params->{args} = {
-        issuing_country => 'xxx',
-        document_type   => '',
-        document_number => '',
-    };
-    $c->call_ok('identity_verification_document_add', $params)
-        ->has_no_system_error->has_error->error_code_is('NotSupportedCountry', 'Country code is not supported.');
-
-    $params->{args} = {
         issuing_country => 'ng',
         document_type   => 'xxx',
-        document_number => '',
+        document_number => 'number',
     };
     $c->call_ok('identity_verification_document_add', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidDocumentType', 'Document type does not exist.');
@@ -159,6 +155,7 @@ subtest 'identity_verification_document_add' => sub {
                 status => 'failed',
             },
             {status => 'rejected'}]);
+
     $c->call_ok('identity_verification_document_add', $params)
         ->has_no_system_error->has_error->error_code_is('ClaimedDocument', "client is not allowed to use this document since it's already claimed");
 

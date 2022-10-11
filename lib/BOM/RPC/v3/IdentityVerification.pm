@@ -4,7 +4,9 @@ use strict;
 use warnings;
 
 use List::Util qw( any );
+use Syntax::Keyword::Try;
 
+use BOM::Rules::Engine;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Utility;
@@ -45,72 +47,29 @@ rpc identity_verification_document_add => sub {
     my $document_type   = lc($args->{document_type}   // '');
     my $document_number = $args->{document_number} // '';
 
-    # If issuing_country is not provided, then we will default to client's citizen or residence
-    $issuing_country = $client->citizen || $client->residence unless $issuing_country;
+    my $rule_engine = BOM::Rules::Engine->new(
+        client          => $client,
+        stop_on_failure => 1
+    );
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'NoAuthNeeded',
-            message_to_client => localize("You don't need to authenticate your account at this time.")}
-    ) unless $client->status->allow_document_upload;
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'NoSubmissionLeft',
-            message_to_client => localize("You've reached the maximum number of attempts for verifying your proof of identity with this method.")}
-    ) if BOM::User::IdentityVerification::submissions_left($client) == 0;
-
-    my $countries = Brands::Countries->new;
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'NotSupportedCountry',
-            message_to_client => localize("The country you selected isn't supported.")}) unless $countries->is_idv_supported($issuing_country);
-
-    my $configs = $countries->get_idv_config($issuing_country);
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidDocumentType',
-            message_to_client => localize("The document type you entered isn't supported for the country you selected.")}
-    ) unless exists $configs->{document_types}->{$document_type};
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'IdentityVerificationDisabled',
-            message_to_client => localize("This verification method is currently unavailable.")})
-        unless BOM::Platform::Utility::has_idv(
-        country  => $issuing_country,
-        provider => $configs->{provider});
-
-    my $regex = $configs->{document_types}->{$document_type}->{format};
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidDocumentNumber',
-            message_to_client => localize("It looks like the document number you entered is invalid. Please check and try again.")}
-    ) if $document_number !~ m/$regex/;
+    try {
+        $rule_engine->verify_action(
+            'idv_add_document',
+            loginid         => $client->loginid,
+            issuing_country => $issuing_country,
+            document_type   => $document_type,
+            document_number => $document_number
+        );
+    } catch ($err) {
+        return BOM::RPC::v3::Utility::rule_engine_error($err);
+    };
 
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'AlreadyAgeVerified',
-            message_to_client => localize("Your age already been verified."),
-        }) if $client->status->age_verification;
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'IdentityVerificationDisallowed',
-            message_to_client => localize("This method of verification is not allowed. Please try another method.")}
-    ) if BOM::User::IdentityVerification::is_idv_disallowed($client);
-
-    my $claimed_documents = $idv_model->get_claimed_documents({
-            issuing_country => $issuing_country,
-            number          => $document_number,
-            type            => $document_type
-        }) // [];
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'ClaimedDocument',
-            message_to_client => localize(
-                "This document number was already submitted for a different account. It seems you have an account with us that doesn't need further verification. Please contact us via live chat if you need help."
-            )}) if any { $_->{status} eq 'verified' or $_->{status} eq 'pending' } @$claimed_documents;
-
     $idv_model->add_document({
         issuing_country => $issuing_country,
-        number          => $document_number,
-        type            => $document_type
+        type            => $document_type,
+        number          => $document_number
     });
 
     BOM::Platform::Event::Emitter::emit('identity_verification_requested', {loginid => $client->loginid});
