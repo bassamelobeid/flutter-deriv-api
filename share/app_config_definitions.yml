@@ -751,19 +751,61 @@ quants:
                   default: 0.008
                   global: 1  
     accumulator:
-      description: "accumulator variables"
+      description: "Accumulator variables"
       isa: section
       contains:
-        max_payout:
-          description: "Maximum payout for accumulator contracts"
-          isa: json_string
-          default: '{ "1655022046": {"USD": 10000, "AUD": 10000, "GBP": 10000, "EUR": 10000}}'
-          global: 1
-        max_duration_coefficient:
-          description: "coefficient use in calculating max duration(coefficient / growth_rate)"
-          isa: json_string
-          default: '{ "1655022046": 10}'
-          global: 1
+        symbol_config:
+          description: "Config per symbol"
+          isa: section
+          contains:
+            common: &accumulator_lc
+              description: "Landing company type"
+              isa: section
+              contains:
+                R_10: &accumulator_symbols
+                  isa: json_string
+                  default: '{ "1655022046": { "max_payout": { "USD": 10000, "AUD": 10000, "GBP": 10000, "EUR": 10000 , "BTC": 0.15, 
+                  "ETH": 2.5, "LTC": 45, "BUSD": 10000, "DAI": 10000, "EURS": 10000, "IDK": 138950, "PAX": 10000, "TUSD": 10000, 
+                  "USB": 10000, "USDC": 10000, "USDK": 10000, "UST": 10000, "eUSDT": 10000, "tUSDT": 10000},
+                  "max_duration_coefficient": 10, "growth_start_step": 1,
+                  "growth_rate": [0.01, 0.02, 0.03, 0.04, 0.05] } }'
+                  global: 1
+                R_25: *accumulator_symbols
+                R_50: *accumulator_symbols
+                R_75: *accumulator_symbols
+                R_100: *accumulator_symbols
+                1HZ10V: *accumulator_symbols
+                1HZ25V: *accumulator_symbols
+                1HZ50V: *accumulator_symbols
+                1HZ75V: *accumulator_symbols
+                1HZ100V: *accumulator_symbols
+                JD10: *accumulator_symbols
+                JD25: *accumulator_symbols
+                JD50: *accumulator_symbols
+                JD75: *accumulator_symbols
+                JD100: *accumulator_symbols
+                CRASH300N: *accumulator_symbols
+                CRASH500: *accumulator_symbols
+                CRASH1000: *accumulator_symbols
+                BOOM300N: *accumulator_symbols
+                BOOM500: *accumulator_symbols
+                BOOM1000: *accumulator_symbols
+            svg: *accumulator_lc
+            virtual: *accumulator_lc
+        affiliate_commission:
+          description: "Affiliate commission for accumulator contracts"
+          isa: section
+          contains:
+            financial:
+              description: "Financial contracts accumulator affiliate commission"
+              isa: Num
+              default: 0.04
+              global: 1
+            non_financial:
+              description: "Non-financial accumulator contracts affiliate commission"
+              isa: Num
+              default: 0.04
+              global: 1
     multiplier_affiliate_commission:
       description: "Affiliate commission for multiplier contracts"
       isa: section
@@ -1249,7 +1291,7 @@ system:
           default: "/feed"
           global: 1
     browser:
-        desciption: "Configuration checks for the client web browser"
+        description: "Configuration checks for the client web browser"
         isa: section
         contains:
             minimum_supported_chrome_version:
