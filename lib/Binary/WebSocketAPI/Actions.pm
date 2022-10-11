@@ -247,6 +247,12 @@ sub actions_config {
                 msg_group    => 'account',
             }
         ],
+        [
+            'unsubscribe_email',
+            {
+                msg_group => 'account',
+            }
+        ],
 
         # authenticated calls
         [
