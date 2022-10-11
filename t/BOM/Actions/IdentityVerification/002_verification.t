@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 use Test::MockModule;
 use Test::Deep;
+use Test::Fatal;
 
 use Date::Utility;
 use Future::Exception;
@@ -375,6 +376,828 @@ subtest 'verify_process - apply side effects' => sub {
     ok $client->status->age_verification, 'age verified correctly';
     ok $client->fully_authenticated(),    'client is fully authenticated';
     is $client->get_authentication('IDV')->{status}, 'pass', 'PoA with IDV';
+
+};
+
+subtest 'testing failed status' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_failed@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf'
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1988-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'failed',
+                    messages => ['NAME_MISMATCH']})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'failed',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["NAME_MISMATCH"]',
+            'id'                       => '5',
+            'document_type'            => 'cpf'
+        },
+        'Document has failed status'
+    );
+
+};
+
+subtest 'testing pass status' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_pass@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf'
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1988-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'pass',
+                    messages => [],
+                    report   => {full_name => "John Doe"}})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'refuted',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["UNDERAGE", "DOB_MISMATCH"]',
+            'id'                       => '6',
+            'document_type'            => 'cpf'
+        },
+        'Document has refuted from pass -  status'
+    );
+};
+
+subtest 'testing the exceptions verify_identity' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+    my $email             = 'test_exceptions_id@binary.com';
+    my $user              = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => 'CR0',
+    };
+    my $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+
+    ok $error=~ /Could not initiate client for loginid: CR0/, 'expected exception caught bad login id here';
+
+    $args = {
+        loginid => $client->loginid,
+    };
+
+    $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+    ok $error=~ /No standby document found, IDV request skipped./, 'expected exception caught no documents added';
+
+    my $bom_config_mock = Test::MockModule->new('BOM::Config::Services');
+    my $idv_microservice;
+
+    $bom_config_mock->mock(
+        'is_enabled',
+        sub {
+            return $idv_microservice;
+        });
+
+    $idv_microservice = 0;
+
+    $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+    ok $error=~ /Could not trigger IDV, microservice is not enabled./, 'expected exception caught no idv';
+
+    $idv_microservice = 1;
+
+    my $idv_model_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+
+    my $submissions_left;
+
+    $idv_model_mock->mock(
+        'submissions_left',
+        sub {
+            return $submissions_left;
+        });
+
+    $submissions_left = 0;
+
+    $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+
+    ok $error=~ /No submissions left, IDV request has ignored for loginid: CR10005/, 'expected exception caught no submissions';
+
+    $idv_model_mock->unmock_all();
+
+};
+
+subtest 'testing the exceptions verify_process' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_processed};
+    my $email             = 'test_exceptions@binary.com';
+    my $user              = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => 'CR0',
+    };
+    my $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+
+    ok $error=~ /Could not initiate client for loginid: CR0/, 'expected exception caught';
+
+    $args = {
+        loginid => $client->loginid,
+    };
+
+    $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+    ok $error=~ /No standby document found, IDV request skipped./, 'expected exception caught no documents added';
+
+    my $bom_config_mock = Test::MockModule->new('BOM::Config::Services');
+    my $idv_microservice;
+
+    $bom_config_mock->mock(
+        'is_enabled',
+        sub {
+            return $idv_microservice;
+        });
+
+    $idv_microservice = 0;
+
+    $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+    ok $error=~ /Could not trigger IDV, microservice is not enabled./, 'expected exception caught no idv';
+
+    $idv_microservice = 1;
+
+    my $idv_model_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+
+    my $submissions_left;
+
+    $idv_model_mock->mock(
+        'submissions_left',
+        sub {
+            return $submissions_left;
+        });
+
+    $submissions_left = 0;
+
+    $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+
+    ok $error=~ /No submissions left, IDV request has ignored for loginid: CR10006/, 'expected exception caught no submissions';
+
+    $idv_model_mock->unmock_all();
+
+};
+
+subtest 'testing refuted status' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_refuted@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf'
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1988-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'refuted',
+                    messages => [],
+                    report   => {birthdate => "1988-02-12"}})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'refuted',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '[]',
+            'id'                       => '7',
+            'document_type'            => 'cpf'
+        },
+        'Document has refuted status'
+    );
+};
+
+subtest 'testing unavailable status' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_unavailable@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf'
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1988-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'unavailable',
+                    messages => [],
+                    report   => {birthdate => "1988-02-12"}})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'failed',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '[]',
+            'id'                       => '8',
+            'document_type'            => 'cpf'
+        },
+        'Document has unavailable status'
+    );
+};
+
+subtest 'testing pass status and DOB' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_pass+DOB@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf'
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1988-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'pass',
+                    messages => [],
+                    report   => {birthdate => "1988-02-12"}})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'refuted',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["NAME_MISMATCH"]',
+            'id'                       => '9',
+            'document_type'            => 'cpf'
+        },
+        'Document has refuted from pass -  status name mismatch'
+    );
+
+};
+
+subtest 'testing pass status and underage' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_pass+underage@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf'
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('2005-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'pass',
+                    messages => [],
+                    report   => {
+                        full_name => "John Doe",
+                        birthdate => "2005-02-12"
+                    }})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'refuted',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["UNDERAGE"]',
+            'id'                       => '10',
+            'document_type'            => 'cpf'
+        },
+        'Document has refuted from pass -  status underage'
+    );
+
+};
+
+subtest 'testing refuted status and expired' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_refuted+expired@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf',
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('2005-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'refuted',
+                    messages => ['EXPIRED'],
+                    report   => {
+                        full_name   => "John Doe",
+                        birthdate   => "2005-02-12",
+                        expiry_date => "2009-05-12",
+                    }})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'refuted',
+            'document_expiration_date' => '2009-05-12 00:00:00',
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["EXPIRED"]',
+            'id'                       => '11',
+            'document_type'            => 'cpf'
+        },
+        'Document has refuted from pass -  status underage'
+    );
+
+};
+
+subtest 'testing refuted status and dob mismatch' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_refuted+dobmismatch@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf',
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1996-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'refuted',
+                    messages => ['DOB_MISMATCH'],
+                    report   => {
+                        full_name => "John Doe",
+                        birthdate => "1997-03-12",
+                    }})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'refuted',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["DOB_MISMATCH"]',
+            'id'                       => '12',
+            'document_type'            => 'cpf'
+        },
+        'Document has refuted from pass -  status underage'
+    );
+
+};
+
+subtest 'testing refuted status and name mismatch' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_refuted+namemismatch@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf',
+    });
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('1996-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'refuted',
+                    messages => ['NAME_MISMATCH'],
+                    report   => {
+                        full_name => "John Mary Doe",
+
+                    }})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'refuted',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["NAME_MISMATCH"]',
+            'id'                       => '13',
+            'document_type'            => 'cpf'
+        },
+        'Document has refuted from pass -  status underage'
+    );
 
 };
 
