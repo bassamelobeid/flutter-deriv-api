@@ -20,6 +20,7 @@ use Email::Stuffer;
 use YAML::XS qw(LoadFile);
 use WebService::SendBird;
 use JSON::MaybeUTF8 qw(:v1);
+use Digest::SHA     qw(hmac_sha1_hex);
 use List::Util      qw(any);
 
 use BOM::Platform::Context qw(request);
@@ -438,6 +439,22 @@ sub p2p_rate_rounding {
     $rate =~ s/(?<=\.\d{2})(\d*?)0*$/$1/ if $args{display};
 
     return $rate;
+}
+
+=head2 generate_email_unsubscribe_checksum
+
+It creates the checksum for unsubscibe request.
+Returns a hmac_sha1_hex hash or empty string for the given loginid and email.
+
+=cut
+
+sub generate_email_unsubscribe_checksum {
+    my $loginid = shift;
+    my $email   = shift;
+    return q{} unless $loginid || $email;
+    my $user_info = $loginid . $email;
+    my $hash_key  = BOM::Config::third_party()->{customerio}->{hash_key};
+    return hmac_sha1_hex($user_info, $hash_key) // q{};
 }
 
 1;
