@@ -24,7 +24,6 @@ my $user = BOM::User->create(
 $user->add_client($client_cr);
 
 subtest 'rule idv.check_expiration_date' => sub {
-    my $check_id  = 'test';
     my $rule_name = 'idv.check_expiration_date';
 
     my $rule_engine = BOM::Rules::Engine->new();
@@ -32,8 +31,8 @@ subtest 'rule idv.check_expiration_date' => sub {
     like exception { $rule_engine->apply_rules($rule_name); },               qr/IDV result is missing/, 'Missing result in passed args';
     like exception { $rule_engine->apply_rules($rule_name, result => {}); }, qr/document is missing/,   'Missing document in passed args';
 
-    my $mock_country_config = Test::MockModule->new('Brands::Countries');
     my $is_lifetime_valid   = 0;
+    my $mock_country_config = Test::MockModule->new('Brands::Countries');
     $mock_country_config->mock(
         get_idv_config => sub {
             return {document_types => {test => {lifetime_valid => $is_lifetime_valid}}};
@@ -106,9 +105,9 @@ subtest 'rule idv.check_expiration_date' => sub {
                 error_code => $error,
                 rule       => $rule_name
                 },
-                "Broken rules: $error";
+                "Violated rule: $error";
         } else {
-            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are honored';
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are passed';
         }
     }
 };
@@ -212,16 +211,15 @@ subtest 'rule idv.check_name_comparison' => sub {
                 error_code => $error,
                 rule       => $rule_name
                 },
-                "Broken rules: $error";
+                "Violated rule: $error";
         } else {
             $rule_engine->apply_rules($rule_name, %args);
-            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are honored';
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are passed';
         }
     }
 };
 
 subtest 'rule idv.check_age_legality' => sub {
-    my $check_id  = 'test';
     my $rule_name = 'idv.check_age_legality';
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
@@ -229,8 +227,6 @@ subtest 'rule idv.check_age_legality' => sub {
 
     like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, result => []); }, qr/IDV result is missing/,
         'Missing result in passed args';
-
-    $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
 
     my $mock_country_config = Test::MockModule->new('Brands::Countries');
     $mock_country_config->mock(
@@ -329,9 +325,9 @@ subtest 'rule idv.check_age_legality' => sub {
                 error_code => $error,
                 rule       => $rule_name
                 },
-                "Broken rules: $error";
+                "Violated rule: $error";
         } else {
-            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are honored';
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are passed';
         }
     }
 
@@ -339,7 +335,6 @@ subtest 'rule idv.check_age_legality' => sub {
 };
 
 subtest 'rule idv.check_dob_conformity' => sub {
-    my $check_id  = 'test';
     my $rule_name = 'idv.check_dob_conformity';
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
@@ -430,20 +425,343 @@ subtest 'rule idv.check_dob_conformity' => sub {
     for my $case ($tests->@*) {
         $client_cr->date_of_birth($case->{client}->{birthdate});
 
-        my $args = {
+        my %args = (
             loginid => $client_cr->loginid,
-            result  => $case->{result}};
+            result  => $case->{result});
 
         if (my $error = $case->{error}) {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
                 +{
                 error_code => $error,
                 rule       => $rule_name
                 },
-                "Broken rules: $error";
+                "Violated rule: $error";
         } else {
-            lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Rules are honored';
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are passed';
         }
+    }
+};
+
+subtest 'rule idv.check_verification_necessity' => sub {
+    my $rule_name = 'idv.check_verification_necessity';
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
+
+    my $mock_client_status        = Test::MockModule->new('BOM::User::Client::Status');
+    my $mock_identityverification = Test::MockModule->new('BOM::User::IdentityVerification');
+
+    my $testCases = [{
+            client         => {statuses => []},
+            idv_disallowed => 0,
+            error          => 'NoAuthNeeded',
+        },
+        {
+            client         => {statuses => []},
+            idv_disallowed => 0,
+            error          => 'NoAuthNeeded',
+        },
+        {
+            client         => {statuses => ['allow_document_upload',]},
+            idv_disallowed => 0,
+            error          => undef,
+        },
+        {
+            client         => {statuses => ['allow_document_upload',]},
+            idv_disallowed => 1,
+            error          => 'IdentityVerificationDisallowed',
+        },
+        {
+            client         => {statuses => ['allow_document_upload', 'age_verification']},
+            idv_disallowed => 0,
+            error          => 'AlreadyAgeVerified',
+        },
+    ];
+
+    for my $case ($testCases->@*) {
+        for my $status ($case->{client}->{statuses}->@*) {
+            $mock_client_status->mock($status => 1);
+        }
+
+        $mock_identityverification->mock('is_idv_disallowed' => $case->{idv_disallowed});
+
+        my %args = (loginid => $client_cr->loginid);
+
+        if (my $error = $case->{error}) {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                +{
+                error_code => $error,
+                rule       => $rule_name
+                },
+                "Violated rule: $error";
+        } else {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are passed';
+        }
+
+        $mock_client_status->unmock_all();
+        $mock_identityverification->unmock_all();
+    }
+};
+
+subtest 'rule idv.check_service_availibility' => sub {
+    my $rule_name = 'idv.check_service_availibility';
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) }, qr/issuing_country is missing/,
+        'document issuing_country is required for this rule';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, issuing_country => 'xx') }, qr/document_type is missing/,
+        'document_type is required for this rule';
+
+    my $mock_country_config   = Test::MockModule->new('Brands::Countries');
+    my $mock_platform_utility = Test::MockModule->new('BOM::Platform::Utility');
+    my $mock_idv_model        = Test::MockModule->new('BOM::User::IdentityVerification');
+
+    my $test_cases = [{
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+            },
+            idv_submission_left => 1,
+            has_idv             => 1,
+            idv_config          => {document_types => {passport => 1}},
+            error               => undef,
+        },
+        {
+            input => {
+                issuing_country => 'wrong country',
+                type            => 'birth_cert',
+            },
+            idv_submission_left => 1,
+            has_idv             => 1,
+            idv_config          => undef,
+            error               => 'NotSupportedCountry',
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+            },
+            idv_submission_left => 1,
+            has_idv             => 0,
+            idv_config          => {},
+            error               => 'IdentityVerificationDisabled',
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+            },
+            idv_submission_left => 0,
+            has_idv             => 1,
+            idv_config          => {},
+            error               => 'NoSubmissionLeft',
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'birth_cert',
+            },
+            idv_submission_left => 1,
+            has_idv             => 1,
+            idv_config          => {document_types => {passport => 1}},
+            error               => 'InvalidDocumentType',
+        },
+    ];
+
+    for my $case ($test_cases->@*) {
+        $mock_platform_utility->mock('has_idv' => $case->{has_idv});
+        $mock_country_config->mock('get_idv_config' => $case->{idv_config});
+        $mock_country_config->mock(
+            'is_idv_supported',
+            sub {
+                my (undef, $country) = @_;
+
+                return 1 if $country eq 'ir';
+
+                return 0;
+            });
+        $mock_idv_model->mock('submissions_left' => $case->{idv_submission_left});
+
+        my %args = (
+            loginid         => $client_cr->loginid,
+            issuing_country => $case->{input}->{issuing_country},
+            document_type   => $case->{input}->{type},
+        );
+
+        if (my $error = $case->{error}) {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                +{
+                error_code => $error,
+                rule       => $rule_name
+                },
+                "Violated rule: $error";
+        } else {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are passed';
+        }
+
+        $mock_platform_utility->unmock_all();
+        $mock_country_config->unmock_all();
+        $mock_idv_model->unmock_all();
+    }
+};
+
+subtest 'rule idv.valid_document_number' => sub {
+    my $rule_name = 'idv.valid_document_number';
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/issuing_country is missing/, 'document issuing_country is required for this rule';
+    like exception { $rule_engine->apply_rules($rule_name, issuing_country => 'xx') }, qr/document_type is missing/,
+        'document_type is required for this rule';
+    like exception { $rule_engine->apply_rules($rule_name, issuing_country => 'xx', document_type => 'national_id') }, qr/document_number is missing/,
+        'document_number is required for this rule';
+
+    my $mock_country_config = Test::MockModule->new('Brands::Countries');
+
+    my $test_cases = [{
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            idv_config => {document_types => {passport => {format => '^E'}}},
+            error      => undef,
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            idv_config => {document_types => {passport => {format => 'E$'}}},
+            error      => 'InvalidDocumentNumber',
+        }];
+
+    for my $case ($test_cases->@*) {
+        $mock_country_config->mock('get_idv_config' => $case->{idv_config});
+
+        my %args = (
+            issuing_country => $case->{input}->{issuing_country},
+            document_type   => $case->{input}->{type},
+            document_number => $case->{input}->{number});
+
+        if (my $error = $case->{error}) {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                +{
+                error_code => $error,
+                rule       => $rule_name
+                },
+                "Violated rule: $error";
+        } else {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are passed';
+        }
+
+        $mock_country_config->unmock_all();
+    }
+};
+
+subtest 'rule idv.check_document_acceptability' => sub {
+    my $rule_name = 'idv.check_document_acceptability';
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) }, qr/issuing_country is missing/,
+        'document issuing_country is required for this rule';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, issuing_country => 'xx') }, qr/document_type is missing/,
+        'document_type is required for this rule';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, issuing_country => 'xx', document_type => 'national_id') },
+        qr/document_number is missing/,
+        'document_number is required for this rule';
+
+    my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
+
+    my $test_cases = [{
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            claimed_docs => undef,
+            error        => undef,
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            claimed_docs => [],
+            error        => undef,
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            claimed_docs => [{
+                    status          => 'refuted',
+                    expiration_date => Date::Utility->new->plus_years(1)->date_yyyymmdd,
+                },
+                {
+                    status          => 'failed',
+                    expiration_date => Date::Utility->new->plus_years(1)->date_yyyymmdd,
+                },
+                {status => 'failed'},
+                {status => 'refuted'},
+            ],
+            error => undef,
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            claimed_docs => [{status => 'x'}],
+            error        => undef,
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            claimed_docs => [{status => 'pending'},],
+            error        => 'ClaimedDocument',
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            claimed_docs => [{status => 'verified'},],
+            error        => 'ClaimedDocument',
+        },
+    ];
+
+    for my $case ($test_cases->@*) {
+        $mock_idv_model->mock('get_claimed_documents' => $case->{claimed_docs});
+
+        my %args = (
+            loginid         => $client_cr->loginid,
+            issuing_country => $case->{input}->{issuing_country},
+            document_type   => $case->{input}->{type},
+            document_number => $case->{input}->{number});
+
+        if (my $error = $case->{error}) {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                +{
+                error_code => $error,
+                rule       => $rule_name
+                },
+                "Violated rule: $error";
+        } else {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are passed';
+        }
+
+        $mock_idv_model->unmock_all();
     }
 };
 

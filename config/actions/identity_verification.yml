@@ -5,3 +5,11 @@ identity_verification:
     - idv.check_name_comparison
     - idv.check_dob_conformity
     - idv.check_age_legality
+
+idv_add_document:
+  description: A set of rules to be passed before adding new document for verification process
+  ruleset:
+    - idv.check_verification_necessity
+    - idv.check_service_availibility
+    - idv.valid_document_number
+    - idv.check_document_acceptability

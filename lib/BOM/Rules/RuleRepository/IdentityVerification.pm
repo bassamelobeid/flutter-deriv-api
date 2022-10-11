@@ -14,8 +14,11 @@ use strict;
 use warnings;
 use utf8;
 
+use BOM::User::IdentityVerification;
 use BOM::Rules::Comparator::Text;
 use BOM::Rules::Registry qw(rule);
+
+use Brands::Countries;
 
 rule 'idv.check_expiration_date' => {
     description => "Checks is the document expired or not based on expiration date",
@@ -46,7 +49,7 @@ rule 'idv.check_name_comparison' => {
 
         my $client = $context->client($args);
 
-        die 'Client is missing'     unless $client;
+        die 'client is missing'     unless $client;
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my @fields = qw/first_name last_name/;
@@ -67,7 +70,7 @@ rule 'idv.check_age_legality' => {
 
         my $client = $context->client($args);
 
-        die 'Client is missing'     unless $client;
+        die 'client is missing'     unless $client;
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my $date_of_birth = eval { Date::Utility->new($result->{birthdate}) };
@@ -86,7 +89,7 @@ rule 'idv.check_dob_conformity' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'Client is missing'     unless my $client = $context->client($args);
+        die 'client is missing'     unless my $client = $context->client($args);
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my $reported_dob = eval { Date::Utility->new($result->{birthdate}) };
@@ -95,7 +98,102 @@ rule 'idv.check_dob_conformity' => {
         $self->fail('DobMismatch') unless $reported_dob and $profile_dob and $profile_dob->is_same_as($reported_dob);
 
         return undef;
-    },
+    }
+};
+
+rule 'idv.check_verification_necessity' => {
+    description => "Checks various parameters to evaluate that whether verification is required for client or not",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        die 'client is missing' unless my $client = $context->client($args);
+
+        $self->fail('NoAuthNeeded') unless $client->status->allow_document_upload;
+
+        $self->fail('AlreadyAgeVerified') if $client->status->age_verification;
+
+        $self->fail('IdentityVerificationDisallowed') if BOM::User::IdentityVerification::is_idv_disallowed($client);
+
+        return undef;
+    }
+};
+
+rule 'idv.check_service_availibility' => {
+    description => "Checks whether the identity verification service is available to provide data or not",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        die 'client is missing'          unless my $client          = $context->client($args);
+        die 'issuing_country is missing' unless my $issuing_country = $args->{issuing_country};
+        die 'document_type is missing'   unless my $document_type   = $args->{document_type};
+
+        my $countries = Brands::Countries->new;
+        my $configs   = $countries->get_idv_config($issuing_country);
+
+        $self->fail('NotSupportedCountry') unless $countries->is_idv_supported($issuing_country);
+
+        $self->fail('IdentityVerificationDisabled')
+            unless BOM::Platform::Utility::has_idv(
+            country  => $issuing_country,
+            provider => $configs->{provider});
+
+        $self->fail('NoSubmissionLeft') if BOM::User::IdentityVerification::submissions_left($client) == 0;
+
+        $self->fail('InvalidDocumentType') unless exists $configs->{document_types}->{$document_type};
+
+        return undef;
+    }
+};
+
+rule 'idv.valid_document_number' => {
+    description => "Checks the document number against the standard regex of a valid document number",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        die 'issuing_country is missing' unless my $issuing_country = $args->{issuing_country};
+        die 'document_type is missing'   unless my $document_type   = $args->{document_type};
+        die 'document_number is missing' unless my $document_number = $args->{document_number};
+
+        my $countries = Brands::Countries->new;
+        my $configs   = $countries->get_idv_config($issuing_country);
+        my $regex     = $configs->{document_types}->{$document_type}->{format};
+
+        $self->fail('InvalidDocumentNumber') if $document_number !~ m/$regex/;
+
+        return undef;
+    }
+};
+
+rule 'idv.check_document_acceptability' => {
+    description => 'Checks whether the provided document is acceptable or not, considers if the document is already being used',
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        die 'client is missing'          unless my $client          = $context->client($args);
+        die 'issuing_country is missing' unless my $issuing_country = $args->{issuing_country};
+        die 'document_type is missing'   unless my $document_type   = $args->{document_type};
+        die 'document_number is missing' unless my $document_number = $args->{document_number};
+
+        my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
+        my $claimed_documents = $idv_model->get_claimed_documents({
+                issuing_country => $issuing_country,
+                type            => $document_type,
+                number          => $document_number,
+            }) // [];
+
+        for my $claimed_doc (@$claimed_documents) {
+            # Claimed document refers to when there is a document same as
+            # given document which is already verified or verification
+            # status still needs to be determined (pending) so that
+            # no one else should be able to use the same again
+            $self->fail('ClaimedDocument')
+                if $claimed_doc->{status} eq 'verified'
+                or $claimed_doc->{status} eq 'pending';
+        }
+
+        return undef;
+    }
 };
 
 1;
