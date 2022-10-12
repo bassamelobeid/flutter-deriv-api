@@ -115,6 +115,23 @@ sub server_check {
     }
 }
 
+=head2 check_trading_category
+
+Checks if trading category matches
+
+=cut
+
+sub check_trading_category {
+    my ($self, $market_type, $account_trading_category) = @_;
+    my $trading_category   = TRADING_CATEGORY_MAP->{$market_type};
+    my @trading_categories = ('Financials Only', 'Synthetics Only', 'CFD');
+
+    #
+    return grep { $_ eq $account_trading_category } @trading_categories if $market_type eq 'all';
+
+    return $account_trading_category eq $trading_category;
+}
+
 =head2 local_accounts
 
 Returns dxtrade account info from our db.
@@ -180,9 +197,10 @@ sub new_account {
                 and $_->{account_type} eq $account_type
                 and $_->{type} eq 'CLIENT'
                 and $_->{status} eq 'FULL_TRADING'
-                and any { $_->{category} eq 'Trading' and $_->{value} eq $trading_category }
+                and any { $_->{category} eq 'Trading' and $self->check_trading_category($args{market_type}, $_->{value}) }
                 ($_->{categories} // [])->@*
         } ($dxclient->{accounts} // [])->@*;
+
         die +{
             error_code     => 'DXExistingAccount',
             message_params => [$existing->{account_code}]} if $existing;
