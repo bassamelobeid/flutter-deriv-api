@@ -74,11 +74,11 @@ subtest 'change email' => sub {
     is_deeply($result, $error, 'change_email returns token error');
 
     $user->update_has_social_signup(1);
-    my $email_token = join '-', $new_email, $test_client->binary_user_id;
-    my $code        = BOM::Platform::Token->new({
+    my $code = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
-            created_for => 'request_email'
+            created_for => 'request_email',
+            created_by  => $test_client->binary_user_id
         })->token;
 
     $params->{args}{verification_code} = $code;
@@ -93,7 +93,8 @@ subtest 'change email' => sub {
     $code = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
-            created_for => 'request_email'
+            created_for => 'request_email',
+            created_by  => $test_client->binary_user_id
         })->token;
     $params->{args}{new_email}         = $email;
     $params->{args}{verification_code} = $code;
@@ -104,7 +105,8 @@ subtest 'change email' => sub {
     $code = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
-            created_for => 'request_email'
+            created_for => 'request_email',
+            created_by  => $test_client->binary_user_id
         })->token;
     $params->{args}{new_email}         = $new_email;
     $params->{args}{verification_code} = $code;
@@ -112,13 +114,15 @@ subtest 'change email' => sub {
     $code = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
-            created_for => 'request_email'
+            created_for => 'request_email',
+            created_by  => $test_client->binary_user_id
         })->token;
 
     $code = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
-            created_for => 'request_email'
+            created_for => 'request_email',
+            created_by  => $test_client->binary_user_id
         })->token;
     $params->{args}{social_signup}     = 1;
     $params->{args}{new_email}         = $new_email;
@@ -144,9 +148,10 @@ subtest 'change email' => sub {
     is_deeply($result, $error, 'change_email returns token error');
 
     $code = BOM::Platform::Token->new({
-            email       => lc $email_token,
+            email       => lc $new_email,
             expires_in  => 3600,
             created_for => 'request_email',
+            created_by  => $test_client->binary_user_id
         })->token;
     $params->{token}                   = $token_2;
     $params->{args}{new_password}      = $new_password;
@@ -160,9 +165,10 @@ subtest 'change email' => sub {
     is_deeply($result, $error, 'change_email returns password error if email and binary_user_id do not match in token');
 
     $code = BOM::Platform::Token->new({
-            email       => lc $email_token,
+            email       => lc $new_email,
             expires_in  => 3600,
             created_for => 'request_email',
+            created_by  => $test_client->binary_user_id
         })->token;
 
     $params->{token}                   = $token;
@@ -177,9 +183,10 @@ subtest 'change email' => sub {
     is_deeply($result, $error, 'change_email returns password error');
 
     $code = BOM::Platform::Token->new({
-            email       => lc $email_token,
+            email       => lc $new_email,
             expires_in  => 3600,
             created_for => 'request_email',
+            created_by  => $test_client->binary_user_id
         })->token;
     $params->{args}{change_email}      = 'update';
     $params->{args}{new_email}         = $new_email;

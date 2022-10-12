@@ -1338,10 +1338,9 @@ rpc change_email => sub {
 
     my $user = $client->user;
     $args->{new_email} = lc $args->{new_email} if $args->{new_email};
-    my $email_token = join '-', $args->{new_email}, $client->binary_user_id;
     if ($args->{change_email} eq 'verify') {
-        my $err =
-            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'request_email')->{error};
+        my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code},
+            $client->email, 'request_email', 0, $client->binary_user_id)->{error};
         if ($err) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $err->{code},
@@ -1357,9 +1356,10 @@ rpc change_email => sub {
 
         # send token to new email
         my $code = BOM::Platform::Token->new({
-                email       => $email_token,
+                email       => $args->{new_email},
                 expires_in  => CHANGE_EMAIL_TOKEN_TTL,
                 created_for => 'request_email',
+                created_by  => $client->binary_user_id,
             })->token;
         my $uri    = get_verification_uri($params->{source}) // '';
         my $params = [
@@ -1384,8 +1384,8 @@ rpc change_email => sub {
         );
 
     } elsif ($args->{change_email} eq 'update') {
-        my $error =
-            BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email_token, 'request_email')->{error};
+        my $error = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code},
+            $args->{new_email}, 'request_email', 0, $client->binary_user_id)->{error};
         if ($error) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $error->{code},

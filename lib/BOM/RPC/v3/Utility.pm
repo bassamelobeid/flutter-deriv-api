@@ -347,7 +347,7 @@ Also, deletes the token if it's not a C<dry_run>.
 
 Takes the following parameters:
 
-=over 4
+=over 5
 
 =item * C<$token> - Token to be validated
 
@@ -357,6 +357,8 @@ Takes the following parameters:
 
 =item * C<$is_dry_run> - [Optional] If true, won't delete the token
 
+=item * C<$created_by> - [Optional] The creator of the token
+
 =back
 
 Returns a hashref containing C<< { status => 1 } >> if successfully validated.
@@ -365,7 +367,7 @@ Otherwise, an error.
 =cut
 
 sub is_verification_token_valid {
-    my ($token, $email, $created_for, $is_dry_run) = @_;
+    my ($token, $email, $created_for, $is_dry_run, $created_by) = @_;
 
     my $verification_token = BOM::Platform::Token->new({token => $token});
     my $response           = create_error({
@@ -379,7 +381,16 @@ sub is_verification_token_valid {
         return $response;
     }
 
-    if ($verification_token->email and $verification_token->email eq $email) {
+    if (    $verification_token->email
+        and $verification_token->email eq $email
+        and not $verification_token->created_by)
+    {
+        $response = {status => 1};
+    } elsif ($verification_token->email
+        and $verification_token->email eq $email
+        and $verification_token->created_by
+        and $verification_token->created_by eq $created_by)
+    {
         $response = {status => 1};
     } else {
         $response = create_error({
