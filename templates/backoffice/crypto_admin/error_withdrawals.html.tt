@@ -23,7 +23,7 @@
 </style>
 
 [% IF error_withdrawals && error_withdrawals.size > 0 %]
-<form name="revert_processing_form" method="post" onsubmit="return checkEmpty()">
+<form name="revert_processing_form" method="post">
     <div class="scrollable">
     <table id="error_txn_list" class="alternate border">
         <tr>
@@ -60,6 +60,14 @@
         [% END %]
     </table>
     </div>
+    <br>
+    <br>
+
+    <!-- Sent Error Withdrawals -->
+         <label for="txn_hash">Transaction hash</label>
+         <input type="text" id="sent_tx_hash" name="txn_hash" value="" size="100"/>
+    <!--  -->
+    
     <div class="grd-margin-top">
         <a href="javascript:;" class="btn btn--secondary" onclick="selectMultiple()">Select multiple transactions</a>
         <a href="javascript:;" class="btn btn--secondary" onclick="selectTransactions()">Deselect all</a>
@@ -71,7 +79,9 @@
     <input type="hidden" name="req_type" value="gt_revert_processing_txn" />
     <hr />
     <div id="selected_items"></div>
-    <button type="submit" class="btn btn--primary">Revert Selected Transactions</button>
+    <button type="button" class="btn btn--primary" onclick="processErrorWithdrawals()">Revert Selected Transactions</button>
+    <button type="button" class="btn btn--primary" onclick="processSentWithdrawals()">Update Selected Sent Error Withdrawals</button>
+
 </form>
 [% ELSE %]
     [% IF error %]
@@ -120,6 +130,27 @@
             return false;
         }
         return true;
+    }
+
+    function processErrorWithdrawals(){
+        if(checkEmpty()){
+            document.forms.revert_processing_form.req_title.value = 'Revert processing transactions';
+            document.forms.revert_processing_form.req_type.value  = 'gt_revert_processing_txn';
+            document.forms.revert_processing_form.submit();
+        }
+    }
+
+    function processSentWithdrawals(){
+        const tx_hash_input = document.getElementById('sent_tx_hash');
+        if(!tx_hash_input.value.trim().length){
+            alert('Error: Transaction hash not provided.');
+            return;
+        }
+        if(checkEmpty()){
+            document.forms.revert_processing_form.req_title.value = 'Update Sent Withdrawals';
+            document.forms.revert_processing_form.req_type.value  = 'gt_update_error_txn_sent';
+            document.forms.revert_processing_form.submit();
+        }
     }
 
     showSelectedSummary();

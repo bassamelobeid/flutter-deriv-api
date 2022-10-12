@@ -25,6 +25,7 @@ BOM::Backoffice::Sysinit::init();
 
 use constant REVERT_ERROR_TXN_RECORD => "CRYPTO::ERROR::TXN::ID::";
 use constant BUMP_TXN_RECORD         => "CRYPTO::BUMP::TXN::ID::";
+use constant SENT_ERROR_TXN_RECORD   => "CRYPTO::SENT::ERROR::TXN::HASH::";
 
 # Check if a staff is logged in
 BOM::Backoffice::Auth0::get_staff();
@@ -254,6 +255,71 @@ $request_type->{gt_revert_processing_txn} = sub {
             }
         }
         print sprintf($_, join ', ', $messages{$_}->@*) for sort { $b =~ /success/ } keys %messages;
+    }
+
+};
+
+$request_type->{gt_update_error_txn_sent} = sub {
+    if ($input{txn_checkbox} && $input{txn_hash} && $staff) {
+        my $redis_read        = BOM::Config::Redis::redis_replicated_read();
+        my $previous_approver = $redis_read->get(SENT_ERROR_TXN_RECORD . $input{txn_hash});
+        my @txn_to_process    = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
+        # call batch_requests if the txn hash is previously approved by other than the caller & txn_to_process not empty
+        if ($previous_approver && $staff ne $previous_approver && @txn_to_process) {
+            push @batch_requests,
+                {
+                id     => 'update_sent_error_txns',
+                action => 'withdrawal/update_bulk',
+                body   => {
+                    currency_code    => $input{gt_currency},
+                    update_type      => 'sent',
+                    staff_name       => $staff,
+                    approver         => $previous_approver,
+                    transaction_list => \@txn_to_process,
+                    txn_hash         => $input{txn_hash},
+                },
+                };
+        }
+    }
+    return sub {
+        my $txn_hash = $input{txn_hash};
+        code_exit_BO("No transaction selected")                           unless $input{txn_checkbox};
+        code_exit_BO("Transaction hash not provided")                     unless $txn_hash;
+        code_exit_BO("ERROR: Missing variable staff name. Please check!") unless $staff;
+
+        my $redis_write       = BOM::Config::Redis::redis_replicated_write();
+        my $redis_read        = BOM::Config::Redis::redis_replicated_read();
+        my $previous_approver = $redis_read->get(SENT_ERROR_TXN_RECORD . $txn_hash);
+        my @txn_to_process    = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
+
+        if ($previous_approver && $staff ne $previous_approver) {
+            my ($response_bodies) = @_;
+            my $req_type = "update_sent_error_txns";
+            if (exists $response_bodies->{$req_type}{error}) {
+                my $error = "";
+                $error .= $response_bodies->{$req_type}{error}{message} . "\n" if exists $response_bodies->{$req_type}{error}{message};
+                $error .= $response_bodies->{$req_type}{error}{details} . "\n" if exists $response_bodies->{$req_type}{error}{details};
+                code_exit_BO("<p class='error'>$error</p>");
+            }
+
+            my $updated_ids = $response_bodies->{$req_type}{transaction_list};
+            if ($updated_ids && scalar @{$updated_ids}) {
+                my $ids = (join ',', sort $updated_ids->@*) . ' => ' . $txn_hash;
+                print sprintf("<p class='success'>Following transaction(s) has been successfully updated.<br />%s</p>", $ids);
+            } else {
+                my $ids = (join ',', sort @txn_to_process) . ' => ' . $txn_hash;
+                print sprintf("<p class='error'>Following transaction(s) could not be updated, possibly already updated.<br />%s</p>", $ids);
+            }
+            $redis_write->del(SENT_ERROR_TXN_RECORD . $txn_hash);
+        } else {
+            my $ids = (join ',', sort @txn_to_process) . ' => ' . $txn_hash;
+            my $msg =
+                $previous_approver && $previous_approver eq $staff
+                ? sprintf("<p class='error'>The following transaction(s) has previously been approved by you.<br />%s</p>",                   $ids)
+                : sprintf("<p class='success'>Following transaction(s) has been successfully approved. Needs one more approval.<br />%s</p>", $ids);
+            print $msg;
+            $redis_write->setex(SENT_ERROR_TXN_RECORD . $txn_hash, 3600, $staff);
+        }
     }
 
 };
