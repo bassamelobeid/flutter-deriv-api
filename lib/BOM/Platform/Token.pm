@@ -6,7 +6,7 @@ Email verification token handler
 
 =head1 SYNOPSIS
 
- my $token = BOM::Platform::Token->new({created_for => 'lost_password', email => 'abc@binary.com', expires_in => 3600});
+ my $token = BOM::Platform::Token->new({created_for => 'lost_password', email => 'abc@binary.com', expires_in => 3600, [optional]created_by => 'CR90000000'});
  my $token = BOM::Platform::Token->new({token => $token});
 
  The resulting token is a simple hashref, stored in Redis for a period of time
@@ -37,8 +37,9 @@ Creates a new token and stores it in redis.
 =cut
 
 my $json = JSON::MaybeXS->new;
-sub email { $_[0]->{email} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
-sub token { $_[0]->{token} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
+sub email      { $_[0]->{email}      if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
+sub token      { $_[0]->{token}      if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
+sub created_by { $_[0]->{created_by} if ref $_[0] }    ## no critic (RequireArgUnpack, RequireFinalReturn)
 
 sub new {    ## no critic (RequireArgUnpack)
     my ($package) = shift;
@@ -55,7 +56,7 @@ sub new {    ## no critic (RequireArgUnpack)
     die "Error creating new verification token, missing: " . join(',', @valid)
         if @valid;
 
-    my @allowed = qw(email token expires_in created_for);
+    my @allowed = qw(email token expires_in created_for created_by);
     my @passed  = keys %$self;
     @valid = array_minus(@passed, @allowed);
     die "Error adding new verification token, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
@@ -65,7 +66,8 @@ sub new {    ## no critic (RequireArgUnpack)
         NonBlocking => 1,
     )->string_from(join('', 'a' .. 'z', 'A' .. 'Z', '0' .. '9'), 8);
 
-    my $key = md5_hex($self->{created_for} . $self->{email});
+    $self->{created_by} ||= "";
+    my $key = md5_hex($self->{created_for} . $self->{created_by} . $self->{email});
     if (my $token = BOM::Config::Redis::redis_replicated_write()->get('VERIFICATION_TOKEN_INDEX::' . $key)) {
         BOM::Config::Redis::redis_replicated_write()->del('VERIFICATION_TOKEN::' . $token);
     }
@@ -102,7 +104,8 @@ sub delete_token {
     my $self = shift;
     return unless $self->{token};
     BOM::Config::Redis::redis_replicated_write()->del('VERIFICATION_TOKEN::' . $self->{token});
-    return BOM::Config::Redis::redis_replicated_write()->del('VERIFICATION_TOKEN_INDEX::' . md5_hex($self->{created_for} . $self->{email}))
+    return BOM::Config::Redis::redis_replicated_write()
+        ->del('VERIFICATION_TOKEN_INDEX::' . md5_hex($self->{created_for} . $self->{created_by} . $self->{email}))
         if ($self->{created_for} and $self->{email});
     return;
 }

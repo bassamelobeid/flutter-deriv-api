@@ -11,7 +11,7 @@ use Test::Pod::CoverageChange;
 my $allowed_naked_packages = {
     'BOM::Platform::RiskProfile'                       => 18,
     'BOM::Platform::Locale'                            => 1,
-    'BOM::Platform::Token'                             => 2,
+    'BOM::Platform::Token'                             => 3,
     'BOM::Platform::Copier'                            => 4,
     'BOM::Platform::S3Client'                          => 7,
     'BOM::Platform::Context'                           => 2,
