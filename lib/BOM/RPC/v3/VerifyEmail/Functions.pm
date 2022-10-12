@@ -451,8 +451,6 @@ If $self->type is `paymentagent_withdraw` then this function will execute
 sub paymentagent_withdraw {
     my ($self) = @_;
     if ($self->{client}) {
-        my $result = common_payment_withdraw($self);
-        return $result unless $result eq 'OK';
 
         my $rule_engine = BOM::Rules::Engine->new(client => $self->{client});
         try {
@@ -464,6 +462,10 @@ sub paymentagent_withdraw {
         } catch ($rules_error) {
             return BOM::RPC::v3::Utility::rule_engine_error($rules_error);
         }
+
+        my $result = common_payment_withdraw($self);
+        return $result unless $result eq 'OK';
+
     }
     return;
 }

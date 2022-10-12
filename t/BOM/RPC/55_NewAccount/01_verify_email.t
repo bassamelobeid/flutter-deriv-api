@@ -420,6 +420,37 @@ subtest 'withdrawal validation' => sub {
     }
 };
 
+subtest 'bom-rules validation' => sub {
+    my $emitted_events;
+    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_events->mock(emit => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
+
+    my $mock_rules = Test::MockModule->new('BOM::Rules::Engine');
+    $mock_rules->mock(apply_rules => sub { {'error' => 'dummy'} });
+
+    $params[1]->{args}->{verify_email} = $client->email;
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
+
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token 3');
+    $params[1]->{token} = $token;
+    undef $emitted_events;
+
+    for my $type (qw( paymentagent_withdraw payment_withdraw)) {
+        $params[1]->{args}->{type} = $type;
+        my $res = $rpc_ct->call_ok(@params)->has_no_system_error->result;
+        ok exists $res->{error}, $type . ' has bom-rules validation';
+    }
+
+    is $emitted_events, undef, 'no events emitted';
+
+    for my $type (qw(account_opening reset_password)) {
+        $params[1]->{args}->{type} = $type;
+        $rpc_ct->call_ok(@params)
+            ->has_no_system_error->has_no_error->result_is_deeply($expected_result, $type . ' does not have bom-rules validation');
+    }
+};
+
 subtest 'Reset password for not exists user' => sub {
     my @emitted;
     no warnings 'redefine';
