@@ -28,9 +28,6 @@ alias:
 - &5
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
-- &redis6
-  image: redis:6
-  name: redis-v6
 - &debian-ci
   auth:
     password: $DOCKERHUB_PASSWORD
@@ -40,7 +37,6 @@ alias:
 default: &6
   docker:
   - *debian-ci
-  - *redis6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-user
 jobs:
