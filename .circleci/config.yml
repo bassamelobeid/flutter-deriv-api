@@ -36,9 +36,6 @@ alias:
     command: |
       /opt/circle/check_services
     name: Check services are running
-- &redis6
-  image: redis:6
-  name: redis-v6
 
 - &debian-ci
   auth:
@@ -50,7 +47,6 @@ alias:
 default: &6
   docker:
   - *debian-ci
-  - *redis6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/binary-websocket-api
 
