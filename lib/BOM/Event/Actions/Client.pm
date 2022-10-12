@@ -1572,22 +1572,6 @@ sub _set_address_verified {
     return undef;
 }
 
-=head2 account_closure
-
-Called when a client closes their accounts, sends an email to the client and tracks the event.
-
-=cut
-
-sub account_closure {
-    my $data = shift;
-
-    $data->{name}         = BOM::User::Client->new({loginid => $data->{loginid}})->first_name;
-    $data->{brand}        = request->brand->name;
-    $data->{new_campaign} = 1;
-    track_account_closure($data);
-    return 1;
-}
-
 =head2 track_account_closure
 
 This is handler for each B<account_closure> event emitted, when handled by the track worker.

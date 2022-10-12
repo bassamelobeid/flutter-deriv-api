@@ -113,7 +113,7 @@ subtest 'process - generic jobs' => sub {
         bag(
             qw/email_statement sync_user_to_MT5
                 store_mt5_transaction new_mt5_signup anonymize_client bulk_anonymization
-                document_upload ready_for_authentication account_closure client_verification
+                document_upload ready_for_authentication client_verification
                 verify_address social_responsibility_check sync_onfido_details
                 authenticated_with_scans qualifying_payment_check
                 payment_deposit send_email

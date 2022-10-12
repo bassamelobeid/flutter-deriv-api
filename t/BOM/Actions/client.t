@@ -1795,48 +1795,6 @@ subtest 'signup event email check for fraud ' => sub {
     ok $client1->status->potential_fraud, 'Second account also has fraud status for suspected result';
 };
 
-subtest 'account closure' => sub {
-    my $req = BOM::Platform::Context::Request->new(
-        brand_name => 'deriv',
-        language   => 'EN',
-        app_id     => $app_id,
-    );
-    request($req);
-
-    my $email_args;
-    my $mock_client = Test::MockModule->new('BOM::Event::Actions::Client');
-    $mock_client->redefine('track_account_closure', sub { $email_args = shift; });
-
-    my $loginid   = $test_client->loginid;
-    my $call_args = {
-        closing_reason    => 'There is no reason',
-        loginid           => $loginid,
-        loginids_disabled => [$loginid],
-        loginids_failed   => [],
-        email_consent     => 0,
-        name              => $test_client->first_name,
-    };
-
-    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{account_closure};
-    my $result         = $action_handler->($call_args);
-
-    ok $result, 'Success result';
-    is_deeply $email_args,
-        {
-        name              => $test_client->first_name,
-        brand             => 'deriv',
-        closing_reason    => 'There is no reason',
-        loginid           => $loginid,
-        loginids_disabled => [$loginid],
-        loginids_failed   => [],
-        email_consent     => 0,
-        new_campaign      => 1
-        },
-        'track_account_closure is called with arguments';
-
-    $mock_client->unmock_all;
-};
-
 subtest 'account closure track' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',

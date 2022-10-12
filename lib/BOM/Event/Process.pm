@@ -63,7 +63,6 @@ my $action_mapping = {
         onfido_doc_ready_for_upload                 => \&BOM::Event::Actions::Client::onfido_doc_ready_for_upload,
         verify_address                              => \&BOM::Event::Actions::Client::verify_address,
         profile_change                              => \&BOM::Event::Actions::User::profile_change,
-        account_closure                             => \&BOM::Event::Actions::Client::account_closure,
         social_responsibility_check                 => \&BOM::Event::Actions::Client::social_responsibility_check,
         sync_onfido_details                         => \&BOM::Event::Actions::Client::sync_onfido_details,
         authenticated_with_scans                    => \&BOM::Event::Actions::Client::authenticated_with_scans,
