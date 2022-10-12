@@ -2753,6 +2753,7 @@ rpc account_closure => sub {
         loginids_disabled => $loginids_disabled_success,
         loginids_failed   => $loginids_disabled_failed,
         email_consent     => $data_email_consent->{email_consent},
+        name              => $client->first_name,
     };
 
     BOM::Platform::Event::Emitter::emit('account_closure', $data_closure);
