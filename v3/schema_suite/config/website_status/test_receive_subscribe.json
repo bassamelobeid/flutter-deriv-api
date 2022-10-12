@@ -14,8 +14,24 @@
             "type" : "string"
         },
         "website_status" : {
-            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country", "p2p_config", "payment_agents"],
+            "required" : ["crypto_config","currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country", "p2p_config", "payment_agents"],
             "properties" : {
+                 "crypto_config": {
+                    "description" : "Provides minimum withdrawal for all crypto currency in USD",
+                    "type": "object",
+                    "minProperties" :  1,
+                    "patternProperties": {
+                        "^[a-zA-Z0-9]{2,20}$": {
+                            "type": "object",
+                            "required": ["minimum_withdrawal"],
+                            "properties": {
+                                "minimum_withdrawal": {
+                                    "type": "number"
+                                }
+                            }
+                        }
+                    }
+                },
                 "supported_languages" : {
                     "description" : "Provides codes for languages supported",
                     "type" : "array",
