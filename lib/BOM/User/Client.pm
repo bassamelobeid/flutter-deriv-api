@@ -2444,12 +2444,14 @@ sub p2p_advertiser_relations {
     my $advertiser_info = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
 
-    if (%param) {
-        $param{$_} //= [] for qw/add_favourites add_blocked remove_favourites remove_blocked/;
+    $param{$_} //= [] for qw(add_favourites add_blocked remove_favourites remove_blocked);
 
+    if (any { $param{$_}->@* } qw(add_favourites add_blocked remove_favourites remove_blocked)) {
         die +{error_code => 'AdvertiserNotApprovedForBlock'} if $param{add_blocked}->@* and not $advertiser_info->{is_approved};
+
         my $bar_error = $self->_p2p_get_advertiser_bar_error($advertiser_info);
-        die $bar_error                                if $bar_error;
+        die $bar_error if $bar_error;
+
         die +{error_code => 'AdvertiserRelationSelf'} if any { $_ == $advertiser_info->{id} } ($param{add_favourites}->@*, $param{add_blocked}->@*);
 
         my $advertisers = $self->db->dbic->run(

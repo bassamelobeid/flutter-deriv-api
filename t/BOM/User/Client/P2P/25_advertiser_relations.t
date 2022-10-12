@@ -233,6 +233,18 @@ subtest 'blocking' => sub {
         'Cannot block when temp banned'
     );
 
+    is(
+        exception {
+            $me->p2p_advertiser_relations(
+                p2p_advertiser_relations => 1,
+                add_blocked              => [],
+                remove_blocked           => []
+            ),
+        },
+        undef,
+        'Can see relations when temp banned'
+    );
+
     $me->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET blocked_until=NULL WHERE id = $advertiser_id");
     delete $me->{_p2p_advertiser_cached};
 
