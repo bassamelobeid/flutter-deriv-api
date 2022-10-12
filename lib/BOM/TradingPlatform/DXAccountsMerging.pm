@@ -21,18 +21,20 @@ use Format::Util::Numbers            qw(financialrounding);
 
 class BOM::TradingPlatform::DXAccountsMerging {
 
-    my ($account_type, $failed_deposits_file, $settings);
+    my ($account_type, $failed_deposits_file, $status_filter, $settings);
 
     BUILD {
         my %runtime_args = @_;
         $settings = {
             account_type         => 'demo',
-            failed_deposits_file => 'failed_deposits.yml'
+            failed_deposits_file => 'failed_deposits.yml',
+            status_filter        => 1
         };
         %$settings = (%$settings, %runtime_args);
 
         $account_type         = $settings->{account_type};
         $failed_deposits_file = $settings->{failed_deposits_file} // '';
+        $status_filter        = $settings->{status_filter};
     }
 
     method accounts_merging {
@@ -291,7 +293,8 @@ class BOM::TradingPlatform::DXAccountsMerging {
 
         # Some clients only have VRTC accounts, so we need to include
         # them in the query
-        my $vrtc_query = $account_type eq 'demo' ? " OR loginid LIKE 'VRTC%'" : "";
+        my $vrtc_query   = $account_type eq 'demo' ? " OR loginid LIKE 'VRTC%'" : "";
+        my $status_query = $status_filter eq 1     ? " AND status IS NULL "     : "";
 
         my $dx_accounts = $user_db->dbic->run(
             fixup => sub {
@@ -300,16 +303,16 @@ class BOM::TradingPlatform::DXAccountsMerging {
                     WITH 
                         financial_accounts AS (
                             SELECT binary_user_id, loginid 
-                            FROM users.loginid 
-                            WHERE status IS NULL 
-                            AND platform = 'dxtrade' 
+                            FROM users.loginid
+                            WHERE platform = 'dxtrade' 
+                            $status_query 
                             AND account_type = ? 
                             AND attributes->> 'market_type' = 'financial'), 
                         synthetic_accounts AS (
                             SELECT binary_user_id, loginid 
                             FROM users.loginid 
-                            WHERE status IS NULL 
-                            AND platform = 'dxtrade' 
+                            WHERE platform = 'dxtrade' 
+                            $status_query 
                             AND account_type = ? 
                             AND attributes->> 'market_type' = 'synthetic'), 
                         cr_accounts AS (
@@ -340,7 +343,7 @@ class BOM::TradingPlatform::DXAccountsMerging {
         my $dx_accounts = $dx->get_accounts;
         my ($dxf) = grep { $account eq $_->{account_id} } @$dx_accounts;
 
-        return ($dxf->{balance}, $dxf->{currency});
+        return ($dxf->{balance} // 0, $dxf->{currency} // '');
     }
 }
 

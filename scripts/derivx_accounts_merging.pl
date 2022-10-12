@@ -40,6 +40,10 @@ MT5 server type ('real' or 'demo')
 
 File with failed deposits to process
 
+=item B<-s>, B<--status_filter>
+
+Status filter for the SQL query (default: 1)
+
 =back
 
 =cut
@@ -47,10 +51,12 @@ File with failed deposits to process
 my $help                 = 0;
 my $account_type         = 'demo';
 my $failed_deposits_file = '';
+my $status_filter        = 1;
 
 GetOptions(
     'a|account_type=s'         => \$account_type,
     'f|failed_deposits_file=s' => \$failed_deposits_file,
+    's|status_filter=i'        => \$status_filter,
     'h|help!'                  => \$help,
 );
 
@@ -58,6 +64,7 @@ pod2usage(1) if $help;
 
 my $accounts_merging = BOM::TradingPlatform::DXAccountsMerging->new(
     account_type         => $account_type,
+    status_filter        => $status_filter,
     failed_deposits_file => $failed_deposits_file,
 );
 
