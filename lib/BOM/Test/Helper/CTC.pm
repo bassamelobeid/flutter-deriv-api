@@ -60,7 +60,9 @@ set transaction as pending in payment.cryptocurrency
 =cut
 
 sub set_pending {
-    my ($address, $currency_code, $amount, $transaction) = @_;
+    my ($address, $currency_code, $amount, $transaction, $trace_id) = @_;
+
+    $trace_id //= "trace_id_" . time . "_" . rand(1e9);
 
     my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
     # since we are using bom-events for subscription we need to set
@@ -68,7 +70,8 @@ sub set_pending {
     try {
         return $dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)', undef, $address, $currency_code, $amount, $transaction);
+                $_->selectrow_array('SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?, ?)',
+                    undef, $address, $currency_code, $amount, $transaction, $trace_id);
             });
     } catch {
         return 0;
