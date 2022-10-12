@@ -53,9 +53,11 @@ jobs:
     - run:
         command: |
           if [[ -n "$CIRCLE_PULL_REQUEST" && $CIRCLE_BRANCH != "master" ]]; then
-            export GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)"; if echo $GIT_COMMIT_DESC|grep -E "\[\s*\bci\b.*]"; then exit 0; else echo "need tag [ci] to trigger tests"; exit 1; fi
+            GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)";
+            if echo $GIT_COMMIT_DESC | grep -E "\[\s*\bci\b.*]"; then exit 0; else echo "need tag [ci] to trigger tests"; exit 1; fi
           else
             echo "This is not a pull request, Branch: $CIRCLE_BRANCH"
+            exit 0
           fi
         name: Check git message if it contains the keyword [ci]
   syntax_unit:
@@ -351,11 +353,7 @@ workflows:
   version: 2
   build-workflow:
     jobs:
-    - check_git_message:
-        filters:
-          branches:
-            ignore:
-              - master
+    - check_git_message
     - syntax_diff_unit:
         requires:
         - check_git_message
