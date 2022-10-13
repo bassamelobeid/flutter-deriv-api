@@ -47,7 +47,7 @@ if ($transaction_hash) {
         my $wrong_currency_code = $response_bodies->{wrong_currency};
         my $client_loginid      = $response_bodies->{client_loginid};
         $sibiling_account  = get_sibiling_account_by_currency_code($client_loginid, $wrong_currency_code);
-        $has_manual_credit = has_manual_credit($to_address, $wrong_currency_code, $broker) if ($sibiling_account);
+        $has_manual_credit = has_manual_credit($to_address, $wrong_currency_code, $sibiling_account) if ($sibiling_account);
     }
 
 }

@@ -135,7 +135,7 @@ my $prepare_transaction = sub {
         my $address  = request()->param('address_to_reprocess');
         my $currency = request()->param('trx_currency_to_reprocess');
 
-        unless (has_manual_credit($address, $currency, $broker)) {
+        unless (has_manual_credit($address, $currency, $loginid)) {
 
             push @batch_requests, {    # Request for reprocess
                 id     => 'reprocess',

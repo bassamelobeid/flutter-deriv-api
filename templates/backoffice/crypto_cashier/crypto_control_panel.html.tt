@@ -38,13 +38,6 @@
         </select>
         <input type="text" name="search_query" data-lpignore="true" size="40" />
     <br><br>
-<!-- Manual Confirmation -->
-    [% IF !is_external %]
-        <button type="submit" class="btn btn--primary" name="view_action" value="reprocess_confirmation">Reprocess address</button>
-        <label for="address_to_reprocess">Address</label>
-        <input type="text" name="address_to_reprocess" id="address_to_reprocess" data-lpignore="true" size="40" />
-    <br><br>
-    [% END %]
 <!-- Deposit -->
     <button type="submit" class="btn btn--primary" name="view_action" value="deposits">Deposit transactions</button>
     <br><br>

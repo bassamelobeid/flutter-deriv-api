@@ -76,11 +76,11 @@ Check if we have credit the client account manually before or not for the passed
 
 =over 4
 
-=item * C<address> - The address to be prioritised
+=item * C<address>        - The address to be prioritised
 
-=item * C<currency_code> - The currency code of the address
+=item * C<currency_code>  - The currency code of the address
 
-=item * C<broker_code> - The client's broker code
+=item * C<client_loginid> - The client's account login id
 
 =back
 
@@ -89,14 +89,14 @@ Returns 1 if has manual credit or undef otherwise
 =cut
 
 sub has_manual_credit {
-    my ($address, $currency_code, $broker_code) = @_;
+    my ($address, $currency_code, $client_loginid) = @_;
 
-    my $clientdb_dbic = my $db = BOM::Database::ClientDB->new({broker_code => $broker_code})->db->dbic;
+    my $clientdb_dbic = my $db = BOM::Database::ClientDB->new({client_loginid => $client_loginid})->db->dbic;
 
     my $result = $clientdb_dbic->run(
         ping => sub {
-            my $sth = $_->prepare('SELECT payment.ctc_check_address_manual_credit(?, ?)');
-            $sth->execute($address, $currency_code);
+            my $sth = $_->prepare('SELECT payment.ctc_check_address_manual_credit(?, ?, ?)');
+            $sth->execute($address, $currency_code, $client_loginid);
             return $sth->fetchrow_hashref;
         });
 
