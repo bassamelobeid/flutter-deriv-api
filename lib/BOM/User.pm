@@ -302,15 +302,8 @@ sub login {
     };
     my @clients;
     my $error;
-    my $too_many_attempts = $self->dbic->run(
-        fixup => sub {
-            $_->selectrow_arrayref('select users.too_many_login_attempts(?::BIGINT, ?::SMALLINT, ?::INTERVAL)',
-                undef, $self->{id}, MAX_FAIL_TIMES, ATTEMPT_INTERVAL)->[0];
-        });
 
-    if ($too_many_attempts) {
-        $error = 'LoginTooManyAttempts';
-    } elsif (!$is_social_login && !$is_refresh_token_login && !BOM::User::Password::checkpw($password, $self->{password})) {
+    if (!$is_social_login && !$is_refresh_token_login && !BOM::User::Password::checkpw($password, $self->{password})) {
         $error = 'INVALID_CREDENTIALS';
     } elsif (!(@clients = $self->clients)) {
         $error = $self->clients(include_self_closed => 1) ? 'AccountSelfClosed' : 'AccountUnavailable';
