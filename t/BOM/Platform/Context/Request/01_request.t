@@ -1,9 +1,12 @@
 use strict;
 use warnings;
+
 use Test::More;
 use Test::Warn;
 use Test::MockObject;
 use Test::MockModule;
+
+use Digest::MD5 qw(md5_hex);
 use Mojo::URL;
 
 BEGIN { use_ok('BOM::Platform::Context::Request'); }
@@ -175,6 +178,25 @@ subtest 'client_ip' => sub {
         '1.1.1.1', 'ip can be fetched from mojo request');
 };
 
+subtest 'client_ua' => sub {
+    is($simple_request->client_ua, '', 'default client ua is empty');
+    is(
+        BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {}, 'GET')})->client_ua,
+        'Mozilla/5.0 (X11; CrOS x86_64 8172.45.0)',
+        'ua can be fetched from mojo request header'
+    );
+};
+
+subtest 'ua_fingerprint' => sub {
+    is($simple_request->ua_fingerprint, md5_hex('127.0.0.1'), 'default ua fingerprint is hash of default ip only');
+    is(
+        BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {app_id => '1511'}, 'GET')})
+            ->ua_fingerprint,
+        md5_hex('15111.1.1.1Mozilla/5.0 (X11; CrOS x86_64 8172.45.0)'),
+        'ua can be fetched from mojo request header'
+    );
+};
+
 done_testing;
 
 sub mock_request_for {
@@ -186,7 +208,13 @@ sub mock_request_for {
     $url_mock->query(%$param) if keys %$param;
 
     my $header_mock = Test::MockObject->new();
-    $header_mock->mock('header', sub { return; });
+    $header_mock->mock(
+        'header',
+        sub {
+            my (undef, $key) = @_;
+            return 'Mozilla/5.0 (X11; CrOS x86_64 8172.45.0)' if $key eq 'User-Agent';
+            return;
+        });
 
     my $params_mock = Test::MockObject->new();
     $params_mock->mock('to_hash', sub { return $url_mock->query->to_hash; });

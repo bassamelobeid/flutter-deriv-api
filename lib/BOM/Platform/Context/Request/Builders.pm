@@ -54,7 +54,8 @@ sub from_mojo {
 
     %ENV = (%ENV, %{$request->env});    ## no critic (RequireLocalizedPunctuationVars)
 
-    $ENV{REMOTE_ADDR} = $args->{_ip} = _remote_ip($request);    ## no critic (RequireLocalizedPunctuationVars)
+    $args->{_ua} = $request->headers->header('User-Agent');
+    $ENV{REMOTE_ADDR} = $args->{_ip} = _remote_ip($request);       ## no critic (RequireLocalizedPunctuationVars)
 
     $args->{domain_name} = $request->url->to_abs->host;
 
