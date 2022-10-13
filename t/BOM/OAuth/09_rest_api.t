@@ -6,16 +6,18 @@ use Test::Mojo;
 use Test::MockModule;
 use Test::Deep;
 use Test::Warn;
+
 use Date::Utility;
+use Digest::SHA     qw( hmac_sha256_hex );
+use JSON::MaybeUTF8 qw( decode_json_utf8 );
+use JSON::WebToken;
+
+use BOM::Config::Redis;
 use BOM::Database::Model::OAuth;
-use BOM::User::Password;
+use BOM::OAuth::Common::Throttler;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use JSON::MaybeUTF8                            qw(encode_json_utf8);
-use Digest::SHA                                qw(hmac_sha256_hex);
-use JSON::WebToken;
-use JSON::MaybeUTF8 qw(decode_json_utf8);
-use BOM::Config::Redis;
+use BOM::User::Password;
 
 my $redis = BOM::Config::Redis::redis_auth_write();
 my $t     = Test::Mojo->new('BOM::OAuth');
@@ -318,8 +320,7 @@ subtest 'login' => sub {
         })->status_is(400)->json_is('/error_code', 'INVALID_DATE_FIRST_CONTACT');
 
     note "Blocked client ip";
-    my $block_redis_key = "oauth::blocked_by_ip::$client_ip";
-    $redis->set($block_redis_key, 1);
+    set_backoff('ip', $client_ip);
     $post->(
         $login_url,
         {
@@ -329,7 +330,7 @@ subtest 'login' => sub {
         {
             Authorization => "Bearer $jwt_token",
         })->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
-    $redis->del($block_redis_key);
+    reset_throttler('ip', $client_ip);
 
     subtest 'Login via system' => sub {
         my $login_type = 'system';
@@ -359,8 +360,7 @@ subtest 'login' => sub {
             })->status_is(400)->json_is('/error_code', 'INVALID_PASSWORD');
 
         note 'Blocked user';
-        $block_redis_key = 'oauth::blocked_by_user::' . $system_user->id;
-        $redis->set($block_redis_key, 1);
+        set_backoff('email', $system_user->email);
         $post->(
             $login_url,
             {
@@ -372,7 +372,7 @@ subtest 'login' => sub {
             {
                 Authorization => "Bearer $jwt_token",
             })->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
-        $redis->del($block_redis_key);
+        reset_throttler('email', $system_user->email);
 
         note "Successful Login";
         $post->(
@@ -404,8 +404,8 @@ subtest 'login' => sub {
             })->status_is(400)->json_is('/error_code', 'MISSING_ONE_TIME_PASSWORD');
 
         note "Wrong ONE TIME PASSWORD";
-        $redis->del('oauth::failure_count_by_user::' . $system_user->id);
-        $redis->del('oauth::failure_count_by_ip::127.0.0.1');
+        reset_throttler('email', $system_user->email);
+        reset_throttler('ip',    '127.0.0.1');
         $post->(
             $login_url,
             {
@@ -419,8 +419,9 @@ subtest 'login' => sub {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
 
-        is $redis->get('oauth::failure_count_by_user::' . $system_user->id), 1, 'Failure counter by user is incremented';
-        is $redis->get('oauth::failure_count_by_ip::127.0.0.1'),             1, 'Failure counter by ip is incremented';
+        is get_counter('email',          $system_user->email), undef, 'Failure counter by email is not incremented';
+        is get_counter('binary_user_id', $system_user->id),    1,     'Failure counter by user id is incremented';
+        is get_counter('ip',             '127.0.0.1'),         1,     'Failure counter by ip is incremented';
 
         note "Successful Login with ONE TIME PASSWORD";
         $post->(
@@ -550,8 +551,10 @@ subtest 'login' => sub {
         ok $redis->ttl('ONE::ALL::TEMP::true') <= 600, 'OneAll cache expiration is 600 seconds';
 
         note "Wrong ONE TIME PASSWORD";
-        $redis->del('oauth::failure_count_by_user::' . $social_user->id);
-        $redis->del('oauth::failure_count_by_ip::127.0.0.1');
+
+        reset_throttler('email', $social_user->email);
+        reset_throttler('ip',    '127.0.0.1');
+
         $oneall_hit = 0;
         $post->(
             $login_url,
@@ -564,8 +567,10 @@ subtest 'login' => sub {
             {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
-        is $redis->get('oauth::failure_count_by_user::' . $social_user->id), 1, 'Failure counter by user is incremented';
-        is $redis->get('oauth::failure_count_by_ip::127.0.0.1'),             1, 'Failure counter by ip is incremented';
+
+        is get_counter('email',          $social_user->email), undef, 'Failure counter by email is not incremented';
+        is get_counter('binary_user_id', $social_user->id),    1,     'Failure counter by user id is incremented';
+        is get_counter('ip',             '127.0.0.1'),         1,     'Failure counter by ip is incremented';
 
         ok !$oneall_hit,                               'OneAll API was skipped';
         ok $redis->get('ONE::ALL::TEMP::true'),        'OneAll response is still cached';
@@ -767,8 +772,7 @@ subtest 'pta_login' => sub {
     $is_official_app = 1;
 
     note "Blocked client ip";
-    my $block_redis_key = "oauth::blocked_by_ip::$client_ip";
-    $redis->set($block_redis_key, 1);
+    set_backoff('ip', $client_ip);
     $post->(
         $pta_login_url,
         {
@@ -779,7 +783,7 @@ subtest 'pta_login' => sub {
         {
             Authorization => "Bearer $jwt_token",
         })->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
-    $redis->del($block_redis_key);
+    reset_throttler('ip', $client_ip);
 
     note 'too many url_params';
     my $params = +{map { $_ => $_ } ('a' .. 'z')};
@@ -825,8 +829,7 @@ subtest 'pta_login' => sub {
         })->status_is(200);
 
     note "Blocked user";
-    $block_redis_key = 'oauth::blocked_by_user::' . $system_user->id;
-    $redis->set($block_redis_key, 1);
+    set_backoff('email', $system_user->email);
     $post->(
         $pta_login_url,
         {
@@ -840,7 +843,7 @@ subtest 'pta_login' => sub {
         {
             Authorization => "Bearer $jwt_token",
         })->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
-    $redis->del($block_redis_key);
+    reset_throttler('email', $system_user->email);
 
     $post->(
         $pta_login_url,
@@ -913,16 +916,13 @@ subtest 'one_time_token' => sub {
     my $one_time_token_endpoint = "$pta_login_url/$one_time_token";
 
     note "Blocked client ip";
-    my $block_redis_key = "oauth::blocked_by_ip::127.0.0.1";
-    $redis->set($block_redis_key, 1);
+    set_backoff('ip', '127.0.0.1');
     $t->get_ok($one_time_token_endpoint)->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
-    $redis->del($block_redis_key);
+    reset_throttler('ip', '127.0.0.1');
 
-    $block_redis_key = 'oauth::blocked_by_user::' . $system_user->id;
-    $redis->set($block_redis_key, 1);
+    set_backoff('email', $system_user->email);
     $t->get_ok($one_time_token_endpoint)->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
-
-    $redis->del($block_redis_key);
+    reset_throttler('email', $system_user->email);
     $t->get_ok($one_time_token_endpoint)->status_is(302);
 };
 
@@ -961,7 +961,7 @@ subtest 'Too many attempts' => sub {
         {
             Authorization => "Bearer $jwt_token",
         }
-    )->status_is(400)->json_is('/error_code', 'TOO_MANY_ATTEMPTS')
+    )->status_is(400)->json_is('/error_code', ' ')
         ->json_is('/message', 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.');
 };
 
@@ -1264,4 +1264,48 @@ subtest 'account reactivation' => sub {
 
 $api_mock->unmock_all;
 $totp_mock->unmock_all;
+
+sub set_backoff {
+    my ($key, $identifier) = @_;
+
+    my $backoff_key = join '::', (BOM::OAuth::Common::Throttler->BACKOFF_KEY, $key, $identifier);
+
+    $redis->set($backoff_key, 3600);
+}
+
+sub get_counter {
+    my ($key, $identifier) = @_;
+
+    my $failure_counter_key = join '::', (BOM::OAuth::Common::Throttler->FAILURE_COUNTER_KEY, $key, $identifier);
+
+    return $redis->get($failure_counter_key);
+}
+
+sub get_round {
+    my ($key, $identifier) = @_;
+
+    my $failure_counter_key = join '::', (BOM::OAuth::Common::Throttler->FAILURE_COUNTER_KEY, $key, $identifier);
+
+    my $count = $redis->get($failure_counter_key);
+
+    return BOM::OAuth::Common::Throttler::_get_round($count);
+}
+
+sub get_backoff {
+    my ($key, $identifier) = @_;
+
+    my $backoff_key = join '::', (BOM::OAuth::Common::Throttler->BACKOFF_KEY, $key, $identifier);
+
+    return $redis->get($backoff_key);
+}
+
+sub reset_throttler {
+    my ($key, $identifier) = @_;
+
+    my $failure_counter_key = join '::', (BOM::OAuth::Common::Throttler->FAILURE_COUNTER_KEY, $key, $identifier);
+    my $backoff_key         = join '::', (BOM::OAuth::Common::Throttler->BACKOFF_KEY,         $key, $identifier);
+
+    $redis->del($failure_counter_key, $backoff_key);
+}
+
 done_testing()

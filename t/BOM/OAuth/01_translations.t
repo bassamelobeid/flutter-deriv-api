@@ -57,6 +57,10 @@ $user->update_totp_fields(
 
 my $t = Test::Mojo->new('BOM::OAuth');
 
+# disable throttler
+my $mock_throttler = Test::MockModule->new('BOM::OAuth::Common::Throttler');
+$mock_throttler->mock(failed_login_attempt => undef);
+
 # mock domain_name to suppress warnings
 my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
 $mocked_request->mock('domain_name', 'www.binaryqa.com');

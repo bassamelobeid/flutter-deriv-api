@@ -21,14 +21,13 @@ use Text::Trim;
 use Brands;
 use LandingCompany::Registry;
 
-use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Database::Model::OAuth;
 use BOM::User;
 use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::OAuth::Common;
-use BOM::OAuth::Helper;
+use BOM::OAuth::Common::Throttler;
 use BOM::OAuth::Static     qw(get_message_mapping);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
@@ -56,29 +55,31 @@ sub authorize {
     # load available networks for brand
     $c->stash('login_providers' => $c->stash('brand')->login_providers);
 
-    my $r          = $c->stash('request');
+    my $req = $c->stash('request');
+    my $ip  = $req->client_ip || $c->client_ip || '';
+
     my $brand_name = $c->stash('brand')->name;
 
     my %template_params = (
         template                  => $c->_get_template_name('login'),
         layout                    => $brand_name,
         app                       => $app,
-        r                         => $r,
+        r                         => $req,
         csrf_token                => $c->csrf_token,
         use_social_login          => $c->_is_social_login_available(),
         login_providers           => $c->stash('login_providers'),
         login_method              => undef,
         is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($app->{id}),
     );
+
     try {
         $template_params{website_domain} = $c->_website_domain($app->{id});
 
         # Check for blocked IPs early in the process.
-        my $ip    = $r->client_ip || '';
-        my $redis = BOM::Config::Redis::redis_auth();
-        if ($ip and $redis->get('oauth::blocked_by_ip::' . $ip)) {
-            stats_inc('login.authorizer.block.hit');
-            $template_params{error} = localize(get_message_mapping()->{SUSPICIOUS_BLOCKED});
+        try {
+            BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(ip => $ip);
+        } catch ($err) {
+            $template_params{error} = localize(get_message_mapping()->{$err->{code}});
             return $c->render(%template_params);
         }
 
@@ -166,10 +167,10 @@ sub authorize {
             return $c->render(%template_params);
         }
 
-        # Let's check the block counter
-        if ($redis->get('oauth::blocked_by_user::' . $user->id)) {
-            stats_inc('login.authorizer.block.hit');
-            $template_params{error} = localize(get_message_mapping()->{SUSPICIOUS_BLOCKED});
+        try {
+            BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(email => $user->email);
+        } catch ($err) {
+            $template_params{error} = localize(get_message_mapping()->{$err->{code}});
             return $c->render(%template_params);
         }
 
@@ -185,7 +186,7 @@ sub authorize {
             $c->session('_otp_verified', $is_verified);
             $otp_error = localize(get_message_mapping->{TFA_FAILURE});
             _stats_inc_error($brand_name, "TFA_FAILURE");
-            BOM::OAuth::Common::failed_login_attempt($c, $user) unless $is_verified;
+            BOM::OAuth::Common::Throttler::failed_login_attempt($c, $user->email) unless $is_verified;
         }
 
         # Check if user has enabled 2FA authentication and this is not a scope request
@@ -248,10 +249,9 @@ sub authorize {
         ) unless $is_all_approved;
 
         # setting up client ip
-        my $client_ip     = $c->client_ip;
         my $client_params = {
             clients => $clients,
-            ip      => $client_ip,
+            ip      => $ip,
             app_id  => $app_id,
         };
         my @params = BOM::OAuth::Common::generate_url_token_params($c, $client_params);
@@ -357,10 +357,34 @@ sub _handle_self_closed {
 sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
-    my $email    = trim lc(defang $c->param('email'));
-    my $password = $c->param('password');
-
+    my $req        = $c->stash('request');
     my $brand_name = $c->stash('brand')->name;
+
+    my %template_params = (
+        template                  => $c->_get_template_name('login'),
+        layout                    => $brand_name,
+        app                       => $app,
+        r                         => $req,
+        csrf_token                => $c->csrf_token,
+        use_social_login          => $c->_is_social_login_available(),
+        login_providers           => $c->stash('login_providers'),
+        login_method              => undef,
+        is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($app->{id}),
+        website_domain            => $c->_website_domain($app->{id}),
+    );
+
+    my $email = trim lc(defang $c->param('email'));
+
+    try {
+        BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(email => $email);
+    } catch ($err) {
+        $template_params{error} = localize(get_message_mapping()->{$err->{code}});
+        $c->render(%template_params);
+
+        return;
+    }
+
+    my $password = $c->param('password');
 
     my $result = BOM::OAuth::Common::validate_login({
         c              => $c,
@@ -375,23 +399,16 @@ sub _login {
         my $err = $result->{error_msg} // $result->{error_code};
 
         _stats_inc_error($brand_name, $err);
-        BOM::OAuth::Common::failed_login_attempt($c);
 
-        my $id = $app->{id};
+        my $ip = $req->client_ip || $c->client_ip || '';
 
-        $c->render(
-            template                  => $c->_get_template_name('login'),
-            layout                    => $brand_name,
-            app                       => $app,
-            error                     => localize(get_message_mapping()->{$err} // $err),
-            r                         => $c->stash('request'),
-            csrf_token                => $c->csrf_token,
-            use_social_login          => $c->_is_social_login_available(),
-            login_providers           => $c->stash('login_providers'),
-            login_method              => undef,
-            is_reset_password_allowed => BOM::OAuth::Common::is_reset_password_allowed($id),
-            website_domain            => $c->_website_domain($id),
+        BOM::OAuth::Common::Throttler::failed_login_attempt(
+            ip    => $ip,
+            email => $email
         );
+
+        $template_params{error} = localize(get_message_mapping()->{$err} // $err);
+        $c->render(%template_params);
 
         return;
     }
