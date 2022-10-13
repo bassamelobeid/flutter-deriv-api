@@ -3,51 +3,50 @@ use strict;
 use warnings;
 no indirect;
 
-use Encode;
 use Date::Utility;
-use Format::Util::Strings qw( set_selected_item );
-use Format::Util::Numbers qw/ formatnumber /;
-use Locale::Country 'code2country';
-use Finance::MIFIR::CONCAT qw(mifir_concat);
-use LWP::UserAgent;
+use Encode;
+use Finance::MIFIR::CONCAT qw( mifir_concat );
+use Format::Util::Numbers  qw( formatnumber );
+use Format::Util::Strings  qw( set_selected_item );
 use HTTP::Headers;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use JSON::MaybeUTF8 qw(:v1);
-use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use List::MoreUtils qw(any);
+use Locale::Country qw( code2country );
 use Log::Any        qw($log);
-use YAML::XS        qw(LoadFile);
+use LWP::UserAgent;
+use Syntax::Keyword::Try;
+use YAML::XS qw(LoadFile);
 
-use BOM::Config::Onfido;
-use BOM::Transaction::Utility;
-use BOM::Config;
-use BOM::User::AuditLog;
-use BOM::Database::ClientDB;
-use BOM::Database::DataMapper::Transaction;
-use BOM::Database::DataMapper::Account;
-use BOM::Database::DataMapper::Payment;
-use BOM::Database::DataMapper::Payment::DoughFlow;
-use BOM::User::Utility;
-use BOM::User::IdentityVerification;
-use BOM::Platform::Locale;
-use BOM::Platform::Context;
-use BOM::Platform::S3Client;
-use BOM::Platform::Client::DoughFlowClient;
-use BOM::Platform::Event::Emitter;
-use BOM::Platform::Utility;
 use BOM::Backoffice::FormAccounts;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Request qw(request);
-use BOM::Database::Model::HandoffToken;
+use BOM::Config;
+use BOM::Config::Onfido;
 use BOM::Config::Redis;
-use BOM::User::Client;
-use BOM::Backoffice::Request qw(request);
-use BOM::User::Onfido;
-use BOM::User::SocialResponsibility;
-use BOM::User::IdentityVerification;
+use BOM::Database::ClientDB;
+use BOM::Database::DataMapper::Account;
+use BOM::Database::DataMapper::Payment;
+use BOM::Database::DataMapper::Payment::DoughFlow;
+use BOM::Database::DataMapper::Transaction;
+use BOM::Database::Model::HandoffToken;
+use BOM::OAuth::Common::Throttler;
+use BOM::Platform::Event::Emitter;
+use BOM::Platform::Client::DoughFlowClient;
+use BOM::Platform::Context;
 use BOM::Platform::Doughflow;
+use BOM::Platform::Locale;
+use BOM::Platform::S3Client;
+use BOM::Platform::Utility;
+use BOM::Transaction::Utility;
+use BOM::User::AuditLog;
+use BOM::User::Client;
+use BOM::User::IdentityVerification;
+use BOM::User::Onfido;
 use BOM::User::RiskScreen;
+use BOM::User::SocialResponsibility;
+use BOM::User::Utility;
 
 use 5.010;
 
@@ -558,19 +557,17 @@ SQL
         sort { $POA_REASONS->{$a}->{reason} cmp $POA_REASONS->{$b}->{reason} }
         keys $POA_REASONS->%*;
 
-    my $redis_oauth  = BOM::Config::Redis::redis_auth_write();
-    my $login_locked = $redis_oauth->ttl('oauth::blocked_by_user::' . $client->user->id);
+    my $redis_oauth = BOM::Config::Redis::redis_auth_write();
+
+    my $login_locked = $redis_oauth->ttl(BOM::OAuth::Common::Throttler->BACKOFF_KEY . '::binary_user_id::' . $client->binary_user_id) // 0;
     my $login_locked_until;
-    my $too_many_attempts;
+    my $bad_attempts   = $redis_oauth->get(BOM::OAuth::Common::Throttler->FAILURE_COUNTER_KEY . '::binary_user_id::' . $client->binary_user_id) // 0;
+    my $login_disabled = 0;
 
     if ($login_locked > 0) {
         $login_locked_until = Date::Utility->new(time + $login_locked);
-    } else {
-        $too_many_attempts = $client->user->dbic->run(
-            fixup => sub {
-                $_->selectrow_arrayref('select users.too_many_login_attempts(?::BIGINT, ?::SMALLINT, ?::INTERVAL)',
-                    undef, $client->user->id, 5, '5 minutes')->[0];
-            });
+    } elsif ($client->status->disabled and $client->status->disabled->{reason} =~ qr/Too many failed login attempts/) {
+        $login_disabled = 1;
     }
 
     my $risk_screen = $client->user->risk_screen;
@@ -678,7 +675,8 @@ SQL
         idv_records                                  => $idv_records,
         expired_poi_docs                             => $client->documents->expired(1),
         login_locked_until                           => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
-        too_many_attempts                            => $too_many_attempts,
+        bad_attempts                                 => $bad_attempts,
+        login_disabled                               => $login_disabled,
         risk_screen                                  => $risk_screen,
         screening_reasons                            => [BOM::User::RiskScreen::SCREENING_REASON],
         is_compliance                                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),

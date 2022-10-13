@@ -79,9 +79,9 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     <tr>
         <td class="label">Login Lock</td>
         [% IF login_locked_until %]
-        <td>: <b class="error">Locked until [% login_locked_until %]</b></td>
-        [% ELSIF too_many_attempts %]
-        <td>: <b class="error">Locked temporary due to many failed attempts</b></td>
+        <td>: <b class="error">Locked until [% login_locked_until %] ([% bad_attempts %] bad attempts)</b></td>
+        [% ELSIF login_disabled %]
+        <td>: <b class="error">Disabled due to many failed attempts</b></td>
         [% ELSE %]
         <td>: <b>Not locked</b></td>
         [% END %]
