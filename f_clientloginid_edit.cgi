@@ -2268,7 +2268,7 @@ sub _update_mt5_status {
                     'mt5_change_color',
                     {
                         loginid => $account,
-                        color   => 4278190080,
+                        color   => -1,
                     }) if not defined $mt5_status;
             }
         }
