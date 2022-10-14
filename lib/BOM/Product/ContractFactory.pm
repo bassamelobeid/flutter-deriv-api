@@ -68,6 +68,8 @@ use BOM::Product::Contract::Resetput;
 use BOM::Product::Contract::Runhigh;
 use BOM::Product::Contract::Runlow;
 use BOM::Product::Contract::Accu;
+use BOM::Product::Contract::Vanillalongcall;
+use BOM::Product::Contract::Vanillalongput;
 
 =head2 produce_contract
 

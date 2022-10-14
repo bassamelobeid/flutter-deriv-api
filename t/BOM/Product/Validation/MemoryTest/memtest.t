@@ -214,7 +214,9 @@ subtest 'memory cycle test' => sub {
         $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
         foreach my $type (@contract_types) {
-            next if $type =~ /^(LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW|TICKHIGH|TICKLOW|RUNHIGH|RUNLOW|MULTUP|MULTDOWN)/;
+            next
+                if $type =~
+                /^(LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW|TICKHIGH|TICKLOW|RUNHIGH|RUNLOW|MULTUP|MULTDOWN|VANILLALONGCALL|VANILLALONGPUT)/;
 
             foreach my $start_type (
                 $offerings_obj->query({

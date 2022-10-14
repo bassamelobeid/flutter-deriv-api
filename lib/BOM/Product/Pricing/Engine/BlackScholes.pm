@@ -20,16 +20,18 @@ has _supported_types => (
     isa     => 'HashRef',
     default => sub {
         return {
-            CALL         => 1,
-            PUT          => 1,
-            RANGE        => 1,
-            UPORDOWN     => 1,
-            ONETOUCH     => 1,
-            NOTOUCH      => 1,
-            EXPIRYMISS   => 1,
-            EXPIRYRANGE  => 1,
-            VANILLA_CALL => 1,
-            VANILLA_PUT  => 1,
+            CALL            => 1,
+            PUT             => 1,
+            RANGE           => 1,
+            UPORDOWN        => 1,
+            ONETOUCH        => 1,
+            NOTOUCH         => 1,
+            EXPIRYMISS      => 1,
+            EXPIRYRANGE     => 1,
+            VANILLA_CALL    => 1,
+            VANILLA_PUT     => 1,
+            VANILLALONGCALL => 1,
+            VANILLALONGPUT  => 1,
         };
     },
 );

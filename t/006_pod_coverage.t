@@ -19,7 +19,6 @@ my $allowed_naked_packages = {
     'BOM::Product::Role::Callputspread'                           => 8,
     'BOM::Product::Role::NonBinary'                               => 2,
     'BOM::Product::Role::HighLowTicks'                            => 10,
-    'BOM::Product::Role::Vanilla'                                 => 0,
     'BOM::Product::Role::Multiplier'                              => 50,
     'BOM::Product::Role::HighLowRuns'                             => 6,
     'BOM::Product::Role::Lookback'                                => 11,

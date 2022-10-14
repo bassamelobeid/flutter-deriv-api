@@ -95,7 +95,8 @@ subtest 'test everything' => sub {
             }
 
             # there's no pricing engine for multiplier and accumulator
-            next if $contract_args->{bet_type} =~ /\bMULTUP\b|\bMULTDOWN\b|\bACCU\b/;
+            next if $contract_args->{bet_type} =~ /\bMULTUP\b|\bMULTDOWN\b|\bACCU\b|\bVANILLALONGCALL\b|\bVANILLALONGPUT\b/;
+
             my $c = produce_contract($contract_args);
 
             next unless exists $expected->{$c->shortcode};
