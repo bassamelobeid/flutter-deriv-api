@@ -1407,8 +1407,8 @@ subtest 'transfer with no fee' => sub {
     $mock_client->redefine(
         get_payment_agent => sub {
             my $mock_pa = Test::MockObject->new;
-            $mock_pa->mock(status           => sub { 'authorized' });
-            $mock_pa->mock(services_allowed => sub { return [] });
+            $mock_pa->mock(status       => sub { 'authorized' });
+            $mock_pa->mock(tier_details => sub { {} });
             return $mock_pa;
         });
     $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('PA to PA transfer is allowed');

@@ -159,8 +159,8 @@ subtest 'platform deposit and withdrawal' => sub {
 
     # payment agent restriction
     my $mock_pa = Test::MockObject->new;
-    $mock_pa->mock(status           => sub { 'authorized' });
-    $mock_pa->mock(services_allowed => sub { return [] });
+    $mock_pa->mock(status       => sub { 'authorized' });
+    $mock_pa->mock(tier_details => sub { {} });
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(get_payment_agent => $mock_pa);

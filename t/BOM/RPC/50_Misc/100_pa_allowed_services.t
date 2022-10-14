@@ -82,6 +82,10 @@ my $token_pa2 = BOM::Platform::Token::API->new->create_token($client_pa2->logini
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
+my $mock_pa      = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+my $tier_details = {};
+$mock_pa->redefine(tier_details => sub { $tier_details });
+
 subtest 'cashier_withdraw restriction' => sub {
     subtest 'Verify email - cashier withdrawal' => sub {
         my @emitted;
@@ -99,15 +103,16 @@ subtest 'cashier_withdraw restriction' => sub {
             },
         };
 
+        $tier_details = {};
+
         $c->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier withdrawal is not available for PAs by default')
             ->error_message_is('This service is not available for payment agents.', 'Serivce unavailability error message');
 
         is(scalar @emitted, 0, 'no email as token email different from passed email');
 
-        my $pa = $client_pa->get_payment_agent;
-        $pa->services_allowed(['cashier_withdraw']);
-        $pa->save;
+        $tier_details->{cashier_withdraw} = 1;
+
         $c->call_ok($method, $params)->has_no_system_error->has_no_error('No error when the service is made available.');
 
         is($emitted[0], 'request_payment_withdraw', 'type=request_payment_withdraw');
@@ -115,9 +120,6 @@ subtest 'cashier_withdraw restriction' => sub {
         is($emitted[1]->{properties}{email}, lc $params->{args}->{verify_email}, 'email is set');
         is $emitted[1]->{properties}{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
         undef @emitted;
-
-        $pa->services_allowed([]);
-        $pa->save;
     };
 
     subtest 'cashier forward' => sub {
@@ -140,13 +142,14 @@ subtest 'cashier_withdraw restriction' => sub {
         # Let's set a default error for normal clients (it is too hard to make a successful cashier forward in a test script).
         $client_pa->status->set('withdrawal_locked', 'system', 'locked for security reason');
 
+        $tier_details = {};
+
         $c->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'PA withdrawal is not available for PAs by default')
             ->error_message_is('This service is not available for payment agents.', 'Serivce unavailability error message');
 
-        my $pa = $client_pa->get_payment_agent;
-        $pa->services_allowed(['cashier_withdraw']);
-        $pa->save;
+        $tier_details->{cashier_withdraw} = 1;
+
         $params->{args}->{verification_code} = BOM::Platform::Token->new({
                 email       => $client_pa->email,
                 expires_in  => 3600,
@@ -155,9 +158,6 @@ subtest 'cashier_withdraw restriction' => sub {
 
         $c->call_ok($method, $params)
             ->has_no_system_error->has_error->error_message_is('Your account is locked for withdrawals.', 'Expected error, like a normal client.');
-
-        $pa->services_allowed([]);
-        $pa->save;
 
         $client_pa->status->clear_withdrawal_locked;
     };
@@ -172,25 +172,24 @@ subtest 'cashier_withdraw restriction' => sub {
             },
         };
 
+        $tier_details = {};
+
         my $res = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
         cmp_deeply $res->{status},             superbagof('withdrawal_locked'),               'Cashier is locked';
         cmp_deeply $res->{cashier_validation}, superbagof('WithdrawServiceUnavailableForPA'), 'Expected cashier verfications flags for the FE.';
 
-        my $pa = $client_pa->get_payment_agent;
-        $pa->services_allowed(['cashier_withdraw']);
-        $pa->save;
+        $tier_details->{cashier_withdraw} = 1;
+
         $res = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
         cmp_deeply $res->{status},             none('withdrawal_locked'),               'Withdrawal is unlocked after allowing the service';
         cmp_deeply $res->{cashier_validation}, none('WithdrawServiceUnavailableForPA'), 'Validation flag is removed.';
 
-        my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
         $mock_pa->redefine(status => undef);
         is_deeply warning { $c->call_ok($method, $params)->has_no_system_error->has_no_error->result }, [],
             'No warning when the PA status is undefined';
-        $mock_pa->unmock_all;
+        $mock_pa->unmock('status');
 
-        $pa->services_allowed([]);
-        $pa->save;
+        $tier_details = {};
     };
 };
 
@@ -234,14 +233,18 @@ subtest 'transfer to a non-pa sibling API call' => sub {
         'Transferring from a payment agent to non-pa sibling is not allowed.')
         ->error_message_is('You are not allowed to transfer to this account.', 'Correct error message.');
 
-    $pa->services_allowed(BOM::User::Client::PaymentAgent::ALLOWABLE_SERVICES);
-    $pa->save;
+    $tier_details = {
+        cashier_withdraw => 1,
+        p2p              => 1,
+        trading          => 1,
+        transfer_to_pa   => 1
+    };
+
     $c->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferToNonPaSibling')
         ->error_message_is('You are not allowed to transfer to this account.',
         'Transfer to a non-pa sibling is strictly blocked, even if we allow all services.');
 
-    $pa->services_allowed([]);
-    $pa->save;
+    $tier_details = {};
     $sibling_btc->payment_agent({%$payment_agent_args, max_withdrawal => 0.00001});
     $sibling_btc->save;
     $c->call_ok($method, $params)->has_no_system_error->has_no_error('No error transfering from a pa to a pa sibling.');
@@ -264,15 +267,15 @@ subtest 'transfer_to_pa restriction' => sub {
             },
         };
 
+        $tier_details = {};
+
         $c->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'PA withdrawal is not available for PAs by default')
             ->error_message_is('You are not allowed to transfer to other payment agents.', 'Serivce unavailability error message');
 
         is(scalar @emitted, 0, 'no email as token email different from passed email');
 
-        my $pa = $client_pa->get_payment_agent;
-        $pa->services_allowed(['transfer_to_pa']);
-        $pa->save;
+        $tier_details->{transfer_to_pa} = 1;
         $c->call_ok($method, $params)->has_no_system_error->has_no_error('No error when the service is made available.');
 
         is($emitted[0], 'request_payment_withdraw', 'type=request_payment_withdraw');
@@ -281,8 +284,7 @@ subtest 'transfer_to_pa restriction' => sub {
         is $emitted[1]->{properties}{live_chat_url}, 'https://www.binary.com/en/contact.html?is_livechat_open=true', 'live_chat_url is set';
         undef @emitted;
 
-        $pa->services_allowed([]);
-        $pa->save;
+        $tier_details = {};
     };
 
     subtest 'paymentagent_withdrawal API call' => sub {
@@ -313,13 +315,14 @@ subtest 'transfer_to_pa restriction' => sub {
                 created_for => $method,
             })->token;
 
+        $tier_details = {};
+
         $c->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('PaymentAgentWithdrawError', 'PA withdrawal is not available for PAs by default')
             ->error_message_is('You are not allowed to transfer to other payment agents.', 'Serivce unavailability error message');
 
-        my $pa = $client_pa2->get_payment_agent;
-        $pa->services_allowed(['transfer_to_pa']);
-        $pa->save;
+        $tier_details->{transfer_to_pa} = 1;
+
         $params->{args}->{verification_code} = BOM::Platform::Token->new({
                 email       => $client_pa2->email,
                 expires_in  => 3600,
@@ -327,8 +330,7 @@ subtest 'transfer_to_pa restriction' => sub {
             })->token;
         $c->call_ok($method, $params)->has_no_system_error->has_no_error('No error when the service is made available.');
 
-        $pa->services_allowed([]);
-        $pa->save;
+        $tier_details = {};
     };
 
     subtest 'paymentagent_transfer API call' => sub {
@@ -344,6 +346,8 @@ subtest 'transfer_to_pa restriction' => sub {
             },
         };
 
+        $tier_details = {};
+
         $c->call_ok($method, $params)->has_no_system_error->has_no_error('No error transfering from a PA to a client');
 
         $params->{args}->{transfer_to} = $client_pa2->loginid;
@@ -351,13 +355,11 @@ subtest 'transfer_to_pa restriction' => sub {
             ->has_no_system_error->has_error->error_code_is('PaymentAgentTransferError', 'Transfer to another PA is not available for PAs by default')
             ->error_message_is('You are not allowed to transfer to other payment agents.', 'Serivce unavailability error message');
 
-        my $pa = $client_pa->get_payment_agent;
-        $pa->services_allowed(['transfer_to_pa']);
-        $pa->save;
+        $tier_details->{transfer_to_pa} = 1;
+
         $c->call_ok($method, $params)->has_no_system_error->has_no_error('No error when the service is made available.');
 
-        $pa->services_allowed([]);
-        $pa->save;
+        $tier_details = {};
     };
 };
 
@@ -375,34 +377,34 @@ subtest 'get account status' => sub {
     my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
 
     my @test_cases = ({
-            status           => 'applied',
-            services_allowed => [],
-            p2p_blocked      => 0,
-            title            => 'status => applied, no service allowed'
+            status       => 'applied',
+            tier_details => {},
+            p2p_blocked  => 0,
+            title        => 'status => applied, no service allowed'
         },
         {
-            status           => 'applied',
-            services_allowed => ['p2p'],
-            p2p_blocked      => 0,
-            title            => 'status = applied, p2p allowed'
+            status       => 'applied',
+            tier_details => => {p2p => 1},
+            p2p_blocked  => 0,
+            title        => 'status = applied, p2p allowed'
         },
         {
-            status           => 'authorized',
-            services_allowed => [],
-            p2p_blocked      => 1,
-            title            => 'status = authorized, no service allowed'
+            status       => 'authorized',
+            tier_details => {},
+            p2p_blocked  => 1,
+            title        => 'status = authorized, no service allowed'
         },
         {
-            status           => 'authorized',
-            services_allowed => ['p2p'],
-            p2p_blocked      => 0,
-            title            => 'status = authorized, p2p service allowed'
+            status       => 'authorized',
+            tier_details => => {p2p => 1},
+            p2p_blocked  => 0,
+            title        => 'status = authorized, p2p service allowed'
         },
     );
 
     for my $test_case (@test_cases) {
-        $mock_pa->redefine(status           => $test_case->{status});
-        $mock_pa->redefine(services_allowed => $test_case->{services_allowed});
+        $mock_pa->redefine(status       => $test_case->{status});
+        $mock_pa->redefine(tier_details => $test_case->{tier_details});
 
         my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
 

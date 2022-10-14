@@ -203,8 +203,8 @@ subtest 'Adverts' => sub {
         $mock_client->redefine(
             get_payment_agent => sub {
                 my $mock_pa = Test::MockObject->new;
-                $mock_pa->mock(status           => sub { 'authorized' });
-                $mock_pa->mock(services_allowed => sub { return [] });
+                $mock_pa->mock(status       => sub { 'authorized' });
+                $mock_pa->mock(tier_details => sub { {} });
                 return $mock_pa;
             });
         $c->call_ok('p2p_advertiser_create', $params)
@@ -249,8 +249,8 @@ subtest 'Adverts' => sub {
         $mock_client->redefine(
             get_payment_agent => sub {
                 my $mock_pa = Test::MockObject->new;
-                $mock_pa->mock(status           => sub { 'authorized' });
-                $mock_pa->mock(services_allowed => sub { return [] });
+                $mock_pa->mock(status       => sub { 'authorized' });
+                $mock_pa->mock(tier_details => sub { {} });
                 return $mock_pa;
             });
 
@@ -381,8 +381,8 @@ subtest 'Create new order' => sub {
         $mock_client->redefine(
             get_payment_agent => sub {
                 my $mock_pa = Test::MockObject->new;
-                $mock_pa->mock(status           => sub { 'authorized' });
-                $mock_pa->mock(services_allowed => sub { return [] });
+                $mock_pa->mock(status       => sub { 'authorized' });
+                $mock_pa->mock(tier_details => sub { {} });
                 return $mock_pa;
             });
         $c->call_ok('p2p_order_create', $params)

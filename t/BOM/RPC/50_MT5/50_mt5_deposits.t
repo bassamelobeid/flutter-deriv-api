@@ -188,13 +188,13 @@ subtest 'deposit' => sub {
         ->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
     $test_client->status->clear_mt5_withdrawal_locked;
 
-    my $mock_client         = Test::MockModule->new('BOM::User::Client');
-    my $pa_services_allowed = [];
+    my $mock_client  = Test::MockModule->new('BOM::User::Client');
+    my $tier_details = {};
     $mock_client->redefine(
         get_payment_agent => sub {
             my $result = Test::MockObject->new();
-            $result->mock(status           => sub { 'authorized' });
-            $result->mock(services_allowed => sub { return $pa_services_allowed });
+            $result->mock(status       => sub { 'authorized' });
+            $result->mock(tier_details => sub { $tier_details });
 
             return $result;
         });
@@ -202,7 +202,13 @@ subtest 'deposit' => sub {
     $c->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('MT5DepositError', 'Payment agents cannot make MT5 deposits.')
         ->error_message_is('You are not allowed to transfer to this account.', 'Error message is about PAs');
 
-    $pa_services_allowed = BOM::User::Client::PaymentAgent::ALLOWABLE_SERVICES;
+    $tier_details = {
+        cashier_withdraw => 1,
+        p2p              => 1,
+        trading          => 1,
+        transfer_to_pa   => 1
+    };
+
     $c->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('MT5DepositError',
         'Payment agents cannot make MT5 deposits, even whith all services allowed.')
