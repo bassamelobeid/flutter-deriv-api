@@ -39,8 +39,8 @@ __PACKAGE__->meta->setup(
         },
         status_comment            => { type => 'varchar' },
         risk_level                => { type => 'text', not_null => 1 },
-        services_allowed          => {type => 'array'},
-        services_allowed_comments => {type => 'text'},
+        services_allowed_comments => { type => 'text' },
+        tier_id                   => { type => 'bigint', default => 1, not_null => 1 },
     ],
 
     primary_key_columns => [ 'client_loginid' ],
