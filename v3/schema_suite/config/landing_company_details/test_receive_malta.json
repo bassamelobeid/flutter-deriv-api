@@ -70,7 +70,8 @@
                      "highlowticks",
                      "reset",
                      "runs",
-                     "multiplier"
+                     "multiplier",
+                     "vanilla"
                   ],
                   "type" : "string"
                },
