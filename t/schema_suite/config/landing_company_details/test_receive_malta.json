@@ -52,7 +52,7 @@
       },
       "legal_allowed_contract_categories" : {
          "items" : {
-            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal|callputspread|reset|highlowticks|lookback|runs|multiplier)$",
+            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal|callputspread|reset|highlowticks|lookback|runs|multiplier|vanilla)$",
             "type" : "string"
          },
          "type" : "array",
