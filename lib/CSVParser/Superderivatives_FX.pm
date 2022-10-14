@@ -211,14 +211,18 @@ sub _convert_sd_mid_to_numeraire {
     my $sd_mid;
 
     if ($bet_type eq 'CALL') {
-        $pricing_param{bet_type} = 'VANILLA_CALL';
+        $pricing_param{bet_type} = 'VANILLALONGCALL';
+        $pricing_param{stake}    = $pricing_param{payout};
+        delete $pricing_param{payout};
         my $compare_bet = produce_contract(\%pricing_param);
         my $compare_bet_bs =
             Math::Business::BlackScholesMerton::NonBinaries::vanilla_call($spot, $barrier, $tiy, $underlying->dividend_rate_for($tiy),
             $compare_bet->mu, $compare_bet->vol_at_strike);
         $sd_mid = ($initial_sd_mid * $spot - $compare_bet_bs) / $barrier;
     } elsif ($bet_type eq 'PUT') {
-        $pricing_param{bet_type} = 'VANILLA_PUT';
+        $pricing_param{bet_type} = 'VANILLALONGPUT';
+        $pricing_param{stake}    = $pricing_param{payout};
+        delete $pricing_param{payout};
         my $compare_bet    = produce_contract(\%pricing_param);
         my $compare_bet_bs = Math::Business::BlackScholesMerton::NonBinaries::vanilla_put($spot, $barrier, $tiy, $underlying->dividend_rate_for($tiy),
             $compare_bet->mu, $compare_bet->vol_at_strike);
