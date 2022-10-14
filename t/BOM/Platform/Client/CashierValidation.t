@@ -648,21 +648,21 @@ subtest 'uderlying action' => sub {
         params            => [],
     };
 
+    my $mock_pa      = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+    my $tier_details = {};
+    $mock_pa->redefine(tier_details => sub { $tier_details });
+
     my $res = BOM::Platform::Client::CashierValidation::validate(%args);
     is_deeply $res->{error}, $expected_error, 'Cashier validation fails for withdrawal by a PA by default';
 
     for my $action_name (qw(withdraw payment_withdraw cashier_withdraw)) {
+        $tier_details->{cashier_withdraw} = 0;
         $res = BOM::Platform::Client::CashierValidation::validate(%args, underlying_action => $action_name);
         is_deeply $res->{error}, $expected_error, "Cashier validation fails for withdrawal by a PA with underlying action = $action_name";
 
-        $pa->services_allowed(['cashier_withdraw']);
-        $pa->save;
-
+        $tier_details->{cashier_withdraw} = 1;
         $res = BOM::Platform::Client::CashierValidation::validate(%args, underlying_action => $action_name);
         is $res->{error}, undef, "Cashier validation passes for action $action_name if the service is allowed for the PA";
-
-        $pa->services_allowed([]);
-        $pa->save;
     }
 
     $res = BOM::Platform::Client::CashierValidation::validate(%args, underlying_action => 'dummy');
