@@ -62,7 +62,7 @@ my %EVENT_PROPERTIES = (
         qw(account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id brand mt5_server mt5_server_location mt5_server_region mt5_server_environment mt5_dashboard_url live_chat_url)
     ],
     mt5_password_changed        => [qw(mt5_loginid)],
-    mt5_change_color            => [qw(loginid color)],
+    mt5_change_color            => [qw(loginid mt5_loginid color)],
     mt5_inactive_notification   => [qw(email name closure_date accounts)],
     mt5_inactive_account_closed => [qw(name title mt5_accounts live_chat_url)],
     document_upload             => [qw(document_type expiration_date file_name id upload_date uploaded_manually_by_staff)],

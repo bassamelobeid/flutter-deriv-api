@@ -283,10 +283,17 @@ async sub mt5_change_color {
     $user_detail->{color} = $color;
     my $updated_user = await BOM::MT5::User::Async::update_user($user_detail);
 
-    die "Could not change client $loginid color to $color" if $updated_user->{color} != $color;
+    die "Could not change client $loginid color to $color" if $updated_user->{color} != ($color == -1 ? 4294967295 : $color);
     die $updated_user->{error}                             if $updated_user->{error};
 
-    return BOM::Event::Services::Track::mt5_change_color($args);
+    my $user           = BOM::User->new(email => $user_detail->{email});
+    my $default_client = $user ? $user->get_default_client : undef;
+
+    return BOM::Event::Services::Track::mt5_change_color({
+        loginid     => ($default_client ? $default_client->loginid : undef),
+        mt5_loginid => $loginid,
+        color       => $color
+    });
 }
 
 =head2 mt5_password_changed
@@ -537,6 +544,9 @@ async sub link_myaff_token_to_mt5 {
     }
 
     die "Could not get details for client $client_mt5_login while linking to affiliate $ib_affiliate_id" unless $user_details;
+
+    # MT5 has problem updating the color to None (4278190080) , let's remove the color from user update
+    delete $user_details->{color};
 
     # Assign the affiliate token in the MT5 API
     my $updated_user = await BOM::MT5::User::Async::update_user({
