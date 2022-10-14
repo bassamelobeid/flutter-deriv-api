@@ -2462,7 +2462,7 @@ sub track_payment_deposit {
 
 =head2 on_user_payment_accounts_limit_reached
 
-Send an email to x-fraud@binary.com warn about the limit that has been reached for the user
+Send an email to x-antifraud-alerts@deriv.com warn about the limit that has been reached for the user
 
 =cut
 
@@ -2477,7 +2477,7 @@ async sub on_user_payment_accounts_limit_reached {
 
     send_email({
             from    => '<no-reply@deriv.com>',
-            to      => 'x-fraud@deriv.com',
+            to      => 'x-antifraud-alerts@deriv.com',
             subject => sprintf('Allowed limit on %s reached by %s', $args{payment_type}, $args{loginid}),
             message => [
                 sprintf("The maximum allowed limit on %s per user of %d has been reached by %s.", $args{payment_type}, $args{limit}, $args{loginid})

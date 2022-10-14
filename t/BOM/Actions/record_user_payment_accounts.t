@@ -87,7 +87,7 @@ subtest 'record_user_payment_accounts' => sub {
 
         my $email = mailbox_search(subject => qr/Allowed limit on CreditCard/);
 
-        cmp_deeply $email->{to}, ['x-fraud@deriv.com'], 'an email is sent to x-fraud@deriv.com';
+        cmp_deeply $email->{to}, ['x-antifraud-alerts@deriv.com'], 'an email is sent to x-antifraud-alerts@deriv.com';
 
         my $loginid = $test_client->loginid;
         is $email->{body}, "The maximum allowed limit on CreditCard per user of 1 has been reached by $loginid.", "email's content is ok";
@@ -138,7 +138,7 @@ subtest 'record_user_payment_accounts' => sub {
 
         my $email = mailbox_search(subject => qr/Allowed limit on CreditCard/);
 
-        cmp_deeply $email->{to}, ['x-fraud@deriv.com'], 'an email is sent to x-fraud@deriv.com';
+        cmp_deeply $email->{to}, ['x-antifraud-alerts@deriv.com'], 'an email is sent to x-antifraud-alerts@deriv.com';
 
         redis_clear($test_client->binary_user_id, 'CreditCard');
     };
