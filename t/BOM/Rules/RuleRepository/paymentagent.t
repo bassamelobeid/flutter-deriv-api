@@ -69,6 +69,10 @@ subtest $rule_name => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => [$client, $pa_client]);
     $pa_client->account('USD');
 
+    my $mock_pa  = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+    my $services = {};
+    $mock_pa->redefine(tier_details => sub { $services });
+
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Action name is required/, 'Action name is required';
 
     my %args = (action => 'dummy action');
@@ -120,12 +124,9 @@ subtest $rule_name => sub {
             },
             "Action $action_name is not allowed - service $service_name is restricted";
 
-        $pa->services_allowed([$service_name]);
-        $pa->save;
+        $services = {$service_name => 1};
         lives_ok { $rule_engine->apply_rules($rule_name, %args) } "Action $action_name is allowed now - service $service_name is unlocked";
-
-        $pa->services_allowed([]);
-        $pa->save;
+        $services = {};
     }
 
     $args{underlying_action} = 'transfer_between_accounts';
@@ -144,7 +145,6 @@ subtest $rule_name => sub {
 
     subtest 'commission withdrawal' => sub {
 
-        my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
         my $limits;
         $mock_pa->redefine(cashier_withdrawable_balance => sub { $limits });
 

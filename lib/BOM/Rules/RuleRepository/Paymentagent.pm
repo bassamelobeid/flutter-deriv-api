@@ -72,9 +72,8 @@ rule 'paymentagent.paymentagent_shouldnt_already_exist' => {
 };
 
 rule 'paymentagent.action_is_allowed' => {
-    description =>
-        "Some services are not allowed for payment agents (trading, p2p, cashier withdrawal, ...), unless they are unlocked from backoffice.",
-    code => sub {
+    description => "Some services are not allowed for payment agents (trading, p2p, cashier withdrawal, ...), unless they allowed by the PAs tier.",
+    code        => sub {
         my ($self, $context, $args) = @_;
 
         my $action = $args->{underlying_action} // $context->{action} or die 'Action name is required';
@@ -113,7 +112,7 @@ rule 'paymentagent.action_is_allowed' => {
 
         my $service = PA_ACTION_MAPPING->{$action} // $action;
         return 1 unless any { $_ eq $service } BOM::User::Client::PaymentAgent::RESTRICTED_SERVICES->@*;
-        return 1 if any     { $_ eq $service } ($pa->services_allowed // [])->@*;
+        return 1 if $pa->tier_details->{$service};
 
         if ($service eq 'cashier_withdraw') {
             my $limits = $pa->cashier_withdrawable_balance;
