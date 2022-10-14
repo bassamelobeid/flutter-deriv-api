@@ -7877,7 +7877,7 @@ sub get_summary_of_deposits {
 
     return $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref("SELECT * FROM payment.summary_of_deposits(?,?)", {Slice => {}}, $self->account->id, $from_time);
+            $_->selectrow_hashref("SELECT * FROM payment.summary_of_deposits_v2(?,?)", {Slice => {}}, $self->account->id, $from_time);
         });
 }
 
