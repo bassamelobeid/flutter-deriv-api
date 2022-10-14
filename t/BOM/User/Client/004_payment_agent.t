@@ -365,40 +365,7 @@ subtest 'validate payment agent details' => sub {
 
     }
 
-    subtest 'Services allowed' => sub {
-        $args{services_allowed} = 'scalar value';
-        like exception { $pa->validate_payment_agent_details(%args) }, qr/ServicesAllowedInvalidType/,
-            'Scalar values are not accepatable for allowed_services';
-
-        $args{services_allowed} = ['invalid name'];
-        like exception { $pa->validate_payment_agent_details(%args) }, qr/ServicesAllowedInvalidName/, 'Serivce name should be valid';
-
-        $args{services_allowed} = ['p2p'];
-        like exception { $pa->validate_payment_agent_details(%args) }, qr/ServicesAllowedComments/, 'Serivce comment cannot be empty';
-
-        my $result;
-        $args{services_allowed}          = undef;
-        $args{services_allowed_comments} = 'This comment will be removed - no allowed services';
-        is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
-        is $result->{services_allowed},                                        undef, 'Services are removed from output';
-        is $result->{services_allowed_comments},                               undef, 'Services comments are removed from output';
-
-        $args{services_allowed}          = [];
-        $args{services_allowed_comments} = 'This comment will be cleared - empty services';
-        is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
-        is_deeply $result->{services_allowed}, [], 'Services are empty - but not removed';
-        is $result->{services_allowed_comments}, '', 'Services comments are cleared with empty services';
-
-        $args{services_allowed}          = ['p2p', 'cashier_withdraw'];
-        $args{services_allowed_comments} = 'This PA is a sweetheart';
-        is exception { $result = $pa->validate_payment_agent_details(%args) }, undef, 'Undefined services are allowed in args';
-        is_deeply $result->{services_allowed}, $args{services_allowed}, 'Services are there';
-        is $result->{services_allowed_comments}, $args{services_allowed_comments}, 'Services comments are there';
-    };
-
     set_fixed_time(1000);
-    $args{services_allowed} = undef;
-
     my $min_max         = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
     my $expected_result = {
         'payment_agent_name'            => 'Nobody',
@@ -480,7 +447,6 @@ subtest 'validate payment agent details' => sub {
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '123abcd',
         'code_of_conduct_approval_time' => 1000,
-        'services_allowed'              => ['p2p'],
         'services_allowed_comments'     => 'This PA is my sweetheart',
     );
 
@@ -690,7 +656,9 @@ subtest 'copy payment agent details and related' => sub {
 subtest 'services allowed' => sub {
     my $pa = $pa_client->get_payment_agent;
 
-    my $mock_pa = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+    my $mock_pa      = Test::MockModule->new('BOM::User::Client::PaymentAgent');
+    my $tier_details = {};
+    $mock_pa->redefine(tier_details => sub { $tier_details });
 
     for my $status (undef, 'applied') {
         $mock_pa->redefine(status => $status);
@@ -707,10 +675,9 @@ subtest 'services allowed' => sub {
 
         ok !$pa->service_is_allowed($service), "Restricted service $service is blocked for authorized PA";
 
-        $mock_pa->redefine(services_allowed => [$service]);
+        $tier_details->{$service} = 1;
         ok $pa->service_is_allowed($service), "$service is allowed for authorized PA if it's added to the list";
-
-        $mock_pa->unmock('services_allowed');
+        delete $tier_details->{$service};
     }
 
 };
