@@ -48,6 +48,15 @@ my $provider_selection = 'CFDs provider : '
     selected_item => 'dxtrade',
     );
 
+my @pa_lcs = grep { $_->{allows_payment_agents} } values LandingCompany::Registry::get_loaded_landing_companies()->%*;
+
+my $pa_brokerselection = 'Broker code : '
+    . create_dropdown(
+    name          => 'broker',
+    items         => [map { $_->{broker_codes}->@* } @pa_lcs],
+    selected_item => $broker,
+    );
+
 # TRANSACTION REPORTS
 if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
     print qq~
@@ -181,15 +190,31 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 }
 
 # PAYMENT AGENTS
-if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'Compliance'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
             Payment Agents
         </div>
-        <div class="card__content">
-            <h3>Dynamic settings</h3>
-            <a href="payment_agents_dynamic_settings.cgi" class="btn btn--primary">Go to Payment Agents dynamic settings</a>
+        <div class="card__content grid2col border">~;
+    if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
+        print qq~
+            <div class="card__content">
+                <h3>Dynamic settings</h3>
+                <a href="payment_agents_dynamic_settings.cgi" class="btn btn--primary">Go to Payment Agents dynamic settings</a>
+            </div>~;
+    }
+    if (BOM::Backoffice::Auth0::has_authorisation(['Compliance'])) {
+        print qq~
+            <div class="card__content">
+                <h3>Tier management</h3>
+                <form action="~ . request()->url_for('backoffice/payment_agent_tier_manage.cgi') . qq~" method="get">
+                    <label>$pa_brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>                
+            </div>~;
+    }
+    print qq~
         </div>
     </div>~;
 }

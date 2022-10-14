@@ -1384,9 +1384,8 @@ if ($payment_agent) {
     my $pa_countries = $pa->get_countries;
     print "<tr><td>Target countries</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";
 
-    my $services_allowed = $pa->services_allowed // [];
-    print "<tr><td>Services Allowed</td><td>" . encode_entities(join(',', @$services_allowed)) . "</td></tr>";
-    print "<tr><td>Services Allowed Comments</td><td>" . encode_entities($pa->services_allowed_comments) . "</td></tr>";
+    print "<tr><td>Tier</td><td>" . encode_entities($pa->tier_details->{name}) . "</td></tr>";
+    print "<tr><td>Tier comments</td><td>" . encode_entities($pa->services_allowed_comments) . "</td></tr>";
 
     print '</table></div>';
 }

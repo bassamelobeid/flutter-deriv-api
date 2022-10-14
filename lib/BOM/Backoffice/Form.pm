@@ -666,11 +666,11 @@ sub _validate_date_field {
 }
 
 sub get_payment_agent_registration_form {
-    my $params             = shift;
-    my $loginid            = $params->{loginid};
-    my $brokercode         = $params->{brokercode};
-    my $coc_approval_time  = $params->{coc_approval_time};
-    my $allowable_services = $params->{allowable_services};
+    my $params            = shift;
+    my $loginid           = $params->{loginid};
+    my $brokercode        = $params->{brokercode};
+    my $coc_approval_time = $params->{coc_approval_time};
+    my $tiers             = $params->{tiers};
 
     # input field for pa_name
     my $input_field_pa_name = {
@@ -1088,31 +1088,22 @@ sub get_payment_agent_registration_form {
         },
     };
 
-    my $label_services_allowed = {
+    my $input_field_tier_id = {
         'label' => {
-            'text' => 'RESTRICTED SERVICES ALLOWED:',
-        }};
+            'text' => 'Tier',
+            'for'  => 'pa_tier_id',
+        },
+        'input' => HTML::FormBuilder::Select->new(
+            'id'      => 'pa_tier_id',
+            'name'    => 'pa_tier_id',
+            'values'  => ['0'],
+            'options' => [map { {value => $_->{id}, text => $_->{name}} } @$tiers],
+        )};
 
-    my @input_fields_services_allowed;
-    for my $service ($allowable_services->@*) {
-        push @input_fields_services_allowed,
-            {
-            'label' => {
-                'text' => "&nbsp;" x 10 . $service,
-                'for'  => "pa_services_allowed_$service",
-            },
-            'input' => HTML::FormBuilder::Select->new(
-                'id'      => "pa_services_allowed_$service",
-                'name'    => "pa_services_allowed_$service",
-                'values'  => ['0'],
-                'options' => _select_yes_no(),
-            )};
-
-    }
-    my $input_field_pa_serices_allowed_comments = {
+    my $input_field_tier_comments = {
         'label' => {
-            'text' => 'Services Allowed Comments',
-            'for'  => 'pa_services_allowed_comments',
+            'text' => 'Tier Comments',
+            'for'  => 'pa_services_allowed_comments',    # db column name is different
         },
         'input' => {
             'id'        => 'pa_services_allowed_comments',
@@ -1202,9 +1193,8 @@ sub get_payment_agent_registration_form {
     }
     $fieldset->add_field($input_field_pa_countries);
 
-    $fieldset->add_field($label_services_allowed);
-    $fieldset->add_field($_) for @input_fields_services_allowed;
-    $fieldset->add_field($input_field_pa_serices_allowed_comments);
+    $fieldset->add_field($input_field_tier_id);
+    $fieldset->add_field($input_field_tier_comments);
 
     $fieldset->add_field($hidden_fields);
     $fieldset->add_field($input_submit_button);

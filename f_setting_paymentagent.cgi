@@ -39,12 +39,12 @@ use constant MAP_FIELDS => {
     pa_countries                 => 'target_country',
     pa_affiliate_id              => 'affiliate_id',
     pa_status_comment            => 'status_comment',
-    pa_services_allowed          => 'services_allowed',
     pa_services_allowed_comments => 'services_allowed_comments',
+    pa_tier_id                   => 'tier_id',
 };
 
 sub _prepare_display_values {
-    my ($pa, $allowable_services) = @_;
+    my ($pa) = @_;
     my %input_fields = map { my $sub_name = MAP_FIELDS->{$_}; $_ => $pa->$sub_name // '' } keys MAP_FIELDS->%*;
     # convery 0/1 to yes/no
     $input_fields{$_} = $input_fields{$_} ? 'yes' : 'no' for (qw/pa_coc_approval pa_auth pa_listed/);
@@ -52,10 +52,6 @@ sub _prepare_display_values {
 
     my $pa_countries = $pa->get_countries;
     $input_fields{pa_countries} = join(',', @$pa_countries);
-    for my $service ($allowable_services->@*) {
-        my $service_is_allowed = any { $_ eq $service } ($pa->services_allowed // [])->@*;
-        $input_fields{"pa_services_allowed_$service"} = $service_is_allowed ? 'yes' : 'no';
-    }
 
     for my $field (qw/pa_url pa_tel pa_supported_payment_method/) {
         my $main_attr = $pa->details_main_field->{MAP_FIELDS->{$field}};
@@ -64,15 +60,10 @@ sub _prepare_display_values {
     return \%input_fields;
 }
 
-sub _get_allowable_services {
-    my $currency_code              = lc(shift);
-    my $app_config                 = BOM::Config::Runtime->instance->app_config;
-    my $currency_not_available_p2p = none { $_ eq $currency_code } $app_config->payments->p2p->available_for_currencies->@*;
-    # will be true if currency not supported in p2p and returns false if otherwise
-    my @allowable_services = BOM::User::Client::PaymentAgent::ALLOWABLE_SERVICES->@*;
-    @allowable_services = grep { $_ !~ m/p2p/ } @allowable_services if $currency_not_available_p2p;
-    # exclude p2p from allowable_services if payment agent's account currency is not supported
-    return \@allowable_services;
+sub _get_tiers {
+    my ($client) = @_;
+
+    return $client->db->dbic->run(fixup => sub { $_->selectall_arrayref('SELECT id, name from betonmarkets.pa_tier_list(NULL)', {Slice => {}}) });
 }
 
 PrintContentType();
@@ -111,14 +102,12 @@ if ($whattodo eq 'create') {
         pa_comm_depo                 => '0.00',
         pa_comm_with                 => '0.00',
         pa_coc_approval              => 'yes',
-        pa_services_allowed          => [],
         pa_services_allowed_comments => ''
     };
 
     # try to copy from a sibling payment agent
-    my $allowable_services = _get_allowable_services($client->currency);
     if (my $sibling_pa = first { $_->get_payment_agent } $client->user->clients) {
-        $values = _prepare_display_values($sibling_pa->get_payment_agent, $allowable_services);
+        $values = _prepare_display_values($sibling_pa->get_payment_agent);
 
         # convert limits
         for my $limit (qw/pa_max_withdrawal pa_min_withdrawal/) {
@@ -128,9 +117,9 @@ if ($whattodo eq 'create') {
     }
 
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form({
-        loginid            => $loginid,
-        broker             => $broker,
-        allowable_services => $allowable_services
+        loginid => $loginid,
+        broker  => $broker,
+        tiers   => _get_tiers($client),
     });
     $payment_agent_registration_form->set_input_fields($values);
     print $payment_agent_registration_form->build();
@@ -141,16 +130,15 @@ if ($whattodo eq 'create') {
 my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
 
 if ($whattodo eq 'show') {
-    my $allowable_services = _get_allowable_services($pa->{currency_code});
 
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form({
-        loginid            => $loginid,
-        broker             => $broker,
-        coc_approval_time  => $pa->code_of_conduct_approval_date,
-        allowable_services => $allowable_services
+        loginid           => $loginid,
+        broker            => $broker,
+        coc_approval_time => $pa->code_of_conduct_approval_date,
+        tiers             => _get_tiers($pa),
     });
 
-    my $input_fields = _prepare_display_values($pa, $allowable_services);
+    my $input_fields = _prepare_display_values($pa);
 
     $payment_agent_registration_form->set_input_fields($input_fields);
 
@@ -193,8 +181,6 @@ if ($whattodo eq 'show') {
     my $pa_comm_with = request()->param('pa_comm_with') + 0;
     code_exit_BO("Invalid deposint commission amount: it should be between 0 and 9")   unless $pa_comm_depo >= 0 and $pa_comm_depo <= 9;
     code_exit_BO("Invalid withdrawal commission amount: it should be between 0 and 9") unless $pa_comm_with >= 0 and $pa_comm_with <= 9;
-    my @services =
-        map { request->param("pa_services_allowed_$_") eq 'yes' ? $_ : () } _get_allowable_services($client->currency)->@*;
 
     my %args = map { MAP_FIELDS->{$_} => request()->param($_) } keys MAP_FIELDS->%*;
     for my $arg (qw/urls phone_numbers supported_payment_methods/) {
@@ -208,8 +194,6 @@ if ($whattodo eq 'show') {
     }
     $args{$_} = ($args{$_} eq 'yes') for (qw/is_listed code_of_conduct_approval/);
     $args{currency_code} = $currency;
-
-    $args{services_allowed} = \@services;
 
     $args{skip_coc_validation} = 1 if $editing;
     try {
