@@ -442,10 +442,9 @@ subtest 'Validate Disabled Client' => sub {
 };
 
 subtest 'Payment agent restriction' => sub {
-    my $services_allowed = [];
+    my $services_allowed = {};
     my $mock_pa          = Test::MockObject->new;
-    $mock_pa->mock(status           => sub { 'authorized' });
-    $mock_pa->mock(services_allowed => sub { $services_allowed });
+    $mock_pa->mock(service_is_allowed => sub { $services_allowed->{$_[1]} });
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(
@@ -467,12 +466,8 @@ subtest 'Payment agent restriction' => sub {
     is($error->get_type, 'ServiceNotAllowedForPA', 'Trading service is not available for Payment agents.');
     like($error->{-message_to_client}, qr/This service is not available for payment agents/, 'Payment agent restruction error message');
 
-    $services_allowed = ['trading'];
+    $services_allowed->{trading} = 1;
     is $validation->_validate_payment_agent_restriction($client), undef, 'No error if tarding is allowed for the payment agent';
-
-    $services_allowed = [];
-    $mock_pa->mock(status => sub { 'verified' });
-    is $validation->_validate_payment_agent_restriction($client), undef, 'No error if the payment agent is not verified';
 
     $mock_client->unmock_all;
 };

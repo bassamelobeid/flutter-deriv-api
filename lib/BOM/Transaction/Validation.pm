@@ -197,19 +197,14 @@ This rule is implemented in bom-rules; but because of circular dependencies it c
 sub _validate_payment_agent_restriction {
     my ($self, $client) = @_;
 
-    my $pa = $client->get_payment_agent;
-
-    return undef unless $pa;
-    return undef unless ($pa->status // '') eq 'authorized';
-
-    my $allowed_services = $pa->services_allowed // [];
+    my $pa = $client->get_payment_agent or return undef;
 
     return Error::Base->cuss(
         -quiet             => 1,
         -type              => 'ServiceNotAllowedForPA',
         -mesg              => "Client is a PA",
         -message_to_client => localize('This service is not available for payment agents.'),
-    ) unless any { $_ eq 'trading' } @$allowed_services;
+    ) unless $pa->service_is_allowed('trading');
 
     return undef;
 }
