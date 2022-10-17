@@ -180,7 +180,7 @@ $req = {
     "contract_type" => "CALL",
     "currency"      => "USD",
     "symbol"        => "frxUSDJPY",
-    "duration"      => 5,
+    "duration"      => 15,
     "duration_unit" => "m",
 };
 

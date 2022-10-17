@@ -19,7 +19,7 @@ start(
 set_language 'EN';
 
 # need to mock these for MULT contracts
-for my $epoch ( 1470744064,1470744072, 1470744088 ){
+for my $epoch (1470744064, 1470744072, 1470744088) {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
         epoch      => $epoch,
@@ -28,7 +28,6 @@ for my $epoch ( 1470744064,1470744072, 1470744088 ){
 }
 
 # UNAUTHENTICATED TESTS
-#
 # contract prices are very sensitive to time. Please avoid having anything before these test.
 # invalid duration
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_offerings_validation_error.json', '100', 'ASIANU', 'R_100', '5', 'm';
@@ -81,10 +80,11 @@ test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_re
 
 # frxUSDJPY
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'frxUSDJPY', '10', 't', 'Win payout if USD/JPY after 10 ticks is strictly higher than entry spot.', '49.60', '49.60', 100.602;
+    '100', 'CALL', 'frxUSDJPY', '15', 'm', 'Win payout if USD/JPY is strictly higher than entry spot at 15 minutes after contract start time.',
+    57.49, '57.49', 97.140;
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'frxUSDJPY', '3', 'm', 'Win payout if USD/JPY is strictly higher than entry spot at 3 minutes after contract start time.',
-    57.5, '57.50', 97.140;
+    '100', 'CALL', 'frxUSDJPY', '30', 'm', 'Win payout if USD/JPY is strictly higher than entry spot at 30 minutes after contract start time.',
+    57.49, '57.49', 97.140;
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '1', 'h', 'Win payout if USD/JPY is strictly higher than entry spot at 1 hour after contract start time.', '57.48',
     '57.48', '97.140';
