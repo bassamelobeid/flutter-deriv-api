@@ -1220,7 +1220,7 @@ sub prepare_bet_data_for_sell {
 
     # we need to verify child table for multiplier and accumulator to avoid cases where a contract
     # is sold while it is being updated via a difference process.
-    if ($contract->category_code =~ /\bmultiplier\b|\baccumulator\b/) {
+    if ($contract->category_code =~ /^(multiplier|accumulator)$/) {
         $bet_params->{verify_child} = _get_info_to_verify_child($self->contract_id, $contract);
     }
     my $quants_bet_variables;
@@ -2137,8 +2137,8 @@ sub sell_expired_contracts {
         my $failure = {fmb_id => $bet->{id}};
         try {
             my $bet_params = shortcode_to_parameters($bet->{short_code}, $currency);
-            if ($bet->{bet_class} eq 'multiplier') {
-                # for multiplier, we need to combine information on the child table to complete a contract
+            if ($bet->{bet_class} =~ /^(multiplier|accumulator)$/) {
+                # for multiplier and accumulator, we need to combine information on the child table to complete a contract
                 $bet_params->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
             }
             $contract = produce_contract($bet_params);
@@ -2168,6 +2168,10 @@ sub sell_expired_contracts {
                 if ($contract->category_code eq 'multiplier') {
                     $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
                     $bet->{hit_type}     = $contract->hit_type;
+                }
+
+                if ($contract->category_code eq 'accumulator') {
+                    $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
                 }
 
                 $bet->{quantity} = 1;

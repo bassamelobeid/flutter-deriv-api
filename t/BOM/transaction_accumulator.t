@@ -546,6 +546,114 @@ subtest 'buy accumulator on crash/boom with VRTC' => sub {
     my %options = (skip_validation => 1);
     my $error   = $txn->buy(%options);
     ok !$error, 'crash symbol buy successful';
+
+    $args->{underlying} = $underlying->symbol;
+};
+
+subtest 'sell failure due to update' => sub {
+    my $contract = produce_contract($args);
+
+    my $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => $contract->bid_price,
+        source        => 23,
+        purchase_date => $contract->date_start,
+        amount        => 100,
+        amount_type   => 'stake',
+    });
+
+    #TODO: For now we skip tnx validation because accumulator contract type is not yet
+    #implemented into our offerings.
+    my %options = (skip_validation => 1);
+    my $error   = $txn->buy(%options);
+    ok !$error, 'buy without error';
+
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
+    # create sell transaction object
+
+    my $contract_sell = produce_contract({
+        underlying   => $underlying->symbol,
+        bet_type     => 'ACCU',
+        date_start   => $contract->date_start,
+        date_pricing => $contract->date_start->plus_time_interval(4),
+        currency     => 'USD',
+        growth_rate  => 0.01,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+    });
+
+    my $sell_txn = BOM::Transaction->new({
+        purchase_date => $contract->date_start,
+        client        => $cl,
+        contract      => $contract_sell,
+        contract_id   => $fmb->{id},
+        price         => $contract_sell->bid_price,
+        source        => 23,
+    });
+
+    # update contract before sell
+    my $updater = BOM::Transaction::ContractUpdate->new(
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        update_params => {take_profit => 2},
+    );
+
+    ok $updater->is_valid_to_update, 'valid to update';
+    $updater->update;
+    $error = $sell_txn->sell(%options);
+    ok $error, 'sell failed after contract is updated';
+    is $error->{-mesg}, 'Contract is updated while attempting to sell', 'error mesg Contract is updated while attempting to sell';
+    is $error->{-type}, 'SellFailureDueToUpdate',                       'error type SellFailureDueToUpdate';
+
+    SKIP: {
+        skip "skip running time sensitive tests for code coverage tests", 2 if $ENV{DEVEL_COVER_OPTIONS};
+
+        subtest 'sell_expired_contract with contract id' => sub {
+            $mocked_contract->mock('is_expired', sub { return 1 });
+
+            sleep 1;
+            my $out = BOM::Transaction::sell_expired_contracts({
+                    client       => $cl,
+                    source       => 23,
+                    contract_ids => [$fmb->{id}]});
+            ok $out->{number_of_sold_bets} == 1, 'sold one contract';
+        };
+        $mocked_contract->unmock('is_expired');
+        subtest 'sell_expired_contract without contract id' => sub {
+            for (1 .. 3) {
+                $contract = produce_contract($args);
+
+                $txn = BOM::Transaction->new({
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => $contract->bid_price,
+                    source        => 19,
+                    purchase_date => $contract->date_start,
+                    amount        => 100,
+                    amount_type   => 'stake',
+                });
+
+                #TODO: For now we skip tnx validation because accumulator contract type is not yet
+                #implemented into our offerings.
+                my %options = (skip_validation => 1);
+                my $error   = $txn->buy(%options);
+                ok !$error, 'buy without error';
+            }
+
+            $mocked_contract->mock('is_expired', sub { return 1 });
+
+            sleep 1;
+            my $out = BOM::Transaction::sell_expired_contracts({
+                client => $cl,
+                source => 23,
+            });
+
+            ok $out->{number_of_sold_bets} == 3, 'sold three contracts';
+            $mocked_contract->unmock('is_expired');
+        };
+    }
 };
 
 done_testing();

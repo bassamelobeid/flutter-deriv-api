@@ -30,7 +30,10 @@ sub get_history_by_contract_id {
         return {error => localize('This contract was not found among your open positions.')};
     }
 
-    my $results = $dm->get_multiplier_audit_details_by_contract_id($args->{contract_id}, $args->{limit});
+    my $results =
+          $contract->category_code eq 'multiplier'
+        ? $dm->get_multiplier_audit_details_by_contract_id($args->{contract_id}, $args->{limit})
+        : $dm->get_accumulator_audit_details_by_contract_id($args->{contract_id}, $args->{limit});
 
     return $self->_get_history($results, $contract, $args->{limit});
 }
@@ -48,7 +51,10 @@ sub get_history_by_transaction_id {
         return {error => localize('This contract was not found among your open positions.')};
     }
 
-    my $results = $dm->get_multiplier_audit_details_by_transaction_id($args->{transaction_id}, $args->{limit});
+    my $results =
+          $contract->category_code eq 'multiplier'
+        ? $dm->get_multiplier_audit_details_by_transaction_id($args->{contract_id}, $args->{limit})
+        : $dm->get_accumulator_audit_details_by_transaction_id($args->{contract_id}, $args->{limit});
 
     return $self->_get_history($results, $contract, $args->{limit});
 }
@@ -79,15 +85,25 @@ sub _get_history {
                 }
             }
 
-            push @history,
-                +{
-                display_name => $display_name,
-                order_amount => $order_amount,
-                order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
-                value        => $contract->new_order({$order_type => abs($order_amount)})->barrier_value,
-                order_type   => $order_type,
+            if (defined $order_amount) {
+                if ($contract->category_code eq 'multiplier') {
+                    push @history,
+                        +{
+                        display_name => $display_name,
+                        order_amount => $order_amount,
+                        order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
+                        value        => $contract->new_order({$order_type => abs($order_amount)})->barrier_value,
+                        order_type   => $order_type,
+                        };
+                } elsif ($contract->category_code eq 'accumulator') {
+                    push @history,
+                        +{
+                        display_name => $display_name,
+                        order_amount => $order_amount,
+                        order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
+                        };
                 }
-                if (defined $order_amount);
+            }
 
             last OUTER if $limit == scalar @history;
         }
