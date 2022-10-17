@@ -862,6 +862,7 @@ subtest 'P2P Order Info' => sub {
         contact_info     => 'Tel: 123456',
         type             => 'sell',
         status           => 'pending',
+        is_seen          => 1,
         id               => re('\d+'),
         price            => 100,
         account_currency => 'USD',
