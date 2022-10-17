@@ -101,12 +101,12 @@ subtest "Sequence of IP login failures" => sub {
         {
             attempts => 3,
             round    => 1,
-            backoff  => 240,
+            backoff  => undef,
         },
         {
             attempts => 4,
             round    => 1,
-            backoff  => 480,
+            backoff  => undef,
         },
         {
             attempts => 5,
@@ -195,12 +195,12 @@ subtest "Sequence of non-identified email login failures" => sub {
         {
             attempts => 3,
             round    => 1,
-            backoff  => 240,
+            backoff  => undef,
         },
         {
             attempts => 4,
             round    => 1,
-            backoff  => 480,
+            backoff  => undef,
         },
         {
             attempts => 5,
@@ -298,13 +298,13 @@ subtest "Sequence of identified email login failures" => sub {
         {
             attempts          => 3,
             round             => 1,
-            backoff           => 240,
+            backoff           => undef,
             accounts_disabled => 0,
         },
         {
             attempts          => 4,
             round             => 1,
-            backoff           => 480,
+            backoff           => undef,
             accounts_disabled => 0,
         },
         {

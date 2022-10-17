@@ -13,7 +13,7 @@ use BOM::User;
 use constant FAILURE_COUNTER_KEY => 'oauth::throttler::failure_count';
 use constant BACKOFF_KEY         => 'oauth::throttler::backoff';
 
-use constant FIRST_ROUND_TRIGGER_COUNT  => 3;
+use constant FIRST_ROUND_TRIGGER_COUNT  => 5;
 use constant SUBSEQ_ROUND_TRIGGER_COUNT => 2;
 
 use constant ROUND_WINDOW => 5;
