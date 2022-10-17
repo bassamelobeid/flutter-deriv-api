@@ -57,12 +57,12 @@ subtest "asset_index" => sub {
         "AUD/JPY",
         [
             ["callput",       "Higher/Lower",               "1d",  "365d"],
-            ["callput",       "Rise/Fall",                  "10t", "365d"],
+            ["callput",       "Rise/Fall",                  "15m", "365d"],
             ["touchnotouch",  "Touch/No Touch",             "1d",  "365d"],
             ["endsinout",     "Ends Between/Ends Outside",  "1d",  "365d"],
             ["staysinout",    "Stays Between/Goes Outside", "1d",  "365d"],
-            ["callputequal",  "Rise/Fall Equal",            "3m",  "365d"],
-            ["callputspread", "Call Spread/Put Spread",     "3m",  "2h"],
+            ["callputequal",  "Rise/Fall Equal",            "15m", "365d"],
+            ["callputspread", "Call Spread/Put Spread",     "15m", "2h"],
             ["multiplier",    "Multiply Up/Multiply Down",  "",    ""],       # logged out will be default to virtual
         ]];
 
@@ -95,7 +95,7 @@ subtest "trading_durations" => sub {
                         durations => [{
                                 display_name => "Minutes",
                                 max          => 1440,
-                                min          => 5,
+                                min          => 15,
                                 name         => "m"
                             },
                             {
