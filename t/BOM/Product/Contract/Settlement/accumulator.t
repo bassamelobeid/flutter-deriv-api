@@ -57,7 +57,8 @@ subtest 'hit barrier' => sub {
     ok $c->hit_tick,   'has hit_tick';
     is $c->hit_tick->epoch, $now->epoch + 2,       'currect hit tick';
     is $c->hit_tick->epoch, $c->close_tick->epoch, 'hit tick == close tick';
-    is $c->value,           '0',                   'current value';
+    is $c->value,           '0',                   'correct value';
+    is $c->pnl,             '-100.00',             'correct pnl';
     ok $c->is_valid_to_sell, 'valid to sell';
 };
 
@@ -89,7 +90,8 @@ subtest 'hit take profit' => sub {
 
     $c = produce_contract($args);
     ok $c->is_expired, 'has expired';
-    is $c->value, '102.01', 'current value';
+    is $c->value, '102.01', 'correct value';
+    is $c->pnl,   '2.01',   'correct pnl';
     ok $c->is_valid_to_sell, 'valid to sell';
 
     delete $args->{date_pricing};
@@ -116,9 +118,9 @@ subtest 'hit take profit and barrier at the same time' => sub {
     ok $c->hit_tick,   'has hit_tick';
     ok $c->exit_tick,  'has exit_tick';
     is $c->hit_tick->epoch, $c->close_tick->epoch, 'exit tick == close tick';
-    is $c->hit_tick->epoch, $now->epoch + 4,       'currect hit tick';
-    is $c->value,           '0',                   'current value';
-
+    is $c->hit_tick->epoch, $now->epoch + 4,       'correct hit tick';
+    is $c->value,           '0',                   'correct value';
+    is $c->pnl,             '-100.00',             'correct pnl';
     delete $args->{limit_order};
 };
 
@@ -137,7 +139,8 @@ subtest 'hit tick expiry' => sub {
     ok $c->exit_tick,  'has exit_tick';
     ok !$c->hit_tick,  'no hit_tick';
     is $c->exit_tick->epoch, $c->close_tick->epoch, 'exit tick == close tick';
-    is $c->value,            '102.01',              'current value';
+    is $c->value,            '102.01',              'correct value';
+    is $c->pnl,              '2.01',                'correct pnl';
     ok $c->is_valid_to_sell, 'valid to sell';
 };
 
@@ -155,7 +158,8 @@ subtest 'hit tick expiry and barrier at the same time' => sub {
     my $c = produce_contract($args);
     ok $c->is_expired, 'has expired';
     ok $c->exit_tick,  'has exit_tick';
-    is $c->value, '0', 'current value';
+    is $c->value, '0',       'correct value';
+    is $c->pnl,   '-100.00', 'correct pnl';
     ok $c->is_valid_to_sell, 'valid to sell';
 
     delete $args->{limit_order};

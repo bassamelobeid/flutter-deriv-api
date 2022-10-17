@@ -191,9 +191,13 @@ since entry_tick is the first tick of the contract there is no previous spot, so
 
 number of ticks recieved after entry_tick
 
+=head2 pnl
+
+profit and loss of the contract
+
 =cut 
 
-has [qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry)] => (
+has [qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry pnl)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -353,6 +357,18 @@ sub get_low_barrier {
     return $spot * (1 - $self->tick_size_barrier);
 }
 
+=head2 _build_pnl
+
+initializing pnl
+
+=cut
+
+sub _build_pnl {
+    my $self = shift;
+
+    return financialrounding('price', $self->currency, $self->bid_price - $self->_user_input_stake);
+}
+
 override 'shortcode' => sub {
     my $self = shift;
 
@@ -461,25 +477,27 @@ has _order => (
     default => sub { {} },
 );
 
-=head2 _validate_take_profit
+=head2 validate_take_profit
 
 validate take profit amount
 it should be 0 < amount <= max_take_profit
 
 =cut
 
-sub _validate_take_profit {
+sub validate_take_profit {
     my $self = shift;
+    #take_profit will be an argument if we are validating contract update paramters
+    my $take_profit = shift // $self->take_profit;
 
     #if there is no take profit order it should be valid
     # amount is undef if we want to cancel and it should always be valid
-    return unless ($self->take_profit and defined $self->take_profit->{amount});
+    return unless ($take_profit and defined $take_profit->{amount});
 
-    if (my $decimal_error = $self->_validate_decimal) {
+    if (my $decimal_error = _validate_decimal($take_profit->{amount}, $self->currency)) {
         return $decimal_error;
     }
 
-    if ($self->take_profit->{amount} <= 0) {
+    if ($take_profit->{amount} <= 0) {
         return {
             message           => 'take profit too low',
             message_to_client => [$ERROR_MAPPING->{TakeProfitTooLow}, financialrounding('price', $self->currency, 0)],
@@ -488,7 +506,7 @@ sub _validate_take_profit {
     }
 
     my $max_take_profit = $self->max_payout - $self->_user_input_stake;
-    if ($self->take_profit->{amount} > $max_take_profit) {
+    if ($take_profit->{amount} > $max_take_profit) {
         return {
             message           => 'take profit too high',
             message_to_client => [$ERROR_MAPPING->{TakeProfitTooHigh}, financialrounding('price', $self->currency, $max_take_profit)],
@@ -506,12 +524,12 @@ validate the precision of TP amount
 =cut
 
 sub _validate_decimal {
-    my $self = shift;
+    my ($amount, $currency) = @_;
 
-    my $order_precision      = Format::Util::Numbers::get_precision_config()->{price}->{$self->currency};
+    my $order_precision      = Format::Util::Numbers::get_precision_config()->{price}->{$currency};
     my $precision_multiplier = 10**$order_precision;
 
-    unless (isint($self->take_profit->{amount} * $precision_multiplier)) {
+    unless (isint($amount * $precision_multiplier)) {
         return {
             message           => 'too many decimal places',
             message_to_client => [$ERROR_MAPPING->{LimitOrderIncorrectDecimal}, $order_precision],
@@ -553,7 +571,7 @@ sub _validation_methods {
     my @validation_methods = qw(_validate_offerings
         _validate_input_parameters
         _validate_feed
-        _validate_take_profit
+        validate_take_profit
         _validate_maximum_stake);
     push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
 

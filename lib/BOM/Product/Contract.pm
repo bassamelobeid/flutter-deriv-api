@@ -1052,8 +1052,8 @@ sub extra_info {
 sub pricing_details {
     my ($self, $action) = @_;
 
-    # non of these information actually valid for multiplier, skipping it here
-    return [] if $self->category_code eq 'multiplier';
+    # non of these information actually valid for multiplier and accumulator, skipping it here
+    return [] if ($self->category_code =~ /^(multiplier|accumulator)$/);
 
     # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
     my $iv   = $self->is_after_expiry ? 0 : $self->pricing_vol;
@@ -1693,7 +1693,7 @@ sub is_non_zero_payout {
 sub skip_streaming {
     my $self = shift;
 
-    # Do not skip if contract does not have defined expiry. Currently, only multipliers does not have pre-defined expiry.
+    # Do not skip if contract does not have defined expiry. Currently, multipliers and accumulators do not have pre-defined expiry.
     return 0 unless $self->category->has_user_defined_expiry;
     # Only skip random_index and random_daily for now. This list might need updating if we introduce more synthetic indices
     # to binary options.
