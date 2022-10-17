@@ -182,6 +182,7 @@ subtest 'Creating new buy order' => sub {
         },
         is_reviewable        => 0,
         verification_pending => 0,
+        is_seen              => 1,
     };
     cmp_deeply($new_order, $expected_order, 'order_create expected response');
     $expected_order->{advertiser_details}{is_recommended} = undef;    # not returned from p2p.order_create db function yet,

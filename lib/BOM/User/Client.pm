@@ -2232,6 +2232,7 @@ use constant {
     P2P_ARCHIVE_DATES_KEY             => 'P2P::AD_ARCHIVAL_DATES',
     P2P_USERS_ONLINE_KEY              => 'P2P::USERS_ONLINE',
     P2P_ONLINE_PERIOD                 => 90,
+    P2P_ORDER_LAST_SEEN_STATUS        => 'P2P::ORDER::LAST_SEEN_STATUS',
     P2P_TOKEN_MIN_EXPIRY              => 2 * 60 * 60,                           # 2 hours. Sendbird token min expiry
     P2P_VERIFICATION_REQUEST_INTERVAL => 60,                                    # min seconds between order verification requests
     P2P_VERIFICATION_TOKEN_EXPIRY     => 10 * 60,                               # tokens expire after 10 min
@@ -2967,7 +2968,6 @@ sub p2p_order_create {
             client_loginid => $self->loginid,
             order_id       => $order->{id},
         });
-
     for my $order_loginid ($order->{client_loginid}, $order->{advertiser_loginid}) {
         BOM::Platform::Event::Emitter::emit(
             p2p_advertiser_updated => {
@@ -2981,8 +2981,11 @@ sub p2p_order_create {
         p2p_adverts_updated => {
             advertiser_id => $order->{type} eq 'buy' ? $order->{client_id} : $order->{advertiser_id},
         });
-
     $order->{payment_method_details} = $self->_p2p_order_payment_method_details($order);
+    $self->_set_last_seen_status(
+        order_id => $order->{id},
+        loginid  => $order->{client_loginid},
+        status   => $order->{status});
     return $self->_order_details([$order])->[0];
 }
 
@@ -3004,6 +3007,13 @@ sub p2p_order_info {
     )->[0] // return;
 
     $order->{payment_method_details} = $self->_p2p_order_payment_method_details($order);
+    unless ($self->_is_order_status_final($order->{status})) {
+        $self->_set_last_seen_status(
+            order_id => $id,
+            loginid  => $self->loginid,
+            status   => $order->{status});
+    }
+
     return $self->_order_details([$order])->[0];
 }
 
@@ -3101,6 +3111,11 @@ sub p2p_order_confirm {
         $self->_p2p_db_error_handler($result);
         $self->_p2p_order_buy_confirmed($order);    # this function does not consider status
         $new_status = $result->{status};
+        $self->_set_last_seen_status(
+            order_id => $id,
+            loginid  => $self->loginid,
+            status   => $new_status
+        );
     }
 
     BOM::Platform::Event::Emitter::emit(
@@ -3129,7 +3144,6 @@ sub p2p_order_cancel {
     my ($self, %param) = @_;
     my $id    = $param{id} // die +{error_code => 'OrderNotFound'};
     my $order = $self->_p2p_orders(id => $id)->[0];
-
     die +{error_code => 'OrderNotFound'} unless $order;
     die +{error_code => 'OrderNoEditExpired'}    if $order->{is_expired};
     die +{error_code => 'OrderAlreadyCancelled'} if $order->{status} eq 'cancelled';
@@ -3454,6 +3468,11 @@ sub p2p_create_order_dispute {
             order_event    => 'dispute',
         });
 
+    $self->_set_last_seen_status(
+        order_id => $id,
+        loginid  => $self->loginid,
+        status   => $updated_order->{status});
+
     return $self->_order_details([$updated_order])->[0];
 }
 
@@ -3617,7 +3636,6 @@ Returns new status if it changed.
 
 sub p2p_expire_order {
     my ($self, %param) = @_;
-
     my $order_id = $param{id} // die 'No id provided to p2p_expire_order';
     my $order    = $self->_p2p_orders(id => $order_id)->[0];
 
@@ -3720,6 +3738,35 @@ sub p2p_expire_order {
 }
 
 =head1 Private P2P methods
+
+=head2 _get_last_seen_status
+Sample hash key: 4|CR90000053 (order_id|login_id)
+Returns last seen status for specified client based on hash key in redis
+Last seen status here means the latest order status seen by client while the order is active 
+
+=cut
+
+sub _get_last_seen_status {
+    my ($self, %param) = @_;
+    my $redis     = BOM::Config::Redis->redis_p2p();
+    my $order_key = $param{order_id} . "|" . $param{loginid};
+    return $redis->hget(P2P_ORDER_LAST_SEEN_STATUS, $order_key);
+}
+
+=head2 _set_last_seen_status
+
+Sample hash key: 4|CR90000053 (order_id|login_id)
+Sets last seen status for specified client based on hash key (order_id|login_id) in redis
+This subroutine invoked only if there is an update to an active order of client and that update is seen by client 
+
+=cut
+
+sub _set_last_seen_status {
+    my ($self, %param) = @_;
+    my $p2p_redis = BOM::Config::Redis->redis_p2p_write();
+    my $order_key = $param{order_id} . "|" . $param{loginid};
+    $p2p_redis->hset(P2P_ORDER_LAST_SEEN_STATUS, $order_key, $param{status});
+}
 
 =head2 _p2p_advertisers
 
@@ -4136,8 +4183,9 @@ sub _validate_advert_payment_method_ids {
         return;
     }
 
-    my $methods      = $self->_p2p_advertiser_payment_methods(advertiser_id => $param{advertiser_id});
-    my @method_names = map { $methods->{$_}{method} } grep { exists $methods->{$_} and $methods->{$_}{is_enabled} } $param{payment_method_ids}->@*;
+    my $methods = $self->_p2p_advertiser_payment_methods(advertiser_id => $param{advertiser_id});
+    my @method_names =
+        map { $methods->{$_}{method} } grep { exists $methods->{$_} and $methods->{$_}{is_enabled} } $param{payment_method_ids}->@*;
 
     die +{error_code => 'InvalidPaymentMethods'}       if any { !$methods->{$_} } $param{payment_method_ids}->@*;
     die +{error_code => 'ActivePaymentMethodRequired'} if $param{is_active} and not @method_names and not trim($param{payment_method});
@@ -4495,7 +4543,8 @@ sub _advertiser_details {
         }
 
         for my $limit (qw/daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/) {
-            $details->{$limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{$limit}) if defined $advertiser->{$limit};
+            $details->{$limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{$limit})
+                if defined $advertiser->{$limit};
         }
 
         if ($advertiser->{blocked_until}) {
@@ -4559,10 +4608,11 @@ sub _advert_details {
             price_display     => $advert->{effective_rate}
             ? financialrounding('amount', $advert->{local_currency}, p2p_rate_rounding($advert->{effective_rate}) * ($amount // 1))
             : undef,
-            rate           => $advert->{rate},
-            rate_type      => $advert->{rate_type},
-            rate_display   => $advert->{rate_type} eq 'float' ? sprintf('%+.2f', $advert->{rate}) : p2p_rate_rounding($advert->{rate}, display => 1),
-            effective_rate => p2p_rate_rounding($advert->{effective_rate}),
+            rate         => $advert->{rate},
+            rate_type    => $advert->{rate_type},
+            rate_display => $advert->{rate_type} eq 'float' ? sprintf('%+.2f', $advert->{rate})
+            : p2p_rate_rounding($advert->{rate}, display => 1),
+            effective_rate                 => p2p_rate_rounding($advert->{effective_rate}),
             effective_rate_display         => p2p_rate_rounding($advert->{effective_rate}, display => 1),
             min_order_amount_limit         => $advert->{min_order_amount},
             min_order_amount_limit_display => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
@@ -4750,6 +4800,13 @@ sub _order_details {
             : (),
         };
 
+        unless ($self->_is_order_status_final($order->{status})) {
+            my $last_seen_status = $self->_get_last_seen_status(
+                order_id => $order->{id},
+                loginid  => $self->loginid
+            );
+            $result->{is_seen} = $order->{status} eq ($last_seen_status // '') ? 1 : 0;
+        }
         if (not exists $order->{payment_method_details} and $order->{payment_method}) {
             $payment_method_defs //= $self->p2p_payment_methods(all => 1);
             $result->{payment_method_names} =
@@ -5167,11 +5224,11 @@ Takes the following argument:
 
 sub _p2p_order_finalized {
     my ($self, $order) = @_;
-
-    my $order_id = $order->{id};
-    my $redis    = BOM::Config::Redis->redis_p2p_write;
-
+    my $order_id   = $order->{id};
+    my $redis      = BOM::Config::Redis->redis_p2p_write;
+    my @order_keys = map { $order_id . "|" . $_ } $order->@{qw/client_loginid advertiser_loginid/};
     $redis->del(P2P_VERIFICATION_ATTEMPT_KEY . "::$order_id", P2P_VERIFICATION_HISTORY_KEY . "::$order_id");
+    $redis->hdel(P2P_ORDER_LAST_SEEN_STATUS, @order_keys);
 }
 
 =head2 _p2p_advertiser_cancellations

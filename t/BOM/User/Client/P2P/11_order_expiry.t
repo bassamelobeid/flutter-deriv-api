@@ -516,6 +516,6 @@ subtest 'errors' => sub {
     $mock->unmock_all;
 
     BOM::Test::Helper::P2P::reset_escrow();
-};
 
+};
 done_testing();
