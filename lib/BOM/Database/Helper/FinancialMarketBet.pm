@@ -665,6 +665,36 @@ sub update_multiplier_contract {
 
     return $res;
 }
+
+=head2 update_accumulator_contract
+
+A specific function update take_profit of accumulator contract.
+
+=cut
+
+sub update_accumulator_contract {
+    my ($self, $args) = @_;
+
+    my ($contract_id, $take_profit) = @{$args}{qw(contract_id take_profit)};
+
+    my @args = ($contract_id, $take_profit, Date::Utility->new->db_timestamp);
+
+    my $sql = q{SELECT financial_market_bet_id, take_profit_order_date, take_profit_order_amount, msg 
+                FROM bet.update_accumulator(?,?,?)};
+
+    my $res = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute(@args);
+            $sth->fetchall_hashref('financial_market_bet_id');
+        });
+
+    unless ($res->{$contract_id}) {
+        $res->{error} = $res->{''}->{msg};
+    }
+
+    return $res;
+}
 no Moose;
 __PACKAGE__->meta->make_immutable;
 

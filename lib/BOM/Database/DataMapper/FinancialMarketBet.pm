@@ -30,6 +30,7 @@ use BOM::Database::Model::FinancialMarketBet::HighLowTick;
 use BOM::Database::Model::FinancialMarketBet::CallputSpread;
 use BOM::Database::Model::FinancialMarketBet::Runs;
 use BOM::Database::Model::FinancialMarketBet::Multiplier;
+use BOM::Database::Model::FinancialMarketBet::Accumulator;
 use Date::Utility;
 use Syntax::Keyword::Try;
 
@@ -108,7 +109,7 @@ sub get_fmb_by_id {
             $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET,        $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET,
             $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET,        $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION,
             $BOM::Database::Model::Constants::BET_CLASS_RESET_BET,        $BOM::Database::Model::Constants::BET_CLASS_HIGH_LOW_TICK,
-            $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER,
+            $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER,       $BOM::Database::Model::Constants::BET_CLASS_ACCUMULATOR,
         ],
         query => [id => $bet_ids],
         db    => $self->db,
@@ -278,11 +279,15 @@ sub get_contract_details_with_transaction_ids {
     my $contract_id = shift;
 
     my $sql = q{
-        SELECT fmb.*, m.*, t.id as transaction_id, t.action_type, t.app_markup
+        SELECT fmb.*, m.*, t.id as transaction_id, t.action_type, t.app_markup,
+            COALESCE(m.take_profit_order_date, a.take_profit_order_date) as take_profit_order_date,
+            COALESCE(m.take_profit_order_amount, a.take_profit_order_amount) as take_profit_order_amount,
+            COALESCE(m.financial_market_bet_id, a.financial_market_bet_id) AS financial_market_bet_id
         FROM
             bet.financial_market_bet fmb
             JOIN transaction.transaction t on t.financial_market_bet_id=fmb.id
             LEFT JOIN bet.multiplier m on m.financial_market_bet_id=fmb.id
+            LEFT JOIN bet.accumulator a on a.financial_market_bet_id=fmb.id
         WHERE
             fmb.id = ?
     };
@@ -356,6 +361,56 @@ sub get_multiplier_audit_details_by_transaction_id {
 
     my $sql = q{
         SELECT * from bet_v1.get_multiplier_audit_details_by_transaction_id(?, ?)
+    };
+
+    my $results = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($transaction_id, $limit);
+            return $sth->fetchall_arrayref({});
+        });
+
+    return $results;
+}
+
+=head2 get_accumulator_audit_details_by_contract_id
+
+Fetch historical updates for accumulator for a specific financial market bet id
+
+=cut
+
+sub get_accumulator_audit_details_by_contract_id {
+    my $self        = shift;
+    my $contract_id = shift;
+    my $limit       = shift;
+
+    my $sql = q{
+        SELECT * from bet_v1.get_accumulator_audit_details_by_contract_id(?, ?)
+    };
+
+    my $results = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($contract_id, $limit);
+            return $sth->fetchall_arrayref({});
+        });
+
+    return $results;
+}
+
+=head2 get_accumulator_audit_details_by_transaction_id
+
+Fetch historical updates for accumulator for a specific transaction id
+
+=cut
+
+sub get_accumulator_audit_details_by_transaction_id {
+    my $self           = shift;
+    my $transaction_id = shift;
+    my $limit          = shift;
+
+    my $sql = q{
+        SELECT * from bet_v1.get_accumulator_audit_details_by_transaction_id(?, ?)
     };
 
     my $results = $self->db->dbic->run(
@@ -448,6 +503,9 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER) {
         $param->{'multiplier_record'} = $rose_object->multiplier;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::Multiplier';
+    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_ACCUMULATOR) {
+        $param->{'accumulator_record'} = $rose_object->accumulator;
+        $model_class = 'BOM::Database::Model::FinancialMarketBet::Accumulator';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
