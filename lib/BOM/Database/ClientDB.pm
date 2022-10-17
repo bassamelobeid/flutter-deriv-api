@@ -6,10 +6,10 @@ use File::ShareDir;
 use JSON::MaybeXS;
 use Text::Trim qw(trim);
 use LandingCompany::Registry;
-use LandingCompany::Wallet;
 use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
 use BOM::Config;
+use BOM::Config::BrokerDatabase;
 
 use BOM::Database::Rose::DB;
 
@@ -64,21 +64,6 @@ sub BUILDARGS {
     croak "At least one of broker_code, or client_loginid must be specified";
 }
 
-my $environment;
-
-BEGIN {
-    my $loaded_landing_companies = LandingCompany::Registry::get_loaded_landing_companies();
-    for my $v (values %$loaded_landing_companies) {
-        $environment->{$_} = $v->{short} for @{$v->{broker_codes}};
-    }
-
-    # loading wallets configuration
-    my $loaded_wallets = LandingCompany::Wallet::available_wallets();
-    for my $v (values %$loaded_wallets) {
-        $environment->{$_} = $v->{short} for @{$v->{broker_codes}};
-    }
-}
-
 =head2 _is_redirect_testcases_to_svg
 
 This method checks whether in ci or qa testdb environement and not a collector
@@ -99,7 +84,7 @@ sub _is_redirect_testcases_to_svg {
 
 sub _build_db {
     my $self   = shift;
-    my $domain = $environment->{$self->broker_code};
+    my $domain = BOM::Config::BrokerDatabase->get_domain($self->broker_code);
     # We are relying on the wording of this message in other places. If you are
     # tempted to change anything here, please make sure to find those places and
     # change them as well.
