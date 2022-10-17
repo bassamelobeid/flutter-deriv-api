@@ -25,12 +25,13 @@ use JSON::MaybeUTF8 qw(:v1);
 use Brands;
 
 use constant {
-    CRON_INTERVAL_DAYS    => 1,
-    AD_ARCHIVE_KEY        => 'P2P::AD_ARCHIVAL_DATES',
-    AD_ACTIVATION_KEY     => 'P2P::AD_ACTIVATION',
-    P2P_USERS_ONLINE_KEY  => 'P2P::USERS_ONLINE',
-    MAX_QUOTE_SECS        => 24 * 60 * 60,               # 1 day
-    P2P_ONLINE_USER_PRUNE => 26 * 7 * 24 * 60 * 60,      # 26 weeks
+    CRON_INTERVAL_DAYS      => 1,
+    AD_ARCHIVE_KEY          => 'P2P::AD_ARCHIVAL_DATES',
+    AD_ACTIVATION_KEY       => 'P2P::AD_ACTIVATION',
+    P2P_USERS_ONLINE_KEY    => 'P2P::USERS_ONLINE',
+    MAX_QUOTE_SECS          => 24 * 60 * 60,               # 1 day
+    P2P_ONLINE_USER_PRUNE   => 26 * 7 * 24 * 60 * 60,      # 26 weeks
+    DAILY_TOTALS_PRUNE_DAYS => 60,
 };
 
 =head1 Name
@@ -75,7 +76,16 @@ sub run {
     for my $lc (grep { $_->p2p_available } LandingCompany::Registry::get_all) {
         for my $broker ($lc->broker_codes->@*) {
             $brokers{$broker} = {
-                db => BOM::Database::ClientDB->new({broker_code => uc $broker})->db->dbic,
+                db_write => BOM::Database::ClientDB->new({
+                        broker_code => uc $broker,
+                        operation   => 'write'
+                    }
+                ),
+                db_replica => BOM::Database::ClientDB->new({
+                        broker_code => uc $broker,
+                        operation   => 'replica'
+                    }
+                ),
                 lc => $lc->short,
             };
         }
@@ -83,14 +93,15 @@ sub run {
 
     for my $broker (keys %brokers) {
 
-        my $db = $brokers{$broker}->{db};
-        my $lc = $brokers{$broker}->{lc};
+        my $db_write   = $brokers{$broker}->{db_write}->db->dbic;
+        my $db_replica = $brokers{$broker}->{db_replica}->db->dbic;
+        my $lc         = $brokers{$broker}->{lc};
 
         try {
 
             # 1. archive inactive ads
             if ($archive_days > 0) {
-                my $updates = $db->run(
+                my $updates = $db_write->run(
                     fixup => sub {
                         $_->selectall_arrayref('SELECT * FROM p2p.deactivate_old_ads(?)', {Slice => {}}, $archive_days);
                     });
@@ -122,19 +133,7 @@ sub run {
             $log->warnf('Error archiving ads for broker %s: %s', $broker, $e);
         }
 
-        try {
-
-            # 2. refresh advertiser completion rate
-            $db->run(
-                fixup => sub {
-                    $_->do('SELECT p2p.advertiser_completion_refresh(?)', undef, CRON_INTERVAL_DAYS);
-                });
-
-        } catch ($e) {
-            $log->warnf('Error refreshing advertiser completion rates for broker %s: %s', $broker, $e);
-        }
-
-        # 3. deactivate fixed/float rate ads
+        # 2. deactivate fixed/float rate ads
         for my $country (sort keys %$ad_config) {
             next unless $all_countries->{$country}{financial_company} eq $lc or $all_countries->{$country}{gaming_company} eq $lc;
 
@@ -149,7 +148,7 @@ sub run {
                     try {
                         my $campaign_id = $campaigns->{float_rate_notice} or die "float_rate_notice email campaign ID is undefined\n";
 
-                        my $user_ids = $db->run(
+                        my $user_ids = $db_write->run(    # even though we are not updating any rows, PG won't allow us to use readonly connection :(
                             fixup => sub {
                                 $_->selectcol_arrayref('SELECT binary_user_id FROM p2p.deactivate_ad_rate_types(?, ?, ?)',
                                     undef, ['fixed'], $country, 1);    # dry run
@@ -193,7 +192,7 @@ sub run {
 
                 my $ads;
                 try {
-                    $ads = $db->run(
+                    $ads = $db_write->run(
                         fixup => sub {
                             $_->selectall_hashref(
                                 'SELECT binary_user_id, rate_type, advertiser_id FROM p2p.deactivate_ad_rate_types(?, ?, ?)',
@@ -234,15 +233,67 @@ sub run {
             }
         }
 
+        my %advertiser_updates;
+
+        # 3. get advertiser completion rates to update
+        try {
+
+            my $rows = $db_replica->run(
+                fixup => sub {
+                    $_->selectall_hashref('SELECT * FROM p2p.get_advertiser_completion(?)', 'advertiser_id', {Slice => {}}, CRON_INTERVAL_DAYS);
+                });
+
+            for my $advertiser (keys %$rows) {
+                $advertiser_updates{$advertiser}{$_} = $rows->{$advertiser}{$_} for keys $rows->{$advertiser}->%*;
+            }
+
+        } catch ($e) {
+            $log->warnf('Error refreshing advertiser completion rates for broker %s: %s', $broker, $e);
+        }
+
+        # 4. get advertiser withdrawal limits to update
         try {
             if (my $limit = $withdrawal_limits->{$lc}) {
-                $db->run(
+                my $rows = $db_replica->run(
                     fixup => sub {
-                        $_->do('SELECT p2p.populate_withdrawal_limits(?, NULL, ?)', undef, $limit->{lifetime_limit}, CRON_INTERVAL_DAYS);
+                        $_->selectall_hashref(
+                            'SELECT * FROM p2p.get_advertiser_withdrawal_limits(?, NULL, ?)',
+                            'advertiser_id',
+                            {Slice => {}},
+                            $limit->{lifetime_limit},
+                            CRON_INTERVAL_DAYS
+                        );
                     });
+
+                for my $advertiser (keys %$rows) {
+                    $advertiser_updates{$advertiser}{$_} = $rows->{$advertiser}{$_} for keys $rows->{$advertiser}->%*;
+                }
             }
         } catch ($e) {
             $log->errorf('Error populating withdrawal limits for broker %s: %s', $broker, $e);
+        }
+
+        # 5. update advertiser totals
+        for my $update (values %advertiser_updates) {
+            try {
+                $db_write->run(
+                    fixup => sub {
+                        $_->do('SELECT p2p.set_advertiser_totals(?, ?, ?, ?)',
+                            undef, $update->@{qw(advertiser_id complete_total complete_success withdrawal_limit)});
+                    });
+            } catch ($e) {
+                $log->errorf('Error saving totals for %s: %s', $update, $e);
+            }
+        }
+
+        # 6. delete old daily totals
+        try {
+            $db_write->run(
+                fixup => sub {
+                    $_->do('SELECT p2p.prune_daily_totals(?)', undef, DAILY_TOTALS_PRUNE_DAYS);
+                });
+        } catch ($e) {
+            $log->errorf('Error pruning daily totals %s: %s', $broker, $e);
         }
 
     }
@@ -253,7 +304,7 @@ sub run {
     $redis->expire(AD_ARCHIVE_KEY, $archive_days * 24 * 60 * 60);
     $redis->exec;
 
-    # delete very old user activity records
+    # 7. delete very old user online activity records
     $redis->zremrangebyscore(P2P_USERS_ONLINE_KEY, '-Inf', time - P2P_ONLINE_USER_PRUNE);
 
     for my $advertiser_id (uniq @advertiser_ids) {
@@ -267,6 +318,7 @@ sub run {
     my $trading_calendar = Quant::Framework->new->trading_calendar($chronicle_reader);
     my $exchange         = Finance::Exchange->create_exchange('FOREX');
 
+    # 8. send internal email if any floating rate countries have exchange rates older than MAX_QUOTE_SECS
     my @alerts;
     for my $country (keys %$ad_config) {
         next if $ad_config->{$country}{float_ads} eq 'disabled';
