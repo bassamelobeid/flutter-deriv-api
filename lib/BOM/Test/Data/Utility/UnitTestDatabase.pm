@@ -22,8 +22,6 @@ use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBet::Multiplier;
 
-use LandingCompany::Wallet;
-
 use Dir::Self;
 use Cwd qw/abs_path/;
 
@@ -150,7 +148,8 @@ sub create_client {
         $client_data->{address_state} = $states->[0]->{value} if $states;
     }
 
-    my $client = LandingCompany::Wallet::get_wallet_for_broker($broker_code) ? BOM::User::Wallet->rnew : BOM::User::Client->rnew;
+    my $class  = BOM::User::Client->get_class_by_broker_code($broker_code);
+    my $client = $class->rnew;
 
     for (keys %$client_data) {
         $client->$_($client_data->{$_});
