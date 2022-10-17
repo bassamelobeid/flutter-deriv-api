@@ -214,7 +214,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
         payout       => 1000,
         date_start   => $now,
         date_pricing => $now,
-        date_expiry  => $now->epoch + 300,
+        date_expiry  => $now->epoch + 900,
         current_tick => $tick,
         barrier      => 'S0P',
     });

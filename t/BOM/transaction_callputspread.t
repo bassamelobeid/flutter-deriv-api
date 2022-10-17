@@ -260,7 +260,7 @@ subtest 'buy CALLSPREAD frxGBPUSD' => sub {
         bet_type      => 'CALLSPREAD',
         currency      => 'USD',
         payout        => 100,
-        duration      => '3m',
+        duration      => '15m',
         current_tick  => $tick_r100,
         barrier_range => 'tight',
     });
@@ -352,7 +352,7 @@ subtest 'buy PUTSPREAD frxGBPUSD' => sub {
         bet_type      => 'PUTSPREAD',
         currency      => 'USD',
         payout        => 100,
-        duration      => '3m',
+        duration      => '15m',
         current_tick  => $tick_r100,
         barrier_range => 'tight',
     });
