@@ -58,8 +58,6 @@ categories:
     broker_codes:
       svg: 
         - CRW
-      maltainvest: 
-        - MFW
     brands:
       - deriv
     groups:
@@ -89,7 +87,7 @@ categories:
           - affiliate
         broker_codes:
           dsl:
-            - AFF
+            - CRA
       demo:
         is_demo: 1
         currencies:

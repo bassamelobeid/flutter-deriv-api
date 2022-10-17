@@ -804,4 +804,16 @@ sub account_types {
     return $config;
 }
 
+=head2 broker_databases
+
+Loads and caches configuration for broker code databases.
+
+=cut
+
+sub broker_databases {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/broker_databases.yml');
+
+    return $config;
+}
+
 1;

@@ -5,6 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Fatal;
 use Test::MockModule;
+use LandingCompany::Registry;
 
 use BOM::Config::AccountType::Registry;
 
@@ -92,14 +93,43 @@ subtest 'registry' => sub {
 
             cmp_deeply [map { $_->name } $account_type->groups->@*], bag($type_config->{groups}->@*, $category_config->{groups}->@*),
                 "Account type $category_name-$type_name 's groups are correctly loaded";
-            is_deeply $account_type->broker_codes, $type_config->{broker_codes} // $category->broker_codes,
-                "Account type $category_name-$type_name 's broker codes are correct";
+
+            my $expected_brokers = keys $type_config->{broker_codes}->%* ? $type_config->{broker_codes} : $category->broker_codes;
+            is_deeply $account_type->broker_codes, $expected_brokers, "Account type $category_name-$type_name 's broker codes are correct";
 
             $groups_used{$_} = 1 for $type_config->{groups}->@*;
         }
     }
 
     cmp_deeply [keys $config->{groups}->%*], bag(keys %groups_used), 'All groups are used in account types and categories';
+
+    subtest 'find broker code' => sub {
+        like exception { BOM::Config::AccountType::Registry->find_broker_code() }, qr/Broker code is missing/,
+            'Correct error for missing broker code';
+
+        my %args = (broker => 'CR');
+        like exception { BOM::Config::AccountType::Registry->find_broker_code(%args) },
+            qr/Cannot find the broke code without a category or an account type name/, 'Correct error for missing category and account type';
+
+        $args{category} = 'trading';
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 1, 'CR found in trading category');
+
+        $args{category} = 'wallet';
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 0, 'CR not found in wallet category');
+
+        delete $args{category};
+        $args{account_type} = 'demo';
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 0, 'CR not found in demo account types');
+
+        $args{account_type} = 'real';
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 1, 'CR found in real account types');
+
+        $args{category} = 'wallet';
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 0, 'CR not found in real account types of wallet category');
+
+        $args{category} = 'trading';
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 1, 'CR found in real account types of trading category');
+    };
 };
 
 subtest 'Group class' => sub {
@@ -193,15 +223,10 @@ subtest 'account type class' => sub {
     is $account_type->is_demo,                        0,                                                              'account type is not demo';
     is $account_type->linkable_to_different_currency, 0, 'it is not linkable to a different currency';
 
-    is_deeply $account_type->brands,   ['deriv'], 'Brands are the same as the category';
-    is_deeply $account_type->groups,   [],        'Groups are empty';
-    is_deeply $account_type->services, [],        'Services are empty (no group)';
-    is_deeply $account_type->broker_codes,
-        {
-        svg         => ['CRW'],
-        maltainvest => ['MFW']
-        },
-        'Broker codes are the same as the category';
+    is_deeply $account_type->brands,                            ['deriv'], 'Brands are the same as the category';
+    is_deeply $account_type->groups,                            [],        'Groups are empty';
+    is_deeply $account_type->services,                          [],        'Services are empty (no group)';
+    is_deeply $account_type->broker_codes, {svg => ['CRW']},    'Broker codes are the same as the category';
     is_deeply $account_type->linkable_wallet_types,             [], 'No linkable wallet types';
     is_deeply $account_type->currencies,                        [], 'No limited currency';
     is_deeply $account_type->currency_types,                    [], 'Currency type is not limited';
@@ -255,6 +280,29 @@ subtest 'account type class' => sub {
 
     my %expected = (%args, services => ['link_to_accounts']);
     is_deeply($account_type->$_, $expected{$_}, "Value of $_ is correct") for keys %expected;
+};
+
+subtest 'validate landing companies and broker codes' => sub {
+    my %all_categories = BOM::Config::AccountType::Registry->all_categories();
+    for my $category_name (keys %all_categories) {
+        my $category = $all_categories{$category_name};
+        for my $type_name (keys $category->account_types->%*) {
+            my $account_type = $category->account_types->{$type_name};
+            next unless keys $account_type->broker_codes->%*;
+
+            for my $lc_name (keys $account_type->broker_codes->%*) {
+                my $landing_company = LandingCompany::Registry->by_name($lc_name);
+
+                ok $landing_company, "Valid landing company $lc_name in $category_name.$type_name broker code config";
+
+                cmp_deeply(
+                    $account_type->broker_codes->{$lc_name},
+                    subsetof($landing_company->broker_codes->@*),
+                    "$category_name.$type_name broker codes are found in landing company $lc_name"
+                );
+            }
+        }
+    }
 };
 
 done_testing;

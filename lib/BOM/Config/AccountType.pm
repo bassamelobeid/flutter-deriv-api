@@ -288,4 +288,32 @@ BUILD {
         };
 };
 
+=head2 get_single_broker_code
+
+It returns the broker code assigned to a landing company in the current account type. It will throw an excpetion if there are more than one broker codes for the landing company, 
+in which case we will need an alternative method to choose between the broker codes.
+It takes one argument:
+
+=over 4
+
+=item * C<landing_company> the short code of a landing company
+
+=back
+
+
+Returns a single broker code matching the requested landing company name.
+
+=cut
+
+method get_single_broker_code ($landing_company) {
+    die 'Landing company name is missing' unless $landing_company;
+
+    my $broker_codes = $self->broker_codes->{$landing_company} // [];
+
+    die "No broker code found in account type $name for $landing_company" unless scalar @$broker_codes;
+    die "Multiple broker codes found in account type $name for $landing_company" if scalar(@$broker_codes) > 1;
+
+    return $broker_codes->[0];
+}
+
 1;

@@ -4,7 +4,7 @@ use warnings;
 no indirect ':fatal';
 
 use Syntax::Keyword::Try;
-use List::Util qw(uniq);
+use List::Util qw(uniq none);
 
 use BOM::Config;
 use BOM::Config::AccountType;
@@ -13,7 +13,7 @@ use BOM::Config::AccountType::Group;
 
 ## VERSION
 
-our (%groups, %categories);
+our (%groups, %categories, @account_types);
 
 =head1 DESCRIPTION
 
@@ -50,8 +50,9 @@ sub load_data {
             my @groups = map { $groups{$_} or die "Unknown group $_ appeared in the account type $category_name-$type_name"; }
                 ($types_config->{$type_name}->{groups}->@*);
 
+            my $config       = $types_config->{$type_name};
             my $account_type = BOM::Config::AccountType->new(
-                $types_config->{$type_name}->%*,
+                %$config,
                 name     => $type_name,
                 category => $category,
                 # category groups are added to account groups
@@ -59,6 +60,7 @@ sub load_data {
             );
 
             $category->account_types->{$type_name} = $account_type;
+            push @account_types, $account_type;
         }
 
         $categories{$category_name} = $category;
@@ -143,12 +145,52 @@ sub account_type_by_name {
 
 Gets all of the registered categories.
 
-Returns a hash, mapping category names to objects.
+Returns a hash, mapping category names to L<BOM::Config::AccountType::Category> objects.
 
 =cut
 
 sub all_categories {
     return %categories;
+}
+
+=head2 find_broker_code
+
+Searches a broker code in account types and categories.
+It takes the following named args:
+
+=over 4
+
+=item * C<broker>: broker code
+
+=item * C<category>: category to search (optional)
+
+=item * C<account_type>: account type to search (optional)
+
+Returns 1 if the given borker code exists in the requested account type and category; 0 otherwise.
+
+=back
+
+=cut
+
+sub find_broker_code {
+    my (undef, %args) = @_;
+
+    my $broker       = $args{broker} or die "Broker code is missing";
+    my $category     = $args{category};
+    my $account_type = $args{account_type};
+
+    die "Broker code is missing"                                                unless $broker;
+    die "Cannot find the broke code without a category or an account type name" unless $category || $account_type;
+
+    for my $type (@account_types) {
+        next if $account_type && ($type->name ne $account_type);
+        next if $category     && ($type->category_name ne $category);
+        next if none { $_ eq $broker } map { $type->broker_codes->{$_}->@* } keys $type->broker_codes->%*;
+
+        return 1;
+    }
+
+    return 0;
 }
 
 1;
