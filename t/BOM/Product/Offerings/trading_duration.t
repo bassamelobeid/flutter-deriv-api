@@ -11,7 +11,9 @@ use Date::Utility;
 use BOM::Product::Offerings::TradingDuration qw(generate_trading_durations);
 use BOM::Config::Runtime;
 use LandingCompany::Registry;
-use YAML::XS qw(LoadFile);
+use YAML::XS qw(LoadFile DumpFile);
+
+use Data::Dumper;
 
 # suspend based on what we are currently suspend on system.
 BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy([
@@ -26,7 +28,7 @@ subtest 'trading durations at quiet period' => sub {
 
     my $trading_durations = generate_trading_durations($offerings);
     my $expected          = LoadFile('t/BOM/Product/Offerings/expected_trading_durations_quiet_period.yml');
-    cmp_deeply($trading_durations, $expected);
+    is_deeply($trading_durations, $expected);
 };
 
 subtest 'trading durations' => sub {

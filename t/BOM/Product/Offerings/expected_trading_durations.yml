@@ -1,118 +1,6 @@
 ---
 - data:
   - symbol:
-    - display_name: GBP/USD
-      name: frxGBPUSD
-    trade_durations:
-    - durations:
-      - display_name: Minutes
-        max: 1440
-        min: 5
-        name: m
-      - display_name: Hours
-        max: 24
-        min: 1
-        name: h
-      - display_name: Days
-        max: 365
-        min: 1
-        name: days
-      trade_type:
-        display_name: Rise/Fall
-        name: rise_fall
-    - durations:
-      - display_name: Minutes
-        max: 1440
-        min: 5
-        name: m
-      - display_name: Hours
-        max: 24
-        min: 1
-        name: h
-      trade_type:
-        display_name: Rise/Fall (Forward Start)
-        name: rise_fall_forward
-    - durations:
-      - display_name: Minutes
-        max: 1440
-        min: 5
-        name: m
-      - display_name: Hours
-        max: 24
-        min: 1
-        name: h
-      - display_name: Days
-        max: 365
-        min: 1
-        name: days
-      trade_type:
-        display_name: Rise/Fall Equal
-        name: rise_fall_equal
-    - durations:
-      - display_name: Minutes
-        max: 1440
-        min: 5
-        name: m
-      - display_name: Hours
-        max: 24
-        min: 1
-        name: h
-      trade_type:
-        display_name: Rise/Fall Equal (Forward Start)
-        name: rise_fall_equal_forward
-    - durations:
-      - display_name: Days
-        max: 365
-        min: 1
-        name: days
-      trade_type:
-        display_name: Higher/Lower
-        name: higher_lower
-    - durations:
-      - display_name: Days
-        max: 365
-        min: 1
-        name: days
-      trade_type:
-        display_name: Touch/No Touch
-        name: touchnotouch
-    - durations:
-      - display_name: Days
-        max: 365
-        min: 1
-        name: days
-      trade_type:
-        display_name: Ends Between/Ends Outside
-        name: endsinout
-    - durations:
-      - display_name: Days
-        max: 365
-        min: 1
-        name: days
-      trade_type:
-        display_name: Stays Between/Goes Outside
-        name: staysinout
-    - durations:
-      - display_name: Minutes
-        max: 120
-        min: 3
-        name: m
-      - display_name: Hours
-        max: 2
-        min: 1
-        name: h
-      trade_type:
-        display_name: Call Spread/Put Spread
-        name: callputspread
-    - durations:
-      - display_name: No Expiry
-        max: 0
-        min: 0
-        name: no_expiry
-      trade_type:
-        display_name: Multiply Up/Multiply Down
-        name: multiplier
-  - symbol:
     - display_name: AUD/JPY
       name: frxAUDJPY
     - display_name: AUD/USD
@@ -133,6 +21,8 @@
       name: frxGBPAUD
     - display_name: GBP/JPY
       name: frxGBPJPY
+    - display_name: GBP/USD
+      name: frxGBPUSD
     - display_name: USD/CAD
       name: frxUSDCAD
     - display_name: USD/CHF
@@ -141,13 +31,9 @@
       name: frxUSDJPY
     trade_durations:
     - durations:
-      - display_name: Ticks
-        max: 10
-        min: 10
-        name: ticks
       - display_name: Minutes
         max: 1440
-        min: 1
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -163,7 +49,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -175,7 +61,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 3
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -191,7 +77,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -235,7 +121,7 @@
     - durations:
       - display_name: Minutes
         max: 120
-        min: 3
+        min: 15
         name: m
       - display_name: Hours
         max: 2
@@ -270,7 +156,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -282,7 +168,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -312,7 +198,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 3
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -328,7 +214,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -340,7 +226,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 3
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -356,7 +242,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -384,7 +270,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -404,7 +290,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 15
         name: m
       - display_name: Hours
         max: 24
@@ -1404,13 +1290,9 @@
       name: WLDUSD
     trade_durations:
     - durations:
-      - display_name: Ticks
-        max: 10
-        min: 10
-        name: ticks
       - display_name: Minutes
         max: 600
-        min: 1
+        min: 15
         name: m
       - display_name: Hours
         max: 10
@@ -1422,7 +1304,7 @@
     - durations:
       - display_name: Minutes
         max: 600
-        min: 3
+        min: 15
         name: m
       - display_name: Hours
         max: 10
@@ -1443,7 +1325,7 @@
     display_name: Basket Indices
     name: basket_index
   submarket:
-    display_name: 'Forex Basket'
+    display_name: Forex Basket
     name: forex_basket
 - data:
   - symbol:
@@ -1451,13 +1333,9 @@
       name: WLDXAU
     trade_durations:
     - durations:
-      - display_name: Ticks
-        max: 10
-        min: 10
-        name: ticks
       - display_name: Minutes
         max: 600
-        min: 1
+        min: 15
         name: m
       - display_name: Hours
         max: 10
@@ -1469,7 +1347,7 @@
     - durations:
       - display_name: Minutes
         max: 600
-        min: 3
+        min: 15
         name: m
       - display_name: Hours
         max: 10
@@ -1490,5 +1368,5 @@
     display_name: Basket Indices
     name: basket_index
   submarket:
-    display_name: 'Commodities Basket'
+    display_name: Commodities Basket
     name: commodity_basket
