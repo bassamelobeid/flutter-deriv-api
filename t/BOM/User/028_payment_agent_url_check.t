@@ -49,7 +49,7 @@ my $urls_from_db = $result->get_pa_urls($db);
 my @URLs         = $result->prepare_urls($db, $urls_from_db);
 
 subtest 'check payment agent urls' => sub {
-    my @expected_brokers  = qw(CR AFF);
+    my @expected_brokers  = qw(CR CRW AFF);
     my @generated_brokers = keys $result->{brokers}->%*;
     is(@generated_brokers, @expected_brokers, "");
     ok(!grep ($_->{pa_url} !~ /^http/, @URLs), "urls which are not starting with http filtered.");

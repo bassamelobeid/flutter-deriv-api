@@ -19,7 +19,7 @@ sub new {
     my $self = shift->SUPER::new(@_) // return;
 
     die 'Broker code ' . $self->broker_code . ' is not an affiliate broker code'
-        unless LandingCompany::Registry->by_broker($self->broker_code)->is_for_affiliates;
+        unless BOM::User::Client->get_class_by_broker_code($self->broker_code // '') eq 'BOM::User::Affiliate';
 
     return $self;
 }

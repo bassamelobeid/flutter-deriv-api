@@ -149,9 +149,11 @@ sub create_client {
     $details{account_opening_reason}    = 'Speculative';
     $details{date_of_birth}             = '1990-01-01';
 
+    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name('binary', 'real');
+
     my $client = $user->create_client(
         %details,
-        broker_code => $landing_company->broker_codes->[0],
+        broker_code => $account_type->get_single_broker_code($landing_company),
     );
 
     $log->infof('Real account loginid: %s, currency: %s', $client->loginid, $currency);

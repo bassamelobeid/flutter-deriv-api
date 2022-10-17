@@ -30,7 +30,7 @@ use POSIX                      qw(ceil);
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
-use LandingCompany::Wallet;
+use BOM::Config::AccountType::Registry;
 use LandingCompany::Registry;
 
 use BOM::Platform::S3Client;
@@ -7536,6 +7536,39 @@ Returns whether this client instance can perform trading.
 
 sub can_trade { 1 }
 
+=head2 get_class_by_broker_code
+
+Retruns the client class name by broker code. It gets the following args:
+
+=over 4
+
+=item * C<broker_code> - a broker code
+
+=back
+
+
+=cut
+
+sub get_class_by_broker_code {
+    my (undef, $broker_code) = @_;
+
+    die 'Broker code is missing' unless $broker_code;
+
+    return 'BOM::User::Affiliate'
+        if BOM::Config::AccountType::Registry->find_broker_code(
+        broker       => $broker_code,
+        category     => 'wallet',
+        account_type => 'affiliate'
+        );
+
+    return 'BOM::User::Wallet' if BOM::Config::AccountType::Registry->find_broker_code(
+        broker   => $broker_code,
+        category => 'wallet'
+    );
+
+    return 'BOM::User::Client';
+}
+
 =head2 get_client_instance
 
 Returns a client or wallet instance from a loginid.
@@ -7554,22 +7587,11 @@ sub get_client_instance {
     my ($self, $loginid, $db_operation) = @_;
 
     my ($broker_code) = $loginid =~ /(^[a-zA-Z]+)/;
+    die "Invalid loginid $loginid" unless $broker_code;
 
-    if (LandingCompany::Wallet::get_wallet_for_broker($broker_code)) {
-        return BOM::User::Wallet->new({
-            loginid      => $loginid,
-            db_operation => $db_operation // 'replica'
-        });
-    }
+    my $class = BOM::User::Client->get_class_by_broker_code($broker_code);
 
-    if (LandingCompany::Registry->by_broker($broker_code)->is_for_affiliates) {
-        return BOM::User::Affiliate->new({
-            loginid      => $loginid,
-            db_operation => $db_operation // 'replica'
-        });
-    }
-
-    return BOM::User::Client->new({
+    return $class->new({
         loginid      => $loginid,
         db_operation => $db_operation // 'replica'
     });

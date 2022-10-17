@@ -9,6 +9,7 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
+use BOM::Config::AccountType::Registry;
 use Data::Chronicle::Reader;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Email qw(send_email);
@@ -73,8 +74,12 @@ sub run {
     my %archival_dates;
     my %brokers;
 
+    # P2P works on `binary` accounts at the moment.
+    # TODO: we should include `wallet` as well, when the appstore is going to launch.
+    my $account_category = BOM::Config::AccountType::Registry->category_by_name('binary');
+
     for my $lc (grep { $_->p2p_available } LandingCompany::Registry::get_all) {
-        for my $broker ($lc->broker_codes->@*) {
+        for my $broker ($account_category->broker_codes->{$lc->short}->@*) {
             $brokers{$broker} = {
                 db_write => BOM::Database::ClientDB->new({
                         broker_code => uc $broker,

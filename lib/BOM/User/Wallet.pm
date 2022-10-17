@@ -6,9 +6,6 @@ use warnings;
 use Format::Util::Numbers qw/formatnumber/;
 use List::Util            qw(all);
 
-use LandingCompany::Wallet;
-use LandingCompany::Registry;
-
 use parent 'BOM::User::Client';
 
 =head2 new
@@ -23,33 +20,11 @@ Example usage:
 
 sub new {
     my $self = shift->SUPER::new(@_) // return;
-    $self->{config} = LandingCompany::Wallet::get_wallet_for_broker($self->broker_code)
-        // die 'Broker code ' . $self->broker_code . ' is not a wallet';
+
+    die 'Broker code ' . $self->broker_code . ' is not a wallet'
+        unless BOM::User::Client->get_class_by_broker_code($self->broker_code // '') eq 'BOM::User::Wallet';
+
     return $self;
-}
-
-=head2 config
-
-Returns the wallet config.
-
-=cut
-
-sub config { return shift->{config} }
-
-=head2 landing_company
-
-Returns the landing company config.
-
-=cut
-
-sub landing_company {
-    my $self = shift;
-    # config may be empty when we register a new wallet client
-    my $config = $self->{config} // LandingCompany::Wallet::get_wallet_for_broker($self->broker_code);
-
-    die 'Broker code ' . $self->broker_code . ' is not a wallet' unless $config;
-
-    return LandingCompany::Registry->by_name($config->{landing_company});
 }
 
 =head2 is_wallet

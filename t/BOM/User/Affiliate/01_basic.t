@@ -21,11 +21,11 @@ subtest 'initial methods' => sub {
 
     ok $client->loginid =~ /^CRA[0-9]+$/, 'Expected broker code';
 
-    isa_ok $client, 'BOM::User::Client', 'from create_client()';
+    isa_ok $client, 'BOM::User::Affiliate', 'from create_client()';
 
-    ok !$client->is_affiliate, 'is_affiliate false';
-    ok !$client->is_wallet,    'is_wallet false';
-    ok $client->can_trade,     'can_trade true';
+    ok $client->is_affiliate, 'is_affiliate true';
+    ok !$client->is_wallet,   'is_wallet false';
+    ok !$client->can_trade,   'can_trade false';
 
     my $affiliate;
     lives_ok {

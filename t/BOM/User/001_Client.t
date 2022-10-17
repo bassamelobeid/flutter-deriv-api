@@ -7,6 +7,7 @@ use warnings;
 use Test::More qw( no_plan );
 use Test::Deep;
 use Test::Exception;
+use Test::Fatal;
 use Test::MockModule;
 
 use BOM::User::Client;
@@ -40,6 +41,15 @@ subtest 'initialization' => sub {
         BOM::User::Client->new({loginid => 'FF123'});
     }
     qr/Could not init_db\(\) - No such domain with the broker code FF/, 'Create instance with non-existing broker code throws error as expected';
+};
+
+subtest 'Get class by broker code' => sub {
+    like exception { BOM::User::Client->get_class_by_broker_code() }, qr/Broker code is missing/, 'Correct error for missing broker code';
+
+    is(BOM::User::Client->get_class_by_broker_code('CRA'),   'BOM::User::Affiliate', 'Correct affiliate class');
+    is(BOM::User::Client->get_class_by_broker_code('CRW'),   'BOM::User::Wallet',    'Correct wallet class');
+    is(BOM::User::Client->get_class_by_broker_code('CR'),    'BOM::User::Client',    'Correct client class');
+    is(BOM::User::Client->get_class_by_broker_code('DUMMY'), 'BOM::User::Client',    'Correct default class');
 };
 
 subtest "Client load and saving." => sub {
