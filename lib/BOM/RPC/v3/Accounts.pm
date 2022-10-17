@@ -3110,7 +3110,7 @@ rpc get_available_accounts_to_transfer => sub {
             },
             {
                 "account_type" => "wallet",
-                "loginid"      => "DW2132132",
+                "loginid"      => "CRW2132132",
                 "type"         => "crypto",
                 "currency"     => "BTC"
             }]};

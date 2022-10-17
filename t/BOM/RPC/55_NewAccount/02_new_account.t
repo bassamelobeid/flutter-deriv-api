@@ -1258,12 +1258,32 @@ subtest $method => sub {
 
         $app_config->system->suspend->wallets(0);
 
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is_deeply $result->{error},
+            {
+            code              => 'InvalidRequestParams',
+            message_to_client => 'Invalid request parameters.',
+            details           => {field => 'currency'}
+            },
+            'Correct error for missing currency.';
+
+        $params->{args}->{currency} = 'DUMMY';
+        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is_deeply $result->{error},
+            {
+            code              => 'InvalidRequestParams',
+            message_to_client => 'Invalid request parameters.',
+            details           => {field => 'currency'}
+            },
+            'Correct error for invalid currency.';
+
+        $params->{args}->{currency} = 'USD';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidAccountRegion',
             'It should return error code if wallet is unavailable in country of residence.')
             ->error_message_is('Sorry, account opening is unavailable in your region.', 'Error message about service unavailability.');
 
-        $mock_countries->redefine(wallet_company_for_country => 'wallet-svg');
+        $mock_countries->redefine(wallet_company_for_country => 'svg');
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidState',
@@ -1275,7 +1295,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error code if missing any details')
             ->error_message_is('Please provide complete details for your account.', 'It should return error message if missing any details')
-            ->error_details_is({missing => ["currency", "payment_method"]});
+            ->error_details_is({missing => ["payment_method"]});
 
         $params->{args}->{payment_method} = 'fiat';
         $params->{args}->{currency}       = 'USD';

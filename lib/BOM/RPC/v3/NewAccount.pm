@@ -32,7 +32,7 @@ use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
 use BOM::User;
 use BOM::Rules::Engine;
-use LandingCompany::Wallet;
+use BOM::Config::AccountType::Registry;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Services::CellxpertService;
 use BOM::RPC::v3::VerifyEmail::Functions;
@@ -117,7 +117,8 @@ rpc new_account_real => sub {
         return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $company;
     }
 
-    my $broker = LandingCompany::Registry->by_name($company)->broker_codes->[0];
+    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name('binary', 'real');
+    my $broker       = $account_type->get_single_broker_code($company);
 
     # Send error if a maltainvest account  is going to be created here;
     # because they should be creaed using new_account_maltainvest call
@@ -164,7 +165,8 @@ rpc new_account_maltainvest => sub {
     # this call is exclusively for maltainvest
     return BOM::RPC::v3::Utility::permission_error if ($company ne 'maltainvest');
 
-    my $broker = LandingCompany::Registry->by_name($company)->broker_codes->[0];
+    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name('binary', 'real');
+    my $broker       = $account_type->get_single_broker_code($company);
 
     my $response = create_new_real_account(
         client          => $client,
@@ -219,8 +221,13 @@ rpc "new_account_virtual",
     $args->{token_details} = delete $params->{token_details};
     $args->{type} //= 'trading';    # default to 'trading'
 
+    my $account_category = $args->{type} eq 'wallet' ? 'wallet' : 'binary';
+    my $account_type     = BOM::Config::AccountType::Registry->account_type_by_name($account_category, 'demo');
+    my $broker           = $account_type->get_single_broker_code('virtual');
+    $args->{broker} = $broker;
+
     return BOM::RPC::v3::Utility::suspended_login()
-        if grep { 'VRTC' eq $_ } BOM::Config::Runtime->instance->app_config->system->suspend->logins->@*;
+        if grep { $broker eq $_ } BOM::Config::Runtime->instance->app_config->system->suspend->logins->@*;
 
     if ($args->{type} eq 'wallet' && BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
         return BOM::RPC::v3::Utility::create_error({
@@ -300,20 +307,28 @@ rpc new_account_wallet => sub {
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;
 
-    my $wallet_short_code = $countries_instance->wallet_company_for_country($client->residence, 'real');
-    my $wallet_lc         = LandingCompany::Wallet::get($wallet_short_code // '');
+    my $company_name = $countries_instance->wallet_company_for_country($client->residence, 'real');
+    my $wallet_lc    = LandingCompany::Registry->by_name($company_name // '');
+
+    my $currency_type = LandingCompany::Registry::get_currency_type($args->{currency} // '');
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidRequestParams',
+            message_to_client => localize('Invalid request parameters.'),
+            details           => {field => 'currency'}}) unless $currency_type;
+
+    # Note: we don't have an argument for wallet account-type a the moment. Let's default it to fiat/crypto based on currency type.
+    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name('wallet', $currency_type);
 
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $wallet_lc;
 
-    my $company = $wallet_lc->{landing_company};
-    my $broker  = $wallet_lc->{broker_codes}->[0];
+    my $broker = $account_type->get_single_broker_code($company_name);
 
     my $response = create_new_real_account(
         client          => $client,
         args            => $args,
         account_type    => 'wallet',
         broker_code     => $broker,
-        landing_company => $company,
+        landing_company => $company_name,
         environment     => request()->login_env($params),
         ip              => $params->{client_ip} // '',
         source          => $params->{source},
