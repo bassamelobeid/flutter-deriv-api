@@ -12,7 +12,7 @@ use BOM::User::Password;
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(localize request);
 
-use LandingCompany::Wallet;
+use BOM::Config::AccountType::Registry;
 
 sub create_account {
     my $args                   = shift;
@@ -23,7 +23,10 @@ sub create_account {
     my $date_first_contact     = $details->{date_first_contact};
     my $brand_name             = $details->{brand_name} // request()->brand->name;
     my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
-    my $type                   = $args->{type} // 'trading';                                                                    # default to 'trading'
+
+    # The argument `type` stands for a `category` in account type terminology.
+    # TODO: The argument sould be renamed to `category` in the API for consistency.
+    my $category = $args->{type} // 'trading';    # default to 'trading'
 
     if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => {code => 'invalid'}};
@@ -32,8 +35,9 @@ sub create_account {
     my $user = BOM::User->new(email => $email);
     if ($user) {
         return {error => {code => 'DuplicateVirtualWallet'}}
-            if $type eq 'wallet' && $user->bom_virtual_wallet_loginid;    # a virtual wallet client already exists
-        return {error => {code => 'duplicate email'}} if $type eq 'trading' && $user->bom_virtual_loginid;   # a virtual trading client already exists
+            if $category eq 'wallet' && $user->bom_virtual_wallet_loginid;    # a virtual wallet client already exists
+        return {error => {code => 'duplicate email'}}
+            if $category eq 'trading' && $user->bom_virtual_loginid;          # a virtual trading client already exists
     }
 
     # we will also check for `is_signup_allowed`
@@ -42,7 +46,7 @@ sub create_account {
     }
 
     # set virtual company if residence is provided otherwise use brand name to infer the broker code
-    my $virtual_company_for_brand = _virtual_company_for_brand($brand_name, $type);
+    my $virtual_company_for_brand = _virtual_company_for_brand($brand_name, $category);
     return {error => {code => 'InvalidBrand'}} unless $virtual_company_for_brand;
 
     #return error if date_first_contact is in future or invalid
@@ -98,12 +102,8 @@ sub create_account {
         ) unless ($user);
 
         my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $virtual_company_for_brand->short;
-        my $broker_code     = LandingCompany::Registry->by_name($landing_company)->broker_codes->[0];
-
-        if ($type eq 'wallet') {
-            $landing_company = $virtual_company_for_brand->short;
-            $broker_code     = LandingCompany::Wallet::get_for_landing_company($landing_company)->{broker_codes}->[0];
-        }
+        my $account_type    = BOM::Config::AccountType::Registry->account_type_by_name($category, 'demo');
+        my $broker_code     = $account_type->get_single_broker_code($landing_company);
 
         my %args = (
             broker_code        => $broker_code,
@@ -121,10 +121,10 @@ sub create_account {
             phone              => '',
             secret_question    => '',
             secret_answer      => '',
-            ($type eq 'wallet') ? (payment_method => 'DemoWalletMoney') : (),
+            ($category eq 'wallet') ? (payment_method => 'DemoWalletMoney') : (),
         );
 
-        $client = $type eq 'wallet' ? $user->create_wallet(%args) : $user->create_client(%args);
+        $client = $category eq 'wallet' ? $user->create_wallet(%args) : $user->create_client(%args);
 
     } catch ($e) {
         warn("Virtual: create_client err [$e]");
