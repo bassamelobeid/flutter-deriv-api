@@ -7,8 +7,9 @@ use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
 use BOM::MyAffiliates::ActivityReporter;
 
-my $day_one = '2011-03-08 12:59:59';
-my $day_two = '2011-03-09 12:59:59';
+my $day_one           = '2011-03-08 12:59:59';
+my $day_two           = '2011-03-09 12:59:59';
+my $first_funded_date = '2022-10-15';
 
 subtest 'binary' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -123,6 +124,7 @@ subtest 'binary' => sub {
             brand           => Brands->new(name => 'binary'),
             processing_date => $processing_date,
         );
+        $first_funded_date = $first_funded_date gt $processing_date->date_yyyymmdd ? $processing_date->date_yyyymmdd : $first_funded_date;
         is $reporter->output_file_path(), '/db/myaffiliates/binary/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
@@ -133,7 +135,7 @@ subtest 'binary' => sub {
         diag $reporter->headers_data();
         is(
             $csv[0],
-            '2011-03-08,' . $client->loginid . ',1165.00,9098.00,0.00,0.00,0.00,2011-03-08,987.00,9098.00,1.00',
+            '2011-03-08,' . $client->loginid . ',1165.00,9098.00,0.00,0.00,0.00,' . $first_funded_date . ',987.00,9098.00,1.00',
             'Check if values are correct in report'
         );
     };
@@ -326,6 +328,7 @@ subtest 'deriv' => sub {
             brand           => Brands->new(name => 'deriv'),
             processing_date => $processing_date,
         );
+        $first_funded_date = $first_funded_date gt $processing_date->date_yyyymmdd ? $processing_date->date_yyyymmdd : $first_funded_date;
         is $reporter->output_file_path(), '/db/myaffiliates/deriv/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
         my @csv = $reporter->activity();
@@ -336,7 +339,7 @@ subtest 'deriv' => sub {
         diag $reporter->headers_data();
         is(
             $csv[0],
-            '2011-03-08,deriv_' . $client->loginid . ',0.00,9098.00,0.00,0.00,0.00,2011-03-08,987.00,9098.00,1.00',
+            '2011-03-08,deriv_' . $client->loginid . ',0.00,9098.00,0.00,0.00,0.00,' . $first_funded_date . ',987.00,9098.00,1.00',
             'Check if values are correct in report'
         );
     };

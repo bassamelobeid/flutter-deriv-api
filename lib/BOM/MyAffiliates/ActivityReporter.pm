@@ -78,6 +78,11 @@ sub activity {
 
         my $first_funded_date =
             $activity->{$loginid}->{'first_funded_date'} ? Date::Utility->new($activity->{$loginid}->{'first_funded_date'})->date_yyyymmdd : '';
+        my $report_date      = $when->date_yyyymmdd;
+        my $report_day       = Date::Utility->new($report_date)->day_of_month();
+        my $first_funded_day = Date::Utility->new($first_funded_date)->day_of_month();
+        $first_funded_date = $first_funded_day gt $report_day ? $report_date : $first_funded_date;
+
         my @output_fields = ($when->date_yyyymmdd, $self->prefix_field($loginid));
 
         if ($currency eq 'USD') {
