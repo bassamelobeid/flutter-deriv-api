@@ -1,10 +1,9 @@
 package BOM::Platform::Context::Request;
 
-use Digest::MD5 qw(md5_hex);
-use Encode;
 use Moose;
-use Sys::Hostname;
+use Encode;
 use URL::Encode;
+use Sys::Hostname;
 
 use Brands;
 use BOM::Config::Runtime;
@@ -28,11 +27,6 @@ has 'domain_name' => (
 );
 
 has 'client_ip' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has 'client_ua' => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -72,15 +66,6 @@ has 'source' => (is => 'ro');
 
 has '_ip' => (
     is => 'ro',
-);
-
-has '_ua' => (
-    is => 'ro',
-);
-
-has 'ua_fingerprint' => (
-    is         => 'ro',
-    lazy_build => 1,
 );
 
 sub param {
@@ -244,9 +229,10 @@ sub _build_language {
     return 'EN';
 }
 
-sub _build_client_ip { shift->_ip || '127.0.0.1' }
-
-sub _build_client_ua { shift->_ua || '' }
+sub _build_client_ip {
+    my $self = shift;
+    return ($self->_ip || '127.0.0.1');
+}
 
 sub _build_app_id {
     my $self = shift;
@@ -259,12 +245,6 @@ sub _build_app {
 
     return undef unless $self->app_id;
     return BOM::Database::Model::OAuth->new->get_app_by_id($self->app_id);
-}
-
-sub _build_ua_fingerprint {
-    my $self = shift;
-
-    return md5_hex(join '', ($self->app_id, $self->client_ip, $self->client_ua));
 }
 
 sub BUILD {
