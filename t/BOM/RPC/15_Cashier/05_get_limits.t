@@ -114,7 +114,8 @@ subtest 'CR - USD' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -150,7 +151,8 @@ subtest 'CR - USD' => sub {
         stash => {
             app_markup_percentage      => 0,
             valid_source               => 1,
-            source_bypass_verification => 0
+            source_bypass_verification => 0,
+            source_type                => 'official',
         },
         'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
         'open_positions'                      => $client->get_limit_for_open_positions,
@@ -230,7 +232,8 @@ subtest 'CR-EUR' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -276,7 +279,8 @@ subtest 'CR-EUR' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -328,7 +332,8 @@ subtest 'CR-BTC' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'BTC', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -382,7 +387,8 @@ subtest 'CR-BTC' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'BTC', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -433,7 +439,8 @@ subtest 'MLT' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -475,7 +482,8 @@ subtest 'MLT' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -527,7 +535,8 @@ subtest 'MX' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -569,7 +578,8 @@ subtest 'MX' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
@@ -598,7 +608,8 @@ subtest 'MX' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,

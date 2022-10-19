@@ -25,7 +25,8 @@ my $expected_result = {
     stash => {
         app_markup_percentage      => 0,
         valid_source               => 1,
-        source_bypass_verification => 0
+        source_bypass_verification => 0,
+        source_type                => 'official',
     },
 };
 
@@ -131,7 +132,8 @@ subtest 'Sell expired contract' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             }
         },
         'It should return counts of sold contracts'
@@ -147,7 +149,8 @@ subtest 'Sell expired contract' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             }
         },
         'It should return 0 if there are not expired contracts'

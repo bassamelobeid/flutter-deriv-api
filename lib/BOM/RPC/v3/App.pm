@@ -7,7 +7,7 @@ use warnings;
 use Syntax::Keyword::Try;
 
 use BOM::RPC::v3::Utility  qw(log_exception);
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
@@ -252,11 +252,14 @@ sub verify_app {
         });
     }
 
+    my $source_type = request()->brand->get_app($app_id)->is_whitelisted ? 'official' : 'unofficial';
+
     return {
         stash => {
             valid_source               => $app_id,
             app_markup_percentage      => $app->{app_markup_percentage} // 0,
-            source_bypass_verification => $app->{bypass_verification}   // 0
+            source_bypass_verification => $app->{bypass_verification}   // 0,
+            source_type                => $source_type,
         }};
 }
 

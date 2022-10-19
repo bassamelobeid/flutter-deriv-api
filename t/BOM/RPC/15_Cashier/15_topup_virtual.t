@@ -45,7 +45,8 @@ sub expected_result {
         stash => {
             app_markup_percentage      => 0,
             valid_source               => 1,
-            source_bypass_verification => 0
+            source_bypass_verification => 0,
+            source_type                => 'official',
         },
         currency => 'USD',
         amount   => shift

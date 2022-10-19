@@ -121,6 +121,7 @@ subtest $method => sub {
             app_markup_percentage      => 0,
             valid_source               => 1,
             source_bypass_verification => 0,
+            source_type                => 'official',
             'email'                    => 'dummy@binary.com',
             'scopes'                   => ['read', 'admin', 'trade', 'payments'],
             'country'                  => 'id',
@@ -280,6 +281,7 @@ subtest $method => sub {
         $params->{token}                          = $unofficial_app_token1;
         $params->{source}                         = $app2->{app_id};
         $expected_result->{stash}->{valid_source} = $app2->{app_id};
+        $expected_result->{stash}->{source_type}  = 'unofficial';
         $expected_result->{stash}->{token}        = $unofficial_app_token1;
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'Third party app can share oAuth token while flag is off');
 
@@ -344,6 +346,7 @@ subtest $method => sub {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
                 source_bypass_verification => 0,
+                source_type                => 'official',
                 'email'                    => 'dummy@binary.com',
                 'scopes'                   => ['read', 'admin', 'trade', 'payments'],
                 'country'                  => 'id',
@@ -470,6 +473,7 @@ subtest $method => sub {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
                 source_bypass_verification => 0,
+                source_type                => 'official',
                 'email'                    => 'dummy@binary.com',
                 'scopes'                   => ['read', 'admin', 'trade', 'payments'],
                 'country'                  => 'id',
@@ -979,7 +983,8 @@ subtest 'logout' => sub {
             stash  => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             }});
 
     # revoke refresh token
@@ -1038,7 +1043,8 @@ subtest 'logout' => sub {
             stash  => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             }});
 
     my $history_records_new = $c->call_ok(

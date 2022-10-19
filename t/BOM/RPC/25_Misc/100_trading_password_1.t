@@ -388,7 +388,8 @@ subtest 'password reset with mt5 accounts' => sub {
             stash  => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
         },
         'Verification code generated'
@@ -539,7 +540,8 @@ subtest 'investor password reset' => sub {
             stash  => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
         },
         'Verification code generated'
@@ -584,7 +586,8 @@ subtest 'investor password reset' => sub {
             stash  => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
         },
         'Verification code generated'

@@ -133,7 +133,8 @@ subtest 'paymentagent_list RPC call' => sub {
         stash => {
             app_markup_percentage      => 0,
             valid_source               => 1,
-            source_bypass_verification => 0
+            source_bypass_verification => 0,
+            source_type                => 'official',
         },
         'available_countries' => [['id', 'Indonesia',]],
         'list'                => [{
@@ -191,7 +192,8 @@ subtest 'paymentagent_list RPC call' => sub {
         stash => {
             app_markup_percentage      => 0,
             valid_source               => 1,
-            source_bypass_verification => 0
+            source_bypass_verification => 0,
+            source_type                => 'official',
         },
         'available_countries' => [['id', 'Indonesia',]],
         'list'                => [{
@@ -276,7 +278,8 @@ subtest 'suspend countries' => sub {
         stash => {
             app_markup_percentage      => 0,
             valid_source               => 1,
-            source_bypass_verification => 0
+            source_bypass_verification => 0,
+            source_type                => 'official',
         },
         'available_countries' => [['id', 'Indonesia',],],
         'list'                => [],
@@ -286,7 +289,8 @@ subtest 'suspend countries' => sub {
         stash => {
             app_markup_percentage      => 0,
             valid_source               => 1,
-            source_bypass_verification => 0
+            source_bypass_verification => 0,
+            source_type                => 'official',
         },
         'available_countries' => [['af', 'Afghanistan',], ['id', 'Indonesia',]],
         'list'                => [{
@@ -311,7 +315,8 @@ subtest 'suspend countries' => sub {
         stash => {
             app_markup_percentage      => 0,
             valid_source               => 1,
-            source_bypass_verification => 0
+            source_bypass_verification => 0,
+            source_type                => 'official',
         },
         'available_countries' => [['id', 'Indonesia',]],
         'list'                => [{

@@ -78,7 +78,8 @@ subtest 'unsubscribe email' => sub {
         'stash' => {
             'source_bypass_verification' => 0,
             'app_markup_percentage'      => '0',
-            'valid_source'               => 1
+            'valid_source'               => 1,
+            source_type                  => 'official',
         },
         'binary_user_id'           => $test_client->binary_user_id,
         'email_unsubscribe_status' => 1

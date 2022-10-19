@@ -27,7 +27,8 @@ my $expected_result = {
     stash => {
         app_markup_percentage      => 0,
         valid_source               => 1,
-        source_bypass_verification => 0
+        source_bypass_verification => 0,
+        source_type                => 'official',
     },
 };
 
@@ -145,7 +146,8 @@ subtest 'Sell one tick contract' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             }
         },
         'Should not be sold at the same second even future tick is exist'
@@ -159,7 +161,9 @@ subtest 'Sell one tick contract' => sub {
             stash => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
+
             }
         },
         'Now its ready to be sold'

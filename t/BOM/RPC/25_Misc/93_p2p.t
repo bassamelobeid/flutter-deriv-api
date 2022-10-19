@@ -876,7 +876,8 @@ subtest 'P2P Order Info' => sub {
         stash                => {
             source_bypass_verification => 0,
             app_markup_percentage      => '0',
-            valid_source               => 1
+            valid_source               => 1,
+            source_type                => 'official',
         }
 
     };

@@ -271,6 +271,7 @@ subtest $method => sub {
                 valid_source               => 1,
                 source_bypass_verification => 0,
                 app_markup_percentage      => 0,
+                source_type                => 'official',
             },
         },
         'result is ok'

@@ -99,7 +99,8 @@ subtest 'multiplier - send_ask' => sub {
             'source_bypass_verification' => 0,
             'valid_source'               => 1,
             'app_markup_percentage'      => '0',
-            'market'                     => 'synthetic_index'
+            'market'                     => 'synthetic_index',
+            source_type                  => 'official',
         },
         'commission'  => '0.50',
         'spot_time'   => ignore(),
@@ -152,7 +153,8 @@ subtest 'multiplier - send_ask' => sub {
             'source_bypass_verification' => 0,
             'valid_source'               => 1,
             'app_markup_percentage'      => '0',
-            'market'                     => 'synthetic_index'
+            'market'                     => 'synthetic_index',
+            source_type                  => 'official',
         },
         'commission'  => '0.50',
         'spot_time'   => ignore(),
@@ -212,7 +214,9 @@ subtest 'multiplier - send_ask' => sub {
             'source_bypass_verification' => 0,
             'valid_source'               => 1,
             'app_markup_percentage'      => '0',
-            'market'                     => 'synthetic_index'
+            'market'                     => 'synthetic_index',
+            source_type                  => 'official',
+
         },
         'commission'  => '0.0504',
         'spot_time'   => ignore(),
@@ -284,7 +288,8 @@ subtest 'multiplier - get_bid' => sub {
         'stash'                      => {
             'app_markup_percentage'      => '0',
             'source_bypass_verification' => 0,
-            'valid_source'               => 1
+            'valid_source'               => 1,
+            source_type                  => 'official',
         },
         'barrier_count'     => 1,
         'entry_tick'        => 100,
@@ -363,7 +368,8 @@ subtest 'multiplier - get_bid' => sub {
         'stash'                      => {
             'app_markup_percentage'      => '0',
             'source_bypass_verification' => 0,
-            'valid_source'               => 1
+            'valid_source'               => 1,
+            source_type                  => 'official',
         },
         'barrier_count'     => 1,
         'entry_tick'        => 100,

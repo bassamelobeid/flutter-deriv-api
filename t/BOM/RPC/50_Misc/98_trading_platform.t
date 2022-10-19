@@ -363,7 +363,8 @@ subtest 'dxtrade password reset' => sub {
             stash  => {
                 app_markup_percentage      => 0,
                 valid_source               => 1,
-                source_bypass_verification => 0
+                source_bypass_verification => 0,
+                source_type                => 'official',
             },
         },
         'Verification code generated'
@@ -612,7 +613,8 @@ subtest 'new account rules failure scenarios' => sub {
         stash       => {
             app_markup_percentage      => '0',
             valid_source               => 1,
-            source_bypass_verification => 0
+            source_bypass_verification => 0,
+            source_type                => 'official',
         },
         display_balance       => '0.00',
         balance               => '0.00',

@@ -158,6 +158,7 @@ subtest 'Crypto cashier calls' => sub {
             valid_source               => 1,
             app_markup_percentage      => 0,
             source_bypass_verification => 0,
+            source_type                => 'official',
         },
     };
 
@@ -387,6 +388,7 @@ subtest 'api crypto_config' => sub {
             valid_source               => 1,
             app_markup_percentage      => 0,
             source_bypass_verification => 0,
+            source_type                => 'official',
         },
     };
     my $expected_result = {$common_expected_result->%*, $redis_result->%*};
