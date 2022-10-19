@@ -7454,16 +7454,9 @@ Returns undef
 =cut
 
 sub propagate_status {
-    my ($self, $status_code, $staff_name, $reason, $args) = @_;
+    my ($self, $status_code, $staff_name, $reason) = @_;
 
-    my $include_virtual = $args->{include_virtual};
-
-    my @clients = $self->user->clients;
-
-    unless ($include_virtual) {
-        @clients = grep { !$_->is_virtual } @clients;
-    }
-
+    my @clients = grep { !$_->is_virtual } $self->user->clients;
     $_->status->upsert($status_code, $staff_name, $reason) foreach @clients;
 
     return undef;

@@ -402,13 +402,6 @@ subtest 'Propagate' => sub {
             staff   => 'chuck',
             reason  => 'chucks reason'
         },
-        {
-            status  => 'allow_poi_resubmission',
-            settler => $client_cr,
-            staff   => 'romeo',
-            reason  => 'romeo reason',
-            args    => {include_virtual => 1}
-        },
     ];
 
     for my $case ($cases->@*) {
@@ -416,16 +409,15 @@ subtest 'Propagate' => sub {
         my $status  = $case->{status};
         my $staff   = $case->{staff};
         my $reason  = $case->{reason};
-        my $args    = $case->{args};
 
         subtest join(' ', $settler->loginid, 'propagating', $status, 'by', $staff, 'with', $reason) => sub {
-            $settler->propagate_status($status, $staff, $reason, $args);
+            $settler->propagate_status($status, $staff, $reason);
 
             for my $client ($clients->@*) {
                 my $current_status = $client->status->_get($status);
 
-                if ($client->is_virtual and (not $args or not $args->{include_virtual})) {
-                    ok !$current_status, 'Not propagated to not included virtual account ' . $client->loginid;
+                if ($client->is_virtual) {
+                    ok !$current_status, 'Not propagated to virtual account ' . $client->loginid;
                 } else {
                     cmp_deeply $current_status,
                         {

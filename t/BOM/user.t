@@ -395,7 +395,7 @@ subtest 'User Login' => sub {
         is $login_history->{status}, 1,       'correct last successful login history status';
     };
 
-    subtest 'Failed Logins' => sub {
+    subtest 'Too Many Failed Logins' => sub {
         my $failed_login = $user->failed_login;
         is $failed_login->{fail_count}, 1, '1 bad attempt';
 
@@ -405,6 +405,10 @@ subtest 'User Login' => sub {
         $user->login(%args, password => 'wednesday') for 1 .. 6;
         $failed_login = $user->failed_login;
         is $failed_login->{fail_count}, 6, 'failed login attempts';
+
+        $status = $user->login(%args);
+        ok !$status->{success},                                                     'Too many bad login attempts, cannot login';
+        ok $status->{error} =~ 'Sorry, you have already had too many unsuccessful', "Correct error for too many wrong attempts";
 
         $user->dbic->run(
             fixup => sub {
@@ -425,7 +429,7 @@ subtest 'login_history' => sub {
     is(scalar @$login_history, 5, 'login_history limit ok');
 
     $login_history = $user->login_history;
-    is(scalar @$login_history, 12, 'login_history limit ok');
+    is(scalar @$login_history, 13, 'login_history limit ok');
 
     my $args = {
         action      => 'login',
@@ -438,7 +442,7 @@ subtest 'login_history' => sub {
 
     lives_ok { $user->add_login_history(%$args); } 'add login history';
     $login_history = $user->login_history(order => 'desc');
-    is(scalar @$login_history, 13, 'login_history ok');
+    is(scalar @$login_history, 14, 'login_history ok');
     my $last_login_history = $user->dbic->run(
         sub {
             $_->selectrow_hashref('select * from users.login_history where binary_user_id = ? order by id desc limit 1', undef, $user->id);
