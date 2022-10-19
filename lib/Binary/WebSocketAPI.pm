@@ -2,7 +2,6 @@ package Binary::WebSocketAPI;
 
 use strict;
 use warnings;
-use Brands;
 
 no indirect;
 
@@ -20,7 +19,6 @@ use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Instance::Redis qw( check_connections ws_redis_master redis_rpc );
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
-use Brands;
 use Encode;
 use DataDog::DogStatsd::Helper;
 use Digest::MD5           qw(md5_hex);
@@ -45,6 +43,9 @@ my $loop = IO::Async::Loop->new;
 die 'Unexpected event loop class: had ' . ref($loop) . ', expected a subclass of IO::Async::Loop::Mojo'
     unless $loop->isa('IO::Async::Loop::Mojo')
     and IO::Async::Loop->new->isa('IO::Async::Loop::Mojo');
+
+use constant VALID_BRANDS  => qw(binary deriv);
+use constant DEFAULT_BRAND => 'deriv';
 
 # These are the apps that are hardcoded to point to a different server pool.
 # This list is overwritten by Redis.
@@ -297,9 +298,8 @@ sub startup {
 
             my $client_ip = $c->client_ip;
 
-            my $brand_name   = defang($c->req->param('brand')) // '';
-            my $valid_brand  = any { $_ eq $brand_name } Brands::allowed_names()->@*;
-            my $binary_brand = $valid_brand ? Brands->new(name => $brand_name) : Brands->new_from_app_id($app_id);
+            my $brand_name = defang($c->req->param('brand'))            // '';
+            my $brand      = (first { $_ eq $brand_name } VALID_BRANDS) // DEFAULT_BRAND;
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -311,7 +311,7 @@ sub startup {
             # not guaranteed to have referrer information so the stash value may not always
             # be set.
             if (my $domain = $c->req->headers->header('Origin')) {
-                my $name = $binary_brand->name;
+                my $name = $brand;
                 if (my ($domain_without_prefix) = $domain =~ m{^(?:https://)?\S+($name\.\S+)$}) {
                     $c->stash(domain => $domain_without_prefix);
                 }
@@ -326,8 +326,8 @@ sub startup {
                 user_agent           => $user_agent,
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 ($app_id) ? (source => $app_id) : (),
-                brand       => $binary_brand->name,
-                source_type => $binary_brand->get_app($app_id)->is_whitelisted ? 'official' : 'unofficial',
+                brand       => $brand,
+                source_type => '',       # Source type will be populated with a first RPC response
             );
         });
 

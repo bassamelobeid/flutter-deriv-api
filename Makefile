@@ -6,6 +6,9 @@ C=PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=
 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
+# Get versions of packages which use in Binary::WebSocketAPI and print it in cpanfile format.
+CHECK_VER = perl -MBinary::WebSocketAPI -e 'print join("\n", map { qq{requires "$$_", } .( $${$$_."::VERSION"} ? qq["== $${$$_."::VERSION"}"] : 0). q{;} } sort grep {!/^([a-z0-9:]|Binary::WebSocketAPI)/} map { s|/|::|g; s|\.pm$$||; $$_ } keys %INC) . "\n" ;'
+
 accounts:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/accounts t/999_redis_keys.t
 
@@ -65,3 +68,9 @@ cover:
 
 cover_websocket_tests:
 	$C /home/git/regentmarkets/bom-websocket-tests/v3/$(sub_test)
+
+versions:
+	@$(CHECK_VER)
+
+update_cpanfile:
+	@$(CHECK_VER) > cpanfile
