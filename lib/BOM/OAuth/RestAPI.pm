@@ -33,7 +33,6 @@ use BOM::Config::Redis;
 use BOM::Config;
 use BOM::Database::Model::UserConnect;
 use BOM::OAuth::Common;
-use BOM::OAuth::Common::Throttler;
 use BOM::OAuth::Static qw( get_api_errors_mapping get_valid_login_types );
 use BOM::Platform::Token::API;
 
@@ -96,22 +95,13 @@ It renders a JSON with the following structure:
 sub verify {
     my $c = shift;
 
-    return $c->_make_error({
-            code   => 'NEED_JSON_BODY',
-            status => 400
-        }) unless $c->req->json;
+    return $c->_make_error('NEED_JSON_BODY', 400) unless $c->req->json;
 
     my $app_id = defang($c->req->json->{app_id});
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
-    return $c->_make_error({
-            code   => 'INVALID_APP_ID',
-            status => 400
-        }) unless $app_id && $oauth_model->verify_app($app_id);
-    return $c->_make_error({
-            code   => 'UNOFFICIAL_APP',
-            status => 400
-        }) unless $oauth_model->is_official_app($app_id);
+    return $c->_make_error('INVALID_APP_ID', 400) unless $app_id && $oauth_model->verify_app($app_id);
+    return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($app_id);
 
     my $expire = time + CHALLENGE_TIMEOUT;
     my $model  = BOM::Database::Model::OAuth->new();
@@ -154,44 +144,24 @@ It renders a JSON with the following structure:
 =cut
 
 sub authorize {
-    my $c  = shift;
-    my $ip = $c->stash('client_ip');
+    my $c = shift;
 
-    return $c->_make_error({
-            code   => 'NEED_JSON_BODY',
-            status => 400
-        }) unless $c->req->json;
+    return $c->_make_error('NEED_JSON_BODY', 400) unless $c->req->json;
 
     my $app_id = defang($c->req->json->{app_id});
-    my $expire = defang($c->req->json->{expire}) or return $c->_make_error({
-        code   => 'INVALID_EXPIRE_TIMESTAMP',
-        status => 400
-    });
+    my $expire = defang($c->req->json->{expire}) or return $c->_make_error('INVALID_EXPIRE_TIMESTAMP', 400);
 
-    return $c->_make_error({
-            code   => 'INVALID_EXPIRE_TIMESTAMP',
-            status => 400
-        }) if time > $expire;
+    return $c->_make_error('INVALID_EXPIRE_TIMESTAMP', 400) if time > $expire;
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
-    return $c->_make_error({
-            code   => 'INVALID_APP_ID',
-            status => 400
-        }) unless $app_id && $oauth_model->verify_app($app_id);
-    return $c->_make_error({
-            code   => 'UNOFFICIAL_APP',
-            status => 400
-        }) unless $oauth_model->is_official_app($app_id);
+    return $c->_make_error('INVALID_APP_ID', 400) unless $app_id && $oauth_model->verify_app($app_id);
+    return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($app_id);
 
     my $solution  = defang($c->req->json->{solution});
     my $tokens    = $oauth_model->get_app_tokens($app_id);
     my $challenge = $c->_challenge($app_id, $expire);
 
-    return $c->_make_error({
-            code   => 'NO_APP_TOKEN_FOUND',
-            status => 404
-        },
-        {ip => $ip}) unless $tokens;
+    return $c->_make_error('NO_APP_TOKEN_FOUND', 404) unless $tokens;
 
     for my $token ($tokens->@*) {
         my $expected = hmac_sha256_hex($challenge, $token);
@@ -232,64 +202,40 @@ Returns an array of loginids along with the access token as a json
 sub login {
     my $c = shift;
 
-    my $req = $c->stash('request');
-    my $ip  = $req->client_ip // $c->stash('client_ip');
-
-    return $c->_make_error({
-            code   => 'NEED_JSON_BODY',
-            status => 400
-        }) unless $c->req->json;
+    return $c->_make_error('NEED_JSON_BODY', 400) unless $c->req->json;
 
     my $token = defang $c->req->headers->header('Authorization');
     my ($jwt) = $token =~ /^Bearer\s(.*)/s;
 
-    return $c->_make_error({code => 'INVALID_TOKEN'}, {ip => $ip}) unless $jwt && (my $payload = $c->_validate_jwt($jwt));
+    return $c->_make_error('INVALID_TOKEN') unless $jwt && (my $payload = $c->_validate_jwt($jwt));
 
     my $encoded_app_id = $payload->{app};
 
     my $app_id = defang $c->req->json->{app_id};
-    return $c->_make_error({
-            code   => 'INVALID_APP_ID',
-            status => 400
-        }) if !$app_id || $app_id !~ /^[0-9]+$/ || $encoded_app_id != $app_id;
+    return $c->_make_error('INVALID_APP_ID', 400) if !$app_id || $app_id !~ /^[0-9]+$/ || $encoded_app_id != $app_id;
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
 
     my $app = $oauth_model->verify_app($app_id);
-    return $c->_make_error({
-            code   => 'INVALID_APP_ID',
-            status => 400
-        }) unless $app;
-    return $c->_make_error({
-            code   => 'UNOFFICIAL_APP',
-            status => 400
-        }) unless $oauth_model->is_official_app($app_id);
+    return $c->_make_error('INVALID_APP_ID', 400) unless $app;
+    return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($app_id);
 
     my $login_type = defang $c->req->json->{type};
-    return $c->_make_error({
-            code   => 'INVALID_LOGIN_TYPE',
-            status => 400
-        }) if !$login_type || none { $_ eq $login_type } get_valid_login_types;
+    return $c->_make_error('INVALID_LOGIN_TYPE', 400) if !$login_type || none { $_ eq $login_type } get_valid_login_types;
 
+    my $r          = $c->stash('request');
     my $brand_name = $c->stash('brand')->name;
-    return $c->_make_error({
-            code   => 'INVALID_BRAND',
-            status => 400
-        }) unless $brand_name;
+    return $c->_make_error('INVALID_BRAND', 400) unless $brand_name;
 
     my $date_first_contact = $c->req->json->{date_first_contact} // undef;
-    return $c->_make_error({
-            code   => 'INVALID_DATE_FIRST_CONTACT',
-            status => 400
-        }) if $date_first_contact && $date_first_contact !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+    return $c->_make_error('INVALID_DATE_FIRST_CONTACT', 400) if $date_first_contact && $date_first_contact !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
 
-    try {
-        BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(ip => $ip);
-    } catch ($err) {
-        return $c->_make_error({
-            code   => $err->{code},
-            status => 429
-        });
+    # Check is current IP blocked.
+    my $redis = BOM::Config::Redis::redis_auth;
+    my $ip    = $r->client_ip // '';
+    if ($ip && $redis->get("oauth::blocked_by_ip::$ip")) {
+        stats_inc('login.authorizer.block.hit');
+        return $c->_make_error('SUSPICIOUS_BLOCKED', 429);
     }
 
     my $login;
@@ -298,15 +244,11 @@ sub login {
 
         $login = $c->$method($app, $brand_name);
     } catch ($e) {
-        return $c->_make_error({
-                code   => $e->{code},
-                status => $e->{status}
-            },
-            $e->{tracking});
+        return $c->_make_error($e->{code}, $e->{status});
     }
 
     my $activate_account = defang $c->req->json->{activate_account} // '';
-    return $c->_make_error({code => 'INVALID_FIELD_VALUE'}) unless $activate_account eq '' || $activate_account eq "1";
+    return $c->_make_error('INVALID_FIELD_VALUE') unless $activate_account eq '' || $activate_account eq "1";
 
     my $self_closed = $login->{login_result}->{self_closed};
     my $clients     = $login->{clients};
@@ -323,32 +265,30 @@ sub login {
                 : 'general'
             ) => 1
         };
-        return $c->_make_error({
-            code    => 'SELF_CLOSED',
-            status  => 401,
-            details => $details
-        });
+        return $c->_make_error('SELF_CLOSED', 401, $details);
     }
-    return $c->_make_error({code => 'NO_SELF_CLOSED_ACCOUNT'}) if !$self_closed && $activate_account;
+    return $c->_make_error('NO_SELF_CLOSED_ACCOUNT') if !$self_closed && $activate_account;
 
     $c->_handle_self_closed($clients, $app) if $self_closed && $activate_account;
 
     # generate refresh token per user
     my $user = $login->{user};
-    return $c->_make_error({code => 'NO_USER_IDENTITY'}) unless $user;
+    return $c->_make_error('NO_USER_IDENTITY') unless $user;
 
     my $refresh_token = $oauth_model->generate_refresh_token($user->{id}, $app_id)
-        || $c->_make_error({
-            code   => 'TOKEN_GENERATION_FAILD',
-            status => 500
-        });
+        || $c->_make_error('TOKEN_GENERATION_FAILD', 500);
     my $client = $clients->[0];
-    return $c->_make_error({code => 'NO_USER_IDENTITY'}) unless $client;
+    return $c->_make_error('NO_USER_IDENTITY') unless $client;
+
+    if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
+        $ip = $c->tx->req->headers->header('REMOTE_ADDR');
+    }
+    my $ua_fingerprint = md5_hex($app_id . ($ip // '') . ($c->req->headers->header('User-Agent') // ''));
 
     # create token per all loginids
     my @tokens;
     foreach my $client (@$clients) {
-        my ($access_token) = $oauth_model->store_access_token_only($app_id, $client->loginid, $c->stash('ua_fingerprint'));
+        my ($access_token) = $oauth_model->store_access_token_only($app_id, $client->loginid, $ua_fingerprint);
         push @tokens,
             {
             'loginid' => $client->loginid,
@@ -389,36 +329,24 @@ Returns a one time token which will be used to redirect to app_id redirect uri.
 sub pta_login {
     my $c = shift;
 
-    my $req = $c->stash('request');
-    my $ip  = $req->client_ip // $c->stash('client_ip');
+    return $c->_make_error('NEED_JSON_BODY', 400) unless $c->req->json;
 
-    return $c->_make_error({
-            code   => 'NEED_JSON_BODY',
-            status => 400
-        }) unless $c->req->json;
-
+    my $r          = $c->stash('request');
     my $brand_name = $c->stash('brand')->name;
-    return $c->_make_error({
-            code   => 'INVALID_BRAND',
-            status => 400
-        }) unless $brand_name;
+    return $c->_make_error('INVALID_BRAND', 400) unless $brand_name;
 
-    try {
-        BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(ip => $ip);
-    } catch ($err) {
-        return $c->_make_error({
-            code   => $err->{code},
-            status => 429
-        });
+    # Check is current IP blocked.
+    my $redis = BOM::Config::Redis::redis_auth_write;
+    my $ip    = $r->client_ip // '';
+    if ($ip && $redis->get("oauth::blocked_by_ip::$ip")) {
+        stats_inc('login.authorizer.block.hit');
+        return $c->_make_error('SUSPICIOUS_BLOCKED', 429);
     }
 
     my $token = defang $c->req->headers->header('Authorization');
     my ($jwt) = $token =~ /^Bearer\s(.*)/s;
 
-    return $c->_make_error({
-            code   => 'INVALID_TOKEN',
-            status => 401
-        }) unless $jwt && (my $payload = $c->_validate_jwt($jwt));
+    return $c->_make_error('INVALID_TOKEN', 401) unless $jwt && (my $payload = $c->_validate_jwt($jwt));
 
     my $oauth_model   = BOM::Database::Model::OAuth->new;
     my $refresh_token = defang $c->req->json->{refresh_token};
@@ -426,78 +354,44 @@ sub pta_login {
 
     unless ($record) {
         stats_inc('login.authorizer.validation_failure', {tags => ["brand:$brand_name", "error:INVALID_TOKEN"]});
+        BOM::OAuth::Common::failed_login_attempt($c);
 
-        return $c->_make_error({
-            code   => 'INVALID_REFRESH_TOKEN',
-            status => 401
-        });
+        return $c->_make_error('INVALID_REFRESH_TOKEN', 401);
     }
 
-    my $user = BOM::User->new(id => $record->{binary_user_id});
-
-    try {
-        BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(email => $user->email)
-    } catch ($err) {
-        return $c->_make_error({
-            code   => $err->{code},
-            status => 429
-        });
+    if ($redis->get('oauth::blocked_by_user::' . $record->{binary_user_id})) {
+        stats_inc('login.authorizer.block.hit');
+        return $c->_make_error('SUSPICIOUS_BLOCKED', 429);
     }
 
     my $source_app = {id => $payload->{app}};
-    return $c->_make_error({
-            code   => 'INVALID_APP_ID',
-            status => 400
-        }) if !$source_app->{id} || !$oauth_model->verify_app($source_app->{id}) || $source_app->{id} != $record->{app_id};
-    return $c->_make_error({
-            code   => 'UNOFFICIAL_APP',
-            status => 400
-        }) unless $oauth_model->is_official_app($source_app->{id});
+    return $c->_make_error('INVALID_APP_ID', 400)
+        if !$source_app->{id} || !$oauth_model->verify_app($source_app->{id}) || $source_app->{id} != $record->{app_id};
+    return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($source_app->{id});
 
     $source_app->{scopes} = $oauth_model->get_app_by_id($record->{app_id})->{scopes};
 
-    my $destination_app = {id => defang $c->req->json->{app_id}} or return $c->_make_error({
-        code   => 'INVALID_APP_ID',
-        status => 400
-    });
+    my $destination_app = {id => defang $c->req->json->{app_id}} or return $c->_make_error('INVALID_APP_ID', 400);
 
     my $app = $oauth_model->verify_app($destination_app->{id});
-    return $c->_make_error({
-            code   => 'INVALID_APP_ID',
-            status => 400
-        }) if !$app;
-    return $c->_make_error({
-            code   => 'UNOFFICIAL_APP',
-            status => 400
-        }) unless $oauth_model->is_official_app($destination_app->{id});
+    return $c->_make_error('INVALID_APP_ID', 400) if !$app;
+    return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($destination_app->{id});
 
     $destination_app->{scopes} = $oauth_model->get_app_by_id($destination_app->{id})->{scopes};
 
     my %allowed_scopes = map { $_ => 0 } $source_app->{scopes}->@*;
     foreach ($destination_app->{scopes}->@*) {
-        return $c->_make_error({
-                code   => 'INVALID_SCOPES',
-                status => 401
-            }) unless exists $allowed_scopes{$_};
+        return $c->_make_error('INVALID_SCOPES', 401) unless exists $allowed_scopes{$_};
     }
 
-    return $c->_make_error({
-            code   => 'INVALID_REDIRECTION',
-            status => 400
-        }) if $source_app->{id} == $destination_app->{id};
+    return $c->_make_error('INVALID_REDIRECTION', 400) if $source_app->{id} == $destination_app->{id};
 
     my $url_params = $c->req->json->{url_params};
     if ($url_params) {
         my $number_of_keys = scalar keys($url_params->%*);
-        return $c->_make_error({
-                code   => 'TOO_MANY_PARAMETERS',
-                status => 400
-            }) if $number_of_keys > URL_PARAMS_LENGTH;
+        return $c->_make_error('TOO_MANY_PARAMETERS', 400) if $number_of_keys > URL_PARAMS_LENGTH;
 
-        return $c->_make_error({
-                code   => 'INVALID_URL_PARAMS',
-                status => 400
-            }) if $number_of_keys && join('', $url_params->%*) !~ /^[\w.-]+$/;
+        return $c->_make_error('INVALID_URL_PARAMS', 400) if $number_of_keys && join('', $url_params->%*) !~ /^[\w.-]+$/;
     }
 
     my $one_time_token_params = encode_json_utf8({
@@ -515,14 +409,11 @@ sub pta_login {
             } if $_ == TOKEN_GENERATION_ATTEMPTS;
 
             $one_time_token = BOM::Platform::Token::API->new->generate_token(ONE_TIME_TOKEN_LENGTH);
-            my $redis = BOM::Config::Redis::redis_auth_write;
             last if $redis->set(ONE_TIME_TOKEN_KEY . $one_time_token, $one_time_token_params, 'EX', ONE_TIME_TOKEN_TIMEOUT, 'NX');
         }
     } catch ($e) {
         $log->errorf("Error: one_time_token generation faild: %s", $e);
-        return $c->_make_error({
-                code   => $e->{code},
-                status => $e->{status}});
+        return $c->_make_error($e->{code}, $e->{status});
     }
 
     return $c->render(
@@ -540,103 +431,69 @@ Verify one time token and redirect to redirect_uri
 sub one_time_token {
     my $c = shift;
 
-    my $req = $c->stash('request');
-    my $ip  = $req->client_ip // $c->stash('client_ip');
-
+    my $r          = $c->stash('request');
     my $brand_name = $c->stash('brand')->name;
+    return $c->_make_login_error('INVALID_BRAND') unless $brand_name;
 
-    return $c->_make_login_error({
-            code => 'INVALID_BRAND',
-        },
-        {ip => $ip}) unless $brand_name;
-
-    try {
-        BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(ip => $ip);
-    } catch ($err) {
-        return $c->_make_error({
-            code   => $err->{code},
-            status => 429
-        });
+    my $redis = BOM::Config::Redis::redis_auth_write;
+    my $ip    = $r->client_ip // '';
+    if ($ip && $redis->get("oauth::blocked_by_ip::$ip")) {
+        stats_inc('login.authorizer.block.hit');
+        return $c->_make_error('SUSPICIOUS_BLOCKED', 429);
     }
 
     my $token   = $c->param('one_time_token');
-    my $redis   = BOM::Config::Redis::redis_auth_write;
     my $payload = $redis->get(ONE_TIME_TOKEN_KEY . $token);
     unless ($payload) {
         stats_inc('login.authorizer.validation_failure', {tags => ["brand:$brand_name", "error:INVALID_TOKEN"]});
+        BOM::OAuth::Common::failed_login_attempt($c);
 
-        return $c->_make_login_error({code => 'INVALID_TOKEN'}, {ip => $ip});
+        return $c->_make_login_error('INVALID_TOKEN');
     }
 
     my $one_time_token_params;
     try {
         $one_time_token_params = decode_json_utf8($payload);
     } catch ($e) {
-        return $c->_make_login_error({code => 'INVALID_TOKEN'});
+        return $c->_make_login_error('INVALID_TOKEN');
     }
 
     my $url_params = $one_time_token_params->{url_params};
 
     my $oauth_model   = BOM::Database::Model::OAuth->new;
     my $refresh_token = $one_time_token_params->{refresh_token};
-    return $c->_make_login_error({code => 'INVALID_REFRESH_TOKEN'}, {ip => $ip})
+    return $c->_make_login_error('INVALID_REFRESH_TOKEN')
         unless $refresh_token && (my $record = $oauth_model->get_user_app_details_by_refresh_token($refresh_token));
 
     my $source_app_id = $one_time_token_params->{source_app_id};
-    return $c->_make_login_error({code => 'INVALID_APP_ID'}, {ip => $ip})
+    return $c->_make_login_error('INVALID_APP_ID')
         if !$source_app_id || !$oauth_model->verify_app($source_app_id) || $source_app_id != $record->{app_id};
-    return $c->_make_login_error({code => 'UNOFFICIAL_APP'}, {ip => $ip}) unless $oauth_model->is_official_app($source_app_id);
+    return $c->_make_login_error('UNOFFICIAL_APP') unless $oauth_model->is_official_app($source_app_id);
 
     my $binary_user_id     = $record->{binary_user_id};
-    my $destination_app_id = $one_time_token_params->{app_id} or return $c->_make_error({
-        code   => 'INVALID_APP_ID',
-        status => 400
-    });
+    my $destination_app_id = $one_time_token_params->{app_id} or return $c->_make_error('INVALID_APP_ID', 400);
 
     my $app = $oauth_model->verify_app($destination_app_id);
-    return $c->_make_login_error({
-            code   => 'INVALID_APP_ID',
-            app_id => $destination_app_id
-        },
-        {ip => $ip}) unless $app;
-    return $c->_make_login_error({
-            code   => 'UNOFFICIAL_APP',
-            app_id => $destination_app_id
-        },
-        {ip => $ip}) unless $oauth_model->is_official_app($destination_app_id);
+    return $c->_make_login_error('INVALID_APP_ID', $destination_app_id) unless $app;
+    return $c->_make_login_error('UNOFFICIAL_APP', $destination_app_id) unless $oauth_model->is_official_app($destination_app_id);
 
     my $redirect_uri = $app->{redirect_uri};
-    return $c->_make_login_error({
-            code   => 'REDIRECT_URI_NOT_FOUND',
-            app_id => $destination_app_id
-        },
-        {ip => $ip}) unless $redirect_uri;
+    return $c->_make_login_error('REDIRECT_URI_NOT_FOUND', $destination_app_id) unless $redirect_uri;
 
     my $login;
     try {
         $login = $c->_perform_refresh_token_login($app, $refresh_token, $binary_user_id, $brand_name);
     } catch ($e) {
-        return $c->_make_login_error({
-            code   => $e->{code},
-            app_id => $destination_app_id,
-        });
+        return $c->_make_login_error($e->{code}, $destination_app_id);
     }
 
     my $clients = $login->{clients};
     my $client  = $clients->[0];
-    return $c->_make_login_error({
-            code   => 'NO_USER_IDENTITY',
-            app_id => $destination_app_id
-        },
-        {ip => $ip}) unless $client;
+    return $c->_make_login_error('NO_USER_IDENTITY', $destination_app_id) unless $client;
 
-    try {
-        BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(email => $client->email);
-    } catch ($err) {
-        return $c->_make_error({
-            code   => $err->{code},
-            status => 429
-        });
+    if ($redis->get('oauth::blocked_by_user::' . $client->user->id)) {
+        stats_inc('login.authorizer.block.hit');
+        return $c->_make_error('SUSPICIOUS_BLOCKED', 429);
     }
 
     # create token per all loginids
@@ -652,7 +509,12 @@ sub one_time_token {
 
     stats_inc('login.authorizer.success', {tags => ["brand:$brand_name"]});
 
-    $redis->del(ONE_TIME_TOKEN_KEY . $token);
+    try {
+        $redis->del(ONE_TIME_TOKEN_KEY . $token);
+    } catch ($e) {
+        $log->debugf("Error: while deleting one time token", $e);
+        return $c->_make_login_error();
+    }
 
     return BOM::OAuth::Common::redirect_to($c, $redirect_uri, \@url_tokens_params);
 }
@@ -682,15 +544,6 @@ sub _perform_system_login {
         status => 400
     } unless $password;
 
-    try {
-        BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(email => $email);
-    } catch ($err) {
-        die +{
-            code   => $err->{code},
-            status => 429,
-        };
-    }
-
     my $result = BOM::OAuth::Common::validate_login({
         c         => $c,
         app       => $app,
@@ -701,16 +554,24 @@ sub _perform_system_login {
 
     if (my $err = $result->{error_code}) {
         stats_inc('login.authorizer.validation_failure', {tags => ["brand:$brand_name", "error:$err"]});
+        BOM::OAuth::Common::failed_login_attempt($c);
 
         die +{
-            code     => $err,
-            tracking => {
-                email => $email,
-                ip    => $c->stash('client_ip'),
-            }};
+            code => $err,
+        };
     }
 
-    my $user = $result->{user};
+    my $redis = BOM::Config::Redis::redis_auth;
+    my $user  = $result->{user};
+
+    if ($redis->get('oauth::blocked_by_user::' . $user->id)) {
+        stats_inc('login.authorizer.block.hit');
+
+        die +{
+            code   => "SUSPICIOUS_BLOCKED",
+            status => 429,
+        };
+    }
 
     _verify_otp($c, $user, defang($c->req->json->{one_time_password}));
 
@@ -742,11 +603,11 @@ sub _perform_social_login {
         };
     }
 
-    my $data;
     my $redis = BOM::Config::Redis::redis_auth_write;
+    my $data;
+
     try {
         my $cached = $redis->get(ONE_ALL_TEMP_KEY . $connection_token);
-
         $data = decode_json_utf8($cached) if $cached;
     } catch {
         $data = undef;
@@ -774,10 +635,7 @@ sub _perform_social_login {
     $redis->setex(ONE_ALL_TEMP_KEY . $connection_token, ONE_ALL_TEMP_TIMEOUT, encode_json_utf8($data));
 
     my $provider_result = $data->{response}->{result};
-    die +{
-        code     => "NO_AUTHENTICATION",
-        tracking => {ip => $c->stash('client_ip')}}
-        if $provider_result->{status}->{code} != 200 || $provider_result->{status}->{flag} eq 'error';
+    die +{code => "NO_AUTHENTICATION"} if $provider_result->{status}->{code} != 200 || $provider_result->{status}->{flag} eq 'error';
 
     my $provider_data = $provider_result->{data};
     my $email         = BOM::OAuth::Common::get_email_by_provider($provider_data);
@@ -802,11 +660,13 @@ sub _perform_social_login {
         my $user_providers = $user_connect->get_connects_by_user_id($user->{id});
         die +{code => "INVALID_PROVIDER"} if defined $user_providers->[0] and $provider_name ne $user_providers->[0];
 
-        try {
-            BOM::OAuth::Common::Throttler::inspect_failed_login_attempts(email => $user->email);
-        } catch ($err) {
+        my $redis = BOM::Config::Redis::redis_auth_write;
+
+        if ($redis->get('oauth::blocked_by_user::' . $user->id)) {
+            stats_inc('login.authorizer.block.hit');
+
             die +{
-                code   => $err->{code},
+                code   => "SUSPICIOUS_BLOCKED",
                 status => 429,
             };
         }
@@ -897,17 +757,6 @@ sub _perform_social_login {
         device_id      => $c->req->param('device_id'),
     });
 
-    if (my $err = $result->{error_code}) {
-        stats_inc('login.authorizer.validation_failure', {tags => ["brand:$brand_name", "error:$err"]});
-
-        die +{
-            code     => $err,
-            tracking => {
-                email => $user->{email},
-                ip    => $c->stash('client_ip'),
-            }};
-    }
-
     _verify_otp($c, $result->{user}, defang($c->req->json->{one_time_password}));
 
     $redis->del(ONE_ALL_TEMP_KEY . $connection_token);
@@ -932,9 +781,9 @@ sub _perform_refresh_token_login {
     my $user_details = $oauth_model->get_user_app_details_by_refresh_token($refresh_token);
 
     die +{
-        code     => "INVALID_REFRESH_TOKEN",
-        status   => 400,
-        tracking => {ip => $c->stash('client_ip')}}
+        code   => "INVALID_REFRESH_TOKEN",
+        status => 400
+        }
         unless $user_details
         && $binary_user_id == $user_details->{binary_user_id};
 
@@ -948,10 +797,11 @@ sub _perform_refresh_token_login {
 
     if (my $err = $result->{error_code}) {
         stats_inc('login.authorizer.validation_failure', {tags => ["brand:$brand_name", "error:$err"]});
+        BOM::OAuth::Common::failed_login_attempt($c);
 
         die +{
-            code     => $err,
-            tracking => {ip => $c->stash('client_ip')}};
+            code => $err,
+        };
     }
 
     return $result;
@@ -1011,16 +861,12 @@ sub _verify_otp {
         } unless $otp;
 
         unless (BOM::User::TOTP->verify_totp($user->{secret_key}, $otp)) {
-            my $req = $c->stash('request');
-            my $ip  = $req->client_ip // $c->stash('client_ip');
+            BOM::OAuth::Common::failed_login_attempt($c, $user);
 
             die +{
-                code     => 'TFA_FAILURE',
-                status   => 400,
-                tracking => {
-                    ip    => $ip,
-                    email => $user->email,
-                }};
+                code   => 'TFA_FAILURE',
+                status => 400
+            };
         }
     }
 }
@@ -1121,8 +967,6 @@ Helper that make and return a generic error response.
 
 =item * C<$status_code> - The http status code
 
-=item * C<$tracking> - Contains login failure tracking parameters
-
 =back
 
 Returns a mojo json response
@@ -1130,15 +974,7 @@ Returns a mojo json response
 =cut
 
 sub _make_error {
-    my ($c, $error_args, $tracking) = @_;
-
-    my ($error_code, $status_code, $details) = @{$error_args}{qw/code  status  details/};
-    my ($ip, $email) = @{$tracking}{qw/ip  email/};
-
-    BOM::OAuth::Common::Throttler::failed_login_attempt(
-        ip    => $ip,
-        email => $email,
-    );
+    my ($c, $error_code, $status_code, $details) = @_;
 
     $error_code //= 'UNKNOWN';
 
@@ -1174,28 +1010,16 @@ Create an error based on the api error mapping and redirect to login page.
 
 =over 4
 
-=item * C<code> - Error code to get api errors.
+=item C<$error_code> error code to get api errors.
 
-=item * C<app_id> - Redirect to this app id.
-
-=item * C<ip> - Contains login failure tracking parameters
-
-=item * C<email> - Contains login failure tracking parameters
+=item C<$app_id> redirect to this app id.
 
 =back
 
 =cut
 
 sub _make_login_error {
-    my ($c, $error_args, $tracking) = @_;
-
-    my ($error_code, $app_id) = @{$error_args}{qw/code  app_id/};
-    my ($ip,         $email)  = @{$tracking}{qw/ip  email/};
-
-    BOM::OAuth::Common::Throttler::failed_login_attempt(
-        ip    => $ip,
-        email => $email,
-    );
+    my ($c, $error_code, $app_id) = @_;
 
     my $error_message = get_api_errors_mapping()->{UNKNOWN};
     $error_message = get_api_errors_mapping()->{$error_code} if $error_code;

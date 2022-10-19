@@ -14,6 +14,7 @@ use BOM::Config;
 use BOM::Database::Model::UserConnect;
 use BOM::User;
 use BOM::Platform::Account::Virtual;
+use BOM::OAuth::Helper;
 use BOM::Platform::Context qw( localize );
 use BOM::OAuth::Static     qw( get_message_mapping );
 use BOM::OAuth::Common;
@@ -30,7 +31,7 @@ sub callback {
     # Redirect client to authorize subroutine if there is no connection token provided
     return $c->redirect_to($redirect_uri) unless $connection_token;
 
-    my $brand_name = _extract_brand_from_params($c->stash('request')->params) // $c->stash('brand')->name;
+    my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $c->stash('brand')->name;
 
     unless ($brand_name) {
         $c->session(social_error => localize(get_message_mapping()->{INVALID_BRAND}));
@@ -179,33 +180,6 @@ sub _get_provider_token {
     my $request = URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0]);
 
     return $request->query_param('provider_connection_token');
-}
-
-=head2 _extract_brand_from_params
-
-Return undef or brand name if exists.
-
-=cut
-
-sub _extract_brand_from_params {
-    my ($self, $params) = @_;
-
-    # extract encoded brand name from parameters curried from oneall
-    my $brand_key = (grep { /(?:amp;){0,1}brand/ } keys %$params)[0];
-
-    return undef unless $brand_key;    ## no critic (ProhibitExplicitReturnUndef)
-
-    my $brand = $params->{$brand_key};
-
-    return undef unless $brand;        ## no critic (ProhibitExplicitReturnUndef)
-
-    if (ref($brand) eq 'ARRAY') {
-        return undef unless $brand->[0] =~ /\w+/;    ## no critic (ProhibitExplicitReturnUndef)
-
-        return $brand->[0];
-    }
-
-    return $brand;
 }
 
 1;

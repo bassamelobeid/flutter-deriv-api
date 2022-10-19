@@ -6,20 +6,33 @@ no indirect;
 
 use DataDog::DogStatsd::Helper qw( stats_inc );
 use Email::Valid;
+use Format::Util::Strings qw( defang );
 use HTTP::BrowserDetect;
-use List::Util qw( first none any);
-use Log::Any   qw( $log );
+use List::Util qw( first min none any);
+use Log::Any   qw($log);
+use Syntax::Keyword::Try;
 use Text::Trim;
 use Digest::MD5 qw( md5_hex );
 
 use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
-use BOM::OAuth::Static     qw( get_valid_device_types );
+use BOM::OAuth::Static     qw( get_message_mapping get_valid_device_types );
 use BOM::Platform::Context qw( localize request );
 use BOM::Platform::Email   qw( send_email );
 use BOM::User;
 use BOM::User::AuditLog;
 use BOM::Platform::Account::Virtual;
+
+# Time in seconds we'll start blocking someone for repeated bad logins from the same IP
+use constant BLOCK_MIN_DURATION => 5 * 60;
+# Upper limit in seconds we'll block an IP  for
+use constant BLOCK_MAX_DURATION => 24 * 60 * 60;
+# How long in seconds before we reset (expire) the exponential backoff
+use constant BLOCK_TTL_RESET_AFTER => 24 * 60 * 60;
+# How many failed attempts (not necessarily consecutive) before we block this IP
+use constant BLOCK_TRIGGER_COUNT => 10;
+# How much time in seconds with no failed attempts before we reset (expire) the failure count
+use constant BLOCK_TRIGGER_WINDOW => 5 * 60;
 
 =head2 validate_login
 
@@ -192,14 +205,153 @@ sub is_reset_password_allowed {
     return BOM::Database::Model::OAuth->new->is_primary_website($app_id);
 }
 
-=head2 is_social_login_suspended
+# fetch social login feature status from settings
+sub is_social_login_suspended {
+    return BOM::Config::Runtime->instance->app_config->system->suspend->social_logins;
+}
 
-Fetchs social login feature status from settings
+=head2 failed_login_attempt
+
+Called for failed manual login attempt.
+
+Increments redis counts and may set a blocking flag.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$c> - a controller instance
+
+=item * C<$user> - (optional) a L<BOM::User> instance
+
+=back
+
+Returns C<undef>.
 
 =cut
 
-sub is_social_login_suspended {
-    return BOM::Config::Runtime->instance->app_config->system->suspend->social_logins;
+sub failed_login_attempt {
+    my ($c, $user) = @_;
+
+    stats_inc('login.authorizer.login_failed');
+
+    # Something went wrong - most probably login failure. Innocent enough in isolation;
+    # if we see a pattern of failures from the same address, we would want to discourage
+    # further attempts.
+    if (my $ip = $c->stash('request')->client_ip) {
+        failed_login_by_ip($ip);
+    }
+
+    # Applies the same treatment to ip, but to the specific user if given.
+    # Most probably due to totp failure.
+    if ($user) {
+        failed_login_by_user($user);
+    }
+
+    return undef;
+}
+
+=head2 failed_login_by_user
+
+Applies the login failure punishment by user.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$user> - the offending L<BOM::User> instance.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub failed_login_by_user {
+    my $user = shift;
+
+    _block_counter_by('user', $user->id);
+
+    return undef;
+}
+
+=head2 failed_login_by_ip
+
+Applies the login failure punishment by ip address.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$ip> - the offending ip address.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub failed_login_by_ip {
+    my $ip = shift;
+
+    _block_counter_by('ip', $ip);
+
+    return undef;
+}
+
+=head2 _block_counter_by
+
+Handles the login attempts counter in Redis.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$key> - what we are about to block, either 'ip' or 'user'.
+
+=item * C<$identifier> - the ip or user id we are about to block.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub _block_counter_by {
+    my ($key, $identifier) = @_;
+
+    try {
+        my $redis       = BOM::Config::Redis::redis_auth_write();
+        my $counter_key = 'oauth::failure_count_by_' . $key . '::' . $identifier;
+        my $backoff_key = 'oauth::backoff_by_' . $key . '::' . $identifier;
+        my $blocked_key = 'oauth::blocked_by_' . $key . '::' . $identifier;
+
+        if ($redis->incr($counter_key) > BLOCK_TRIGGER_COUNT) {
+            # Note that we don't actively delete the failure count here, since we expect
+            # it to expire before the block does. If it doesn't... well, this only applies
+            # on failed login attempt, if you get the password right first time after the
+            # block then you're home free.
+
+            my $ttl = $redis->get($backoff_key);
+            $ttl = min(BLOCK_MAX_DURATION, $ttl ? $ttl * 2 : BLOCK_MIN_DURATION);
+
+            # Record our new TTL (hangs around for a day, which we expect to be sufficient
+            # to slow down offenders enough that we no longer have to be particularly concerned),
+            # and also apply the block at this stage.
+            $redis->set($backoff_key, $ttl, EX => BLOCK_TTL_RESET_AFTER);
+            $redis->set($blocked_key, 1,    EX => $ttl);
+            stats_inc('login.authorizer.block.add');
+        } else {
+            # Extend expiry every time there's a failure
+            $redis->expire($counter_key, BLOCK_TRIGGER_WINDOW);
+            stats_inc('login.authorizer.block.fail');
+        }
+    } catch ($err) {
+        $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $err);
+        stats_inc('login.authorizer.block.error');
+    }
+
+    return undef;
 }
 
 sub get_email_by_provider {
