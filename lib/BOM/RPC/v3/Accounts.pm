@@ -2200,8 +2200,8 @@ rpc set_self_exclusion => sub {
         $balance = '0.00';
     }
 
-    if ($args{exclude_until} and $client->landing_company->short ne 'svg') {
-        # send exclude_until email for MLT, MF and MX only
+    if ($args{exclude_until} and $client->landing_company->short eq 'maltainvest') {
+        # send exclude_until email for MF only
         warn 'Compliance email regarding self exclusion from the website failed to send.'
             unless send_self_exclusion_notification($client, 'self_exclusion', \%args, $balance);
     }
@@ -2304,7 +2304,7 @@ sub send_self_exclusion_notification {
 
         my $to_email = $brand->emails('compliance');
 
-        # Include accounts team if client's brokercode is MLT/MX
+        # Include accounts team if client's brokercode is MX
         # As per UKGC LCCP Audit Regulations
         if (   $client->landing_company->self_exclusion_notify
             && $args->{exclude_until}
