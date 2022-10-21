@@ -10,6 +10,7 @@ use Log::Any qw($log);
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email   qw(send_email);
+use BOM::User;
 use BOM::User::Client;
 use BOM::User::Utility qw(parse_mt5_group);
 use BOM::MT5::User::Async;
@@ -18,6 +19,8 @@ use BOM::Config;
 use BOM::Event::Services::Track;
 use BOM::Platform::Client::Sanctions;
 use BOM::Config::MT5;
+use BOM::Rules::Engine;
+use BOM::Platform::Context::Request;
 use Future::AsyncAwait;
 
 use Email::Stuffer;
@@ -36,14 +39,18 @@ use Scalar::Util;
 
 use LandingCompany::Registry;
 use Future;
+use Future::AsyncAwait;
 use IO::Async::Loop;
 use Net::Async::Redis;
+use ExchangeRates::CurrencyConverter qw(convert_currency);
+use Format::Util::Numbers            qw(financialrounding);
 
 use List::Util qw(sum0);
 use HTML::Entities;
 
-use constant DAYS_TO_EXPIRE => 14;
-use constant SECONDS_IN_DAY => 86400;
+use constant DAYS_TO_EXPIRE            => 14;
+use constant SECONDS_IN_DAY            => 86400;
+use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 
 =head2 sync_info
 
@@ -725,6 +732,709 @@ sub mt5_archived_account_reset_trading_password {
     } catch ($e) {
         $log->errorf("mt5_archived_account_reset_trading_password [%s]: Unable to reset password due to error: %s", Time::Moment->now, $e);
     }
+}
+
+=head2 mt5_deriv_auto_rescind
+
+A script that receive a list of mt5 accounts to perfrom transfer of funds to first available Deriv account, then archive it.
+After archival step, notification will be send to email of account holder and a report of process result will be sent.
+
+=over 4
+
+=item * C<mt5_accounts> - Reference of mt5 accounts list
+
+=item * C<$override_status> - A flag to consider skipping disabled account and validate payment check
+
+=back
+
+Return C<$process_end_result> containing full information on processed mt5 accounts, the success and failed cases.
+
+=head2 Comment
+
+This script will not process for mt5 accounts that only have Deriv accounts with unsupported currency regardless of override status.
+The process will consider all Deriv accounts, and pick the first available and valid Deriv account to perform the transfer.
+Disabled account are considered if override status flag is true, in which it will be used for transfer if all other Deriv account does not meet condition.
+
+=cut
+
+async sub mt5_deriv_auto_rescind {
+    my $args            = shift;
+    my @mt5_accounts    = @{delete $args->{mt5_accounts}};
+    my $override_status = delete $args->{override_status};
+    my (%mt5_deriv_accounts, %process_mt5_success, %process_mt5_fail);
+
+    return 1 unless (@mt5_accounts);
+
+    foreach my $mt5_account (@mt5_accounts) {
+        try {
+            my $user = await BOM::MT5::User::Async::get_user($mt5_account);
+
+            unless ($user->{email}) {
+                _create_error(\%process_mt5_fail, $mt5_account, 'MT5 Error', 'MT5 Account retrieved without email');
+                next;
+            }
+
+            if (not defined($mt5_deriv_accounts{$user->{email}})) {
+                my $bom_user = BOM::User->new(email => $user->{email});
+                unless (defined($bom_user)) {
+                    _create_error(\%process_mt5_fail, $mt5_account, 'MT5 Error', 'BOM User Account not found');
+                    next;
+                }
+
+                my @bom_login_ids = $bom_user->bom_real_loginids();
+                unless (@bom_login_ids) {
+                    _create_error(\%process_mt5_fail, $mt5_account, 'MT5 Error', 'BOM User Real Loginids not found');
+                    next;
+                }
+
+                $mt5_deriv_accounts{$user->{email}} = {
+                    bom_user               => $bom_user,
+                    deriv_accounts         => \@bom_login_ids,
+                    disabled_deriv_account => undef
+                };
+            }
+
+            push $mt5_deriv_accounts{$user->{email}}{mt5_accounts}->@*, $mt5_account;
+
+        } catch ($e) {
+            if (defined($e->{error})) {
+                _create_error(\%process_mt5_fail, $mt5_account, 'MT5 Error', $e->{error});
+            } else {
+                _create_error(\%process_mt5_fail, $mt5_account, 'MT5 Error', 'Error getting MT5 data');
+            }
+        }
+    }
+
+    my %group_to_currency;
+    foreach my $bom_email (keys %mt5_deriv_accounts) {
+        foreach my $mt5_account ($mt5_deriv_accounts{$bom_email}{mt5_accounts}->@*) {
+            my $mt5_user = await BOM::MT5::User::Async::get_user($mt5_account);
+
+            my $is_demo                 = $mt5_user->{group} =~ /^demo/ ? 1 : 0;
+            my $disabled_account_option = 0;
+            if ($is_demo) {
+                _create_error(\%process_mt5_fail, $mt5_account, 'MT5 Error', 'Demo Account detected, do nothing');
+            } else {
+                foreach my $deriv_account_id ($mt5_deriv_accounts{$bom_email}{deriv_accounts}->@*) {
+                    my $params = {
+                        deriv_account_id   => $deriv_account_id,
+                        mt5_user           => $mt5_user,
+                        group_to_ccy       => \%group_to_currency,
+                        override_status    => $override_status,
+                        mt5_deriv_accounts => \%mt5_deriv_accounts,
+                        process_mt5_fail   => \%process_mt5_fail
+                    };
+
+                    if ($disabled_account_option) {
+                        $params->{deriv_account_id}        = $mt5_deriv_accounts{$bom_email}{disabled_deriv_account};
+                        $params->{disabled_account_bypass} = 1;
+                    }
+
+                    my $process_result = await _mt5_cr_auto_rescind_process($params);
+
+                    if ($process_result) {
+                        $process_mt5_success{$bom_email}{bom_user} = $mt5_deriv_accounts{$bom_email}{bom_user}
+                            if not defined($process_mt5_success{$bom_email});
+
+                        if ($process_result->{transferred_deriv}) {
+                            $process_mt5_success{$bom_email}{$mt5_user->{login}} = {
+                                transferred_deriv          => $process_result->{transferred_deriv},
+                                transferred_mt5_amount     => $process_result->{transferred_mt5_amount},
+                                transferred_mt5_currency   => $process_result->{transferred_mt5_currency},
+                                transferred_deriv_amount   => $process_result->{transferred_deriv_amount},
+                                transferred_deriv_currency => $process_result->{transferred_deriv_currency}};
+
+                            push $process_mt5_success{$bom_email}{transfer_targets}->@*, $params->{deriv_account_id};
+                        }
+
+                        push $process_mt5_success{$bom_email}{mt5_accounts}->@*, $mt5_user;
+
+                        delete $process_mt5_fail{$mt5_user->{login}} if exists($process_mt5_fail{$mt5_user->{login}});
+
+                    } else {
+                        #Consider disabled account option if failed at last available Deriv account.
+                        if (    $override_status
+                            and not $disabled_account_option
+                            and $mt5_deriv_accounts{$bom_email}{deriv_accounts}[-1] eq $deriv_account_id
+                            and defined($mt5_deriv_accounts{$bom_email}{disabled_deriv_account}))
+                        {
+                            $disabled_account_option = 1;
+                            redo;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    my $process_end_result = {
+        processed_mt5_accounts => \@mt5_accounts,
+        success_case           => \%process_mt5_success,
+        failed_case            => \%process_mt5_fail
+    };
+
+    _send_closure_email(\%process_mt5_success);
+    _send_mt5_rescind_report($process_end_result);
+
+    return Future->done($process_end_result);
+}
+
+=head2 _mt5_cr_auto_rescind_process
+
+Series of check if Deriv and MT5 meet the condition to perform transfer
+
+=over 4
+
+=item * C<$params> - hashref with the following keys
+
+=item * C<$mt5_user> - MT5 account instance obtained from get user call
+
+=item * C<$group_to_ccy> - Contain mapped information on the currency used for corresponding mt5 account group
+
+=item * C<$override_status> - A flag to consider skipping disabled account and validate payment check
+
+=item * C<$mt5_deriv_accounts> - Reference to gathered list of bom user and its mt5 accounts. Used to record disabled account candidate for this function.
+
+=item * C<$process_mt5_fail> - Reference to record which part of the process failed the requirement for auto rescind process
+
+=item * C<$disabled_account_bypass> - A flag to continue on auto rescind process even if Deriv account is a disabled account.
+
+=back
+
+Return C<$params> set of values containing information on the transfer such as currency, amount, source and target account.
+
+=cut
+
+async sub _mt5_cr_auto_rescind_process {
+    my $params = shift;
+    my ($deriv_account_id, $mt5_user, $group_to_ccy, $override_status, $mt5_deriv_accounts, $process_mt5_fail, $disabled_account_bypass) =
+        @{$params}{qw/deriv_account_id mt5_user group_to_ccy override_status mt5_deriv_accounts process_mt5_fail disabled_account_bypass/};
+
+    $disabled_account_bypass = 0 unless $disabled_account_bypass;
+    my $mt5_id = $mt5_user->{login};
+
+    my $deriv_client;
+    try {
+        $deriv_client = BOM::User::Client->new({loginid => $deriv_account_id});
+    } catch ($e) {
+        _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, "Error getting Deriv Account");
+        return 0;
+    }
+
+    unless ($deriv_client) {
+        _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, "Deriv Account not found");
+        return 0;
+    }
+
+    unless ($deriv_client->currency) {
+        _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, "Deriv Account currency not found");
+        return 0;
+    }
+
+    my $currency;
+    if (exists $group_to_ccy->{$mt5_user->{group}} and defined $group_to_ccy->{$mt5_user->{group}}) {
+        $currency = $group_to_ccy->{$mt5_user->{group}};
+    } else {
+        my $user_group = await BOM::MT5::User::Async::get_group($mt5_user->{group});
+        $currency = uc($user_group->{currency}) if defined($user_group->{currency});
+        $group_to_ccy->{$mt5_user->{group}} = $currency;
+    }
+
+    unless ($currency) {
+        _create_error($process_mt5_fail, $mt5_id, "MT5 Error", "Currency Group not found");
+        return 0;
+    }
+
+    my $transfer_amount =
+        $deriv_client->currency ne $currency ? convert_currency($mt5_user->{balance}, $currency, $deriv_client->currency) : $mt5_user->{balance};
+
+    my $rule_engine = BOM::Rules::Engine->new(client => [$deriv_client]);
+    unless ($override_status) {
+        try {
+            $deriv_client->validate_payment(
+                currency    => $deriv_client->currency,
+                amount      => $transfer_amount,
+                rule_engine => $rule_engine
+            );
+        } catch ($e) {
+            if (ref $e and defined($e->{message_to_client})) {
+                _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, $e->{message_to_client});
+            } else {
+                _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, 'Validate Payment failed');
+            }
+
+            return 0;
+        }
+    }
+
+    try {
+        $rule_engine->apply_rules(
+            [qw/landing_company.currency_is_allowed/],
+            loginid => $deriv_client->loginid,
+        );
+    } catch ($e) {
+        if (ref $e and defined($e->{message_to_client})) {
+            _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, $e->{message_to_client});
+        } else {
+            _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, 'Currency not allowed');
+        }
+
+        return 0;
+    }
+
+    if ($deriv_client->status->disabled) {
+        unless ($override_status) {
+            _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, 'Account Disabled');
+            return 0;
+        }
+
+        $mt5_deriv_accounts->{$mt5_user->{email}}{disabled_deriv_account} = $deriv_account_id
+            if !defined($mt5_deriv_accounts->{$mt5_user->{email}}{disabled_deriv_account});
+
+        return 0 unless $disabled_account_bypass;
+    }
+
+    my $open_position = await BOM::MT5::User::Async::get_open_positions_count($mt5_id);
+    _create_error($process_mt5_fail, $mt5_id, 'MT5 Error', "Detected $open_position->{total} open position") if $open_position->{total};
+
+    my $open_order = await BOM::MT5::User::Async::get_open_orders_count($mt5_id);
+    _create_error($process_mt5_fail, $mt5_id, 'MT5 Error', "Detected $open_order->{total} open order") if $open_order->{total};
+
+    return 0 if $open_position->{total} || $open_order->{total};
+
+    my $rescind_transfer_result = await _mt5_cr_auto_rescind_transfer_process({
+        mt5_id           => $mt5_id,
+        currency         => $currency,
+        mt5_user         => $mt5_user,
+        deriv_account_id => $deriv_account_id,
+        deriv_client     => $deriv_client,
+        transfer_amount  => $transfer_amount,
+        process_mt5_fail => $process_mt5_fail,
+    });
+
+    return 0 unless ($rescind_transfer_result);
+
+    my ($transferred_deriv, $transferred_mt5_value, $archivable);
+    ($transferred_deriv, $transferred_mt5_value) = @{$rescind_transfer_result}{qw/transferred_deriv transferred_mt5_value/}
+        if (exists $rescind_transfer_result->{transferred_deriv});
+    $archivable = $rescind_transfer_result->{archivable};
+
+    if (not $archivable) {
+        _create_error($process_mt5_fail, $mt5_id, "MT5 Error", "Archive condition not met");
+        return 0;
+    }
+
+    my $archived;
+    try {
+        $archived = await _archive_mt5_account($mt5_user);
+    } catch ($e) {
+        $log->debug('AutoRescind Archive failed');
+    }
+
+    unless ($archived) {
+        _create_error($process_mt5_fail, $mt5_id, "MT5 Error", "Archive process failed");
+        return 0;
+    }
+
+    return {
+        transferred_deriv          => $transferred_deriv,
+        transferred_mt5_amount     => $transferred_mt5_value,
+        transferred_mt5_currency   => $currency,
+        transferred_deriv_amount   => $transfer_amount,
+        transferred_deriv_currency => $deriv_client->currency
+    };
+}
+
+=head2 _mt5_cr_auto_rescind_transfer_process
+
+Perform the operation of transferring funds from MT5 account to Deriv account.
+
+=over 4
+
+=item * C<$params> - hashref with the following keys
+
+=item * C<$mt5_id> - MT5 account ID
+
+=item * C<$currency> - Currency type of MT5 account
+
+=item * C<$mt5_user> - MT5 account instance obtained from get user call
+
+=item * C<$deriv_account_id> - Deriv Client Account ID
+
+=item * C<$deriv_client> - Reference to deriv client instance
+
+=item * C<$transfer_amount> - The amount of funds to transfer towards deriv account
+
+=item * C<$process_mt5_fail> - Reference to record which part of the process failed the requirement for auto rescind process
+
+=back
+
+Return C<$params> set of values containing information on the transfer such as transferred_deriv, transferred_mt5_value, and archievable.
+
+=cut
+
+async sub _mt5_cr_auto_rescind_transfer_process {
+    my $params = shift;
+    my ($mt5_id, $currency, $mt5_user, $deriv_account_id, $deriv_client, $transfer_amount, $process_mt5_fail) =
+        @{$params}{qw/mt5_id currency mt5_user deriv_account_id deriv_client transfer_amount process_mt5_fail/};
+
+    my $mt5_balance_before = $mt5_user->{balance};
+    my $archivable         = 0;
+    my $transfer_triggered = 0;
+    if ($mt5_balance_before == 0) {
+        $archivable = 1;
+    } elsif ($mt5_balance_before > 0) {
+        my $mt5_balance_change;
+        try {
+            $mt5_balance_change = await BOM::MT5::User::Async::user_balance_change({
+                login        => $mt5_id,
+                user_balance => -$mt5_user->{balance},
+                comment      => "Auto transfer to [$deriv_account_id]",
+                type         => 'balance'
+            });
+        } catch ($e) {
+            _create_error($process_mt5_fail, $mt5_id, 'MT5 Error',
+                'Balance update response failed but may have been updated. Manual check required.');
+            return 0;
+        }
+
+        try {
+            $mt5_user = await BOM::MT5::User::Async::get_user($mt5_id);
+            if ($mt5_balance_change->{status} and $mt5_user->{balance} == 0) {
+                $transfer_amount = financialrounding('price', $deriv_client->currency, $transfer_amount);
+                my ($txn) = $deriv_client->payment_mt5_transfer(
+                    currency => $deriv_client->currency,
+                    amount   => $transfer_amount,
+                    remark   => "Transfer from MT5 account $mt5_id to $deriv_account_id $currency $mt5_balance_before to "
+                        . $deriv_client->currency
+                        . " $transfer_amount",
+                    staff  => 'payment',
+                    fees   => 0,
+                    source => 1
+                );
+
+                my $result = _record_mt5_transfer($deriv_client->db->dbic, $txn->payment_id, $mt5_balance_before, $mt5_id, $currency);
+
+                unless ($result) {
+                    _create_error($process_mt5_fail, $mt5_id, $deriv_account_id,
+                        'Funds transfer operation completed but error in recording mt5_transfer, archive process skipped');
+                    return 0;
+                }
+
+                $transfer_triggered = 1;
+                $archivable         = 1;
+            }
+        } catch ($e) {
+            _create_error($process_mt5_fail, $mt5_id, $deriv_account_id, 'Payment MT5 Transfer failed - MT5 Balance changes reverted');
+
+            my $mt5_balance_change_revert;
+
+            try {
+                $mt5_user = await BOM::MT5::User::Async::get_user($mt5_id);
+
+                if ($mt5_user->{balance} == 0) {
+                    $mt5_balance_change_revert = await BOM::MT5::User::Async::user_balance_change({
+                        login        => $mt5_id,
+                        user_balance => $mt5_balance_before,
+                        comment      => "Revert due to failed auto transfer to [$deriv_account_id]",
+                        type         => 'balance'
+                    });
+                }
+
+            } catch ($e) {
+                $log->errorf("MT5 Account %s: Failed to revert balance update", $mt5_id);
+            }
+
+            _create_error($process_mt5_fail, $mt5_id, $deriv_account_id,
+                'Payment MT5 Transfer failed - MT5 Balance modified and may failed to revert. Manual check required.')
+                if not $mt5_balance_change_revert->{status} and $mt5_balance_change->{status};
+
+            return 0;
+        }
+    }
+
+    return {
+        $transfer_triggered
+        ? (
+            transferred_deriv     => $deriv_account_id,
+            transferred_mt5_value => $mt5_balance_before
+            )
+        : (),
+        archivable => $archivable,
+    };
+}
+
+=head2 _record_mt5_transfer
+
+Record the transfer details to DB.
+
+=over 4
+
+=item * C<$dbic> - Reference of User Client's DBIC for database query
+
+=item * C<$payment_id> - Payment ID generated from payment mt5 transfer process
+
+=item * C<$mt5_amount> - The amount of funds transferred from mt5 account
+
+=item * C<$mt5_account_id> - The mt5 account ID used to perform the funds transfer
+
+=item * C<$mt5_currency_code> - The currency type that belongs to the mt5 account
+
+=back
+
+Return C<1> acknowledge successful operation.
+
+=cut
+
+sub _record_mt5_transfer {
+    my ($dbic, $payment_id, $mt5_amount, $mt5_account_id, $mt5_currency_code) = @_;
+
+    try {
+        $dbic->run(
+            ping => sub {
+                $_->do("SELECT * FROM payment.add_mt5_transfer_record(?, ?, ?, ?)",
+                    undef, $payment_id, $mt5_amount, $mt5_account_id, $mt5_currency_code);
+            });
+    } catch ($e) {
+        return 0;
+    }
+
+    return 1;
+}
+
+=head2 _archive_mt5_account
+
+Perform the archival process of provided mt5 account.
+
+=over 4
+
+=item * C<$mt5_user> - MT5 account instance obtained from get user call
+
+=back
+
+Return C<1> acknowledge successful operation.
+
+=cut
+
+async sub _archive_mt5_account {
+    my $mt5_user = shift;
+
+    await BOM::MT5::User::Async::update_user({
+        login  => $mt5_user->{login},
+        rights => USER_RIGHT_TRADE_DISABLED
+    });
+
+    await BOM::MT5::User::Async::user_archive($mt5_user->{login});
+
+    BOM::Platform::Event::Emitter::emit('mt5_archived_account_reset_trading_password', {email => $mt5_user->{email}},);
+
+    return 1;
+}
+
+=head2 _send_closure_email
+
+Notify the closure of mt5 account using the account's attached email.
+
+=over 4
+
+=item * C<$archived_list> - Reference to hash of mt5 accounts with successful processing, contains information on transfer details
+
+=back
+
+Return C<1> acknowledge successful operation.
+
+=cut
+
+sub _send_closure_email {
+    my $archived_list = shift;
+
+    foreach my $bom_email (keys %$archived_list) {
+        my @mt5_accounts;
+        foreach my $mt5_account ($archived_list->{$bom_email}{mt5_accounts}->@*) {
+            my $group_details = parse_mt5_group($mt5_account->{group});
+
+            push @mt5_accounts,
+                +{
+                login => $mt5_account->{login},
+                name  => $mt5_account->{name},
+                type  => join ' ',
+                ($group_details->{account_type} // '', $group_details->{market_type} // 'mt5'),
+                };
+        }
+
+        my $transfer_targets = $archived_list->{$bom_email}{transfer_targets} // [];
+
+        my $req = BOM::Platform::Context::Request->new(language => $archived_list->{$bom_email}{bom_user}->preferred_language // 'en');
+        request($req);
+
+        BOM::Platform::Event::Emitter::emit(
+            'mt5_inactive_account_closed',
+            {
+                email        => $archived_list->{$bom_email}{bom_user}->email,
+                mt5_accounts => \@mt5_accounts,
+                transferred  => join(', ', @$transfer_targets),
+            },
+        );
+    }
+
+    return 1;
+}
+
+=head2 _send_mt5_rescind_report
+
+Send a Summary report about the result of auto rescind process.
+
+=over 4
+
+=item * C<$args> - hashref with the following keys
+
+=item * C<$processed_mt5_accountsr> - Reference to list of mt5 accounts processed
+
+=item * C<$success_case> - Reference to hash of mt5 accounts with successful processing, contains information on transfer details
+
+=item * C<$failed_case> - Reference to hash of mt5 accounts with failed processing, contains information of why it failed the process.
+
+=back
+
+Return C<1> acknowledge successful operation.
+
+=cut
+
+sub _send_mt5_rescind_report {
+    my $args = shift;
+    my ($mt5_accounts, $process_mt5_success, $process_mt5_fail) = @{$args}{qw/processed_mt5_accounts success_case failed_case/};
+    my $total_process_num = @$mt5_accounts;
+    my $total_success_num = 0;
+    my $total_failed_num  = 0;
+    my $success_csv       = path('/tmp/rescind_success_report.csv');
+    my $failed_csv        = path('/tmp/rescind_failed_report.csv');
+    my @message           = ('<h1>MT5 Auto Rescind Report</h1><br>');
+
+    return 0 unless ($total_process_num);
+
+    $success_csv->remove if $success_csv->exists;
+    $failed_csv->remove  if $failed_csv->exists;
+
+    $success_csv->append("mt5_account,mt5_account_currency,mt5_balance,deriv_account,deriv_account_currency,deriv_transferred_amount\n");
+    $failed_csv->append("mt5_account, error_type, error_message\n");
+
+    push @message, ('<b>MT5 Processed: </b>', join(', ', @$mt5_accounts), '<br>');
+
+    my (@success_mt5_list, @success_mt5_list_summary);
+    foreach my $bom_email (keys %$process_mt5_success) {
+        foreach my $mt5_account ($process_mt5_success->{$bom_email}{mt5_accounts}->@*) {
+            push @success_mt5_list, $mt5_account->{login};
+            my $csv_line;
+            if (defined($process_mt5_success->{$bom_email}{$mt5_account->{login}})) {
+                my $transfer_details = $process_mt5_success->{$bom_email}{$mt5_account->{login}};
+                my $transfer_report  = join(
+                    ' ',
+                    (
+                        '<b>-</b>',                                      $mt5_account->{login},
+                        "(Archived) Transferred",                        $transfer_details->{transferred_mt5_currency},
+                        $transfer_details->{transferred_mt5_amount},     "to",
+                        $transfer_details->{transferred_deriv},          'With Value of',
+                        $transfer_details->{transferred_deriv_currency}, $transfer_details->{transferred_deriv_amount},
+                        '<br>'
+                    ));
+
+                $csv_line = join ',',
+                    (
+                    $mt5_account->{login},
+                    map { $transfer_details->{$_} }
+                        qw(transferred_mt5_currency transferred_mt5_amount transferred_deriv transferred_deriv_currency transferred_deriv_amount)
+                    );
+                $csv_line .= "\n";
+                push @success_mt5_list_summary, $transfer_report;
+            } else {
+                $csv_line = $mt5_account->{login} . "\n";
+                push @success_mt5_list_summary, join(' ', ('<b>-</b>', $mt5_account->{login}, "(Archived) No Transfer<br>"));
+            }
+            $success_csv->append($csv_line);
+        }
+    }
+
+    if (@success_mt5_list) {
+        push @message,
+            (
+            '<br><b>###SUCCESS CASE###</b><br>',
+            '<b>Auto Rescind Successful for: </b>',
+            join(', ', @success_mt5_list),
+            '<br>',                    '<b>Success Result Details:</b><br>',
+            @success_mt5_list_summary, '<br>'
+            );
+
+        $total_success_num = @success_mt5_list;
+    }
+
+    if (scalar(keys %$process_mt5_fail)) {
+        push @message,
+            (
+            '<br><b>###FAILED CASE###</b><br>',
+            '<b>Auto Rescind Failed for: </b>',
+            join(', ', keys %$process_mt5_fail),
+            '<br>', '<b>Failed Result Details:</b><br>'
+            );
+
+        $total_failed_num = keys %$process_mt5_fail;
+    }
+
+    foreach my $failed_mt5 (keys %$process_mt5_fail) {
+        push @message, '<b>-</b> ' . $failed_mt5 . '<br>';
+
+        for my $error_type (keys %{$process_mt5_fail->{$failed_mt5}}) {
+            my $csv_line = join(',', ($failed_mt5, $error_type, $process_mt5_fail->{$failed_mt5}{$error_type}));
+            $csv_line .= "\n";
+            $failed_csv->append($csv_line);
+            push @message, join(' ', ('&nbsp&nbsp*', $error_type, ':', $process_mt5_fail->{$failed_mt5}{$error_type}, '<br>'));
+        }
+    }
+
+    push @message,
+        (
+        "<br>Total MT5 Accounts Processed: $total_process_num<br>",
+        "Total MT5 Accounts Processed (Succeed): $total_success_num<br>",
+        "Total MT5 Accounts Processed (Failed): $total_failed_num<br>",
+        '<br><b>###END OF REPORT###</b><br>'
+        );
+
+    my $brand          = request()->brand;
+    my $csv_attachment = [];
+    push @$csv_attachment, $success_csv->[0] if @success_mt5_list;
+    push @$csv_attachment, $failed_csv->[0]  if scalar(keys %$process_mt5_fail);
+
+    BOM::Platform::Email::send_email({
+        to         => 'i-payments-TL@deriv.com',
+        from       => $brand->emails('no-reply'),
+        subject    => 'MT5 Account Rescind Report',
+        message    => \@message,
+        attachment => $csv_attachment,
+    });
+
+    return 1;
+}
+
+=head2 _create_error
+
+Record the error message to its corresponding type and related mt5 account.
+
+=over 4
+
+=item * C<$error_record> - Reference to hash to record failed mt5 account and its reason
+
+=item * C<$mt5_account_id> - MT5 account ID that failed the condition
+
+=item * C<$error_type> - Type of error in relation to its message
+
+=item * C<$error_message> - Message detailing on the error
+
+=back
+
+=cut
+
+sub _create_error {
+    my ($error_record, $mt5_account_id, $error_type, $error_message) = @_;
+    $error_record->{$mt5_account_id}{$error_type} = $error_message;
 }
 
 =head2 update_loginid_status

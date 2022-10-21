@@ -134,7 +134,7 @@ subtest 'process - generic jobs' => sub {
                 verify_email_closed_account_other verify_email_closed_account_reset_password
                 verify_email_closed_account_account_opening account_verification_for_pending_payout
                 pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast crypto_cashier_transaction_updated
-                update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies/
+                update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies mt5_deriv_auto_rescind/
         ),
         'Correct number of actions that can be emitted'
     );

@@ -63,6 +63,12 @@ my $mocked_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
 my @datadog_args;
 $mocked_datadog->mock('stats_inc', sub { @datadog_args = @_ });
 
+my $mocked_user                = Test::MockModule->new('BOM::User');
+my $mocked_user_client         = Test::MockModule->new('BOM::User::Client');
+my $mocked_rule_engine         = Test::MockModule->new('BOM::Rules::Engine');
+my $mocked_mt5_events          = Test::MockModule->new('BOM::Event::Actions::MT5');
+my $mocked_user_client_account = Test::MockModule->new('BOM::User::Client::Account');
+
 subtest 'test unrecoverable error' => sub {
     $mocked_mt5->mock('get_user', sub { Future->done({error => 'Not found'}) });
     is(BOM::Event::Actions::MT5::sync_info({loginid => $test_client->loginid}), 0, 'return 0 because there is error');
@@ -546,6 +552,821 @@ subtest 'mt5 account closure report' => sub {
 
     ok $email, 'Account closure report email sent';
     like $email->{body}, qr/MT5 account closure report is attached/, 'corrent content';
+};
+
+subtest 'mt5 deriv auto rescind' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    my $auto_rescind_test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'testrescind@test.com',
+    });
+
+    my $sample_mt5_user = {
+        address       => "ADDR 1",
+        agent         => 0,
+        balance       => "0.0",
+        city          => "Cyber",
+        company       => "",
+        country       => "Indonesia",
+        email         => $auto_rescind_test_client->email,
+        group         => "real\\p01_ts03\\synthetic\\svg_std_usd\\03",
+        leverage      => 500,
+        login         => "MTR10000",
+        name          => "QA script testrescindfVz",
+        phone         => "+62417591703",
+        phonePassword => undef,
+        rights        => 481,
+        state         => "",
+        zipCode       => undef,
+    };
+
+    my $sample_bom_user = {
+        email              => $auto_rescind_test_client->email,
+        preferred_language => 'en'
+    };
+
+    my $sample_bom_user_client = {
+        currency => 'USD',
+    };
+
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_deriv_auto_rescind};
+    my $action_get     = sub { $action_handler->(shift)->get };
+
+    my %mt5_event_mock = (
+        convert_currency => sub {
+            $mocked_mt5_events->mock(
+                'convert_currency',
+                shift // sub {
+                    my ($amount, $from_currency, $to_currency) = @_;
+                    my $convert_rate = 1;
+
+                    #Assumption for test, from_currency always USD
+                    $convert_rate = 0.000043 if $to_currency eq 'BTC';
+                    $convert_rate = 0.98     if $to_currency eq 'EUR';
+
+                    return ($amount) * $convert_rate;
+                });
+        },
+        financialrounding => sub {
+            $mocked_mt5_events->mock(
+                'financialrounding',
+                shift // sub {
+                    my ($type, $currency, $amount) = @_;
+                    return $amount;
+                });
+        },
+        record_mt5_transfer => sub {
+            $mocked_mt5_events->mock('_record_mt5_transfer', shift // sub { 1 });
+        },
+    );
+
+    my %mt5_mock = (
+        get_user => sub {
+            $mocked_mt5->mock('get_user', shift // sub { Future->done($sample_mt5_user) });
+        },
+        get_group => sub {
+            $mocked_mt5->mock('get_group', shift // sub { Future->done({currency => 'USD'}) });
+        },
+        get_open_positions_count => sub {
+            $mocked_mt5->mock('get_open_positions_count', shift // sub { Future->done({total => 0}) });
+        },
+        get_open_orders_count => sub {
+            $mocked_mt5->mock('get_open_orders_count', shift // sub { Future->done({total => 0}) });
+        },
+        user_balance_change => sub {
+            $mocked_mt5->mock('user_balance_change', shift // sub { Future->done({status => 1}) });
+        },
+        update_user => sub {
+            $mocked_mt5->mock('update_user', shift // sub { Future->done({status => 1}) });
+        },
+        user_archive => sub {
+            $mocked_mt5->mock('user_archive', shift // sub { Future->done({status => 1}) });
+        },
+    );
+
+    my %bom_user_mock = (
+        new => sub {
+            $mocked_user->mock('new', shift // sub { bless $sample_bom_user, 'BOM::User' });
+        },
+        bom_real_loginids => sub {
+            $mocked_user->mock('bom_real_loginids', shift // sub { ('CR90000') });
+        },
+    );
+
+    my %bom_user_client_mock = (
+        new => sub {
+            $mocked_user_client->mock('new', shift // sub { bless $sample_bom_user_client, 'BOM::User::Client' });
+        },
+        currency => sub {
+            $mocked_user_client->mock('currency', shift // sub { 'USD' });
+        },
+        validate_payment => sub {
+            $mocked_user_client->mock('validate_payment', shift // sub { 1 });
+        },
+        status => sub {
+            $mocked_user_client->mock('status', shift // sub { bless {disabled => 0}, 'BOM::User::Client::Status' });
+        },
+        payment_mt5_transfer => sub {
+            $mocked_user_client->mock('payment_mt5_transfer', shift // sub { bless {payment_id => '123'}, 'BOM::User::Client::Account' });
+        },
+        db => sub {
+            $mocked_user_client->mock(
+                'db',
+                shift // sub {
+                    bless {
+                        dbic => sub { 1 }
+                        },
+                        'BOM::User::Client';
+                });
+        },
+        dbic => sub {
+            $mocked_user_client->mock('dbic', shift // sub { 1 });
+        },
+    );
+
+    my %bom_user_client_account_mock = (
+        payment_id => sub {
+            $mocked_user_client_account->mock('payment_id', shift // sub { '123' });
+        },
+    );
+
+    my %bom_rule_engine_mock = (
+        new => sub {
+            $mocked_rule_engine->mock('new', shift // sub { bless {}, 'BOM::Rules::Engine' });
+        },
+        apply_rules => sub {
+            $mocked_rule_engine->mock('apply_rules', shift // sub { 1 });
+        },
+    );
+
+    my $mt5_deriv_auto_rescind_mock_set = sub {
+        $mt5_mock{get_user}->();
+        $bom_user_mock{new}->();
+        $bom_user_mock{bom_real_loginids}->(sub { ('CR90000') });
+    };
+
+    my $mt5_deriv_auto_rescind_process_mock_set = sub {
+        $bom_user_client_mock{new}->();
+        $bom_user_client_mock{currency}->();
+        $mt5_mock{get_group}->();
+        $mt5_event_mock{convert_currency}->();
+        $bom_rule_engine_mock{new}->();
+        $bom_user_client_mock{validate_payment}->();
+        $bom_rule_engine_mock{apply_rules}->();
+        $bom_user_client_mock{status}->();
+        $mt5_mock{get_open_positions_count}->();
+        $mt5_mock{get_open_orders_count}->();
+        $mt5_mock{user_balance_change}->();
+        $mt5_event_mock{financialrounding}->();
+        $bom_user_client_mock{payment_mt5_transfer}->();
+        $bom_user_client_mock{dbic}->();
+        $bom_user_client_account_mock{payment_id}->();
+        $mt5_event_mock{record_mt5_transfer}->();
+        $bom_user_client_mock{db}->();
+        $mt5_mock{update_user}->();
+        $mt5_mock{user_archive}->();
+    };
+
+    subtest 'can call auto rescind process' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_mock{get_user}->(sub { die {error => "ERR_NOTFOUND"} });
+
+        my $result = $action_get->($args);
+        ok $result, 'Success MT5 Auto Rescind Result';
+    };
+
+    subtest 'mt5 accounts processed from output same as input' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR1111', 'MTR2222', 'MTR3333'],
+            override_status => 0
+        };
+
+        $mt5_mock{get_user}->(sub { die {error => "ERR_NOTFOUND"} });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{processed_mt5_accounts}, ['MTR1111', 'MTR2222', 'MTR3333'], 'Processed correct list of MT5 Accounts';
+    };
+
+    subtest 'user not found' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_mock{get_user}->(sub { die {error => "ERR_NOTFOUND"} });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'ERR_NOTFOUND'}}, 'Got user not found error';
+    };
+
+    subtest 'MT5 Account retrieved without email' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        my %missing_email_mt5_user = %$sample_mt5_user;
+        delete $missing_email_mt5_user{email};
+        $mt5_mock{get_user}->(sub { Future->done(\%missing_email_mt5_user) });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'MT5 Account retrieved without email'}},
+            'Got mt5 account retrieved without email error';
+    };
+
+    subtest 'BOM User Account not found' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_mock{get_user}->();
+        $bom_user_mock{new}->(sub { undef; });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'BOM User Account not found'}}, 'Got bom user account not found error';
+    };
+
+    subtest 'BOM User Real Loginids not found' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_mock{get_user}->();
+        $bom_user_mock{new}->();
+        $bom_user_mock{bom_real_loginids}->(sub { () });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'BOM User Real Loginids not found'}},
+            'Got bom user real loginids not found error';
+    };
+
+    subtest 'Demo Account detected' => sub {
+        my $args = {
+            mt5_accounts    => ['MTD10000'],
+            override_status => 0
+        };
+
+        my %demo_mt5_user = %$sample_mt5_user;
+        $demo_mt5_user{group} = 'demo\\p01_ts03\\synthetic\\svg_std_usd\\03';
+        $mt5_mock{get_user}->(sub { Future->done(\%demo_mt5_user) });
+        $bom_user_mock{new}->();
+        $bom_user_mock{bom_real_loginids}->(sub { ('CR90000') });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTD10000' => {'MT5 Error' => 'Demo Account detected, do nothing'}},
+            'Got demo account detected, do nothing error';
+    };
+
+    subtest 'Error getting Deriv Account' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $bom_user_client_mock{new}->(sub { die {error => 'Generic Error'} });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Error getting Deriv Account'}}, 'Got error getting deriv account error';
+    };
+
+    subtest 'Deriv Account not found' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $bom_user_client_mock{new}->(sub { undef; });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Deriv Account not found'}}, 'Got deriv account not found error';
+    };
+
+    subtest 'Deriv Account currency not found' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        $bom_user_client_mock{currency}->(sub { undef; });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Deriv Account currency not found'}},
+            'Got deriv account currency not found error';
+    };
+
+    subtest 'Currency Group not found' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        $mt5_mock{get_group}->(sub { Future->done(undef) });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'Currency Group not found'}}, 'Got currency group not found error';
+    };
+
+    subtest 'Validate Payment failed' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        $bom_user_client_mock{validate_payment}->(sub { die {error => 'Generic Error'} });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Validate Payment failed'}}, 'Got validate payment failed error';
+    };
+
+    subtest 'Currency not allowed' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        $bom_rule_engine_mock{apply_rules}->(sub { die {error => 'Generic Error'} });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Currency not allowed'}}, 'Got currency not allowed error';
+    };
+
+    subtest 'Account Disabled error' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        $bom_user_client_mock{status}->(sub { bless {disabled => 1}, 'BOM::User::Client::Status' });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Account Disabled'}}, 'Got account disabled error';
+    };
+
+    subtest 'MT5 open position error' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        $mt5_mock{get_open_positions_count}->(sub { Future->done({total => 2}) });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'Detected 2 open position'}}, 'Got mt5 open position error';
+    };
+
+    subtest 'MT5 open order error' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        $mt5_mock{get_open_orders_count}->(sub { Future->done({total => 3}) });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'Detected 3 open order'}}, 'Got mt5 open order error';
+    };
+
+    subtest 'Balance update failed' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_mock{get_user}->(sub { Future->done(\%mt5_user_with_balance) });
+        $mt5_mock{user_balance_change}->(sub { die {error => "Generic Error"} });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case},
+            {'MTR10000' => {'MT5 Error' => 'Balance update response failed but may have been updated. Manual check required.'}},
+            'Got balance update failed error';
+    };
+
+    subtest 'Funds transfer operation completed but error in recording mt5_transfer, archive process skipped' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_user_with_balance{ct}      = 3;
+        $mt5_mock{get_user}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{ct}--;
+                $mt5_ref->{balance} = '0.00' if $mt5_ref->{ct} == 0;
+                return Future->done($mt5_ref);
+            });
+        $mt5_event_mock{record_mt5_transfer}->(sub { 0 });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case},
+            {'MTR10000' => {'CR90000' => 'Funds transfer operation completed but error in recording mt5_transfer, archive process skipped'}},
+            'Got mt5 db record error';
+    };
+
+    subtest 'Payment MT5 Transfer failed - MT5 Balance changes reverted' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_user_with_balance{ct}      = 3;
+        $mt5_mock{get_user}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{ct}--;
+                $mt5_ref->{balance} = '0.00' if $mt5_ref->{ct} == 0;
+                return Future->done($mt5_ref);
+            });
+        $bom_user_client_mock{payment_mt5_transfer}->(sub { die {error => 'Generic Error'} });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'CR90000' => 'Payment MT5 Transfer failed - MT5 Balance changes reverted'}},
+            'Got payment error';
+    };
+
+    subtest 'Payment MT5 Transfer failed - MT5 Balance modified and failed to revert' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_user_with_balance{ct}      = 3;
+        $mt5_mock{get_user}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{ct}--;
+                $mt5_ref->{balance} = '0.00' if $mt5_ref->{ct} == 0;
+                return Future->done($mt5_ref);
+            });
+        my $balance_change_counter = 2;
+        $mt5_mock{user_balance_change}->(
+            sub {
+                my $ct = \$balance_change_counter;
+                $$ct--;
+                return Future->done($$ct <= 0 ? {status => 0} : {status => 1});
+            });
+        $bom_user_client_mock{payment_mt5_transfer}->(sub { die {error => 'Generic Error'} });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case},
+            {'MTR10000' => {'CR90000' => 'Payment MT5 Transfer failed - MT5 Balance modified and may failed to revert. Manual check required.'}},
+            'Got payment with failed to revert error';
+    };
+
+    subtest 'Archive condition not met' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_mock{get_user}->(sub { Future->done(\%mt5_user_with_balance) });
+        $mt5_mock{user_balance_change}->(
+            sub {
+                Future->done({status => 0});
+            });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'Archive condition not met'}}, 'Got archive condition not met error';
+    };
+
+    subtest 'Archive process failed' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        $mt5_mock{update_user}->(sub { die {error => 'Generic Error'} });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'Archive process failed'}}, 'Got archive process failed error';
+    };
+
+    subtest 'Success Case with Balance 0' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{success_case},
+            {
+            $auto_rescind_test_client->email => {
+                bom_user     => $sample_bom_user,
+                mt5_accounts => [$sample_mt5_user]}
+            },
+            'Success Case with Balance 0';
+    };
+
+    subtest 'Success Case with Balance 10 from MT5 USD to Deriv USD' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_mock{get_user}->(sub { Future->done(\%mt5_user_with_balance) });
+        $mt5_mock{user_balance_change}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{balance} = '0.0';
+                return Future->done({status => 1});
+            });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{success_case}, {
+            $auto_rescind_test_client->email => {
+                bom_user     => $sample_bom_user,
+                mt5_accounts => [$sample_mt5_user],
+                MTR10000     => {
+                    transferred_deriv          => "CR90000",
+                    transferred_deriv_amount   => "10.00",
+                    transferred_deriv_currency => "USD",
+                    transferred_mt5_amount     => "10.00",
+                    transferred_mt5_currency   => "USD",
+
+                },
+                transfer_targets => ["CR90000"],
+            }
+            },
+            'Success Case with Balance 10 USD to USD';
+    };
+
+    subtest 'Success Case with Balance 10 from MT5 USD to Deriv EUR' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_mock{get_user}->(sub { Future->done(\%mt5_user_with_balance) });
+        $mt5_mock{user_balance_change}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{balance} = '0.0';
+                return Future->done({status => 1});
+            });
+        $bom_user_client_mock{currency}->(sub { 'EUR' });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{success_case}, {
+            $auto_rescind_test_client->email => {
+                bom_user     => $sample_bom_user,
+                mt5_accounts => [$sample_mt5_user],
+                MTR10000     => {
+                    transferred_deriv          => "CR90000",
+                    transferred_deriv_amount   => "9.8",
+                    transferred_deriv_currency => "EUR",
+                    transferred_mt5_amount     => "10.00",
+                    transferred_mt5_currency   => "USD",
+
+                },
+                transfer_targets => ["CR90000"],
+            }
+            },
+            'Success Case with Balance 10 USD to EUR';
+    };
+
+    subtest 'Success Case with Balance 10 from MT5 USD to Deriv USD with override_status on Disabled Account' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 1
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_mock{get_user}->(sub { Future->done(\%mt5_user_with_balance) });
+        $mt5_mock{user_balance_change}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{balance} = '0.0';
+                return Future->done({status => 1});
+            });
+        $bom_user_client_mock{status}->(sub { bless {disabled => 1}, 'BOM::User::Client::Status' });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{success_case}, {
+            $auto_rescind_test_client->email => {
+                bom_user     => $sample_bom_user,
+                mt5_accounts => [$sample_mt5_user],
+                MTR10000     => {
+                    transferred_deriv          => "CR90000",
+                    transferred_deriv_amount   => "10.00",
+                    transferred_deriv_currency => "USD",
+                    transferred_mt5_amount     => "10.00",
+                    transferred_mt5_currency   => "USD",
+
+                },
+                transfer_targets => ["CR90000"],
+            }
+            },
+            'Success Case with Balance 10 USD to USD with Disabled Account';
+    };
+
+    subtest 'Report Sent for Success Case' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+        mailbox_clear();
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_mock{get_user}->(sub { Future->done(\%mt5_user_with_balance) });
+        $mt5_mock{user_balance_change}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{balance} = '0.0';
+                return Future->done({status => 1});
+            });
+
+        my $result = $action_get->($args)->get;
+        my $email  = mailbox_search(
+            email   => 'i-payments-TL@deriv.com',
+            subject => qr/MT5 Account Rescind Report/
+        );
+
+        my $expected_email = '<h1>MT5 Auto Rescind Report</h1><br>
+        <b>MT5 Processed: </b>
+        MTR10000
+        <br>
+        <br><b>###SUCCESS CASE###</b><br>
+        <b>Auto Rescind Successful for: </b>
+        MTR10000
+        <br>
+        <b>Success Result Details:</b><br>
+        <b>-</b> MTR10000 (Archived) Transferred USD 10.00 to CR90000 With Value of USD 10.00 <br>
+        <br>
+        <br>Total MT5 Accounts Processed: 1<br>
+        Total MT5 Accounts Processed (Succeed): 1<br>
+        Total MT5 Accounts Processed (Failed): 0<br>
+        <br><b>###END OF REPORT###</b><br>';
+
+        ok $email, 'MT5 Account Rescind Report sent';
+        my @correct_email  = split(' ', $expected_email);
+        my @received_email = split(' ', $email->{body});
+        is_deeply(\@received_email, \@correct_email, 'correct content');
+    };
+
+    subtest 'Report Sent for Failed Case' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0
+        };
+        mailbox_clear();
+
+        $mt5_mock{get_user}->(sub { die {error => "ERR_NOTFOUND"} });
+
+        my $result = $action_get->($args)->get;
+        my $email  = mailbox_search(
+            email   => 'i-payments-TL@deriv.com',
+            subject => qr/MT5 Account Rescind Report/
+        );
+
+        my $expected_email = '<h1>MT5 Auto Rescind Report</h1><br>
+        <b>MT5 Processed: </b>
+        MTR10000
+        <br>
+        <br><b>###FAILED CASE###</b><br>
+        <b>Auto Rescind Failed for: </b>
+        MTR10000
+        <br>
+        <b>Failed Result Details:</b><br>
+        <b>-</b> MTR10000<br>
+        &nbsp&nbsp* MT5 Error : ERR_NOTFOUND <br>
+        <br>Total MT5 Accounts Processed: 1<br>
+        Total MT5 Accounts Processed (Succeed): 0<br>
+        Total MT5 Accounts Processed (Failed): 1<br>
+        <br><b>###END OF REPORT###</b><br>';
+
+        ok $email, 'MT5 Account Rescind Report sent';
+        my @correct_email  = split(' ', $expected_email);
+        my @received_email = split(' ', $email->{body});
+        is_deeply(\@received_email, \@correct_email, 'correct content');
+    };
+
+    subtest 'Report Sent for Success and Failed Case' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000', 'MTR20000'],
+            override_status => 0
+        };
+        mailbox_clear();
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %alt_sample_mt5_user = %$sample_mt5_user;
+        $alt_sample_mt5_user{login} = 'MTR20000';
+
+        $mt5_mock{get_user}->(
+            sub {
+                my $mt5_id = shift;
+                return Future->done($sample_mt5_user)      if $mt5_id eq 'MTR10000';
+                return Future->done(\%alt_sample_mt5_user) if $mt5_id eq 'MTR20000';
+            });
+
+        $mt5_mock{get_open_positions_count}->(
+            sub {
+                my $mt5_id = shift;
+                return Future->done({total => 2}) if $mt5_id eq 'MTR10000';
+                return Future->done({total => 0}) if $mt5_id eq 'MTR20000';
+            });
+
+        my $result = $action_get->($args)->get;
+        my $email  = mailbox_search(
+            email   => 'i-payments-TL@deriv.com',
+            subject => qr/MT5 Account Rescind Report/
+        );
+
+        my $expected_email = '<h1>MT5 Auto Rescind Report</h1><br>
+        <b>MT5 Processed: </b>
+        MTR10000, MTR20000
+        <br>
+        <br><b>###SUCCESS CASE###</b><br>
+        <b>Auto Rescind Successful for: </b>
+        MTR20000
+        <br>
+        <b>Success Result Details:</b><br>
+        <b>-</b> MTR20000 (Archived) No Transfer<br>
+        <br>
+        <br><b>###FAILED CASE###</b><br>
+        <b>Auto Rescind Failed for: </b>
+        MTR10000
+        <br>
+        <b>Failed Result Details:</b><br>
+        <b>-</b> MTR10000<br>
+        &nbsp&nbsp* MT5 Error : Detected 2 open position <br>
+        <br>Total MT5 Accounts Processed: 2<br>
+        Total MT5 Accounts Processed (Succeed): 1<br>
+        Total MT5 Accounts Processed (Failed): 1<br>
+        <br><b>###END OF REPORT###</b><br>';
+
+        ok $email, 'MT5 Account Rescind Report sent';
+        my @correct_email  = split(' ', $expected_email);
+        my @received_email = split(' ', $email->{body});
+        is_deeply(\@received_email, \@correct_email, 'correct content');
+    };
 };
 
 subtest 'link myaffiliate token to mt5' => sub {
