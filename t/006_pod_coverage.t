@@ -15,7 +15,7 @@ my $allowed_naked_packages = {
     'BOM::PricingDetails'                                => 16,
     'BOM::DailySummaryReport'                            => 6,
     'BOM::DynamicSettings'                               => 6,
-    'BOM::DualControl'                                   => 16,
+    'BOM::DualControl'                                   => 17,
     'BOM::JavascriptConfig'                              => 1,
     'BOM::StaffPages'                                    => 1,
     'BOM::RiskReporting::ScenarioAnalysis'               => 3,
@@ -49,6 +49,7 @@ my $allowed_naked_packages = {
     'BOM::Backoffice::Request::Base'                     => 11,
     'BOM::Backoffice::Request::Role'                     => 4,
     'BOM::MarketData::Display::VolatilitySurface'        => 8,
+    'BOM::MT5::BOUtility'                                => 1,
 };
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);

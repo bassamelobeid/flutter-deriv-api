@@ -68,6 +68,22 @@ print "<form id=\"paymentDCC\" action=\""
     . encode_entities($clerk) . ")'>"
     . "</form>";
 
+Bar("Make Dual Control Code (MT5 Auto Transfer)");
+print "<p>To comply with ISO17799 requirements, deposits/withdrawals to client accounts require 2 staff members to authorise.
+One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when inputting the transaction.</p>";
+print "<form id=\"mt5AutoTransferDCC\" action=\""
+    . request()->url_for('backoffice/f_makedcc_mt5_autotransfer.cgi')
+    . "\" method=\"post\" class=\"bo_ajax_form\">"
+    . "<input type=\"hidden\" name=\"broker\" value=\"$encoded_broker\">"
+    . "<input type=\"hidden\" name=\"l\" value=\"EN\">"
+    . "<div class=\"row\">"
+    . "<label>MT5 Accounts:</label><input type=\"text\" placeholder=\"[Example: MTR123456, MTR654321] (comma separate accounts)\" size=\"50\" name=\"mt5accountid\" data-lpignore=\"true\" />"
+    . "</div>"
+    . "<div class=\"row\"><label>Input a comment/reminder about this DCC:</label><input type=\"text\" placeholder=\"required\" size=\"50\" name=\"reminder\" data-lpignore=\"true\" /></div>"
+    . "<input type=\"submit\" class='btn btn--primary' value='Make Dual Control Code (by "
+    . encode_entities($clerk) . ")'>"
+    . "</form>";
+
 my $tt = BOM::Backoffice::Request::template;
 
 Bar("Manual payments");
@@ -86,6 +102,10 @@ $tt->process(
     {
         currency_options => $currency_options,
     }) || die $tt->error();
+
+Bar("Transfer from MT5 to Accounts");
+
+$tt->process('backoffice/account/manager_transfer_mt5_cr.tt') || die $tt->error();
 
 Bar("BATCH CREDIT/DEBIT CLIENTS ACCOUNT");
 

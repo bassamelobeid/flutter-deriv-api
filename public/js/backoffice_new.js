@@ -100,7 +100,7 @@ $(document).ready(function() {
 
         event.stopImmediatePropagation();
 
-        if (this_form.attr('id') != 'paymentDCC') {
+        if (this_form.attr('id') != 'paymentDCC' && this_form.attr('id') != 'mt5AutoTransferDCC') {
             if (!confirm('Are you sure you want to continue?')) {
                 return false;
             }

@@ -230,6 +230,36 @@ sub validate_batch_payment_control_code {
     return;
 }
 
+=head2 validate_batch_payment_control_code
+
+Validates batch payment DCC
+
+=cut
+
+sub validate_batch_account_transfer_control_code {
+    my ($self, $incode, $account_list) = @_;
+
+    die 'invalid account list provided' unless ref($account_list) eq 'ARRAY';
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+
+    my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_element_count($code, 5);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_account_list($code, $account_list);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_already_used($incode);
+    return $error_status if $error_status;
+
+    return;
+}
+
 =head2 validate_client_anonymization_control_code
 
 Validates Client anonymization DCC
@@ -446,6 +476,25 @@ sub _validate_filelines {
         return Error::Base->cuss(
             -type => 'DifferentFile',
             -mesg => 'File provided does not match with the file provided during code generation',
+        );
+    }
+    return;
+}
+
+=head2 _validate_account_list
+
+Checks validity of the CSV file
+
+=cut
+
+sub _validate_account_list {
+    my ($self, $code, $lines) = @_;
+
+    my @arry = split("_##_", $code);
+    if (checksum_for_records($lines) ne $arry[3]) {
+        return Error::Base->cuss(
+            -type => 'DifferentAccountList',
+            -mesg => 'Account list provided does not match with the account list provided during code generation',
         );
     }
     return;
