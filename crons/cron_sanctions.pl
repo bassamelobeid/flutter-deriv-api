@@ -54,7 +54,7 @@ my $reports_path = shift or die "Please provide a path for storing the sanction 
 # 1. Regulated broker codes (EU) has a higher priority
 # 2. The regulated broker codes have a smaller number of clients, in comparison to CR
 # Thus, it would be better to send the emails one at a time, with regulated ones first
-my @brokers = qw(MF MX MLT CR);
+my @brokers = qw(MF CR);
 
 my $redis = BOM::Config::Redis::redis_replicated_write();
 
