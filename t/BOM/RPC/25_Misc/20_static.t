@@ -388,9 +388,8 @@ subtest 'p2p_config' => sub {
     );
 
     $p2p_config->restricted_countries(['au', 'nz']);
-    #$mock_currency->redefine(local_currencies_details   => sub { \%currencies });
     %BOM::Config::CurrencyConfig::ALL_CURRENCIES = %currencies;
-    $mock_currency->redefine(local_currency_for_country => sub { return 'AAA' if shift eq 'id' });
+    $mock_currency->redefine(local_currency_for_country => sub { my %params = @_; return 'AAA' if $params{country} eq 'id' });
     BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', 'BBB,CCC');
 
     my %vals = (
@@ -413,6 +412,7 @@ subtest 'p2p_config' => sub {
         fixed_rate_adverts_end_date => '2012-02-03',
         review_period               => 13,
         feature_level               => 14,
+        override_exchange_rate      => num(123.45),
         local_currencies            => [{
                 symbol       => 'AAA',
                 display_name => $currencies{AAA}->{name},
@@ -450,6 +450,14 @@ subtest 'p2p_config' => sub {
                     float_ads        => 'list_only',
                     fixed_ads        => 'disabled',
                     deactivate_fixed => '2012-02-03'
+                }}));
+
+    $p2p_config->currency_config(
+        encode_json({
+                'AAA' => {
+                    max_rate_range     => 8.2,
+                    manual_quote       => 123.45,
+                    manual_quote_epoch => time + 100,
                 }}));
 
     my %params = (

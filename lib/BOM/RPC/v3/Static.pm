@@ -375,11 +375,12 @@ rpc website_status => sub {
 
     if (my $p2p_advert_config = BOM::Config::P2P::advert_config()->{$country // ''}) {
         my $p2p_config           = $app_config->payments->p2p;
-        my $exchange_rate        = BOM::User::Utility::p2p_exchange_rate($country);
+        my $local_currency       = BOM::Config::CurrencyConfig::local_currency_for_country(country => $country);
+        my $exchange_rate        = BOM::User::Utility::p2p_exchange_rate($local_currency);
+        my $float_range          = BOM::Config::P2P::currency_float_range($local_currency);
         my %all_local_currencies = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
         my @p2p_countries        = keys BOM::Config::P2P::available_countries()->%*;
         my @p2p_currencies       = split ',', BOM::Config::Redis->redis_p2p->get('P2P::LOCAL_CURRENCIES');
-        my $local_currency       = BOM::Config::CurrencyConfig::local_currency_for_country($country);
 
         my @local_currencies;
         for my $symbol (sort keys %all_local_currencies) {
@@ -412,7 +413,7 @@ rpc website_status => sub {
             review_period           => $p2p_config->review_period,
             fixed_rate_adverts      => $p2p_advert_config->{fixed_ads},
             float_rate_adverts      => $p2p_advert_config->{float_ads},
-            float_rate_offset_limit => $p2p_advert_config->{max_rate_range} / 2,
+            float_rate_offset_limit => $float_range / 2,
             $p2p_advert_config->{deactivate_fixed}       ? (fixed_rate_adverts_end_date => $p2p_advert_config->{deactivate_fixed}) : (),
             ($exchange_rate->{source} // '') eq 'manual' ? (override_exchange_rate      => $exchange_rate->{quote})                : (),
             feature_level    => $p2p_config->feature_level,
