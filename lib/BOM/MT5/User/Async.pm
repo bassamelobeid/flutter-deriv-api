@@ -718,6 +718,16 @@ sub get_user_archive {
         });
 }
 
+sub user_archive {
+    my $login = shift;
+    my $param = {login => $login};
+
+    return _invoke_mt5('UserArchive', $param)->then(
+        sub {
+            return Future->done({status => 1});
+        });
+}
+
 sub update_user {
     my $args   = shift;
     my @fields = _get_update_user_fields();
@@ -813,6 +823,22 @@ sub withdrawal {
         });
 }
 
+sub user_balance_change {
+    my $args = shift;
+
+    my $param = {
+        login   => $args->{login},
+        balance => $args->{user_balance},
+        comment => $args->{comment},
+        type    => $args->{type}};
+
+    return _invoke_mt5('UserBalanceChange', $param)->then(
+        sub {
+
+            return Future->done({status => 1});
+        });
+}
+
 sub get_open_positions_count {
     my $login = shift;
 
@@ -820,7 +846,18 @@ sub get_open_positions_count {
         sub {
             my ($response) = @_;
 
-            return Future->done({total => $response->{total}});
+            return Future->done({total => $response->{user}{total}});
+        });
+}
+
+sub get_open_orders_count {
+    my $login = shift;
+
+    return _invoke_mt5('OrderGetTotal', {login => $login})->then(
+        sub {
+            my ($response) = @_;
+
+            return Future->done({total => $response->{order_get_total}{total}});
         });
 }
 
