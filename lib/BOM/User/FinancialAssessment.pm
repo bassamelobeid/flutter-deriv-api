@@ -38,6 +38,8 @@ sub update_financial_assessment {
 
     my $client = $all_clients[0];
 
+    return undef if $client->landing_company->is_suspended;
+
     my $previous = $client->financial_assessment();
     $previous = decode_fa($previous) if $previous;
 
