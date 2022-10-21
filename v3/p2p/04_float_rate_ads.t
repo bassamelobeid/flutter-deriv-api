@@ -35,12 +35,18 @@ $app_config->set({'payments.p2p.available'                => 1});
 $app_config->set({'payments.p2p.restricted_countries'     => []});
 $app_config->set({'payments.p2p.available_for_currencies' => ['usd']});
 $app_config->set({'payments.p2p.escrow'                   => [$client_escrow->loginid]});
-# if this test takes more than 10 minutues to run, it will fail if we get a quote for IDR. But then we have other problems :)
+
 $app_config->set({
         'payments.p2p.country_advert_config' => encode_json_utf8({
                 'id' => {
                     float_ads          => 'enabled',
                     fixed_ads          => 'enabled',
+                }})});
+
+# if this test takes more than 10 minutues to run, it will fail if we get a quote for IDR. But then we have other problems :)
+$app_config->set({
+        'payments.p2p.currency_config' => encode_json_utf8({
+                'IDR' => {
                     manual_quote       => 100,
                     manual_quote_epoch => time + 600,
                     max_rate_range     => 100
