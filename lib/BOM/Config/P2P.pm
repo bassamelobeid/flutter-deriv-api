@@ -54,18 +54,30 @@ Return a hashref of floating and fixed rate advert configuration for all P2P cou
 sub advert_config {
     my $countries = available_countries();
 
-    my $advert_config    = decode_json_utf8(BOM::Config::Runtime->instance->app_config->payments->p2p->country_advert_config);
-    my $global_max_range = BOM::Config::Runtime->instance->app_config->payments->p2p->float_rate_global_max_range;
+    my $advert_config = decode_json_utf8(BOM::Config::Runtime->instance->app_config->payments->p2p->country_advert_config);
 
     my $result = {};
     for my $country (keys %$countries) {
-        $result->{$country}{float_ads}      = $advert_config->{$country}{float_ads}      // 'disabled';
-        $result->{$country}{fixed_ads}      = $advert_config->{$country}{fixed_ads}      // 'enabled';
-        $result->{$country}{max_rate_range} = $advert_config->{$country}{max_rate_range} // $global_max_range;
-        $result->{$country}{$_}             = $advert_config->{$country}{$_} for qw(manual_quote manual_quote_epoch deactivate_fixed);
+        $result->{$country}{float_ads}        = $advert_config->{$country}{float_ads} // 'disabled';
+        $result->{$country}{fixed_ads}        = $advert_config->{$country}{fixed_ads} // 'enabled';
+        $result->{$country}{deactivate_fixed} = $advert_config->{$country}{deactivate_fixed};
     }
 
     return $result;
+}
+
+=head2 currency_float_range
+
+Returns the allowed rate range for floating rate adverts for a single currency.
+
+=cut
+
+sub currency_float_range {
+    my $currency = shift;
+
+    my $currency_config  = decode_json_utf8(BOM::Config::Runtime->instance->app_config->payments->p2p->currency_config);
+    my $global_max_range = BOM::Config::Runtime->instance->app_config->payments->p2p->float_rate_global_max_range;
+    return $currency_config->{$currency}{max_rate_range} // $global_max_range;
 }
 
 1;

@@ -25,7 +25,7 @@ use JSON::MaybeUTF8;
 use Log::Any                         qw($log);
 use Format::Util::Numbers            qw(get_min_unit financialrounding);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
-use List::Util                       qw(any max min uniq first);
+use List::Util                       qw(any min);
 
 use LandingCompany::Registry;
 
@@ -67,45 +67,46 @@ our %ALL_CURRENCIES = do {
     # those countries is different from its database we need to silence those here
     local $SIG{__WARN__} = sub { };
 
-    # override/missing countries in Locale::Object::Currency
+    # Override countries in Locale::Object::Currency
+    # For countries with multiple currencies, all but one must be included in @legacy_currencies
     my %country_currencies = (
-        af => 'AFN',    # Afghanistan
-        an => 'ANG',    # Netherlands Antilles
-        aq => 'AAD',    # Antarctica
-        ax => 'EUR',    # Aland Islands
-        az => 'AZN',    # Azerbaijan
-        bg => 'BGN',    # Bulgaria
-        bl => 'EUR',    # Saint-Barthemy
-        bq => 'ANG',    # Curacao (old country code)
-        by => 'BYN',    # Belarus
-        cw => 'ANG',    # Curacao
-        cy => 'EUR',    # Cyprus
-        ec => 'USD',    # Ecuador
-        ee => 'EUR',    # Estonia
-        gh => 'GHS',    # Ghana
-        gq => 'XAF',    # Equatorial Guinea
-        lt => 'EUR',    # Lithuania
-        lv => 'EUR',    # Latvia
-        me => 'EUR',    # Montenegro
-        mf => 'EUR',    # Saint-Martin (French part)
-        mg => 'MGA',    # Madagascar
-        mr => 'MRU',    # Mauritania
-        mt => 'EUR',    # Malta
-        mz => 'MZN',    # Mozambique
-        ro => 'RON',    # Romania
-        rs => 'RSD',    # Serbia
-        sd => 'SDG',    # Sudan
-        si => 'EUR',    # Slovenia
-        sk => 'EUR',    # Slovakia
-        sr => 'SRD',    # Suriname
-        ss => 'SSP',    # South Sudan
-        st => 'STN',    # Sao Tome and Principe
-        sx => 'ANG',    # Sint Maarten (Dutch part)
-        tr => 'TRY',    # Turkey
-        tm => 'TMT',    # Turkmenistan
-        ve => 'VES',    # Venezuela
-        zm => 'ZMW',    # Zambia
-        zw => 'ZWL',    # Zimbabwe
+        af => ['AFN'],                  # Afghanistan
+        an => ['ANG'],                  # Netherlands Antilles
+        aq => ['AAD'],                  # Antarctica
+        ax => ['EUR'],                  # Aland Islands
+        az => ['AZN'],                  # Azerbaijan
+        bg => ['BGN'],                  # Bulgaria
+        bl => ['EUR'],                  # Saint-Barthemy
+        bq => ['ANG'],                  # Curacao (old country code)
+        by => ['BYN'],                  # Belarus
+        cw => ['ANG'],                  # Curacao
+        cy => ['EUR'],                  # Cyprus
+        ec => ['ECS', 'USD'],           # Ecuador
+        ee => ['EUR'],                  # Estonia
+        gh => ['GHC', 'GHS'],           # Ghana
+        gq => ['XAF'],                  # Equatorial Guinea
+        lt => ['EUR'],                  # Lithuania
+        lv => ['EUR'],                  # Latvia
+        me => ['EUR'],                  # Montenegro
+        mf => ['EUR'],                  # Saint-Martin (French part)
+        mg => ['MGA'],                  # Madagascar
+        mr => ['MRU'],                  # Mauritania
+        mt => ['EUR'],                  # Malta
+        mz => ['MZM', 'MZN'],           # Mozambique
+        ro => ['RON'],                  # Romania
+        rs => ['RSD'],                  # Serbia
+        sd => ['SDG'],                  # Sudan
+        si => ['EUR'],                  # Slovenia
+        sk => ['EUR'],                  # Slovakia
+        sr => ['SRD'],                  # Suriname
+        ss => ['SSP'],                  # South Sudan
+        st => ['STN'],                  # Sao Tome and Principe
+        sx => ['ANG'],                  # Sint Maarten (Dutch part)
+        tr => ['TRY'],                  # Turkey
+        tm => ['TMT'],                  # Turkmenistan
+        ve => ['VEB', 'VEF', 'VES'],    # Venezuela
+        zm => ['ZMK', 'ZMW'],           # Zambia
+        zw => ['ZWD', 'ZWL'],           # Zimbabwe
     );
 
     # Override/missing currency names in Locale::Currency::code2currency().
@@ -118,8 +119,10 @@ our %ALL_CURRENCIES = do {
         BDT => 'Bangladeshi Taka',
         BTN => 'Bhutanese Ngultrum',
         BWP => 'Botswana Pula',
+        ECS => 'Ecuadorian Sucre',
         ERN => 'Eritrean Nakfa',
         GEL => 'Georgian Lari',
+        GHC => 'Ghanaian Cedi (old)',
         GMD => 'Gambian Dalasi',
         GTQ => 'Guatemalan Quetzal',
         HNL => 'Honduran Lempira',
@@ -139,6 +142,7 @@ our %ALL_CURRENCIES = do {
         MOP => 'Macanese Pataca',
         MRU => 'Mauritanian Ouguiya',
         MVR => 'Maldivian Rufiyaa',
+        MZM => 'Mozambique Metical (old)',
         NGN => 'Nigerian Naira',
         OMR => 'Omani Rial',
         PAB => 'Panamanian Balboa',
@@ -154,16 +158,33 @@ our %ALL_CURRENCIES = do {
         TJS => 'Tajikistani Somoni',
         TOP => 'Tongan Paʻanga',
         UAH => 'Ukrainian Hryvnia',
+        VEB => 'Venezuelan Bolívar',
+        VEF => 'Venezuelan Fuente',
         UYU => 'Uruguayan Peso',
         VES => 'Venezuelan Bolívar Soberano',
         VND => 'Vietnamese Đồng',
         VUV => 'Vanuatu Vatu',
         WST => 'Samoan Tala',
         ZAR => 'South African Rand',
+        ZWD => 'Zimbabwe Dollar',
+        ZMK => 'Zambian Kwacha (old)',
+    );
+
+    my @legacy_currencies = (
+        'ECS',    # Ecuadorian Sucre
+        'GHC',    # Ghanaian Cedi
+        'MZM',    # Mozambique Metical
+        'VEB',    # Venezuelan Bolívar
+        'VEF',    # Venezuelan Fuente
+        'ZMK',    # Zambian Kwacha
+        'ZWD',    # Zimbabwe Dollar
     );
 
     my %result;
-    push $result{$country_currencies{$_}}->{countries}->@*, $_ for keys %country_currencies;
+    for my $country (keys %country_currencies) {
+        push $result{$_}->{countries}->@*, $country for $country_currencies{$country}->@*;
+
+    }
 
     for my $country (Locale::Country::all_country_codes()) {
         next if $country_currencies{$country};
@@ -173,68 +194,45 @@ our %ALL_CURRENCIES = do {
     }
 
     for my $currency (keys %result) {
-        $result{$currency}->{name} = $currency_names{$currency} // code2currency($currency) // $currency;
+        $result{$currency}->{name}      = $currency_names{$currency} // code2currency($currency) // $currency;
+        $result{$currency}->{is_legacy} = 1 if any { $_ eq $currency } @legacy_currencies;
     }
 
     %result;
 };
 
-=head2 local_currencies
-
-Returns all local currencies as hashfref with localized name.
-
-=cut
-
-sub local_currencies {
-    return {map { $_ => $ALL_CURRENCIES{$_}->{name} } keys %ALL_CURRENCIES};
-}
-
 =head2 local_currency_for_country
 
-Takes the following parameters:
+Takes the following named parameters:
 
 =over 4
 
 =item * C<$country> - A two letter ISO country code
 
+=item * C<$include_legacy> - Include deprecated currencies of the country. Only applicable when called in list context.
+
 =back
 
 Example:
 
-    my $currency = BOM::Config::Chronicle::local_currency_for_country('my');
+    my $currency = BOM::Config::Chronicle::local_currency_for_country(country => 'my');
 
-Returns a three letter ISO currency code as a string for the country
-and config database.
+Returns a three letter ISO currency code as a string for the country.
 
 =cut
 
 sub local_currency_for_country {
-    my ($country) = @_;
+    my %args = @_;
 
-    return first {
-        any { $_ eq lc($country // '') }
+    my @currencies = grep {
+        any { $_ eq lc($args{country} // '') }
             $ALL_CURRENCIES{$_}->{countries}->@*
         }
         keys %ALL_CURRENCIES;
-}
 
-=head2 countries_for_currency
+    @currencies = grep { !$ALL_CURRENCIES{$_}->{is_legacy} } @currencies unless $args{include_legacy} and wantarray;
 
-Returns arrayref of country codes for a currency.
-Takes the following parameters:
-
-=over 4
-
-=item * C<$currency> - currency code
-
-=back
-
-=cut
-
-sub countries_for_currency {
-    my ($country) = @_;
-
-    return $ALL_CURRENCIES{$country} ? $ALL_CURRENCIES{$country}->{countries} : [];
+    return wantarray ? @currencies : $currencies[0];
 }
 
 =head2 is_valid_currency

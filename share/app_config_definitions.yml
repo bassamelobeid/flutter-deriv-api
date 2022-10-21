@@ -469,6 +469,11 @@ payments:
           isa: json_string
           default: '{}'
           global: 1
+        currency_config:
+          description: 'Currency specific settings.'
+          isa: json_string
+          default: '{}'
+          global: 1        
         float_rate_global_max_range:
           isa: Num
           description: 'Total range of floating rate allowed for adverts unless overridden per country. E.g. 10 means -5% to +5%.'

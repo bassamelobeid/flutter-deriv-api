@@ -89,45 +89,36 @@ subtest 'restricted_countries' => sub {
 };
 
 subtest 'advert_config' => sub {
-    $config->float_rate_global_max_range(99);
+
     $config->available(1);
     $config->restricted_countries(['bb', 'cc']);
     $config->country_advert_config('{}');
 
-    cmp_deeply(
-        BOM::Config::P2P::advert_config,
-        {
-            aa => {
-                float_ads          => 'disabled',
-                fixed_ads          => 'enabled',
-                max_rate_range     => 99,
-                manual_quote       => undef,
-                manual_quote_epoch => undef,
-                deactivate_fixed   => undef,
-            }
-        },
-        'default country config'
-    );
-
-    $config->country_advert_config(
-        '{ "aa": { "float_ads": "enabled", "max_rate_range": 88, "manual_quote": 1.23, "manual_quote_epoch" : 1234, "deactivate_fixed" : "2030-01-01" } }'
-    );
+    $config->country_advert_config('{ "aa": { "float_ads": "enabled", "deactivate_fixed" : "2030-01-01" } }');
 
     cmp_deeply(
         BOM::Config::P2P::advert_config,
         {
             aa => {
-                float_ads          => 'enabled',
-                fixed_ads          => 'enabled',
-                max_rate_range     => 88,
-                manual_quote       => 1.23,
-                manual_quote_epoch => 1234,
-                deactivate_fixed   => '2030-01-01',
+                float_ads        => 'enabled',
+                fixed_ads        => 'enabled',
+                deactivate_fixed => '2030-01-01',
             }
         },
         'override country config'
     );
+};
 
+subtest 'currency config' => sub {
+    $config->float_rate_global_max_range(10);
+    $config->currency_config('{}');
+    note $config->currency_config;
+
+    is BOM::Config::P2P::currency_float_range('AAA'), 10, 'use default max range';
+
+    $config->currency_config('{ "AAA": { "max_rate_range": 20 }, "BBB" : { "max_rate_range": 30 } }');
+
+    is BOM::Config::P2P::currency_float_range('AAA'), 20, 'use custom max range';
 };
 
 done_testing();
