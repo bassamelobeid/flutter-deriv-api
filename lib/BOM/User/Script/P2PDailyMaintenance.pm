@@ -24,6 +24,7 @@ use Date::Utility;
 use List::Util      qw(uniq);
 use JSON::MaybeUTF8 qw(:v1);
 use Brands;
+use POSIX qw(ceil);
 
 use constant {
     CRON_INTERVAL_DAYS      => 1,
@@ -169,7 +170,7 @@ sub run {
                                 id_ignore_missing => 1,
                                 data              => {
                                     deactivation_date => $deactivation_date->date,
-                                    local_currency    => BOM::Config::CurrencyConfig::local_currency_for_country($country),
+                                    local_currency    => BOM::Config::CurrencyConfig::local_currency_for_country(country => $country),
                                     live_chat_url     => $brand->live_chat_url,
                                 }}) if @$user_ids;
 
@@ -223,7 +224,7 @@ sub run {
                                     ids               => [keys $ads->{$type}->%*],
                                     id_ignore_missing => 1,
                                     data              => {
-                                        local_currency => BOM::Config::CurrencyConfig::local_currency_for_country($country),
+                                        local_currency => BOM::Config::CurrencyConfig::local_currency_for_country(country => $country),
                                         live_chat_url  => $brand->live_chat_url,
                                     }});
                         } else {
@@ -322,17 +323,22 @@ sub run {
     my $chronicle_reader = Data::Chronicle::Reader->new(cache_reader => Cache::RedisDB::redis());
     my $trading_calendar = Quant::Framework->new->trading_calendar($chronicle_reader);
     my $exchange         = Finance::Exchange->create_exchange('FOREX');
+    my %all_currencies   = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
 
     # 8. send internal email if any floating rate countries have exchange rates older than MAX_QUOTE_SECS
     my @alerts;
-    for my $country (keys %$ad_config) {
-        next if $ad_config->{$country}{float_ads} eq 'disabled';
-        my $rate = BOM::User::Utility::p2p_exchange_rate($country);
-        unless ($rate) {
+    for my $currency (keys %all_currencies) {
+        my @float_countries = grep { $ad_config->{$_} and $ad_config->{$_}{float_ads} ne 'disabled' } $all_currencies{$currency}->{countries}->@*;
+        next unless @float_countries;
+
+        my $rate = BOM::User::Utility::p2p_exchange_rate($currency);
+
+        unless (defined $rate->{quote}) {
             push @alerts,
                 {
-                country => $country,
-                age     => "inf"
+                currency  => $currency,
+                countries => \@float_countries,
+                age       => 'inf'
                 };
             next;
         }
@@ -341,9 +347,10 @@ sub run {
         push @alerts,
             {
             %$rate,
-            country => $country,
-            age     => $age,
-            date    => $date
+            currency  => $currency,
+            countries => \@float_countries,
+            age       => $age,
+            date      => $date
             } if ($age > MAX_QUOTE_SECS);
     }
 
@@ -351,28 +358,25 @@ sub run {
         $log->debugf('sending quants email for %i alerts', scalar @alerts);
 
         my @lines = (
-            '<p>The following country(s) have floating rate adverts enabled in P2P, and the FOREX market has been open more than 24 hours since the exchange rate was updated.<br>Actions needed:</p>',
-            '<ul><li>Check the feed</li><li>Enter a manual quote</li><li>Consider switching the country to fixed rate adverts</li></ul>',
-            '<table border=1 style="border-collapse:collapse;"><tr><th>Country</th><th>Currency</th><th>Age (hours)</th><th>Source</th><th>Time</th><th>Quote</th></tr>',
+            '<p>The following currency(s) have countries with floating rate adverts enabled in P2P, and the FOREX market has been open more than 24 hours since the exchange rate was updated.<br>Actions needed:</p>',
+            '<ul><li>Check the feed</li><li>Enter a manual quote in backoffiice P2P advert rates management</li><li>Consider switching the countries to fixed rate adverts</li></ul>',
+            '<table border=1 style="border-collapse:collapse;"><tr><th>Currency</th><th>Age (hours)</th><th>Source</th><th>Time</th><th>Quote</th><th>Float rate country(s)</th></tr>',
         );
 
         for my $alert (sort { $b->{age} <=> $a->{age} } @alerts) {
-            push @lines,
-                (
-                '<tr><td>' . $alert->{country} . ' (' . $all_countries->{$alert->{country}}{name} . ')</td>',
-                '<td>' . BOM::Config::CurrencyConfig::local_currency_for_country($alert->{country}) . '</td>',
-                );
+            push @lines, '<tr><td>' . $alert->{currency} . ' (' . $all_currencies{$alert->{currency}}->{name} . ')</td>';
             if ($alert->{quote}) {
                 push @lines,
                     (
-                    '<td>' . sprintf('%.1f', ($alert->{age} / 3600)) . '</td>',
+                    '<td>' . ceil($alert->{age} / 3600) . '</td>',
                     '<td>' . $alert->{source} . '</td>',
                     '<td>' . $alert->{date}->datetime . '</td>',
-                    '<td>' . $alert->{quote} . '</td></tr>',
+                    '<td>' . $alert->{quote} . '</td>',
                     );
             } else {
-                push @lines, '<td colspan=4>No rate</td></tr>';
+                push @lines, '<td colspan=4>No rate</td>';
             }
+            push @lines, '<td>' . (join '<br>', map { $_ . ' (' . $all_countries->{$_}{name} . ')' } $alert->{countries}->@*) . '</td></tr>';
         }
         push @lines, '</table>';
 

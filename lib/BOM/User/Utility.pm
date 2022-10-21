@@ -394,25 +394,25 @@ Returns a hashref of quote details or empty hashref if no quote.
 =cut
 
 sub p2p_exchange_rate {
-    my $country = shift;
+    my $currency = shift;
 
-    my $config   = BOM::Config::P2P::advert_config()->{$country};
-    my $currency = BOM::Config::CurrencyConfig::local_currency_for_country($country);
-    my $quote    = ExchangeRates::CurrencyConverter::usd_rate($currency);
+    my $currency_config = decode_json_utf8(BOM::Config::Runtime->instance->app_config->payments->p2p->currency_config);
+    my $feed_quote      = ExchangeRates::CurrencyConverter::usd_rate($currency);
 
     my @quotes;
     push @quotes,
         {
-        epoch  => $config->{manual_quote_epoch},
-        quote  => $config->{manual_quote},
+        epoch  => $currency_config->{$currency}{manual_quote_epoch},
+        quote  => $currency_config->{$currency}{manual_quote},
         source => 'manual'
-        } if $config->{manual_quote};
+        }
+        if $currency_config->{$currency} and $currency_config->{$currency}{manual_quote};
     push @quotes,
         {
-        epoch  => $quote->{epoch},
-        quote  => 1 / $quote->{quote},
+        epoch  => $feed_quote->{epoch},
+        quote  => 1 / $feed_quote->{quote},
         source => 'feed'
-        } if $quote;
+        } if $feed_quote;
 
     @quotes = sort { $b->{epoch} <=> $a->{epoch} } @quotes;
 

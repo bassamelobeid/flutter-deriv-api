@@ -40,33 +40,33 @@ subtest 'exchange rate' => sub {
     my $mock_converter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
     my $quote;
     $mock_converter->mock(usd_rate => sub { $quote });
-    cmp_deeply BOM::User::Utility::p2p_exchange_rate('id'), {}, 'no feed';
+    cmp_deeply BOM::User::Utility::p2p_exchange_rate('IDR'), {}, 'no feed';
 
     $quote = {
         quote => 0.5,
         epoch => 1000
     };
-    cmp_ok BOM::User::Utility::p2p_exchange_rate('id')->{quote}, '==', 2, 'use feed';
+    cmp_ok BOM::User::Utility::p2p_exchange_rate('IDR')->{quote}, '==', 2, 'use feed';
 
-    $config->country_advert_config(
+    $config->currency_config(
         encode_json_utf8({
-                id => {
+                IDR => {
                     manual_quote       => 2.1,
                     manual_quote_epoch => 1001
                 }}));
-    cmp_ok BOM::User::Utility::p2p_exchange_rate('id')->{quote}, '==', 2.1, 'use manual quote';
+    cmp_ok BOM::User::Utility::p2p_exchange_rate('IDR')->{quote}, '==', 2.1, 'use manual quote';
 
     $quote = {
         quote => 0.4,
         epoch => 1002
     };
-    cmp_ok BOM::User::Utility::p2p_exchange_rate('id')->{quote}, '==', 2.5, 'recent feed replaces manual quote';
+    cmp_ok BOM::User::Utility::p2p_exchange_rate('IDR')->{quote}, '==', 2.5, 'recent feed replaces manual quote';
 
     $quote = {
         quote => 0.6,
         epoch => 1003
     };
-    cmp_ok BOM::User::Utility::p2p_exchange_rate('id')->{quote}, '==', 1.666667, 'rate is rounded to 6 decimal places';
+    cmp_ok BOM::User::Utility::p2p_exchange_rate('IDR')->{quote}, '==', 1.666667, 'rate is rounded to 6 decimal places';
 
 };
 
@@ -474,50 +474,6 @@ subtest 'orders' => sub {
     );
 
     cmp_ok $order->{rate}, '==', 100.1, 'order rate';
-
-    $client = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => $advertiser->residence});
-    $config->country_advert_config(
-        encode_json_utf8({
-                $advertiser->residence => {
-                    float_ads => 'list_only',
-                    fixed_ads => 'enabled'
-                }}));
-
-    is(
-        exception {
-            $client->p2p_order_create(
-                advert_id   => $ad->{id},
-                amount      => 1,
-                rate        => 100.1,
-                rule_engine => $rule_engine,
-            );
-        },
-        undef,
-        'Order ok float ads are list only'
-    );
-
-    $client = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => $advertiser->residence});
-    $config->country_advert_config(
-        encode_json_utf8({
-                $advertiser->residence => {
-                    float_ads => 'disabled',
-                    fixed_ads => 'enabled'
-                }}));
-
-    cmp_deeply(
-        exception {
-            $client->p2p_order_create(
-                advert_id   => $ad->{id},
-                amount      => 1,
-                rate        => 100.1,
-                rule_engine => $rule_engine,
-            );
-        },
-        {
-            error_code => 'AdvertNotFound',
-        },
-        'Cannot order when float ads are disabled'
-    );
 };
 
 subtest 'ad list filtering' => sub {
@@ -554,30 +510,6 @@ subtest 'ad list filtering' => sub {
 
     $mock_client->redefine(p2p_exchange_rate => {quote => 100});
     cmp_bag([map { $_->{id} } $client->p2p_advert_list->@*], [$fixed_ad->{id}, $float_ad->{id}], 'both shown when there is rate');
-
-    $config->country_advert_config(
-        encode_json_utf8({
-                $client->residence => {
-                    float_ads => 'disabled',
-                    fixed_ads => 'list_only'
-                }}));
-    cmp_bag([map { $_->{id} } $client->p2p_advert_list->@*], [$fixed_ad->{id}], 'fixed only');
-
-    $config->country_advert_config(
-        encode_json_utf8({
-                $client->residence => {
-                    float_ads => 'list_only',
-                    fixed_ads => 'disabled'
-                }}));
-    cmp_bag([map { $_->{id} } $client->p2p_advert_list->@*], [$float_ad->{id}], 'float only');
-
-    $config->country_advert_config(
-        encode_json_utf8({
-                $client->residence => {
-                    float_ads => 'disabled',
-                    fixed_ads => 'disabled'
-                }}));
-    ok !$client->p2p_advert_list->@*, 'all disabled';
 };
 
 subtest 'advertiser active ads flags' => sub {

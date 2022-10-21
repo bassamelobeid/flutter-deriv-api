@@ -21,7 +21,7 @@ my $mock_client = Test::MockModule->new('BOM::User::Client');
 my %params = (
     is_active        => 1,
     account_currency => 'USD',
-    local_currency   => 'MYR',
+    local_currency   => 'IDR',
     amount           => 100,
     description      => 'test advert',
     max_order_amount => 10,
@@ -350,13 +350,7 @@ eval {
                 'Eeror when rate above lower limit'
             );
 
-            $config->country_advert_config(
-                encode_json_utf8({
-                        'id' => {
-                            float_ads      => 'enabled',
-                            fixed_ads      => 'disabled',
-                            max_rate_range => 2
-                        }}));
+            $config->currency_config(encode_json_utf8({'IDR' => {max_rate_range => 2}}));
 
             cmp_deeply(
                 exception {
@@ -366,12 +360,12 @@ eval {
                     error_code     => 'FloatRateTooBig',
                     message_params => ['1.00'],
                 },
-                'Eeror when rate outside country specific limit'
+                'Eeror when rate outside currency specific limit'
             );
 
+            $config->currency_config('{}');
             $config->country_advert_config('{}');
         };
-
     };
 
     $method = '_validate_advert_payment_contact_info';
@@ -1029,5 +1023,5 @@ eval {
         );
     };
 };
-note explain $@;
+
 done_testing();

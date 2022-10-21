@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use Test::Fatal qw(exception lives_ok);
 use Test::Deep;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -14,15 +14,14 @@ BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
 BOM::Test::Helper::P2P::create_payment_methods();
 
-my $json           = JSON::MaybeXS->new;
-my $runtime_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
-my $rule_engine    = BOM::Rules::Engine->new();
+my $p2p_config  = BOM::Config::Runtime->instance->app_config->payments->p2p;
+my $rule_engine = BOM::Rules::Engine->new();
 
-$runtime_config->payment_methods_enabled(1);
-$runtime_config->transaction_verification_countries([]);
-$runtime_config->transaction_verification_countries_all(0);
-$runtime_config->payment_method_countries(
-    $json->encode({
+$p2p_config->payment_methods_enabled(1);
+$p2p_config->transaction_verification_countries([]);
+$p2p_config->transaction_verification_countries_all(0);
+$p2p_config->payment_method_countries(
+    encode_json_utf8({
             method1 => {
                 mode      => 'include',
                 countries => ['id']
@@ -201,6 +200,49 @@ subtest 'orders' => sub {
         $advertiser_id->p2p_order_confirm(id => $order->{id});
     }
     'can complete sell order of other currency';
+};
+
+subtest 'floating rate ads' => sub {
+
+    $p2p_config->country_advert_config(
+        encode_json_utf8({
+                'lk' => {
+                    float_ads => 'enabled',
+                    fixed_ads => 'disabled'
+                },
+                'za' => {
+                    float_ads => 'enabled',
+                    fixed_ads => 'disabled'
+                }}));
+
+    $p2p_config->currency_config(
+        encode_json_utf8({
+                'LKR' => {
+                    manual_quote       => 100,
+                    manual_quote_epoch => time(),
+                }}));
+
+    my (undef, $ad) = BOM::Test::Helper::P2P::create_advert(
+        rate_type  => 'float',
+        rate       => 0.1,
+        advertiser => {residence => 'lk'});
+    cmp_ok $ad->{effective_rate}, '==', 100.1, 'rate returned from ad create';
+
+    my $za_advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => 'za'});
+
+    cmp_ok $za_advertiser->p2p_advert_info(id => $ad->{id})->{effective_rate}, '==', 100.1,
+        'advertiser in other country gets correct ad rate from p2p_advert_info';
+    cmp_ok $za_advertiser->p2p_advert_list(local_currency => 'LKR')->[0]->{effective_rate}, '==', 100.1,
+        'advertiser in other country gets correct ad rate from p2p_advert_list';
+
+    my $order = $za_advertiser->p2p_order_create(
+        advert_id   => $ad->{id},
+        amount      => 10,
+        rate        => 100.1,
+        rule_engine => $rule_engine
+    );
+    cmp_ok $order->{rate},                                             '==', 100.1, 'created order has correct rate';
+    cmp_ok $za_advertiser->p2p_order_info(id => $order->{id})->{rate}, '==', 100.1, 'p2p_order_info has correct rate';
 };
 
 done_testing();

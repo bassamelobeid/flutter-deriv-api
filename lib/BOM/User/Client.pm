@@ -1095,7 +1095,7 @@ sub local_currency {
 
     return undef unless $country;
 
-    return BOM::Config::CurrencyConfig::local_currency_for_country($country);
+    return BOM::Config::CurrencyConfig::local_currency_for_country(country => $country);
 }
 
 sub has_deposits {
@@ -2503,7 +2503,11 @@ sub p2p_advertiser_adverts {
     my $advertiser_info = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
 
-    my $list = $self->_p2p_adverts(%param, advertiser_id => $advertiser_info->{id});
+    my $list = $self->_p2p_adverts(
+        %param,
+        advertiser_id => $advertiser_info->{id},
+        country       => $self->residence
+    );
     return $self->_advert_details($list);
 }
 
@@ -2536,7 +2540,7 @@ sub p2p_advert_create {
 
     $self->_validate_advert(%param);
 
-    my $market_rate = p2p_exchange_rate($self->residence)->{quote};
+    my $market_rate = p2p_exchange_rate($param{local_currency})->{quote};
     die +{error_code => 'AdvertFloatRateNotAllowed'} if $param{rate_type} eq 'float' and not $market_rate;
 
     my ($id) = $self->db->dbic->run(
@@ -2623,7 +2627,10 @@ sub p2p_advert_info {
     } elsif ($param{subscribe}) {
         # at this point, advertiser is subscribing to all their ads
         my $advertiser_info = $self->_p2p_advertiser_cached or die +{error_code => 'AdvertiserNotRegistered'};
-        $list = $self->_p2p_adverts(advertiser_id => $advertiser_info->{id});
+        $list = $self->_p2p_adverts(
+            advertiser_id => $advertiser_info->{id},
+            country       => $self->residence
+        );
     }
 
     my $details = $self->_advert_details($list);
@@ -2679,7 +2686,6 @@ sub p2p_advert_list {
         client_loginid         => $self->loginid,
         account_currency       => $self->currency,
         hide_blocked           => 1,
-        filter_rate_type       => 1,
     );
 
     return $self->_advert_details($list, $param{amount});
@@ -2697,8 +2703,12 @@ Returns latest advert info or dies with error code.
 sub p2p_advert_update {
     my ($self, %param) = @_;
 
-    my $id     = $param{id}                                 or die +{error_code => 'AdvertNotFound'};
-    my $advert = $self->_p2p_adverts(id => $param{id})->[0] or die +{error_code => 'AdvertNotFound'};
+    my $id     = $param{id} or die +{error_code => 'AdvertNotFound'};
+    my $advert = $self->_p2p_adverts(
+        id      => $param{id},
+        country => $self->residence
+    )->[0];
+    die +{error_code => 'AdvertNotFound'} unless $advert;
     die +{error_code => 'PermissionDenied'} if $advert->{advertiser_loginid} ne $self->loginid;
 
     $advert->{remaining_amount} = delete $advert->{remaining};    # named differently in api vs db function
@@ -2798,8 +2808,6 @@ sub p2p_order_create {
         message_params => [$limit_per_day_per_client]}
         if ($day_order_count // 0) >= $limit_per_day_per_client;
 
-    my $market_rate = p2p_exchange_rate($self->residence)->{quote};
-
     my $advert = $self->_p2p_adverts(
         id                     => $advert_id,
         is_active              => 1,
@@ -2808,8 +2816,6 @@ sub p2p_order_create {
         advertiser_is_listed   => 1,
         account_currency       => $self->currency,
         client_loginid         => $self->loginid,
-        filter_rate_type       => 1,
-        market_rate            => $market_rate,
         payment_method         => [keys $self->p2p_payment_methods->%*, 'none']
         ,    # filter out ads in other countries which don't have compatible payment methods
     )->[0];
@@ -2935,6 +2941,7 @@ sub p2p_order_create {
     my $txn_time            = Date::Utility->new->datetime;
     my $reversible_limit    = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
     my $reversible_lookback = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
+    my $market_rate         = p2p_exchange_rate($advert->{local_currency})->{quote};
 
     my $order = $self->db->dbic->run(
         fixup => sub {
@@ -3833,8 +3840,6 @@ To note:
 
 =item * C<payment_method> is an arrayref of payment method names.
 
-=item * C<filter_rate_type> will use residence to filter fixed/float ads.
-
 =back
 
 =cut
@@ -3849,16 +3854,26 @@ sub _p2p_adverts {
     $param{max_order} = convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $self->currency);
     $param{reversible_limit}    = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
     $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
-    $param{advertiser_name} =~ s/([%_])/\\$1/g if $param{advertiser_name};
-    $param{market_rate} //= p2p_exchange_rate($self->residence)->{quote};
+    $param{advertiser_name} =~ s/([%_])/\\$1/g         if $param{advertiser_name};
     $param{local_currency} = uc $param{local_currency} if $param{local_currency};
 
-    if ($param{filter_rate_type}) {
-        my $config = BOM::Config::P2P::advert_config()->{$self->residence} or die +{error_code => 'RestrictedCountry'};
-        $param{rate_type} = [];
-        push $param{rate_type}->@*, 'fixed' if $config->{fixed_ads} ne 'disabled';
-        # it's very unlikely that we won't have a market rate, but if it happens, we will hide float rate ads
-        push $param{rate_type}->@*, 'float' if $param{market_rate} and ($config->{float_ads} ne 'disabled');
+    unless ($param{market_rate}) {
+        my @currencies;
+        if ($param{local_currency}) {
+            @currencies = ($param{local_currency});
+        } else {
+            my @countries = $param{country} ? ($param{country}) : keys BOM::Config::P2P::available_countries()->%*;
+            for my $country (@countries) {
+                push @currencies,
+                    BOM::Config::CurrencyConfig::local_currency_for_country(
+                    country        => $country,
+                    include_legacy => 1
+                    );
+            }
+        }
+
+        my %market_rate_map = map { $_ => p2p_exchange_rate($_)->{quote} } @currencies;
+        $param{market_rate_map} = $json->encode(\%market_rate_map);
     }
 
     for my $field (qw/id advert_id limit offset/) {
@@ -3868,12 +3883,12 @@ sub _p2p_adverts {
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
                         client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
-                        use_client_limits favourites_only hide_blocked market_rate rate_type local_currency/
+                        use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map/
                 });
         }) // [];
 }
@@ -3985,14 +4000,14 @@ Validation of advert rate and rate_type fields.
 sub _validate_advert_rates {
     my ($self, %param) = @_;
 
-    my $config         = BOM::Config::P2P::advert_config()->{$param{country}} or die +{error_code => 'RestrictedCountry'};
+    my $advert_config  = BOM::Config::P2P::advert_config()->{$param{country}} or die +{error_code => 'RestrictedCountry'};
     my $type_changed   = $param{rate_type} ne ($param{old}->{rate_type} // '');
     my $active_changed = ($param{is_active} and $param{is_active} != ($param{old}->{is_active} // 0));
 
     if ($param{rate_type} eq 'float') {
         die +{error_code => 'AdvertFloatRateNotAllowed'}
-            if ($type_changed and $config->{float_ads} ne 'enabled')
-            or ($active_changed and $config->{float_ads} eq 'disabled');
+            if ($type_changed and $advert_config->{float_ads} ne 'enabled')
+            or ($active_changed and $advert_config->{float_ads} eq 'disabled');
 
         # too much precision
         if (my ($decimals) = $param{rate} =~ /\.(\d+)$/) {
@@ -4001,8 +4016,8 @@ sub _validate_advert_rates {
 
         die +{error_code => 'FloatRatePrecision'} if $param{rate} =~ /e-/;
 
-        # within country specific range
-        my $range = $config->{max_rate_range} / 2;
+        # within currency specific range
+        my $range = BOM::Config::P2P::currency_float_range($param{local_currency}) / 2;
         if (abs($param{rate}) > $range) {
             die +{
                 error_code     => 'FloatRateTooBig',
@@ -4011,8 +4026,8 @@ sub _validate_advert_rates {
         }
     } else {    # fixed rate
         die +{error_code => 'AdvertFixedRateNotAllowed'}
-            if ($type_changed and $config->{fixed_ads} ne 'enabled')
-            or ($active_changed and $config->{fixed_ads} eq 'disabled');
+            if ($type_changed and $advert_config->{fixed_ads} ne 'enabled')
+            or ($active_changed and $advert_config->{fixed_ads} eq 'disabled');
 
         # rate min
         if ($param{rate} < P2P_RATE_LOWER_LIMIT) {
@@ -4106,6 +4121,7 @@ sub _validate_advert_duplicates {
     my @active_ads = $self->_p2p_adverts(
         advertiser_id => $param{advertiser_id},
         is_active     => 1,
+        country       => $self->residence,
     )->@*;
 
     # exclude ads that ran out of money - this should be removed when FE can enable/disable ads
@@ -4557,7 +4573,8 @@ sub _advertiser_details {
         if ($advert_config->{fixed_ads} ne 'enabled' or $advert_config->{float_ads} ne 'disabled') {
             my $ads = $self->_p2p_adverts(
                 advertiser_id => $advertiser->{id},
-                is_active     => 1
+                is_active     => 1,
+                country       => $self->residence,
             );
             for my $type ('fixed', 'float') {
                 my $count = scalar grep { $_->{rate_type} eq $type } @$ads;

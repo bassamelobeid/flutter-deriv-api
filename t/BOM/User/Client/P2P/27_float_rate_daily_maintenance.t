@@ -42,8 +42,8 @@ my %campaigns = (
 $config->email_campaign_ids(encode_json_utf8(\%campaigns));
 
 subtest 'deactivate fixed ads notice' => sub {
-    my $country    = 'id';
-    my $currency   = BOM::Config::CurrencyConfig::local_currency_for_country($country);
+    my $country    = 'zw';
+    my $currency   = BOM::Config::CurrencyConfig::local_currency_for_country(country => $country);
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => $country});
 
     my $date = '2000-01-02';
@@ -133,8 +133,8 @@ subtest 'deactivate fixed ads notice' => sub {
 };
 
 subtest 'ad deactivation' => sub {
-    my $country    = 'ng';
-    my $currency   = BOM::Config::CurrencyConfig::local_currency_for_country($country);
+    my $country    = 'zw';
+    my $currency   = BOM::Config::CurrencyConfig::local_currency_for_country(country => $country);
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => {residence => $country});
 
     $config->country_advert_config(
@@ -306,12 +306,12 @@ subtest 'quants alert email' => sub {
     $config->country_advert_config(encode_json_utf8($ad_config));
 
     my %mock_rates = (
-        id => {
+        IDR => {
             quote  => 123,
             epoch  => time,
             source => 'feed'
         },
-        ng => {
+        NGN => {
             quote  => 123,
             epoch  => Date::Utility->new('1999-12-30')->epoch,
             source => 'manual'
@@ -337,8 +337,7 @@ subtest 'quants alert email' => sub {
     $email = mailbox_search(subject => qr/Outdated exchange rates for P2P Float Rate countries on 2000-01-01/);
     ok !$email, 'No email sent when no outdated rates';
 
-    $mock_rates{id} = undef;
-    $mock_rates{ng} = undef;
+    %mock_rates = ();
 
     mailbox_clear();
     BOM::User::Script::P2PDailyMaintenance->new->run;
