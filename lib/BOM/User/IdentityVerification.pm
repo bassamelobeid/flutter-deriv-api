@@ -311,7 +311,7 @@ sub submissions_left {
 
 =head2 incr_submissions
 
-Returns the submissions left for the user.
+Increments the submissions for the user.
 
 Returns,
     an integer representing the submissions left for the user involved.
@@ -323,6 +323,22 @@ sub incr_submissions {
     my $redis = BOM::Config::Redis::redis_events();
 
     $redis->incr(IDV_REQUEST_PER_USER_PREFIX . $self->user_id);
+}
+
+=head2 decr_submissions
+
+Decrements the submissions for the user.
+
+Returns,
+    an integer representing the submissions left for the user involved.
+
+=cut
+
+sub decr_submissions {
+    my $self  = shift;
+    my $redis = BOM::Config::Redis::redis_events();
+
+    $redis->decr(IDV_REQUEST_PER_USER_PREFIX . $self->user_id);
 }
 
 =head2 reset_to_zero_left_submissions 
