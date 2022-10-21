@@ -79,7 +79,7 @@ GetOptions(
     "f|float_rate"    => \(my $float_rate    = 0),
 );
 
-my $local_currency = BOM::Config::CurrencyConfig::local_currency_for_country($country) or die "No local currency for country $country.\n";
+my $local_currency = BOM::Config::CurrencyConfig::local_currency_for_country(country => $country) or die "No local currency for country $country.\n";
 
 my $advert_config;
 if ($float_rate) {
