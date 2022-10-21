@@ -402,6 +402,8 @@ async sub _trigger {
 
     my $config = BOM::Config::Services->config('identity_verification');
 
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
     my $api_base_url = sprintf('http://%s:%s', $config->{host}, $config->{port});
 
     my $req_body = encode_json_utf8 {
@@ -457,6 +459,17 @@ async sub _trigger {
                 $document->{id}, $decoded_response->{code} // 'UNKNOWN',
                 $e->message, $decoded_response->{error} // 'UNKNOWN'
             );
+        } elsif ($e =~ /\bconnection refused\b/i) {
+
+            # Give back a submission attempt
+            $idv_model->decr_submissions();
+
+            # Update the status to failed as for it to not remain in perpetual 'pending' state
+            $status         = RESULT_STATUS->{fail};
+            $status_message = "CONNECTION_REFUSED";
+
+        } else {
+            $log->errorf('Unhandled IDV exception: %s', $e);
         }
     }
 
