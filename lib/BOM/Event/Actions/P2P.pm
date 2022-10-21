@@ -37,7 +37,7 @@ use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use BOM::Event::Utility        qw(exception_logged);
-use List::Util                 qw(any first);
+use List::Util                 qw(any first uniq);
 use Future::AsyncAwait;
 use Template::AutoFilter;
 use Encode;
@@ -588,7 +588,7 @@ sub update_local_currencies {
             })->@*;
     }
 
-    BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', join ',', grep { $_ ne 'AAD' } @currencies);
+    BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', join ',', uniq sort grep { $_ ne 'AAD' } @currencies);
 }
 
 =head2 _track_p2p_order_event
