@@ -472,6 +472,7 @@ sub get_settings_by_group {
                 payments.payment_methods.high_risk
                 payments.p2p.payment_methods_enabled
                 payments.p2p.country_advert_config
+                payments.p2p.currency_config
                 payments.p2p.float_rate_global_max_range
                 payments.p2p.float_rate_order_slippage
                 payments.p2p.email_campaign_ids

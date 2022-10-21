@@ -2,75 +2,87 @@
      #settings_summary { display: none }
 </style>
 
-[% IF error %]<p class="error">[% error %]</p>[% END %]
+[% FOR error IN errors %]<p class="error">[% error %]</p>[% END %]
 
 [% IF cron_notices.size %]
     <p><b>The following actions will occur on the next cron run [% next_cron %]:</b></p><ul>
     [% FOR notice IN cron_notices %]<li>[% notice %]</li>[% END %]
-    </ul><hr>
+    </ul>
 [% END %]
 
-[% IF currency_warnings.size %]
-    <p><b>The following currencies have inconsistent float or fixed rate ad visibility which can cause issues for cross border ads.<br/>
-        e.g. users in a country where float rates are disbled will not see float rate ads in other countries.</b></p><ul>
-    [% FOR currency IN currency_warnings %]<li>[% currency %]</li>[% END %]
-    </ul><hr>
-[% END %]
+[% PROCESS currency_table currencies = active_currencies %]
 
-<p>[%IF request.params.sort == 'currency' %]<a href="?sort=country">Sort by country</a>[% ELSE %]<a href="?sort=currency">Sort by currency</a>[% END %]</p>
+<h3>Legacy currencies</h3>
+[% PROCESS currency_table currencies = legacy_currencies %]
 
-<table class="small alternate sortable">
+
+[% BLOCK currency_table %]
+
+<table class="small alternate border">
     <thead>
-        <tr><th>Country</th><th>Float Rate Ads</th><th>Range override</th><th>Latest quote</th><th>Manual quote (from USD)</th><th>Fixed Rate Ads</th><th colspan=2>Deactivate fixed ads on</th></tr>
+        <tr><th>Currency</th><th>Feed quote</th><th>Manual quote</th><th>Final quote</th><th>Range override</th><th></th><th>Country</th><th>Float Rate Ads</th><th>Fixed Rate Ads</th><th>Deactivate fixed ads on</th></tr>
     </thead>
-[% FOR country IN rows %]
-    <tr>
+    [% FOR currency IN currencies %]
         <form action="[% request.url_for('backoffice/p2p_advert_rates_manage.cgi') %]" method="post">
         <input type="hidden" name="revision" value="[% revision %]"/>
-        <input type="hidden" name="country" value="[% country.code %]"/>            
-        <td><b>[% country.name %]</b></td>
-        <td>
-            <select name="float_ads" style="width: 166px; height: 20px; padding: 0;">
-                <option value="disabled">&#10060; Deactivated &#10060; Can't create</option>
-                <option value="list_only" [% country.float_ads=='list_only' && 'selected' %]>&#9989; Listed &#10060; Can't Create</option>
-                <option value="enabled" [% country.float_ads=='enabled' && 'selected' %]>&#9989; Listed &#9989; Can Create</option>
-            </select>
-        </td>
-        <td>
-            <input type="text" name="max_rate_range" style="width: 60px; height: 20px;" value="[% country.max_rate_range %]" data-lpignore="true"></input>
-        </td>            
-        <td>[% IF country.currency %]
-            <b>[% country.currency %]</b>&nbsp; 
-                [% IF country.p2p_quote %]
-                <span tooltip="Feed quote: [% country.quote %] at [% country.quote_time %]">[% country.p2p_quote %] ([% country.quote_age %] ago)</span>
-                [% ELSE %]no feed[% END %]
-            [% ELSE %]Currency undefined[% END %]</td>
-        </td>
-        <td>
-            <input type="text" name="manual_quote" style="width: 120px; height: 20px;" data-lpignore="true"></input>
-            [% IF country.manual_quote %]
-                <span tooltip="Set by [% country.manual_quote_staff %] at [% country.manual_quote_time %]">[% country.manual_quote %] ([% country.manual_quote_age %] ago)</span>
-                <input type="checkbox" name="remove_manual_quote">Remove
-            [% END %]
-        </td>
-        <td>
-            <select name="fixed_ads" style="width: 166px; height: 20px; padding: 0;">
-                <option value="disabled">&#10060; Deactivated &#10060; Can't create</option>
-                <option value="list_only" [% country.fixed_ads=='list_only' && 'selected' %]>&#9989; Listed &#10060; Can't Create</option> 
-                <option value="enabled" [% country.fixed_ads=='enabled' && 'selected' %]>&#9989; Listed &#9989; Can Create</option>
-            </select>
-        </td>
-        <td>
-            <input type="text" value="[% country.deactivate_fixed %]" size=11 name="deactivate_fixed" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" style="height: 20px;"/>
-        </td>
-        <td>
-            <button type="submit" class="btn btn--primary" name="save" value="1">Save [% country.code %]</button>            
-        </td>
+        [% FOR country IN currency.countries %]
+            <tr>
+                [% IF loop.index == 0 %]
+                    <td rowspan="[% currency.countries.size %]" valign="top">
+                        <b>[% currency.symbol %]</b>&nbsp;&nbsp;[% currency.name %]
+                    </td>
+                    <td rowspan="[% currency.countries.size %]" valign="top">
+                    [% IF currency.p2p_quote %]
+                        <span tooltip="Last quote: [% currency.feed_quote_time %]">[% currency.feed_quote %] <span  class="[% IF currency.old_quote %]error[% ELSE %]success[% END %]">([% currency.feed_quote_age %] ago)</span></span>
+                        [% ELSE %]<span class="error">no feed</span>[% END %]
+                    </td>
+                    <td rowspan="[% currency.countries.size %]" valign="top">
+                        <input type="text" name="manual_quote" style="width: 120px; height: 20px;" data-lpignore="true"></input>
+                        [% IF currency.manual_quote %]
+                            <br/><span tooltip="Set by [% currency.manual_quote_staff %] at [% currency.manual_quote_time %]">[% currency.manual_quote %] ([% currency.manual_quote_age %] ago)</span>
+                            <input type="checkbox" name="remove_manual_quote">Remove
+                        [% END %]
+                    </td>
+                    <td rowspan="[% currency.countries.size %]" valign="top">
+                        [% IF currency.p2p_quote %]
+                            <span tooltip="Unrounded: [% currency.p2p_quote %]">[% currency.p2p_quote_formatted %] (source: [% currency.p2p_quote_source %])</span>
+                        [% ELSE %]None[% END %]
+                    </td>
+                    <td rowspan="[% currency.countries.size %]" valign="top">
+                        <input type="text" name="max_rate_range" style="width: 60px; height: 20px;" value="[% currency.max_rate_range %]" data-lpignore="true"></input>
+                    </td>                        
+                    <td rowspan="[% currency.countries.size %]" valign="top">
+                        <button type="submit" class="btn btn--primary" name="save" value="[% currency.symbol %]">Save [% currency.symbol %]</button>            
+                    </td>                                               
+                [% END %]
+                <td>
+                    <b>[% country.code %]</b>&nbsp;&nbsp;[% country.name %]
+                </td>          
+                <td>
+                    <select name="[% country.code %]_float_ads" style="width: 166px; height: 20px; padding: 0;">
+                        <option value="disabled">&#10060; Deactivated &#10060; Can't create</option>
+                        <option value="list_only" [% country.float_ads=='list_only' && 'selected' %]>&#9989; Listed &#10060; Can't Create</option>
+                        <option value="enabled" [% country.float_ads=='enabled' && 'selected' %]>&#9989; Listed &#9989; Can Create</option>
+                    </select>
+                </td>
+                <td>
+                    <select name="[% country.code %]_fixed_ads" style="width: 166px; height: 20px; padding: 0;">
+                        <option value="disabled">&#10060; Deactivated &#10060; Can't create</option>
+                        <option value="list_only" [% country.fixed_ads=='list_only' && 'selected' %]>&#9989; Listed &#10060; Can't Create</option> 
+                        <option value="enabled" [% country.fixed_ads=='enabled' && 'selected' %]>&#9989; Listed &#9989; Can Create</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" value="[% country.deactivate_fixed %]" size=11 name="[% country.code %]_deactivate_fixed" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" style="height: 20px;"/>
+                </td>                                           
+            </tr>            
+        [% END %]
         </form>
-    </tr>
-[% END %]
+    [% END %]
 </table>
-<hr/>
+
+[% END %]
+
 
 <script type="text/javascript" language="javascript">
 \$(document).ready(function() {

@@ -15,9 +15,11 @@ use BOM::DynamicSettings;
 use BOM::Config::Runtime;
 use BOM::Config::P2P;
 use BOM::Config::CurrencyConfig;
+use BOM::User::Utility;
 use ExchangeRates::CurrencyConverter;
 use List::Util      qw(any all none);
 use Scalar::Util    qw(looks_like_number);
+use Array::Utils    qw(intersect);
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
 
@@ -29,63 +31,92 @@ PrintContentType();
 
 BrokerPresentation('P2P ADVERT RATES MANAGEMENT');
 
-my $redis         = BOM::Config::Redis->redis_p2p_write;
-my $app_config    = BOM::Config::Runtime->instance->app_config();
-my $ad_config     = decode_json_utf8($app_config->payments->p2p->country_advert_config);
-my $p2p_countries = BOM::Config::P2P::available_countries();
-my $error         = "";
+my %params          = request()->params->%*;
+my $redis           = BOM::Config::Redis->redis_p2p_write;
+my $app_config      = BOM::Config::Runtime->instance->app_config();
+my $ad_config       = decode_json_utf8($app_config->payments->p2p->country_advert_config);
+my $currency_config = decode_json_utf8($app_config->payments->p2p->currency_config);
+my %p2p_countries   = BOM::Config::P2P::available_countries()->%*;
+my %output;
 
-if (request()->http_method eq 'POST' and request()->params->{save}) {
+if (request()->http_method eq 'POST') {
     if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}})) {
         code_exit_BO('<p class="error"><b>' . master_live_server_error() . '</b></p>');
+    }
+}
+
+if (my $currency = $params{save}) {
+
+    if ($params{remove_manual_quote}) {
+        delete $currency_config->{$currency}->@{qw(manual_quote manual_quote_epoch manual_quote_staff)};
+    } elsif (looks_like_number($params{manual_quote})) {
+        $currency_config->{$currency}->{manual_quote}       = $params{manual_quote};
+        $currency_config->{$currency}->{manual_quote_epoch} = time;
+        $currency_config->{$currency}->{manual_quote_staff} = BOM::Backoffice::Auth0::get_staffname();
+    }
+
+    if (looks_like_number($params{max_rate_range})) {
+        $currency_config->{$currency}{max_rate_range} = $params{max_rate_range};
     } else {
-        my $data    = request()->params;
-        my $country = $data->{country};
+        delete $currency_config->{$currency}{max_rate_range};
+    }
 
-        my %defaults = (
-            float_ads        => 'disabled',
-            fixed_ads        => 'enabled',
-            deactivate_fixed => ''
-        );
+    code_exit_BO()
+        unless BOM::DynamicSettings::save_settings({
+            'settings' => {
+                'payments.p2p.currency_config' => encode_json_utf8($currency_config),
+                revision                       => $params{revision}
+            },
+            'settings_in_group' => ['payments.p2p.currency_config'],
+            'save'              => 'global',
+        });
 
+    my %country_updates;
+    for my $param (keys %params) {
+        for my $setting (qw (float_ads fixed_ads deactivate_fixed)) {
+            if (my ($country) = $param =~ /(\w{2})_$setting/) {
+                $country_updates{$country}{$setting} = $params{$param};
+            }
+        }
+    }
+
+    my %defaults = (
+        float_ads        => 'disabled',
+        fixed_ads        => 'enabled',
+        deactivate_fixed => ''
+    );
+
+    for my $country (keys %country_updates) {
+        my %update = $country_updates{$country}->%*;
         # It is not possible to set both floating and fixed rates as enabled or disabled or list_only
         # Basically we should always allow exactly one type of ad to be created
-        unless ($data->{float_ads} eq 'enabled' xor $data->{fixed_ads} eq 'enabled') {
-
-            if (all { $data->{$_} eq 'enabled' } qw/float_ads fixed_ads/) {
-                $error = 'It is not possible to set both floating and fixed rates as enabled for any country';
+        unless ($update{float_ads} eq 'enabled' xor $update{fixed_ads} eq 'enabled') {
+            if (all { $update{$_} eq 'enabled' } qw/float_ads fixed_ads/) {
+                push $output{errors}->@*, "Invalid settting for $p2p_countries{$country}: fixed and floating rates cannot both be enabled.";
             } else {
-                $error = 'It is mandatory to enable one of floating and fixed rates as enabled for each country.';
+                push $output{errors}->@*, "Invalid settting for $p2p_countries{$country}: fixed and floating rates cannot both be disabled.";
             }
-            $data->{$_} = $ad_config->{$country}{$_} // $defaults{$_} for qw(float_ads fixed_ads);
+            next;
         }
-        my %changes = map { $country . ':' . $_ => $data->{$_} }
-            grep { $data->{$_} ne ($ad_config->{$country}->{$_} // $defaults{$_}) } qw(float_ads fixed_ads deactivate_fixed);
 
-        $ad_config->{$country}{$_} = $data->{$_} for qw(float_ads fixed_ads deactivate_fixed);
-        looks_like_number($data->{max_rate_range})
-            ? $ad_config->{$country}{max_rate_range} = $data->{max_rate_range}
-            : delete $ad_config->{$country}{max_rate_range};
-        delete $ad_config->{$country}->@{qw(manual_quote manual_quote_epoch manual_quote_staff)} if $data->{remove_manual_quote};
-        if (looks_like_number($data->{manual_quote})) {
-            $ad_config->{$country}{manual_quote}       = $data->{manual_quote};
-            $ad_config->{$country}{manual_quote_epoch} = time;
-            $ad_config->{$country}{manual_quote_staff} = BOM::Backoffice::Auth0::get_staffname();
-        }
-        unless ($error) {
-            code_exit_BO()
-                unless BOM::DynamicSettings::save_settings({
-                    'settings' => {
-                        'payments.p2p.country_advert_config' => encode_json_utf8($ad_config),
-                        revision                             => $data->{revision}
-                    },
-                    'settings_in_group' => ['payments.p2p.country_advert_config'],
-                    'save'              => 'global',
-                });
-        }
+        my %changes = map { $country . ':' . $_ => $update{$_} }
+            grep { $update{$_} ne ($ad_config->{$country}{$_} // $defaults{$_}) } qw(float_ads fixed_ads deactivate_fixed);
 
         BOM::Config::Redis->redis_p2p_write->hset(ACTIVATION_KEY, %changes) if %changes;
+
+        $ad_config->{$country}{$_} = $update{$_} for qw(float_ads fixed_ads deactivate_fixed);
     }
+
+    code_exit_BO()
+        unless BOM::DynamicSettings::save_settings({
+            'settings' => {
+                'payments.p2p.country_advert_config' => encode_json_utf8($ad_config),
+                revision                             => $app_config->global_revision(),
+            },
+            'settings_in_group' => ['payments.p2p.country_advert_config'],
+            'save'              => 'global',
+        });
+
 }
 
 my $age_format = sub {
@@ -99,73 +130,93 @@ my $age_format = sub {
     return Time::Duration::Concise->new(interval => $age)->as_concise_string;
 };
 
-my (@rows, @cron_notices, %ads_by_currency, @currency_warnings);
 my $next_cron = Date::Utility->new->truncate_to_day->plus_time_interval('2h30m');
 my $now       = Date::Utility->new;
 $next_cron = $next_cron->plus_time_interval('24h') if $now->seconds_after_midnight > (2.5 * 60 * 60);
 my %activation = $redis->hgetall(ACTIVATION_KEY)->@*;
 
-for my $country (sort keys %$p2p_countries) {
-    my $row = $ad_config->{$country};
-    $row->{code} = $country;
-    $row->{name} = $p2p_countries->{$country};
-    $row->{fixed_ads} //= 'enabled';
-    $row->{float_ads} //= 'disabled';
-    $row->{manual_quote_age}  = $age_format->($row->{manual_quote_epoch})                if $row->{manual_quote_epoch};
-    $row->{manual_quote_time} = Date::Utility->new($row->{manual_quote_epoch})->datetime if $row->{manual_quote_epoch};
+for my $country (keys %p2p_countries) {
+    my $country_config = $ad_config->{$country} //= {};
 
-    if ($row->{deactivate_fixed}) {
-        my $date = Date::Utility->new($row->{deactivate_fixed});
-        $row->{deactivate_fixed} = $date->date;
-        if ($row->{fixed_ads} ne 'disabled' and ($activation{"$country:fixed_ads"} // '') ne 'disabled') {
+    $country_config->{code} = $country;
+    $country_config->{name} = $p2p_countries{$country};
+    $country_config->{fixed_ads} //= 'enabled';
+    $country_config->{float_ads} //= 'disabled';
+
+    if ($country_config->{deactivate_fixed}) {
+        my $date = Date::Utility->new($country_config->{deactivate_fixed});
+        $country_config->{deactivate_fixed} = $date->date;
+
+        if ($country_config->{fixed_ads} ne 'disabled' and ($activation{"$country:fixed_ads"} // '') ne 'disabled') {
             if ($next_cron->days_between($date) == 0) {
-                push @cron_notices,
-                    "Fixed rate ads for $row->{name} will be deactivated because of the set date, and all users who have active ads will be emailed.";
+                push $output{cron_notices}->@*,
+                    "Fixed rate ads for $p2p_countries{$country} will be deactivated because of the set date, and all users who have active ads will be emailed.";
             }
             if ($activation{"$country:deactivate_fixed"} and $date->is_after($now)) {
-                push @cron_notices,
-                    "Users with active fixed rate ads in $row->{name} will be emailed that fixed rate ads are being disabled on " . $date->date;
+                push $output{cron_notices}->@*,
+                    "Users with active fixed rate ads in $p2p_countries{$country} will be emailed that fixed rate ads are being disabled on "
+                    . $date->date;
             }
         }
     }
 
-    if (my $currency = BOM::Config::CurrencyConfig::local_currency_for_country($country)) {
-        $row->{currency} = $currency;
-        if (my $quote = ExchangeRates::CurrencyConverter::usd_rate($currency)) {
-            my $dt = Date::Utility->new($quote->{epoch});
-            $row->{quote}      = $quote->{quote};
-            $row->{p2p_quote}  = 1 / $quote->{quote};
-            $row->{quote_age}  = $age_format->($quote->{epoch});
-            $row->{quote_time} = $dt->datetime;
-            $row->{old_quote}  = 1 if $dt->is_before(Date::Utility->new->minus_time_interval('24h'));
-        }
-        $ads_by_currency{$currency}{$_}{$row->{$_ . '_ads'} eq 'disabled' ? 1 : 0} = 1 for qw(float fixed);
-    }
-
-    push @cron_notices, "Fixed rate ads for $row->{name} will be deactivated and all users who have active fixed rate ads will be emailed."
+    push $output{cron_notices}->@*,
+        "Fixed rate ads for $p2p_countries{$country} will be deactivated and all users who have active fixed rate ads will be emailed."
         if ($activation{"$country:fixed_ads"} // '') eq 'disabled';
 
-    push @cron_notices, "Float rate ads for $row->{name} will be deactivated and all users who have active float rate ads will be emailed."
+    push $output{cron_notices}->@*,
+        "Float rate ads for $p2p_countries{$country} will be deactivated and all users who have active float rate ads will be emailed."
         if ($activation{"$country:float_ads"} // '') eq 'disabled';
-
-    push @rows, $row;
 }
 
-for my $currency (sort keys %ads_by_currency) {
-    push @currency_warnings, $currency if (grep { keys %$_ > 1 } values $ads_by_currency{$currency}->%*);
+my %currencies    = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
+my @p2p_countries = keys %p2p_countries;
+
+for my $currency (sort keys %currencies) {
+    my @countries = grep { $p2p_countries{$_} } $currencies{$currency}->{countries}->@*;
+    next unless @countries;
+
+    my $currency_item;
+    $currency_item->{symbol}         = $currency;
+    $currency_item->{name}           = $currencies{$currency}->{name};
+    $currency_item->{max_rate_range} = $currency_config->{$currency}->{max_rate_range};
+
+    if (my $quote = ExchangeRates::CurrencyConverter::usd_rate($currency)) {
+        my $dt = Date::Utility->new($quote->{epoch});
+        $currency_item->{feed_quote}      = $quote->{quote};
+        $currency_item->{feed_quote_age}  = $age_format->($quote->{epoch});
+        $currency_item->{feed_quote_time} = $dt->datetime;
+        $currency_item->{old_quote}       = 1 if $dt->is_before(Date::Utility->new->minus_time_interval('24h'));
+    }
+
+    $currency_item->{manual_quote}       = $currency_config->{$currency}{manual_quote};
+    $currency_item->{manual_quote_staff} = $currency_config->{$currency}{manual_quote_staff};
+    if (my $epoch = $currency_config->{$currency}{manual_quote_epoch}) {
+        $currency_item->{manual_quote_age}  = $age_format->($epoch);
+        $currency_item->{manual_quote_time} = Date::Utility->new($epoch)->datetime;
+    }
+
+    my $p2p_quote = BOM::User::Utility::p2p_exchange_rate($currency);
+    $currency_item->{p2p_quote}           = $p2p_quote->{quote};
+    $currency_item->{p2p_quote_formatted} = BOM::User::Utility::p2p_rate_rounding($p2p_quote->{quote});
+    $currency_item->{p2p_quote_source}    = $p2p_quote->{source};
+
+    for my $country (sort { $p2p_countries{$a} cmp $p2p_countries{$b} } @countries) {
+        push $currency_item->{countries}->@*, $ad_config->{$country};
+    }
+
+    if ($currencies{$currency}->{is_legacy}) {
+        push $output{legacy_currencies}->@*, $currency_item;
+    } else {
+        push $output{active_currencies}->@*, $currency_item;
+    }
 }
-
-my $sort_key = (request()->params->{sort} // '') eq 'currency' ? 'currency' : 'name';
-
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_advert_rates_manage.tt',
     {
-        rows              => [sort { $a->{$sort_key} cmp $b->{$sort_key} } @rows],
-        revision          => $app_config->global_revision(),
-        next_cron         => $next_cron->datetime,
-        cron_notices      => \@cron_notices,
-        currency_warnings => \@currency_warnings,
-        error             => $error,
+        %output,
+        revision  => $app_config->global_revision(),
+        next_cron => $next_cron->datetime,
     });
 
 code_exit_BO();
