@@ -78,9 +78,11 @@ sub activity {
 
         my $first_funded_date =
             $activity->{$loginid}->{'first_funded_date'} ? Date::Utility->new($activity->{$loginid}->{'first_funded_date'})->date_yyyymmdd : '';
-        my $report_date      = $when->date_yyyymmdd;
-        my $report_day       = Date::Utility->new($report_date)->day_of_month();
-        my $first_funded_day = Date::Utility->new($first_funded_date)->day_of_month();
+        my $report_date = $when->date_yyyymmdd;
+        my $report_day  = Date::Utility->new($report_date)->day_of_month();
+        # When we get a default empty date for first funded date then we calulate the first_funded_day as the current report_day -1
+        # this is to ensure we still save the empty date for first funded date that we get from DB in our csv's as expected.
+        my $first_funded_day = $first_funded_date ? Date::Utility->new($first_funded_date)->day_of_month() : $report_day - 1;
         $first_funded_date = $first_funded_day gt $report_day ? $report_date : $first_funded_date;
 
         my @output_fields = ($when->date_yyyymmdd, $self->prefix_field($loginid));
