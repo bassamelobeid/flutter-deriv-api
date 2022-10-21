@@ -169,6 +169,15 @@ async sub bulk_affiliate_loginids_sync {
         }
     }
 
+    stats_event(
+        'MyAffiliate Events - bulk_affiliate_loginids_sync',
+        sprintf(
+            "%s : Bulk IB Sync event for Affiliate ID \n[%s]",
+            Date::Utility->new->datetime_ddmmmyy_hhmmss,
+            (join ", ", (map { $_ } keys %{$affiliate_loginids}))
+        ),
+        {alert_type => 'info'});
+
     push @message, '<h2>Bulk Affliate synchronization to MT5 summary for ' . $data->{processing_date} . '</h2><br>';
 
     if (scalar @success_list > 0) {
