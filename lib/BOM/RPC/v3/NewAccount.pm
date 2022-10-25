@@ -1108,7 +1108,7 @@ rpc "affiliate_account_add",
 
 B<Uses Cases:>
 
-1. User creates first account with affiliate ==> add affiliate 
+1. User creates first account with affiliate ==> add affiliate s
 
 2. User creates second account with affiliate ==> do not add affliate token ( this user belongs to deriv)
 

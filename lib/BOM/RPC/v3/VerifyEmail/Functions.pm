@@ -219,11 +219,13 @@ sub reset_password {
             {
                 loginid    => $self->{existing_user}->get_default_client->loginid,
                 properties => {
-                    verification_url => $data->{template_args}->{verification_url}  // '',
-                    social_login     => $data->{template_args}->{has_social_signup} // '',
-                    first_name       => $self->{existing_user}->get_default_client->first_name,
-                    code             => $data->{template_args}->{code} // '',
-                    email            => $self->{email},
+                    verification_url      => $data->{template_args}->{verification_url}  // '',
+                    social_login          => $data->{template_args}->{has_social_signup} // '',
+                    first_name            => $self->{existing_user}->get_default_client->first_name,
+                    code                  => $data->{template_args}->{code} // '',
+                    email                 => $self->{email},
+                    time_to_expire_in_min => REQUEST_EMAIL_TOKEN_TTL / 60,
+                    live_chat_url         => request()->brand->live_chat_url
                 },
             });
     }
