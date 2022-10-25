@@ -153,6 +153,8 @@ my %EVENT_PROPERTIES = (
     withdrawal_rejected         => [qw(first_name reason remark)],
     request_edd_document_upload => [qw(first_name email login_url expiry_date live_chat_url)],
     p2p_order_confirm_verify    => [qw(verification_url order_id order_amount order_currency buyer_name code live_chat_url password_reset_url)],
+    poi_poa_resubmission        =>
+        [qw(first_name poi_reason poi_title poi_subtitle footnote poi_layout poa_reason poa_title poa_subtitle poa_layout title is_eu)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -195,6 +197,7 @@ my @COMMON_EVENT_METHODS = qw(
     pa_withdraw_confirm
     withdrawal_rejected
     p2p_order_confirm_verify
+    poi_poa_resubmission
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1413,6 +1416,10 @@ It is triggered for each B<poi_authentication_requested> event emitted, deliveri
 =head2 p2p_order_confirm_verify
 
 It is triggered for each B<p2p_order_confirm_verify> event emitted, delivering it to Segment.
+
+=head2 poi_poa_resubmission
+
+It is triggered for each B<poi_poa_resubmission> event emitted, delivering it to rudderstack.
 
 =head2 poa_verification_warning
 

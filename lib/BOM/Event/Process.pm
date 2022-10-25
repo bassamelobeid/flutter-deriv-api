@@ -166,6 +166,7 @@ my $action_mapping = {
         bonus_reject                                     => \&BOM::Event::Services::Track::bonus_reject,
         withdrawal_rejected                              => \&BOM::Event::Services::Track::withdrawal_rejected,
         p2p_order_confirm_verify                         => \&BOM::Event::Services::Track::p2p_order_confirm_verify,
+        poi_poa_resubmission                             => \&BOM::Event::Services::Track::poi_poa_resubmission,
     },
     mt5_retryable => {
         link_myaff_token_to_mt5 => \&BOM::Event::Actions::MT5::link_myaff_token_to_mt5,
