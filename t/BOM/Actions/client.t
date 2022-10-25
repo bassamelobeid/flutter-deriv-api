@@ -417,13 +417,15 @@ subtest 'upload document' => sub {
             my $args = {
                 loginid    => $test_client->loginid,
                 properties => {
-                    first_name       => 'Potato',
-                    verification_url => 'https://ver.url',
-                    social_login     => 1,
-                    email            => 'potato@binary.com',
-                    lost_password    => 1,
-                    code             => 'CODEE',
-                    language         => 'en',
+                    first_name            => 'Potato',
+                    verification_url      => 'https://ver.url',
+                    social_login          => 1,
+                    email                 => 'potato@binary.com',
+                    lost_password         => 1,
+                    code                  => 'CODEE',
+                    language              => 'en',
+                    time_to_expire_in_min => 60,
+                    live_chat_url         => 'https://live.chat.url'
                 }};
 
             my $handler = BOM::Event::Process->new(category => 'track')->actions->{reset_password_request};

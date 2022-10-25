@@ -39,7 +39,8 @@ Provides functions for tracking events.
 # loginid, lang and brand are always sent for events, and do not need to be inlcuded here.
 
 my %EVENT_PROPERTIES = (
-    reset_password_request      => [qw(loginid first_name verification_url social_login email lost_password language code)],
+    reset_password_request =>
+        [qw(loginid first_name verification_url social_login email lost_password language code time_to_expire_in_min live_chat_url)],
     reset_password_confirmation => [qw(loginid first_name email type)],
     identify                    => [
         qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country unsubscribed)
