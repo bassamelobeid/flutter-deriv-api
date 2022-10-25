@@ -161,7 +161,6 @@ if ($input{kyc_email_checkbox}) {
     my $poa_reason = $input{poa_reason} || $client->status->reason('allow_poa_resubmission');
     $poa_reason =~ s/\skyc_email$//;
     $poa_reason = undef if $poa_reason && ($poa_reason eq "unselected" || $poa_reason eq "other");
-
     notify_resubmission_of_poi_poa_documents($loginid, $poi_reason, $poa_reason) if ($poi_reason || $poa_reason);
 }
 
