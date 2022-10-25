@@ -27,6 +27,11 @@ no indirect;
 use curry;
 
 use Database::Async;
+# we import Cpanel::JSON::XS here to make sure JSON::MaybeXS will return it
+# Because Database::Async::Engine::PostgreSQL introduced Crypt::Digest::SHA256 -> .. -> CryptX
+# -> JSON::XS
+# See https://github.com/regentmarkets/bom-test/blob/ad60664f73030451be79eab2c533a76363069417/lib/BOM/Test/CheckJsonMaybeXS.pm#L9
+use Cpanel::JSON::XS;
 use Database::Async::Engine::PostgreSQL;
 use List::UtilsBy qw(max_by);
 use Net::Async::Redis;
