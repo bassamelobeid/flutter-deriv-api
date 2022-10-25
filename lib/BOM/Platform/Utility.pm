@@ -192,6 +192,7 @@ sub error_map {
         AmountExceedsBalance => localize('Withdrawal amount ~[[_1] [_2]~] exceeds client balance ~[[_3] [_2]~].'),
         AmountExceedsUnfrozenBalance => localize('Withdrawal is [_2] [_1] but balance [_3] includes frozen bonus [_4].'),
         NoBalance                    => localize('This transaction cannot be done because your [_1] account has zero balance.'),
+        NoBalanceVerifyMail          => localize("Withdrawal isn't possible because you have no funds in your [_1] account."),
         InvalidAccount               => localize('Invalid account.'),
         InvalidLandingCompany        => localize('Invalid landing company - [_1]'),
         WithdrawalLimitReached       => localize(
