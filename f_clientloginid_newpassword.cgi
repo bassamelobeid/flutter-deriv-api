@@ -55,11 +55,13 @@ my $result = BOM::Platform::Event::Emitter::emit(
     {
         loginid    => $client->loginid,
         properties => {
-            email            => $email,
-            verification_url => $link             // '',
-            social_login     => $has_social_login // '',
-            code             => $token,
-            language         => $lang,
+            email                 => $email,
+            verification_url      => $link             // '',
+            social_login          => $has_social_login // '',
+            code                  => $token,
+            language              => $lang,
+            time_to_expire_in_min => 60,
+            live_chat_url         => request()->brand->live_chat_url
         },
     });
 
