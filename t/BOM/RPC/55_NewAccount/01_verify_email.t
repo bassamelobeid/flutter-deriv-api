@@ -13,6 +13,8 @@ use BOM::Platform::Token::API;
 use BOM::Database::Model::AccessToken;
 use BOM::User;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
+use BOM::Test::Helper::Client;
+
 use BOM::Test::RPC::QueueClient;
 use Data::Dumper;
 
@@ -256,6 +258,12 @@ subtest 'Payment agent withdraw' => sub {
 
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     $params[1]->{token} = $token;
+
+    subtest 'given zero balance account should not send withdrawl verify email' => sub {
+        $rpc_ct->call_ok(@params)->has_error->error_code_is('NoBalanceVerifyMail');
+    };
+
+    BOM::Test::Helper::Client::top_up($client, $client->currency, 10);
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");

@@ -976,8 +976,8 @@ sub rule_engine_error {
 
     # For scalar errors (without error code, etc) let it be caught and logged by default RPC error handling.
     # TODO: we've got to ultimately create a rule engine error class and check here if the error is it's instance.
-    die $error unless (ref $error and ($error->{code} // $error->{error_code}));
 
+    die $error unless (ref $error and ($error->{code} // $error->{error_code}));
     my $error_code = $error->{error_code} // $error->{code};
 
     my $message;

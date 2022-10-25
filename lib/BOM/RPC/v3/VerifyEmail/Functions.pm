@@ -457,11 +457,14 @@ sub paymentagent_withdraw {
         my $rule_engine = BOM::Rules::Engine->new(client => $self->{client});
         try {
             $rule_engine->apply_rules(
-                [qw/client.is_not_virtual paymentagent.paymentagent_withdrawal_allowed/],
+                [qw/client.is_not_virtual paymentagent.paymentagent_withdrawal_allowed client.account_is_not_empty/],
                 loginid                    => $self->{client}->loginid,
                 source_bypass_verification => 0,
             );
         } catch ($rules_error) {
+            #We want to change the message the client receives back to be more specifiect if they have no balance, the message for NoBalance
+            #does not work in this context and due to this it needs to be shifted to a different response.
+            $rules_error->{error_code} = 'NoBalanceVerifyMail' if $rules_error->{error_code} eq 'NoBalance';
             return BOM::RPC::v3::Utility::rule_engine_error($rules_error);
         }
 
