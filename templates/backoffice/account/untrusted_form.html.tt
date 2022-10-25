@@ -54,6 +54,35 @@
                         </td>
                     </tr>
                 [% END %]
+                [% FOREACH key IN client_statuses_readonly.keys.sort %]
+                    <tr>
+                        <td> 
+                        </td>
+                        <td align="left">
+                              <b> [% key %] <b>
+                        </td>
+                        <td>
+                            <b>
+                                <b>[% client_statuses_readonly.$key.reason %]</b>
+                            </b>
+                        </td>
+                        <td>
+                            <b>
+                                [% client_statuses_readonly.$key.staff_name %]
+                            </b>
+                        </td>
+                        <td>
+                        </td>
+                            <b>
+                                [% client_statuses_readonly.$key.siblings_summary %]
+                            </b>
+                        <td>
+                         <b>
+                           [% client_statuses_readonly.$key.last_modified_date  %]
+                         </b>
+                        </td>
+                    </tr>
+                [% END %]
             </tbody>
          </table>
          <br>
