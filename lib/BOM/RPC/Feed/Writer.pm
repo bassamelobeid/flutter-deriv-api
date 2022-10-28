@@ -82,7 +82,7 @@ async sub subscribe_to_redis {
             auth => $cfg->{password},
         ));
     await $redis->connect;
-    my $sub = await $redis->subscribe('DISTRIBUTOR_FEED::' . $symbol);
+    my $sub = await $redis->subscribe('TICK_ENGINE::' . $symbol);
     return $sub->events->map('payload')->decode('UTF-8')->decode('json')->each(
         sub {
             my $tick      = shift;
