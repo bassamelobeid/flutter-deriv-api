@@ -101,7 +101,7 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription/channel>
 
 =cut
 
-sub _build_channel { return 'DISTRIBUTOR_FEED::' . shift->symbol }
+sub _build_channel { return 'TICK_ENGINE::' . shift->symbol }
 
 =head2 _unique_key
 
