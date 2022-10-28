@@ -31,7 +31,7 @@ initialize_realtime_ticks_db();
     my $ohlc_sample =
         '60:7807.4957,7811.9598,7807.1055,7807.1055;120:7807.0929,7811.9598,7806.6856,7807.1055;180:7793.6775,7811.9598,7793.5814,7807.1055;300:7807.0929,7811.9598,7806.6856,7807.1055;600:7807.0929,7811.9598,7806.6856,7807.1055;900:7789.5519,7811.9598,7784.1465,7807.1055;1800:7789.5519,7811.9598,7784.1465,7807.1055;3600:7723.5128,7811.9598,7718.4277,7807.1055;7200:7723.5128,7811.9598,7718.4277,7807.1055;14400:7743.3676,7811.9598,7672.4463,7807.1055;28800:7743.3676,7811.9598,7672.4463,7807.1055;86400:7743.3676,7811.9598,7672.4463,7807.1055;';
 
-    sub _create_tick {    #creates R_50 tick in redis channel DISTRIBUTOR_FEED::R_50
+    sub _create_tick {    #creates R_50 tick in redis channel TICK_ENGINE::R_50
         my ($i, $symbol) = @_;
         $i ||= 700;
         my $payload = {
@@ -42,7 +42,7 @@ initialize_realtime_ticks_db();
             bid    => $i + 1,
             ohlc   => $ohlc_sample,
         };
-        BOM::Config::Redis::redis_replicated_write()->publish("DISTRIBUTOR_FEED::$symbol", encode_json_utf8($payload));
+        BOM::Config::Redis::redis_replicated_write()->publish("TICK_ENGINE::$symbol", encode_json_utf8($payload));
     }
 
     my $t = build_wsapi_test();

@@ -27,7 +27,7 @@ for my $symbol (qw/R_50 R_100/) {
     );
 }
 
-sub _create_tick {    #creates R_50 tick in redis channel DISTRIBUTOR_FEED::R_50
+sub _create_tick {    #creates R_50 tick in redis channel TICK_ENGINE::R_50
     my ($i, $symbol) = @_;
     $i      ||= 700;
     $symbol ||= 'R_50';
@@ -42,7 +42,7 @@ sub _create_tick {    #creates R_50 tick in redis channel DISTRIBUTOR_FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Config::Redis::redis_replicated_write()->publish("DISTRIBUTOR_FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
+    BOM::Config::Redis::redis_replicated_write()->publish("TICK_ENGINE::$symbol", Encode::encode_utf8($json->encode($payload)));
 }
 
 my $t = build_wsapi_test();
