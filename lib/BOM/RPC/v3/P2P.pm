@@ -160,7 +160,7 @@ our %ERROR_MAP = do {
         OrderUnderDispute           => localize('This order is under dispute.'),
         InvalidFinalStateForDispute => localize('This order is complete and can no longer be disputed.'),
         TemporaryBar                =>
-            localize("You've been temporarily barred from using our services due to multiple cancellation attempts. Try again after [_1]."),
+            localize("You've been temporarily barred from using our services due to multiple cancellation attempts. Try again after [_1] GMT."),
         PaymentMethodNotFound       => localize('The payment method ID does not exist.'),
         InvalidPaymentMethodField   => localize('[_1] is not a valid field for payment method [_2].'),
         InvalidPaymentMethod        => localize('Invalid payment method provided: [_1].'),
