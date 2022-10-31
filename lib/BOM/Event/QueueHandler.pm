@@ -408,7 +408,7 @@ async sub stream_process_loop {
                 # message and mark the message as processed
                 if ($retry_count >= NUMBER_OF_RETRIES || !$self->retry_interval) {
                     $log->error($e);
-                    stats_inc($stream . ".processed.failure");
+                    stats_inc($stream . ".processed.failure", {tags => ["event:$decoded_data->{type}"]});
                     await $self->_ack_message($stream, $id);
                     exception_logged();
                     next ITEM;
@@ -467,6 +467,7 @@ async sub items_to_reprocess {
                     my $retry_count  = $item->[3] + 1;
                     my $event        = $claimed_item->[0]->[1]->[1];
                     my $decoded_info = decode_json_utf8($event);
+                    stats_inc("$stream.event_retried", {tags => ["event:$event"]});
 
                     if ($retry_count > NUMBER_OF_RETRIES) {
                         await $self->_ack_message($stream, $id);
