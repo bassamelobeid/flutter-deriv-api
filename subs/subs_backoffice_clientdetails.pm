@@ -616,6 +616,14 @@ SQL
         client_loginid => $client->loginid,
     });
 
+    my $doughflow_methods = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM payment.doughflow_deposit_methods_without_poo(?)', undef, $client->binary_user_id);
+        });
+    my $proof_of_ownership_list = $client->proof_of_ownership->list();
+
+    my $poo_access = BOM::Backoffice::Auth0::has_authorisation(['AntiFraud', 'CS']);
+
     my $template_param = {
         balance              => $balance,
         client               => $client,
@@ -690,10 +698,12 @@ SQL
         risk_disclaimer_updated_at                   => $risk_disclaimer_resubmission_updated_at,
         risk_disclaimer_updated_by                   => $risk_disclaimer_resubmission_updated_by,
         payment_methods                              => $doughflow_mapper->get_poo_required_methods(),
-        proof_of_ownership_list                      => $client->proof_of_ownership->list(),
+        proof_of_ownership_list                      => $proof_of_ownership_list,
         disallow_residence_change                    => @countries_disallow_residence_change,
         onfido_pending_request                       => BOM::User::Onfido::pending_request($client->binary_user_id),
         onfido_supported_country => BOM::Config::Onfido::is_country_supported(uc($client->place_of_birth || $client->residence // '')),
+        doughflow_methods        => $doughflow_methods,
+        poo_access               => $poo_access,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

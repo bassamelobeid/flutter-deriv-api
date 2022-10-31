@@ -351,7 +351,7 @@ if ($input{reject_proof_of_ownership}) {
     try {
         $client->proof_of_ownership->reject({id => $input{reject_proof_of_ownership}});
     } catch ($e) {
-        print qq[<p class="notify notify--warning">Could not reject Proof of Ownership: $e.</p>];
+        print qq[<p class="notify notify--warning">Could not reject proof of ownership: $e.</p>];
         code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
     }
 }
@@ -360,35 +360,86 @@ if ($input{verify_proof_of_ownership}) {
     try {
         $client->proof_of_ownership->verify({id => $input{verify_proof_of_ownership}});
     } catch ($e) {
-        print qq[<p class="notify notify--warning">Could not verify Proof of Ownership: $e.</p>];
+        print qq[<p class="notify notify--warning">Could not verify proof of ownership: $e.</p>];
         code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
     }
 }
 
-if ($input{request_poo}) {
-    my $poo_payment_method            = trim($input{poo_payment_method})            // '';
-    my $poo_payment_method_identifier = trim($input{poo_payment_method_identifier}) // '';
-
-    unless ($poo_payment_method) {
-        print qq[<p class="notify notify--warning">You should specify a payment method.</p>];
-        code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
-    }
-
-    unless ($poo_payment_method_identifier) {
-        print qq[<p class="notify notify--warning">You should specify the payment method identifier.</p>];
-        code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
-    }
-
+if ($input{delete_proof_of_ownership}) {
     try {
-        $client->set_db('write') unless $client->get_db() eq 'write';
-        $client->proof_of_ownership->create({
-            payment_method            => $poo_payment_method,
-            payment_method_identifier => $poo_payment_method_identifier,
-        });
+        $client->proof_of_ownership->delete({id => $input{delete_proof_of_ownership}});
     } catch ($e) {
-        $e = 'Cannot create duplicates' if $e =~ /duplicate key value violates unique constraint/;
-        print qq[<p class="notify notify--warning">Could not request POO: $e.</p>];
+        print qq[<p class="notify notify--warning">Could not delete proof of ownership: $e.</p>];
         code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+    }
+}
+
+if ($input{resubmit_proof_of_ownership}) {
+    try {
+        $client->proof_of_ownership->resubmit({id => $input{resubmit_proof_of_ownership}});
+    } catch ($e) {
+        print qq[<p class="notify notify--warning">Could not delete proof of ownership: $e.</p>];
+        code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+    }
+}
+
+if (BOM::Backoffice::Auth0::has_authorisation(['AntiFraud', 'CS'])) {
+    # access granted
+    my $poo_requests = {};
+
+    for my $key (keys %input) {
+        my ($trace_id) = $key =~ /^poo\[(.*)\]$/;
+
+        if ($trace_id) {
+            my $payment_method = $input{$key};
+            $poo_requests->{$trace_id} = $payment_method;
+        }
+    }
+
+    if (scalar keys $poo_requests->%*) {
+        for my $trace_id (keys $poo_requests->%*) {
+            try {
+                $client->set_db('write') unless $client->get_db() eq 'write';
+                $client->proof_of_ownership->create({
+                    payment_service_provider => $poo_requests->{$trace_id},
+                    trace_id                 => $trace_id,
+                    comment                  => ''
+                });
+            } catch ($e) {
+                $e = 'Cannot create duplicates' if $e =~ /duplicate key value violates unique constraint/;
+                print qq[<p class="notify notify--warning">Could not request POO: $e.</p>];
+                code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+            }
+        }
+    }
+
+    # Logic for updating poo comments
+
+    my $poo_comments = [];
+
+    for my $key (keys %input) {
+        my ($poo_id) = $key =~ /^poo_comment_(.*)$/;
+
+        if ($poo_id) {
+            my $poo_comment = $input{$key};
+            push @$poo_comments,
+                {
+                id      => $poo_id,
+                comment => $poo_comment
+                };
+        }
+    }
+
+    # call user proof update comment
+    if (scalar $poo_comments->@*) {
+        try {
+            $client->set_db('write') unless $client->get_db() eq 'write';
+            $client->proof_of_ownership->update_comments({poo_comments => $poo_comments});
+        } catch ($e) {
+            $e = 'Cannot create duplicates' if $e =~ /duplicate key value violates unique constraint/;
+            print qq[<p class="notify notify--warning">Could not request POO: $e.</p>];
+            code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
+        }
     }
 }
 
