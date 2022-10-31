@@ -143,16 +143,15 @@ subtest 'emit payment_deposit' => sub {
 
     is_deeply $doughflow_payment,
         {
-        payment_type               => 'DogeTypeThing',
-        payment_processor          => 'QIWI',
-        created_by                 => 'derek',
-        payment_id                 => $doughflow_payment->{payment_id},
-        transaction_type           => 'deposit',
-        ip_address                 => '127.0.0.1',
-        trace_id                   => $doughflow_payment->{trace_id},
-        payment_account_identifier => sha256_hex('1234**9999'),
-        payment_method             => 'VISA',
-        transaction_id             => $doughflow_payment->{transaction_id},
+        payment_type      => 'DogeTypeThing',
+        payment_processor => 'QIWI',
+        created_by        => 'derek',
+        payment_id        => $doughflow_payment->{payment_id},
+        transaction_type  => 'deposit',
+        ip_address        => '127.0.0.1',
+        trace_id          => $doughflow_payment->{trace_id},
+        payment_method    => 'VISA',
+        transaction_id    => $doughflow_payment->{transaction_id},
         },
         'df payment is correct';
 
