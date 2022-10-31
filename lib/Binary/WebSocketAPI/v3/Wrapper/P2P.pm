@@ -37,7 +37,7 @@ sub subscribe_orders {
         defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
     };
 
-    return $result unless $args->{subscribe} and $c->stash('loginid') and $c->stash('broker') and $c->stash('country') and $c->stash('currency');
+    return $result unless $args->{subscribe} and $c->stash('loginid') and $c->stash('broker');
 
     my $order_id =
           $msg_type eq 'p2p_order_info'   ? $args->{id}
@@ -45,12 +45,10 @@ sub subscribe_orders {
         :                                   undef;
 
     my $sub = Binary::WebSocketAPI::v3::Subscription::P2P::Order->new(
-        c        => $c,
-        args     => $args,
-        loginid  => $c->stash('loginid'),
-        broker   => $c->stash('broker'),
-        country  => $c->stash('country'),
-        currency => $c->stash('currency'),
+        c       => $c,
+        args    => $args,
+        loginid => $c->stash('loginid'),
+        broker  => $c->stash('broker'),
         ($order_id ? (order_id => $order_id) : ()),
     );
 

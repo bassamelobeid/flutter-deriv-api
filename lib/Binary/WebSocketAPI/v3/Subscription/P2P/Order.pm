@@ -25,7 +25,6 @@ has broker => (
     is       => 'ro',
     required => 1,
     isa      => sub {
-        ;
         die "broker can only be a string which contains 2-4 chars: $_[0]" unless $_[0] =~ /^\w{2,4}$/;
     });
 
@@ -33,22 +32,6 @@ has loginid => (
     is       => 'ro',
     required => 1,
 );
-
-has currency => (
-    is       => 'ro',
-    required => 1,
-    isa      => sub {
-        ;
-        die "currency can only be a string containing 2-20 letters and numbers: $_[0]" unless $_[0] =~ /^[a-zA-Z0-9]{2,20}$/;
-    });
-
-has country => (
-    is       => 'ro',
-    required => 1,
-    isa      => sub {
-        ;
-        die "country can only be a string which contains 2 chars: $_[0]" unless $_[0] =~ /^\w{2}$/;
-    });
 
 has order_id => (is => 'ro');
 
@@ -58,7 +41,7 @@ sub subscription_manager {
 
 sub _build_channel {
     my $self = shift;
-    return join q{::} => map { uc($_) } ('P2P::ORDER::NOTIFICATION', $self->broker, $self->country, $self->currency);
+    return join q{::} => map { uc($_) } ('P2P::ORDER::NOTIFICATION', $self->broker, $self->loginid);
 }
 
 # This method is used to find a subscription.
@@ -76,12 +59,7 @@ sub handle_message {
         return;
     }
 
-    return
-        if ($payload->{advertiser_loginid} // '') ne $self->loginid
-        && ($payload->{client_loginid} // '') ne $self->loginid;
-
-    delete @{$payload}{qw(advertiser_loginid client_loginid)};
-
+    # If subscribed to a single order, discard other orders for this advertiser
     return if $self->order_id && $self->order_id ne $payload->{id};
 
     my $args = $self->args;
