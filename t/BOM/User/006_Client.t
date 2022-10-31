@@ -235,9 +235,8 @@ subtest 'payment transaction' => sub {
     $payment_expected->{payment_gateway_code} = 'doughflow';
     $initial_balance                          = 135;
     delete $args->{source};
-    $args->{df_payment_type}            = 'CreditCard';
-    $args->{payment_account_identifier} = '1234**9999';
-    $txn                                = $client->payment_doughflow(%$args);
+    $args->{df_payment_type} = 'CreditCard';
+    $txn = $client->payment_doughflow(%$args);
     isa_ok $txn, 'BOM::User::Client::PaymentTransaction::Doughflow', 'Correct class for doughflow payment transaction object';
     verify_txn($txn, $account, $args, $initial_balance, $payment_expected);
 
@@ -248,22 +247,20 @@ subtest 'payment transaction' => sub {
 
     cmp_deeply $doughflow_payment,
         {
-        created_by                 => $txn->{staff_loginid},
-        payment_id                 => $txn->{payment_id},
-        transaction_id             => undef,
-        ip_address                 => undef,
-        payment_type               => 'CreditCard',
-        payment_method             => undef,
-        trace_id                   => '0',
-        payment_processor          => 'unspecified',
-        transaction_type           => 'deposit',
-        payment_account_identifier => '1234**9999',
+        created_by        => $txn->{staff_loginid},
+        payment_id        => $txn->{payment_id},
+        transaction_id    => undef,
+        ip_address        => undef,
+        payment_type      => 'CreditCard',
+        payment_method    => undef,
+        trace_id          => '0',
+        payment_processor => 'unspecified',
+        transaction_type  => 'deposit',
         },
         'expected df payment found (payment type=CreditCard)';
 
     $initial_balance = 150;
     delete $args->{df_payment_type};
-    delete $args->{payment_account_identifier};
     $txn = $client->payment_doughflow(%$args);
 
     isa_ok $txn, 'BOM::User::Client::PaymentTransaction::Doughflow', 'Correct class for doughflow payment transaction object';
@@ -276,16 +273,15 @@ subtest 'payment transaction' => sub {
 
     cmp_deeply $doughflow_payment,
         {
-        created_by                 => $txn->{staff_loginid},
-        payment_id                 => $txn->{payment_id},
-        transaction_id             => undef,
-        ip_address                 => undef,
-        payment_type               => undef,
-        payment_method             => undef,
-        trace_id                   => '0',
-        payment_processor          => 'unspecified',
-        transaction_type           => 'deposit',
-        payment_account_identifier => undef,
+        created_by        => $txn->{staff_loginid},
+        payment_id        => $txn->{payment_id},
+        transaction_id    => undef,
+        ip_address        => undef,
+        payment_type      => undef,
+        payment_method    => undef,
+        trace_id          => '0',
+        payment_processor => 'unspecified',
+        transaction_type  => 'deposit',
         },
         'expected df payment found (no payment type)';
 };

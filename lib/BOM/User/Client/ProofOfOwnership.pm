@@ -4,8 +4,9 @@ use strict;
 use warnings;
 use Moo;
 
-use JSON::MaybeXS qw(encode_json decode_json);
-use List::Util    qw(any all);
+use JSON::MaybeXS   qw(encode_json decode_json);
+use List::Util      qw(any all);
+use JSON::MaybeUTF8 qw(:v1);
 
 =head1 NAME
 
@@ -33,9 +34,11 @@ It takes the following arguments as hashref:
 
 =over 4
 
-=item * C<payment_method> - the payment method to request POO
+=item * C<payment_service_provider> - the payment method to request POO
 
-=item * C<payment_method_identifier> - the identifier of the payment method we are requesting POO
+=item * C<trace_id> - the trace_id of the payment method
+
+=item * C<comment> - a comment about the poo request <optional>
 
 =back
 
@@ -46,16 +49,18 @@ Returns the new POO record.
 sub create {
     my ($self, $args) = @_;
 
-    my ($payment_method, $payment_method_identifier) = @{$args}{qw/payment_method payment_method_identifier/};
+    my ($payment_service_provider, $trace_id, $comment) = @{$args}{qw/payment_service_provider trace_id comment/};
 
     my $proof_of_ownership = $self->client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM betonmarkets.create_proof_of_ownership(?, ?, ?)',
-                undef,           $self->client->loginid,
-                $payment_method, $payment_method_identifier,
+                'SELECT * FROM betonmarkets.create_proof_of_ownership_v2(?, ?, ? ,?)',
+                undef, $self->client->loginid,
+                $payment_service_provider, $trace_id, $comment,
             );
         });
+
+    die "Cannot create proof of ownership" unless $proof_of_ownership;
 
     return $self->_normalize($proof_of_ownership);
 }
@@ -113,7 +118,7 @@ sub list {
     my $list_of_poo = $self->client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM betonmarkets.list_proof_of_ownership(?, ?, ?)',
+                'SELECT * FROM betonmarkets.list_proof_of_ownership_v2(?, ?, ?)',
                 {Slice => {}},
                 $self->client->loginid,
                 $id, $status,
@@ -147,6 +152,8 @@ sub fulfill {
     my ($self, $args) = @_;
 
     my ($id, $payment_method_details, $client_authentication_document_id) = @{$args}{qw/id payment_method_details client_authentication_document_id/};
+
+    delete $payment_method_details->{payment_identifier};    # Deleting identifier as to not store in DB.
 
     $payment_method_details = encode_json($payment_method_details // {});
 
@@ -254,7 +261,7 @@ It takes the folllowing arguments as hashref:
 
 =over 4
 
-=item * C<id> - (optional) a proof of ownership id
+=item * C<id> - a proof of ownership id
 
 =back
 
@@ -284,7 +291,7 @@ It takes the folllowing arguments as hashref:
 
 =over 4
 
-=item * C<id> - (optional) a proof of ownership id
+=item * C<id> - a proof of ownership id
 
 =back
 
@@ -304,6 +311,96 @@ sub reject {
     die sprintf("Cannot reject proof of ownership %d", $id) unless $proof_of_ownership;
 
     return $self->_normalize($proof_of_ownership);
+}
+
+=head2 delete
+
+Delets the given proof of ownership document.
+
+It takes the following arguments as hashref:
+
+=over 4
+
+=item * C<id> - a proof of ownership id
+
+=back
+
+Returns 1 if POO record deleted properly.
+
+=cut
+
+sub delete {
+    my ($self, $args) = @_;
+    my $id = $args->{id};
+
+    my $proof_of_ownership = $self->client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM betonmarkets.delete_proof_of_ownership(?)', undef, $id);
+        });
+
+    die sprintf("Cannot delete proof of ownership %d", $id) unless $proof_of_ownership;
+
+    return 1;
+}
+
+=head2 resubmit
+
+Flags the given proof of ownership document as `uploaded`.
+
+It takes the following arguments as hashref:
+
+=over 4
+
+=item * C<id> - a proof of ownership id
+
+=back
+
+Returns the updated POO record.
+
+=cut
+
+sub resubmit {
+    my ($self, $args) = @_;
+    my $id = $args->{id};
+
+    my $proof_of_ownership = $self->client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM betonmarkets.resubmit_proof_of_ownership(?)', undef, $id);
+        });
+
+    die sprintf("Cannot verify proof of ownership %d", $id) unless $proof_of_ownership;
+
+    return $self->_normalize($proof_of_ownership);
+}
+
+=head2 update_comments
+
+Updates the comments for the proof of ownerships IDs
+
+It takes an arrayref of hashrefs with the following structure:
+
+=over 4
+
+=item * C<id> - a proof of ownership id
+
+=item * C<comment> - a proof of ownership comment
+
+=back
+
+Returns undef 
+
+=cut
+
+sub update_comments {
+    my ($self, $args) = @_;
+    my $poo_comments = $args->{poo_comments};
+
+    $self->client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM betonmarkets.update_proof_of_ownership_comments(?)', undef, encode_json_utf8($poo_comments));
+        });
+
+    return undef;
 }
 
 1;
