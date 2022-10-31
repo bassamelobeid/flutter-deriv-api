@@ -553,10 +553,7 @@ subtest 'Proof of ownership upload' => sub {
     )->has_error->error_message_is('The proof of ownership id provided is not valid', 'POO id was invalid')
         ->error_code_is('UploadDenied', 'error code is correct');
 
-    my $poo = $client->proof_of_ownership->create({
-        payment_method_identifier => 'test@binary.com',
-        payment_method            => 'Skrill'
-    });
+    my $poo = $client->proof_of_ownership->create({payment_service_provider => 'Skrill', trace_id => 100});
 
     $c->call_ok(
         'document_upload',
@@ -776,8 +773,8 @@ subtest 'validate proof of ownership' => sub {
         'invalid_proof_of_ownership_id', "invalid POO id";
 
     my $poo = $client2->proof_of_ownership->create({
-        payment_method_identifier => '1234',
-        payment_method            => 'VISA',
+        payment_service_provider => 'VISA',
+        trace_id                 => 100,
     });
 
     is BOM::RPC::v3::DocumentUpload::validate_proof_of_ownership({

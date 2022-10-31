@@ -340,6 +340,47 @@ subtest 'idv details' => sub {
     $doc_mock->unmock_all;
 };
 
+subtest 'Proof of Ownership - Documents Required' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+poo-documents@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'none',
+        requests => [],
+        },
+        'Expected POO from auth';
+
+    cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate';
+
+    my $poo = $client->proof_of_ownership->create({payment_service_provider => 'onlinenaira', trace_id => 103});
+
+    $client->proof_of_ownership->_clear_full_list();
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{ownership},
+        {
+        status   => 'none',
+        requests => [{
+                payment_method     => 'onlinenaira',
+                id                 => re('\d+'),
+                creation_time      => re('.+'),
+                documents_required => 2,
+            }
+        ],
+        },
+        'Expected POO result when pending POO with payment method onlinenaira';
+};
+
 subtest 'Proof of Ownership' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -362,10 +403,7 @@ subtest 'Proof of Ownership' => sub {
 
     cmp_bag $result->{authentication}->{needs_verification}, [], 'Nothing to authenticate';
 
-    my $poo = $client->proof_of_ownership->create({
-        payment_method            => 'VISA',
-        payment_method_identifier => '99999'
-    });
+    my $poo = $client->proof_of_ownership->create({payment_service_provider => 'astropay', trace_id => 100});
 
     $client->proof_of_ownership->_clear_full_list();
     $result = $c->tcall('get_account_status', {token => $token});
@@ -374,10 +412,10 @@ subtest 'Proof of Ownership' => sub {
         {
         status   => 'none',
         requests => [{
-                payment_method            => 'VISA',
-                payment_method_identifier => '99999',
-                id                        => re('\d+'),
-                creation_time             => re('.+'),
+                payment_method     => 'astropay',
+                id                 => re('\d+'),
+                creation_time      => re('.+'),
+                documents_required => 2,
             }
         ],
         },
@@ -419,14 +457,14 @@ subtest 'Proof of Ownership' => sub {
     $client->proof_of_ownership->_clear_full_list();
     $result = $c->tcall('get_account_status', {token => $token});
 
-    cmp_deeply $result->{authentication}->{ownership},
-        {
+    cmp_deeply $result->{authentication}->{ownership}, {
         status   => 'rejected',
         requests => [{
-                payment_method            => 'VISA',
-                payment_method_identifier => '99999',
-                id                        => re('\d+'),
-                creation_time             => re('.+'),
+                payment_method     => 'astropay',
+                id                 => re('\d+'),
+                creation_time      => re('.+'),
+                documents_required => 2,
+
             }
         ],
         },
@@ -478,10 +516,7 @@ subtest 'Proof of Ownership' => sub {
     cmp_bag $result->{authentication}->{needs_verification}, [], 'Does not need verification';
 
     # after some time new poo is requested
-    $poo = $client->proof_of_ownership->create({
-        payment_method            => 'VISA',
-        payment_method_identifier => '12345'
-    });
+    $poo = $client->proof_of_ownership->create({payment_service_provider => 'VISA', trace_id => 200});
 
     $client->proof_of_ownership->_clear_full_list();
     $result = $c->tcall('get_account_status', {token => $token});
@@ -490,10 +525,10 @@ subtest 'Proof of Ownership' => sub {
         {
         status   => 'none',
         requests => [{
-                payment_method            => 'VISA',
-                payment_method_identifier => '12345',
-                id                        => re('\d+'),
-                creation_time             => re('.+'),
+                payment_method     => 'VISA',
+                id                 => re('\d+'),
+                creation_time      => re('.+'),
+                documents_required => 1,
             }
         ],
         },
@@ -539,10 +574,10 @@ subtest 'Proof of Ownership' => sub {
         {
         status   => 'rejected',
         requests => [{
-                payment_method            => 'VISA',
-                payment_method_identifier => '12345',
-                id                        => re('\d+'),
-                creation_time             => re('.+'),
+                payment_method     => 'VISA',
+                id                 => re('\d+'),
+                creation_time      => re('.+'),
+                documents_required => 1,
             }
         ],
         },

@@ -1157,12 +1157,41 @@ sub _get_authentication_poo {
     return {
         status   => $poo_status,
         requests => [
-            map {
-                { %$_{qw/id payment_method payment_method_identifier creation_time/} }
-                }
-                grep { $_->{status} eq 'pending' || $_->{status} eq 'rejected'; } $poo_list->@*
+            map  { {documents_required => _get_poo_documents_required($_), %$_{qw/id payment_method creation_time/}} }
+            grep { $_->{status} eq 'pending' || $_->{status} eq 'rejected'; } $poo_list->@*
         ],
     };
+}
+
+=head2 _get_poo_documents_required
+
+Resolves the number of documents required for a given poo.
+
+It takes the following named params:
+
+=over 4
+
+=item * POO - The Proof of Ownserhip Record
+
+
+=back
+
+Returns,
+    Number of documents required to be uploaded
+
+=cut
+
+sub _get_poo_documents_required {
+    my ($poo) = @_;
+
+    my %documents_required = (
+        astropay    => 2,
+        onlinenaira => 2,
+    );
+
+    my $pm = lc $poo->{payment_method};
+
+    return $documents_required{$pm} // 1;
 }
 
 =head2 _get_authentication_poi
