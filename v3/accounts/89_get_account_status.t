@@ -125,10 +125,7 @@ subtest 'Proof of ownership' => sub {
         'expected poo result for brand new client';
     cmp_deeply $res->{get_account_status}->{authentication}->{needs_verification}, [], 'expected needs verification for brand new client';
 
-    my $poo = $client->proof_of_ownership->create({
-        payment_method            => 'VISA',
-        payment_method_identifier => '1234**9999',
-    });
+    my $poo = $client->proof_of_ownership->create({payment_service_provider => 'VISA', trace_id => 100});
 
     $t->await::authorize({authorize => $token});
     $client->proof_of_ownership->_clear_full_list();
@@ -138,10 +135,10 @@ subtest 'Proof of ownership' => sub {
     cmp_deeply $res->{get_account_status}->{authentication}->{ownership},
         {
         requests => [{
-                id                        => re('\d+'),
-                creation_time             => re('.+'),
-                payment_method            => 'VISA',
-                payment_method_identifier => '1234**9999',
+                id                 => re('\d+'),
+                creation_time      => re('.+'),
+                payment_method     => 'VISA',
+                documents_required => 1,
             }
         ],
         status => 'none',
@@ -165,7 +162,7 @@ subtest 'Proof of ownership' => sub {
             proof_of_ownership => {
                 id      => $res->{get_account_status}->{authentication}->{ownership}->{requests}->[0]->{id},
                 details => {
-                    some => 'thing',
+                    payment_identifier => 'thing',
                 }}});
 
     test_schema('document_upload', $res);
@@ -202,10 +199,10 @@ subtest 'Proof of ownership' => sub {
     cmp_deeply $res->{get_account_status}->{authentication}->{ownership},
         {
         requests => [{
-                id                        => re('\d+'),
-                creation_time             => re('.+'),
-                payment_method            => 'VISA',
-                payment_method_identifier => '1234**9999',
+                id                 => re('\d+'),
+                creation_time      => re('.+'),
+                payment_method     => 'VISA',
+                documents_required => 1,
             }
         ],
         status => 'rejected',

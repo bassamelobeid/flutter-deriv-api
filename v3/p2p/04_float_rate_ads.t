@@ -39,8 +39,8 @@ $app_config->set({'payments.p2p.escrow'                   => [$client_escrow->lo
 $app_config->set({
         'payments.p2p.country_advert_config' => encode_json_utf8({
                 'id' => {
-                    float_ads          => 'enabled',
-                    fixed_ads          => 'enabled',
+                    float_ads => 'enabled',
+                    fixed_ads => 'enabled',
                 }})});
 
 # if this test takes more than 10 minutues to run, it will fail if we get a quote for IDR. But then we have other problems :)
