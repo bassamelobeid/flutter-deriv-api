@@ -39,6 +39,7 @@ use Array::Utils qw(intersect array_minus);
 use Scalar::Util qw(blessed);
 use Text::Trim   qw(trim);
 use WebService::MyAffiliates;
+use Digest::SHA qw/sha256_hex/;
 
 use BOM::Config;
 use BOM::Config::Onfido;
@@ -2373,6 +2374,8 @@ async sub payment_deposit {
     my $account_identifier = $args->{account_identifier};
     my $payment_method     = $args->{payment_method} // '';
     my $payment_type       = $args->{payment_type}   // '';
+
+    $account_identifier = sha256_hex($account_identifier) if $account_identifier;
 
     if ($is_first_deposit) {
         try {

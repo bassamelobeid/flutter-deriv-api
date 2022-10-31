@@ -13,6 +13,7 @@ use BOM::Test::Email;
 use BOM::Config::Runtime;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::User::PaymentRecord;
+use Digest::SHA qw/sha256_hex/;
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 
@@ -59,7 +60,7 @@ subtest 'record_user_payment_accounts' => sub {
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'X',
                 payment_type       => 'CreditCard',
-                account_identifier => 'XXXX',
+                account_identifier => sha256_hex('XXXX'),
                 loginid            => $test_client->{loginid}})->get;
 
         is(mailbox_search(subject => qr/Allowed limit reached on CrediCard/), undef, 'no extra action is performed');
@@ -82,7 +83,7 @@ subtest 'record_user_payment_accounts' => sub {
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'X',
                 payment_type       => 'CreditCard',
-                account_identifier => 'XXXX',
+                account_identifier => sha256_hex('XXXX'),
                 loginid            => $test_client->{loginid}})->get;
 
         my $email = mailbox_search(subject => qr/Allowed limit on CreditCard/);
@@ -103,7 +104,7 @@ subtest 'record_user_payment_accounts' => sub {
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'X',
                 payment_type       => 'CreditCard',
-                account_identifier => 'XXXX',
+                account_identifier => sha256_hex('XXXX'),
                 loginid            => $test_client->{loginid}})->get;
 
         mailbox_clear();    # just clear the inbox, we don't actually care about this email
@@ -111,7 +112,7 @@ subtest 'record_user_payment_accounts' => sub {
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'X',
                 payment_type       => 'CreditCard',
-                account_identifier => 'XXXY',
+                account_identifier => sha256_hex('XXXY'),
                 loginid            => $test_client->{loginid}})->get;
 
         is(mailbox_search(subject => qr/Maximum limit on CreditCard reached/), undef, 'does not send any email anymore');
@@ -125,7 +126,7 @@ subtest 'record_user_payment_accounts' => sub {
         # crypto payments do not have payment_processor nor payment_method
         # see BOM::CTC::Helper#confirm_deposit
         BOM::Event::Actions::Client::payment_deposit({
-                account_identifier => 'XXXX',
+                account_identifier => sha256_hex('XXXX'),
                 loginid            => $test_client->{loginid}})->get;
 
         is(mailbox_search(subject => qr/Allowed limit on CreditCard/), undef, 'no email has been sent');
@@ -133,7 +134,7 @@ subtest 'record_user_payment_accounts' => sub {
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'X',
                 payment_type       => 'CreditCard',
-                account_identifier => 'XXXY',
+                account_identifier => sha256_hex('XXXY'),
                 loginid            => $test_client->{loginid}})->get;
 
         my $email = mailbox_search(subject => qr/Allowed limit on CreditCard/);
@@ -149,24 +150,30 @@ subtest 'record_user_payment_accounts' => sub {
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'X',
                 payment_type       => 'CreditCard',
-                account_identifier => '0x01',
+                account_identifier => sha256_hex('0x01'),
                 loginid            => $test_client->{loginid}})->get;
 
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'Y',
                 payment_type       => 'CreditCard',
-                account_identifier => '0x02',
+                account_identifier => sha256_hex('0x02'),
                 loginid            => $test_client->{loginid}})->get;
 
         BOM::Event::Actions::Client::payment_deposit({
                 payment_processor  => 'Z',
                 payment_type       => 'CreditCard',
-                account_identifier => '0x03',
+                account_identifier => sha256_hex('0x03'),
                 loginid            => $test_client->{loginid}})->get;
 
         my $records = $pr->get_raw_payments(30);
 
-        cmp_bag $records, ['X||CreditCard|0x01', 'Y||CreditCard|0x02', 'Z||CreditCard|0x03',], 'Expected records added';
+        cmp_bag $records,
+            [
+            'X||CreditCard|1789c2b4e7983c7eff63265975b2a4d20d237c1fc69681f8a086f60008c2ab29',
+            'Y||CreditCard|1f902dee07311bd6486d8eb5da95f9037d000b1815bbacf9c11e7376b695fdfe',
+            'Z||CreditCard|fc9fb9f0836f51a4b1591aece9a2bfae3aa0dd8d629ae2feb70a11cc7ae9dabe',
+            ],
+            'Expected records added';
     };
 };
 
