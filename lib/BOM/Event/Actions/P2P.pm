@@ -183,8 +183,7 @@ async sub order_updated {
     my $client = BOM::User::Client->new({loginid => $loginid});
     my $order  = $client->_p2p_orders(id => $order_id)->[0];
     $order->{payment_method_details} = $client->_p2p_order_payment_method_details($order);
-    my $redis     = BOM::Config::Redis->redis_p2p_write();
-    my $redis_key = _get_order_channel_name($client);
+    my $redis = BOM::Config::Redis->redis_p2p_write();
     my ($parties, $order_response);
 
     for my $client_type (qw(advertiser_loginid client_loginid)) {
@@ -199,8 +198,7 @@ async sub order_updated {
 
         # _order_details() is different for each client, so need to publish both verisons
         $order_response = $cur_client->_order_details([$order])->[0];
-        $order_response->{$client_type} = $order->{$client_type};
-        $redis->publish($redis_key, encode_json_utf8($order_response));
+        $redis->publish(_get_order_channel_name($cur_client), encode_json_utf8($order_response));
     }
 
     stats_inc('p2p.order.status.updated.count', {tags => ["status:$order->{status}"]});
@@ -642,7 +640,7 @@ sub _track_p2p_order_event {
 sub _get_order_channel_name {
     my $client = shift;
 
-    return join q{::} => map { uc($_) } ("P2P::ORDER::NOTIFICATION", $client->broker, $client->residence, $client->currency,);
+    return join q{::} => map { uc($_) } ("P2P::ORDER::NOTIFICATION", $client->broker, $client->loginid);
 }
 
 sub _get_advertiser_channel_name {
