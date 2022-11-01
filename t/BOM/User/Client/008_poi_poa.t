@@ -2030,6 +2030,17 @@ subtest 'Manual POI status' => sub {
             verified                => 1,
             age_verification        => 1,
             ignore_age_verification => 1,
+        },
+        {
+            status    => 'pending',
+            onfido    => 'none',
+            idv       => 'none',
+            documents => {
+                test => {},
+            },
+            verified                => 1,
+            age_verification        => 0,
+            ignore_age_verification => 0,
         }
         ],
         ;

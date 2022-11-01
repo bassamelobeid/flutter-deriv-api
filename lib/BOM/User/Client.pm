@@ -7253,6 +7253,9 @@ sub get_manual_poi_status {
         return 'verified' unless $self->ignore_age_verification;
     }
 
+    # Return pending when the documents are verified, but the age is not verified yet.
+    return 'pending' if $self->documents->verified;
+
     return 'rejected';    # if docs are not pending, not age verified, what else could it be?
 }
 
