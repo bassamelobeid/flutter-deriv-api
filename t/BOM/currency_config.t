@@ -544,6 +544,22 @@ subtest 'get_crypto_payout_auto_update_global_status' => sub {
 
 };
 
+subtest 'local currencies' => sub {
+    %BOM::Config::CurrencyConfig::ALL_CURRENCIES = (
+        AAA => {
+            name      => 'AAA currency',
+            countries => ['c1', 'c2'],
+        },
+        BBB => {
+            name      => 'BBB currency',
+            countries => ['c3', 'c4'],
+        },
+    );
+    my $local_currencies = BOM::Config::CurrencyConfig::local_currencies;
+    is $local_currencies->{'AAA'}, 'AAA currency', 'name';
+    is $local_currencies->{'CCC'}, undef,          'no localized name';
+};
+
 $mock_app_config->unmock_all();
 
 done_testing();

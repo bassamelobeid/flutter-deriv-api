@@ -201,6 +201,17 @@ our %ALL_CURRENCIES = do {
     %result;
 };
 
+=head2 local_currencies
+
+Returns all local currencies as hashref with localized name.
+Note: this is used by BOM::Backoffice::Script::ExtraTranslations.
+
+=cut
+
+sub local_currencies {
+    return {map { $_ => $ALL_CURRENCIES{$_}->{name} } keys %ALL_CURRENCIES};
+}
+
 =head2 local_currency_for_country
 
 Takes the following named parameters:
