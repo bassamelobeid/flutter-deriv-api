@@ -851,6 +851,8 @@ async sub mt5_deriv_auto_rescind {
 
                         delete $process_mt5_fail{$mt5_user->{login}} if exists($process_mt5_fail{$mt5_user->{login}});
 
+                        last;
+
                     } else {
                         #Consider disabled account option if failed at last available Deriv account.
                         if (    $override_status
@@ -1219,7 +1221,9 @@ Return C<1> acknowledge successful operation.
 async sub _archive_mt5_account {
     my $mt5_user = shift;
 
+    delete $mt5_user->{color};
     await BOM::MT5::User::Async::update_user({
+        %{$mt5_user},
         login  => $mt5_user->{login},
         rights => USER_RIGHT_TRADE_DISABLED
     });
@@ -1404,11 +1408,12 @@ sub _send_mt5_rescind_report {
     push @$csv_attachment, $failed_csv->[0]  if scalar(keys %$process_mt5_fail);
 
     BOM::Platform::Email::send_email({
-        to         => 'i-payments-TL@deriv.com',
-        from       => $brand->emails('no-reply'),
-        subject    => 'MT5 Account Rescind Report',
-        message    => \@message,
-        attachment => $csv_attachment,
+        to                    => 'i-payments-TL@deriv.com',
+        from                  => $brand->emails('no-reply'),
+        email_content_is_html => 1,
+        subject               => 'MT5 Account Rescind Report',
+        message               => \@message,
+        attachment            => $csv_attachment,
     });
 
     return 1;
