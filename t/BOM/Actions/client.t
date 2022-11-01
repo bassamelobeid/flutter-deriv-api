@@ -2933,6 +2933,9 @@ subtest 'verify address' => sub {
         is BOM::Event::Actions::Client::_smarty_license($test_client), $licenses->{''}, "Expected license for 'undef'";
     };
 
+    $loop->add(my $services = BOM::Event::Services->new);
+    my $redis_replicated_read = $services->redis_events_read();
+
     $residence = 'br';
     my $events_mock  = Test::MockModule->new('BOM::Event::Actions::Client');
     my $dd_mock      = Test::MockModule->new('DataDog::DogStatsd::Helper');
@@ -3193,6 +3196,7 @@ subtest 'verify address' => sub {
     $verify_details              = {};
 
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'        => undef,
@@ -3216,6 +3220,26 @@ subtest 'verify address' => sub {
         {'ADDRESS_VERIFICATION_RESULT'
             . $test_client->binary_user_id => {encode_utf8(join(' ', ($freeform, ($test_client->residence // '')))) => 'awesome'}},
         'Expected data recorded to Redis';
+
+    # too many attempts
+
+    $has_deposits                = 0;
+    $fully_authenticated         = 1;
+    $dd_bag                      = {};
+    $check_already_performed     = 0;
+    $address_verification_future = undef;
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request'           => undef,
+        'event.address_verification.triggered'         => {tags => ['verify_address:authenticated']},
+        'event.address_verification.too_many_attempts' => {tags => ['verify_address:authenticated']},
+        },
+        'Expected data for the data pooch';
+
+    ok $redis_replicated_read->ttl('ADDRESS_VERIFICATION_RESULT' . $test_client->binary_user_id) > 0, 'TTL Set for Address Verification Result';
+    ok $redis_replicated_read->ttl('ADDRESS_CHANGE_LOCK' . $test_client->binary_user_id) > 0,         'TTL Set for Address Change Lock';
 
     $dd_mock->unmock_all;
     $client_mock->unmock_all;

@@ -1347,7 +1347,12 @@ async sub verify_address {
             DataDog::DogStatsd::Helper::stats_inc('event.address_verification.triggered', {tags => \@dd_tags});
             return await _address_verification(client => $client);
         } catch ($e) {
-            DataDog::DogStatsd::Helper::stats_inc('event.address_verification.exception', {tags => \@dd_tags});
+            if ($e =~ /too many attempts/) {
+                DataDog::DogStatsd::Helper::stats_inc('event.address_verification.too_many_attempts', {tags => \@dd_tags});
+            } else {
+                DataDog::DogStatsd::Helper::stats_inc('event.address_verification.exception', {tags => \@dd_tags});
+            }
+
             $log->errorf('Failed to verify applicants address for %s : %s', $loginid, $e);
             exception_logged();
         }
@@ -1388,6 +1393,14 @@ async sub _address_verification {
         return;
     }
 
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
+
+    my $counter_to_lock = await $redis_events_write->incr('ADDRESS_CHANGE_LOCK' . $client->binary_user_id);
+    await $redis_events_write->expire('ADDRESS_CHANGE_LOCK' . $client->binary_user_id, 84600);
+
+    die 'too many attempts' if $counter_to_lock > 3;
+
     DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.trigger');
     # Next step is an address check. Let's make sure that whatever they
     # are sending is valid at least to locality level.
@@ -1422,10 +1435,9 @@ async sub _address_verification {
         _set_address_verified($client);
     }
 
-    my $redis_events_write = _redis_events_write();
-    await $redis_events_write->connect;
     await $redis_events_write->hset('ADDRESS_VERIFICATION_RESULT' . $client->binary_user_id,
         encode_utf8(join(' ', ($freeform, ($client->residence // '')))), $status);
+    await $redis_events_write->expire('ADDRESS_VERIFICATION_RESULT' . $client->binary_user_id, 86400);    #TTL for Hash is set for 1 day.
     DataDog::DogStatsd::Helper::stats_inc('event.address_verification.recorded.redis');
 
     return;
