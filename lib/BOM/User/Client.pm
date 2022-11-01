@@ -2901,9 +2901,12 @@ sub p2p_order_create {
             rule_engine  => $rule_engine,
         );
     } catch ($e) {
+        my $message = ref $e ? $e->{message_to_client} : localize('Please try later.');
+        # temporary logging to allow us to see the full string
+        $log->warnf('validate_payment in p2p_order_create returned a scalar! %s', $e) unless ref $e;
         die +{
             error_code     => 'OrderCreateFailClient',
-            message_params => [$e->{message_to_client}],
+            message_params => [$message],
         };
     }
 
