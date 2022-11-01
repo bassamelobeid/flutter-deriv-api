@@ -261,7 +261,7 @@ subtest "/v1/payment/withdraw" => sub {
     subtest "Invalid payment" => sub {
         $mocked_user->mock(
             validate_payment => sub {
-                die 'error_message';
+                die {message_to_client => 'error_message'};
             },
         );
 

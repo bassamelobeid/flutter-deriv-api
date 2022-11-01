@@ -165,7 +165,7 @@ sub withdraw {
             rule_engine  => $rule_engine
         );
     } catch ($e) {
-        my $error_message = (split("\n", $e))[0];
+        my $error_message = $e->{message_to_client};
         return $self->render_error('InvalidPayment', message_params => $error_message);
     }
 
