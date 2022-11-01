@@ -265,8 +265,7 @@ sub p2p_rpc {    ## no critic(Subroutines::RequireArgUnpacking)
             );
 
             _check_client_access($client, $app_config);
-
-            BOM::Config::Redis->redis_p2p_write->zadd('P2P::USERS_ONLINE', time, $client->loginid);
+            BOM::Config::Redis->redis_p2p_write->zadd('P2P::USERS_ONLINE', time, ($client->loginid . "::" . $client->residence));
 
             my $acc = $client->default_account;
 

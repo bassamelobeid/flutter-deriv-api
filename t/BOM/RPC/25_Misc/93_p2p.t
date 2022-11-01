@@ -948,11 +948,12 @@ subtest 'p2p_ping and online tracking' => sub {
     set_absolute_time(2000);
     my $res = $c->call_ok(p2p_ping => {token => $client_token})->has_no_system_error->result;
     is $res, 'pong', 'result is pong';
-    cmp_ok $redis->zscore('P2P::USERS_ONLINE', $client->loginid) - 2000, '<=', 1, 'online time is set in redis';
+    cmp_ok $redis->zscore('P2P::USERS_ONLINE', ($client->loginid . "::" . $client->residence)) - 2000, '<=', 1, 'online time is set in redis';
 
     set_absolute_time(2099);
     $c->call_ok(p2p_advertiser_info => {token => $client_token});
-    cmp_ok $redis->zscore('P2P::USERS_ONLINE', $client->loginid) - 2099, '<=', 1, 'online time is updated by other call';
+    cmp_ok $redis->zscore('P2P::USERS_ONLINE', ($client->loginid . "::" . $client->residence)) - 2099, '<=', 1,
+        'online time is updated by other call';
 };
 
 done_testing();
