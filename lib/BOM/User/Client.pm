@@ -4950,7 +4950,6 @@ Returns hashref.
 
 sub _p2p_advertiser_stats {
     my ($self, $loginid, $hours) = @_;
-
     my $start_ts   = $hours ? Date::Utility->new->minus_time_interval($hours . 'h')->epoch : '-inf';
     my $key_prefix = P2P_STATS_REDIS_PREFIX . '::' . $loginid . '::';
     my $redis      = BOM::Config::Redis->redis_p2p();
@@ -4989,7 +4988,7 @@ sub _p2p_advertiser_stats {
         advert_rates => $raw{ADVERT_RATES}->@* ? sprintf("%.2f", (List::Util::sum($raw{ADVERT_RATES}->@*) / $raw{ADVERT_RATES}->@*) * 100)
         : undef,
         partner_count => $redis->scard($key_prefix . 'ORDER_PARTNERS'),
-        last_online   => $redis->zscore(P2P_USERS_ONLINE_KEY, $loginid),
+        last_online   => $redis->zscore(P2P_USERS_ONLINE_KEY, ($loginid . "::" . $self->residence)),
     };
 
     return $stats;

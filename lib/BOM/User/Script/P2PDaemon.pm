@@ -10,7 +10,7 @@ use Net::Async::Redis;
 use Time::HiRes qw(gettimeofday tv_interval);
 use Log::Any    qw($log);
 use Date::Utility;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_gauge);
 use List::Util                 qw(uniq);
 use curry::weak;
 
@@ -319,6 +319,12 @@ sub process_advertisers_online {
     my @current  = $redis->zrangebyscore(P2P_USERS_ONLINE, time - P2P_ONLINE_PERIOD, '+Inf')->@*;
     my @previous = split /\|/, $redis->get(P2P_USERS_ONLINE_LATEST) // '';
     $redis->set(P2P_USERS_ONLINE_LATEST, join '|', @current);
+    if (@current) {
+        my %counter;
+        my @countries_list = map { $_ =~ /::(\w+?)$/ } @current;
+        $counter{$_}++ for @countries_list;
+        stats_gauge('p2p.user_online.country.count', $counter{$_}, {tags => ['country:' . $_]}) foreach keys %counter;
+    }
 
     # this seems the fastest way to get the difference (tried a few ways)
     my (%new_online, %new_offline);

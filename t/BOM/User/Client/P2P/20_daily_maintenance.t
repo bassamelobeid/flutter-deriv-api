@@ -171,17 +171,17 @@ subtest 'refresh advertiser completion rates' => sub {
 subtest 'prune old online entries' => sub {
     my $redis = BOM::Config::Redis->redis_p2p_write;
     set_fixed_time(Date::Utility->new('2000-01-01')->epoch);
-    $redis->zadd('P2P::USERS_ONLINE', time, 'CR001');
+    $redis->zadd('P2P::USERS_ONLINE', time, 'CR001::za');
 
     set_fixed_time(Date::Utility->new('2000-06-30')->epoch);
     BOM::User::Script::P2PDailyMaintenance->new->run;
 
-    ok $redis->zscore('P2P::USERS_ONLINE', 'CR001'), 'key still there after 5 months';
+    ok $redis->zscore('P2P::USERS_ONLINE', 'CR001::za'), 'key still there after 5 months';
 
     set_fixed_time(Date::Utility->new('2000-07-01')->epoch);
     BOM::User::Script::P2PDailyMaintenance->new->run;
 
-    ok !$redis->zscore('P2P::USERS_ONLINE', 'CR001'), 'key deleted after 6 months';
+    ok !$redis->zscore('P2P::USERS_ONLINE', 'CR001::za'), 'key deleted after 6 months';
 };
 
 done_testing;

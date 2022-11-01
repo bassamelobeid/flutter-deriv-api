@@ -205,7 +205,7 @@ subtest 'online status' => sub {
     set_fixed_time(1000);
 
     my $client = BOM::Test::Helper::P2P::create_advertiser();
-    $redis->zadd('P2P::USERS_ONLINE', 910, $client->loginid);
+    $redis->zadd('P2P::USERS_ONLINE', 910, ($client->loginid . "::" . $client->residence));
 
     cmp_deeply(
         $client->p2p_advertiser_info,
@@ -217,7 +217,7 @@ subtest 'online status' => sub {
         'online at 90s'
     );
 
-    $redis->zadd('P2P::USERS_ONLINE', 909, $client->loginid);
+    $redis->zadd('P2P::USERS_ONLINE', 909, ($client->loginid . "::" . $client->residence));
 
     cmp_deeply(
         $client->p2p_advertiser_info,

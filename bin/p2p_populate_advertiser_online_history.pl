@@ -42,7 +42,7 @@ for my $broker (@brokers) {
     my $data = $db->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT a.client_loginid, c.binary_user_id 
+                'SELECT a.client_loginid, c.binary_user_id, c.residence
                  FROM p2p.p2p_advertiser AS a 
                  JOIN betonmarkets.client AS c ON c.loginid = a.client_loginid',
                 {Slice => {}});
@@ -50,7 +50,7 @@ for my $broker (@brokers) {
         });
 
     $log->debugf('got %i advertisers for %s', scalar(@$data), $broker);
-    $users{$_->{binary_user_id}} = $_->{client_loginid} for @$data;
+    $users{$_->{binary_user_id}} = ($_->{client_loginid} . "::" . $_->{residence}) for @$data;
 }
 
 my $user_db = BOM::Database::UserDB::rose_db(operation => 'replica')->dbic;
