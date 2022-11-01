@@ -63,7 +63,7 @@ for my $field (qw(id created_time loginid nickname trade_band email residence pa
 if (@$results) {
     my $redis = BOM::Config::Redis->redis_p2p();
     for my $res (@$results) {
-        my $online_ts = $redis->zscore(P2P_USERS_ONLINE_KEY, $res->{loginid});
+        my $online_ts = $redis->zscore(P2P_USERS_ONLINE_KEY, ($res->{loginid} . "::" . $res->{residence}));
         $res->{is_online}   = ($online_ts and $online_ts >= (time - P2P_ONLINE_PERIOD)) ? '&#128994;'                                  : '&#9711;';
         $res->{online_time} = $online_ts                                                ? Date::Utility->new($online_ts)->db_timestamp : '>6 months';
     }
