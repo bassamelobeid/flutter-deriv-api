@@ -247,15 +247,16 @@ subtest 'payment transaction' => sub {
 
     cmp_deeply $doughflow_payment,
         {
-        created_by        => $txn->{staff_loginid},
-        payment_id        => $txn->{payment_id},
-        transaction_id    => undef,
-        ip_address        => undef,
-        payment_type      => 'CreditCard',
-        payment_method    => undef,
-        trace_id          => '0',
-        payment_processor => 'unspecified',
-        transaction_type  => 'deposit',
+        created_by                 => $txn->{staff_loginid},
+        payment_id                 => $txn->{payment_id},
+        transaction_id             => undef,
+        payment_account_identifier => undef,
+        ip_address                 => undef,
+        payment_type               => 'CreditCard',
+        payment_method             => undef,
+        trace_id                   => '0',
+        payment_processor          => 'unspecified',
+        transaction_type           => 'deposit',
         },
         'expected df payment found (payment type=CreditCard)';
 
@@ -273,15 +274,16 @@ subtest 'payment transaction' => sub {
 
     cmp_deeply $doughflow_payment,
         {
-        created_by        => $txn->{staff_loginid},
-        payment_id        => $txn->{payment_id},
-        transaction_id    => undef,
-        ip_address        => undef,
-        payment_type      => undef,
-        payment_method    => undef,
-        trace_id          => '0',
-        payment_processor => 'unspecified',
-        transaction_type  => 'deposit',
+        created_by                 => $txn->{staff_loginid},
+        payment_id                 => $txn->{payment_id},
+        transaction_id             => undef,
+        ip_address                 => undef,
+        payment_type               => undef,
+        payment_method             => undef,
+        trace_id                   => '0',
+        payment_processor          => 'unspecified',
+        transaction_type           => 'deposit',
+        payment_account_identifier => undef,
         },
         'expected df payment found (no payment type)';
 };
