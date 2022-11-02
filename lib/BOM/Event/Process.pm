@@ -109,6 +109,7 @@ my $action_mapping = {
         trigger_cio_broadcast                       => \&BOM::Event::Actions::Common::trigger_cio_broadcast,
         mt5_deriv_auto_rescind                      => \&BOM::Event::Actions::MT5::mt5_deriv_auto_rescind,
         crypto_cashier_transaction_updated          => \&BOM::Event::Actions::CryptoCashier::crypto_cashier_transaction_updated,
+        account_disabled_sideoffice                 => \&BOM::Event::Actions::Client::account_disabled_sideoffice,
         update_loginid_status                       => \&BOM::Event::Actions::MT5::update_loginid_status,
         bulk_affiliate_loginids_sync                => \&BOM::Event::Actions::MyAffiliate::bulk_affiliate_loginids_sync,
         p2p_update_local_currencies                 => \&BOM::Event::Actions::P2P::update_local_currencies,

@@ -3498,4 +3498,31 @@ for my $func_name (
     }
 }
 
+=head2 account_disabled_sideoffice
+
+Handles requests triggered form the sideoffce to set client account status to disabled   
+
+=over 4
+
+=item * C<loginid> - required. Login id of the client.
+
+=item * C<agent_username> - required. Slack username for the CS agent that made the disable request
+
+=back
+
+=cut
+
+sub account_disabled_sideoffice {
+    my ($args) = @_;
+
+    my $client = BOM::User::Client->new({loginid => $args->{loginid}})
+        or die 'Could not instantiate client for login ID ' . $args->{loginid};
+
+    # We don't want to override status reason if the current status is disabled
+    $client->status->setnx('disabled', $args->{agent_username}, 'Sideoffce')
+        unless (@{$client->get_open_contracts} || $client->status->disabled);
+
+    return 1;
+}
+
 1;

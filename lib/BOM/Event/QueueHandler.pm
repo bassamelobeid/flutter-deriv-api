@@ -467,7 +467,7 @@ async sub items_to_reprocess {
                     my $retry_count  = $item->[3] + 1;
                     my $event        = $claimed_item->[0]->[1]->[1];
                     my $decoded_info = decode_json_utf8($event);
-                    stats_inc("$stream.event_retried", {tags => ["event:$event"]});
+                    stats_inc("$stream.event_retried", {tags => ["event:$decoded_info->{type}"]});
 
                     if ($retry_count > NUMBER_OF_RETRIES) {
                         await $self->_ack_message($stream, $id);

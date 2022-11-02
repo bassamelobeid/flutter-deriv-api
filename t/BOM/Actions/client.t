@@ -4680,4 +4680,40 @@ subtest 'request edd document upload' => sub {
     is scalar @track_args, 7, 'Track event is triggered';
 };
 
+subtest 'account disabled event for the sideoffice' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test33@bin.com',
+    });
+
+    ok !$client->status->disabled, 'No disabled status set';
+    delete $client->{status};    #clear status cache
+
+    my $args = {
+        loginid        => $client->loginid,
+        agent_username => 'system',
+    };
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{account_disabled_sideoffice};
+    my $result  = $handler->($args);
+    ok $result,                   'Success result';
+    ok $client->status->disabled, 'Disabled status is set';
+    is $client->status->disabled->{reason}, 'Sideoffce', 'Status reason is correct';
+
+    # Test that we dont override the reason for disabled status
+    $client->status->disabled->{reason} = 'Old reason';
+    $result = $handler->($args);
+    ok $result, 'Success result';
+    is $client->status->disabled->{reason}, 'Old reason', 'Status reason was not changed';
+    $client->status->clear_disabled;
+    delete $client->{status};    #clear status cache
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine('get_open_contracts', sub { return [1]; });
+
+    $result = $handler->($args);
+    ok $result,                    'Success result';
+    ok !$client->status->disabled, 'Disabled status was not set if there is contracts are open';
+};
+
 done_testing();
