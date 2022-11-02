@@ -476,6 +476,20 @@ subtest 'rule idv.check_verification_necessity' => sub {
             idv_disallowed => 0,
             error          => 'AlreadyAgeVerified',
         },
+        {
+            client                      => {statuses => ['allow_document_upload', 'age_verification']},
+            idv_disallowed              => 0,
+            error                       => undef,
+            idv_status                  => 'expired',
+            has_expired_document_chance => 1,
+        },
+        {
+            client                      => {statuses => ['allow_document_upload', 'age_verification']},
+            idv_disallowed              => 0,
+            error                       => 'AlreadyAgeVerified',
+            idv_status                  => 'expired',
+            has_expired_document_chance => 0,
+        },
     ];
 
     for my $case ($testCases->@*) {
@@ -483,7 +497,9 @@ subtest 'rule idv.check_verification_necessity' => sub {
             $mock_client_status->mock($status => 1);
         }
 
-        $mock_identityverification->mock('is_idv_disallowed' => $case->{idv_disallowed});
+        $mock_identityverification->mock('is_idv_disallowed'           => $case->{idv_disallowed});
+        $mock_identityverification->mock('status'                      => $case->{idv_status} // 'none');
+        $mock_identityverification->mock('has_expired_document_chance' => $case->{has_expired_document_chance});
 
         my %args = (loginid => $client_cr->loginid);
 
@@ -560,6 +576,30 @@ subtest 'rule idv.check_service_availibility' => sub {
         {
             input => {
                 issuing_country => 'ir',
+                type            => 'passport',
+            },
+            idv_submission_left         => 0,
+            has_idv                     => 1,
+            idv_config                  => {document_types => {passport => 1}},
+            error                       => undef,
+            idv_status                  => 'expired',
+            has_expired_document_chance => 1,
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+            },
+            idv_submission_left         => 0,
+            has_idv                     => 1,
+            idv_config                  => {document_types => {passport => 1}},
+            error                       => 'NoSubmissionLeft',
+            idv_status                  => 'expired',
+            has_expired_document_chance => 0,
+        },
+        {
+            input => {
+                issuing_country => 'ir',
                 type            => 'birth_cert',
             },
             idv_submission_left => 1,
@@ -582,6 +622,8 @@ subtest 'rule idv.check_service_availibility' => sub {
                 return 0;
             });
         $mock_idv_model->mock('submissions_left' => $case->{idv_submission_left});
+        $mock_idv_model->mock('status'           => $case->{idv_status} // 'none');
+        $mock_idv_model->mock('has_expired_document_chance', $case->{has_expired_document_chance});
 
         my %args = (
             loginid         => $client_cr->loginid,

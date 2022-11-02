@@ -110,7 +110,10 @@ rule 'idv.check_verification_necessity' => {
 
         $self->fail('NoAuthNeeded') unless $client->status->allow_document_upload;
 
-        $self->fail('AlreadyAgeVerified') if $client->status->age_verification;
+        my $idv_model      = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+        my $expired_bypass = $client->get_idv_status eq 'expired' && $idv_model->has_expired_document_chance();
+
+        $self->fail('AlreadyAgeVerified') if $client->status->age_verification && !$expired_bypass;
 
         $self->fail('IdentityVerificationDisallowed') if BOM::User::IdentityVerification::is_idv_disallowed($client);
 
@@ -137,7 +140,10 @@ rule 'idv.check_service_availibility' => {
             country  => $issuing_country,
             provider => $configs->{provider});
 
-        $self->fail('NoSubmissionLeft') if BOM::User::IdentityVerification::submissions_left($client) == 0;
+        my $idv_model      = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+        my $expired_bypass = $client->get_idv_status eq 'expired' && $idv_model->has_expired_document_chance();
+
+        $self->fail('NoSubmissionLeft') if BOM::User::IdentityVerification::submissions_left($client) == 0 && !$expired_bypass;
 
         $self->fail('InvalidDocumentType') unless exists $configs->{document_types}->{$document_type};
 
