@@ -340,6 +340,72 @@ subtest 'idv details' => sub {
     $doc_mock->unmock_all;
 };
 
+subtest 'expired idv document' => sub {
+    my $user = BOM::User->create(
+        email    => 'the-expired-idv@deriv.com',
+        password => 'secret0',
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $user->add_client($client);
+
+    my $token = $m->create_token($client->loginid, 'test token');
+
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+
+    my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+
+    subtest 'automatically 1 attempt when no submissions are left' => sub {
+        $idv_mock->mock(
+            'submissions_left',
+            sub {
+                return 0;
+            });
+
+        $mocked_client->mock(
+            'get_idv_status',
+            sub {
+                return 'expired';
+            });
+
+        $idv_mock->mock(
+            'has_expired_document_chance',
+            sub {
+                return 1;
+            });
+
+        my $result = $c->tcall('get_account_status', {token => $token});
+        is $result->{authentication}->{identity}->{services}->{idv}->{submissions_left}, 1, '1 submissions for expired docs';
+
+        $mocked_client->mock(
+            'get_idv_status',
+            sub {
+                return 'none';
+            });
+
+        $result = $c->tcall('get_account_status', {token => $token});
+        is $result->{authentication}->{identity}->{services}->{idv}->{submissions_left}, 0, 'Back to 0 submissions left';
+
+        $mocked_client->mock(
+            'get_idv_status',
+            sub {
+                return 'expired';
+            });
+
+        $idv_mock->mock(
+            'has_expired_document_chance',
+            sub {
+                return 0;
+            });
+
+        $result = $c->tcall('get_account_status', {token => $token});
+        is $result->{authentication}->{identity}->{services}->{idv}->{submissions_left}, 0, 'Zero submissions left if the chance was claimed';
+    };
+
+    $mocked_client->unmock_all;
+    $idv_mock->unmock_all;
+};
+
 subtest 'Proof of Ownership - Documents Required' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',

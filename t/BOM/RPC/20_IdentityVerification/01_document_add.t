@@ -14,6 +14,7 @@ use BOM::Test::RPC::QueueClient;
 use BOM::Test::Helper::Client;
 use BOM::User;
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
@@ -232,7 +233,63 @@ subtest 'identity_verification_document_add' => sub {
     is $document->{document_number}, $params->{args}->{document_number}, 'document number submitted correctly';
     is $document->{document_type},   $params->{args}->{document_type},   'document type submitted correctly';
     is $document->{issuing_country}, $params->{args}->{issuing_country}, 'document issuing country submitted correctly';
+};
 
+subtest 'ignore submissions left when expired status' => sub {
+    $client_cr->status->set('age_verification', 'test', 'test');
+
+    my $params = {
+        token    => $token_cr,
+        language => 'EN',
+    };
+
+    $params->{args} = {
+        issuing_country => 'br',
+        document_type   => 'cpf',
+        document_number => '000.000.001-00',
+    };
+
+    my $mock_client    = Test::MockModule->new('BOM::User::Client');
+    my $idv_status     = 'none';
+    my $expired_chance = 1;
+    $mock_client->mock(
+        'get_idv_status',
+        sub {
+            return $idv_status;
+        });
+    my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
+    $mock_idv_model->mock('submissions_left' => 0);
+    $mock_idv_model->mock(
+        'has_expired_document_chance',
+        sub {
+            return $expired_chance;
+        });
+
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('AlreadyAgeVerified', 'already age verified');
+
+    $idv_status     = 'expired';
+    $expired_chance = 1;
+
+    ok $idv_model->has_expired_document_chance(), 'Expired chance not used';
+
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error->result;
+
+    my $document = $idv_model->get_standby_document();
+
+    is $document->{document_number}, $params->{args}->{document_number}, 'document number submitted correctly';
+    is $document->{document_type},   $params->{args}->{document_type},   'document type submitted correctly';
+    is $document->{issuing_country}, $params->{args}->{issuing_country}, 'document issuing country submitted correctly';
+
+    $expired_chance = 0;
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('AlreadyAgeVerified', 'No submission left occurred');
+
+    $mock_client->unmock_all;
+    $mock_idv_model->unmock_all;
+
+    is $client_cr->get_idv_status, 'pending', 'Doc changed to pending';
+    ok !$idv_model->has_expired_document_chance, 'Expired chance claimed';
 };
 
 done_testing();

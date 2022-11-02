@@ -1289,8 +1289,13 @@ sub _get_idv_service_detail {
         }
     }
 
+    my $submissions_left = $idv->submissions_left();
+
+    # automatically give 1 attempt if doc is expired and no submissions are left
+    $submissions_left = $idv->has_expired_document_chance() ? 1 : 0 if $submissions_left <= 0 && $client->get_idv_status() eq 'expired';
+
     return {
-        submissions_left    => $idv->submissions_left(),
+        submissions_left    => $submissions_left,
         last_rejected       => $idv_reject_reasons  // [],
         status              => $status              // 'none',
         reported_properties => $reported_properties // {},

@@ -2820,6 +2820,23 @@ subtest 'get account status' => sub {
                 'idv not allowed for regulated landing companies'
             );
 
+            $test_client->status->set('age_verification', 'test', 'test');
+            $mocked_lc->mock(short => 'svg');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete)),
+                'idv not allowed for age verified client'
+            );
+
+            $mocked_client->mock(get_idv_status => 'expired');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(allow_document_upload financial_information_not_complete)),
+                'idv allowed for age verified client and idv status expired'
+            );
+
             $mocked_client->unmock_all();
         };
 
