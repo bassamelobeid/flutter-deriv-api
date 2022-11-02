@@ -81,7 +81,11 @@ async sub verify_identity {
 
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
-    die sprintf("No submissions left, IDV request has ignored for loginid: %s", $client->loginid) unless $idv_model->submissions_left($client);
+    # head scratching huh? however the claim was made at RPC level, if the event gets here
+    # and submissions left = 0 the only way could've been by expired chance used.
+    my $has_expired_chance = $idv_model->has_expired_document_chance();
+    die sprintf("No submissions left, IDV request has ignored for loginid: %s", $client->loginid)
+        if $idv_model->submissions_left($client) <= 0 && $has_expired_chance;
 
     die $log->errorf('Could not trigger IDV, microservice is not enabled.') unless BOM::Config::Services->is_enabled('identity_verification');
 

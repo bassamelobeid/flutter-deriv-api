@@ -5,6 +5,7 @@ no indirect;
 use Test::Fatal;
 use Test::MockModule;
 use Test::More;
+use Test::MockModule;
 
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -35,14 +36,25 @@ $mock_config_service->mock(
         if ($_[1] eq 'identity_verification') {
             return $idv_service_enabled;
         }
-
         return $mock_config_service->original('is_enabled')->(@_);
     });
+
+my $args = {
+    loginid => $client->loginid,
+};
 
 my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
 my $mock_idv_event = Test::MockModule->new('BOM::Event::Actions::Client::IdentityVerification');
 
-my $args;
+my $client_mock                 = Test::MockModule->new('BOM::User::Client');
+my $idv_mock                    = Test::MockModule->new('BOM::User::IdentityVerification');
+my $has_expired_document_chance = 1;
+$idv_mock->mock(
+    'has_expired_document_chance',
+    sub {
+        return $has_expired_document_chance;
+    });
+
 subtest 'nonentity client' => sub {
     $args = {loginid => 'CR0'};
     like exception { $idv_event_handler->($args)->get }, qr/Could not initiate client/i, 'Exception thrown for unknown client';
@@ -52,15 +64,27 @@ subtest 'no submission left' => sub {
     $args = {loginid => $client->loginid};
     $mock_idv_model->mock(submissions_left => 0);
     like exception { $idv_event_handler->($args)->get }, qr/No submissions left/i, 'Exception thrown when no submission left';
-
-    $mock_idv_model->unmock_all;
 };
 
 subtest 'no standby document' => sub {
     $args = {loginid => $client->loginid};
+    $mock_idv_model->mock(submissions_left     => 3);
     $mock_idv_model->mock(get_standby_document => undef);
     like exception { $idv_event_handler->($args)->get }, qr/No standby document found/i, 'Exception thrown when no standby document found';
 
+    $mock_idv_model->mock(submissions_left => 0);
+    $has_expired_document_chance = 1;
+
+    like exception { $idv_event_handler->($args)->get }, qr/No submissions left, IDV request has ignored for loginid:/i,
+        'Exception thrown for user without submissions left';
+
+    $has_expired_document_chance = 0;
+
+    like exception { $idv_event_handler->($args)->get }, qr/No standby document found/i, 'Exception thrown for user without standby document for IDV';
+
+    _set_submissions_left($user->id, 2);
+
+    like exception { $idv_event_handler->($args)->get }, qr/No standby document found/i, 'Exception thrown for user without standby document for IDV';
     $mock_idv_model->unmock_all;
 };
 
@@ -87,6 +111,17 @@ subtest 'microservice is disabled' => sub {
 
     $mock_config_service->unmock_all;
 };
+
+$idv_mock->unmock_all;
+$client_mock->unmock_all;
+
+sub _set_submissions_left {
+    my $user_id = shift;
+    my $left    = shift;
+    my $redis   = BOM::Config::Redis::redis_events();
+
+    $redis->set(BOM::User::IdentityVerification::IDV_REQUEST_PER_USER_PREFIX . $user_id, 2 - $left);
+}
 
 done_testing();
 
