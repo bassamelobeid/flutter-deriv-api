@@ -16,11 +16,14 @@ use JSON::MaybeUTF8 qw(:v2);
 use Syntax::Keyword::Try;
 use Log::Any qw($log);
 
+use BOM::Platform::Context qw(request);
 use BOM::Config::Redis;
 use BOM::Database::UserDB;
 use Moo;
 
-use constant IDV_REQUEST_PER_USER_PREFIX => 'IDV::REQUEST::PER::USER::';
+use constant IDV_REQUEST_PER_USER_PREFIX    => 'IDV::REQUEST::PER::USER::';
+use constant IDV_EXPIRED_CHANCE_USED_PREFIX => 'IDV::EXPIRED::CHANCE::USED::';
+use constant ONE_WEEK                       => 604_800;
 
 =head2 user_id
 
@@ -306,7 +309,50 @@ sub submissions_left {
     my $redis            = BOM::Config::Redis::redis_events();
     my $request_per_user = $redis->get(IDV_REQUEST_PER_USER_PREFIX . $self->user_id) // 0;
     my $submissions_left = limit_per_user() - $request_per_user;
+
     return $submissions_left;
+}
+
+=head2 has_expired_document_chance
+
+Determines whether the expired doc chance has been used for this week.
+
+=cut
+
+sub has_expired_document_chance {
+    my $self  = shift;
+    my $redis = BOM::Config::Redis::redis_events_write();
+
+    return !$redis->get(IDV_EXPIRED_CHANCE_USED_PREFIX . $self->user_id);
+}
+
+=head2 claim_expired_document_chance
+
+Claims the expired document chance by writing the redis lock for one week.
+
+=cut
+
+sub claim_expired_document_chance {
+    my $self  = shift;
+    my $redis = BOM::Config::Redis::redis_events_write();
+
+    return $redis->set(IDV_EXPIRED_CHANCE_USED_PREFIX . $self->user_id, 1, 'EX', ONE_WEEK);
+}
+
+=head2 expired_document_chance_ttl
+
+Gets the TTL for the expired document chance reset.
+
+=cut
+
+sub expired_document_chance_ttl {
+    my $self  = shift;
+    my $redis = BOM::Config::Redis::redis_events();
+
+    # will return -2 when the keys does not exists
+    # will return -1 when the keys exists but no expiration was defined
+    # otherwise will return the ttl in seconds.
+    return $redis->ttl(IDV_EXPIRED_CHANCE_USED_PREFIX . $self->user_id);
 }
 
 =head2 incr_submissions
@@ -321,8 +367,28 @@ Returns,
 sub incr_submissions {
     my $self  = shift;
     my $redis = BOM::Config::Redis::redis_events();
+    my $left  = $self->submissions_left();
+
+    # do not go beyond the limit
+    return unless $left > 0;
 
     $redis->incr(IDV_REQUEST_PER_USER_PREFIX . $self->user_id);
+}
+
+=head2 reset_attempts
+
+Get the attempts of the client back.
+
+=cut
+
+sub reset_attempts {
+    my $self  = shift;
+    my $redis = BOM::Config::Redis::redis_events();
+
+    # Reset the expired docs chance
+    $redis->del(IDV_EXPIRED_CHANCE_USED_PREFIX . $self->user_id);
+
+    return $redis->del(IDV_REQUEST_PER_USER_PREFIX . $self->user_id);
 }
 
 =head2 decr_submissions
@@ -511,7 +577,7 @@ sub is_idv_disallowed {
 
     return 1 if ($client->aml_risk_classification // '') eq 'high';
 
-    return 1 if $client->status->age_verification;
+    return 1 if $client->status->age_verification && $client->get_idv_status() ne 'expired';
     return 1 if $client->status->allow_poi_resubmission;
 
     if ($client->status->allow_document_upload) {

@@ -7,6 +7,7 @@ use Log::Any::Test;
 use Log::Any qw($log);
 use Test::Deep;
 use Test::Exception;
+use Test::MockObject;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
@@ -447,17 +448,42 @@ subtest 'Limit per user' => sub {
 subtest 'Incr submissions' => sub {
     $idv_model_ccr->incr_submissions;
     is $idv_model_ccr->submissions_left, 2, 'Expected submissions left';
+
+    $idv_model_ccr->incr_submissions;
+    is $idv_model_ccr->submissions_left, 1, 'Expected submissions left';
+
+    $idv_model_ccr->incr_submissions;
+    is $idv_model_ccr->submissions_left, 0, 'Expected submissions left';
+
+    $idv_model_ccr->incr_submissions;
+    is $idv_model_ccr->submissions_left, 0, 'Expected submissions left (does not cross the limit)';
+
+    subtest 'reset attempts' => sub {
+        $idv_model_ccr->reset_attempts();
+        is $idv_model_ccr->submissions_left, 3, 'The attempts of the client have come back';
+    };
 };
 
 subtest 'Decr submissions' => sub {
     $idv_model_ccr->decr_submissions;
-    is $idv_model_ccr->submissions_left, 3, 'Expected submissions left';
+    is $idv_model_ccr->submissions_left, 4, 'Expected submissions left';
 };
 
 subtest 'Reset submissions to zero' => sub {
-    is $idv_model_ccr->submissions_left, 3, 'Expected submissions left is correct';
+    is $idv_model_ccr->submissions_left, 4, 'Expected submissions left is correct';
     BOM::User::IdentityVerification::reset_to_zero_left_submissions($user_cr->id);
     is $idv_model_ccr->submissions_left, 0, 'Expected submissions left is reset';
+};
+
+subtest 'Expired docs chance' => sub {
+    ok $idv_model_ccr->has_expired_document_chance(), 'Has the chance';
+    ok $idv_model_ccr->has_expired_document_chance(), 'Has the chance';
+    is $idv_model_ccr->expired_document_chance_ttl(), -2, 'key does not exist';
+    ok $idv_model_ccr->claim_expired_document_chance(),   'chance claimed';
+    ok !$idv_model_ccr->has_expired_document_chance(),    'Expired chance not available yet';
+    ok $idv_model_ccr->expired_document_chance_ttl() > 0, 'ttl set';
+    $idv_model_ccr->reset_attempts();
+    ok $idv_model_ccr->has_expired_document_chance(), 'Expired chance is available again';
 };
 
 subtest 'is idv disallowed' => sub {
@@ -558,6 +584,193 @@ subtest 'is idv disallowed' => sub {
 
     $mocked_lc->unmock_all;
     $mocked_cli->unmock_all;
+};
+
+subtest 'is_idv_disallowed (moved from rpc utility)' => sub {
+    my $mock_data = {};
+
+    my $status_mock = Test::MockObject->new();
+    my $lc_mock     = Test::MockObject->new();
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $client      = BOM::User::Client->rnew();
+
+    $client_mock->mock(
+        'landing_company',
+        sub {
+            return $lc_mock;
+        });
+
+    $client_mock->mock(
+        'residence',
+        sub {
+            return $mock_data->{residence};
+        });
+
+    $client_mock->mock(
+        'get_manual_poi_status',
+        sub {
+            return $mock_data->{get_manual_poi_status};
+        });
+
+    $client_mock->mock(
+        'get_onfido_status',
+        sub {
+            return $mock_data->{get_onfido_status};
+        });
+
+    $client_mock->mock(
+        'status',
+        sub {
+            return $status_mock;
+        });
+
+    $client_mock->mock(
+        'aml_risk_classification',
+        sub {
+            return $mock_data->{aml_risk_classification};
+        });
+
+    $client_mock->mock(
+        'get_idv_status',
+        sub {
+            return $mock_data->{get_idv_status};
+        });
+
+    $status_mock->mock(
+        'allow_poi_resubmission',
+        sub {
+            return $mock_data->{allow_poi_resubmission};
+        });
+
+    $status_mock->mock(
+        'allow_document_upload',
+        sub {
+            return $mock_data->{allow_document_upload};
+        });
+
+    $status_mock->mock(
+        'unwelcome',
+        sub {
+            return $mock_data->{unwelcome};
+        });
+
+    $status_mock->mock(
+        'age_verification',
+        sub {
+            return $mock_data->{age_verification};
+        });
+
+    $lc_mock->mock(
+        'short',
+        sub {
+            return $mock_data->{short};
+        });
+
+    $mock_data->{unwelcome} = 1;
+    $mock_data->{short}     = 'svg';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for unwelcome client';
+
+    $mock_data->{unwelcome} = 0;
+    $mock_data->{short}     = 'malta';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for non svg LC';
+
+    $mock_data->{unwelcome}               = 0;
+    $mock_data->{short}                   = 'svg';
+    $mock_data->{aml_risk_classification} = 'high';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for high AML risk';
+
+    $mock_data->{unwelcome}               = 0;
+    $mock_data->{short}                   = 'svg';
+    $mock_data->{aml_risk_classification} = 'low';
+    $mock_data->{get_idv_status}          = 'none';
+    $mock_data->{age_verification}        = 1;
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for non expired age verified';
+
+    $mock_data->{unwelcome}               = 0;
+    $mock_data->{short}                   = 'svg';
+    $mock_data->{aml_risk_classification} = 'low';
+    $mock_data->{get_idv_status}          = 'none';
+    $mock_data->{age_verification}        = 0;
+    $mock_data->{allow_poi_resubmission}  = 1;
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for allow poi resubmission status';
+
+    $mock_data->{unwelcome}               = 0;
+    $mock_data->{short}                   = 'svg';
+    $mock_data->{aml_risk_classification} = 'low';
+    $mock_data->{get_idv_status}          = 'none';
+    $mock_data->{age_verification}        = 0;
+    $mock_data->{allow_poi_resubmission}  = 0;
+    $mock_data->{allow_document_upload}   = {reason => 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT'};
+    $mock_data->{get_manual_poi_status}   = 'rejected';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for manual POI rejected status';
+
+    $mock_data->{unwelcome}               = 0;
+    $mock_data->{short}                   = 'svg';
+    $mock_data->{aml_risk_classification} = 'low';
+    $mock_data->{get_idv_status}          = 'none';
+    $mock_data->{age_verification}        = 0;
+    $mock_data->{allow_poi_resubmission}  = 0;
+    $mock_data->{allow_document_upload}   = {reason => 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT'};
+    $mock_data->{get_manual_poi_status}   = 'expired';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for manual POI expired status';
+
+    $mock_data->{unwelcome}               = 0;
+    $mock_data->{short}                   = 'svg';
+    $mock_data->{aml_risk_classification} = 'low';
+    $mock_data->{get_idv_status}          = 'none';
+    $mock_data->{age_verification}        = 0;
+    $mock_data->{allow_poi_resubmission}  = 0;
+    $mock_data->{allow_document_upload}   = {reason => 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT'};
+    $mock_data->{get_manual_poi_status}   = 'none';
+    $mock_data->{get_onfido_status}       = 'expired';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for onfido expired status';
+
+    $mock_data->{unwelcome}               = 0;
+    $mock_data->{short}                   = 'svg';
+    $mock_data->{aml_risk_classification} = 'low';
+    $mock_data->{get_idv_status}          = 'none';
+    $mock_data->{age_verification}        = 0;
+    $mock_data->{allow_poi_resubmission}  = 0;
+    $mock_data->{allow_document_upload}   = {reason => 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT'};
+    $mock_data->{get_manual_poi_status}   = 'none';
+    $mock_data->{get_onfido_status}       = 'rejected';
+
+    ok BOM::User::IdentityVerification::is_idv_disallowed($client), 'Disallowed for onfido rejected status';
+
+    $mock_data->{unwelcome}               = 0;
+    $mock_data->{short}                   = 'svg';
+    $mock_data->{aml_risk_classification} = 'low';
+    $mock_data->{get_idv_status}          = 'none';
+    $mock_data->{age_verification}        = 0;
+    $mock_data->{allow_poi_resubmission}  = 0;
+    $mock_data->{allow_document_upload}   = {reason => 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT'};
+    $mock_data->{get_manual_poi_status}   = 'none';
+    $mock_data->{get_onfido_status}       = 'none';
+    $mock_data->{residence}               = 'br';
+
+    ok !BOM::User::IdentityVerification::is_idv_disallowed($client), 'IDV allowed when all conditions are met';
+
+    for my $reason (
+        qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/)
+    {
+        $mock_data->{allow_document_upload} = {reason => $reason};
+
+        ok !BOM::User::IdentityVerification::is_idv_disallowed($client), 'IDV allowed for doc upload reason: ' . $reason;
+    }
+
+    $mock_data->{age_verification} = 1;
+    $mock_data->{get_idv_status}   = 'expired';
+    ok !BOM::User::IdentityVerification::is_idv_disallowed($client), 'IDV allowed for age verified status when idv status is expired';
+
+    $client_mock->unmock_all;
 };
 
 done_testing();
