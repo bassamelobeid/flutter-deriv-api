@@ -192,8 +192,15 @@ if (defined $input{run_onfido_check}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
 
+my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
+if (defined $input{idv_reset}) {
+    $idv_model->reset_attempts();
+    print "<p class=\"notify\">The IDV attempts have been succesfully reset.</p>";
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
+}
+
 if (defined $input{run_idv_check}) {
-    my $idv_model        = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
     my $standby_document = $idv_model->get_standby_document();
 
     unless ($standby_document) {

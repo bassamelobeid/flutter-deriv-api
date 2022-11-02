@@ -616,6 +616,9 @@ SQL
         client_loginid => $client->loginid,
     });
 
+    my $idv_submissions_left = $idv_model->submissions_left();
+
+    $idv_submissions_left = $idv_model->has_expired_document_chance() ? 1 : 0 if $idv_submissions_left <= 0 && $client->get_idv_status() eq 'expired';
     my $doughflow_methods = $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM payment.doughflow_deposit_methods_without_poo(?)', undef, $client->binary_user_id);
@@ -687,7 +690,6 @@ SQL
         onfido_submissions_reset                     => BOM::User::Onfido::submissions_reset_at($client),
         onfido_reported_properties                   => BOM::User::Onfido::reported_properties($client),
         poi_name_mismatch                            => $client->status->poi_name_mismatch,
-        idv_submissions_left                         => $idv_model->submissions_left(),
         idv_records                                  => $idv_records,
         expired_poi_docs                             => $client->documents->expired(1),
         login_locked_until                           => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
@@ -702,6 +704,7 @@ SQL
         disallow_residence_change                    => @countries_disallow_residence_change,
         onfido_pending_request                       => BOM::User::Onfido::pending_request($client->binary_user_id),
         onfido_supported_country => BOM::Config::Onfido::is_country_supported(uc($client->place_of_birth || $client->residence // '')),
+        idv_submissions_left     => $idv_submissions_left,
         doughflow_methods        => $doughflow_methods,
         poo_access               => $poo_access,
     };
