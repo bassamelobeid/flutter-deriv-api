@@ -66,8 +66,6 @@ rpc identity_verification_document_add => sub {
 
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
-    use Data::Dumper;
-    print Dumper($idv_model->has_expired_document_chance(), $idv_model->submissions_left());
     $idv_model->claim_expired_document_chance() if $idv_model->has_expired_document_chance() && $idv_model->submissions_left() == 0;
 
     $idv_model->add_document({
