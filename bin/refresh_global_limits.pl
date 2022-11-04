@@ -22,13 +22,17 @@ my @limits = ({
         limit_amount      => 40000,
     },
     {
-        market       => ['basket_index'],
-        limit_amount => 100000,
+        submarket    => ['forex_basket'],
+        limit_amount => 80000,
     },
     {
-        market            => ['basket_index'],
+        submarket         => ['forex_basket'],
         underlying_symbol => ['default'],
-        limit_amount      => 40000,
+        limit_amount      => 20000,
+    },
+    {
+        submarket    => ['commodity_basket'],
+        limit_amount => 20000,
     },
     {
         market       => ['synthetic_index'],
@@ -71,7 +75,7 @@ foreach my $landing_company (keys %{$qc->broker_code_mapper}) {
             $config{limit_type}      = $limit_type;
             my $current_amount = $qc->get_global_limit({
                 limit_type => $config{limit_type},
-                (map { $_ => $config{$_}->[0] } qw(market underlying_symbol landing_company)),
+                (map { $_ => $config{$_}->[0] } grep { $config{$_} } qw(market underlying_symbol landing_company submarket)),
             });
             my $default_amount = $config{limit_amount} * $multiplier{$limit_type};
             next if defined $current_amount and $current_amount < $default_amount;

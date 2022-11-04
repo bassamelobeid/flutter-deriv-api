@@ -32,81 +32,83 @@ sub script_run {
         my ($todo, $risk_profile, $to_remove, $between);
         my $now          = Date::Utility->new;
         my $cut_off_hour = $now->is_dst_in_zone('Europe/London') ? '06' : '07';
+        foreach my $type (({market => 'forex'}, {submarket => 'forex_basket,commodity_basket'})) {
 
-        # Since we are setting start and end time, we just need to do this once a day at 00
-        if ($duration eq 'intraday') {
-            if ($now->hour == 00) {
-                $todo         = 'set extreme_risk_fx_' . $duration . '_trade_asian_hour';
-                $risk_profile = 'extreme_risk';
-                my $uniq_key = substr(md5_hex('new' . $todo), 0, 16);
+            my ($value) = values $type->%*;
+            # Since we are setting start and end time, we just need to do this once a day at 00
+            if ($duration eq 'intraday') {
+                if ($now->hour == 00) {
+                    $todo         = "set extreme_risk_${value}_${duration}_trade_asian_hour";
+                    $risk_profile = 'extreme_risk';
+                    my $uniq_key = substr(md5_hex('new' . $todo), 0, 16);
 
-                my $start_time = $now->truncate_to_day;
-                my $end_time   = $start_time->plus_time_interval('7h');
+                    my $start_time = $now->truncate_to_day;
+                    my $end_time   = $start_time->plus_time_interval('7h');
 
-                my %new_limit = (
-                    risk_profile => $risk_profile,
-                    market       => 'forex,basket_index',
-                    expiry_type  => $duration,
-                    name         => $todo,
-                    updated_by   => 'cron job',
-                    start_time   => $start_time->datetime_yyyymmdd_hhmmss,
-                    end_time     => $end_time->datetime_yyyymmdd_hhmmss,
-                    updated_on   => Date::Utility->new->datetime,
-                );
+                    my %new_limit = (
+                        risk_profile => $risk_profile,
+                        expiry_type  => $duration,
+                        name         => $todo,
+                        updated_by   => 'cron job',
+                        start_time   => $start_time->datetime_yyyymmdd_hhmmss,
+                        end_time     => $end_time->datetime_yyyymmdd_hhmmss,
+                        updated_on   => Date::Utility->new->datetime,
+                        $type->%*,
+                    );
 
-                #removing old limit for intraday set previous day at 00 hour
-                my @removing_keys =
-                    grep { $current_product_profiles->{$_}->{updated_by} eq 'cron job' and $current_product_profiles->{$_}->{name} eq $todo }
-                    keys %$current_product_profiles;
-                delete @{$current_product_profiles}{@removing_keys};
+                    #removing old limit for intraday set previous day at 00 hour
+                    my @removing_keys =
+                        grep { $current_product_profiles->{$_}->{updated_by} eq 'cron job' and $current_product_profiles->{$_}->{name} eq $todo }
+                        keys %$current_product_profiles;
+                    delete @{$current_product_profiles}{@removing_keys};
 
-                $current_product_profiles->{$uniq_key} = \%new_limit;
-                $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+                    $current_product_profiles->{$uniq_key} = \%new_limit;
+                    $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
 
-                $between = $start_time->hour . ' to ' . $end_time->hour . ' GMT';
-                send_notification_email(\%new_limit, $todo . ' for forex and basket indices intraday between ' . $between);
+                    $between = $start_time->hour . ' to ' . $end_time->hour . ' GMT';
+                    send_notification_email(\%new_limit, $todo . ' between ' . $between);
+                }
+                next;
             }
-            next;
+
+            if ($now->hour == 00) {
+                $todo         = "set extreme_risk_${value}_${duration}_trade";
+                $to_remove    = "set high_risk_${value}_${duration}_trade";
+                $risk_profile = 'extreme_risk';
+                $between      = "00 to " . $cut_off_hour . 'GMT';
+
+            } elsif ($now->hour == $cut_off_hour) {
+                $todo         = "set high_risk_${value}_${duration}_trade";
+                $to_remove    = "set extreme_risk_${value}_${duration}_trade";
+                $risk_profile = 'high_risk';
+                $between      = $cut_off_hour . ' to 00GMT';
+            } else {
+                next;
+            }
+            my $uniq_key = substr(md5_hex('new' . $todo), 0, 16);
+
+            #removing old limit (tick trade/ ultra short duration)
+            my @removing_keys =
+                grep { $current_product_profiles->{$_}->{updated_by} eq 'cron job' and $current_product_profiles->{$_}->{name} eq $to_remove }
+                keys %$current_product_profiles;
+            delete @{$current_product_profiles}{@removing_keys};
+
+            $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+
+            #imposing new limit on forex and basket indices (tick trade/ ultra short duration)
+            my %new_limit = (
+                risk_profile => $risk_profile,
+                expiry_type  => $duration,
+                name         => $todo,
+                updated_by   => 'cron job',
+                updated_on   => Date::Utility->new->datetime,
+                $type->%*,
+            );
+
+            $current_product_profiles->{$uniq_key} = \%new_limit;
+            $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+            send_notification_email(\%new_limit, $todo . ' between ' . $between);
         }
-
-        if ($now->hour == 00) {
-            $todo         = 'set extreme_risk_fx_' . $duration . '_trade';
-            $to_remove    = 'set high_risk_fx_' . $duration . '_trade';
-            $risk_profile = 'extreme_risk';
-            $between      = "00 to " . $cut_off_hour . 'GMT';
-
-        } elsif ($now->hour == $cut_off_hour) {
-            $todo         = 'set high_risk_fx_' . $duration . '_trade';
-            $to_remove    = 'set extreme_risk_fx_' . $duration . '_trade';
-            $risk_profile = 'high_risk';
-            $between      = $cut_off_hour . ' to 00GMT';
-        } else {
-            next;
-
-        }
-        my $uniq_key = substr(md5_hex('new' . $todo), 0, 16);
-
-        #removing old limit (tick trade/ ultra short duration)
-        my @removing_keys =
-            grep { $current_product_profiles->{$_}->{updated_by} eq 'cron job' and $current_product_profiles->{$_}->{name} eq $to_remove }
-            keys %$current_product_profiles;
-        delete @{$current_product_profiles}{@removing_keys};
-
-        $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
-
-        #imposing new limit on forex and basket indices (tick trade/ ultra short duration)
-        my %new_limit = (
-            risk_profile => $risk_profile,
-            market       => 'forex,basket_index',
-            expiry_type  => $duration,
-            name         => $todo,
-            updated_by   => 'cron job',
-            updated_on   => Date::Utility->new->datetime,
-        );
-
-        $current_product_profiles->{$uniq_key} = \%new_limit;
-        $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
-        send_notification_email(\%new_limit, $todo . ' for forex and basket indices tick trade between ' . $between);
 
     }
 

@@ -168,7 +168,7 @@ sub _debug_content {
         };
 
     # rates
-    if (grep { $bet->underlying->market->name eq $_ } ('forex', 'commodities', 'indices', 'basket_index')) {
+    if (grep { $bet->underlying->market->name eq $_ } ('forex', 'commodities', 'indices')) {
         push @{$tabs_content},
             {
             label   => 'Rates',
@@ -208,7 +208,7 @@ sub _get_rates {
     my $spot          = $underlying->spot;
 
     my $headers;
-    if (grep { $underlying->market->name eq $_ } ('forex', 'commodities', 'basket_index')) {
+    if (grep { $underlying->market->name eq $_ } ('forex', 'commodities')) {
         $headers = [
             ['',       '',     $underlying->asset_symbol, $underlying->quoted_currency_symbol, $underlying->symbol],
             ['Expiry', 'Date', 'Deposit',                 'Deposit',                           'Forward']];

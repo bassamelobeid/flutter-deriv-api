@@ -23,6 +23,7 @@ use Scalar::Util    qw(looks_like_number);
 use BOM::Config::Runtime;
 use BOM::Backoffice::QuantsAuditLog;
 use Time::Duration::Concise;
+use Finance::Underlying::Market::Registry;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -78,10 +79,11 @@ my $contract_groups          = [uniq map { $_->[1] } @$output_ref];
 my $contract_group_data      = _format_output($output_ref);
 my @existing_contract_groups = map { {key => $_, list => $contract_group_data->{$_}} } keys %$contract_group_data;
 
-my $market_ref             = BOM::Backoffice::QuantsConfigHelper::get_config_input('market');
-my $markets                = [uniq map { $_->[1] } @$market_ref];
-my $market_group_data      = _format_output($market_ref);
-my @existing_market_groups = map { {key => $_, list => $market_group_data->{$_}} } keys %$market_group_data;
+my $market_ref        = BOM::Backoffice::QuantsConfigHelper::get_config_input('market');
+my $markets           = [uniq map { $_->[1] } @$market_ref];
+my $market_group_data = _format_output($market_ref);
+my @existing_market_groups =
+    map { {key => Finance::Underlying::Market::Registry->get($_)->display_name, list => $market_group_data->{$_}} } keys %$market_group_data;
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/quants_config_form.html.tt',
@@ -92,7 +94,13 @@ BOM::Backoffice::Request::template()->process(
         existing_contract_groups      => \@existing_contract_groups,
         existing_market_groups        => \@existing_market_groups,
         data                          => {
-            markets           => $json->encode([@$markets, 'new_market']),
+            markets => $json->encode([
+                    (map { {value => $_, display_value => Finance::Underlying::Market::Registry->get($_)->display_name} } @$markets),
+                    {
+                        value         => 'new_market',
+                        display_value => 'New Market'
+                    }]
+            ),
             expiry_types      => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('expiry_type')),
             contract_groups   => $json->encode([uniq(@$contract_groups)]),
             barrier_types     => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('barrier_type')),

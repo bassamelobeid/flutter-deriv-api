@@ -327,10 +327,18 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
 
         for (var i=0; i<data.length; i++) {
             var input = data[i];
-            if (input == 'new_market') {
+            var value = input;
+            var display_value = input;
+
+            if (typeof input === 'object') {
+                value = input.value;
+                display_value = input.display_value;
+            }
+
+            if (value == 'new_market') {
                 table += '<tr><td><input type="text" name="new_market" data-lpignore="true" /></td></tr>';
             } else {
-                table += '<tr><td><input type="checkbox" name="'+id+'" value="'+input+'">'+input+'</input></td></tr>';
+                table += '<tr><td><input type="checkbox" name="'+id+'" value="'+value+'">'+display_value+'</input></td></tr>';
             }
         }
 

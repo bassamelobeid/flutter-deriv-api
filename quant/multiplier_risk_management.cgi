@@ -129,9 +129,8 @@ sub _get_existing_multiplier_config {
     my $all_config       = $qc->get_multiplier_config_default();
     my %display_priority = (
         synthetic_index => 0,
-        basket_index    => 1,
-        forex           => 2,
-        cryptocurrency  => 3,
+        forex           => 1,
+        cryptocurrency  => 2,
     );
 
     my %existing;
@@ -191,7 +190,9 @@ sub _get_existing_market_and_symbol_volume_limits {
     my @symbol_limits;
 
     for my $market (sort keys %{$markets}) {
-        push @market_limits, {%{$markets->{$market}}, market => $market};
+        my $market_obj = Finance::Underlying::Market::Registry->instance->get($market);
+        next unless $market_obj;
+        push @market_limits, {%{$markets->{$market}}, market => $market_obj->display_name};
     }
     for my $symbol (sort keys %{$symbols}) {
         push @symbol_limits, {%{$symbols->{$symbol}}, symbol => $symbol};
@@ -201,11 +202,13 @@ sub _get_existing_market_and_symbol_volume_limits {
 
     my @market_limits_default;
     foreach my $market ($offerings->query({contract_category => 'multiplier'}, ['market'])) {
+        my $market_obj = Finance::Underlying::Market::Registry->instance->get($market);
+        next unless $market_obj;
         push @market_limits_default,
             {
-            market               => $market,
+            market               => $market_obj->display_name,
             max_volume_positions => 5,
-            risk_profile         => Finance::Underlying::Market::Registry->instance->get($market)->{risk_profile}};
+            risk_profile         => $market_obj->{risk_profile}};
     }
 
     return {
