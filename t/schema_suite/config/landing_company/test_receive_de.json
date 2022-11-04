@@ -81,8 +81,7 @@
             "has_reality_check": 0,
             "legal_allowed_markets": [
                "forex",
-               "cryptocurrency",
-               "basket_index"
+               "cryptocurrency"
             ],
             "address": [
                "W Business Centre",
@@ -122,20 +121,6 @@
                   }
                },
                "forex": {
-                  "USD": {
-                     "min_stake": 5,
-                     "max_payout": 50000
-                  },
-                  "GBP": {
-                     "min_stake": 5,
-                     "max_payout": 50000
-                  },
-                  "EUR": {
-                     "min_stake": 5,
-                     "max_payout": 50000
-                  }
-               },
-               "basket_index": {
                   "USD": {
                      "min_stake": 5,
                      "max_payout": 50000
@@ -227,7 +212,7 @@
                "minItems": 1,
                "items": {
                   "type": "string",
-                  "pattern": "^(forex|synthetic_index|cryptocurrency|basket_index)$"
+                  "pattern": "^(forex|synthetic_index|cryptocurrency)$"
                },
                "type": "array"
             },
@@ -242,32 +227,6 @@
             "currency_config": {
                "properties": {
                   "forex": {
-                     "additionalProperties": false,
-                     "type": "object",
-                     "patternProperties": {
-                        "^[a-zA-Z0-9]{2,20}$": {
-                           "type": "object",
-                           "additionalProperties": false,
-                           "properties": {
-                              "min_stake": {
-                                 "maximum": 10,
-                                 "type": "number",
-                                 "minimum": 0
-                              },
-                              "max_payout": {
-                                 "type": "number",
-                                 "minimum": 0
-                              }
-                           },
-                           "required": [
-                              "max_payout",
-                              "min_stake"
-                           ]
-                        }
-                     },
-                     "properties": {}
-                  },
-                  "basket_index": {
                      "additionalProperties": false,
                      "type": "object",
                      "patternProperties": {
@@ -466,7 +425,7 @@
                "minItems": 1,
                "items": {
                   "type": "string",
-                  "pattern": "^(forex|synthetic_index|cryptocurrency|basket_index)$"
+                  "pattern": "^(forex|synthetic_index|cryptocurrency)$"
                },
                "type": "array"
             },
@@ -481,32 +440,6 @@
             "currency_config": {
                "properties": {
                   "forex": {
-                     "additionalProperties": false,
-                     "type": "object",
-                     "patternProperties": {
-                        "^[a-zA-Z0-9]{2,20}$": {
-                           "type": "object",
-                           "additionalProperties": false,
-                           "properties": {
-                              "min_stake": {
-                                 "maximum": 10,
-                                 "type": "number",
-                                 "minimum": 0
-                              },
-                              "max_payout": {
-                                 "type": "number",
-                                 "minimum": 0
-                              }
-                           },
-                           "required": [
-                              "max_payout",
-                              "min_stake"
-                           ]
-                        }
-                     },
-                     "properties": {}
-                  },
-                  "basket_index": {
                      "additionalProperties": false,
                      "type": "object",
                      "patternProperties": {

@@ -58,36 +58,10 @@
             "commodities",
             "synthetic_index",
             "indices",
-            "cryptocurrency",
-            "basket_index"
+            "cryptocurrency"
          ],
          "properties" : {
             "forex" : {
-               "additionalProperties" : false,
-               "type" : "object",
-               "patternProperties" : {
-                  "^[a-zA-Z0-9]{2,20}$" : {
-                     "properties" : {
-                        "min_stake" : {
-                           "type" : "number",
-                           "minimum" : 0,
-                           "maximum" : 10
-                        },
-                        "max_payout" : {
-                           "type" : "number",
-                           "minimum" : 0
-                        }
-                     },
-                     "required" : [
-                        "max_payout",
-                        "min_stake"
-                     ],
-                     "additionalProperties" : false,
-                     "type" : "object"
-                  }
-               }
-            },
-            "basket_index" : {
                "additionalProperties" : false,
                "type" : "object",
                "patternProperties" : {
@@ -231,7 +205,7 @@
       "legal_allowed_markets" : {
          "type" : "array",
          "items" : {
-            "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency|basket_index)$",
+            "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
             "type" : "string"
          },
          "minItems" : 4

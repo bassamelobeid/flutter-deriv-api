@@ -60,7 +60,7 @@ subtest "active_symbols - response keys" => sub {
         }};
     my $result        = $c->call_ok('active_symbols', $params)->has_no_system_error->result;
     my $expected_keys = [
-        qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age)
+        qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age subgroup subgroup_display_name display_order spot_percentage_change)
     ];
     cmp_bag([keys $result->[0]->%*], $expected_keys, 'response keys matched');
 };

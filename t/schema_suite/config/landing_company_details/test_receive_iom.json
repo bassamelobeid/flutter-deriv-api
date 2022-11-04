@@ -56,7 +56,7 @@
       "legal_allowed_markets" : {
          "items" : {
             "type" : "string",
-            "pattern" : "^(commodities|forex|indices|synthetic_index|basket_index)$"
+            "pattern" : "^(commodities|forex|indices|synthetic_index)$"
          },
          "type" : "array",
          "minItems" : 4
@@ -169,39 +169,13 @@
                   }
                },
                "properties" : {}
-            },
-            "basket_index" : {
-               "additionalProperties" : false,
-               "type" : "object",
-               "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
-                     "type" : "object",
-                     "additionalProperties" : false,
-                     "properties" : {
-                        "min_stake" : {
-                           "minimum" : 0,
-                           "type" : "number"
-                        },
-                        "max_payout" : {
-                           "minimum" : 0,
-                           "type" : "number"
-                        }
-                     },
-                     "required" : [
-                        "max_payout",
-                        "min_stake"
-                     ]
-                  }
-               },
-               "properties" : {}
             }
          },
          "required" : [
             "indices",
             "synthetic_index",
             "commodities",
-            "forex",
-            "basket_index"
+            "forex"
          ]
       },
       "stash" : {

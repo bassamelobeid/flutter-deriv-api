@@ -26,6 +26,7 @@ rpc active_symbols => sub {
         $_->{display_name}           = localize($_->{display_name});
         $_->{market_display_name}    = localize($_->{market_display_name});
         $_->{submarket_display_name} = localize($_->{submarket_display_name});
+        $_->{subgroup_display_name}  = localize($_->{subgroup_display_name});
         $_
         } sort_by { $_->{display_name} =~ s{([0-9]+)}{sprintf "%-09.09d", $1}ger } $res->{symbols}->@*;
 
