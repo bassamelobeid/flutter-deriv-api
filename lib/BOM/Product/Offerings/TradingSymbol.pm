@@ -8,9 +8,11 @@ our @EXPORT_OK = qw(get_symbols);
 
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
+use BOM::Config::Redis;
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Exception;
 
+use Format::Util::Numbers qw/roundcommon/;
 use LandingCompany::Registry;
 use Cache::RedisDB;
 use Finance::Underlying;
@@ -18,7 +20,10 @@ use Quant::Framework;
 use Date::Utility;
 use Brands;
 
-use constant NAMESPACE => 'TRADING_SYMBOL';
+use constant {
+    NAMESPACE      => 'TRADING_SYMBOL',
+    SECONDS_IN_DAY => 86400,
+};
 
 =head2 get_symbols
 
@@ -65,11 +70,15 @@ sub get_symbols {
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
-        my @all_active = $offerings_obj->values_for_key('underlying_symbol');
+        my $leaderboard = _get_leaderboard($offerings_obj);
+        my @all_active  = $offerings_obj->values_for_key('underlying_symbol');
         # symbols would be active if we allow forward starting contracts on them.
         my %forward_starting = map { $_ => 1 } $offerings_obj->query({start_type => 'forward'}, ['underlying_symbol']);
         foreach my $symbol (@all_active) {
             my $desc = _description($symbol) or next;
+            # leaderboard will have data on transacted symbols, default to total number symbols (E.g. last in display_order if
+            # there is no transaction on a particular symbol).
+            $desc->{display_order}          = $leaderboard->{$symbol} // scalar(@all_active);
             $desc->{allow_forward_starting} = $forward_starting{$symbol} ? 1 : 0;
             push @{$active_symbols}, $desc;
         }
@@ -89,7 +98,7 @@ Trim active symbols to return brief information.
 
 {
     my @brief =
-        qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting);
+        qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting subgroup subgroup_display_name display_order);
 
     sub _trim {
         my $active_symbols = shift;
@@ -112,10 +121,13 @@ Returns an hash reference of configuration details for a symbol
 sub _description {
     my $symbol = shift;
 
-    my $ul               = create_underlying($symbol) || return;
-    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
-    my $exchange_is_open = $trading_calendar->is_open_at($ul->exchange, Date::Utility->new);
-    my $response         = {
+    my $ul                      = create_underlying($symbol) || return;
+    my $trading_calendar        = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
+    my $exchange_is_open        = $trading_calendar->is_open_at($ul->exchange, Date::Utility->new);
+    my $ohlc                    = $ul->realtime_ohlc_for(SECONDS_IN_DAY);
+    my $daily_percentage_change = exists $ohlc->{open} ? (roundcommon(0.01, ($ul->spot - $ohlc->{open}) / $ohlc->{open} * 100)) : '0.00';
+
+    my $response = {
         symbol                    => $symbol,
         display_name              => $ul->display_name,
         symbol_type               => $ul->instrument_type,
@@ -123,6 +135,8 @@ sub _description {
         market                    => $ul->market->name,
         submarket                 => $ul->submarket->name,
         submarket_display_name    => $ul->submarket->display_name,
+        subgroup                  => $ul->submarket->subgroup->{name},
+        subgroup_display_name     => $ul->submarket->subgroup->{display_name},
         exchange_is_open          => $exchange_is_open || 0,
         is_trading_suspended      => 0,                                 # please remove this if we ever move to a newer API version of active_symbols
         pip                       => $ul->pip_size . "",
@@ -133,9 +147,32 @@ sub _description {
         spot                      => $ul->spot,
         spot_time                 => $ul->spot_time // '',
         spot_age                  => $ul->spot_age,
+        spot_percentage_change    => $daily_percentage_change,
     };
 
     return $response;
+}
+
+=head2 _get_leaderboard
+
+Get leaderboard by market.
+
+=cut
+
+sub _get_leaderboard {
+    my $offerings = shift;
+
+    my $redis = BOM::Config::Redis::redis_transaction();
+    my %leaderboard;
+    foreach my $market ($offerings->values_for_key('market')) {
+        # counter separate by market
+        my $counter = 0;
+        foreach my $symbol ($redis->zrevrangebyscore('SYMBOL_LEADERBOARD::' . $market, 'inf', 0)->@*) {
+            $leaderboard{$symbol} = $counter++;
+        }
+    }
+
+    return \%leaderboard;
 }
 
 1;

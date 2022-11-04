@@ -265,7 +265,7 @@ has hour_end_markup_parameters => (
 sub _build_hour_end_markup_parameters {
     my $self = shift;
 
-    return {} unless ($self->market->name =~ /^(forex|commodities|basket_index)$/);
+    return {} unless ($self->underlying->apply_forex_trading_condition);
 
     # For forward starting, only applies it if the contract bought at 15 mins before the date_start, other that that it is hard for client to exploit the edge
     return {} if ($self->is_forward_starting && ($self->date_start->epoch - $self->date_pricing->epoch) > 15 * 60);
@@ -530,8 +530,8 @@ Returns true or false. Note that the value may vary depending on date_pricing.
 sub market_is_inefficient {
     my $self = shift;
 
-    # market inefficiency only applies to forex and commodities and basket_index.
-    return 0 unless ($self->market->name =~ /^(forex|commodities|basket_index)$/);
+    # market inefficiency only applies to forex and commodities and basket indices.
+    return 0 unless ($self->underlying->apply_forex_trading_condition);
     return 0 if $self->expiry_daily;
 
     my $hour = $self->date_pricing->hour + 0;
@@ -556,7 +556,7 @@ sub is_in_quiet_period {
 
     my $quiet = 0;
 
-    if ($underlying->market->name =~ /^(forex|basket_index)$/) {
+    if ($underlying->is_forex_alike) {
         # Pretty much everything trades in these big centers of activity
         my @check_if_open = ('LSE', 'FSE', 'NYSE');
 
@@ -583,7 +583,8 @@ sub is_in_quiet_period {
 sub apply_rollover_markup {
     my $self = shift;
 
-    return 0 if $self->underlying->market->name !~ /^(forex|basket_index)$/;
+    # don't have to apply rollover markup for basket indices because they use flat volatility
+    return 0 if $self->underlying->market->name ne 'forex';
 
     return 0 if $self->date_expiry->hour < 20;
     my $rollover_date = $self->volsurface->rollover_date($self->date_pricing);
@@ -624,7 +625,7 @@ sub _build_forqqq {
 
     my $result = {};
 
-    if ($self->priced_with =~ 'quanto' and $self->underlying->market->name =~ /^(forex|commodities|basket_index)$/) {
+    if ($self->priced_with =~ 'quanto' and $self->underlying->market->name =~ /^(forex|commodities)$/) {
         $result->{underlying} = create_underlying({
             symbol   => 'frx' . $self->underlying->asset_symbol . $self->currency,
             for_date => $self->underlying->for_date
@@ -790,8 +791,10 @@ sub _build_priced_with {
 
     my $underlying = $self->underlying;
 
-    # price with numeraire if payout currency is crypto or market is basket_index.
-    if ($underlying->market->name eq 'basket_index' or ($self->payout_currency_type and $self->payout_currency_type eq 'crypto')) {
+    # price with numeraire if payout currency is crypto or submarket is basket indices.
+    if ($underlying->submarket->name =~ /^(?:forex_basket|commodity_basket )$/
+        or ($self->payout_currency_type and $self->payout_currency_type eq 'crypto'))
+    {
         return 'numeraire';
     }
 
@@ -821,7 +824,7 @@ sub _build_mu {
 
     my $mu = $self->r_rate - $self->q_rate;
 
-    if (first { $self->underlying->market->name eq $_ } (qw(forex commodities indices basket_index))) {
+    if ($self->underlying->market->name eq 'indices' or $self->underlying->apply_forex_trading_condition) {
         my $rho = $self->rho->{fd_dq};
         my $vol = $self->atm_vols;
         # See [1] for Quanto Formula
@@ -845,7 +848,7 @@ sub _build_rho {
         $rhos{fd_dq} = 0;
     } elsif ($self->priced_with eq 'base') {
         $rhos{fd_dq} = -1;
-    } elsif ($self->underlying->market->name =~ /^(forex|commodities|basket_index)$/) {
+    } elsif ($self->underlying->apply_forex_trading_condition) {
         $rhos{fd_dq} =
             $w * (($atm_vols->{forqqq}**2 - $atm_vols->{fordom}**2 - $atm_vols->{domqqq}**2) / (2 * $atm_vols->{fordom} * $atm_vols->{domqqq}));
     } elsif ($self->underlying->market->name eq 'indices') {
@@ -901,20 +904,27 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    #For Volatility indices, we use plain BS formula for pricing instead of VV/Slope
-    return 'Pricing::Engine::BlackScholes' if $self->market->name eq 'synthetic_index';
+    # For synthetic indices that are generated purely from RNG, we will price with BlackScholes engine.
+    return 'Pricing::Engine::BlackScholes' if $self->underlying->submarket->is_rng;
 
     my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
 
     if ($self->tick_expiry) {
         # forex and basket indices are the only financial markets that offers tick expiry contracts for now.
-        my @symbols = create_underlying_db->get_symbols_for(
-            market            => ['forex', 'basket_index'],
+        my @fx_symbols = create_underlying_db->get_symbols_for(
+            market            => 'forex',
             contract_category => 'callput',
             expiry_type       => 'tick',
         );
 
-        $engine_name = 'Pricing::Engine::TickExpiry' if _match_symbol(\@symbols, $self->underlying->symbol);
+        my @baskets = create_underlying_db->get_symbols_for(
+            market            => 'synthetic_index',
+            submarket         => ['forex_basket', 'commodity_basket'],
+            contract_category => 'callput',
+            expiry_type       => 'tick',
+        );
+
+        $engine_name = 'Pricing::Engine::TickExpiry' if _match_symbol([@fx_symbols, @baskets], $self->underlying->symbol);
     } elsif (my $intraday_engine_name = $self->_check_intraday_engine_compatibility) {
         $engine_name = $intraday_engine_name;
     }

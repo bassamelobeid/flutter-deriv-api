@@ -1132,7 +1132,7 @@
         display_name: Vanilla Options
         name: vanilla
   market:
-    display_name: Synthetic Indices
+    display_name: Derived
     name: synthetic_index
   submarket:
     display_name: Continuous Indices
@@ -1273,7 +1273,7 @@
         display_name: Digits
         name: digits
   market:
-    display_name: Synthetic Indices
+    display_name: Derived
     name: synthetic_index
   submarket:
     display_name: Daily Reset Indices
@@ -1322,8 +1322,8 @@
         display_name: Multiply Up/Multiply Down
         name: multiplier
   market:
-    display_name: Basket Indices
-    name: basket_index
+    display_name: Derived
+    name: synthetic_index
   submarket:
     display_name: Forex Basket
     name: forex_basket
@@ -1365,8 +1365,8 @@
         display_name: Multiply Up/Multiply Down
         name: multiplier
   market:
-    display_name: Basket Indices
-    name: basket_index
+    display_name: Derived
+    name: synthetic_index
   submarket:
     display_name: Commodities Basket
     name: commodity_basket

@@ -324,7 +324,7 @@ sub maximum_feed_delay_seconds {
     my $underlying = $self->underlying;
 
     return $underlying->max_suspend_trading_feed_delay->seconds
-        if $underlying->market->name !~ /^(forex|basket_index)$/ or $self->is_forward_starting;
+        if not $underlying->is_forex_alike or $self->is_forward_starting;
 
     my $effective_epoch = $self->effective_start->epoch;
     my @events_in_the_last_15_seconds =
@@ -686,7 +686,7 @@ has date_start_forward_blackouts => (
 sub _build_date_start_forward_blackouts {
     my $self = shift;
 
-    return [] if $self->market->name !~ /^(forex|basket_index)$/;
+    return [] if not $self->underlying->is_forex_alike;
     return [] if not $self->is_forward_starting;
     return [] if not $self->is_intraday;
 
@@ -729,7 +729,7 @@ sub _validate_start_and_expiry_date {
 
     # disable contracts with duration < 5 hours at 21:00 to 24:00GMT due to quiet period.
     # did not inlcude this in date_start_blackouts because we want a different message to client.
-    if ($self->disable_trading_at_quiet_period and ($self->underlying->market->name =~ /^(forex|commodities|basket_index)$/)) {
+    if ($self->disable_trading_at_quiet_period and $self->underlying->apply_forex_trading_condition) {
         my $pricing_hour       = $self->date_pricing->hour;
         my $five_hour_in_years = 5 * 3600 / (86400 * 365);
         if ($self->timeinyears->amount < $five_hour_in_years && ($pricing_hour >= 21 && $pricing_hour < 24)) {
@@ -785,7 +785,7 @@ sub _validate_rollover_blackout {
     my $self = shift;
 
     # This is for disabling trading on path dependent contracts for AUD, NZD and JPY forex pairs during rollover time
-    if (   $self->underlying->market->name =~ /^(basket_index|forex)$/
+    if (   $self->underlying->market->name eq 'forex'
         && $self->is_path_dependent
         && $self->underlying->symbol =~ /AUD|NZD|JPY/)
     {
@@ -798,7 +798,7 @@ sub _validate_rollover_blackout {
         }
     }
 
-    return if $self->underlying->market->name !~ /^(forex|basket_index)$/ || $self->is_atm_bet;
+    return if $self->underlying->market->name ne 'forex' || $self->is_atm_bet;
     return if not $self->for_sale;
 
     # do not proceed if non delta surface is used for forex or basket indices pricing.
@@ -837,7 +837,7 @@ sub _validate_volsurface {
         };
     }
     my $exceeded;
-    if (    $self->market->name =~ /^(forex|basket_index)$/
+    if (    $self->market->name eq 'forex'
         and not $self->priced_with_intraday_model
         and $self->timeindays->amount < 4
         and not $self->is_atm_bet
@@ -973,7 +973,7 @@ sub _build_date_start_blackouts {
     if (my $sod = $calendar->opening_on($underlying->exchange, $start)) {
         my $sod_blackout =
             ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
-            : (     $underlying->market->name =~ /^(forex|basket_index)$/
+            : (     $underlying->is_forex_alike
                 and $self->is_forward_starting
                 and not $self->trading_calendar->trades_on($self->underlying->exchange, $start->minus_time_interval('1d'))) ? '10m'
             : '';
@@ -986,8 +986,7 @@ sub _build_date_start_blackouts {
     if ($end_of_trading) {
         if ($self->is_intraday) {
             my $eod_blackout =
-                ($self->tick_expiry
-                    and ($underlying->resets_at_open or ($underlying->market->name =~ /^(basket_index|forex)$/ and $start->day_of_week == 5)))
+                ($self->tick_expiry and ($underlying->resets_at_open or ($underlying->is_forex_alike and $start->day_of_week == 5)))
                 ? $self->_max_tick_expiry_duration
                 : $underlying->eod_blackout_start;
             push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;

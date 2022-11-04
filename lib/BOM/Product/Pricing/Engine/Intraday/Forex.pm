@@ -298,7 +298,7 @@ sub _build_risk_markup {
     my $lookback_duration = min(30, $bet_duration);
 
     my $min_max         = $bet->spot_min_max($bet->date_start->minus_time_interval($lookback_duration . 'm'));
-    my $rollover_hour   = $bet->underlying->market->name =~ /^(forex|basket_index)$/ ? $bet->volsurface->rollover_date($bet->date_pricing) : undef;
+    my $rollover_hour   = $bet->underlying->market->name eq 'forex' ? $bet->volsurface->rollover_date($bet->date_pricing) : undef;
     my $apply_equal_tie = $self->apply_equal_tie_markup;
 
     my $mean_reversion_markup = (defined $self->apply_mean_reversion_markup and $self->apply_mean_reversion_markup) ? 1 : 0;

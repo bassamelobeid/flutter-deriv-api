@@ -24,7 +24,7 @@ subtest 'product listing - deriv dtrader' => sub {
     my $app_id        = 16929;
     my $deriv_dtrader = BOM::Product::Listing->new->by_country('id', [$app_id]);
     cmp_bag $deriv_dtrader->{$app_id}->{available_markets},
-        ['Commodities', 'Cryptocurrencies', 'Forex', 'Stock Indices', 'Synthetic Indices', 'Basket Indices'],
+        ['Commodities', 'Cryptocurrencies', 'Forex', 'Stock Indices', 'Derived'],
         'available markets matched';
     cmp_bag $deriv_dtrader->{$app_id}->{available_trade_types}, ['Options', 'Spreads', 'Multipliers'], 'available trade types matched';
     is scalar $deriv_dtrader->{$app_id}->{product_list}->@*, 81, '81 listing';
@@ -37,8 +37,7 @@ subtest 'product listing - deriv dtrader' => sub {
 subtest 'product listing - deriv bot' => sub {
     my $app_id    = 19111;
     my $deriv_bot = BOM::Product::Listing->new->by_country('id', [$app_id]);
-    cmp_bag $deriv_bot->{$app_id}->{available_markets}, ['Commodities', 'Forex', 'Stock Indices', 'Synthetic Indices', 'Basket Indices'],
-        'available markets matched';
+    cmp_bag $deriv_bot->{$app_id}->{available_markets}, ['Commodities', 'Forex', 'Stock Indices', 'Derived'], 'available markets matched';
     cmp_bag $deriv_bot->{$app_id}->{available_trade_types}, ['Options', 'Multipliers'], 'available trade types matched';
     is scalar $deriv_bot->{$app_id}->{product_list}->@*, 74, '74 listing';
     # check the structure
@@ -50,8 +49,7 @@ subtest 'product listing - deriv bot' => sub {
 subtest 'product listing - deriv go' => sub {
     my $app_id   = 23789;
     my $deriv_go = BOM::Product::Listing->new->by_country('id', [$app_id]);
-    cmp_bag $deriv_go->{$app_id}->{available_markets}, ['Cryptocurrencies', 'Forex', 'Synthetic Indices', 'Basket Indices'],
-        'available markets matched';
+    cmp_bag $deriv_go->{$app_id}->{available_markets}, ['Cryptocurrencies', 'Forex', 'Derived'], 'available markets matched';
     cmp_bag $deriv_go->{$app_id}->{available_trade_types}, ['Spreads', 'Multipliers'], 'available trade types matched';
     is scalar $deriv_go->{$app_id}->{product_list}->@*, 49, '49 listing';
     # check the structure

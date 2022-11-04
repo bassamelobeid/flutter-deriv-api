@@ -256,7 +256,7 @@ subtest 'type=brief' => sub {
     # default type=full
     my $res           = get_symbols({type => 'brief'});
     my $expected_keys = [
-        qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting)
+        qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting subgroup subgroup_display_name display_order)
     ];
     cmp_bag([keys $res->{symbols}->[0]->%*], $expected_keys, 'brief symbol returns correct information');
 };

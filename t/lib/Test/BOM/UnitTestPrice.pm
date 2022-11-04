@@ -21,7 +21,7 @@ sub create_pricing_data {
     my @currencies = ($payout_currency);
 
     my @quanto_list;
-    if ($underlying->market->name =~ /^(basket_index|forex)$/) {
+    if ($underlying->market->name eq 'forex') {
         for ($underlying->asset_symbol, $underlying->quoted_currency_symbol) {
             if (my $symbol = _order_symbol($_, $payout_currency)) {
                 push @quanto_list, $symbol;
@@ -78,7 +78,7 @@ sub create_pricing_data {
             }
         }
 
-        if (grep { $underlying->market->name eq $_ } qw(forex commodities basket_index)) {
+        if (grep { $underlying->market->name eq $_ } qw(forex commodities)) {
             push @currencies,
                 ($underlying->asset_symbol, $underlying->quoted_currency_symbol, $underlying->rate_to_imply . '-' . $underlying->rate_to_imply_from);
         } else {
