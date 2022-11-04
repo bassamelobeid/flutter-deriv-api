@@ -33,17 +33,17 @@ sub script_run {
         local $> = (getpwnam('nobody'))[2];
     }
 
-    my $opt        = shift @ARGV || '';    #update operation. Accepts [forex|indices|flat|basket_index]
+    my $opt        = shift @ARGV || '';    #update operation. Accepts [forex|indices|flat]
     my $source     = shift @ARGV || '';    #data source. Accepts [BBDL|BVOL]
     my $root_path  = shift @ARGV || '';    #the root path of the source of data
-    my $update_for = shift @ARGV || '';    #update option. Accepts [forex|indices|all|quanto|basket_index]
+    my $update_for = shift @ARGV || '';    #update option. Accepts [forex|indices|all|quanto]
 
     local $SIG{ALRM} = sub { die 'Timed out.' };
 
     alarm(60 * 30);
 
     my ($class);
-    if ($opt =~ /^(forex|basket_index)$/) {
+    if ($opt eq 'forex') {
         if (is_within_rollover_period($datetime)) {
             # Forex vol surface is currently not being updated during rollover period
             return;
