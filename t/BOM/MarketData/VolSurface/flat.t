@@ -53,7 +53,12 @@ subtest 'everything' => sub {
             JD25        => 0.3307,
             JD50        => 0.6614,
             JD75        => 0.9922,
-            JD100       => 1.3229
+            JD100       => 1.3229,
+            WLDUSD      => 0.1,
+            WLDGBP      => 0.1,
+            WLDAUD      => 0.1,
+            WLDEUR      => 0.1,
+            WLDXAU      => 0.25,
         );
         foreach my $symbol (@symbols) {
             my $flat = BOM::MarketData::VolSurface::Flat->new(

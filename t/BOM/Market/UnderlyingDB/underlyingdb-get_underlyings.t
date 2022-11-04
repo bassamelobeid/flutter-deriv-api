@@ -27,7 +27,7 @@ eq_or_diff [sort $udb->available_expiry_types], [sort qw(intraday daily tick no_
 
 eq_or_diff [sort $udb->available_start_types], [sort qw(spot forward)], 'Correct list of available start types.';
 
-eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices synthetic_index stocks cryptocurrency basket_index)], "Correct list of markets";
+eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices synthetic_index stocks cryptocurrency)], "Correct list of markets";
 
 eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDUSD frxEURAUD frxEURCAD frxEURCHF
@@ -114,7 +114,8 @@ my @ul_basket_index_active = sort qw(
     WLDAUD    WLDEUR    WLDGBP    WLDUSD WLDXAU);
 eq_or_diff [
     sort $udb->get_symbols_for(
-        market            => 'basket_index',
+        market            => 'synthetic_index',
+        submarket         => ['forex_basket', 'commodity_basket'],
         contract_category => 'ANY'
     )
     ],

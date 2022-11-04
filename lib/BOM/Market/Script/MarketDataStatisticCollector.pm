@@ -58,7 +58,8 @@ sub _collect_vol_ages {
         contract_category => 'ANY',
     );
     my @basket_indices = create_underlying_db->get_symbols_for(
-        market => 'basket_index',
+        market    => 'synthetic_index',
+        submarket => ['forex_basket', 'commodity_basket'],
     );
 
     my @offer_underlyings = (@offered_forex, @offered_others, @basket_indices);
