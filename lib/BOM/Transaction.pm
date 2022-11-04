@@ -977,10 +977,31 @@ sub buy {
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
 
+    $self->_increment_transacted_symbol();
     $self->_enqueue_new_notification($fmb->{id});
 
     # For soft realtime expiration notification.
     $self->expiryq->enqueue_new_transaction(_get_params_for_expiryqueue($self));
+
+    return;
+}
+
+=head2 _increment_transacted_symbol
+
+Store a symbol leaderboard by market for 'popular' symbols display purposes.
+
+Uses redis sorted set.
+
+=cut
+
+sub _increment_transacted_symbol {
+    my $self = shift;
+
+    my $redis_t  = BOM::Config::Redis::redis_transaction_write();
+    my $contract = $self->contract;
+    my $key      = join("::", "SYMBOL_LEADERBOARD", $contract->underlying->market->name);
+
+    $redis_t->zincrby($key, 1, $contract->underlying->symbol);
 
     return;
 }
@@ -1332,7 +1353,7 @@ sub sell {
     my $datetime = Date::Utility->new();
 
     # This is for disabling resale on path dependent contracts for AUD, NZD and JPY forex pairs during rollover time
-    if (   $self->contract->underlying->market->name =~ /^(forex|basket_index)$/
+    if (   $self->contract->underlying->market->name eq 'forex'
         && $self->contract->is_path_dependent
         && $self->action_type eq 'sell'
         && $self->contract->category_code ne 'multiplier'
