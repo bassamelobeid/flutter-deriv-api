@@ -47,6 +47,9 @@
                },
                "display_name" : {
                   "type" : "string"
+               },
+               "display_order": {
+                 "type": "integer"
                }
             },
             "type" : "object"

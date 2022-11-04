@@ -101,12 +101,14 @@
                            "turnover_limit" : {
                               "type" : "number",
                               "enum" : [
-                                 500000
+                                 500000,
+                                 50000,
+                                 5000
                               ]
                            },
                            "name" : {
                               "type" : "string",
-                              "pattern" : "^Synthetic Indices$"
+                              "pattern" : "^(Forex Basket|Commodities Basket|Derived)$"
                            }
                         }
                      },
@@ -119,33 +121,13 @@
                               "enum" : [
                                  100000,
                                  50000,
-                                 5000
+                                 20000
                               ],
                               "type" : "number"
                            },
                            "name" : {
                               "type" : "string",
-                              "pattern" : "^(Major Pairs|Minor Pairs)$"
-                           }
-                        },
-                        "type" : "object"
-                     },
-                     "type" : "array"
-                  },
-                  "basket_index" : {
-                     "items" : {
-                        "properties" : {
-                           "turnover_limit" : {
-                              "enum" : [
-                                 100000,
-                                 50000,
-                                 5000
-                              ],
-                              "type" : "number"
-                           },
-                           "name" : {
-                              "type" : "string",
-                              "pattern" : "^(Forex|Commodities) Basket$"
+                              "pattern" : "^(Major Pairs|Minor Pairs|Forex)$"
                            }
                         },
                         "type" : "object"
@@ -158,8 +140,7 @@
                   "commodities",
                   "indices",
                   "synthetic_index",
-                  "forex",
-                  "basket_index"
+                  "forex"
                ]
             },
             "lifetime_limit" : {
