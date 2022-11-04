@@ -490,7 +490,7 @@ method get_params ($contract_type, $symbol) {
     my $sub_market = $contract->submarket;
     my $min        = $contract->min_contract_duration;
     my $max        = $contract->max_contract_duration;
-    if ($market =~ /^(forex|basket_index)$/) {
+    if ($market eq 'forex') {
         ($min, $max) = $self->forex_duration_adjustments(
             min        => $min,
             max        => $max,
@@ -529,7 +529,7 @@ method get_params ($contract_type, $symbol) {
         CALLE => $pute_calle,
     };
 
-    if ($market =~ /^(forex|basket_index|commodities|indices)$/) {
+    if ($market =~ /^(forex|commodities|indices)$/) {
         delete $contract_params->{$contract_type}->{barrier};
     }
     if ($sub_market eq 'minor_pairs') {
