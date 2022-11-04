@@ -13,7 +13,8 @@ use Quant::Framework::Underlying;
 
 use BOM::Platform::RiskProfile;
 use BOM::Config::Runtime;
-use BOM::Test::Helper::Client qw(create_client);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::Client                  qw(create_client);
 
 my $ul = Quant::Framework::Underlying->new('frxUSDJPY');
 
@@ -160,9 +161,10 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{tick_expiry}, 'tick_expiry set to 1';
     my $symbols = [
-        '1HZ100V', '1HZ10V', '1HZ25V',  '1HZ50V',  '1HZ75V',   'BOOM1000', 'BOOM500', 'CRASH1000', 'CRASH500', 'RDBEAR',
-        'RDBULL',  'R_10',   'R_100',   'R_25',    'R_50',     'R_75',     'stpRNG',  'JD10',      'JD100',    'JD25',
-        'JD50',    'JD75',   '1HZ200V', '1HZ300V', 'BOOM300N', 'CRASH300N'
+        '1HZ100V',  '1HZ10V',    '1HZ25V', '1HZ50V', '1HZ75V', 'BOOM1000', 'BOOM500', 'CRASH1000',
+        'CRASH500', 'RDBEAR',    'RDBULL', 'R_10',   'R_100',  'R_25',     'R_50',    'R_75',
+        'stpRNG',   'JD10',      'JD100',  'JD25',   'JD50',   'JD75',     '1HZ200V', '1HZ300V',
+        'BOOM300N', 'CRASH300N', 'WLDAUD', 'WLDEUR', 'WLDGBP', 'WLDUSD',   'WLDXAU'
     ];
     cmp_bag $param->[0]->{symbols}, $symbols, 'correct symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
@@ -250,14 +252,30 @@ subtest 'get_current_profile_definitions' => sub {
                     'turnover_limit' => "50000.00",
                     'payout_limit'   => "5000.00",
                     'name'           => 'Commodities',
-                    'profile_name'   => 'moderate_risk'
+                    'profile_name'   => 'moderate_risk',
+                    'level'          => 'market',
                 }
             ],
             'synthetic_index' => [{
+                    'name'           => 'Commodities Basket',
+                    'payout_limit'   => '5000.00',
+                    'profile_name'   => 'moderate_risk',
+                    'turnover_limit' => '50000.00',
+                    'level'          => 'submarket',
+                },
+                {
+                    'name'           => 'Forex Basket',
+                    'payout_limit'   => '5000.00',
+                    'profile_name'   => 'moderate_risk',
+                    'turnover_limit' => '50000.00',
+                    'level'          => 'submarket',
+                },
+                {
                     'turnover_limit' => "500000.00",
                     'payout_limit'   => "50000.00",
-                    'name'           => 'Synthetic Indices',
-                    'profile_name'   => 'low_risk'
+                    'name'           => 'Derived',
+                    'profile_name'   => 'low_risk',
+                    'level'          => 'market',
                 }
             ],
             'forex' => [{
@@ -265,43 +283,42 @@ subtest 'get_current_profile_definitions' => sub {
                     'payout_limit'   => "20000.00",
                     'name'           => 'Major Pairs',
                     'profile_name'   => 'medium_risk',
+                    'level'          => 'submarket',
                 },
                 {
                     'turnover_limit' => "50000.00",
                     'payout_limit'   => "5000.00",
                     'name'           => 'Minor Pairs',
                     'profile_name'   => 'moderate_risk',
-                },
-            ],
-            'basket_index' => [{
-                    'turnover_limit' => "50000.00",
-                    'payout_limit'   => "5000.00",
-                    'name'           => 'Forex Basket',
-                    'profile_name'   => 'moderate_risk',
+                    'level'          => 'submarket',
                 },
                 {
-                    'turnover_limit' => "50000.00",
-                    'payout_limit'   => "5000.00",
-                    'name'           => 'Commodities Basket',
-                    'profile_name'   => 'moderate_risk',
+                    'name'           => 'Forex',
+                    'payout_limit'   => '20000.00',
+                    'profile_name'   => 'medium_risk',
+                    'turnover_limit' => '100000.00',
+                    'level'          => 'market',
                 },
             ],
             'indices' => [{
                     'turnover_limit' => "100000.00",
                     'payout_limit'   => "20000.00",
                     'name'           => 'Stock Indices',
-                    'profile_name'   => 'medium_risk'
+                    'profile_name'   => 'medium_risk',
+                    'level'          => 'market',
                 }
             ],
             'cryptocurrency' => [{
                     'turnover_limit' => "1000.00",
                     'payout_limit'   => "100.00",
                     'name'           => 'Cryptocurrencies',
-                    'profile_name'   => 'extreme_risk'
+                    'profile_name'   => 'extreme_risk',
+                    'level'          => 'market',
                 }
             ],
         },
     };
+
     foreach my $broker (keys %$expected) {
         my $client  = create_client($broker);
         my $general = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
@@ -354,13 +371,6 @@ subtest 'get_current_profile_definitions' => sub {
                 }
 
                 for (($general->{forex} // [])->@*) {
-                    ok defined $_->{turnover_limit}, 'Turnover Limit is defined';
-                    ok defined $_->{payout_limit},   'Payout Limit is defined';
-                    is $_->{turnover_limit} + 0, 0, 'Turnover Limit defaulted to 0';
-                    is $_->{payout_limit} + 0,   0, 'Payout Limit defaulted to 0';
-                }
-
-                for (($general->{basket_index} // [])->@*) {
                     ok defined $_->{turnover_limit}, 'Turnover Limit is defined';
                     ok defined $_->{payout_limit},   'Payout Limit is defined';
                     is $_->{turnover_limit} + 0, 0, 'Turnover Limit defaulted to 0';

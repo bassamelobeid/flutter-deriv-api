@@ -465,19 +465,22 @@ sub get_current_profile_definitions {
                     name           => $_->display_name,
                     turnover_limit => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{turnover}{$currency} // 0),
                     payout_limit   => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{payout}{$currency}   // 0),
-                    profile_name   => $_->risk_profile
+                    profile_name   => $_->risk_profile,
+                    level          => 'submarket'
                 }
             } @submarket_list;
             push @{$limits{$market->name}}, @list;
-        } else {
-            push @{$limits{$market->name}},
-                +{
-                name           => $market->display_name,
-                turnover_limit => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{turnover}{$currency} // 0),
-                payout_limit   => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{payout}{$currency}   // 0),
-                profile_name   => $market->risk_profile,
-                };
         }
+
+        # we will show both market and submarket limits if it's defined.
+        push @{$limits{$market->name}},
+            +{
+            name           => $market->display_name,
+            turnover_limit => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{turnover}{$currency} // 0),
+            payout_limit   => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{payout}{$currency}   // 0),
+            profile_name   => $market->risk_profile,
+            level          => 'market'
+            };
     }
 
     return \%limits;
