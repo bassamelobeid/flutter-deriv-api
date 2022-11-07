@@ -28,15 +28,15 @@ Class constructor; it's called without any arguments.
 sub new {
     my ($class, %args) = @_;
 
-    my (@all_brokers, @jurisdiction_brokers);
+    my @all_brokers;
     foreach my $landing_company (LandingCompany::Registry->get_all) {
-        next if $landing_company->is_virtual or $landing_company->is_for_affiliates;
+        next
+            if $landing_company->is_virtual
+            || !($landing_company->risk_lookup->{aml_thresholds} || $landing_company->risk_lookup->{aml_jurisdiction});
 
-        push @all_brokers,          $landing_company->broker_codes->@*;
-        push @jurisdiction_brokers, $landing_company->broker_codes->@* if $landing_company->jurisdiction_risk_ratings;
+        push @all_brokers, $landing_company->broker_codes->@*;
     }
-    $args{all_brokers}          = [uniq @all_brokers];
-    $args{jurisdiction_brokers} = [uniq @jurisdiction_brokers];
+    $args{all_brokers} = [uniq @all_brokers];
 
     return bless \%args, $class;
 }
@@ -66,26 +66,58 @@ sub aml_risk_update {
     my $self = shift;
 
     my $config       = BOM::Config::Compliance->new;
-    my $thresholds   = $config->get_risk_thresholds('aml')     // {};
-    my $jurisdiction = $config->get_jurisdiction_risk_rating() // {};
+    my $thresholds   = $config->get_risk_thresholds('aml')          // {};
+    my $jurisdiction = $config->get_jurisdiction_risk_rating('aml') // {};
 
     # filter redundant key 'revision'
     delete $jurisdiction->{revision};
     delete $thresholds->{revision};
+
+    # We should convert landing company names to broker codes in thresholds, because the database function works with broker codes
+    for my $short_name (keys %$thresholds) {
+        my $lc = LandingCompany::Registry->by_name($short_name);
+        next unless $lc;
+        $thresholds->{$_} = $thresholds->{$short_name} for $lc->broker_codes->@*;
+    }
+
+    my (@jurisdiction_ratings);
+    for my $company_name (keys %$jurisdiction) {
+        my $landing_company = LandingCompany::Registry->by_name($company_name);
+        next unless $landing_company;
+        next unless $landing_company->risk_lookup->{aml_jurisdiction};
+        next unless $jurisdiction->{$company_name};
+
+        for my $risk_level (qw/standard high/) {
+            my $countries = $jurisdiction->{$company_name}->{$risk_level};
+            next unless $countries;
+
+            push @jurisdiction_ratings,
+                {
+                broker    => $_,
+                risk      => $risk_level,
+                countries => $countries
+                } for $landing_company->broker_codes->@*;
+        }
+    }
 
     foreach my $broker_code ($self->{all_brokers}->@*) {
         my $dbic = BOM::Database::ClientDB->new({
                 broker_code => $broker_code,
             })->db->dbic;
 
+        $dbic->run(
+            fixup => sub {
+                $_->do("SELECT FROM betonmarkets.update_transaction_risk(?)", undef, encode_json_utf8($thresholds),);
+            });
+
+        $dbic->run(
+            fixup => sub {
+                $_->do("SELECT FROM betonmarkets.update_jurisdiction_risk(?)", undef, encode_json_utf8(\@jurisdiction_ratings),);
+            });
+
         my $result = $dbic->run(
             fixup => sub {
-                $_->selectall_arrayref(
-                    "SELECT * FROM betonmarkets.update_aml_risk(?, ?, ?)",
-                    {Slice => {}},
-                    encode_json_utf8($thresholds),
-                    encode_json_utf8($jurisdiction),
-                    $self->{jurisdiction_brokers});
+                $_->selectall_arrayref("SELECT * FROM betonmarkets.update_aml_risk()", {Slice => {}},);
             });
 
         _send_risk_report_email($broker_code, $result) if scalar(@$result);
@@ -106,15 +138,13 @@ sub _send_risk_report_email {
     my $content =
           "<h1>Daily AML risk update for $broker_code - $date</h1>\n"
         . '<table border="1" cellpadding="5" style="border-collapse:collapse">'
-        . "<tr><th> Operation </th><th> Loginids </th><th> Reason </th><th> AML Risk Level </th></tr>\n";
+        . "<tr><th> Operation </th><th> Loginids </th><th> AML Risk Level </th><th> Reason </th></tr>\n";
     for my $row (@$result) {
         try {
-            my $user = BOM::User->new(id => $row->{binary_user_id});
-            die "User with id $row->{binary_user_id} was not found" unless $user;
+            $row->{$_} //= 'low' for (qw/aml_risk_classification withdraw deposit jurisdiction/);
 
-            my $loginids = join ',', $user->loginids;
-
-            $content .= "<tr><td>AML Risk Updated</td><td>$loginids</td><td>$row->{reason}</td><td>$row->{aml_risk_classification}</td></tr>";
+            $content .=
+                "<tr><td>AML Risk Updated</td><td>$row->{loginids}</td><td>$row->{aml_risk_classification}</td><td>withdraw: $row->{withdraw} Deposit:$row->{withdraw}, Jurisdiction: $row->{jurisdiction}</td></tr>";
         } catch ($e) {
             warn $e;
             $log->errorf("Failed to load user info for AML risk update report: %s", $e);

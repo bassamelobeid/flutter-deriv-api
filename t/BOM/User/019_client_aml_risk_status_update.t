@@ -358,11 +358,11 @@ subtest 'AML risk update' => sub {
     subtest 'transaction thresholds' => sub {
 
         my $thresholds = {
-            CR => {
+            svg => {
                 yearly_standard => 10,
                 yearly_high     => 20
             },
-            MF => {
+            maltainvest => {
                 yearly_standard => 10,
                 yearly_high     => 20
             },
@@ -404,19 +404,21 @@ subtest 'AML risk update' => sub {
     };
 
     subtest 'jurisdiction ratings' => sub {
+
         my $jurisdiction = {
-            standard => [qw/br/],
-            high     => [qw/es ru/],
-            revision => 1,
+            svg => {
+                standard => [qw/br/],
+                high     => [qw/es ru/],
+                revision => 1,
+            },
         };
 
         my $mock_config = Test::MockModule->new('BOM::Config::Compliance');
         $mock_config->redefine(
             get_risk_thresholds          => {},
-            get_jurisdiction_risk_rating => $jurisdiction
-        );
+            get_jurisdiction_risk_rating => sub { $jurisdiction });
         my $mock_landing_company = Test::MockModule->new('LandingCompany');
-        $mock_landing_company->redefine(jurisdiction_risk_ratings => 0);
+        $mock_landing_company->redefine(risk_settings => []);
 
         $client_cr->aml_risk_classification('low');
         $client_mf->aml_risk_classification('low');
@@ -428,18 +430,27 @@ subtest 'AML risk update' => sub {
         $c->aml_risk_update();
         $client_cr->load;
         $client_mf->load;
-        is $client_cr->aml_risk_classification, 'low', 'CR risk classification is not changed';
-        is $client_mf->aml_risk_classification, 'low', 'MF risk classification is not changed';
+        is $client_cr->aml_risk_classification, 'low', 'CR risk not changed - jurisdiction ratings are not enabled for svg';
+        is $client_mf->aml_risk_classification, 'low', 'MF risk not changed - no jurisdiction risk ratings';
         is scalar @emails,                      0,     'No email is sent';
 
-        $mock_landing_company->redefine(jurisdiction_risk_ratings => 1);
+        $mock_landing_company->redefine(risk_settings => ['aml_jurisdiction']);
 
         $c = BOM::User::Script::AMLClientsUpdate->new();
         $c->aml_risk_update();
         $client_cr->load;
         $client_mf->load;
-        is $client_cr->aml_risk_classification, 'standard', 'CR risk classification changed to standard by the jurisdiction rating';
-        is $client_mf->aml_risk_classification, 'high',     'MF risk classification changed to high by the jurisdiction rating';
+        is $client_cr->aml_risk_classification, 'standard', 'CR risk changed to standard by the jurisdiction rating';
+        is $client_mf->aml_risk_classification, 'low',      'MF risk is not changed - no jurisdiction risk  rating for the landing company';
+
+        is scalar @emails, 0, 'No email is sent for the standard risk';
+
+        $jurisdiction->{maltainvest} = $jurisdiction->{svg};
+        $c->aml_risk_update();
+        $client_cr->load;
+        $client_mf->load;
+        is $client_cr->aml_risk_classification, 'standard', 'CR risk is still standard';
+        is $client_mf->aml_risk_classification, 'high',     'MF risk is changed to high by jurisdiction risk rating';
 
         is scalar @emails, 1, 'An email is sent for the high risk client';
 
@@ -447,7 +458,7 @@ subtest 'AML risk update' => sub {
         my $user_id = $user_mf->id;
         like $mail->{subject}, qr/Daily AML risk update/, 'email subject is correct';
         my $loginid = $client_mf->loginid;
-        ok $mail->{message}->[0] =~ qr/$loginid/, 'loginids is found in email content';
+        ok $mail->{message}->[0] =~ qr/$loginid/, 'MF loginid is found in email content';
         ok $mail->{message}->[0] !~ qr/CR\d/,     'No CR loginid found in email content';
 
         $mock_landing_company->unmock_all;
