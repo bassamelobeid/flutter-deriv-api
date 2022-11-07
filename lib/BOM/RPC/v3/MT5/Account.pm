@@ -787,14 +787,11 @@ async_rpc "mt5_new_account",
     return create_error_future('permission') if $mt5_account_currency ne $selected_currency;
 
     # restrict high risk countries from bvi, labuan and vanuatu
-    my $high_risk_countries = {map { $_ => 1 } @{BOM::Config::Compliance->new()->get_jurisdiction_risk_rating->{'high'}}};
+    # restrict high risk countries from bvi, labuan and vanuatu
+    my $jurisdiction_ratings = BOM::Config::Compliance->new()->get_jurisdiction_risk_rating('mt5')->{$landing_company_short} // {};
+    my $high_risk_countries  = {map { $_ => 1 } @{$jurisdiction_ratings->{high} // []}};
 
-    return create_error_future('MT5NotAllowed', {params => $company_type})
-        if (
-        $high_risk_countries->{$residence}
-        and (  $landing_company_short eq 'bvi'
-            or $landing_company_short eq 'vanuatu'
-            or $landing_company_short eq 'labuan'));
+    return create_error_future('MT5NotAllowed', {params => $company_type}) if ($high_risk_countries->{$residence});
 
     my $group = _mt5_group({
         country               => $residence,
