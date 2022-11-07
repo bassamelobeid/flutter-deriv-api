@@ -675,6 +675,7 @@ SQL
         tax_identification_number                    => $tax_identification_number,
         cashier_allow_payment_agent_status           => $client->status->pa_withdrawal_explicitly_allowed,
         address_verification_status                  => $client->status->address_verified,
+        smarty_street_status                         => $client->status->smarty_streets_validated,
         onfido_check_result                          => $onfido_check->{result},
         onfido_check_url                             => $onfido_check->{results_uri} // '',
         onfido_resubmission                          => $onfido_allow_resubmission_flag,

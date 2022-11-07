@@ -314,6 +314,12 @@ if ($input{document_list}) {
     }
     print $full_msg;
     %input = ();    # stay in the same page and avoid side effects
+
+    if ($client->documents->is_poa_verified) {
+        $client->propagate_status('address_verified', $clerk, 'At least 1 PoA document has been verified');
+    } else {
+        $client->propagate_clear_status('address_verified');
+    }
 }
 
 # Deleting checked statuses

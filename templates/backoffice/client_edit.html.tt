@@ -278,10 +278,17 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     <tr>
         <td class="bg-lightgrey" colspan="2">#Postal address</td>
     </tr>
-    [% IF address_verification_status %]
+    [% IF address_verification_status OR smarty_street_status %]
         <tr>
             <td class="label">Status</td>
-            <td>: <span class="bg-highlight">Address Verified</span></td>
+            <td>: 
+                [% IF address_verification_status %]
+                    <span class="bg-highlight">[% address_verification_status.reason || 'Address verified' %]</span>
+                [% END %]
+                [% IF smarty_street_status %]
+                    <span class="bg-skyblue">[% smarty_street_status.reason || 'Smarty Streets' %]</span>
+                [% END %]
+            </td>
         </tr>
     [% END %]
     <tr>
