@@ -1321,7 +1321,7 @@ async sub sync_onfido_details {
 This event is triggered once client or someone from backoffice
 have updated client address.
 
-It first clear existing address_verified status and then
+It first clear existing smarty_streets_validated status and then
 request again for new address.
 
 =cut
@@ -1410,7 +1410,7 @@ async sub _address_verification {
         sub {
             DataDog::DogStatsd::Helper::stats_inc('smartystreet.lookup.failure');
             # clear current status on failure, if any
-            $client->status->clear_address_verified();
+            $client->status->clear_smarty_streets_validated();
             $log->errorf('Address lookup failed for %s - %s', $client->loginid, $_[0]);
             return;
         }
@@ -1432,7 +1432,7 @@ async sub _address_verification {
         DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.success', {tags => ['verify_address:' . $status]});
         $log->debugf('Address verified with accuracy of locality level by smartystreet.');
 
-        _set_address_verified($client);
+        _set_smarty_streets_validated($client);
     }
 
     await $redis_events_write->hset('ADDRESS_VERIFICATION_RESULT' . $client->binary_user_id,
@@ -1554,9 +1554,9 @@ sub _get_document_details {
     return $doc;
 }
 
-=head2 _set_address_verified
+=head2 _set_smarty_streets_validated
 
-This method sets the specified client as B<address_verified> by SmartyStreets.
+This method sets the specified client as B<smarty_streets_validated> by SmartyStreets.
 
 It takes the following arguments:
 
@@ -1570,15 +1570,13 @@ Returns undef.
 
 =cut
 
-sub _set_address_verified {
+sub _set_smarty_streets_validated {
     my $client      = shift;
-    my $status_code = 'address_verified';
-    my $reason      = 'SmartyStreets - address verified';
+    my $status_code = 'smarty_streets_validated';
+    my $reason      = 'SmartyStreets verified';
     my $staff       = 'system';
 
     $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $status_code, $reason);
-
-    BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $client->loginid});
 
     $client->status->setnx($status_code, $staff, $reason);
 

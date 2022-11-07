@@ -3035,6 +3035,8 @@ subtest 'verify address' => sub {
     $dd_bag               = {};
 
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    $test_client->status->_build_all;
+    ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request' => undef,
@@ -3047,6 +3049,8 @@ subtest 'verify address' => sub {
     $dd_bag                      = {};
 
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    $test_client->status->_build_all;
+    ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'   => undef,
@@ -3060,6 +3064,8 @@ subtest 'verify address' => sub {
     $dd_bag                      = {};
 
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    $test_client->status->_build_all;
+    ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'   => undef,
@@ -3074,6 +3080,8 @@ subtest 'verify address' => sub {
     $dd_bag                      = {};
 
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    $test_client->status->_build_all;
+    ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'   => undef,
@@ -3087,6 +3095,8 @@ subtest 'verify address' => sub {
     $dd_bag                      = {};
 
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    $test_client->status->_build_all;
+    ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'   => undef,
@@ -3105,6 +3115,8 @@ subtest 'verify address' => sub {
     $address_verification_future = undef;
 
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    $test_client->status->_build_all;
+    ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'        => undef,
@@ -3123,6 +3135,8 @@ subtest 'verify address' => sub {
     $verify_future               = Future->fail('failure');
 
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    $test_client->status->_build_all;
+    ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'   => undef,
@@ -3148,6 +3162,8 @@ subtest 'verify address' => sub {
     $redis_hset_data             = {};
     $verify_details              = {};
 
+    ok !$test_client->status->smarty_streets_validated, 'not smarty verified';
+    $test_client->status->_build_all;
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
     cmp_deeply $dd_bag,
         {
@@ -3196,7 +3212,8 @@ subtest 'verify address' => sub {
     $verify_details              = {};
 
     is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
-
+    $test_client->status->_build_all;
+    ok $test_client->status->smarty_streets_validated, 'smarty verified';
     cmp_deeply $dd_bag,
         {
         'event.address_verification.request'        => undef,
