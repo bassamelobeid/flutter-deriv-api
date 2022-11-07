@@ -1087,20 +1087,25 @@ compliance:
           global: 1
           default: ""
     aml_risk_thresholds:
-      description: "AML risk level transaction thresholds (in EUR)"
+      description: "AML risk level transaction thresholds (in EUR) for Deriv accounts"
       isa: json_string
       global: 1
-      default: '{"CR": {"yearly_standard": 10000, "yearly_high": 20000}, "MF": {"yearly_standard": 10000, "yearly_high": 20000} }'
+      default: '{"svg": {"yearly_standard": 10000, "yearly_high": 20000}, "maltainvest": {"yearly_standard": 10000, "yearly_high": 20000}}'
     mt5_risk_thresholds:
-      description: "AML risk level transaction thresholds (in EUR)"
+      description: "AML risk level transaction thresholds for MT5 accouts"
       isa: json_string
       global: 1
-      default: '{"real/bvi": {"yearly_standard": null, "yearly_high": null}, "real/labuan": {"yearly_standard": null, "yearly_high": null}, "real/vanuatu": {"yearly_standard": null, "yearly_high": null} }'
-    jurisdiction_risk_rating:
-      description: "Defines the jurisdiction risk ratings for certain countries"
+      default: '{"labuan": {"yearly_standard": null, "yearly_high": null}, "bvi": {"yearly_standard": null, "yearly_high": null}, "vanuatu": {"yearly_standard": null, "yearly_high": null} }'
+    aml_jurisdiction_risk_rating:
+      description: "The jurisdiction risk ratings of landing companies, defined as arrays of standrd- and high-risk country codes"
       isa: json_string
       global: 1
-      default: '{"standard":[], "high":[]}'
+      default: '{"maltainvest": {"standard":[], "high":[]} }'
+    mt5_jurisdiction_risk_rating:
+      description: "The MT5 jurisdiction risk ratings of landing companies, mapping from landing company name to arrays for 'standard' and 'high'-risk country codes"
+      isa: json_string
+      global: 1
+      default: '{"labuan": {"standard":[], "high":[]}, "vanuatu": {"standard":[], "high":[]}, "bvi": {"standard":[], "high":[]} }'
     enhanced_due_diligence:
       description: "Enhanced Due Diligence (EDD) settings"
       isa: section

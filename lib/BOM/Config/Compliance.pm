@@ -15,19 +15,20 @@ This module implements methods to easily load and save global compliance-related
 =cut
 
 use Format::Util::Numbers qw(financialrounding);
-use List::Util            qw(any uniq);
+use List::Util            qw(any uniq none);
 use Scalar::Util          qw(looks_like_number);
 use JSON::MaybeUTF8       qw(decode_json_utf8 encode_json_utf8);
 
+use LandingCompany::Registry;
 use BOM::Config::Runtime;
 
 use constant RISK_THRESHOLDS => ({
-        name  => 'yearly_high',
-        title => 'Yearly High Risk'
-    },
-    {
         name  => 'yearly_standard',
         title => 'Yearly Standard Risk'
+    },
+    {
+        name  => 'yearly_high',
+        title => 'Yearly High Risk'
     },
 );
 
@@ -78,8 +79,8 @@ The return thresholds by broker codes is a hash-ref with the following structure
 
 {
     revision: ...,
-    CR: { high: ..., standard: ...},
-    MF: { high: ..., standard: ...}
+    svg: { high: ..., standard: ...},
+    maltainvest: { high: ..., standard: ...}
 }
 
 =cut
@@ -88,22 +89,41 @@ sub get_risk_thresholds {
     my ($self, $type) = @_;
 
     die 'Threshold type is missing'    unless $type;
-    die "Invalid threshold type $type" unless $type =~ qr/(aml|mt5)/;
+    die "Invalid threshold type $type" unless $type =~ qr/^(aml|mt5)$/;
 
     my $app_config = $self->_app_config;
-    return {
-        decode_json_utf8($app_config->get("compliance.${type}_risk_thresholds"))->%*,
-        revision => $app_config->global_revision(),
-    };
+    my %config     = decode_json_utf8($app_config->get("compliance.${type}_risk_thresholds"))->%*;
+
+    # We used to save AML risk thresholds by broker code. In order to avoid data loss,
+    # broker codes are converted to landing company short names. This part can be removed if settings are rewritten once from the compliance dashboard backoffice.
+    for my $code (keys %config) {
+        my $lc = LandingCompany::Registry->by_broker($code);
+        if ($lc) {
+            $config{$lc->short} = $config{$code};
+            delete $config{$code};
+        }
+    }
+
+    my @valid_landing_companies = grep { $_->risk_lookup->{"${type}_thresholds"} } LandingCompany::Registry->get_all;
+
+    my $result;
+    for my $lc (@valid_landing_companies) {
+        $result->{$lc->short}->{"yearly_$_"} = $config{$lc->short}->{"yearly_$_"} for RISK_LEVELS;
+    }
+
+    $result->{revision} = $app_config->global_revision;
+    return $result;
 }
 
 =head2 validate_risk_thresholds
 
-Takes the risk thresholds (AML or MT5) and validates their values. It works with these args:
+Takes the aml risk thresholds and validates their values. It works with these args:
 
 =over 4
 
-=item * C<%values> - risk thresholds by broker code, represented as a hash
+=item * C<%values> - risk thresholds by broker code, represented as a hash; for example:
+
+( svg => {standard => 10000, high => 20000}, maltainvest => {standard => 10000, high => 20000}, ... )
 
 =back
 
@@ -112,27 +132,41 @@ It returns the same thresholds in a hash-ref with financial rounding applied.
 =cut
 
 sub validate_risk_thresholds {
-    my ($self, %values) = @_;
+    my ($self, $type, %values) = @_;
 
-    for my $broker (keys %values) {
-        next if $broker eq 'revision';
+    my @valid_landing_companies = grep { $_->risk_lookup->{"${type}_thresholds"} } LandingCompany::Registry->get_all;
 
-        my $broker_settings = $values{$broker};
+    # Broker codes are converted to landing company short names (for backward compatibility)
+    for my $code (keys %values) {
+        my $lc = LandingCompany::Registry->by_broker($code);
+        if ($lc) {
+            $values{$lc->short} = $values{$code};
+            delete $values{$code};
+        }
+    }
+
+    for my $landing_company (keys %values) {
+        next if $landing_company eq 'revision';
+
+        die "AML risk thresholds are not applicable to the landing company $landing_company"
+            if none { $landing_company eq $_->short } @valid_landing_companies;
+
+        my $lc_settings = $values{$landing_company};
         for my $threshold (RISK_THRESHOLDS) {
-            my $value = $broker_settings->{$threshold->{name}};
+            my $value = $lc_settings->{$threshold->{name}};
 
             if ($value) {
-                die "Invalid numeric value for $broker $threshold->{title}: $value\n" unless looks_like_number($value) and $value > 0;
+                die "Invalid numeric value for $landing_company $threshold->{title}: $value\n" unless looks_like_number($value) and $value > 0;
                 $value = financialrounding('amount', 'EUR', $value);
             } else {
                 $value = undef;
             }
-            $broker_settings->{$threshold->{name}} = $value;
+            $lc_settings->{$threshold->{name}} = $value;
         }
 
-        if ($broker_settings->{yearly_high} && $broker_settings->{yearly_standard}) {
-            die "Yearly Standard threshold is higher than Yearly High Risk threshold - $broker\n"
-                if $broker_settings->{yearly_standard} > $broker_settings->{yearly_high};
+        if ($lc_settings->{yearly_high} && $lc_settings->{yearly_standard}) {
+            die "Yearly Standard threshold is higher than Yearly High Risk threshold - $landing_company\n"
+                if $lc_settings->{yearly_standard} > $lc_settings->{yearly_high};
         }
     }
 
@@ -157,68 +191,82 @@ Gets list of countries categorized by their landing company name, along with the
 
 Example:
 
-    my $compliance_comfig = BOM::Config::Compliance->new();
-    my $result            = $compliance_config->get_jurisdiction_risk_rating();
+    my $compliance_config = BOM::Config::Compliance->new();
+    my $result            = $compliance_config->get_jurisdiction_risk_rating('aml');
 
 Returns a hashref with the following structure:
 
-{ revision => ..., standard => [...], hight => [...] } 
+{ revision => ..., maltainvest => {standard => [...], hight => [...]},  bvi => {standard => [...], hight => [...]}, ... } 
 
 =cut
 
 sub get_jurisdiction_risk_rating {
-    my ($self) = @_;
+    my ($self, $type) = @_;
+
+    die 'Threshold type is missing'    unless $type;
+    die "Invalid threshold type $type" unless $type =~ qr/^(aml|mt5)$/;
 
     my $app_config = $self->_app_config;
-    my $result     = decode_json_utf8($app_config->get('compliance.jurisdiction_risk_rating'));
+    my $config     = decode_json_utf8($app_config->get("compliance.${type}_jurisdiction_risk_rating"));
+
+    my @valid_landing_companies = grep { scalar $_->risk_lookup->{"${type}_jurisdiction"} } LandingCompany::Registry->get_all;
+
+    # Output structure is the same as app_config's; but it will contain all landing companies and risk levels (even if country lists are empty).
+    # The data is ready to show and edit in backoffice.
+    my $result;
+    for my $lc (@valid_landing_companies) {
+        next if none { $_ eq "${type}_jurisdiction" } $lc->risk_settings->@*;
+
+        $config->{$lc->short}->{$_} //= [] for RISK_LEVELS;
+        $result->{$lc->short}->{$_} = [sort $config->{$lc->short}->{$_}->@*] for RISK_LEVELS;
+    }
+
     $result->{revision} = $app_config->global_revision;
-
-    $result->{$_} //= [] for RISK_LEVELS;
-    $result->{$_} = [sort $result->{$_}->@*] for RISK_LEVELS;
-
     return $result;
 }
 
 =head2 validate_jurisdiction_risk_rating
 
 Saves the country lists assigned to jurisdiction risk levels. It also validates the input and reutrns an error message on failure.
-It accepts the following named args:
+It accepts the risk ratings in the following format:
 
-=over 4
-
-=item * standard - list of countries with standard risk level.
-
-=item * high - list of countries with high risk level.
-
-=item * revision - app-config revision with which the data was retrieved.
-
-=back
+( revision => ..., maltainvest => {standard => [...], hight => [...]},  bvi => {standard => [...], hight => [...]}, ... )
 
 It returns the same structure as a hash-ref with sorted, unique country lists.
 
 =cut
 
 sub validate_jurisdiction_risk_rating {
-    my ($self, %args) = @_;
+    my ($self, $type, %args) = @_;
 
-    # an auxilary hash for finding duplicate country codes
-    my %contry_to_risk_level;
+    my $result = {};
 
-    my $result;
-    for my $risk_level (RISK_LEVELS) {
-        my @country_list = uniq $args{$risk_level}->@*;
+    my @valid_landing_companies = grep { scalar $_->risk_lookup->{"${type}_jurisdiction"} } LandingCompany::Registry->get_all;
 
-        for my $country (@country_list) {
-            next unless $country;
-            if ($contry_to_risk_level{$country}) {
-                die "Duplicate country found: <$country> appears both in $contry_to_risk_level{$country} and $risk_level risk listings\n";
-            } else {
-                $contry_to_risk_level{$country} = $risk_level;
+    for my $lc (keys %args) {
+        next if $lc eq 'revision';
+
+        die "Jursdiction risk ratings are not applicable to the landing company $lc" if none { $lc eq $_->short } @valid_landing_companies;
+
+        # an auxilary hash for finding duplicate country codes
+        my %country_to_risk_level;
+
+        for my $risk_level (RISK_LEVELS) {
+            my @country_list = uniq $args{$lc}->{$risk_level}->@*;
+
+            for my $country (@country_list) {
+                next unless $country;
+                if ($country_to_risk_level{$country}) {
+                    die
+                        "Duplicate country found in $lc jurisdiction ratings: <$country> appears both in $country_to_risk_level{$country} and $risk_level listings\n";
+                } else {
+                    $country_to_risk_level{$country} = $risk_level;
+                }
+
+                die "Invalid country code <$country> in $risk_level risk listing\n" unless $self->_countries->country_from_code($country);
             }
-
-            die "Invalid country code <$country> in $risk_level risk listing\n" unless $self->_countries->country_from_code($country);
+            $result->{$lc}->{$risk_level} = [sort @country_list];
         }
-        $result->{$risk_level} = [sort @country_list];
     }
 
     return $result;
