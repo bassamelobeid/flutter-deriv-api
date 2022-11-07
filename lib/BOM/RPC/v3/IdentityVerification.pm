@@ -65,7 +65,6 @@ rpc identity_verification_document_add => sub {
     };
 
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
-
     $idv_model->claim_expired_document_chance() if $idv_model->has_expired_document_chance() && $idv_model->submissions_left() == 0;
 
     $idv_model->add_document({
@@ -74,7 +73,7 @@ rpc identity_verification_document_add => sub {
         number          => $document_number
     });
 
-    BOM::Platform::Event::Emitter::emit('identity_verification_requested', {loginid => $client->loginid});
+    $idv_model->identity_verification_requested($client);
 
     return 1;
 };

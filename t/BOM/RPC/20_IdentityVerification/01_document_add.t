@@ -29,6 +29,8 @@ my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 
 $user->add_client($client_cr);
+$client_cr->binary_user_id($user->id);
+$client_cr->save;
 
 my $token_model = BOM::Platform::Token::API->new;
 my $token_cr    = $token_model->create_token($client_cr->loginid, 'test token');
@@ -36,8 +38,9 @@ my $token_cr    = $token_model->create_token($client_cr->loginid, 'test token');
 my $idv_model = BOM::User::IdentityVerification->new(user_id => $client_cr->binary_user_id);
 
 subtest 'identity_verification_document_add' => sub {
-    my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
-    my $mock_emitter   = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $mock_idv_model            = Test::MockModule->new('BOM::User::IdentityVerification');
+    my $mock_emitter              = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $previous_submissions_left = $idv_model->submissions_left();
 
     my @raised_events = ();
     $mock_emitter->mock(
@@ -210,10 +213,10 @@ subtest 'identity_verification_document_add' => sub {
     $client_cr->status->upsert('allow_document_upload', 'system', 'CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT');
     $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
 
-    is scalar @raised_events, 4, 'three events have raised';
-    is_deeply \@raised_events,
-        ['identity_verification_requested', 'identity_verification_requested', 'identity_verification_requested', 'identity_verification_requested'],
-        'the raised events are correct';
+    is scalar @raised_events, 1, 'only once due to pending lock';
+    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised events are correct';
+
+    is $idv_model->submissions_left(), $previous_submissions_left - 1, 'Expected submission used';
 
     @raised_events = ();
 
@@ -223,10 +226,14 @@ subtest 'identity_verification_document_add' => sub {
         document_number => '00000000A00',
     };
     $client_cr->status->upsert('allow_document_upload', 'system', 'CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT');
+
+    $idv_model->remove_lock;
     $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error->result;
 
     is scalar @raised_events, 1, 'one event has raised';
     is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
+
+    is $idv_model->submissions_left(), $previous_submissions_left - 2, 'Expected submission used';
 
     my $document = $idv_model->get_standby_document();
 
