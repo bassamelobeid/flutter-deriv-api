@@ -80,13 +80,16 @@ async sub verify_identity {
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die sprintf("Could not initiate client for loginid: %s", $loginid);
 
-    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+    my $idv_model    = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+    my $pending_lock = $idv_model->get_pending_lock();
+    $idv_model->remove_lock();
+
+    die sprintf("No pending lock found for loginid: %s", $client->loginid) unless defined $pending_lock;
 
     # head scratching huh? however the claim was made at RPC level, if the event gets here
     # and submissions left = 0 the only way could've been by expired chance used.
     my $has_expired_chance = $idv_model->has_expired_document_chance();
-    die sprintf("No submissions left, IDV request has ignored for loginid: %s", $client->loginid)
-        if $idv_model->submissions_left($client) <= 0 && $has_expired_chance;
+    die sprintf("No submissions left, IDV request has ignored for loginid: %s", $client->loginid) if $pending_lock <= 0 && $has_expired_chance;
 
     die $log->errorf('Could not trigger IDV, microservice is not enabled.') unless BOM::Config::Services->is_enabled('identity_verification');
 
@@ -103,8 +106,6 @@ async sub verify_identity {
     try {
         $log->debugf('Start triggering identity verification microservice (contacting %s) for document %s associated by loginid: %s',
             $provider, $document->{id}, $loginid);
-
-        $idv_model->incr_submissions();
 
         my $request_start = [Time::HiRes::gettimeofday];
 
@@ -186,8 +187,6 @@ async sub verify_process {
         or die sprintf("Could not initiate client for loginid: %s", $loginid);
 
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
-
-    die sprintf("No submissions left, IDV request has ignored for loginid: %s", $client->loginid) unless $idv_model->submissions_left($client);
 
     die $log->errorf('Could not trigger IDV, microservice is not enabled.') unless BOM::Config::Services->is_enabled('identity_verification');
 

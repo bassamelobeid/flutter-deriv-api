@@ -16,7 +16,10 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Config::Redis;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
 use BOM::User::IdentityVerification;
+
+use constant IDV_LOCK_PENDING => 'IDV::LOCK::PENDING::';
 
 my $idv_mock = Test::MockModule->new('BOM::Event::Actions::Client::IdentityVerification');
 my $encoding = {};
@@ -127,6 +130,9 @@ subtest 'verify identity by smile_identity through microservice is passed and da
         type            => 'national_id'
     });
 
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
     $client->address_postcode('12345900');
@@ -229,6 +235,9 @@ subtest 'microservice address verified' => sub {
         type            => 'cpf'
     });
 
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
     $client->address_postcode('12345900');
@@ -299,6 +308,9 @@ subtest 'microservice is unavailable' => sub {
         number          => '99989',
         type            => 'dl'
     });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
     ok $idv_event_handler->($args)->get, 'the event processed without error';
 
@@ -416,6 +428,9 @@ subtest 'testing failed status' => sub {
         type            => 'cpf'
     });
 
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
     $client->address_postcode('12345900');
@@ -488,6 +503,9 @@ subtest 'testing pass status' => sub {
         type            => 'cpf'
     });
 
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
     $client->address_postcode('12345900');
@@ -558,6 +576,9 @@ subtest 'testing the exceptions verify_identity' => sub {
         loginid => $client->loginid,
     };
 
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
     $error = exception {
         $idv_event_handler->($args)->get;
     };
@@ -573,6 +594,7 @@ subtest 'testing the exceptions verify_identity' => sub {
         });
 
     $idv_microservice = 0;
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
     $error = exception {
         $idv_event_handler->($args)->get;
@@ -592,6 +614,7 @@ subtest 'testing the exceptions verify_identity' => sub {
         });
 
     $submissions_left = 0;
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 0);
 
     $error = exception {
         $idv_event_handler->($args)->get;
@@ -658,27 +681,6 @@ subtest 'testing the exceptions verify_process' => sub {
     ok $error=~ /Could not trigger IDV, microservice is not enabled./, 'expected exception caught no idv';
 
     $idv_microservice = 1;
-
-    my $idv_model_mock = Test::MockModule->new('BOM::User::IdentityVerification');
-
-    my $submissions_left;
-
-    $idv_model_mock->mock(
-        'submissions_left',
-        sub {
-            return $submissions_left;
-        });
-
-    $submissions_left = 0;
-
-    $error = exception {
-        $idv_event_handler->($args)->get;
-    };
-
-    ok $error=~ /No submissions left, IDV request has ignored for loginid: CR10006/, 'expected exception caught no submissions';
-
-    $idv_model_mock->unmock_all();
-
 };
 
 subtest 'testing refuted status' => sub {
@@ -715,6 +717,9 @@ subtest 'testing refuted status' => sub {
         number          => '123.456.789-33',
         type            => 'cpf'
     });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
@@ -787,6 +792,9 @@ subtest 'testing unavailable status' => sub {
         number          => '123.456.789-33',
         type            => 'cpf'
     });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
@@ -877,6 +885,10 @@ subtest 'testing pass status and DOB' => sub {
                     messages => [],
                     report   => {birthdate => "1988-02-12"}})));
 
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $idv_model->user_id, 1);
+    ok $redis->get(IDV_LOCK_PENDING . $idv_model->user_id), 'There is a redis lock';
+
     ok $idv_event_handler->($args)->get, 'the event processed without error';
 
     my $document = $idv_model->get_last_updated_document;
@@ -896,6 +908,7 @@ subtest 'testing pass status and DOB' => sub {
         'Document has refuted from pass -  status name mismatch'
     );
 
+    ok !$redis->get(IDV_LOCK_PENDING . $idv_model->user_id), 'There isn\'t a redis lock';
 };
 
 subtest 'testing pass status and underage' => sub {
@@ -932,6 +945,9 @@ subtest 'testing pass status and underage' => sub {
         number          => '123.456.789-33',
         type            => 'cpf'
     });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
@@ -1008,6 +1024,9 @@ subtest 'testing refuted status and expired' => sub {
         number          => '123.456.789-33',
         type            => 'cpf',
     });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
@@ -1086,6 +1105,9 @@ subtest 'testing refuted status and dob mismatch' => sub {
         type            => 'cpf',
     });
 
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
     $client->address_postcode('12345900');
@@ -1161,6 +1183,9 @@ subtest 'testing refuted status and name mismatch' => sub {
         number          => '123.456.789-33',
         type            => 'cpf',
     });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
@@ -1307,6 +1332,8 @@ subtest 'testing connection refused' => sub {
         type            => 'cpf'
     });
 
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
     $client->address_postcode('12345900');
@@ -1341,7 +1368,7 @@ subtest 'testing connection refused' => sub {
 
     my $current_submissions = $redis->get('IDV::REQUEST::PER::USER::' . $client->binary_user_id);
 
-    is $current_submissions, $previous_submissions, 'Submissions should be reset';
+    is $current_submissions, $previous_submissions - 1, 'Submissions should be reset';
 
 };
 
@@ -1381,6 +1408,8 @@ subtest 'testing unexpected error' => sub {
         number          => '123.456.789-33',
         type            => 'cpf'
     });
+
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
 
     $client->address_line_1('Fake St 123');
     $client->address_line_2('apartamento 22');
