@@ -451,7 +451,7 @@ Manages advertiser payment methods:
 
 =cut
 
-p2p_rpc p2p_advertiser_payment_methods => sub {
+p2p_rpc p2p_advertiser_payment_methods => readonly => 1 => sub {
     my (%args) = @_;
 
     my $client = $args{client};
