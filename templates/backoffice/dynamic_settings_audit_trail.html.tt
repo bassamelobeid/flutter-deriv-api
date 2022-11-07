@@ -4,7 +4,8 @@
 <a class="btn btn--secondary" href="[% request.url_for('backoffice/' _ referrer) %]">Back</a>
 [% END %]
 
-<table class="small alternate">
+<div style="display: block; overflow-x: auto; white-space: nowrap;">
+<table class="small alternate" style="white-space: nowrap;">
     [% IF history.size %]
     <thead>
         <tr>
@@ -50,3 +51,4 @@
         </tr>
     </tfoot>
 </table>
+<div>

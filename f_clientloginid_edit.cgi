@@ -24,6 +24,7 @@ use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::User::Client;
 use BOM::Config::Redis;
+use BOM::Config::Compliance;
 use BOM::Backoffice::Request qw(request);
 use BOM::User;
 use BOM::User::Utility;
@@ -1551,13 +1552,29 @@ foreach my $lid ($user_clients->@*) {
 }
 
 # show MT5 a/c
+
+# inverse jurisdiction ratings; for example high => [id, ru] is converted to {id => high, ru => high}
+my $mt5_jurisdiction = BOM::Config::Compliance->get_jurisdiction_risk_rating('mt5');
+delete $mt5_jurisdiction->{revision};
+for my $landing_company (keys %$mt5_jurisdiction) {
+    for my $risk_level (BOM::Config::Compliance::RISK_LEVELS) {
+        $mt5_jurisdiction->{$landing_company}->{country_risk}->{$_} = $risk_level for $mt5_jurisdiction->{$landing_company}->{$risk_level}->@*;
+    }
+}
+
 foreach my $mt_ac ($mt_logins->@*) {
     print "<li>" . encode_entities($mt_ac);
 
     my ($group, $status) = get_mt5_group_and_status($mt_ac);
 
     if ($group) {
-        print " (" . encode_entities($group) . ")" . " ( $status )";
+        my $landing_company = BOM::User::Utility::parse_mt5_group($group)->{landing_company_short};
+
+        my $jurisdiction_risk;
+        $jurisdiction_risk = $mt5_jurisdiction->{$landing_company}->{country_risk}->{$client->residence} if $mt5_jurisdiction->{$landing_company};
+        $jurisdiction_risk //= 'low';
+
+        print " (" . encode_entities($group) . "), jur. risk= $jurisdiction_risk" . " ( $status )";
     } else {
         print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
     }

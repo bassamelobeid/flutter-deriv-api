@@ -31,27 +31,24 @@ my $compliance_config   = BOM::Config::Compliance->new;
 
 my $what_to_do = request()->param('whattodo') // '';
 
-if (!$thresholds_readonly && $what_to_do =~ qr/^save_thresholds_(.*)$/) {
-    my $type = $1;
+if (!$thresholds_readonly && $what_to_do =~ qr/^save_thresholds_(\w+)_(\w+)$/) {
+    my ($type, $landing_company) = ($1, $2);
 
     $thresholds->{$type} = $compliance_config->get_risk_thresholds($type);
-
     delete $thresholds->{$type}->{revision};
 
-    for my $broker (keys $thresholds->{$type}->%*) {
-        my %values = ();
-        for my $threshold (BOM::Config::Compliance::RISK_THRESHOLDS) {
-            my $name  = $threshold->{name};
-            my $value = request()->param("$broker.$name") || undef;
+    my %values = ();
+    for my $threshold (BOM::Config::Compliance::RISK_THRESHOLDS) {
+        my $name  = $threshold->{name};
+        my $value = request()->param("$landing_company.$name") || undef;
 
-            $values{$name} = $value if $value;
-        }
-        $thresholds->{$type}->{$broker} = \%values;
+        $values{$name} = $value if $value;
     }
+    $thresholds->{$type}->{$landing_company} = \%values;
 
-    my $revision = request()->param("revision_thresholds_$type");
+    my $revision = request()->param("revision");
     try {
-        my $data = $compliance_config->validate_risk_thresholds($thresholds->{$type}->%*);
+        my $data = $compliance_config->validate_risk_thresholds($type, $thresholds->{$type}->%*);
 
         BOM::DynamicSettings::save_settings({
                 settings => {
@@ -62,74 +59,100 @@ if (!$thresholds_readonly && $what_to_do =~ qr/^save_thresholds_(.*)$/) {
                 save              => 'global',
             });
         # let thresholds be reloaded after successful save
-        delete $thresholds->{$type};
+        undef $thresholds->{$type};
     } catch ($e) {
         print "<p class=\"error\">Error: $e </p>";
         $thresholds->{$type}->{revision} = $revision;
     };
-} elsif ($what_to_do eq 'save_jurisdiction_risk_rating') {
-    $jurisdiction_rating = $compliance_config->get_jurisdiction_risk_rating();
-    delete $jurisdiction_rating->{revision};
+} elsif ($what_to_do =~ qr/^save_jurisdiction_risk_rating_(\w+)_(\w+)$/) {
+    my ($type, $landing_company) = ($1, $2);
+
+    $jurisdiction_rating->{$type} = $compliance_config->get_jurisdiction_risk_rating($type);
+    delete $jurisdiction_rating->{$type}->{revision};
 
     for my $risk_level (BOM::Config::Compliance::RISK_LEVELS) {
-        my $value = request()->param("jurisdiction_risk.$risk_level") // '';
+        my $value = request()->param("$landing_company.$risk_level") // '';
 
-        $jurisdiction_rating->{$risk_level} = [split ' ', $value];
+        $jurisdiction_rating->{$type}->{$landing_company}->{$risk_level} = [split ' ', $value];
     }
 
-    my $revision = request()->param("jurisdiction_risk_revision") // '';
+    my $revision = request()->param("revision") // '';
     try {
-        my $result = $compliance_config->validate_jurisdiction_risk_rating(%$jurisdiction_rating);
+        my $result = $compliance_config->validate_jurisdiction_risk_rating($type, $jurisdiction_rating->{$type}->%*);
 
         BOM::DynamicSettings::save_settings({
                 settings => {
-                    revision                              => $revision,
-                    'compliance.jurisdiction_risk_rating' => encode_json_utf8($result),
+                    revision                                      => $revision,
+                    "compliance.${type}_jurisdiction_risk_rating" => encode_json_utf8($result),
                 },
-                settings_in_group => ['compliance.jurisdiction_risk_rating'],
+                settings_in_group => ["compliance.${type}_jurisdiction_risk_rating"],
                 save              => 'global',
             });
 
-        $jurisdiction_rating = undef;
+        $jurisdiction_rating->{$type} = undef;
     } catch ($e) {
         print '<p class="error"> ' . encode_entities($e) . '</p>';
-        $jurisdiction_rating->{revision} = $revision;
+        $jurisdiction_rating->{$type}->{revision} = $revision;
     }
 }
 
-for my $threshold_type (qw/aml mt5/) {
-    Bar(uc($threshold_type) . ' RISK THRESHOLDS');
+$thresholds->{$_}          //= $compliance_config->get_risk_thresholds($_)          for qw/aml mt5/;
+$jurisdiction_rating->{$_} //= $compliance_config->get_jurisdiction_risk_rating($_) for qw/aml mt5/;
 
-    my $data     = $thresholds->{$threshold_type} // $compliance_config->get_risk_thresholds($threshold_type);
-    my $revision = delete $data->{revision};
+my $show_landing_company = sub {
+    my ($type, $landing_company) = @_;
+    my $is_mt5 = $type eq 'mt5';
+
+    # Compliance team insists to show broker codes CR and MF rather than landing company names svg and maltainvest
+    my $lc_display_name = $is_mt5 ? $landing_company->short : $landing_company->broker_codes->[0];
 
     BOM::Backoffice::Request::template()->process(
-        'backoffice/transaction_thresholds.html.tt',
+        'backoffice/aml_risk_settings.html.tt',
         {
-            url              => request()->url_for('backoffice/compliance_dashboard.cgi'),
-            threshold_type   => $threshold_type,
-            data             => $data,
-            revision         => $revision,
-            broker_codes     => [sort keys %$data],
-            threshold_names  => [BOM::Config::Compliance::RISK_THRESHOLDS],
-            dynamic_settings => "compliance.${threshold_type}_risk_thresholds",
-            is_readonly      => $thresholds_readonly,
+            url             => request()->url_for('backoffice/compliance_dashboard.cgi'),
+            type            => $type,
+            landing_company => $landing_company->short,
+            lc_display_name => $lc_display_name,
+            is_mt5          => $is_mt5,
+            thresholds      => $thresholds->{$type},
+            jurisdiction    => $jurisdiction_rating->{$type},
+            threshold_names => [BOM::Config::Compliance::RISK_THRESHOLDS],
+            risk_levels     => [BOM::Config::Compliance::RISK_LEVELS],
+            is_readonly     => $thresholds_readonly,
         }) || die BOM::Backoffice::Request::template()->error() . "\n";
+};
+
+my @all_landing_companies = LandingCompany::Registry->get_all();
+
+Bar('AML Risk Settings');
+print '<table>';
+for my $landing_company (@all_landing_companies) {
+    next if $landing_company eq 'revision';
+    next unless $thresholds->{aml}->{$landing_company->short} or $jurisdiction_rating->{aml}->{$landing_company->short};
+
+    $show_landing_company->('aml', $landing_company);
+}
+print '<tr> <td>'
+    . '<p><a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=compliance.aml_risk_thresholds&referrer=compliance_dashboard.cgi">See history of threshold changes</a></p>'
+    . '</td> <td>'
+    . '<p><a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=compliance.aml_jurisdiction_risk_rating&referrer=compliance_dashboard.cgi">See history of jurisdiction changes</a></p>'
+    . '</td> </tr>';
+print '</table>';
+
+Bar('MT5 AML Risk Settings');
+print '<table>';
+for my $landing_company (@all_landing_companies) {
+    next if $landing_company eq 'revision';
+    next unless $thresholds->{mt5}->{$landing_company->short} or $jurisdiction_rating->{mt5}->{$landing_company->short};
+
+    $show_landing_company->('mt5', $landing_company);
 }
 
-Bar("Jurisdiction Risk Rating");
-
-$jurisdiction_rating //= $compliance_config->get_jurisdiction_risk_rating();
-my $revision = delete $jurisdiction_rating->{revision};
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/risk_rating.html.tt',
-    {
-        url              => request()->url_for('backoffice/compliance_dashboard.cgi'),
-        data             => $jurisdiction_rating,
-        revision         => $revision,
-        risk_levels      => [BOM::Config::Compliance::RISK_LEVELS],
-        dynamic_settings => "compliance.jurisdiction_risk_rating",
-    }) || die BOM::Backoffice::Request::template()->error() . "\n";
+print '<tr> <td>'
+    . '<p><a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=compliance.mt5_risk_thresholds&referrer=compliance_dashboard.cgi">See history of threshold changes</a></p>'
+    . '</td> <td>'
+    . '<p><a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=compliance.mt5_jurisdiction_risk_rating&referrer=compliance_dashboard.cgi">See history of jurisdiction changes</a></p>'
+    . '</td> </tr>';
+print '</table>';
 
 code_exit_BO();
