@@ -323,7 +323,7 @@ sub available_accounts {
     my ($self, $args) = @_;
 
     unless ($args->{country_code}) {
-        $log->errorf("CountryCodeRequired Exception > Client ID: %s, Binary User ID: %s", $self->client->loginid, $self->client->binary_user_id);
+        $log->debugf("CountryCodeRequired Exception > Client ID: %s, Binary User ID: %s", $self->client->loginid, $self->client->binary_user_id);
         die 'CountryCodeRequired';
     }
 
