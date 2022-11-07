@@ -59,6 +59,7 @@ subtest 'sell ads' => sub {
                     branch    => '001',
                     account   => '1234',
                 }]});
+
     test_schema('p2p_advertiser_payment_methods', $resp);
     my $method = $resp->{p2p_advertiser_payment_methods};
     my ($method_id) = keys $method->%*;
@@ -74,14 +75,17 @@ subtest 'sell ads' => sub {
         contact_info       => 'call me',
         payment_method_ids => [$method_id],
     });
+
     test_schema('p2p_advert_create', $resp);
     my $advert = $resp->{p2p_advert_create};
+    $method->{$method_id}{used_by_adverts} = [$advert->{id}];
     cmp_deeply $advert->{payment_method_details}, $method, 'payment method details from advert create';
 
     $resp = $t->await::p2p_advert_info({
         p2p_advert_info => 1,
         id              => $advert->{id},
     });
+
     cmp_deeply $advert->{payment_method_details}, $method, 'payment method details from advert info';
 
     my $client       = BOM::Test::Helper::P2P::create_advertiser;
@@ -96,6 +100,7 @@ subtest 'sell ads' => sub {
     test_schema('p2p_order_create', $resp);
     my $order = $resp->{p2p_order_create};
 
+    delete $method->{$method_id}->@{qw/used_by_adverts used_by_orders/};
     cmp_deeply $order->{payment_method_details}, $method, 'got method details in from order_create';
 
     $t->await::authorize({authorize => $advertiser_token});
@@ -129,6 +134,7 @@ subtest 'sell ads' => sub {
         p2p_order_info => 1,
         id             => $order->{id},
     });
+    delete $method->{$method_id}->@{qw/used_by_adverts used_by_orders/};
     cmp_deeply $resp->{p2p_order_info}{payment_method_details}, {$method_id => $method->{$method_id}}, 'method details updated for client';
 
     $t->await::p2p_order_confirm({
@@ -243,6 +249,7 @@ subtest 'sell orders' => sub {
     });
     test_schema('p2p_order_create', $resp);
     my $order = $resp->{p2p_order_create};
+    $method->{$method_id}{used_by_orders} = [$order->{id}];
     cmp_deeply $order->{payment_method_details}, $method, 'got method details in from order_create';
 
     $resp = $t->await::p2p_order_list({
@@ -257,6 +264,7 @@ subtest 'sell orders' => sub {
         p2p_order_info => 1,
         id             => $order->{id},
     });
+    delete $method->{$method_id}->@{qw/used_by_adverts used_by_orders/};
     cmp_deeply $resp->{p2p_order_info}{payment_method_details}, $method, 'counterparty sees payment details';
 
 };
