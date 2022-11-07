@@ -13,8 +13,12 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::User;
 use BOM::User::IdentityVerification;
+use BOM::Config::Redis;
 
 use JSON::MaybeUTF8 qw( decode_json_utf8 );
+
+use constant IDV_REQUEST_PER_USER_PREFIX => 'IDV::REQUEST::PER::USER::';
+use constant IDV_LOCK_PENDING            => 'IDV::LOCK::PENDING::';
 
 my $user_cr;
 my $user_mf;
@@ -605,6 +609,41 @@ subtest 'is idv disallowed' => sub {
 
     $mocked_lc->unmock_all;
     $mocked_cli->unmock_all;
+};
+
+subtest 'identity verification requested' => sub {
+    my $emit_mocker = Test::MockModule->new('BOM::Platform::Event::Emitter');
+
+    my $emission = +{};
+
+    $emit_mocker->mock(
+        'emit',
+        sub {
+            $emission = +{@_};
+
+            return 1;
+        });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->del(IDV_REQUEST_PER_USER_PREFIX . $idv_model_ccr->user_id);
+
+    ok $idv_model_ccr->identity_verification_requested($client_cr), 'IDV succesfully requested';
+    ok $redis->ttl(IDV_LOCK_PENDING . $idv_model_ccr->user_id) > 0, 'there is a TTL';
+    is $idv_model_ccr->submissions_left(), 2, 'submission left decreased';
+
+    cmp_deeply $emission, +{identity_verification_requested => {loginid => 'CR10000'}}, 'Expected emitted event';
+
+    is $idv_model_ccr->get_pending_lock, 3, 'There is a redis lock';
+
+    ok !$idv_model_ccr->identity_verification_requested($client_cr), 'IDV did not make it';
+
+    is $client_cr->get_idv_status, 'pending', 'Pending due to IDV request lock';
+
+    $log->contains_ok(qr/Unexpected IDV request when pending flag is still alive, user:/, 'expected log found');
+
+    $idv_model_ccr->remove_lock();
+
+    ok !$idv_model_ccr->get_pending_lock, 'There isn\'t a redis lock';
 };
 
 subtest 'is_idv_disallowed (moved from rpc utility)' => sub {

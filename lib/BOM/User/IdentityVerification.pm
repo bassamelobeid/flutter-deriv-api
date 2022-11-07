@@ -21,6 +21,8 @@ use BOM::Config::Redis;
 use BOM::Database::UserDB;
 use Moo;
 
+use constant IDV_LOCK_PENDING               => 'IDV::LOCK::PENDING::';
+use constant IDV_REQUEST_PENDING_TTL        => 86400;                            # one day in second
 use constant IDV_REQUEST_PER_USER_PREFIX    => 'IDV::REQUEST::PER::USER::';
 use constant IDV_EXPIRED_CHANCE_USED_PREFIX => 'IDV::EXPIRED::CHANCE::USED::';
 use constant ONE_WEEK                       => 604_800;
@@ -467,6 +469,11 @@ Returns the mapped status.
 
 sub status {
     my ($self, $document) = @_;
+
+    # if lock exists return pending right away
+    my $redis = BOM::Config::Redis::redis_events();
+    return 'pending' if $redis->get(IDV_LOCK_PENDING . $self->user_id);
+
     $document //= $self->get_last_updated_document();
 
     return 'none' unless $document;
@@ -590,6 +597,73 @@ sub is_idv_disallowed {
     }
 
     return 0;
+}
+
+=head2 identity_verification_requested
+
+Fires the event to perform the applicant check request.
+
+This function will also take care of counter increasing and everything
+that the frontend may need to properly render the POI page.
+
+It takes:
+
+=over 4
+
+=item * C<$client> - a client instance
+
+=back
+
+Returns C<0> - if there is a pending idv doc
+Returns C<1> - if there is no pending idv doc
+
+=cut
+
+sub identity_verification_requested {
+    my ($self, $client) = @_;
+    my $redis = BOM::Config::Redis::redis_events();
+
+    unless ($redis->set(IDV_LOCK_PENDING . $self->user_id, $self->submissions_left, 'NX', 'EX', IDV_REQUEST_PENDING_TTL)) {
+        # using submissions_left as the lock value to consume al 3 submissions available for idv
+        # this should not happen as we'd expect the frontend to block further requests
+        $log->warnf('Unexpected IDV request when pending flag is still alive, user: %d', $self->user_id);
+        return 0;
+    }
+
+    $self->incr_submissions();
+
+    BOM::Platform::Event::Emitter::emit(
+        identity_verification_requested => {
+            loginid => $client->loginid,
+        });
+
+    return 1;
+}
+
+=head2 remove_lock
+
+Removes the IDV request pending lock
+
+=cut
+
+sub remove_lock {
+    my $self  = shift;
+    my $redis = BOM::Config::Redis::redis_events();
+
+    $redis->del(IDV_LOCK_PENDING . $self->user_id);
+}
+
+=head2 get_pending_lock
+
+Retrieves the IDV request pending lock, that should be the number of submissions left at lock time
+
+=cut
+
+sub get_pending_lock {
+    my $self  = shift;
+    my $redis = BOM::Config::Redis::redis_events();
+
+    return $redis->get(IDV_LOCK_PENDING . $self->user_id);
 }
 
 1;

@@ -2066,19 +2066,21 @@ subtest 'Manual POI status' => sub {
 };
 
 subtest 'IDV status' => sub {
-    my $client = BOM::User::Client->rnew(
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         residence   => 'br',
         citizen     => 'br',
         email       => 'idv-poi-status@email.com',
         loginid     => 'CR191003'
-    );
+    });
     my $user = BOM::User->create(
         email          => 'idv-poi-status@email.com',
         password       => BOM::User::Password::hashpw('asdf12345'),
         email_verified => 1,
     );
     $user->add_client($client);
+    $client->binary_user_id($user->id);
+    $client->save;
 
     my $tests = [{
             document => {
