@@ -512,25 +512,30 @@ it is used in bom-backoffice->f_clientloginid_edit.cgi and bom-events->Authentic
 
 sub set_authentication_and_status {
     my ($self, $client_authentication, $staff) = @_;
+    my $address_verified;
 
     # Remove existing status to make the auth methods mutually exclusive
     $_->delete for @{$self->client_authentication_method};
 
     if ($client_authentication eq 'IDV') {
         $self->set_authentication('IDV', {status => 'pass'}, $staff);
+        $address_verified = 1;
     }
 
     if ($client_authentication eq 'ID_NOTARIZED') {
         $self->set_authentication('ID_NOTARIZED', {status => 'pass'}, $staff);
+        $address_verified = 1;
     }
 
     if ($client_authentication eq 'ID_DOCUMENT') {
         $self->set_authentication('ID_DOCUMENT', {status => 'pass'}, $staff);
         BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $self->loginid});
+        $address_verified = 1;
     }
 
     if ($client_authentication eq 'ID_ONLINE') {
         $self->set_authentication('ID_ONLINE', {status => 'pass'}, $staff);
+        $address_verified = 1;
     }
 
     if ($client_authentication eq 'NEEDS_ACTION') {
@@ -547,6 +552,9 @@ sub set_authentication_and_status {
         and $self->landing_company->short eq 'iom'
         and $self->fully_authenticated
         and $self->status->unwelcome);
+
+    $self->status->upsert('address_verified', $staff, 'address verified') if $address_verified;
+    $self->status->clear_address_verified unless $address_verified;
 
     return 1;
 }

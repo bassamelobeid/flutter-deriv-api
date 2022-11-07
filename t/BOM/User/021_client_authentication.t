@@ -137,20 +137,38 @@ subtest 'set_authentication_and_status' => sub {
     $client_cr1->set_authentication_and_status('NEEDS_ACTION', 'Sarah Aziziyan');
     ok $client_cr1->get_authentication('ID_DOCUMENT'), "Client has NEEDS_ACTION";
     ok $client_cr1->status->allow_document_upload,     "Client is allowed to upload document";
+    ok !$client_cr1->status->address_verified,         "Client is not address verified";
 
     $client_cr1->set_authentication_and_status('ID_DOCUMENT', 'Sarah Aziziyan');
     ok $client_cr1->get_authentication('ID_DOCUMENT'), "Client has ID_DOCUMENT";
     ok !$client_cr1->status->allow_document_upload,    "Authenticated client is not allowed to upload document";
+    ok $client_cr1->status->address_verified,          "Client is address verified";
 
+    $client_cr1->status->clear_address_verified();
+    $client_cr1->status->_build_all;
     $client_cr1->set_authentication_and_status('ID_NOTARIZED', 'Sarah Aziziyan');
     ok $client_cr1->get_authentication('ID_NOTARIZED'), "Client has ID_NOTARIZED";
+    ok $client_cr1->status->address_verified,           "Client is address verified";
 
+    $client_cr1->status->clear_address_verified();
+    $client_cr1->status->_build_all;
     $client_cr1->set_authentication_and_status('ID_ONLINE', 'Sarah Aziziyan');
     ok !$client_mf2->get_authentication('ID_ONLINE'), "Client has not ID_ONLINE";
+    ok $client_cr1->status->address_verified,         "Client is address verified";
 
+    $client_cr1->status->clear_address_verified();
+    $client_cr1->status->_build_all;
+    $client_cr1->set_authentication_and_status('NEEDS_ACTION', 'Sarah Aziziyan');
+    ok $client_cr1->get_authentication('ID_DOCUMENT'), "Client has NEEDS_ACTION";
+    ok $client_cr1->status->allow_document_upload,     "Client is allowed to upload document";
+    ok !$client_cr1->status->address_verified,         "Client is not address verified";
+
+    $client_cr1->status->clear_address_verified();
+    $client_cr1->status->_build_all;
     $client_cr1->set_authentication_and_status('IDV', 'Testing');
     is $client_cr1->get_authentication('IDV')->{status}, 'pass', 'Expected status';
     ok !$client_mf2->get_authentication('IDV'), "Client has not IDV";
+    ok $client_cr1->status->address_verified,   "Client is address verified";
 };
 
 subtest 'set_staff_name' => sub {

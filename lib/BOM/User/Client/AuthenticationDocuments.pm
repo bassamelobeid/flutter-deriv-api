@@ -739,6 +739,37 @@ sub pending {
     return $poi->{is_pending};
 }
 
+=head2 is_poa_verified
+
+Flag that determines whether the client has at least 1 verified PoA document.
+
+=cut
+
+has is_poa_verified => (
+    is      => 'lazy',
+    clearer => '_clear_is_poa_verified',
+);
+
+=head2 _build_is_poa_verified
+
+Computes the PoA verification status of the user.
+
+It returns C<1> if at least one of the PoA documents is verified.
+
+Otherwise it will return C<0>.
+
+=cut
+
+sub _build_is_poa_verified {
+    my ($self) = @_;
+
+    for my $doc (values $self->uploaded->{proof_of_address}->{documents}->%*) {
+        return 1 if $doc->{status} eq 'verified';
+    }
+
+    return 0;
+}
+
 =head2 pow_types
 
 Lazily computes the list of POW (proof of income/wealth) document types.
@@ -770,4 +801,5 @@ sub _build_pow_types {
 
     return $pow;
 }
+
 1;
