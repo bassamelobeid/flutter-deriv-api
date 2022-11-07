@@ -38,11 +38,11 @@ my %ERROR_MAP = do {
         DXExistingAccount     => localize('You already have Deriv X account of this type (account ID [_1]).'),
         DXInvalidAccount      => localize('An invalid Deriv X account ID was provided.'),
         DXInvalidMarketType   => localize('An invalid Deriv X market type was provided for [_1] account creation'),
-        DXDepositFailed       => localize('The required funds could not be withdrawn from your Deriv account. Pleaese try a different account.'),
+        DXDepositFailed       => localize('The required funds could not be withdrawn from your Deriv account. Please try a different account.'),
         DXDepositIncomplete   => localize('The deposit to your Deriv X account did not complete. Please contact our Customer Support team.'),
         DXInsufficientBalance => localize('Your Deriv X account balance is insufficient for this withdrawal.'),
         DXWithdrawalFailed    =>
-            localize('The required funds could not be withdrawn from your Deriv X account. Pleaese try later or use a different account.'),
+            localize('The required funds could not be withdrawn from your Deriv X account. Please try later or use a different account.'),
         DXWithdrawalIncomplete  => localize('The credit to your Deriv account did not complete. Please contact our Customer Support team.'),
         DXTransferCompleteError => localize('The transfer completed successfully, but an error occured when getting account details.'),
         DXDemoTopupBalance      =>

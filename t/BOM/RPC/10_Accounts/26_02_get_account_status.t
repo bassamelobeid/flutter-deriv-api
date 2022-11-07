@@ -193,7 +193,7 @@ subtest 'idv details' => sub {
             },
             result => {
                 submissions_left    => 3,
-                last_rejected       => ["The verfication is passed but the personal info is not available to compare."],
+                last_rejected       => ["The verification is passed but the personal info is not available to compare."],
                 status              => 'rejected',
                 reported_properties => {},
             }

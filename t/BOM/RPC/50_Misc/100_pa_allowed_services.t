@@ -176,7 +176,7 @@ subtest 'cashier_withdraw restriction' => sub {
 
         my $res = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
         cmp_deeply $res->{status},             superbagof('withdrawal_locked'),               'Cashier is locked';
-        cmp_deeply $res->{cashier_validation}, superbagof('WithdrawServiceUnavailableForPA'), 'Expected cashier verfications flags for the FE.';
+        cmp_deeply $res->{cashier_validation}, superbagof('WithdrawServiceUnavailableForPA'), 'Expected cashier verifications flags for the FE.';
 
         $tier_details->{cashier_withdraw} = 1;
 
