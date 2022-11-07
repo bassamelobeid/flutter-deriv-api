@@ -104,7 +104,7 @@ subtest 'add document' => sub {
     is $document->{document_expiration_date}, '2085-02-02 00:00:00', 'expiration date set correctly';
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_nx->add_document({
             issuing_country => 'ir',
             number          => '1234',
@@ -114,19 +114,19 @@ subtest 'add document' => sub {
     qr/is not present in table "binary_user"/, 'add document failed due to not existent user';
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_ccr->add_document();
     }
     qr/issuing_country/, 'missing issuing country';
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_ccr->add_document({issuing_country => 'ir'});
     }
     qr/number/, 'missing document number';
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_ccr->add_document({
             issuing_country => 'ir',
             number          => '1234'
@@ -249,19 +249,19 @@ subtest 'update document check' => sub {
         'Expected warning logged');
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_nx->update_document_check({document_id => -1});
     }
     qr/The document you are looking for is not there/, 'update failed due to not existent document';
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_ccr->update_document_check();
     }
     qr/document_id/, 'missing document_id';
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_ccr->update_document_check({
             document_id => $document->{id},
             provider    => 'not exists provider'
@@ -270,7 +270,7 @@ subtest 'update document check' => sub {
     qr/invalid input value for enum idv.provider/, 'invalid provider';
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_ccr->update_document_check({
             document_id => $document->{id},
             status      => 'not exists status'
@@ -415,7 +415,7 @@ subtest 'get document check detail' => sub {
     is $check->{request},  '{}',             'request is correct';
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_ccr->get_document_check_detail();
     }
     qr/document_id/, 'missing document_id';
@@ -456,7 +456,7 @@ subtest 'get claimed documents' => sub {
     is scalar @$claims, 2, 'fetched claimed docs number is correct';
 
     throws_ok {
-        local $SIG{__WARN__} = undef;
+        local $SIG{__WARN__} = sub { };
         $idv_model_ccr->get_claimed_documents();
     }
     qr/issuing_country/, 'missing issuing_country';

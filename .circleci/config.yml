@@ -67,6 +67,12 @@ jobs:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          # echo something to prevent circleci from thinking test is dead
+          while :
+            do
+            echo -n "."
+            sleep 1
+            done &
           make test
         name: core tests
     - run:

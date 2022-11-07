@@ -776,7 +776,7 @@ subtest 'test update preferred language' => sub {
     lives_ok { $user->update_preferred_language('fa'); } 'do update';
     is $user->preferred_language, 'FA', 'preferred language updated correctly';
 
-    local $SIG{__WARN__} = undef;
+    local $SIG{__WARN__} = sub { };
 
     throws_ok { $user->update_preferred_language(''); } qr/violates check constraint/, 'updating with undef value got DB error';
     is $user->preferred_language, 'FA', 'preferred language is still same FA correctly';

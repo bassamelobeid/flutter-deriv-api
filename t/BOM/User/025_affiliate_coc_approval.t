@@ -26,7 +26,7 @@ is $user->affiliate_coc_approval_required, undef, 'returns undef if user is not 
 
 $user->set_affiliate_id($id_1);
 
-local $SIG{__WARN__} = undef;
+local $SIG{__WARN__} = sub { };
 cmp_deeply(exception { $user->set_affiliate_id('123') }, {code => 'AffiliateAlreadyExist'}, 'cannot change affiliate_id');
 
 is $user->affiliate->{affiliate_id}, $id_1, 'can set affiliate_id';
