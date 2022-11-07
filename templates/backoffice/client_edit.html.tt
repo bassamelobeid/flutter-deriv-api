@@ -434,7 +434,16 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             <button name="idv_reset" onclick="return confirm('This will reset the IDV attempts counter of the client, do you want to proceed?')">Reset Now</button>
             [% END %]
         </td>
-        <td><button name="run_idv_check" type="submit" class="btn btn--primary" value="1">Run IDV Check</button></td>
+         [% IF idv_pending_lock <= 0 %] 
+            [% IF idv_submissions_left > 0 %]
+                <td><button name="run_idv_check" type="submit" class="btn btn--primary" value="1">Run IDV Check</button></td>
+            [% ELSE %]
+                <td><button name="run_idv_check" type="submit" class="btn btn--primary" value="1" disabled>No IDV submissions left</button></td>
+            [% END %]
+        [% ELSE %] 
+            <td><button name="run_idv_check" type="submit" class="btn btn--primary" value="1" disabled>Pending IDV Check</button></td>
+        [% END %] 
+        
     </tr>
 
     <tr>

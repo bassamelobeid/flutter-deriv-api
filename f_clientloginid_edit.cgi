@@ -208,7 +208,12 @@ if (defined $input{run_idv_check}) {
         code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
     }
 
-    BOM::Platform::Event::Emitter::emit('identity_verification_requested', {loginid => $loginid});
+    unless ($idv_model->submissions_left) {
+        print "<p class=\"notify notify--warning\">No IDV submissions left for client $loginid.</p>";
+        code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+    }
+
+    $idv_model->identity_verification_requested($client);
 
     print "<p class=\"notify\">Identity verification request sent.</p>";
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);

@@ -705,6 +705,7 @@ SQL
         disallow_residence_change                    => @countries_disallow_residence_change,
         onfido_pending_request                       => BOM::User::Onfido::pending_request($client->binary_user_id),
         onfido_supported_country => BOM::Config::Onfido::is_country_supported(uc($client->place_of_birth || $client->residence // '')),
+        idv_pending_lock         => $idv_model->get_pending_lock() // -1,
         idv_submissions_left     => $idv_submissions_left,
         doughflow_methods        => $doughflow_methods,
         poo_access               => $poo_access,
