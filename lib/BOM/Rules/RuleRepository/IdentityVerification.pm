@@ -135,15 +135,16 @@ rule 'idv.check_service_availibility' => {
 
         $self->fail('NotSupportedCountry') unless $countries->is_idv_supported($issuing_country);
 
+        my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
         $self->fail('IdentityVerificationDisabled')
             unless BOM::Platform::Utility::has_idv(
             country  => $issuing_country,
             provider => $configs->{provider});
 
-        my $idv_model      = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
         my $expired_bypass = $client->get_idv_status eq 'expired' && $idv_model->has_expired_document_chance();
 
-        $self->fail('NoSubmissionLeft') if BOM::User::IdentityVerification::submissions_left($client) == 0 && !$expired_bypass;
+        $self->fail('NoSubmissionLeft') if $idv_model->submissions_left($client) == 0 && !$expired_bypass;
 
         $self->fail('InvalidDocumentType') unless exists $configs->{document_types}->{$document_type};
 
