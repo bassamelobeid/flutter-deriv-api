@@ -32,11 +32,7 @@ subtest 'trading_times' => sub {
                 'submarkets' => ignore(),
             },
             {
-                'name'       => 'Synthetic Indices',
-                'submarkets' => ignore(),
-            },
-            {
-                'name'       => 'Basket Indices',
+                'name'       => 'Derived',
                 'submarkets' => ignore(),
             },
             {
