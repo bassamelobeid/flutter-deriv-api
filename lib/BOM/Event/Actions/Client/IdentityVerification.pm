@@ -35,11 +35,12 @@ use BOM::User::IdentityVerification;
 use BOM::User::Client;
 
 use constant RESULT_STATUS => {
-    pass   => 'pass',
-    verify => 'verified',
-    fail   => 'failed',
-    reject => 'refuted',
-    n_a    => 'unavailable',
+    pass     => 'pass',
+    verify   => 'verified',
+    fail     => 'failed',
+    reject   => 'refuted',
+    n_a      => 'unavailable',
+    callback => 'callback',
 };
 
 my $loop = IO::Async::Loop->new;
@@ -286,6 +287,14 @@ async sub verify_process {
         await $verified_document_handler->();
     } elsif ($status eq RESULT_STATUS->{reject}) {
         await $refuted_document_handler->(_messages_to_hashref(@messages));
+    } elsif ($status eq RESULT_STATUS->{callback}) {
+        $idv_model->update_document_check({
+            document_id  => $document->{id},
+            status       => 'deferred',
+            messages     => \@messages,
+            provider     => $provider,
+            request_body => encode_json_text($provider_request_body),
+        });
     } else {
         DataDog::DogStatsd::Helper::stats_inc(
             'event.identity_verification.failure',
