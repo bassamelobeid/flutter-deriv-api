@@ -66,8 +66,6 @@ sub activity {
 
     foreach my $loginid (sort keys %{$activity}) {
 
-        next if $self->is_broker_code_excluded($loginid);
-
         my $currency = $activity->{$loginid}->{currency};
 
         # this is for optimization else we would need to call in_usd for each record
@@ -87,19 +85,7 @@ sub activity {
 
         my @output_fields = ($when->date_yyyymmdd, $self->prefix_field($loginid));
 
-        if ($currency eq 'USD') {
-            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{pnl});
-            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{deposits});
-            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{turnover_ticktrade});
-            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{turnover_intradays});
-            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{turnover_others});
-            push @output_fields, $first_funded_date;
-            push @output_fields, financialrounding('amount', $currency, $activity->{$loginid}->{'withdrawals'});
-            push @output_fields, financialrounding('amount', $currency, ($activity->{$loginid}->{'first_funded_amount'}) // 0);
-            push @output_fields, financialrounding('amount', $currency, 1);
-        } else {
-            # we need to convert other currencies to USD as required
-            # by myaffiliates system
+        if (!($self->is_broker_code_excluded($loginid))) {
             push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{pnl});
             push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{deposits});
             push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_ticktrade});
@@ -109,8 +95,19 @@ sub activity {
             push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{'withdrawals'});
             push @output_fields,
                 financialrounding('amount', 'USD', $conversion_hash{$currency} * ($activity->{$loginid}->{'first_funded_amount'} // 0));
-            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency});
+        } else {
+            # Check if broker code is in exlcluded list and send only deposit value in csv.
+            # This is for MF CPA commission calulation. All other amounts should be 0.
+            push @output_fields, financialrounding('amount', 'USD', 0);
+            push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{deposits});
+            push @output_fields, financialrounding('amount', 'USD', 0);
+            push @output_fields, financialrounding('amount', 'USD', 0);
+            push @output_fields, financialrounding('amount', 'USD', 0);
+            push @output_fields, $first_funded_date;
+            push @output_fields, financialrounding('amount', 'USD', 0);
+            push @output_fields, financialrounding('amount', 'USD', 0);
         }
+        push @output_fields, financialrounding('amount', 'USD', $conversion_hash{$currency});
 
         $csv->combine(@output_fields);
         push @output, $self->format_data($csv->string);
