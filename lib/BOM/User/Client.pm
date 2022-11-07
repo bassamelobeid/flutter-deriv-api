@@ -4275,11 +4275,10 @@ Returns hashref keyed by id.
 
 sub _p2p_advertiser_payment_methods {
     my ($self, %param) = @_;
-
     my $result = $self->db->dbic->run(
         fixup => sub {
             $_->selectall_hashref(
-                'SELECT id, is_enabled, method, params FROM p2p.advertiser_payment_method_list(?, ?, ?, ?)',
+                'SELECT id, is_enabled, method, params, used_by_adverts, used_by_orders FROM p2p.advertiser_payment_method_list(?, ?, ?, ?)',
                 'id',
                 {Slice => {}},
                 @param{qw/advertiser_id advert_id order_id is_enabled/});
@@ -4300,14 +4299,12 @@ Format advertiser payment methods for websocket response.
 
 sub _p2p_advertiser_payment_method_details {
     my ($self, $methods) = @_;
-
     my $defs = $self->p2p_payment_methods(all => 1);
 
     for my $id (keys %$methods) {
         my $method_def = $defs->{$methods->{$id}{method}};
-        $methods->{$id}{display_name} = $method_def->{display_name};
-        $methods->{$id}{type}         = $method_def->{type};
-
+        $methods->{$id}{$_} = $method_def->{$_}   for qw/display_name type/;
+        $methods->{$id}{$_} = $methods->{$id}{$_} for qw/used_by_adverts used_by_orders/;
         for my $field (keys $method_def->{fields}->%*) {
             $methods->{$id}{fields}{$field} = {
                 $method_def->{fields}{$field}->%*,
@@ -4315,7 +4312,6 @@ sub _p2p_advertiser_payment_method_details {
             };
         }
     }
-
     return $methods;
 }
 
@@ -4807,9 +4803,7 @@ sub _order_details {
                 dispute_reason   => $order->{dispute_reason},
                 disputer_loginid => $order->{disputer_loginid},
             },
-            ($order->{payment_method})                                                  ? (payment_method         => $order->{payment_method}) : (),
-            ($order->{payment_method_details} and $order->{payment_method_details}->%*) ? (payment_method_details => $order->{payment_method_details})
-            : (),
+            ($order->{payment_method}) ? (payment_method => $order->{payment_method}) : (),
             ($role eq 'client' and $order->{advertiser_review_rating})
             ? (
                 review_details => {
@@ -4835,13 +4829,22 @@ sub _order_details {
             );
             $result->{is_seen} = $order->{status} eq ($last_seen_status // '') ? 1 : 0;
         }
-        if (not exists $order->{payment_method_details} and $order->{payment_method}) {
+
+        if ($order->{payment_method_details} and $order->{payment_method_details}->%*) {
+            $result->{payment_method_details} = $order->{payment_method_details};
+            my (undef, $seller) = $self->_p2p_order_parties($order);
+            if ($seller ne $self->loginid) {
+                # only the seller (pm owner) can see these fields
+                delete $result->{payment_method_details}{$_}->@{qw(used_by_adverts used_by_orders)} for keys $result->{payment_method_details}->%*;
+            }
+        } elsif ($order->{payment_method}) {
             $payment_method_defs //= $self->p2p_payment_methods(all => 1);
             $result->{payment_method_names} =
                 [map { $payment_method_defs->{$_}{display_name} } grep { exists $payment_method_defs->{$_} } split ',', $order->{payment_method}];
         }
 
         $result->{is_reviewable} = 0;
+
         if ($order->{completion_time}) {
             $result->{completion_time} = Date::Utility->new($order->{completion_time})->epoch;
             if ($order->{status} eq 'completed' and not $result->{review_details}) {
@@ -5505,6 +5508,7 @@ sub p2p_advertiser_payment_methods {
     my $advertiser = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser;
 
+    $self->set_db('write') if %param;
     my $existing = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
 
     delete $param{p2p_advertiser_payment_methods};

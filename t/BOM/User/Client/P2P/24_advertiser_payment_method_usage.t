@@ -59,8 +59,9 @@ subtest 'adverts' => sub {
         payment_method_ids => [keys %methods],
     );
 
-    cmp_deeply $advert->{payment_method_names},   ['Method 1', 'Method 2'], 'payment method names from advert create';
-    cmp_deeply $advert->{payment_method_details}, \%methods,                'payment method details from advert create';
+    cmp_deeply $advert->{payment_method_names}, ['Method 1', 'Method 2'], 'payment method names from advert create';
+    $_->{used_by_adverts} = [$advert->{id}] for (values %methods);
+    cmp_deeply $advert->{payment_method_details}, \%methods, 'payment method details from advert create';
 
     $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
     my $ad_info = $client->p2p_advert_info(id => $advert->{id});
@@ -118,6 +119,8 @@ subtest 'adverts' => sub {
     my $update = $client->p2p_advert_update(
         id                 => $advert->{id},
         payment_method_ids => [@methods_by_tag{qw/m4 m5/}]);
+
+    $methods{$methods_by_tag{$_}}->{used_by_adverts} = [$advert->{id}] for qw/m4 m5/;
 
     my $pm_details = {
         $methods_by_tag{m4} => $methods{$methods_by_tag{m4}},
@@ -288,8 +291,16 @@ subtest 'buy ads / sell orders' => sub {
     is $order->{payment_method}, 'method1', 'order create payment_method';
 
     my $pm_details = {
-        $methods_by_tag{m1} => $methods{$methods_by_tag{m1}},
-        $methods_by_tag{m2} => $methods{$methods_by_tag{m2}},
+        $methods_by_tag{m1} => {
+            $methods{$methods_by_tag{m1}}->%*,
+            used_by_orders  => [$order->{id}],
+            used_by_adverts => undef
+        },
+        $methods_by_tag{m2} => {
+            $methods{$methods_by_tag{m2}}->%*,
+            used_by_orders  => [$order->{id}],
+            used_by_adverts => undef
+        },
     };
 
     cmp_deeply $order->{payment_method_details}, $pm_details, 'payment_method_details returned from order_create';
@@ -297,8 +308,12 @@ subtest 'buy ads / sell orders' => sub {
     cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details,
         'payment_method_details returned from order_info for pending order';
 
+    delete $pm_details->{$methods_by_tag{m1}}->@{qw/used_by_orders used_by_adverts/};
+    delete $pm_details->{$methods_by_tag{m2}}->@{qw/used_by_orders used_by_adverts/};
+
     my $order_info = $advertiser->p2p_order_info(id => $order->{id});
     is $order_info->{payment_method}, 'method1', 'counterparty gets payment_method';
+
     cmp_deeply $order_info->{payment_method_details}, $pm_details, 'counterparty gets payment_method_details';
 
     $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
@@ -420,36 +435,43 @@ subtest 'sell ads / buy orders' => sub {
         rule_engine => $rule_engine,
     );
 
-    my $pm_details = {
+    %advertiser_methods = $advertiser->p2p_advertiser_payment_methods()->%*;
+
+    my %pm_details = (
         $methods_by_tag{m1} => $advertiser_methods{$methods_by_tag{m1}},
         $methods_by_tag{m2} => $advertiser_methods{$methods_by_tag{m2}},
-    };
+    );
 
-    cmp_deeply $order->{payment_method_details}, $pm_details, 'payment_method_details returned from order_create';
+    cmp_deeply $advertiser->p2p_order_info(id => $order->{id})->{payment_method_details}, \%pm_details,
+        'advertiser gets all pm detail fields in order';
+
+    delete $pm_details{$_}->@{qw/used_by_adverts used_by_orders/} for keys %pm_details;
+    cmp_deeply $order->{payment_method_details}, \%pm_details, 'payment_method_details returned from order_create (minus some fields)';
 
     $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details,
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, \%pm_details,
         'buyer gets payment_method_details even if pm disabled in country';
     BOM::Test::Helper::P2P::create_payment_methods();    # reset
 
     %advertiser_methods = $advertiser->p2p_advertiser_payment_methods(update => {$methods_by_tag{m3} => {is_enabled => 1}})->%*;
 
-    $pm_details->{$methods_by_tag{m3}} = $advertiser_methods{$methods_by_tag{m3}};
+    $pm_details{$methods_by_tag{m3}} = $advertiser_methods{$methods_by_tag{m3}};
+    delete $pm_details{$methods_by_tag{m3}}->@{qw/used_by_adverts used_by_orders/};
 
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details, 'payment_method_details for order_info';
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, \%pm_details, 'payment_method_details for order_info';
 
     $client->p2p_order_confirm(id => $order->{id});
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details,
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, \%pm_details,
         'payment_method_details returned after buyer-confirmed';
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details, 'payment_method_details returned when timed-out';
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, \%pm_details, 'payment_method_details returned when timed-out';
 
     $client->p2p_create_order_dispute(
         id             => $order->{id},
         dispute_reason => 'seller_not_released'
     );
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details, 'payment_method_details returned when disputed';
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, \%pm_details, 'payment_method_details returned when disputed';
 
     cmp_deeply(exception { $advertiser->p2p_advertiser_payment_methods(update => {$methods_by_tag{m1} => {is_enabled => 0}}) },
         undef, 'advertiser can disable payment method of ad with active order if it does not remove ad method names');

@@ -141,7 +141,10 @@ subtest 'create' => sub {
                         required     => 0,
                         type         => 'memo',
                         value        => ''
-                    }}
+                    }
+                },
+                used_by_adverts => undef,
+                used_by_orders  => undef,
             },
             {
                 method       => 'method2',
@@ -167,7 +170,10 @@ subtest 'create' => sub {
                         type         => 'memo',
                         value        => ''
                     },
-                }}
+                },
+                used_by_adverts => undef,
+                used_by_orders  => undef,
+            }
         ),
         'Create multiple methods ok'
     );
@@ -290,7 +296,9 @@ subtest 'update' => sub {
                     type         => 'memo',
                     value        => ''
                 },
-            }
+            },
+            used_by_adverts => undef,
+            used_by_orders  => undef,
         },
         'update a field and add another'
     );
@@ -436,7 +444,10 @@ subtest 'Instructions field' => sub {
                     value        => 'my instructions',
                     display_name => 'Instructions',
                     type         => 'memo',
-                    required     => bool(0)}}
+                    required     => bool(0)}
+            },
+            used_by_adverts => undef,
+            used_by_orders  => undef,
         },
         'create method with instructions'
     );
@@ -466,7 +477,11 @@ subtest 'Instructions field' => sub {
                         value        => 'new instructions',
                         display_name => 'Instructions',
                         type         => 'memo',
-                        required     => bool(0)}}}
+                        required     => bool(0)}
+                },
+                used_by_adverts => undef,
+                used_by_orders  => undef,
+            }
         },
         'update method with instructions'
     );
