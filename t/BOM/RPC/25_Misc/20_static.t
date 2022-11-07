@@ -88,7 +88,7 @@ subtest 'residence_list' => sub {
             },
             text       => 'Nigeria',
             phone_idd  => '234',
-            tin_format => ['^\d{10}$', '^\d{8}$', '^[A-Za-z]\\d{4,8}$', '^\\d{11}$'],
+            tin_format => ['^\d{10}$', '^\d{8}$', '^[A-Za-z]\\d{4,8}$', '^\\d{11}$', '^\\d{12}$'],
         },
         'ng is correct'
     );
