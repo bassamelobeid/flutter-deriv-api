@@ -604,7 +604,7 @@ async sub ready_for_authentication {
 
         my $res = await Future->wait_any(
             $loop->timeout_future(after => VERIFICATION_TIMEOUT)
-                ->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.'); return undef }),
+                ->on_fail(sub { $log->errorf('Time out waiting for Onfido verification.'); return undef }),
 
             _check_applicant({
                     client       => $client,
