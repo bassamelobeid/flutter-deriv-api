@@ -436,7 +436,7 @@ sub rejected_identity_verification_reasons {
         'NAME_MISMATCH'      => localize("The name retrieved from your document doesn't match your profile."),
         'DOB_MISMATCH'       => localize("The date of birth retrieved from your document doesn't match your profile."),
         'EMPTY_STATUS'       => localize("The verification status was empty, rejected for lack of information."),
-        'INFORMATION_LACK'   => localize("The verfication is passed but the personal info is not available to compare."),
+        'INFORMATION_LACK'   => localize("The verification is passed but the personal info is not available to compare."),
         'DOCUMENT_REJECTED'  => localize("Document was rejected by the provider."),
         'UNAVAILABLE_STATUS' => localize("The verification status is not available, provider says: N/A."),
         'UNAVAILABLE_ISSUER' => localize("The verification status is not available, provider says: Issuer Unavailable."),
