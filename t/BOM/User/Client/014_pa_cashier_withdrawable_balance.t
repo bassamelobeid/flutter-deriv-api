@@ -135,13 +135,29 @@ subtest 'Fiat PA' => sub {
         'After api commision received',
     );
 
+    $client->payment_mt5_transfer(
+        amount   => -2,
+        currency => 'USD',
+        remark   => 'x',
+    );
+
+    cmp_deeply(
+        $pa->cashier_withdrawable_balance,
+        {
+            available  => 11,
+            commission => 34,
+            payouts    => 23,
+        },
+        'Withdrawals to MT5 are excluded',
+    );
+
     $pa->status('applied');
 
     cmp_deeply(
         $pa->cashier_withdrawable_balance,
         {
-            available  => num(23),
-            commission => 36,
+            available  => num(21),
+            commission => 34,
             payouts    => 23,
         },
         'Can withdraw full balance if status not authorized'
