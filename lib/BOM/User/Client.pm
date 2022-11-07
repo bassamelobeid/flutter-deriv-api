@@ -7892,6 +7892,7 @@ sub poi_attempts {
             $idv_status = 'rejected' if $idv_check->{status} eq 'failed';
             $idv_status = 'rejected' if $idv_check->{status} eq 'refuted';
             $idv_status = 'verified' if $idv_check->{status} eq 'verified';
+            $idv_status = 'pending'  if $idv_check->{status} eq 'deferred';
 
             push $attempts->@*,
                 {

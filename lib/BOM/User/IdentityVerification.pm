@@ -476,6 +476,7 @@ sub status {
         failed   => 'rejected',
         pending  => 'pending',
         verified => 'verified',
+        deferred => 'pending',
     };
 
     my $expiration_date;

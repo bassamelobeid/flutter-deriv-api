@@ -273,6 +273,27 @@ subtest 'update document check' => sub {
         });
     }
     qr/invalid input value for enum idv.check_status/, 'invalid check status';
+
+    subtest 'deferred status' => sub {
+        lives_ok {
+            $idv_model_ccr->update_document_check({
+                document_id => $document->{id},
+                status      => 'deferred',
+                messages    => ['got', undef, 'cha'],
+                provider    => 'smile_identity'
+            });
+        }
+        'document updated sucessfully';
+
+        lives_ok {
+            $document = $idv_model_ccr->get_last_updated_document();
+        }
+        'last updated document fetched';
+
+        is $document->{status}, 'deferred', 'deferred status mapped to pending';
+
+        $idv_model_ccr->status, 'pending', 'status is mapped to pending';
+    };
 };
 
 subtest 'get_last_updated_document' => sub {
