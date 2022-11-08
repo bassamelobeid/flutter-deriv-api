@@ -29,7 +29,11 @@ use constant {
 };
 
 use constant API_ENDPOINTS => {
-    PROCESS_BATCH => 'process_batch',
+    PROCESS_BATCH                  => 'process_batch',
+    LIST_LOCKED_CRYPTO_WITHDRAWALS => 'list_locked_crypto_withdrawals',
+    LIST_TOTAL_WITHDRAWALS_BY_DATE => 'list_total_withdrawals_by_date',
+    VERIFY_WITHDRAWAL              => 'verify_withdrawal',
+    REJECT_WITHDRAWAL              => 'reject_withdrawal',
 };
 
 use constant HTTP_METHODS => {
@@ -154,6 +158,179 @@ sub process_batch {
             }});
 }
 
+=head2 list_locked_crypto_withdrawals
+
+Get all the locked crypto withdrawal requests
+
+=over 4
+
+=item * C<excluded_currencies> [OPTIONAL] comma separated currency_code(s) to exclude specific currencies from auto-refusal
+
+=back
+
+Returns all the locked records as array of hashrefs, each one contains:
+
+=over 4
+
+=item * C<id> An integer representing the db row in cryptocurrency table
+
+=item * C<client_loginid> client's loginid
+
+=item * C<currency_code> currency code
+
+=item * C<amount> - payment's amount in USD
+
+=item * C<source> app_id of the requesting application
+
+=back
+
+=cut
+
+sub list_locked_crypto_withdrawals {
+    my ($self, $excluded_currencies) = @_;
+
+    return $self->_request({
+            method       => HTTP_METHODS->{GET},
+            endpoint     => API_ENDPOINTS->{LIST_LOCKED_CRYPTO_WITHDRAWALS},
+            query_params => {
+                excluded_currencies => $excluded_currencies,
+            }});
+}
+
+=head2 list_total_withdrawals_by_date
+
+Get all the locked crypto withdrawals initiated today except those having current status 'ERROR','CANCELLED' or 'REJECTED' in specific date range
+
+=over 4
+
+=item * C<from_date> - The start of the date range
+
+=item * C<to_date>   - The end of the date range
+
+=back
+
+Returns all the records with following elements:
+
+=over 4
+
+=item * C<id> An integer representing the db row table
+
+=item * C<client_loginid> client's loginid
+
+=item * C<currency_code> currency code
+
+=item * C<amount> - payment's amount in USD
+
+=back
+
+=cut
+
+sub list_total_withdrawals_by_date {
+    my ($self, $from_date, $to_date) = @_;
+
+    die 'from_date parameter is missing!' unless $from_date;
+    die 'to_date parameter is missing!'   unless $to_date;
+
+    return $self->_request({
+            method       => HTTP_METHODS->{GET},
+            endpoint     => API_ENDPOINTS->{LIST_TOTAL_WITHDRAWALS_BY_DATE},
+            query_params => {
+                from_date => $from_date,
+                to_date   => $to_date,
+            }});
+}
+
+=head2 verify_withdrawal
+
+Approve the pending withdrawal requests
+
+=over 4
+
+=item * C<approval_list> - Array reference of the reuqests, each request contain the following
+
+=over 4
+
+=item * C<id>     - withdrawal request id (required)
+
+=item * C<remark> - withdrawal request remark (optional)
+
+=back
+
+=back
+
+Returns records with following elements:
+
+=over 4
+
+=item * C<id> row id for payment record
+
+=item * C<is_success> 1 in case of success/ 0 in case of failure
+
+=item * C<error> error message if there is any
+
+=back
+
+=cut
+
+sub verify_withdrawal {
+    my ($self, $approval_list) = @_;
+
+    die 'approval_list parameter is missing!' unless $approval_list;
+
+    return $self->_request({
+            method   => HTTP_METHODS->{POST},
+            endpoint => API_ENDPOINTS->{VERIFY_WITHDRAWAL},
+            payload  => {
+                approval_list => $approval_list,
+            }});
+}
+
+=head2 reject_withdrawal
+
+Reject the pending withdrawal requests
+
+=over 4
+
+=item * C<rejection_list> - Array reference of the reuqests, each request contain the following
+
+=over 4
+
+=item * C<id>     - withdrawal request id (required)
+
+=item * C<remark> - withdrawal request remark (required)
+
+=back
+
+=back
+
+Returns records with following elements:
+
+=over 4
+
+=item * C<id> row id for payment record
+
+=item * C<is_success> 1 in case of success/ 0 in case of failure
+
+=item * C<error> error message if there is any
+
+=back
+
+=cut
+
+sub reject_withdrawal {
+    my ($self, $rejection_list) = @_;
+
+    die 'rejection_list parameter is missing!' unless $rejection_list;
+
+    return $self->_request({
+            method   => HTTP_METHODS->{POST},
+            endpoint => API_ENDPOINTS->{REJECT_WITHDRAWAL},
+            payload  => {
+                rejection_list => $rejection_list,
+            }});
+
+}
+
 =head2 _request
 
 Makes an HTTP request and returns the result.
@@ -208,7 +385,8 @@ sub _request {
     }
 
     my $response = decode_json_utf8($response_content);
-    if ($response->{error}) {
+
+    if ($response && ref $response eq 'HASH' && $response->{error}) {
         $response->{error}{message_to_client} = delete $response->{error}{message};
     }
     return $response;

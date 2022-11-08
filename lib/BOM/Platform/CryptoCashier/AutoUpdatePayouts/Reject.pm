@@ -1,0 +1,421 @@
+package BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject;
+
+use strict;
+use warnings;
+
+=head1 NAME
+
+BOM::Platform::CryptoCashier::AutoUpdatePayouts::Reject;
+
+=head1 DESCRIPTION
+
+This script aims to automatically reject cryptocurrency withdrawal requests for the following rules defined by payments:
+
+1. Reject cryptocurrency withdrawal requests if the highest net deposit method is not `crypto` within the limit of six months (limit is configurable via BO).
+Tag: HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO
+
+=cut
+
+use BOM::Platform::Event::Emitter;
+use DataDog::DogStatsd::Helper qw/stats_inc stats_count/;
+use List::Util                 qw(any);
+use Log::Any                   qw($log);
+use Syntax::Keyword::Try;
+use Time::Moment;
+use Text::CSV qw (csv);
+
+use parent qw(BOM::Platform::CryptoCashier::AutoUpdatePayouts);
+
+use constant TIME_RANGE => 6 * 30 * 86400;    # roughly 6 months in seconds
+
+# Rejection reasons to be shown in backoffice and can be used to send client email
+use constant {
+    REJECTION_REASONS => {
+        highest_deposit_method_is_not_crypto => {
+            reason => 'highest deposit method is not crypto',
+            remark => 'Crypto net deposits are lower compared to other deposit methods. Initiate withdrawal request via most deposited method'
+        }
+    },
+    TAGS => {
+        no_non_crypto_deposits         => 'NO_NON_CRYPTO_DEPOSITS_RECENTLY',
+        highest_deposit_not_crypto     => 'HIGHEST_DEPOST_METHOD_IS_NOT_CRYPTO',
+        high_crypto_deposit            => 'HIGH_CRYPTOCURRENCY_DEPOSIT',
+        auto_reject_disable_for_client => 'AUTO_REJECT_IS_DISABLED_FOR_CLIENT'
+
+    }};
+
+=head2 new
+
+Constructor
+
+=over 4
+
+=item * C<broker_code> broker code
+
+=back
+
+=cut
+
+sub new {
+    my ($class, %args) = @_;
+
+    my $self = bless {}, $class;
+    $self->{$_} = $args{$_} for keys %args;
+    return $self;
+}
+
+=head2 run
+
+Entry point to auto reject crypto payouts.
+
+This sub gets all the withdrawals in locked status and sends it for processing.
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * C<enable_reject> boolean flag to dry run, if false, will be a dry run and  no changes will be performed in the Database
+
+=item * C<excluded_currencies> [OPTIONAL] comma separated currency_code(s) to exclude specific currencies from auto-reject
+
+=back
+
+=cut
+
+sub run {
+    my ($self, %args) = @_;
+
+    try {
+
+        my ($locked_withdrawals) = $self->db_load_locked_crypto_withdrawals($args{excluded_currencies} // '');
+
+        $log->debugf('Withdrawals in locked state %s', $locked_withdrawals);
+
+        return 0 unless scalar(@$locked_withdrawals);
+
+        my $withdrawals_today = $self->get_withdrawals_today_per_user();
+
+        my @user_withdraw_pairs = $self->process_locked_withdrawals(
+            locked_withdrawals => $locked_withdrawals,
+            withdrawals_today  => $withdrawals_today,
+            is_enabled         => $args{enable_reject},
+        );
+
+        my $csv_file_name = $self->csv_export(\@user_withdraw_pairs);
+        $self->send_email(attachment => [$csv_file_name]);
+
+    } catch ($e) {
+        stats_inc('crypto.payments.autoreject.failure');
+        die $log->fatalf("Error while running crypto auto reject script is %s", $e);
+    };
+
+    return 1;
+}
+
+=head2 user_activity
+
+Perform and collects details related to user activity on platform
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * C<binary_user_id> - user unique identifier from database
+
+=item * C<client_loginid> - Client login id
+
+=item * C<total_withdrawal_amount> - total withdrawal amount requested by user
+
+=item * C<total_withdrawal_amount_today> - total withdrawal amount today
+
+=item * C<currency_code> - Currency code
+
+=back
+
+=cut
+
+sub user_activity {
+    my ($self, %args) = @_;
+    my $total_withdrawal_amount_today = $args{total_withdrawal_amount_today} // 0;
+    my $currency_code                 = $args{currency_code};
+    my $binary_user_id                = $args{binary_user_id};
+    my $client_loginid                = $args{client_loginid};
+    my $response                      = {};
+    $response->{total_withdrawal_amount_today_in_usd} = $total_withdrawal_amount_today;
+
+    if ($self->is_client_auto_reject_disabled($client_loginid)) {
+        $log->debugf('Auto reject is not enabled for client %s', $client_loginid);
+        $response->{tag}         = TAGS->{auto_reject_disable_for_client};
+        $response->{auto_reject} = 0;
+        return $response;
+    }
+
+    my $start_date_to_inspect = Time::Moment->from_epoch(Time::Moment->now->epoch - TIME_RANGE);
+    my ($user_payments) = $self->user_payment_details(
+        binary_user_id => $binary_user_id,
+        from_date      => $start_date_to_inspect->to_string,
+    );
+    #if there are no deposits via stable payment methods (non-crypto deposits) we should not auto reject
+    unless ($user_payments->{count} and $user_payments->{has_stable_method_deposits}) {
+        $log->debugf('User has no real non-crypto deposits since %s', $start_date_to_inspect->to_string);
+        $response->{tag}         = TAGS->{no_non_crypto_deposits};
+        $response->{auto_reject} = 0;
+        return $response;
+    }
+    my $all_crypto_net_deposits   = $user_payments->{currency_wise_crypto_net_deposits} // {};
+    my $net_crypto_deposit_amount = $all_crypto_net_deposits->{$currency_code}          // 0;
+    my $highest_deposited_amount  = $self->find_highest_deposit($user_payments);
+    my $fiat_account              = $self->find_fiat_account($user_payments->{payments}) // 'fiat';
+
+    if (%$highest_deposited_amount and $net_crypto_deposit_amount < $highest_deposited_amount->{net_amount_in_usd}) {
+
+        $log->debugf('User has more Fiat deposits than crypto deposits since %s', $start_date_to_inspect->to_string);
+        $response->{tag}           = TAGS->{highest_deposit_not_crypto};
+        $response->{reject_reason} = 'highest_deposit_method_is_not_crypto';
+        $response->{auto_reject}   = 1;
+        $response->{meta_data}     = $self->map_clean_method_name($highest_deposited_amount->{highest_deposit_method});
+        $response->{fiat_account}  = $fiat_account;
+        $response->{reject_remark} = $self->generate_reject_remarks(
+            reject_reason => $response->{reject_reason},
+            reject_remark => $response->{meta_data});
+    } else {
+        $log->debugf('User has more crypto deposits than fiat, PA and P2P since %s', $start_date_to_inspect->to_string);
+        $response->{tag}         = TAGS->{high_crypto_deposit};
+        $response->{auto_reject} = 0;
+    }
+
+    return $response;
+}
+
+=head2 db_reject_withdrawal
+
+Perfom database changes to reject the crypto withdrawal
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * C<id> - row id for payment record
+
+=back
+
+=cut
+
+sub db_reject_withdrawal {
+    my ($self, %args) = @_;
+
+    my $crypto_api = BOM::Platform::CryptoCashier::InternalAPI->new;
+    my $response   = $crypto_api->reject_withdrawal([{id => $args{id}, remark => $args{reject_remark}}]);
+
+    if ($response && ref $response eq 'HASH' && $response->{error}) {
+        $log->errorf('Faild to reject the withdrawal request, error: %s', $response->{error}{message_to_client});
+        return 0;
+    }
+
+    return $response->[0]->{is_success};
+}
+
+=head2 auto_update_withdrawal
+
+Reject the crypto withdrawal record if any of the condition satisfies.
+
+Does not invoke the db function if reject is not enabled and will be a dry run
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * C<withdrawal_details> - see C<db_load_locked_crypto_withdrawals>'s response
+
+=item * C<is_enabled> - boolean flag to enable actual reject of payouts, if false, will be a dry rub and no db changes will be performed
+
+=item * C<user_details> - contains data returned by C<user_activity>. the return values differ from case to case.
+
+=back
+
+Returns 1 if withdrawal is successfully rejected else returns 0
+
+=cut
+
+sub auto_update_withdrawal {
+    my ($self, %args) = @_;
+    my $withdrawal_details = $args{withdrawal_details};
+    my $is_reject_enabled  = $args{is_enabled};
+    my $user_details       = $args{user_details};
+
+    if (!$is_reject_enabled) {
+        return $log->debugf('Rejection is not enabled. It will not reject any withdrawals.');
+    }
+
+    if ($user_details->{auto_reject}) {
+        $log->debugf('Rejecting withdrawal. Details - currency: %s, paymentID: %s.', $withdrawal_details->{currency_code}, $withdrawal_details->{id});
+
+        my ($result) = $self->db_reject_withdrawal(
+            id            => $withdrawal_details->{id},
+            reject_remark => $user_details->{reject_remark});
+
+        $log->debugf('DB reject withdrawal response %s', $result);
+
+        if ($result) {
+
+            BOM::Platform::Event::Emitter::emit(
+                'crypto_withdrawal_rejected_email',
+                {
+                    app_id         => $withdrawal_details->{source},
+                    client_loginid => $withdrawal_details->{client_loginid},
+                    reject_reason  => $user_details->{reject_reason},
+                    amount         => $withdrawal_details->{amount},
+                    currency_code  => $withdrawal_details->{currency_code},
+                    meta_data      => $user_details->{meta_data},
+                    fiat_account   => $user_details->{fiat_account}});
+
+            stats_inc('crypto.payments.autoreject.rejected',
+                {tags => ['reason:' . $user_details->{tag}, 'currency:' . $withdrawal_details->{currency_code}]});
+
+            stats_count(
+                'crypto.payments.autoreject.total_in_usd',
+                $withdrawal_details->{amount_in_usd},
+                {tags => ['currency:' . $withdrawal_details->{currency_code}]});
+
+            return 1;
+        }
+
+    } else {
+        stats_inc('crypto.payments.autoreject.non_rejected',
+            {tags => ['reason:' . $user_details->{tag}, 'currency:' . $withdrawal_details->{currency_code}]});
+    }
+
+    return 0;
+}
+
+=head2 csv_export
+
+Exports to a csv file a combination of user and withdrawal details
+
+Takes as argument a list of hashref of user and withdrawal pairs
+
+    ({
+        user => { ... },
+        withdrawal => { ... }
+    }, {
+        ...
+    })
+
+The CSV contains the following fields:
+
+- User ID
+- Login ID
+- Currency
+- Amount
+- Amount requested (in USD)
+- Total amount requested (in USD)
+- Total amount requested today (in USD)
+- Last reversible deposit date
+- Last reversible deposit amount
+- Last reversible deposit amount (in USD)
+- Last reversible deposit currency
+- Reversible deposit (in USD)
+- Reversible withdrawal (in USD)
+- Risk percentage
+- Auto reject
+- Tag
+- Status
+- Remarks
+
+=cut
+
+sub csv_export {
+
+    my $self = shift;
+    my @data = shift->@*;
+
+    my @csv_headers = (
+        "User ID", "Login ID", "Currency", "Amount",
+        "Amount requested (in USD)",
+        "Total amount requested (in USD)",
+        "Total amount requested today (in USD)",
+        "Auto reject", "Tag", "Remarks"
+    );
+
+    my @csv_rows = ();
+    for my $pair (@data) {
+        my $user_details       = $pair->{user_details};
+        my $withdrawal_details = $pair->{withdrawal_details};
+
+        push @csv_rows,
+            [
+            $withdrawal_details->{binary_user_id},                 $withdrawal_details->{client_loginid},
+            $withdrawal_details->{currency_code},                  $withdrawal_details->{amount},
+            $withdrawal_details->{amount_in_usd},                  $withdrawal_details->{total_withdrawal_amount_in_usd},
+            $user_details->{total_withdrawal_amount_today_in_usd}, $user_details->{auto_reject},
+            $user_details->{tag},                                  $user_details->{reject_remark}];
+    }
+
+    mkdir 'autoreject';
+    my $csv_file_name = "autoreject/crypto_auto_reject_" . Time::Moment->now->strftime('%Y_%m_%d_%H_%M_%S') . ".csv";
+    csv(
+        in      => \@csv_rows,
+        headers => \@csv_headers,
+        out     => $csv_file_name,
+    );
+
+    return $csv_file_name;
+}
+
+=head2 is_client_auto_reject_disabled
+
+check if reject is disabled for current client
+
+=over 4
+
+=item * C<client_loginid> - Client login id
+
+=back
+
+Returns 1 if client has status code crypto_auto_reject_disabled else returns 0
+
+=cut
+
+sub is_client_auto_reject_disabled {
+
+    my ($self, $client_loginid) = @_;
+
+    my $statuses = $self->client_status(client_loginid => $client_loginid);
+
+    return 1 if any { $_->{status_code} eq 'crypto_auto_reject_disabled' } @$statuses;
+
+    return 0;
+}
+
+=head2 generate_reject_remarks
+
+Generate descriptive message as remarks for rejected payouts.
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * C<reject_reason> - Reject reason
+
+=item * C<reject_remark> - Additional information about rejection.
+
+=back
+
+Returns a string
+
+=cut
+
+sub generate_reject_remarks () {
+    my ($self, %args) = @_;
+
+    my $rejection_reason = 'AutoRejected';
+
+    if ($args{reject_reason} eq 'highest_deposit_method_is_not_crypto') {
+        $rejection_reason =
+            sprintf("AutoRejected - %s, request payout via %s", REJECTION_REASONS->{$args{reject_reason}}->{reason}, $args{reject_remark});
+    }
+
+    return $rejection_reason;
+}
+
+1;
