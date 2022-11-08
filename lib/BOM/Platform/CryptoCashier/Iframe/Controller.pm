@@ -17,14 +17,17 @@ use BOM::Config;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
+use BOM::Config::Redis;
 
 use LandingCompany::Registry;
 use Log::Any qw( $log );
 
 use constant {
-    ACTION_TYPE_CANCEL_WITHDRAWAL => 'cancel_withdraw',
-    ACTION_TYPE_DEPOSIT           => 'deposit',
-    ACTION_TYPE_WITHDRAW          => 'withdraw',
+    ACTION_TYPE_CANCEL_WITHDRAWAL             => 'cancel_withdraw',
+    ACTION_TYPE_DEPOSIT                       => 'deposit',
+    ACTION_TYPE_WITHDRAW                      => 'withdraw',
+    CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT     => "rpc::cryptocurrency::crypto_config::client_min_amount::",
+    CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT_TTL => 120,
 };
 
 # Fix for Cryptocashier Page.
@@ -201,9 +204,11 @@ sub _deposit {
 sub _withdraw {
     my ($c, $crypto_api, $client) = @_;
 
-    my $currency_code    = $client->account->currency_code;
-    my $currency_name    = LandingCompany::Registry::get_currency_definition($currency_code)->{name};
-    my $currency_display = $crypto_symbols{$currency_code} // $currency_code;
+    my $currency_code            = $client->account->currency_code;
+    my $currency_name            = LandingCompany::Registry::get_currency_definition($currency_code)->{name};
+    my $currency_display         = $crypto_symbols{$currency_code} // $currency_code;
+    my $redis_read               = BOM::Config::Redis::redis_replicated_read();
+    my $client_min_locked_amount = $redis_read->get(CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT . $client->loginid) // undef;
 
     if (my $address = trim($c->param('address'))) {
         if ($c->csrf_token ne $c->param('csrf_token')) {
@@ -222,7 +227,7 @@ sub _withdraw {
                 address => $address,
             );
         } else {
-            my $withdraw_response = $crypto_api->withdraw($client->loginid, $address, $amount, 0, $currency_code);
+            my $withdraw_response = $crypto_api->withdraw($client->loginid, $address, $amount, 0, $currency_code, $client_min_locked_amount);
             if ($withdraw_response->{error}) {
                 $c->stash(
                     error   => $withdraw_response->{error}->{message_to_client},
@@ -241,9 +246,18 @@ sub _withdraw {
     my @transactions = map { format_transaction_date($_) } $trxs->@*;
 
     my $min_withdrawal;
-    my $crypto_config = $crypto_api->crypto_config($currency_code);
-    $min_withdrawal = $crypto_config->{currencies_config}{$currency_code}{minimum_withdrawal} if $crypto_config->{currencies_config}{$currency_code};
-
+    # check if locked minimum withdrawal amount is still there?
+    if ($client_min_locked_amount) {
+        $min_withdrawal = $client_min_locked_amount;
+    } else {
+        my $crypto_config = $crypto_api->crypto_config($currency_code);
+        if ($crypto_config->{currencies_config}{$currency_code}) {
+            $min_withdrawal = $crypto_config->{currencies_config}{$currency_code}{minimum_withdrawal};
+            my $redis_write = BOM::Config::Redis::redis_replicated_write();
+            $redis_write->setex(CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT . $client->loginid, CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT_TTL, $min_withdrawal)
+                if $min_withdrawal;
+        }
+    }
     return $c->render(
         template       => ACTION_TYPE_WITHDRAW,
         layout         => 'default',

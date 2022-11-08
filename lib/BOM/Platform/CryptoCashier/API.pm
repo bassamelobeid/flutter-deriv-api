@@ -194,17 +194,18 @@ Or the result of withdrawal operation containing the following keys:
 =cut
 
 sub withdraw {
-    my ($self, $loginid, $address, $amount, $is_dry_run, $currency_code) = @_;
+    my ($self, $loginid, $address, $amount, $is_dry_run, $currency_code, $client_locked_min_withdrawal_amount) = @_;
 
     my $result = $self->_request({
             method   => HTTP_METHODS->{POST},
             endpoint => API_ENDPOINTS->{WITHDRAW},
             payload  => {
-                loginid       => $loginid,
-                address       => $address,
-                amount        => $amount,
-                dry_run       => $is_dry_run,
-                currency_code => $currency_code,
+                loginid                             => $loginid,
+                address                             => $address,
+                amount                              => $amount,
+                dry_run                             => $is_dry_run,
+                currency_code                       => $currency_code,
+                client_locked_min_withdrawal_amount => $client_locked_min_withdrawal_amount,
             }});
 
     return $result if $result->{error};
