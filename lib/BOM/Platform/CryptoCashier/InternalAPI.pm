@@ -58,7 +58,7 @@ sub ua {
     my ($self) = @_;
 
     return $self->{ua} //= do {
-        LWP::UserAgent->new(timeout => 20);
+        LWP::UserAgent->new(timeout => 480);
     };
 }
 
