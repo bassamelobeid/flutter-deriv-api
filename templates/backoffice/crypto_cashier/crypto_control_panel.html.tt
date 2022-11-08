@@ -19,7 +19,6 @@
     <br>
     <input type="hidden" name="broker" value="[% broker %]">
 <!-- Recon -->
-    [% IF !is_external %]
         <button type="submit" class="btn btn--primary" name="view_action" value="reconcil">Reconciliation</button>
         <input type="text" name="start_date" class="datepick" value="[% start_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
         <input type="text" name="end_date" class="datepick" value="[% end_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
@@ -29,7 +28,6 @@
             <label for="fee_recon">Show BTC recon</label>
         [% END %]
     <br><br>
-    [% END %]
 <!-- Search -->
         <button type="submit" class="btn btn--primary" name="view_action" value="search">Search</button>
         <select name="search_type">
