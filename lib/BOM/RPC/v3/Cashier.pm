@@ -146,7 +146,10 @@ rpc "cashier", sub {
                 $rule_engine);
 
             return $cashier_validation_error if ($cashier_validation_error);
-            return $crypto_service->withdraw($client->loginid, $args->{address}, $args->{amount}, $is_dry_run, $client->currency);
+            # get the locked min withdrawal if available in redis
+            my $client_locked_min_withdrawal_amount = BOM::RPC::v3::Utility::get_client_locked_min_withdrawal_amount($client->loginid);
+            return $crypto_service->withdraw($client->loginid, $args->{address}, $args->{amount}, $is_dry_run, $client->currency,
+                $client_locked_min_withdrawal_amount);
         }
     }
 
@@ -1921,13 +1924,20 @@ rpc 'crypto_config',
             message_to_client => localize('The provided currency [_1] is not a valid cryptocurrency.', $currency_code),
         });
     }
-
+    my $client = ($params->{token_details}{loginid}) ? BOM::User::Client->get_client_instance($params->{token_details}{loginid}) : '';
     # Retrieve from redis
     my $result;
     my $redis_read = BOM::Config::Redis::redis_replicated_read();
+    my $client_min_locked_amount;
 
     $result = $currency_code ? $redis_read->get(CRYPTO_CONFIG_RPC_REDIS . "::" . $currency_code) : $redis_read->get(CRYPTO_CONFIG_RPC_REDIS);
-    return decode_json($result) if $result;
+    if ($result) {
+        my $decoded_result = decode_json($result);
+        if ($client && $client->loginid) {
+            BOM::RPC::v3::Utility::handle_client_locked_min_withdrawal_amount($decoded_result, $client->loginid, $client->currency);
+        }
+        return $decoded_result;
+    }
 
     my $crypto_service = BOM::Platform::CryptoCashier::API->new($params);
     $result = $crypto_service->crypto_config($currency_code);
@@ -1937,6 +1947,9 @@ rpc 'crypto_config',
         $currency_code
             ? $redis_write->setex(CRYPTO_CONFIG_RPC_REDIS . "::" . $currency_code, 5, encode_json($result))
             : $redis_write->setex(CRYPTO_CONFIG_RPC_REDIS,                         5, encode_json($result));
+        if ($client && $client->loginid) {
+            BOM::RPC::v3::Utility::handle_client_locked_min_withdrawal_amount($result, $client->loginid, $client->currency);
+        }
     }
     return $result;
     };

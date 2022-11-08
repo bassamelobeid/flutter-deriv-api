@@ -11,11 +11,12 @@ use BOM::Test::Email                             qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);
 use BOM::Test::Helper::Utility                   qw(random_email_address);
-use BOM::Test::Helper::Client                    qw( top_up );
+use BOM::Test::Helper::Client                    qw( create_client top_up );
 use BOM::Test::RPC::QueueClient;
 use BOM::User;
 use LWP::UserAgent;
 require Test::NoWarnings;
+use BOM::Platform::Token;
 
 use BOM::Config::Redis;
 use JSON::MaybeXS                    qw(encode_json decode_json);
@@ -344,6 +345,7 @@ subtest 'validate_amount' => sub {
 };
 
 subtest 'api crypto_config' => sub {
+    my $new_client       = create_client('CR', undef, {residence => 'id'});
     my $invalid_currency = "abcd";
     $rpc_ct->call_ok(
         'crypto_config',
@@ -361,15 +363,15 @@ subtest 'api crypto_config' => sub {
 
     my $redis_result = $redis_read->get("rpc::cryptocurrency::crypto_config::");
     is undef, $redis_result, "should not have cache result prior any call to api.";
+    my $client_locked_min_withdrawal = $redis_read->get("rpc::cryptocurrency::crypto_config::client_min_amount::" . $new_client->loginid);
+    is undef, $client_locked_min_withdrawal, "does not contain locked amount prior to any call to api";
 
     $mocked_call->mock('get', sub { return {_content => 'customer too old'} });
-
-    my $api_response = {
-        crypto_config => {
-            currencies_config => {
-                BTC => {minimum_withdrawal => 0.00084364},
-                ETH => {minimum_withdrawal => 0.23},
-            },
+    my $eth_min_withdrawal = 0.23;
+    my $api_response       = {
+        currencies_config => {
+            BTC => {minimum_withdrawal => 0.00084364},
+            ETH => {minimum_withdrawal => $eth_min_withdrawal},
         },
     };
     my $http_response = HTTP::Response->new(200);
@@ -381,8 +383,9 @@ subtest 'api crypto_config' => sub {
             language => 'EN',
             args     => {crypto_config => 1}})->has_no_system_error->has_no_error->result;
 
-    $redis_result = decode_json($redis_read->get("rpc::cryptocurrency::crypto_config"));
-
+    $redis_result                 = decode_json($redis_read->get("rpc::cryptocurrency::crypto_config"));
+    $client_locked_min_withdrawal = $redis_read->get("rpc::cryptocurrency::crypto_config::client_min_amount::" . $new_client->loginid);
+    is undef, $client_locked_min_withdrawal, "does not contain locked min withdrawal amount as token was not passed";
     my $common_expected_result = {
         stash => {
             valid_source               => 1,
@@ -392,13 +395,12 @@ subtest 'api crypto_config' => sub {
         },
     };
     my $expected_result = {$common_expected_result->%*, $redis_result->%*};
+
     cmp_deeply $result_api, $expected_result, 'Result matches with redis result as expected.';
 
     $api_response = {
-        crypto_config => {
-            currencies_config => {
-                BTC => {minimum_withdrawal => 0.00084364},
-            },
+        currencies_config => {
+            BTC => {minimum_withdrawal => 0.00084364},
         },
     };
 
@@ -420,9 +422,7 @@ subtest 'api crypto_config' => sub {
     $redis_write->del("rpc::cryptocurrency::crypto_config");
 
     $api_response = {
-        crypto_config => {
-            currencies_config => {},
-        },
+        currencies_config => {},
     };
 
     $result_api = $rpc_ct->call_ok(
@@ -437,6 +437,57 @@ subtest 'api crypto_config' => sub {
     $redis_result    = decode_json($redis_read->get("rpc::cryptocurrency::crypto_config"));
     $expected_result = {$common_expected_result->%*, $redis_result->%*};
     cmp_deeply $result_api, $expected_result, 'Correct result when empty hash is returned from crypto api for crypto configs.';
+
+    $redis_write->del("rpc::cryptocurrency::crypto_config");
+    my $m = BOM::Platform::Token::API->new;
+    $new_client->set_default_account('ETH');
+    my $token = $m->create_token($new_client->loginid, 'test token');
+
+    $api_response = {
+        currencies_config => {
+            BTC => {minimum_withdrawal => 0.00084364},
+            ETH => {minimum_withdrawal => $eth_min_withdrawal},
+        },
+    };
+    $result_api = $rpc_ct->call_ok(
+        'crypto_config',
+        {
+            language => 'EN',
+            token    => $token,
+            args     => {crypto_config => 1}})->has_no_system_error->has_no_error->result;
+    $redis_result                 = decode_json($redis_read->get("rpc::cryptocurrency::crypto_config"));
+    $client_locked_min_withdrawal = $redis_read->get("rpc::cryptocurrency::crypto_config::client_min_amount::" . $new_client->loginid);
+    is $eth_min_withdrawal, $client_locked_min_withdrawal, "correct locked min withdrawal amount for client";
+    # RPC crypto config expires
+    $redis_write->del("rpc::cryptocurrency::crypto_config");
+    # min withdrawal amount for ETH increased to 10
+    $api_response = {
+        currencies_config => {
+            BTC => {minimum_withdrawal => 0.00084364},
+            ETH => {minimum_withdrawal => 10},
+        },
+    };
+    $result_api = $rpc_ct->call_ok(
+        'crypto_config',
+        {
+            language => 'EN',
+            args     => {
+                crypto_config => 1,
+            },
+        })->has_no_system_error->has_no_error->result;
+    # client access the withdrawal page again or iframe refreshed
+    $result_api = $rpc_ct->call_ok(
+        'crypto_config',
+        {
+            language => 'EN',
+            token    => $token,
+            args     => {crypto_config => 1}})->has_no_system_error->has_no_error->result;
+    $redis_result                 = decode_json($redis_read->get("rpc::cryptocurrency::crypto_config"));
+    $client_locked_min_withdrawal = $redis_read->get("rpc::cryptocurrency::crypto_config::client_min_amount::" . $new_client->loginid);
+    $redis_result->{currencies_config}->{$new_client->currency}->{minimum_withdrawal} = $client_locked_min_withdrawal;
+    $expected_result = {$common_expected_result->%*, $redis_result->%*};
+    cmp_deeply $result_api, $expected_result, 'Correct result as locked min withdrawal amount feched from redis & used in api response';
+    is $eth_min_withdrawal, $client_locked_min_withdrawal, "correct locked min withdrawal amount for client";
 
     $mocked_call->unmock_all;
 };

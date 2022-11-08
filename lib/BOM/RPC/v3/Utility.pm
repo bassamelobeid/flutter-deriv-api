@@ -78,7 +78,11 @@ use constant GENERIC_DD_STATS_KEY               => 'bom.rpc.exception';
 # - all characters ASCII index should be within ( )[space] to (~)[tilde] indexes range
 use constant REGEX_PASSWORD_VALIDATION => qr/^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$/;
 
-use constant MAX_PASSWORD_CHECK_ATTEMPTS => 5;
+use constant {
+    MAX_PASSWORD_CHECK_ATTEMPTS               => 5,
+    CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT     => "rpc::cryptocurrency::crypto_config::client_min_amount::",
+    CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT_TTL => 120,
+};
 
 =head2 validation_checks
 
@@ -1460,4 +1464,79 @@ sub request_email {
     });
 
     return 1;
+}
+
+=head2 set_client_locked_min_withdrawal_amount
+
+save crypto minimum withdrawal amount in redis for client mentioned
+
+=over 4
+
+=item - $client_loginid:  client's loginid
+
+=item - $minimum_withdrawal: minimum withdrawal amount
+
+=back
+
+Returns 1
+
+=cut
+
+sub set_client_locked_min_withdrawal_amount {
+    my ($client_loginid, $minimum_withdrawal) = @_;
+    return unless ($minimum_withdrawal && $client_loginid);
+    my $redis_write = BOM::Config::Redis::redis_replicated_write();
+    $redis_write->setex(CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT . $client_loginid, CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT_TTL, $minimum_withdrawal);
+    return 1;
+}
+
+=head2 get_client_locked_min_withdrawal_amount
+
+fetch crypto minimum withdrawal amount in redis for client mentioned
+
+=over 4
+
+=item - $client_loginid:  client's loginid
+
+=back
+
+Returns minimum amount if available else undef
+
+=cut
+
+sub get_client_locked_min_withdrawal_amount {
+    my ($client_loginid) = @_;
+    my $redis_read = BOM::Config::Redis::redis_replicated_read();
+    return $redis_read->get(CRYPTO_CONFIG_REDIS_CLIENT_MIN_AMOUNT . $client_loginid) // undef;
+}
+
+=head2 handle_client_locked_min_withdrawal_amount
+
+checks if minimum withdrawal amount is set for client then overwrited the global hashref `crypto_config` passed.
+else gets the min_withdrawal_amount from config passed & sets it in redis
+
+=over 4
+
+=item - $crypto_config: crypto_config either from redis or via direct api
+
+=item - $loginid: client's login id
+
+=item - $currency: client's currency
+
+=back
+
+returns undef
+
+=cut
+
+sub handle_client_locked_min_withdrawal_amount {
+    my ($crypto_config, $loginid, $currency) = @_;
+
+    if (my $client_min_locked_amount = get_client_locked_min_withdrawal_amount($loginid)) {
+        $crypto_config->{currencies_config}->{$currency}->{minimum_withdrawal} = $client_min_locked_amount;
+    } else {
+        my $minimum_withdrawal = $crypto_config->{currencies_config}->{$currency}->{minimum_withdrawal} // 0;
+        set_client_locked_min_withdrawal_amount($loginid, $minimum_withdrawal) if $minimum_withdrawal;
+    }
+    return undef;
 }
