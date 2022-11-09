@@ -94,15 +94,47 @@ subtest 'is_enabled' => sub {
 subtest 'identify_vetification.yml integrity check' => sub {
     my $config   = BOM::Config::identity_verification;
     my $expected = {
-        'providers' => {
-            'smile_identity' => {
-                'selfish'     => 0,
-                'portal_base' => 'https://portal.smileidentity.com/partner/job_results/production/%s'
+        statuses => {
+            pending  => 'Pending',
+            verified => 'Verified',
+            refuted  => 'Refuted',
+            failed   => 'Failed',
+        },
+        messages => [
+            qw/
+                DOB_MISMATCH
+                EXPIRED
+                PROVIDER_UNAVAILABLE
+                REJECTED_BY_PROVIDER
+                DECEASED
+                UNAVAILABLE_MICROSERVICE
+                UNAVAILABLE_ISSUER
+                NAME_MISMATCH
+                MALFORMED_JSON
+                DOCUMENT_REJECTED
+                VERIFICATION_STARTED
+                UNEXPECTED_ERROR
+                EMPTY_STATUS
+                INFORMATION_LACK
+                UNDERAGE
+                UNDESIRED_HTTP_CODE
+                TIMEOUT
+                /
+        ],
+        providers => {
+            smile_identity => {
+                selfish      => 0,
+                portal_base  => 'https://portal.smileidentity.com/partner/job_results/production/%s',
+                display_name => 'Smile Identity',
             },
-            'derivative_wealth' => {'selfish' => 0},
-            'zaig'              => {
-                'selfish'     => 1,
-                'portal_base' => 'https://dash.zaig.com.br/natural-person/%s'
+            derivative_wealth => {
+                selfish      => 0,
+                display_name => 'Derivative Wealth',
+            },
+            zaig => {
+                selfish      => 1,
+                portal_base  => 'https://dash.zaig.com.br/natural-person/%s',
+                display_name => 'Zaig',
             }}};
     cmp_deeply $config, $expected, 'Expected information for config yml file';
 };

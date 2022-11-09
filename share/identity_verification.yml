@@ -2,8 +2,34 @@ providers:
   smile_identity:
     portal_base: https://portal.smileidentity.com/partner/job_results/production/%s
     selfish: 0
+    display_name: Smile Identity
   zaig:
     portal_base: https://dash.zaig.com.br/natural-person/%s
     selfish: 1
+    display_name: Zaig
   derivative_wealth:
     selfish: 0
+    display_name: Derivative Wealth
+statuses:
+  pending: Pending
+  verified: Verified
+  refuted: Refuted
+  failed: Failed
+messages:
+  - DOB_MISMATCH
+  - EXPIRED
+  - PROVIDER_UNAVAILABLE
+  - REJECTED_BY_PROVIDER
+  - DECEASED
+  - UNAVAILABLE_MICROSERVICE
+  - UNAVAILABLE_ISSUER
+  - NAME_MISMATCH
+  - MALFORMED_JSON
+  - DOCUMENT_REJECTED
+  - VERIFICATION_STARTED
+  - UNEXPECTED_ERROR
+  - EMPTY_STATUS
+  - INFORMATION_LACK
+  - UNDERAGE
+  - UNDESIRED_HTTP_CODE
+  - TIMEOUT
