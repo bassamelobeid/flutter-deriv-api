@@ -303,7 +303,8 @@ subtest 'create advert (sell)' => sub {
     is $advert->{active_orders}, 0,                            'active_orders';
 
     BOM::User::Script::P2PDailyMaintenance->new->run;
-    $advert->{days_until_archive} = 10;    # not returned for new ad
+    $advert->{days_until_archive} = 10;                            # not returned for new ad
+    $advert->{advertiser_details}{last_online_time} = ignore();    # can change between calls
 
     $resp = $t->await::p2p_advertiser_adverts({p2p_advertiser_adverts => 1});
     test_schema('p2p_advertiser_adverts', $resp);
@@ -337,6 +338,7 @@ subtest 'create advert (sell)' => sub {
         # Fields that are only visible when viewing a different advertiser
         $expected{advertiser_details}->{is_blocked}     = $expected{advertiser_details}->{is_favourite} = 0;
         $expected{advertiser_details}->{is_recommended} = undef;
+        note explain $resp->{p2p_advert_info};
 
         cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
     };
@@ -399,9 +401,11 @@ subtest 'create order (buy)' => sub {
     delete $order->{payment_method_details};
     delete $order_info->{payment_method_details};
     $order->{advertiser_details}{is_recommended} = undef;
+    $order->{advertiser_details}{last_online_time} = ignore();
+    $order->{client_details}{last_online_time}     = ignore();
 
-    cmp_deeply($order_info,   $listed_order, 'Order info matches order list');
-    cmp_deeply($listed_order, $order,        'Order list matches order create');
+    cmp_deeply($order_info,   $order, 'Order info matches order create');
+    cmp_deeply($listed_order, $order, 'Order list matches order create');
 };
 
 subtest 'create chat' => sub {
