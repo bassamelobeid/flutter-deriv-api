@@ -216,6 +216,16 @@ sub create_client {
     $args{binary_user_id} = $self->{id};
     my $client = BOM::User::Client->register_and_return_new_client(\%args);
     $self->add_client($client);
+
+    # Enable the trading_hub status if any siblings already has it enabled
+    my $siblings = $client->get_siblings_information();
+    for my $each_sibling (keys %{$siblings}) {
+        my $sibling = BOM::User::Client->new({loginid => $each_sibling});
+        if ($sibling->status->trading_hub) {
+            $client->status->setnx('trading_hub', 'system', 'Enabling the Trading Hub');
+            last;
+        }
+    }
     return $client;
 }
 
@@ -254,6 +264,15 @@ sub create_wallet {
         # in current back-end perspective wallet is a client
         $self->add_client($wallet);
 
+        # Enable the trading_hub status if any siblings already has it enabled
+        my $siblings = $wallet->get_siblings_information();
+        for my $each_sibling (keys %{$siblings}) {
+            my $sibling = BOM::User::Client->new({loginid => $each_sibling});
+            if ($sibling->status->trading_hub) {
+                $wallet->status->setnx('trading_hub', 'system', 'Enabling the Trading Hub');
+                last;
+            }
+        }
         return $wallet;
     } finally {
         BOM::Platform::Redis::release_lock($lock_name);
