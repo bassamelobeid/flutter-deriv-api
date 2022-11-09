@@ -380,7 +380,7 @@ rpc website_status => sub {
         my $float_range          = BOM::Config::P2P::currency_float_range($local_currency);
         my %all_local_currencies = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
         my @p2p_countries        = keys BOM::Config::P2P::available_countries()->%*;
-        my @p2p_currencies       = split ',', BOM::Config::Redis->redis_p2p->get('P2P::LOCAL_CURRENCIES');
+        my @p2p_currencies       = split ',', (BOM::Config::Redis->redis_p2p->get('P2P::LOCAL_CURRENCIES') // '');
 
         my @local_currencies;
         for my $symbol (sort keys %all_local_currencies) {
