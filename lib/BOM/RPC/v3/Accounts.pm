@@ -1676,6 +1676,7 @@ rpc get_settings => sub {
         country_code       => $country_code,
         email_consent      => ($user and $user->{email_consent}) ? 1 : 0,
         preferred_language => $user->preferred_language,
+        trading_hub        => $client->status->trading_hub ? 1 : 0,
         feature_flag       => $user->get_feature_flag,
         immutable_fields   => [$client->immutable_fields()],
         ($client->citizen ? (citizen => $client->citizen) : ()),
@@ -1780,6 +1781,16 @@ rpc set_settings => sub {
 
     $user->update_preferred_language($args->{preferred_language}) if $args->{preferred_language};
     $user->set_feature_flag($args->{feature_flag})                if $args->{feature_flag};
+
+    # Set trading_hub as a client status_code if the user has it enabled
+    if (defined $args->{trading_hub}) {
+        my $siblings = $current_client->get_siblings_information();
+        for my $each_sibling (keys %{$siblings}) {
+            my $client = BOM::User::Client->new({loginid => $each_sibling});
+            $client->status->setnx('trading_hub', 'system', 'Enabling the Trading Hub') if $args->{trading_hub} == 1;
+            $client->status->clear_trading_hub                                          if $args->{trading_hub} == 0;
+        }
+    }
 
     # email consent is per user whereas other settings are per client
     # so need to save it separately

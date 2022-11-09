@@ -272,6 +272,7 @@ subtest 'get settings' => sub {
             'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
             'preferred_language'             => 'FA',
             'feature_flag'                   => {wallet => 0},
+            'trading_hub'                    => 0,
         });
 
     $user_X->update_preferred_language('AZ');
@@ -297,6 +298,7 @@ subtest 'get settings' => sub {
             'immutable_fields'   => ['residence'],
             'preferred_language' => 'EN',
             'feature_flag'       => {wallet => 0},
+            'trading_hub'        => 0,
         },
         'vr client return less messages when it does not have real sibling'
     );
@@ -336,6 +338,7 @@ subtest 'get settings' => sub {
             'immutable_fields'               => ['residence'],
             'preferred_language'             => 'AZ',
             'feature_flag'                   => {wallet => 0},
+            'trading_hub'                    => 0,
         },
         'vr client return real account information when it has sibling'
     );
@@ -376,6 +379,7 @@ subtest 'get settings' => sub {
         'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
         'preferred_language'             => 'FA',
         'feature_flag'                   => {wallet => 0},
+        'trading_hub'                    => 0,
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
 
@@ -411,6 +415,7 @@ subtest 'get settings' => sub {
         'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
         'preferred_language'             => 'FA',
         'feature_flag'                   => {wallet => 0},
+        'trading_hub'                    => 0,
     };
     is_deeply($result, $expected, 'return 1 for code of conduct approval');
 
@@ -730,6 +735,22 @@ subtest 'set settings' => sub {
         $params->{args} = {%full_args, preferred_language => 'ZH_CN'};
         is($c->tcall($method,        $params)->{status},                              1,       'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'ZH_CN', 'preferred language updated to ZH_CN.');
+    };
+
+    subtest 'trading hub setting' => sub {
+        $params->{token} = $token_Y_cr_1;
+
+        $params->{args} = {%full_args, trading_hub => 1};
+        my $res = $c->tcall($method, $params);
+
+        is($c->tcall($method,        $params)->{status},                       1, 'update successfully');
+        is($c->tcall('get_settings', {token => $token_Y_cr_1})->{trading_hub}, 1, 'Trading hub is enabled for the user');
+
+        $params->{args} = {%full_args, trading_hub => 0};
+        $res = $c->tcall($method, $params);
+
+        is($c->tcall($method,        $params)->{status},                       1, 'update successfully');
+        is($c->tcall('get_settings', {token => $token_Y_cr_1})->{trading_hub}, 0, 'Trading hub is disabled for the user');
     };
 
     $mocked_client->unmock('fully_authenticated');

@@ -9,6 +9,7 @@
       "residence",
       "immutable_fields",
       "user_hash",
+      "trading_hub",
       "preferred_language"
    ],
    "title" : null,
@@ -65,6 +66,13 @@
       "preferred_language" : {
          "type" : "string",
          "pattern": "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+      },
+      "trading_hub" : {
+         "type" : "integer",
+         "enum" : [
+            0,
+            1
+         ]
       }
    }
 }

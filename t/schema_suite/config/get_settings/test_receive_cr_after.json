@@ -24,7 +24,8 @@
       "is_authenticated_payment_agent",
       "client_tnc_status",
       "non_pep_declaration",
-      "preferred_language"
+      "preferred_language",
+      "trading_hub"
    ],
    "properties" : {
       "date_of_birth" : {
@@ -121,6 +122,13 @@
       "preferred_language" : {
          "type" : "string",
          "pattern": "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+      },
+      "trading_hub" : {
+         "type" : "integer",
+         "enum" : [
+            0,
+            1
+         ]
       }
    }
 }
