@@ -258,7 +258,8 @@ rule 'profile.fields_allowed_to_change' => {
         # Ideally, I think we should refactor this part instead of hard-coding it. We have $client->immutable_fields logic in place.
         # The logic for fields allowed to be changed should be !$client->immutable_fields. But, I do not have a 100% understanding of
         # client profile rules.
-        my $allowed_fields_for_virtual = qr/set_settings|loginid|email_consent|residence|allow_copiers|preferred_language|feature_flag|citizen/;
+        my $allowed_fields_for_virtual =
+            qr/set_settings|loginid|email_consent|residence|allow_copiers|preferred_language|feature_flag|citizen|trading_hub/;
         for (keys %$args) {
             $self->fail(
                 'PermissionDenied',
