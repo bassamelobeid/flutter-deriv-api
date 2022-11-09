@@ -731,6 +731,10 @@ sub prepare_bet_data_for_buy {
             $bet_params->{take_profit_order_date}   = $contract->take_profit->{date}->db_timestamp;
             $bet_params->{take_profit_order_amount} = $contract->take_profit->{amount};
         }
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_VANILLA) {
+        $bet_params->{barrier}     = $contract->barrier->as_absolute;
+        $bet_params->{entry_spot}  = $contract->entry_spot;
+        $bet_params->{entry_epoch} = Date::Utility->new($contract->entry_tick->epoch)->db_timestamp;
     } else {
         return Error::Base->cuss(
             -quiet             => 1,
@@ -821,7 +825,6 @@ sub prepare_buy {
     my ($self, $skip) = @_;
 
     return $self->prepare_bet_data_for_buy if $skip;
-
     $self->limits($self->calculate_limits);
 
     my $error_status = BOM::Transaction::Validation->new({
@@ -899,6 +902,7 @@ sub buy {
         {tags => ["contract_class:$contract_type", "market:$market"]});
 
     try {
+
         $company_limits->add_buys($client);
         my $expiry_epoch = $self->contract->date_expiry->epoch;
 
