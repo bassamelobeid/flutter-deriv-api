@@ -12,6 +12,7 @@ use f_brokerincludeall;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit      ();
+use BOM::Backoffice::IdentityVerification;
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
@@ -163,4 +164,35 @@ print qq~
 print '<input type="submit" class="btn btn--primary" value="Submit">';
 print "</form>";
 
+if (BOM::Backoffice::Auth0::has_authorisation(['CS', 'Compliance'])) {
+    Bar("IDV DASHBOARD");
+
+    my $filter_data = BOM::Backoffice::IdentityVerification::get_filter_data();
+
+    my ($idv_countries, $idv_document_types, $idv_providers, $idv_statuses, $idv_messages) = @{$filter_data}{
+        qw/
+            countries
+            document_types
+            providers
+            statuses
+            messages
+            /
+    };
+
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/idv/filters.html.tt',
+        {
+            url            => request()->url_for('backoffice/f_idv_dashboard.cgi'),
+            providers      => $idv_providers,
+            countries      => $idv_countries,
+            document_types => $idv_document_types,
+            statuses       => $idv_statuses,
+            messages       => $idv_messages,
+            title          => 'Filter IDV Requests',
+            offset         => 0,
+            filters        => {
+                date_from => Date::Utility->new()->minus_months(1)->date_yyyymmdd,
+                date_to   => Date::Utility->new()->date_yyyymmdd,
+            }});
+}
 code_exit_BO();

@@ -118,6 +118,7 @@ my $permissions = {
     'f_quant_query.cgi'           => ['Quants',   'CS'],
     'f_dynamic_settings.cgi'      => ['Quants',   'IT'],    # it has extra internal logic inside
     'crypto_dynamic_settings.cgi' => ['IT'],
+    'f_idv_dashboard.cgi'         => ['CS', 'Compliance'],
 
     'f_save.cgi'                                                              => ['QuantsWrite'],
     'f_upload_holidays.cgi'                                                   => ['QuantsWrite'],

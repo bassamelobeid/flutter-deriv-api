@@ -1308,3 +1308,9 @@ table.pivot .summary {
     margin: 0;
     padding: 0;
 }
+
+.col-4 {
+    width: 25%;
+    margin: 0;
+    padding: 0;
+}
