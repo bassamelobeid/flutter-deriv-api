@@ -19,7 +19,8 @@
             "country_code",
             "user_hash",
             "immutable_fields",
-            "preferred_language"
+            "preferred_language",
+            "trading_hub"
          ],
          "properties" : {
             "email_consent" : {
@@ -65,6 +66,13 @@
                      ]
                   }
                }
+            },
+            "trading_hub" : {
+               "type" : "integer",
+               "enum" : [
+                  0,
+                  1
+               ]
             }
          }
       },

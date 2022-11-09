@@ -31,7 +31,8 @@
             "address_city",
             "non_pep_declaration",
             "immutable_fields",
-            "preferred_language"
+            "preferred_language",
+            "trading_hub"
          ],
          "properties" : {
             "address_state" : {
@@ -128,6 +129,13 @@
             "preferred_language" : {
                "type" : "string",
                "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+            },
+            "trading_hub" : {
+               "type" : "integer",
+               "enum" : [
+                  0,
+                  1
+               ]
             }
          }
       },
