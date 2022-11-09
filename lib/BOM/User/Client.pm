@@ -4531,8 +4531,7 @@ sub _advertiser_details {
         rating_count               => $advertiser->{rating_count} // 0,
         recommended_average        => defined $advertiser->{recommended_average} ? sprintf('%.1f', $advertiser->{recommended_average} * 100) : undef,
         recommended_count          => defined $advertiser->{recommended_average} ? $advertiser->{recommended_count}                          : undef,
-        is_online                  => ($stats{last_online} and $stats{last_online} >= (time - P2P_ONLINE_PERIOD)) ? 1                        : 0,
-        last_online_time           => $stats{last_online},
+        $self->_p2p_advertiser_online_status($advertiser->{client_loginid}, $advertiser->{country} // $self->residence),
     };
 
     if ($advertiser->{show_name}) {
@@ -4680,6 +4679,7 @@ sub _advert_details {
                 : undef,
                 # calculate the number of positive recommendations
                 recommended_count => defined $advert->{advertiser_recommended_average} ? $advert->{advertiser_recommended_count} : undef,
+                $self->_p2p_advertiser_online_status($advert->{advertiser_loginid}, $advert->{advertiser_country}),
             },
         };
 
@@ -4783,6 +4783,7 @@ sub _order_details {
                 first_name => $order->{advertiser_first_name},
                 last_name  => $order->{advertiser_last_name},
                 ($role eq 'client' and exists $order->{advertiser_recommended}) ? (is_recommended => $order->{advertiser_recommended}) : (),
+                $self->_p2p_advertiser_online_status($order->{advertiser_loginid}, $order->{advertiser_country}),
 
             },
             client_details => {
@@ -4792,6 +4793,7 @@ sub _order_details {
                 first_name => $order->{client_first_name},
                 last_name  => $order->{client_last_name},
                 ($role eq 'advertiser' and exists $order->{client_recommended}) ? (is_recommended => $order->{client_recommended}) : (),
+                $self->_p2p_advertiser_online_status($order->{client_loginid}, $order->{client_country}),
             },
             advert_details => {
                 id             => $order->{advert_id},
@@ -5002,10 +5004,36 @@ sub _p2p_advertiser_stats {
         advert_rates => $raw{ADVERT_RATES}->@* ? sprintf("%.2f", (List::Util::sum($raw{ADVERT_RATES}->@*) / $raw{ADVERT_RATES}->@*) * 100)
         : undef,
         partner_count => $redis->scard($key_prefix . 'ORDER_PARTNERS'),
-        last_online   => $redis->zscore(P2P_USERS_ONLINE_KEY, ($loginid . "::" . $self->residence)),
     };
 
     return $stats;
+}
+
+=head2 _p2p_advertiser_online_status
+
+Gets online status of an advertiser.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$loginid> - loginid of advertiser
+
+=back
+
+Returns hash of fields that can be used directly in responses.
+
+=cut
+
+sub _p2p_advertiser_online_status {
+    my ($self, $loginid, $country) = @_;
+
+    my $last_online = BOM::Config::Redis->redis_p2p->zscore(P2P_USERS_ONLINE_KEY, ($loginid . "::" . $country));
+
+    return (
+        is_online        => ($last_online and $last_online >= (time - P2P_ONLINE_PERIOD)) ? 1 : 0,
+        last_online_time => $last_online,
+    );
 }
 
 =head2 _p2p_advertiser_relation_lists

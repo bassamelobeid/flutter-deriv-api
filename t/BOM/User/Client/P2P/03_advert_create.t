@@ -439,6 +439,8 @@ subtest 'Creating advert' => sub {
             rating_count           => 0,
             recommended_average    => undef,
             recommended_count      => undef,
+            is_online              => 0,
+            last_online_time       => undef,
         },
         is_visible             => bool(1),
         active_orders          => 0,
