@@ -13,6 +13,8 @@
     [% WRAPPER layout title='SYNCING AFFILIATE ' _ active_affiliate _ ' TO MT5' %]
         [% IF action_result == 'success' %]
             <p class="success">Sync proccess was started. Wait for email with result</p>
+        [% ELSIF action_result == 'success_untag' %]
+            <p class="success">Untag proccess was started. Wait for email with result</p>
         [% ELSIF action_result == 'fail' %]
             <p class="error">Fail to start sync process. try again later</p>
         [% END %]
@@ -49,7 +51,10 @@
             <input type='hidden' name='affiliate_id' value='[% sync_acc.affiliate_id %]'>
             <input type='hidden' name='loginid' value='[% loginid %]'>
             <input type='hidden' name='_csrf' value='[% csrf %]'>
-            <input type='submit' class="btn btn--primary" value='Start sync process'>
+            <p>
+                <input type='submit' class="btn btn--primary" value='Start sync process'>
+                <input type='submit' class="btn btn--primary" name='untag' value='Untag Affiliate'>
+            </p>
         </form>
     [% END %]
 [% END %]

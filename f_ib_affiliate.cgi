@@ -38,17 +38,23 @@ my (@sync_accounts, $action, $action_result, $active_affiliate);
 if (request()->http_method eq 'POST') {
     code_exit_BO(_get_display_error_message('Invalid CSRF Token')) if $input->{_csrf} ne BOM::Backoffice::Form::get_csrf_token();
 
+    $input->{action} = 'clear' if exists $input->{untag};
+
     $active_affiliate = $input->{affiliate_id};
     my $mt5_login = $input->{mt5_login};
     $action = $input->{action};
     if ($action =~ /^(sync|clear)$/) {
         $action_result = BOM::Platform::Event::Emitter::emit(
             affiliate_sync_initiated => {
-                affiliate_id => $active_affiliate,
-                action       => $input->{action},
-                email        => $input->{email},
+                affiliate_id  => $active_affiliate,
+                action        => $input->{action},
+                email         => $input->{email},
+                deriv_loginid => $loginid,
+                untag         => $input->{untag} ? 1 : 0,
             },
         ) ? 'success' : 'fail';
+
+        $action_result = 'success_untag' if $action_result eq 'success' and exists $input->{untag};
     } else {
         code_exit_BO(_get_display_error_message('Invalid Action'));
     }
