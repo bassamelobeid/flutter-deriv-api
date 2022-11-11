@@ -51,10 +51,12 @@ async sub affiliate_sync_initiated {
 
     while (my @chunk = splice(@loginids, 0, AFFILIATE_CHUNK_SIZE)) {
         my $args = {
-            loginids     => [@chunk],
-            affiliate_id => $affiliate_id,
-            action       => $data->{action},
-            email        => $data->{email},
+            loginids      => [@chunk],
+            affiliate_id  => $affiliate_id,
+            action        => $data->{action},
+            email         => $data->{email},
+            deriv_loginid => $data->{deriv_loginid},
+            untag         => $data->{untag} // 0,
         };
 
         # Don't fire a new event if this is the last batch, process it right away instead
@@ -108,14 +110,25 @@ async sub affiliate_loginids_sync {
         }
     }
 
+    my $archive_result = {};
+    $archive_result = await _archive_technical_accounts($data->{deriv_loginid}) if $data->{untag};
+
+    my $section_sep = '-' x 20;
+    my @archive_report;
+    push @archive_report, ($section_sep, 'MT5 Technical Accounts Archived', '~~~', (sort @{$archive_result->{success}}), '~~~')
+        if exists $archive_result->{success} and @{$archive_result->{success}};
+    push @archive_report, ($section_sep, 'MT5 Technical Accounts Archive Failed', '~~~', (sort @{$archive_result->{failed}}), '~~~')
+        if exists $archive_result->{failed} and @{$archive_result->{failed}};
+
     send_email({
             from    => '<no-reply@binary.com>',
             to      => $data->{email},
             subject => "Affliate $affiliate_id synchronization to mt5",
             message => [
-                "Synchronization to mt5 for Affiliate $affiliate_id is finished.",
+                ($data->{untag} ? 'Untag operation' : 'Synchronization to mt5') . " for Affiliate $affiliate_id is finished.",
                 'Action: ' . ($action eq 'clear' ? 'remove agent from all clients.' : 'sync agent with all clients.'),
-                '-' x 20, sort @results,
+                $section_sep, (sort @results),
+                @archive_report,
             ],
         });
 
@@ -255,6 +268,7 @@ async sub _set_affiliate_for_mt5 {
     # no update needed
     return if $agent_id == ($user_details->{agent} // 0);
 
+    delete $user_details->{color};
     await BOM::MT5::User::Async::update_user({
         %{$user_details},
         login => $mt5_login,
@@ -311,6 +325,35 @@ sub _generate_csv {
     }
 
     return $filename->canonpath;
+}
+
+async sub _archive_technical_accounts {
+    my $deriv_loginid             = shift;
+    my $client                    = BOM::User::Client->new({loginid => $deriv_loginid});
+    my $affiliate_mt5_accounts_db = $client->user->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(q{SELECT * FROM mt5.list_user_accounts(?)}, {Slice => {}}, $client->user->id);
+        });
+
+    my %affiliate_mt5_accounts = map { 'MTR' . $_->{mt5_account_id} => $_ } @$affiliate_mt5_accounts_db;
+
+    my %archive_result;
+    $archive_result{success} = [];
+    $archive_result{failed}  = [];
+    foreach my $mt5_account (keys %affiliate_mt5_accounts) {
+        next unless $affiliate_mt5_accounts{$mt5_account}{mt5_account_type} eq 'technical';
+
+        try {
+            await BOM::MT5::User::Async::user_archive($mt5_account);
+            push @{$archive_result{success}}, $mt5_account;
+        } catch ($e) {
+            my $error_code = '';
+            $error_code = ' - ' . $e->{code} if ref $e eq 'HASH' and exists $e->{code};
+            push @{$archive_result{failed}}, $mt5_account . $error_code;
+        }
+    }
+
+    return \%archive_result;
 }
 
 1;

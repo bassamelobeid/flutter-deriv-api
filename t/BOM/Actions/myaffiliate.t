@@ -105,20 +105,24 @@ subtest "affiliate_sync_initiated" => sub {
     for my $data ($emission->{affiliate_loginids_sync}->{data}->@*) {
         cmp_deeply $data,
             {
-            affiliate_id => $affiliate_id,
-            email        => $test_client->email,
-            loginids     => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
-            action       => 'sync',
+            affiliate_id  => $affiliate_id,
+            email         => $test_client->email,
+            loginids      => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
+            action        => 'sync',
+            deriv_loginid => undef,
+            untag         => 0,
             },
             'Expected data emitted for this chunk';
     }
 
     cmp_deeply $last_batch_data,
         {
-        affiliate_id => $affiliate_id,
-        email        => $test_client->email,
-        loginids     => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
-        action       => 'sync',
+        affiliate_id  => $affiliate_id,
+        email         => $test_client->email,
+        loginids      => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
+        action        => 'sync',
+        deriv_loginid => undef,
+        untag         => 0,
         },
         'Expected last chunk of data processed';
 
@@ -151,10 +155,12 @@ subtest "affiliate_sync_initiated" => sub {
         cmp_deeply $emission, {}, 'No additional event emitted';
         cmp_deeply $last_batch_data,
             {
-            affiliate_id => $affiliate_id,
-            email        => $test_client->email,
-            loginids     => [map { $_->{CLIENT_ID} } $customers->@*],
-            action       => 'clear',
+            affiliate_id  => $affiliate_id,
+            email         => $test_client->email,
+            loginids      => [map { $_->{CLIENT_ID} } $customers->@*],
+            action        => 'clear',
+            deriv_loginid => undef,
+            untag         => 0,
             },
             'Expected data processed';
 
