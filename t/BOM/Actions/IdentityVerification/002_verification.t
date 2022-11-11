@@ -649,15 +649,22 @@ subtest 'testing the exceptions verify_process' => sub {
     my $args = {
         loginid => 'CR0',
     };
+
     my $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+
+    ok $error=~ /No status received./, 'expected exception caught no status added';
+
+    $args->{status} = 'verified';
+
+    $error = exception {
         $idv_event_handler->($args)->get;
     };
 
     ok $error=~ /Could not initiate client for loginid: CR0/, 'expected exception caught';
 
-    $args = {
-        loginid => $client->loginid,
-    };
+    $args->{loginid} = $client->loginid;
 
     $error = exception {
         $idv_event_handler->($args)->get;
