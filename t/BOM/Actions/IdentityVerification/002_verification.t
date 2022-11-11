@@ -605,15 +605,6 @@ subtest 'testing the exceptions verify_identity' => sub {
 
     my $idv_model_mock = Test::MockModule->new('BOM::User::IdentityVerification');
 
-    my $submissions_left;
-
-    $idv_model_mock->mock(
-        'submissions_left',
-        sub {
-            return $submissions_left;
-        });
-
-    $submissions_left = 0;
     $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 0);
 
     $error = exception {
@@ -688,6 +679,17 @@ subtest 'testing the exceptions verify_process' => sub {
     ok $error=~ /Could not trigger IDV, microservice is not enabled./, 'expected exception caught no idv';
 
     $idv_microservice = 1;
+
+    my $idv_model_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+
+    $error = exception {
+        $idv_event_handler->($args)->get;
+    };
+
+    ok $error=~ /No standby document found, IDV request skipped/, 'expected exception caught (does not check for submission left)';
+
+    $idv_model_mock->unmock_all();
+
 };
 
 subtest 'testing refuted status' => sub {
