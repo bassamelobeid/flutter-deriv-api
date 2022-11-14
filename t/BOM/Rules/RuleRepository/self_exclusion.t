@@ -26,7 +26,7 @@ subtest "rule $rule_name" => sub {
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
         error_code => 'SelfExclusion',
-        params     => $excluded_until,
+        params     => [$excluded_until],
         rule       => $rule_name,
         details    => {excluded_until => $excluded_until}
         },
