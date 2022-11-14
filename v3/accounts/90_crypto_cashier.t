@@ -162,8 +162,13 @@ subtest 'crypto_config call' => sub {
 
     $rpc_response = {
         currencies_config => {
-            BTC => {minimum_withdrawal => 0.00059166},
-            ETH => {minimum_withdrawal => 0.01030783},
+            BTC   => {minimum_withdrawal => 0.00059166},
+            ETH   => {minimum_withdrawal => 0.01030783},
+            tUSDT => {
+                minimum_withdrawal => 100,
+                minimum_deposit    => 1
+            }
+
         },
     };
     my $ws_response = $t->await::crypto_config({
