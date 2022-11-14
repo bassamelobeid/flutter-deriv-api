@@ -35,7 +35,7 @@ my %ERROR_MAP = do {
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
         DXtradeNoCurrency     => localize('Please provide a currency for the Deriv X account.'),
-        DXExistingAccount     => localize('You already have Deriv X account of this type (account ID [_1]).'),
+        DXExistingAccount     => localize('You already have Deriv X account of this type (account ID [_1]).[_2]'),
         DXInvalidAccount      => localize('An invalid Deriv X account ID was provided.'),
         DXInvalidMarketType   => localize('An invalid Deriv X market type was provided for [_1] account creation'),
         DXDepositFailed       => localize('The required funds could not be withdrawn from your Deriv account. Please try a different account.'),
@@ -48,6 +48,7 @@ my %ERROR_MAP = do {
         DXDemoTopupBalance      =>
             localize('We cannot complete your request. You can only top up your Deriv X demo account when the balance falls below [_1] [_2].'),
         DXDemoTopFailed                        => localize('Your Deriv X demo account could not be topped up at this time. Please try later.'),
+        DXNewAccountFailed                     => localize('There was an error while creating your account. Please try again later.'),
         PlatformTransferTemporarilyUnavailable => localize('Transfers between these accounts are temporarily unavailable. Please try later.'),
         PlatformTransferError                  => localize('The transfer could not be completed: [_1]'),
         PlatformTransferSuspended              => localize('Transfers are suspended for system maintenance. Please try later.'),
