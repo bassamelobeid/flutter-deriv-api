@@ -1115,7 +1115,7 @@ sub get_untrusted_client_reason {
         },
         sr => {
             name    => 'SR',
-            reasons => ['Problem gambler', 'Negative target market',],
+            reasons => ['Problem Trader', 'Negative target market',],
         },
         investigation => {
             name    => 'Investigations',
