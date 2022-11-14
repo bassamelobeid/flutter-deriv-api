@@ -178,6 +178,12 @@ cmp_deeply(
     'user attributes of second account'
 );
 
+$dxtrader_mock->mock(
+    'get_client_accounts',
+    sub {
+        return [{loginid => "DXD1000"}];
+    });
+
 cmp_deeply(
     exception {
         $dxtrader->new_account(

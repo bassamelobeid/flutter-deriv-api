@@ -191,6 +191,7 @@ sub new_account {
 
     my $dxclient = $self->dxclient_get($server);
 
+    my %attributes;
     if ($dxclient) {
         my $existing = first {
                     $_->{currency} eq $currency
@@ -201,10 +202,30 @@ sub new_account {
                 ($_->{categories} // [])->@*
         } ($dxclient->{accounts} // [])->@*;
 
+        my ($user_loginids) = $self->get_client_accounts();
+
+        if ($existing) {
+            my $existing_dx_account = grep { $_->{loginid} eq $existing->{account_code} } @$user_loginids;
+
+            unless ($existing_dx_account) {
+                %attributes = (
+                    login         => $dxclient->{login},
+                    market_type   => $args{market_type},
+                    client_domain => $dxclient->{domain},
+                    account_code  => $existing->{account_code},
+                    clearing_code => DX_CLEARING_CODE,
+                );
+
+                $self->client->user->add_loginid($existing->{account_code}, PLATFORM_ID, $args{account_type}, $existing->{currency}, \%attributes);
+                die +{
+                    error_code     => 'DXExistingAccount',
+                    message_params => [$existing->{account_code}, " Please refresh the page"]};
+            }
+        }
+
         die +{
             error_code     => 'DXExistingAccount',
             message_params => [$existing->{account_code}]} if $existing;
-
     } else {
         # no existing client, try to create one
         my $login       = $self->dxtrade_login;
@@ -273,10 +294,21 @@ sub new_account {
         ],
     );
 
-    my $account = $account_resp->{content};
-    die 'Created account does not have requested account code' unless $account->{account_code} eq $account_code;
+    # Verifying here if the account has been created
+    try {
+        $self->call_api(
+            server => $server,
+            login  => $dxclient->{login},
+            domain => $dxclient->{domain},
+            method => 'client_get',
+        );
+    } catch {
+        die +{error_code => 'DXNewAccountFailed'};
+    }
 
-    my %attributes = (
+    my $account = $account_resp->{content};
+
+    %attributes = (
         login         => $dxclient->{login},
         market_type   => $args{market_type},
         client_domain => $dxclient->{domain},
@@ -302,6 +334,23 @@ sub new_account {
     $account->{login}      = $dxclient->{login};
 
     return $self->account_details($account);
+}
+
+=head2 get_client_accounts
+
+Gets all accounts of a client
+
+=cut
+
+sub get_client_accounts {
+    my ($self) = @_;
+
+    my ($result) = $self->client->user->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT loginid FROM users.get_loginids(?)", {Slice => {}}, $self->client->binary_user_id);
+        });
+
+    return $result;
 }
 
 =head2 is_valid_market_type
