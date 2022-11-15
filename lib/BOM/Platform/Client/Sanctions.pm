@@ -1,8 +1,9 @@
 package BOM::Platform::Client::Sanctions;
 
 use Moose;
-
+use feature qw(state);
 use BOM::Config;
+use BOM::Config::Redis;
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use Data::Validate::Sanctions;
@@ -40,7 +41,18 @@ has recheck_authenticated_clients => (
     default => 0
 );
 
-our $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
+=head2 sanctions
+
+    return a Data::Validate::Sanctions object
+
+=cut
+
+sub sanctions {
+    state $sanctions = Data::Validate::Sanctions->new(
+        storage    => 'redis',
+        connection => BOM::Config::Redis::redis_replicated_read());
+    return $sanctions;
+}
 
 =head2 check
 
@@ -67,7 +79,7 @@ sub check {
     return if $client->is_virtual;
 
     my %query           = map { $_ => $client->$_ } (qw/first_name last_name date_of_birth place_of_birth citizen residence/);
-    my $sanctioned_info = $sanctions->get_sanctioned_info(\%query);
+    my $sanctioned_info = sanctions()->get_sanctioned_info(\%query);
     $client->sanctions_check({
         type   => $self->type,
         result => $sanctioned_info->{matched} ? $sanctioned_info->{list} : '',
@@ -84,7 +96,7 @@ sub check {
     my $message =
           "UN Sanctions: $client_loginid suspected (Client's name is $client_name) - similar to $sanctioned_info->{matched_args}->{name}\n"
         . "Check possible match in UN sanctions list found in [$sanctioned_info->{list}, "
-        . Date::Utility->new($sanctions->last_updated($sanctioned_info->{list}))->date . "].\n"
+        . Date::Utility->new(sanctions()->last_updated($sanctioned_info->{list}))->date . "].\n"
         . "Matched fields: $matched_fields \n"
         . ($sanctioned_info->{comment} ? "Comments: $sanctioned_info->{comment} \n" : '');
 
