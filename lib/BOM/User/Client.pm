@@ -8002,7 +8002,7 @@ sub get_sum_trades {
 
 =head2 get_summary_of_deposits
 
-gets the summary of deposits
+Gets the summary of deposits for this and all sibling accounts in the same broker code.
 
 =cut
 
@@ -8011,7 +8011,7 @@ sub get_summary_of_deposits {
 
     return $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref("SELECT * FROM payment.summary_of_deposits_v2(?,?)", {Slice => {}}, $self->account->id, $from_time);
+            $_->selectrow_hashref("SELECT * FROM payment.summary_of_deposits_v3(?,?)", {Slice => {}}, $self->loginid, $from_time);
         });
 }
 
@@ -8092,13 +8092,11 @@ sub allow_paymentagent_withdrawal {
     my $elapsed = Time::HiRes::time - $start;
     stats_timing('bom_rpc.allow_payment_agent_withdraw.timing', $elapsed);
 
-    return "PaymentAgentZeroDeposits" unless $self->account->balance;
+    return "PaymentAgentZeroDeposits" if $self->account->balance <= 0;
 
-    my $sum_deposits = $summary_of_deposits->{sum_deposits};
+    my $sum_deposits = $summary_of_deposits->{sum_deposits};    # query converts this to USD
 
-    return undef unless $sum_deposits;    # according to the query if this is undef it means client has only pa deposits
-
-    $sum_deposits = convert_currency($sum_deposits, $self->currency, 'USD');
+    return undef unless $sum_deposits;                          # according to the query if this is undef it means client has only pa deposits
 
     my $sum_of_trades = convert_currency($self->get_sum_trades($from_time), $self->currency, 'USD');
 

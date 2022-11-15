@@ -18,18 +18,32 @@ use BOM::User;
 use BOM::User::Password;
 use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
-use BOM::Test::Helper::ExchangeRates qw (populate_exchange_rates);
+use BOM::Test::Helper::ExchangeRates qw (populate_exchange_rates populate_exchange_rates_db);
 
-populate_exchange_rates();
+my $db = BOM::Database::ClientDB->new({broker_code => 'CR', operation => 'write'})->db->dbic;
 
-BOM::Database::ClientDB->new({broker_code => 'CR', operation => 'write'})->db->dbic->dbh->do(
+$db->dbh->do(
     "INSERT INTO payment.doughflow_method (payment_processor, payment_method, reversible, withdrawal_supported) 
     VALUES ('reversible', 'reversible', TRUE, TRUE), ('can_wd', 'can_wd', FALSE, TRUE), ('no_wd', 'no_wd', FALSE, FALSE)"
 );
 
+my $rates = {ETH => 1000};
+populate_exchange_rates($rates);
+populate_exchange_rates_db($db, $rates);
+
 BOM::Config::Runtime->instance->app_config->payments->pa_sum_deposits_limit(200);
 
-my $agent_usd = new_client('in', 'USD');
+my $agent_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => 'pa@test.com',
+    residence   => 'in',
+});
+$agent_usd->account('USD');
+
+BOM::User->create(
+    email    => $agent_usd->email,
+    password => 'xxx',
+)->add_client($agent_usd);
 
 #Create payment agent
 $agent_usd->payment_agent({
@@ -48,25 +62,25 @@ $agent_usd->save;
 
 $agent_usd->payment_legacy_payment(
     currency     => 'USD',
-    amount       => 1000,
+    amount       => 10000,
     remark       => 'here is money',
     payment_type => 'ewallet',
 );
 
-my $allow_withdraw;
+my ($client_usd, $client_eth);
 
 BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(0);
 
-subtest '1- No deposits or PA is the only deposit method -> payment agent withdrawal allowed' => sub {
+subtest 'No deposits or PA is the only deposit method -> payment agent withdrawal allowed' => sub {
 
-    my $client = new_client('in', 'USD');    # non blocked CFT country
+    create_clients('in');    # non blocked CFT country
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentZeroDeposits', '1-1- no deposits - do not allow PA withdrawal';
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentZeroDeposits', 'Fiat account has error with empty account';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentZeroDeposits', 'Crypto account has error with empty account';
 
-    # PA sends money to client
+    # PA sends money to fiat client
     $agent_usd->payment_account_transfer(
-        toClient           => $client,
+        toClient           => $client_usd,
         currency           => 'USD',
         amount             => 500,
         fees               => 0,
@@ -75,254 +89,216 @@ subtest '1- No deposits or PA is the only deposit method -> payment agent withdr
         verification       => 'paymentagent_transfer',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, '1-2- PA is the only deposit method -> payment agent withdrawal allowed';
+    is $client_usd->allow_paymentagent_withdrawal, undef,                      'Fiat account can withdraw with only PA deposit';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentZeroDeposits', 'Crypto account still cannot withdraw';
+
+    # transfer all to crypto
+    $client_usd->payment_account_transfer(
+        toClient  => $client_eth,
+        currency  => 'USD',
+        amount    => 500,
+        fees      => 0,
+        to_amount => 0.5,
+        remark    => 'x',
+    );
+
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentZeroDeposits', 'Fiat account cannot withdraw after transferring to crypto';
+    is $client_eth->allow_paymentagent_withdrawal, undef,                      'Crypto account can withdraw after transferring PA deposit';
 };
 
-subtest '2- visa - CFT NOT Blocked' => sub {
+subtest 'Visa - CFT NOT Blocked country' => sub {
 
-    my $client = new_client('in', 'USD');    # non blocked CFT country
+    create_clients('in');    # non blocked CFT country
+    pa_deposit_and_transfer();
 
-    # PA sends money to client
-    $agent_usd->payment_account_transfer(
-        toClient           => $client,
-        currency           => 'USD',
-        amount             => 1,
-        fees               => 0,
-        is_agent_to_client => 1,
-        gateway_code       => 'payment_agent_transfer',
-        verification       => 'paymentagent_transfer',
-    );
-
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency       => 'USD',
-        amount         => 2,
+        amount         => 50,
         remark         => 'x',
         payment_method => 'VISA',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentWithdrawSameMethod', '2-1- PaymentAgentWithdrawSameMethod';
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod', 'cannot withdraw from fiat account with net VISA deposit';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod', 'cannot withdraw from crypto account with net VISA deposit';
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency       => 'USD',
-        amount         => -2,
+        amount         => -50,
         remark         => 'x',
         payment_method => 'VISA',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, 'Allowed when net visa deposit is zero';
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'can withdraw from fiat account with zero net VISA deposit';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'can withdraw from crypto account with zero net VISA deposit';
 };
 
-subtest '3- visa - CFT blocked' => sub {
+subtest 'Visa - CFT blocked country' => sub {
 
-    my $client = new_client('ca', 'USD');    # blocked CFT country
+    create_clients('ca');    # CFT blocked country
+    pa_deposit_and_transfer();
 
-    # PA sends money to client
-    $agent_usd->payment_account_transfer(
-        toClient           => $client,
-        currency           => 'USD',
-        amount             => 1,
-        fees               => 0,
-        is_agent_to_client => 1,
-        gateway_code       => 'payment_agent_transfer',
-        verification       => 'paymentagent_transfer',
-    );
-
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency       => 'USD',
-        amount         => 3,
+        amount         => 50,
         remark         => 'x',
         payment_method => 'VISA',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentUseOtherMethod', '3-1- PaymentAgentUseOtherMethod';
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentUseOtherMethod', 'cannot withdraw from fiat account with net VISA deposit';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentUseOtherMethod', 'cannot withdraw from crypto account with net VISA deposit';
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency       => 'USD',
-        amount         => -3,
+        amount         => -50,
         remark         => 'x',
         payment_method => 'VISA',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, 'Allowed when net visa deposit is zero';
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'can withdraw from fiat account with zero net VISA deposit';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'can withdraw from crypto account with zero net VISA deposit';
 };
 
-subtest '4- MasterCard' => sub {
+subtest 'MasterCard' => sub {
 
-    my $client = new_client('in', 'USD');
+    create_clients('in');
+    pa_deposit_and_transfer();
 
-    # PA sends money to client
-    $agent_usd->payment_account_transfer(
-        toClient           => $client,
-        currency           => 'USD',
-        amount             => 1,
-        fees               => 0,
-        is_agent_to_client => 1,
-        gateway_code       => 'payment_agent_transfer',
-        verification       => 'paymentagent_transfer',
-    );
-
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency       => 'USD',
-        amount         => 4,
+        amount         => 50,
         remark         => 'x',
         payment_method => 'MasterCard',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentUseOtherMethod', '4-1- not traded so ask for justification/same withdrawal method';
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentUseOtherMethod', 'cannot withdraw from fiat account with net MC deposit';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentUseOtherMethod', 'cannot withdraw from crypto account with net MC deposit';
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency       => 'USD',
-        amount         => -4,
+        amount         => -50,
         remark         => 'x',
         payment_method => 'MasterCard',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, 'Allowed when net mastercard deposit is zero';
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'can withdraw from fiat account with zero net MC deposit';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'can withdraw from crypto account with zero net MC deposit';
 };
 
-subtest '6- Reversible - Acquired (NOT ZingPay) - CFT NOT Blocked' => sub {
+subtest 'Reversible method (NOT ZingPay) - CFT NOT Blocked country' => sub {
 
-    my $client = new_client('in', 'USD');    # non blocked CFT country
+    create_clients('in');    # non blocked CFT country
+    pa_deposit_and_transfer();
 
-    # PA sends money to client
-    $agent_usd->payment_account_transfer(
-        toClient           => $client,
-        currency           => 'USD',
-        amount             => 1,
-        fees               => 0,
-        is_agent_to_client => 1,
-        gateway_code       => 'payment_agent_transfer',
-        verification       => 'paymentagent_transfer',
-    );
-
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency          => 'USD',
-        amount            => 5,
+        amount            => 50,
         remark            => 'x',
         payment_processor => 'reversible',
         payment_method    => 'reversible',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentWithdrawSameMethod', '6-1- PaymentAgentWithdrawSameMethod';
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod', 'cannot withdraw from fiat account with net reversible deposit';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod',
+        'cannot withdraw from crypto account with net reversible deposit';
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency          => 'USD',
-        amount            => -5,
+        amount            => -50,
         remark            => 'x',
         payment_processor => 'reversible',
         payment_method    => 'reversible',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, 'Allowed when net deposit is zero';
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'can withdraw from fiat account with zero net reversible deposit';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'can withdraw from crypto account with zero net reversible deposit';
 };
 
-subtest '7- Reversible - CardPay (NOT ZingPay) - CFT blocked' => sub {
+subtest 'Reversible method (NOT ZingPay) - CFT blocked country' => sub {
 
-    my $client = new_client('ca', 'USD');    # blocked CFT country
+    create_clients('ca');    # blocked CFT country
+    pa_deposit_and_transfer();
 
-    # PA sends money to client
-    $agent_usd->payment_account_transfer(
-        toClient           => $client,
-        currency           => 'USD',
-        amount             => 1,
-        fees               => 0,
-        is_agent_to_client => 1,
-        gateway_code       => 'payment_agent_transfer',
-        verification       => 'paymentagent_transfer',
-    );
-
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency          => 'USD',
-        amount            => 6,
+        amount            => 50,
         remark            => 'x',
         payment_processor => 'reversible',
         payment_method    => 'reversible',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentUseOtherMethod', '7-1- PaymentAgentUseOtherMethod';
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentUseOtherMethod', 'cannot withdraw from fiat account with net reversible deposit';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentUseOtherMethod', 'cannot withdraw from crypto account with net reversible deposit';
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency          => 'USD',
-        amount            => -6,
+        amount            => -50,
         remark            => 'x',
         payment_processor => 'reversible',
         payment_method    => 'reversible',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, 'Allowed when net reversible deposit is zero';
-
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'can withdraw from fiat account with zero net reversible deposit';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'can withdraw from crypto account with zero net reversible deposit';
 };
 
-subtest '8- Reversible - ZingPay' => sub {
+subtest 'ZingPay' => sub {
 
-    my $client = new_client('in', 'USD');    # non blocked CFT country
+    create_clients('in');    # non blocked CFT country
+    pa_deposit_and_transfer();
 
-    # PA sends money to client
-    $agent_usd->payment_account_transfer(
-        toClient           => $client,
-        currency           => 'USD',
-        amount             => 1,
-        fees               => 0,
-        is_agent_to_client => 1,
-        gateway_code       => 'payment_agent_transfer',
-        verification       => 'paymentagent_transfer',
-    );
-
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency       => 'USD',
-        amount         => 7,
+        amount         => 50,
         remark         => 'x',
         payment_method => 'ZingPay',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentWithdrawSameMethod', '8-1-  PaymentAgentWithdrawSameMethod';
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod', 'cannot withdraw from fiat account with net ZingPay deposit';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod', 'cannot withdraw from crypto account with net ZingPay deposit';
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency       => 'USD',
-        amount         => -7,
+        amount         => -50,
         remark         => 'x',
         payment_method => 'ZingPay',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, 'Allowed when net zingpay deposit is zero';
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'can withdraw from fiat account with zero net ZingPay deposit';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'can withdraw from crypto account with zero net ZingPay deposit';
 };
 
-subtest '9- Ireversible - withdrawal_supported' => sub {
+subtest 'Ireversible method - withdrawal_supported' => sub {
 
-    my $client = new_client('id', 'USD');
+    create_clients('id');
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency          => 'USD',
-        amount            => 101,        # <200
+        amount            => 190,        # <200
         remark            => 'x',
         payment_method    => 'can_wd',
         payment_processor => 'can_wd',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentJustification', '9-1- no trade amount<200 - PaymentAgentWithdrawSameMethod';
+    # Transfer some to crypto
+    $client_usd->payment_account_transfer(
+        toClient  => $client_eth,
+        currency  => 'USD',
+        amount    => 50,
+        fees      => 0,
+        to_amount => 0.05,
+        remark    => 'x',
+    );
 
-    # sum of deposits : 101
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentJustification', 'amount<200, no trade - PaymentAgentJustification on fiat account';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentJustification', 'amount<200, no trade - PaymentAgentJustification on crypto account';
+
     my $mock_client = Test::MockModule->new("BOM::User::Client");
     $mock_client->mock(get_sum_trades => sub { return 100; });
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, '9-2- allow paymentagent withdrawal';
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'amount<200, has traded - fiat account can withdraw';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'amount<200, has traded - crypto account can withdraw';
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency          => 'USD',
         amount            => 100,
         remark            => 'x',
@@ -330,50 +306,59 @@ subtest '9- Ireversible - withdrawal_supported' => sub {
         payment_processor => 'can_wd',
     );
 
-    # sum of deposits became 101+100 = 201
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentWithdrawSameMethod', '9-3- amount>200';
+    # sum of deposits became 190+100 = 290
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod', 'amount>200 - PaymentAgentWithdrawSameMethod on fiat account';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod', 'amount>200 - PaymentAgentWithdrawSameMethod on crypto account';
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency          => 'USD',
-        amount            => -2,
+        amount            => -100,
         remark            => 'x',
         payment_method    => 'can_wd',
         payment_processor => 'can_wd',
     );
 
-    # sum of deposits became 101+100-2 = 199
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, 'net sum of deposits under limit';
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'net deposit < 200 - fiat account can withdraw';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'net deposit < 200 - crypto account can withdraw';
 };
 
-subtest '10- Ireversible - withdrawal option NOT available' => sub {
+subtest 'Ireversible method - withdrawal option NOT available' => sub {
 
-    my $client = new_client('id', 'USD');
+    create_clients('id');
 
-    $client->payment_doughflow(
+    $client_usd->payment_doughflow(
         currency          => 'USD',
-        amount            => 201,
+        amount            => 200,
         remark            => 'x',
         payment_method    => 'no_wd',
         payment_processor => 'no_wd',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentJustification', '10-1- not traded';
+    # Transfer some to crypto
+    $client_usd->payment_account_transfer(
+        toClient  => $client_eth,
+        currency  => 'USD',
+        amount    => 50,
+        fees      => 0,
+        to_amount => 0.05,
+        remark    => 'x',
+    );
+
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentJustification', 'no trades - PaymentAgentJustification on fiat account';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentJustification', 'no trades - PaymentAgentJustification on crypto account';
 
     my $mock_client = Test::MockModule->new("BOM::User::Client");
     $mock_client->mock(get_sum_trades => sub { return 120; });
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, '10-2- allow paymentagent withdrawal';
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'has traded - fiat account can withdraw';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'has traded - crypto account can withdraw';
 };
 
-subtest '11- crypto' => sub {
+subtest 'Crypto' => sub {
 
-    my $client = new_client('id', 'ETH');
+    create_clients('id');
 
-    $client->payment_ctc(
+    $client_eth->payment_ctc(
         currency         => 'ETH',
         amount           => 10,
         crypto_id        => 1,
@@ -381,32 +366,78 @@ subtest '11- crypto' => sub {
         transaction_hash => 'txhash1',
     );
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, 'PaymentAgentWithdrawSameMethod', '11-1- not traded so ask PaymentAgentWithdrawSameMethod';
+    # Transfer some to fiat
+    $client_eth->payment_account_transfer(
+        toClient  => $client_usd,
+        currency  => 'ETH',
+        amount    => 0.01,
+        fees      => 0,
+        to_amount => 10,
+        remark    => 'x',
+    );
+
+    is $client_usd->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod', 'no trades - PaymentAgentWithdrawSameMethod on fiat account';
+    is $client_eth->allow_paymentagent_withdrawal, 'PaymentAgentWithdrawSameMethod', 'no trades - PaymentAgentWithdrawSameMethod on crypto account';
 
     my $mock_client = Test::MockModule->new("BOM::User::Client");
-    $mock_client->mock(get_sum_trades => sub { return 80; });
+    $mock_client->mock(get_sum_trades => sub { return 5000; });
 
-    $allow_withdraw = $client->allow_paymentagent_withdrawal;
-    is $allow_withdraw, undef, '11-2- allow paymentagent withdrawal';
+    is $client_usd->allow_paymentagent_withdrawal, undef, 'has traded - fiat account can withdraw';
+    is $client_eth->allow_paymentagent_withdrawal, undef, 'has traded - crypto account can withdraw';
 };
 
 done_testing();
 
-sub new_client {
-    my ($country, $currency) = @_;
+sub create_clients {
+    my $country = shift;
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'dummy' . rand(999) . '@binary.com',
-        residence   => $country,
-    });
+    my $email = 'dummy' . rand(999) . '@binary.com';
 
-    BOM::User->create(
-        email    => $client->email,
+    my $user = BOM::User->create(
+        email    => $email,
         password => 'xxx',
-    )->add_client($client);
+    );
 
-    $client->account($currency);
-    return $client;
+    $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        residence      => $country,
+        binary_user_id => $user->id,
+    });
+    $client_usd->account('USD');
+
+    $client_eth = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        residence      => $country,
+        binary_user_id => $user->id,
+    });
+    $client_eth->account('ETH');
+
+    $user->add_client($client_usd);
+    $user->add_client($client_eth);
+}
+
+sub pa_deposit_and_transfer {
+
+    # PA sends money to fiat client
+    $agent_usd->payment_account_transfer(
+        toClient           => $client_usd,
+        currency           => 'USD',
+        amount             => 100,
+        fees               => 0,
+        is_agent_to_client => 1,
+        gateway_code       => 'payment_agent_transfer',
+        verification       => 'paymentagent_transfer',
+    );
+
+    # Transfer half to crypto
+    $client_usd->payment_account_transfer(
+        toClient  => $client_eth,
+        currency  => 'USD',
+        amount    => 50,
+        fees      => 0,
+        to_amount => 0.05,
+        remark    => 'x',
+    );
 }
