@@ -193,11 +193,11 @@ subtest 'process_deposit' => sub {
                 amount => 0.02
             },
             {
-                type   => 'deposit',    #as per the check, this should be assigned to fees
+                type   => 'fee_crypto_deposit',    #as per the check, this should be assigned to fees
                 amount => 0.01
             },
             {
-                type   => 'deposit',
+                type   => 'fee_crypto_deposit',
                 amount => 0.03
             }
         ],
@@ -214,12 +214,51 @@ subtest 'process_deposit' => sub {
         transaction_fee => 0.01,
     };
 
-    my $expected_result = {
+    my $expected_result_1 = {
         is_success   => 1,
         transactions => [$normalize_txn],
     };
+
+    #case when internal deposit normalized successfully
+    my $payload_internal = {
+        id           => 1234,
+        transactions => [{
+                address  => 'address2',
+                currency => 'USDTT',
+                txid     => 'tx_hash2',
+                amount   => 10
+            }
+        ],
+        fees => [{
+                type   => 'mining',
+                amount => 0.02
+            },
+            {
+                type   => 'fee_crypto_deposit_internal',    #as per the check, this should be assigned to fees
+                amount => 0.03
+            },
+        ],
+        status => 'confirmed',
+    };
+    my $normalize_internal_txn = {
+        trace_id        => 1234,
+        status          => 'confirmed',
+        error           => '',
+        address         => 'address2',
+        amount          => 10,
+        currency        => 'tUSDT',
+        hash            => 'tx_hash2',
+        transaction_fee => 0.03,
+    };
+
+    my $expected_result_2 = {
+        is_success   => 1,
+        transactions => [$normalize_internal_txn],
+    };
+
     my $coinspaid = BOM::Platform::CryptoWebhook::Webhook::PaymentProcessor->new(processor_name => 'Coinspaid');
-    is_deeply $coinspaid->process_deposit($payload), $expected_result, 'Correct response for valid payload for deposit txn';
+    is_deeply $coinspaid->process_deposit($payload),          $expected_result_1, 'Correct response for valid payload for deposit txn';
+    is_deeply $coinspaid->process_deposit($payload_internal), $expected_result_2, 'Correct response for valid payload for internal deposit txn';
 
 };
 
@@ -338,11 +377,11 @@ subtest 'process_withdrawal' => sub {
                 amount => 0.02
             },
             {
-                type   => 'withdrawal',    #as per the check, this should be assigned to fees
+                type   => 'fee_crypto_withdrawal',    #as per the check, this should be assigned to fees
                 amount => 0.091
             },
             {
-                type   => 'withdrawal',
+                type   => 'fee_crypto_withdrawal',
                 amount => 0.03
             }
         ],
@@ -364,8 +403,48 @@ subtest 'process_withdrawal' => sub {
         is_success   => 1,
         transactions => [$normalize_txn],
     };
+
+    #case when internal withdrawal normalized successfully
+    my $payload_internal = {
+        id           => 1234,
+        foreign_id   => 45678,
+        transactions => [{
+                address  => 'address2',
+                currency => 'USDTT',
+                txid     => 'tx_hash2',
+                amount   => 12
+            }
+        ],
+        fees => [{
+                type   => 'mining',
+                amount => 0.02
+            },
+            {
+                type   => 'fee_crypto_withdrawal_internal',    #as per the check, this should be assigned to fees
+                amount => 0.099
+            },
+        ],
+        status => 'confirmed',
+    };
+    my $normalize_internal_txn = {
+        trace_id        => 1234,
+        reference_id    => 45678,
+        status          => 'confirmed',
+        error           => '',
+        address         => 'address2',
+        amount          => 12,
+        currency        => 'tUSDT',
+        hash            => 'tx_hash2',
+        transaction_fee => 0.099,
+    };
+
+    my $expected_result_2 = {
+        is_success   => 1,
+        transactions => [$normalize_internal_txn],
+    };
     my $coinspaid = BOM::Platform::CryptoWebhook::Webhook::PaymentProcessor->new(processor_name => 'Coinspaid');
-    is_deeply $coinspaid->process_withdrawal($payload), $expected_result, 'Correct response for valid payload for withdrawal txn';
+    is_deeply $coinspaid->process_withdrawal($payload),          $expected_result,   'Correct response for valid payload for withdrawal txn';
+    is_deeply $coinspaid->process_withdrawal($payload_internal), $expected_result_2, 'Correct response for valid payload for internal withdrawal txn';
 };
 
 done_testing;

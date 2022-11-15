@@ -30,7 +30,16 @@ use constant {
     CURRENCY_MAPPING => {
         USDTT => 'tUSDT',
     },
-};
+    #fee types for deposit transactions
+    FEE_TYPES_DEPOSIT => {
+        fee_crypto_deposit          => 1,
+        fee_crypto_deposit_internal => 1
+    },
+    #fee types for withdrawal transactions
+    FEE_TYPES_WITHDRAWAL => {
+        fee_crypto_withdrawal          => 1,
+        fee_crypto_withdrawal_internal => 1
+    }};
 
 =head2 new
 
@@ -165,9 +174,9 @@ sub process_deposit {
     return {error => 'fees not found in payload'}         unless $fees;
     return {error => 'status not found in payload'}       unless $status;
 
-    #iterate fees and check if deposit fees is sent otherwise return error
+    #iterate fees and check if deposit fees is sent otherwise adds a log
     #fees will be empty for pending(not_confirmed) and canceleed transactions
-    my $fee = first { ($_->{type} // '') eq 'deposit' } $fees->@*;
+    my $fee = first { FEE_TYPES_DEPOSIT->{($_->{type} // '')} } $fees->@*;
 
     my @normalized_txns;
     #since coinspaid returns transactions as an array list, we handle each of it
@@ -237,13 +246,13 @@ sub process_withdrawal {
     return {error => 'fees not found in payload'}         unless $fees;
     return {error => 'status not found in payload'}       unless $status;
 
-    #iterate fees and check if deposit fees is sent otherwise return error
-    #fees will be empty for pending(not_confirmed) and canceleed transactions
-    my $fee = first { ($_->{type} // '') eq 'withdrawal' } $fees->@*;
+    #iterate fees and check if withdrawal fees is sent otherwise adds a log
+    #fees will be empty for pending(not_confirmed) and cancelled transactions
+    my $fee = first { FEE_TYPES_WITHDRAWAL->{($_->{type} // '')} } $fees->@*;
 
     my @normalized_txns;
     #since coinspaid returns transactions as an array list, we handle each of it
-    # if any of transaction parsing fails, we discard all the transactions & return not ok result to coinspaid
+    #if any of transaction parsing fails, we discard all the transactions & return not ok result to coinspaid
     for my $txn ($transactions->@*) {
         defined $txn->{$_} or (return {error => sprintf('%s not found in payload, coinspaid_id: %s', $_, $id)}) for qw(address currency txid amount);
 
