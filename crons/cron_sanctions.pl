@@ -29,22 +29,31 @@ use constant LAST_CRON_SANCTIONS_CHECK_RUN_KEY => 'LAST_CRON_SANCTIONS_CHECK_RUN
 =cut
 
 GetOptions(
-    'v|verbose' => \(my $verbose        = 0),
-    'f|force'   => \(my $force          = 0),
-    'u|update'  => \(my $update         = 0),
-    'c|clear'   => \(my $clear_last_run = 0),
+    'v|verbose'  => \(my $verbose        = 0),
+    'f|force'    => \(my $force          = 0),
+    'u|update'   => \(my $update         = 0),
+    'x|export=s' => \(my $export_to      = ''),
+    'c|clear'    => \(my $clear_last_run = 0),
 ) or die "Invalid argument\n";
 
 Log::Any::Adapter->import(qw(Stdout), log_level => $verbose ? 'info' : 'warning');
 
-my $sanctions = Data::Validate::Sanctions->new(
-    sanction_file => BOM::Config::sanction_file(),
-    eu_token      => BOM::Config::third_party()->{eu_sanctions}->{token},
-    hmt_url       => BOM::Config::Runtime->instance->app_config->compliance->sanctions->hmt_consolidated_url,
+my %args = (
+    storage    => 'redis',
+    connection => BOM::Config::Redis::redis_replicated_read(),
+    eu_token   => BOM::Config::third_party()->{eu_sanctions}->{token},
+    hmt_url    => BOM::Config::Runtime->instance->app_config->compliance->sanctions->hmt_consolidated_url,
 );
 
 if ($update) {
-    $sanctions->update_data(verbose => $verbose);
+    my $validator = Data::Validate::Sanctions->new(%args, connection => BOM::Config::Redis::redis_replicated_write());
+    $validator->update_data(verbose => $verbose);
+    exit 0;
+}
+
+my $validator = Data::Validate::Sanctions->new(%args);
+if ($export_to) {
+    $validator->export_data($export_to);
     exit 0;
 }
 
@@ -75,7 +84,7 @@ sub do_report {
     my $brand = BOM::Config->brand();
 
     my $today_date           = Date::Utility::today()->date;
-    my $last_sanction_update = $sanctions->last_updated();
+    my $last_sanction_update = $validator->last_updated();
     if (($last_run > $last_sanction_update) && !$force) {
         my $last_date                 = Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ;
         my $last_sanction_update_date = Date::Utility->new($last_sanction_update)->datetime_ddmmmyy_hhmmss_TZ;
@@ -190,7 +199,7 @@ sub get_matched_clients_info_by_broker {
     while (my @clients = $get_clients_from_pagination->($limit, $last_loginid)->@*) {
         for my $client (@clients) {
             my %args = map { $_ => $client->{$_} } (qw/first_name last_name date_of_birth place_of_birth citizen residence/);
-            $sinfo = $sanctions->get_sanctioned_info(\%args);
+            $sinfo = $validator->get_sanctioned_info(\%args);
             $update_sanctions->($client->{loginid}, $sinfo->{matched} ? $sinfo->{list} : '');
             next unless $sinfo->{matched};
 
@@ -199,7 +208,7 @@ sub get_matched_clients_info_by_broker {
                 [
                 $sinfo->{matched_args}->{name},
                 $sinfo->{list},
-                $listdate{$sinfo->{list}} //= Date::Utility->new($sanctions->last_updated($sinfo->{list}))->date,
+                $listdate{$sinfo->{list}} //= Date::Utility->new($validator->last_updated($sinfo->{list}))->date,
                 (join ' ', keys $sinfo->{matched_args}->%*),
                 (map { $client->{$_} // '' } qw(date_of_birth broker_code loginid first_name last_name gender date_joined residence citizen)),
                 $sinfo->{comment}];

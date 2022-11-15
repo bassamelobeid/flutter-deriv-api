@@ -12,6 +12,7 @@ use Syntax::Keyword::Try;
 use Date::Utility;
 use LandingCompany::Registry;
 use Syntax::Keyword::Try;
+use Data::Validate::Sanctions;
 
 use f_brokerincludeall;
 use BOM::Platform::Locale;
@@ -20,6 +21,8 @@ use BOM::Backoffice::Sysinit      ();
 use BOM::Config::Compliance;
 use BOM::Config::Chronicle;
 use BOM::DynamicSettings;
+use BOM::Config;
+use BOM::Config::Redis;
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
@@ -154,5 +157,21 @@ print '<tr> <td>'
     . '<p><a class="btn btn--secondary" href="dynamic_settings_audit_trail.cgi?setting=compliance.mt5_jurisdiction_risk_rating&referrer=compliance_dashboard.cgi">See history of jurisdiction changes</a></p>'
     . '</td> </tr>';
 print '</table>';
+
+Bar("Sanction List Info");
+my $sanction_validator = Data::Validate::Sanctions->new(
+    storage    => 'redis',
+    connection => BOM::Config::Redis::redis_replicated_read());
+my %data;
+for my $source (keys $sanction_validator->data->%*) {
+    my $source_data = $sanction_validator->data->{$source};
+    $data{$source}->{name}     = $source;
+    $data{$source}->{updated}  = $source_data->{updated} ? Date::Utility->new($source_data->{updated})->date : '-';
+    $data{$source}->{count}    = scalar($source_data->{content} // [])->@*;
+    $data{$source}->{verified} = $source_data->{verified} ? Date::Utility->new($source_data->{verified})->datetime_yyyymmdd_hhmmss : '-';
+    $data{$source}->{error}    = $source_data->{error},;
+}
+BOM::Backoffice::Request::template()->process('backoffice/sanction_list_info.html.tt', {data => \%data},)
+    || die BOM::Backoffice::Request::template()->error() . "\n";
 
 code_exit_BO();
