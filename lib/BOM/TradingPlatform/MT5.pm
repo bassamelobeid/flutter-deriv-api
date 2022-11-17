@@ -9,6 +9,7 @@ use List::Util qw(any first);
 use Syntax::Keyword::Try;
 
 use BOM::Config::MT5;
+use BOM::Config::Compliance;
 use BOM::MT5::User::Async;
 use BOM::User::Utility;
 use DataDog::DogStatsd::Helper qw(stats_inc);
@@ -337,7 +338,10 @@ sub available_accounts {
     my @trading_accounts;
     foreach my $market_type (sort keys $accounts->%*) {
         foreach my $account ($accounts->{$market_type}->@*) {
-            my $lc = LandingCompany::Registry->by_name($account->{company});
+            my $lc                   = LandingCompany::Registry->by_name($account->{company});
+            my $jurisdiction_ratings = BOM::Config::Compliance->new()->get_jurisdiction_risk_rating('mt5')->{$lc->short} // {};
+            my $high_risk_countries  = {map { $_ => 1 } @{$jurisdiction_ratings->{high} // []}};
+            next if $high_risk_countries->{$args->{country_code}};
             push @trading_accounts,
                 +{
                 shortcode        => $lc->short,
