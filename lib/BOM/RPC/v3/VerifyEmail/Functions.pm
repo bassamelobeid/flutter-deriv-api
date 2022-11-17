@@ -40,8 +40,8 @@ Returns Functions object
 sub new {
     my ($class, %params) = @_;
 
-    $params{utm_medium}   = $params{url_parameters}->{utm_medium}   // '';
-    $params{utm_campaign} = $params{url_parameters}->{utm_campaign} // '';
+    $params{utm_medium}   = $params{args}->{url_parameters}->{utm_medium}   // '';
+    $params{utm_campaign} = $params{args}->{url_parameters}->{utm_campaign} // '';
     $params{email}        = lc $params{args}->{verify_email};
     $params{type}         = $params{args}->{type};
     $params{url_params}   = $params{args}->{url_parameters};
