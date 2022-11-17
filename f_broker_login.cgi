@@ -381,7 +381,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 }
 
 # Payment Methods
-if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'Payments'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'PaymentsAdmin'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
