@@ -47,6 +47,7 @@ cgi:
         - ZH_TW
         - TH
         - TR
+        - KO
     rtl_languages:
       description: "Contains languages that need right to left support"
       isa: ArrayRef
