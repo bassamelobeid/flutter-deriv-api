@@ -652,7 +652,7 @@ subtest 'landing_company call' => sub {
 };
 
 subtest 'trading_platform_available_accounts' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', residence => 'id'});
 
     BOM::User->create(
         email    => 'testme@test.com',
@@ -677,6 +677,34 @@ subtest 'trading_platform_available_accounts' => sub {
     foreach my $account ($result->@*) {
         cmp_bag([keys %$account], $expected_keys, 'response of trading_platform_accounts is as expected');
     }
+
+    my $jurisdiction = {
+        bvi => {
+            standard => [qw/br/],
+            high     => [qw/id ru/],
+            revision => 1,
+        },
+        vanuatu => {
+            standard => [qw/br/],
+            high     => [qw/id/],
+            revision => 1,
+        },
+        labuan => {
+            standard => [qw/br/],
+            high     => [qw/id/],
+            revision => 1,
+        }};
+    my $mock_config = Test::MockModule->new('BOM::Config::Compliance');
+    $mock_config->redefine(
+        get_risk_thresholds          => {},
+        get_jurisdiction_risk_rating => sub { $jurisdiction });
+    $result = $c->call_ok('trading_platform_available_accounts', $params)->has_no_system_error->has_no_error->result;
+
+    is scalar(@{$result}), 2, 'got correct number of platforms';
+    foreach my $account ($result->@*) {
+        ok $account->{shortcode} eq 'svg', 'response of trading_platform_accounts is as expected';
+    }
+    $mock_config->unmock_all;
 };
 
 done_testing();
