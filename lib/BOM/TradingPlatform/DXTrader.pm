@@ -783,11 +783,36 @@ The DXTrader implementation of resetting password.
 =cut
 
 sub reset_password {
-    my ($self, $args) = @_;
+    my ($self, $user_id) = @_;
 
-    # TODO: should call BOM::DevExperts::User related method
+    my $pwd_reset;
 
-    return $args;
+    for my $server ($self->account_servers) {
+        my $dxclient;
+        try {
+            $dxclient = $self->dxclient_get($server) or next;
+
+            $self->call_api(
+                server   => $server,
+                method   => 'client_update',
+                login    => $dxclient->{login},
+                domain   => $dxclient->{domain},
+                password => undef,
+            );
+            $pwd_reset = 1;
+        } catch {
+            return {failed_logins => [$self->dxtrade_login]};
+        }
+    }
+
+    my $user_db = BOM::Database::UserDB::rose_db();
+
+    $user_db->dbic->run(
+        fixup => sub {
+            $_->do('SELECT users.reset_dx_trading_password(?)', undef, $user_id);
+        });
+
+    return ($pwd_reset ? {successful_logins => [$self->dxtrade_login]} : undef);
 }
 
 =head2 get_account_info
