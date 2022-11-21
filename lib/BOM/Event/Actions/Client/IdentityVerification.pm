@@ -234,7 +234,8 @@ async sub idv_verified {
     my ($client, $messages, $document, $provider, $response_hash) = @{$args}{qw/client messages document provider response_hash/};
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
-    $client->status->clear_poi_name_mismatch;
+    $client->propagate_clear_status('poi_name_mismatch');
+    $client->propagate_clear_status('poi_dob_mismatch');
 
     if (any { $_ eq 'ADDRESS_VERIFIED' } @$messages) {
         $client->set_authentication('IDV', {status => 'pass'});
@@ -422,33 +423,36 @@ sub _apply_side_effects {
     my ($client, $errors, $provider) = @{$args}{qw/client errors provider/};
 
     my @messages;
+    my $clear_age_verification;
 
     unless (exists $errors->{Expired}) {
         if (exists $errors->{NameMismatch}) {
             push @messages, "NAME_MISMATCH";
 
-            $client->status->setnx('poi_name_mismatch', 'system', "Client's name doesn't match with provided name by $provider");
+            $client->propagate_status('poi_name_mismatch', 'system', "Client's name doesn't match with provided name by $provider");
+            $clear_age_verification = 1;
         }
 
         if (exists $errors->{UnderAge}) {
             push @messages, 'UNDERAGE';
 
             BOM::Event::Actions::Common::handle_under_age_client($client, $provider);
-            $client->status->clear_age_verification;
+            $clear_age_verification = 1;
         }
 
         if (exists $errors->{DobMismatch}) {
             push @messages, 'DOB_MISMATCH';
-
-            $client->status->clear_age_verification;
+            $client->propagate_status('poi_dob_mismatch', 'system', "Client's DOB doesn't match with provided DOB by $provider");
+            $clear_age_verification = 1;
         }
 
         BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id);    # no second attempts allowed
     } else {
         push @messages, 'EXPIRED';
-
-        $client->status->clear_age_verification;
+        $clear_age_verification = 1;
     }
+
+    $client->propagate_clear_status('age_verification') if $clear_age_verification;
 
     return @messages;
 }

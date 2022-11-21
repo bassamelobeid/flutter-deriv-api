@@ -968,13 +968,13 @@ subtest "Uninitialized date of birth" => sub {
         cmp_deeply + {@metrics},
             +{
             'event.onfido.client_verification.dispatch'     => undef,
-            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch']},
-            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:name_mismatch']},
+            'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},
+            'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},
             'event.onfido.client_verification.success'      => undef,
             },
             'Expected dd metrics';
     }
-    "client verification should pass with undef dob";
+    "client verification should not pass with undef dob";
 
     $mocked_client->unmock_all();
     $mocked_report->unmock_all();
@@ -2539,6 +2539,11 @@ subtest 'onfido resubmission' => sub {
         ok !$test_client->status->age_verification, 'Could not set age verification: poi name mismatch';
 
         $test_client->status->clear_poi_name_mismatch;
+        $test_client->status->setnx('poi_dob_mismatch', 'test', 'test');
+        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
+        ok !$test_client->status->age_verification, 'Could not set age verification: poi dob mismatch';
+
+        $test_client->status->clear_poi_dob_mismatch;
         BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
         ok $test_client->status->age_verification, 'Client is age verified';
         is_deeply \@emit_args,
@@ -3764,7 +3769,7 @@ subtest 'underage_account_closed' => sub {
     is $returned_args{properties}->{loginid}, $client->loginid,          "got correct customer loginid";
 };
 
-subtest 'Underage detection' => sub {
+subtest 'Onfido DOB checks' => sub {
     my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
     my @metrics;
     $dog_mock->mock(
@@ -3871,6 +3876,7 @@ subtest 'Underage detection' => sub {
         $test_client->status->clear_disabled();
         $test_client->status->clear_age_verification();
         $test_client->status->clear_poi_name_mismatch();
+        $test_client->status->clear_poi_dob_mismatch();
         $test_client->status->_build_all();
         mailbox_clear();
 
@@ -3941,6 +3947,7 @@ subtest 'Underage detection' => sub {
             $test_client->status->clear_disabled();
             $test_client->status->clear_age_verification();
             $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->clear_poi_dob_mismatch();
             $test_client->status->_build_all();
             mailbox_clear();
 
@@ -3968,6 +3975,8 @@ subtest 'Underage detection' => sub {
 
             ok !$emissions->{underage_account_closed}, 'underage_account_closed not event emitted';
 
+            ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch status not set';
+
             my $msg = mailbox_search(subject => qr/Underage client detection/);
             ok $msg, 'underage email sent to CS';
             ok $msg->{body} =~ /The client posseses the following MT5 loginids/, 'MT5 loginds detected';
@@ -3994,6 +4003,7 @@ subtest 'Underage detection' => sub {
             $test_client->status->clear_disabled();
             $test_client->status->clear_age_verification();
             $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->clear_poi_dob_mismatch();
             $test_client->status->_build_all();
             mailbox_clear();
 
@@ -4018,6 +4028,8 @@ subtest 'Underage detection' => sub {
             ok $test_client->status->disabled, 'Disabled status set (mt5 demo)';
 
             ok !$test_client->status->age_verification, 'Not age verified';
+
+            ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch status not set';
 
             cmp_deeply $emissions->{underage_account_closed},
                 {
@@ -4045,6 +4057,7 @@ subtest 'Underage detection' => sub {
         $vrtc_client->status->_build_all();
         $test_client->status->clear_disabled();
         $test_client->status->clear_poi_name_mismatch();
+        $test_client->status->clear_poi_dob_mismatch();
         $test_client->status->clear_age_verification();
         $test_client->status->_build_all();
         mailbox_clear();
@@ -4116,6 +4129,7 @@ subtest 'Underage detection' => sub {
             $test_client->status->clear_disabled();
             $test_client->status->clear_age_verification();
             $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->clear_poi_dob_mismatch();
             $test_client->status->_build_all();
             mailbox_clear();
 
@@ -4133,6 +4147,8 @@ subtest 'Underage detection' => sub {
             ok !$test_client->status->disabled, 'Disabled status not set (dxtrader real)';
 
             ok !$test_client->status->age_verification, 'Not age verified';
+
+            ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch status not set';
 
             my $msg = mailbox_search(subject => qr/Underage client detection/);
             ok $msg, 'underage email sent to CS';
@@ -4159,6 +4175,7 @@ subtest 'Underage detection' => sub {
             $test_client->status->clear_disabled();
             $test_client->status->clear_age_verification();
             $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->clear_poi_dob_mismatch();
             $test_client->status->_build_all();
             mailbox_clear();
 
@@ -4193,6 +4210,8 @@ subtest 'Underage detection' => sub {
 
             ok !$test_client->status->age_verification, 'Not age verified';
 
+            ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch status not set';
+
             my $msg = mailbox_search(subject => qr/Underage client detection/);
 
             ok !$msg, 'underage email not sent to cs';
@@ -4205,8 +4224,10 @@ subtest 'Underage detection' => sub {
         $reported_dob              = '1989-10-10';
         $report_result             = 'clear';
         $emissions                 = {};
-        $reported_first_name       = $test_client->first_name;
-        $reported_last_name        = $test_client->last_name;
+        $test_client->date_of_birth('1989-10-10');
+        $test_client->save;
+        $reported_first_name = $test_client->first_name;
+        $reported_last_name  = $test_client->last_name;
 
         $vrtc_client->status->clear_disabled();
         $vrtc_client->status->_build_all();
@@ -4233,9 +4254,10 @@ subtest 'Underage detection' => sub {
 
         ok !$emissions->{underage_account_closed}, 'underage_account_closed event was not emitted';
 
-        ok !$vrtc_client->status->disabled,        'Not disabled';
-        ok !$test_client->status->disabled,        'Not disabled';
-        ok $test_client->status->age_verification, 'Age verified';
+        ok !$vrtc_client->status->disabled,         'Not disabled';
+        ok !$test_client->status->disabled,         'Not disabled';
+        ok $test_client->status->age_verification,  'Age verified';
+        ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch status not set';
 
         my $msg = mailbox_search(subject => qr/Underage client detection/);
 
@@ -4253,6 +4275,7 @@ subtest 'Underage detection' => sub {
             $test_client->status->clear_disabled();
             $test_client->status->clear_age_verification();
             $test_client->status->clear_poi_name_mismatch();
+            $test_client->status->clear_poi_dob_mismatch();
             $test_client->status->_build_all();
             mailbox_clear();
 
@@ -4296,6 +4319,8 @@ subtest 'Underage detection' => sub {
 
             ok !$test_client->status->age_verification, 'Not age verified';
 
+            ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch status not set';
+
             my $msg = mailbox_search(subject => qr/Underage client detection/);
             ok $msg, 'underage email sent to CS';
             ok $msg->{body} =~ /The following loginids have balance:/,  'Balances > 0 detected';
@@ -4303,6 +4328,49 @@ subtest 'Underage detection' => sub {
             ok $msg->{body} =~ qr/$test_sibling_loginids.*5\.0* LTC\b/, 'Sibling with balance reported';
             cmp_deeply $msg->{to}, [$brand->emails('authentications')], 'Expected to email address';
         };
+    };
+
+    subtest 'dob mismatch' => sub {
+        $underage_result = 'clear';
+        $reported_dob    = '1989-10-10';
+        $report_result   = 'clear';
+        $emissions       = {};
+        $test_client->date_of_birth('1989-10-11');
+        $test_client->save;
+        $reported_first_name = $test_client->first_name;
+        $reported_last_name  = $test_client->last_name;
+
+        $vrtc_client->status->clear_disabled();
+        $vrtc_client->status->_build_all();
+        $test_client->status->clear_disabled();
+        $test_client->status->clear_age_verification();
+        $test_client->status->clear_poi_name_mismatch();
+        $test_client->status->clear_poi_dob_mismatch();
+        $test_client->status->_build_all();
+        mailbox_clear();
+
+        lives_ok {
+            @metrics = ();
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check_href,
+                })->get;
+            cmp_deeply + {@metrics},
+                +{
+                'event.onfido.client_verification.dispatch'     => undef,
+                'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},
+                'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},
+                'event.onfido.client_verification.success'      => undef,
+                },
+                'Expected dd metrics';
+        }
+        'the event made it alive!';
+
+        ok !$emissions->{underage_account_closed}, 'underage_account_closed event was not emitted';
+
+        ok !$vrtc_client->status->disabled,         'Not disabled';
+        ok !$test_client->status->disabled,         'Not disabled';
+        ok !$test_client->status->age_verification, 'Not age verified';
+        ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch status set';
     };
 
     $mocked_report->unmock_all();

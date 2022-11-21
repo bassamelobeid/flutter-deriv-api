@@ -64,6 +64,7 @@ sub set_age_verification {
     my $status_code = 'age_verification';
 
     return undef if $client->status->poi_name_mismatch;
+    return undef if $client->status->poi_dob_mismatch;
 
     my $setter = sub {
         my $c = shift;

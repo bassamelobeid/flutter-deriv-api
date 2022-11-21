@@ -39,7 +39,8 @@ use Array::Utils qw(intersect array_minus);
 use Scalar::Util qw(blessed);
 use Text::Trim   qw(trim);
 use WebService::MyAffiliates;
-use Digest::SHA qw/sha256_hex/;
+use Array::Utils qw(array_minus);
+use Digest::SHA  qw/sha256_hex/;
 
 use BOM::Config;
 use BOM::Config::Onfido;
@@ -627,6 +628,19 @@ async sub ready_for_authentication {
     return;
 }
 
+=head2 client_verification
+
+This events handles the Onfido webhook report response from
+the Onfido service.
+
+It will update onfido checks and reports on the database, will
+also download all the related documents to the BO.
+
+Finally, it will analyze the report to get the client age verified.
+Some extra validation rules are applied such as: dob mismatch, name mismatch.
+
+=cut
+
 async sub client_verification {
     my ($args) = @_;
     my $brand = request->brand;
@@ -650,7 +664,6 @@ async sub client_verification {
         my $check = await _onfido()->check_get(
             check_id => $check_id,
         );
-
         my $applicant_id = $check->applicant_id;
         my $result       = $check->result;
 
@@ -746,7 +759,6 @@ async sub client_verification {
                 $last_report //= {};
 
                 push @common_datadog_tags, sprintf("report:%s", $last_report->result);
-
                 my $minimum_accepted_age = $last_report->{breakdown}->{age_validation}->{breakdown}->{minimum_accepted_age}->{result};
                 my $underage_detected    = defined $minimum_accepted_age && $minimum_accepted_age ne 'clear';
 
@@ -760,26 +772,6 @@ async sub client_verification {
                     my %dob = map { ($_->{properties}{date_of_birth} // '') => 1 } @valid_doc;
                     my ($first_dob) = keys %dob;
 
-                    # All documents should have the same date of birth
-                    # Override date_of_birth if there is mismatch between Onfido report and client submited data
-                    if (not defined $client->date_of_birth or $client->date_of_birth ne $first_dob) {
-                        try {
-                            my $user = $client->user;
-
-                            foreach my $lid ($user->bom_real_loginids) {
-                                my $current_client = BOM::User::Client->new({loginid => $lid});
-                                $current_client->date_of_birth($first_dob);
-                                $current_client->save;
-                            }
-                        } catch ($e) {
-                            $log->debugf('Error updating client date of birth: %s', $e);
-                            exception_logged();
-                        }
-
-                        # Update applicant data
-                        BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
-                        $log->debugf("Updating client's date of birth due to mismatch between Onfido's response and submitted information");
-                    }
                     # Age verified if report is clear and age is above minimum allowed age, otherwise send an email to notify cs
                     # Get the minimum age from the client's residence
                     my $min_age = $brand->countries_instance->minimum_age_for_country($client->residence);
@@ -1018,6 +1010,8 @@ The following side effects could happen on rules engine verification error:
 
 =item * C<NameMismatch>: the client will be flagged with the C<poi_name_mismatch> status.
 
+=item * C<DobMismatch>: the client will be flagged with the C<poi_dob_mismatch> status.
+
 =back
 
 Returns a L<Future> which resolves to C<1> on success.
@@ -1030,6 +1024,7 @@ async sub check_onfido_rules {
     my $client  = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
     die "Virtual account should not meddle with Onfido" if $client->is_virtual;
 
+    my $tags     = $args->{datadog_tags};
     my $check_id = $args->{check_id};
     my $check    = BOM::User::Onfido::get_latest_check($client)->{user_check} // {};
     $check_id = $check->{id};
@@ -1039,30 +1034,38 @@ async sub check_onfido_rules {
             grep { $_->{api_name} eq 'document' } values BOM::User::Onfido::get_all_onfido_reports($client->binary_user_id, $check_id)->%*;
 
         if ($report) {
-            my $rule_engine   = BOM::Rules::Engine->new(client => $client);
+            my $rule_engine = BOM::Rules::Engine->new(
+                client          => $client,
+                stop_on_failure => 0
+            );
             my $report_result = $report->{result} // '';
             my $check_result  = $check->{result}  // '';
             # get the current rejected reasons and drop the name mismatches if any.
-            my @reasons =
-                grep { $_ !~ /^(data_comparison\.first_name|data_comparison\.last_name)$/ } BOM::User::Onfido::get_consider_reasons($client)->@*;
+            my @bad_reasons = qw(data_comparison.first_name data_comparison.last_name data_comparison.date_of_birth);
+            my @reasons     = array_minus(BOM::User::Onfido::get_consider_reasons($client)->@*, @bad_reasons);
 
-            try {
-                $rule_engine->verify_action(
-                    'check_results',
-                    loginid => $client->loginid,
-                    report  => $report
-                );
-
+            my $rules_result = $rule_engine->verify_action(
+                'check_results',
+                loginid => $client->loginid,
+                report  => $report,
+            );
+            unless ($rules_result->has_failure) {
                 my $poi_name_mismatch = $client->status->poi_name_mismatch;
 
+                $client->propagate_clear_status('poi_name_mismatch');
                 $client->status->clear_poi_name_mismatch;
+
+                my $poi_dob_mismatch = $client->status->poi_dob_mismatch;
+
+                $client->propagate_clear_status('poi_dob_mismatch');
+                $client->status->clear_poi_dob_mismatch;
 
                 # If the user had this status but now is clear then age verification is due,
                 # we should alse ensure the aren't other rejection reasons.
-                if ($poi_name_mismatch && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0) {
+                my $age_verification_due = $poi_name_mismatch || $poi_dob_mismatch;
+
+                if ($age_verification_due && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0) {
                     if (BOM::Event::Actions::Common::set_age_verification($client, 'Onfido')) {
-                        my $tags = $args->{datadog_tags};
-                        push @$tags, "result:age_verified";
                         if ($tags) {
                             DataDog::DogStatsd::Helper::stats_inc(
                                 'event.onfido.client_verification.result',
@@ -1072,24 +1075,38 @@ async sub check_onfido_rules {
                         }
                     }
                 }
+            } else {
+                my $errors = $rules_result->errors;
+                my $tags   = $args->{datadog_tags};
 
-            } catch ($e) {
-                my $error_code = '';
-                $error_code = $e->{error_code} // '' if ref($e) eq 'HASH';
-                $client->status->setnx('poi_name_mismatch', 'system', "Name in client details and Onfido report don't match")
-                    if $error_code eq 'NameMismatch';
-
-                my $tags = $args->{datadog_tags};
-
-                if ($tags) {
-                    if ($error_code eq 'NameMismatch') {
-                        push @$tags, 'result:name_mismatch';
+                if (exists $errors->{NameMismatch}) {
+                    if ($tags) {
+                        push @$tags, 'result:dob_mismatch';
                         DataDog::DogStatsd::Helper::stats_inc(
                             'event.onfido.client_verification.result',
                             {
                                 tags => $tags,
                             });
                     }
+
+                    $client->propagate_status('poi_name_mismatch', 'system', "Name in client details and Onfido report don't match");
+                } else {
+                    $client->propagate_clear_status('poi_name_mismatch');
+                }
+
+                if (exists $errors->{DobMismatch}) {
+                    if ($tags) {
+                        push @$tags, 'result:dob_mismatch';
+                        DataDog::DogStatsd::Helper::stats_inc(
+                            'event.onfido.client_verification.result',
+                            {
+                                tags => $tags,
+                            });
+                    }
+
+                    $client->propagate_status('poi_dob_mismatch', 'system', "DOB in client details and Onfido report don't match");
+                } else {
+                    $client->propagate_clear_status('poi_dob_mismatch');
                 }
             }
         }

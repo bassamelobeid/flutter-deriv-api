@@ -259,6 +259,7 @@ subtest 'Check Onfido Rules' => sub {
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{check_onfido_rules};
     my $first_name;
     my $last_name;
+    my $date_of_birth;
     my $result;
     my $current;
     my $check_result;
@@ -289,8 +290,9 @@ subtest 'Check Onfido Rules' => sub {
                     result     => $result,
                     api_name   => 'document',
                     properties => encode_json_utf8({
-                            first_name => $first_name,
-                            last_name  => $last_name,
+                            first_name    => $first_name,
+                            last_name     => $last_name,
+                            date_of_birth => $date_of_birth,
                         }
                     ),
                     breakdown => {},
@@ -299,6 +301,7 @@ subtest 'Check Onfido Rules' => sub {
 
     $test_client->first_name('elon');
     $test_client->last_name('musk');
+    $test_client->date_of_birth('1990-01-02');
     $test_client->save;
 
     for (qw/consider clear suspect/) {
@@ -307,13 +310,14 @@ subtest 'Check Onfido Rules' => sub {
         for (qw/consider clear suspect/) {
             $result = $_;
 
-            for (qw/data_comparison.first_name data_comparison.last_name data_comparison.birthday/) {
-                @rejected    = ($_);
-                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
-                $last_name   = 'musk';
-                $first_name  = 'elon';
+            for (qw/data_comparison.first_name data_comparison.last_name data_comparison.date_of_birth/) {
+                @rejected      = ($_);
+                $test_client   = BOM::User::Client->new({loginid => $test_client->loginid});
+                $last_name     = 'musk';
+                $first_name    = 'elon';
+                $date_of_birth = '1990-01-02';
 
-                my $mismatch = $test_client->status->poi_name_mismatch;
+                my $mismatch = $test_client->status->poi_name_mismatch || $test_client->status->poi_dob_mismatch;
                 ok $action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
@@ -321,14 +325,17 @@ subtest 'Check Onfido Rules' => sub {
 
                 $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
                 ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
+                ok !$test_client->status->poi_dob_mismatch,  'POI dob mismatch not set';
 
-                if ($mismatch && $result eq 'clear' && $check_result eq 'clear' && $_ ne 'data_comparison.birthday') {
+                if ($mismatch && $result eq 'clear' && $check_result eq 'clear') {
                     ok $test_client->status->age_verification, 'Age verified set';
                 } else {
                     ok !$test_client->status->age_verification, 'Age verified not set';
                 }
 
                 $test_client->status->clear_age_verification;
+                $test_client->status->clear_poi_name_mismatch;
+                $test_client->status->clear_poi_dob_mismatch;
                 $last_name  = 'mask';
                 $first_name = 'elon';
 
@@ -338,6 +345,64 @@ subtest 'Check Onfido Rules' => sub {
                         check_id => 'TEST'
                     })->get, 'Successfull event execution';
                 ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
+                ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch not set';
+                ok !$test_client->status->age_verification, 'Age verified not set';
+
+                $test_client->status->clear_age_verification;
+                $test_client->status->clear_poi_name_mismatch;
+                $test_client->status->clear_poi_dob_mismatch;
+                $date_of_birth = '2000-10-10';
+                $first_name    = 'elona';
+                $last_name     = 'musketter';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+                ok $action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+                ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch set';
+                ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
+                ok !$test_client->status->age_verification, 'Age verified not set';
+
+                $test_client->status->clear_age_verification;
+                $test_client->status->clear_poi_name_mismatch;
+                $test_client->status->clear_poi_dob_mismatch;
+
+                $test_client->status->clear_age_verification;
+                $test_client->status->clear_poi_dob_mismatch;
+                $test_client->status->setnx('poi_name_mismatch', 'test', 'test');
+                $date_of_birth = '2000-10-10';
+                $first_name    = 'elon';
+                $last_name     = 'musk';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+                ok $action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+                ok $test_client->status->poi_dob_mismatch,   'POI dob mismatch set';
+                ok !$test_client->status->poi_name_mismatch, 'POI name mismatch cleared up';
+                ok !$test_client->status->age_verification,  'Age verified not set';
+
+                $test_client->status->clear_age_verification;
+                $test_client->status->clear_poi_name_mismatch;
+                $test_client->status->setnx('poi_dob_mismatch', 'test', 'test');
+                $date_of_birth = '1990-01-02';
+                $first_name    = 'elona';
+                $last_name     = 'musketter';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+                ok $action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+                ok !$test_client->status->poi_dob_mismatch, 'POI dob mismatch cleared up';
+                ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
+                ok !$test_client->status->age_verification, 'Age verified not set';
+
+                $test_client->status->clear_age_verification;
+                $test_client->status->clear_poi_name_mismatch;
+                $test_client->status->clear_poi_dob_mismatch;
             }
         }
     }
