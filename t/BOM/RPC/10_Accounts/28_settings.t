@@ -192,12 +192,14 @@ my $c = Test::BOM::RPC::QueueClient->new();
 my $method = 'get_settings';
 subtest 'get settings' => sub {
     my $poi_name_mismatch;
+    my $poi_dob_mismatch;
     my $personal_details_locked;
     my $poi_status  = 'none';
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine('get_poi_status' => sub { return $poi_status });
     my $mock_status = Test::MockModule->new('BOM::User::Client::Status');
     $mock_status->redefine('poi_name_mismatch'       => sub { return $poi_name_mismatch });
+    $mock_status->redefine('poi_dob_mismatch'        => sub { return $poi_dob_mismatch });
     $mock_status->redefine('personal_details_locked' => sub { return $personal_details_locked });
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
 
@@ -432,9 +434,18 @@ subtest 'get settings' => sub {
     $expected->{immutable_fields} = ['citizen', 'date_of_birth', 'residence', 'salutation', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'first and last name allowed after poi name mismatch');
 
+    # poi dob mismatch
+    $poi_status                   = 'expired';
+    $poi_name_mismatch            = 0;
+    $poi_dob_mismatch             = 1;
+    $result                       = $c->tcall($method, $params);
+    $expected->{immutable_fields} = ['citizen', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
+    is_deeply($result, $expected, 'dob allowed after poi dob mismatch');
+
     # personal details locked
     $poi_status              = 'expired';
     $poi_name_mismatch       = 1;
+    $poi_dob_mismatch        = 0;
     $personal_details_locked = 1;
     $result                  = $c->tcall($method, $params);
     $expected->{immutable_fields} =

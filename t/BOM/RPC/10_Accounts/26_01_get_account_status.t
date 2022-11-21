@@ -3078,6 +3078,7 @@ subtest 'Rejected reasons' => sub {
     my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
     my $poi_status  = 'rejected';
     my $poi_name_mismatch;
+    my $poi_dob_mismatch;
     my $reasons       = [];
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
     my $onfido_document_sub_result;
@@ -3126,11 +3127,26 @@ subtest 'Rejected reasons' => sub {
         sub {
             return $poi_name_mismatch;
         });
+    $status_mock->mock(
+        'poi_dob_mismatch',
+        sub {
+            return $poi_dob_mismatch;
+        });
 
     my %catalog = BOM::Platform::Utility::rejected_onfido_reasons()->%*;
     my $tests   = [map { +{reasons => [$_], poi_status => 'rejected', expected => [$catalog{$_}], test => "Testing $_",} } keys %catalog];
 
     # Adding more cases
+
+    push $tests->@*,
+        {
+        reasons          => [],
+        expected         => [],
+        test             => 'From our rules (poi_dob_mismatch is set but not by onfido)',
+        poi_status       => 'verified',
+        poi_dob_mismatch => 1,
+        provider         => 'idv'
+        };
 
     push $tests->@*,
         {
@@ -3172,6 +3188,23 @@ subtest 'Rejected reasons' => sub {
 
     push $tests->@*,
         {
+        reasons    => ['data_comparison.date_of_birth'],
+        expected   => ["The date of birth on your document doesn't match your profile.",],
+        test       => 'Date of birth issues',
+        poi_status => 'rejected',
+        };
+
+    push $tests->@*,
+        {
+        poi_dob_mismatch => 1,
+        reasons          => [],
+        expected         => ["The date of birth on your document doesn't match your profile.",],
+        test             => 'Date of birth mismatch',
+        poi_status       => 'rejected',
+        };
+
+    push $tests->@*,
+        {
         reasons    => ['data_comparison.first_name', 'age_validation.minimum_accepted_age', 'selfie', 'garbage'],
         expected   => [],
         test       => 'Empty rejected messages for verified account',
@@ -3209,6 +3242,7 @@ subtest 'Rejected reasons' => sub {
         $reasons           = $test->{reasons};
         $poi_status        = $test->{poi_status};
         $poi_name_mismatch = $test->{poi_name_mismatch};
+        $poi_dob_mismatch  = $test->{poi_dob_mismatch};
         $provider          = $test->{provider} // 'onfido';
 
         if ($poi_status eq 'rejected') {
