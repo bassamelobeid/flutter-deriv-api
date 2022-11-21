@@ -298,7 +298,7 @@ subtest 'rule idv.check_age_legality' => sub {
             client => {
                 residence => 'be',
             },
-            error => 'UnderAge'
+            error => undef
         },
         {
             result => {
@@ -307,7 +307,7 @@ subtest 'rule idv.check_age_legality' => sub {
             client => {
                 residence => 'be',
             },
-            error => 'UnderAge'
+            error => undef
         },
     ];
 

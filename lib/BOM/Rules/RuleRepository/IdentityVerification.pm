@@ -75,10 +75,12 @@ rule 'idv.check_age_legality' => {
 
         my $date_of_birth = eval { Date::Utility->new($result->{birthdate}) };
 
+        return undef unless $date_of_birth;
+
         my $countries_config = Brands::Countries->new();
         my $min_legal_age    = $countries_config->minimum_age_for_country($client->residence);
 
-        $self->fail('UnderAge') unless $date_of_birth and $date_of_birth->is_before(Date::Utility->new->_minus_years($min_legal_age));
+        $self->fail('UnderAge') unless $date_of_birth->is_before(Date::Utility->new->_minus_years($min_legal_age));
 
         return undef;
     }

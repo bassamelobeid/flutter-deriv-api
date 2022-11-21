@@ -137,4 +137,81 @@ subtest 'rule onfido.check_name_comparison' => sub {
     }
 };
 
+subtest 'rule onfido.check_dob_conformity' => sub {
+    my $check_id  = 'test';
+    my $rule_name = 'onfido.check_dob_conformity';
+
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Loginid is required';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) }, qr/Onfido report is missing/,
+        'Missing report from args';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, report => {}) }, qr/Onfido report api_name is invalid/,
+        'Report api_name is not valid (should be document)';
+
+    my $tests = [{
+            properties => {
+                date_of_birth => '2020-10-10',
+            },
+            client => {
+                date_of_birth => '2020-11-11',
+            },
+            error => 'DobMismatch'
+        },
+        {
+            properties => {
+
+            },
+            client => {
+                date_of_birth => '2020-11-11',
+            },
+            error => 'DobMismatch'
+        },
+        {
+            properties => {date_of_birth => undef},
+            client     => {
+                date_of_birth => '2020-11-11',
+            },
+            error => 'DobMismatch'
+        },
+        {
+            properties => {date_of_birth => '2020-11-11'},
+            client     => {
+                date_of_birth => undef,
+            },
+            error => 'DobMismatch'
+        },
+        {
+            properties => {
+                date_of_birth => '2020-11-11',
+            },
+            client => {
+                date_of_birth => '2020-11-11',
+            },
+            error => undef
+        },
+    ];
+
+    for my $case ($tests->@*) {
+        $client_cr->date_of_birth($case->{client}->{date_of_birth});
+        $client_cr->save;
+
+        my %args = (
+            loginid => $client_cr->loginid,
+            report  => {
+                api_name   => 'document',
+                properties => encode_json_utf8($case->{properties}),
+            });
+
+        if (my $error = $case->{error}) {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                {
+                error_code => $error,
+                rule       => $rule_name
+                },
+                "Broken rules: $error";
+        } else {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are honored';
+        }
+    }
+};
+
 done_testing();

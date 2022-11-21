@@ -41,3 +41,22 @@ rule 'onfido.check_name_comparison' => {
         return undef;
     },
 };
+
+rule 'onfido.check_dob_conformity' => {
+    description => "Checks if the context client dob matches the Onfido report dob",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $client = $context->client($args);
+        die 'Onfido report is missing' unless my $report = $args->{report};
+        die 'Onfido report api_name is invalid' unless ($report->{api_name} // '') eq 'document';
+
+        my $properties   = eval { decode_json_utf8($report->{properties} // '{}') };
+        my $actual_dob   = eval { Date::Utility->new($client->date_of_birth) };
+        my $expected_dob = eval { Date::Utility->new($properties->{date_of_birth}) };
+
+        $self->fail('DobMismatch') unless $expected_dob && $actual_dob && $actual_dob->date eq $expected_dob->date;
+
+        return undef;
+    },
+};
