@@ -66,6 +66,7 @@ my %EVENT_PROPERTIES = (
     mt5_change_color            => [qw(loginid mt5_loginid color)],
     mt5_inactive_notification   => [qw(email name closure_date accounts)],
     mt5_inactive_account_closed => [qw(name title mt5_accounts live_chat_url)],
+    derivx_account_deactivated  => [qw(email first_name closure_date account)],
     document_upload             => [qw(document_type expiration_date file_name id upload_date uploaded_manually_by_staff)],
     set_financial_assessment    => [
         qw(education_level employment_industry estimated_worth income_source net_income occupation account_turnover binary_options_trading_experience
@@ -199,6 +200,7 @@ my @COMMON_EVENT_METHODS = qw(
     withdrawal_rejected
     p2p_order_confirm_verify
     poi_poa_resubmission
+    derivx_account_deactivated
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1429,6 +1431,12 @@ It is triggered for each B<poa_verification_warning> event emitted, delivering i
 =head2 poa_verification_expired
 
 It is triggered for each B<poa_verification_expired> event emitted, delivering it to Segment.
+
+=cut
+
+=head2 derivx_account_deactivated
+
+It is triggered for each B<derivx_account_deactivated> event emitted, delivering it to Segment.
 
 =cut
 

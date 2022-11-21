@@ -3523,4 +3523,32 @@ sub account_disabled_sideoffice {
     return 1;
 }
 
+=head2 derivx_account_deactivated
+
+Sends email to a user notifiying them about their DerivX accounts being archived.
+Takes the following named parameters
+
+=over 4
+
+=item * C<email> - user's  email address
+
+=item * C<account> - user's inactive derivx account
+
+=back
+
+=cut
+
+sub derivx_account_deactivated {
+    my $args = shift;
+
+    my $user    = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
+    my $loginid = eval { [$user->bom_loginids()]->[0] }            or die "User $args->{email} doesn't have any accounts";
+
+    return BOM::Event::Services::Track::derivx_account_deactivated({
+            loginid    => $loginid,
+            email      => $args->{email},
+            first_name => $args->{first_name},
+            account    => $args->{account}});
+}
+
 1;
