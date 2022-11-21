@@ -2126,9 +2126,16 @@ sub immutable_fields {
 
     my @immutable = grep { $self->$_ } PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH->@*;
 
-    # Allow first and last name edition when poi name mismatch (should not be locked though)
-    if ($self->status->poi_name_mismatch && !$self->status->personal_details_locked) {
-        @immutable = grep { $_ !~ qr/(first_name|last_name)/ } @immutable;
+    if (!$self->status->personal_details_locked) {
+        # Allow first and last name edition when poi name mismatch (should not be locked though)
+        if ($self->status->poi_name_mismatch) {
+            @immutable = grep { $_ !~ qr/(first_name|last_name)/ } @immutable;
+        }
+
+        # Allow dob edition when poi dob mismatch (should not be locked though)
+        if ($self->status->poi_dob_mismatch) {
+            @immutable = grep { $_ !~ qr/(date_of_birth)/ } @immutable;
+        }
     }
 
     return @immutable if $self->get_poi_status() =~ qr/verified|expired/;
@@ -7120,7 +7127,7 @@ sub get_poi_status {
 
     return 'suspected' if $status{suspected};
 
-    return 'rejected' if $self->status->poi_name_mismatch;
+    return 'rejected' if $self->status->poi_name_mismatch || $self->status->poi_dob_mismatch;
 
     return 'rejected' if $status{rejected};
 
@@ -7544,7 +7551,10 @@ Returns undef
 sub propagate_clear_status {
     my ($self, $status_code) = @_;
 
-    my @clients = grep { !$_->is_virtual } $self->user->clients;
+    my @clients = grep { !$_->is_virtual } $self->user->clients(
+        include_disabled   => 1,
+        include_duplicated => 1,
+    );
     $_->status->_clear($status_code) foreach @clients;
 
     return undef;

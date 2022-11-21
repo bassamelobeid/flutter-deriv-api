@@ -587,6 +587,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
     subtest 'poi and authentication' => sub {
         my @excluded_fields;
         my @poi_name_mismatch_fields = qw(first_name last_name);
+        my @poi_dob_mismatch_fields  = qw(date_of_birth);
 
         for my $field (@all_immutables) {
             push @excluded_fields, $field;
@@ -608,8 +609,13 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         $client_cr->status->setnx('poi_name_mismatch', 'test', 'test');
         cmp_bag [uniq($client_cr->immutable_fields)], [array_minus(@all_immutables, @poi_name_mismatch_fields)],
             "Can update first_name and last_name on name mismatch";
-
         $client_cr->status->clear_poi_name_mismatch;
+
+        $client_cr->status->setnx('poi_dob_mismatch', 'test', 'test');
+        cmp_bag [uniq($client_cr->immutable_fields)], [array_minus(@all_immutables, @poi_dob_mismatch_fields)],
+            "Can update date_of_birth on dob mismatch";
+        $client_cr->status->clear_poi_dob_mismatch;
+
         $test_poi_status->{svg} = 'expired';
         cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields remain unchanged";
 

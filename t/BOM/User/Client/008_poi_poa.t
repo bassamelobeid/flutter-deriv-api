@@ -502,6 +502,22 @@ subtest 'get_poi_status' => sub {
             $mocked_client->unmock_all;
         };
 
+        subtest 'POI status reject - POI dob mismatch' => sub {
+            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $uploaded               = {proof_of_identity => {documents => {}}};
+            $onfido_document_status = 'complete';
+            $onfido_sub_result      = 'clear';
+            $test_client_cr->status->clear_age_verification;
+            $test_client_cr->status->setnx('poi_dob_mismatch', 'test', 'test');
+
+            is $test_client_cr->get_poi_status, 'rejected', 'Rejected when POI dob mismatch reported';
+
+            $test_client_cr->status->clear_poi_dob_mismatch;
+            is $test_client_cr->get_poi_status, 'none', 'Non rejected when POI dob mismatch is cleared';
+
+            $mocked_client->unmock_all;
+        };
+
         subtest 'First Onfido upload and no check was made just yet' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock('latest_poi_by',       sub { return undef });

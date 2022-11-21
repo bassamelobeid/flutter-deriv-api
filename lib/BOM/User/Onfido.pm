@@ -552,6 +552,8 @@ sub get_rules_reasons {
 
     push $reasons->@*, 'data_comparison.first_name' if $client->status->poi_name_mismatch && $provider eq 'onfido';
 
+    push $reasons->@*, 'data_comparison.date_of_birth' if $client->status->poi_dob_mismatch && $provider eq 'onfido';
+
     return $reasons;
 }
 
