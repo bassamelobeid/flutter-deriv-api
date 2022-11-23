@@ -817,7 +817,7 @@ async sub client_verification {
                             my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
 
                             if ($db_doc) {
-                                if ($report->result eq 'clear') {
+                                if ($report->result eq 'clear' && $age_verified) {
                                     $db_doc->expiration_date($expiration_date);
                                     $db_doc->document_id($doc_numbers->[0]->{value});
                                     $db_doc->status('verified');
@@ -940,8 +940,7 @@ async sub _store_applicant_documents {
         my ($expiration_date, $document_numbers) = @{$report_for_doc_id{$doc->id}{properties}}{qw(date_of_expiry document_numbers)};
         my $doc_number = $document_numbers ? $document_numbers->[0]->{value} : undef;
 
-        BOM::Platform::Event::Emitter::emit(
-            onfido_doc_ready_for_upload => {
+        await onfido_doc_ready_for_upload({
                 final_status   => _get_document_final_status($report_for_doc_id{$doc->id}{result}),
                 type           => 'document',
                 document_id    => $doc->id,
@@ -975,15 +974,14 @@ async sub _store_applicant_documents {
 
     BOM::User::Onfido::store_onfido_live_photo($photo, $applicant_id);
 
-    BOM::Platform::Event::Emitter::emit(
-        onfido_doc_ready_for_upload => {
-            $facial_similarity_report ? (final_status => _get_document_final_status($facial_similarity_report->result)) : (),
-            type           => 'photo',
-            document_id    => $photo->id,
-            client_loginid => $client->loginid,
-            applicant_id   => $applicant_id,
-            file_type      => $photo->file_type,
-        });
+    await onfido_doc_ready_for_upload({
+        $facial_similarity_report ? (final_status => _get_document_final_status($facial_similarity_report->result)) : (),
+        type           => 'photo',
+        document_id    => $photo->id,
+        client_loginid => $client->loginid,
+        applicant_id   => $applicant_id,
+        file_type      => $photo->file_type,
+    });
 
     return undef;
 }

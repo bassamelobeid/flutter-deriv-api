@@ -706,8 +706,17 @@ my $services;
 my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
 my $ryu_mock      = Test::MockModule->new('Ryu::Source');
 my $ryu_data      = {
-    photo_list    => [WebService::Async::Onfido::Document->new(id => 'test'),],
-    document_list => [WebService::Async::Onfido::Document->new(id => 'aaa'), WebService::Async::Onfido::Document->new(id => 'bbb'),],
+    photo_list    => [WebService::Async::Onfido::Document->new(id => 'test', file_type => 'png'),],
+    document_list => [
+        WebService::Async::Onfido::Document->new(
+            id        => 'aaa',
+            file_type => 'png'
+        ),
+        WebService::Async::Onfido::Document->new(
+            id        => 'bbb',
+            file_type => 'png'
+        ),
+    ],
 };
 my $ryu_pointer;
 
@@ -823,7 +832,7 @@ subtest "client_verification" => sub {
         is scalar @$keys, 0, 'Pending lock released';
 
         my ($db_doc) = $test_client->find_client_authentication_document(query => [id => $db_doc_id]);
-        is $db_doc->status, 'verified', 'upload doc status is verified';
+        is $db_doc->status, 'rejected', 'upload doc status is rejected';
     }
     "client verification no exception";
     my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
