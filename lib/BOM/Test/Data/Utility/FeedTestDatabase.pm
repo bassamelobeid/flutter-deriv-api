@@ -10,8 +10,7 @@ use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::OHLC;
 use File::Basename;
-use YAML::XS        qw(LoadFile);
-use JSON::MaybeUTF8 qw(:v1);
+use YAML::XS qw(LoadFile);
 use Sereal::Encoder;
 use BOM::Config::Redis;
 use BOM::Config::Chronicle;
@@ -93,8 +92,7 @@ sub create_realtime_tick {
 
     die 'args must be a hash reference' if ref $args ne 'HASH';
 
-    my $redis = BOM::Config::Redis::redis_feed_master_write();
-    return $redis->set(join("::", "QUOTE", $args->{underlying}), encode_json_utf8($args));
+    return Cache::RedisDB->set_nw('QUOTE', $args->{underlying}, $args);
 }
 
 sub create_historical_ticks {
@@ -198,8 +196,7 @@ Flush feed database and create ticks
 sub flush_and_create_ticks {
     my @ticks = @_;
 
-    my $feed_redis = BOM::Config::Redis::redis_feed_master_write();
-    $feed_redis->del($_) for @{$feed_redis->keys('*QUOTE*')};
+    Cache::RedisDB->redis->flushdb;
     my $redis = BOM::Config::Redis::redis_replicated_write();
     $redis->del($_) for @{$redis->keys('*DEC*')};
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
