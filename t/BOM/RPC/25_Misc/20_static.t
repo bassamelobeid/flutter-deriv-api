@@ -11,7 +11,6 @@ use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
-use Format::Util::Numbers            qw/financialrounding/;
 
 use BOM::User;
 use BOM::User::Client;
@@ -188,32 +187,6 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
             "Transfer between account fee is correct for ${currency}_$_"
         ) for @all_currencies;
     }
-
-};
-
-subtest 'crypto_config' => sub {
-
-    my $result = $c->call_ok(
-        'website_status',
-        {
-            language => 'EN',
-            args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
-
-    my @all_currencies = keys %{LandingCompany::Registry->by_name('svg')->legal_allowed_currencies};
-    my @currency       = map {
-        if (LandingCompany::Registry::get_currency_type($_) eq 'crypto') { $_ }
-    } @all_currencies;
-    my @crypto_currency = grep { $_ ne '' } @currency;
-
-    cmp_ok(
-        0 + financialrounding(
-            'amount', $_,
-            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($_), 'USD', $_)
-        ),
-        '==',
-        $result->{crypto_config}->{$_}->{minimum_withdrawal},
-        "API:website_status:crypto_config=> Minimum withdrawal in USD is correct for $_"
-    ) for @crypto_currency;
 
 };
 

@@ -22,7 +22,7 @@ use Array::Utils  qw(intersect);
 use Time::HiRes   ();
 
 use LandingCompany::Registry;
-use Format::Util::Numbers      qw/financialrounding/;
+use Format::Util::Numbers;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
 use Unicode::UTF8              qw(decode_utf8);
 use JSON::MaybeXS              qw(decode_json);
@@ -241,39 +241,6 @@ sub _currencies_config {
     return \%currencies_config;
 }
 
-=head2 _crypto_config
-
-Returns limits for cryptocurrencies in USD
-
-=over 4
-
-=item * text (curency name)
-
-=item * amount (minimum withdrawal)
-
-=back
-
-Returns a HASH.
-
-=cut
-
-sub _crypto_config {
-
-    my @all_crypto_currencies = LandingCompany::Registry::all_crypto_currencies();
-    my %crypto_config;
-    for my $currency (@all_crypto_currencies) {
-
-        # To check if Exchange Rate is present currently [ Ex: IDK ]
-        my $converted = eval {
-            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($currency),
-                'USD', $currency);
-        } or undef;
-        $crypto_config{$currency}->{minimum_withdrawal} = 0 + financialrounding('amount', $currency, $converted) if $converted;
-    }
-
-    return \%crypto_config;
-}
-
 =head2 _mt5_status
 
 Returns mt5 platform suspension status
@@ -365,7 +332,6 @@ rpc website_status => sub {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        crypto_config            => _crypto_config(),
         mt5_status               => _mt5_status(),
         dxtrade_status           => _dxtrade_status(),
         payment_agents           => {
