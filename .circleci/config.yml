@@ -68,10 +68,10 @@ jobs:
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           # echo something to prevent circleci from thinking test is dead
-          while :
+          for i in $(seq 1 12)
             do
             echo -n "."
-            sleep 1
+            sleep 300
             done &
           make test
         name: core tests
@@ -95,10 +95,10 @@ jobs:
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           # echo something to prevent circleci from thinking test is dead
-          while :
+          for i in $(seq 1 12)
             do
             echo -n "."
-            sleep 1
+            sleep 300
             done &
           make test
         name: core tests
