@@ -403,4 +403,50 @@ subtest 'buy advert' => sub {
     is $redis->zscore($review_key, $order->{id} . '|' . $client->loginid), undef, 'order removed from redis key for client';
 };
 
+subtest 'duplicate review from DB' => sub {
+    my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert();
+    my ($client,     $order) = BOM::Test::Helper::P2P::create_order(advert_id => $ad->{id});
+
+    $client->p2p_order_confirm(id => $order->{id});
+    $advertiser->p2p_order_confirm(id => $order->{id});
+
+    cmp_deeply(
+        $client->p2p_order_review(
+            order_id    => $order->{id},
+            rating      => 5,
+            recommended => 1
+        ),
+        {
+            advertiser_id => $advertiser->_p2p_advertiser_cached->{id},
+            created_time  => re('\d+'),
+            order_id      => $order->{id},
+            rating        => 5,
+            recommended   => 1
+        },
+        'client reviews advertiser'
+    );
+
+    my $merging_module = Test::MockModule->new('BOM::User::Client');
+    my $order_data     = $client->_p2p_orders(id => $order->{id})->[0];
+    $merging_module->mock(
+        '_p2p_orders',
+        sub {
+            return [{%$order_data, advertiser_review_rating => undef}];
+        });
+
+    cmp_deeply(
+        exception {
+            $client->p2p_order_review(
+                order_id    => $order->{id},
+                rating      => 5,
+                recommended => 1
+            )
+        },
+        {
+            error_code => 'OrderReviewExists',
+        },
+        'client cannot review again, error is coming from db'
+    );
+};
+
 done_testing();

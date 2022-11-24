@@ -2287,7 +2287,8 @@ use constant {
         PP020 => 'AlreadyInProgress',
         PP021 => "OrderRefundInvalid",
         PP022 => 'OrderNotConfirmedPending',
-        PP023 => 'OrderConfirmCompleted'
+        PP023 => 'OrderConfirmCompleted',
+        PP024 => 'OrderReviewExists'
     },
 };
 
@@ -3257,8 +3258,11 @@ sub p2p_order_review {
 
     my $review = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_review(?, ?, ?, ?, ?)', undef, $id, $reviewee, $reviewer, @param{qw(rating recommended)});
+            $_->selectrow_hashref('SELECT * FROM p2p.order_review_v2(?, ?, ?, ?, ?)',
+                undef, $id, $reviewee, $reviewer, @param{qw(rating recommended)});
         });
+
+    $self->_p2p_db_error_handler($review);
 
     $review->{created_time} = Date::Utility->new($review->{created_time})->epoch;
 
@@ -5820,7 +5824,10 @@ Dies or returns undef.
 sub _p2p_db_error_handler {
     my ($self, $p2p_object) = @_;
 
-    return unless $p2p_object->{error_code};
+    unless ($p2p_object->{error_code}) {
+        delete $p2p_object->@{qw(error_params error_code)};
+        return;
+    }
 
     die +{
         error_code => P2P_DB_ERR_MAP->{$p2p_object->{error_code}},
