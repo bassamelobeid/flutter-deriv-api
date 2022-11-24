@@ -161,7 +161,7 @@ jobs:
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
           # circleci need output in 10 minutes. Otherwise it will fail
-          while :; do echo -n "."; sleep 300; done &
+          for i in $(seq 1 12); do echo -n "."; sleep 300; done &
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make test2
         name: Run tests
