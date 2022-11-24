@@ -318,7 +318,7 @@ sub _initialize_other_parameters {
             error_args => ['duration', 'date_expiry'],
             details    => {field => 'duration'},
         ) unless (defined $params->{date_expiry} or defined $params->{duration});
-    } elsif ($params->{pricing_new} and (defined $params->{date_expiry} or defined $params->{duration})) {
+    } elsif ($params->{pricing_new} and (defined $params->{date_expiry} or defined $params->{duration}) and (not $params->{bo_inspection})) {
         BOM::Product::Exception->throw(
             error_code => 'InvalidExpiry',
             error_args => [$params->{bet_type}],
@@ -326,7 +326,7 @@ sub _initialize_other_parameters {
         );
     }
 
-    if (not $params->{category}->has_user_defined_expiry and $params->{date_expiry} and $params->{pricing_new}) {
+    if (not $params->{category}->has_user_defined_expiry and $params->{date_expiry} and $params->{pricing_new} and (not $params->{bo_inspection})) {
         BOM::Product::Exception->throw(
             error_code => 'InvalidExpiry',
             error_args => [$params->{bet_type}],
