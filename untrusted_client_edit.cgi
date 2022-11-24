@@ -30,6 +30,7 @@ my $status_checked     = request()->param('status_checked') // [];
 $status_checked = [$status_checked] unless ref($status_checked);
 my $additional_info = request()->param('additional_info');
 my $p2p_approved    = request()->param('p2p_approved');
+my $add_regex       = qr/^add|^sync/;
 
 if (my $error_message = write_operation_error()) {
     print_error_and_exit($error_message);
@@ -42,8 +43,13 @@ if (!$operation || $operation =~ /SELECT AN OPERATION/) {
     print_error_and_exit("Operation is not specified.");
 }
 
+# check invalid Operation
+if (!$status_checked->@* && $operation =~ /remove/) {
+    print_error_and_exit("Status to be removed not specified. It should already exist.");
+}
+
 # check invalid Action
-if (!($#{$status_checked} + 1) && (!$client_status_type || $client_status_type =~ /SELECT AN ACTION/)) {
+if (!$status_checked->@* && (!$client_status_type || $client_status_type =~ /SELECT AN ACTION/)) {
     print_error_and_exit("Action is not specified.");
 }
 
@@ -61,10 +67,10 @@ my ($printline, @invalid_logins);
 $clientID || code_exit_BO('Login ID is mandatory.', "UNTRUSTED/DISABLE CLIENT", redirect());
 
 Bar("UNTRUSTED/DISABLE CLIENT");
-
 LOGIN:
 foreach my $login_id (split(/\s+/, $clientID)) {
     my $client = eval { BOM::User::Client::get_instance({'loginid' => $login_id}) };
+
     if (not $client) {
         push @invalid_logins, encode_entities($login_id);
         next LOGIN;
@@ -80,7 +86,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
     if ($client_status_type =~ /SELECT AN ACTION/) {
         #Skip (it's just a check)
     } elsif ($client_status_type eq 'disabledlogins') {
-        if ($action eq 'insert_data') {
+        if ($action eq 'insert_data' && $operation =~ $add_regex) {
             #should check portfolio
             if (@{get_open_contracts($client)}) {
                 my $encoded_login_id = link_for_clientloginid_edit($login_id);
@@ -94,7 +100,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         elsif ($action eq 'remove_status') {
             $printline = execute_remove_status({%common_args_for_execute_method, status_code => 'disabled'});
         }
-    } elsif ($client_status_type eq 'duplicateaccount') {
+    } elsif ($client_status_type eq 'duplicateaccount' && ($operation =~ $add_regex)) {
         if ($action eq 'insert_data') {
             $printline = execute_set_status({
                     %common_args_for_execute_method,
@@ -123,7 +129,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         }
     } else {
         my $status_code = get_untrusted_type_by_linktype($client_status_type)->{code};
-        if ($action eq 'insert_data') {
+        if ($action eq 'insert_data' && ($operation =~ $add_regex)) {
             $printline = execute_set_status({%common_args_for_execute_method, status_code => $status_code});
             if ($status_code eq 'allow_document_upload' && $reason eq 'Pending payout request') {
                 notify_submission_of_documents_for_pending_payout($client);
@@ -166,7 +172,8 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         {
             status_op             => $operation,
             status_checked        => $status_checked,
-            untrusted_action_type => $client_status_type
+            untrusted_action_type => $client_status_type,
+            reason                => $reason
         });
 
     print $status_op_summary if $status_op_summary;

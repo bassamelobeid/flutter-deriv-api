@@ -1006,16 +1006,17 @@ Returns a summary to print out or undef if nothing happened.
 =cut
 
 sub status_op_processor {
-
-    my ($client, $input) = @_;
-    my $status_op      = $input->{status_op};
-    my $status_checked = $input->{status_checked} // [];
+    my ($client, $args) = @_;
+    my $status_op      = $args->{status_op};
+    my $status_checked = $args->{status_checked} // [];
     $status_checked = [$status_checked] unless ref($status_checked);
-    my $client_status_type = $input->{untrusted_action_type};
-    my $status_map         = {
+    my $client_status_type = $args->{untrusted_action_type};
+    my $reason             = $args->{reason};
+
+    my $status_map = {
         disabledlogins            => 'disabled',
         lockcashierlogins         => 'cashier_locked',
-        unwelcomelogins           => 'no_withdrawal_or_trading',
+        unwelcomelogins           => 'unwelcome',
         nowithdrawalortrading     => 'no_withdrawal_or_trading',
         lockwithdrawal            => 'withdrawal_locked',
         lockmt5withdrawal         => 'mt5_withdrawal_locked',
@@ -1031,7 +1032,6 @@ sub status_op_processor {
     if ($client_status_type && $client_status_type !~ /SELECT AN ACTION/) {
         push(@$status_checked, $client_status_type);
     }
-
     return undef unless $status_op;
     return undef unless scalar $status_checked->@*;
 
@@ -1065,9 +1065,10 @@ sub status_op_processor {
                         "<div class='notify'><b>SUCCESS :</b><&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from siblings:<b>$siblings</b></div>";
                 }
             } elsif ($status_op eq 'sync' or $status_op eq 'sync_accounts') {
-                $status = $status_map->{$status} ? $status_map->{$status} : $status;
+                $status = $status_map->{$status}       ? $status_map->{$status}           : $status;
+                $reason = $reason =~ /SELECT A REASON/ ? $client->status->reason($status) : $reason;
                 my $updated_client_loginids =
-                    $client->copy_status_to_siblings($status, BOM::Backoffice::Auth0::get_staffname(), $status_op eq 'sync_accounts');
+                    $client->copy_status_to_siblings($status, BOM::Backoffice::Auth0::get_staffname(), $status_op eq 'sync_accounts', $reason);
                 my $siblings = join ', ', $updated_client_loginids->@*;
 
                 if (scalar $updated_client_loginids->@*) {
