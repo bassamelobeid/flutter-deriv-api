@@ -9,10 +9,12 @@ use Test::Deep;
 use Test::Exception;
 
 use BOM::User::Client;
+use BOM::Platform::Token::API;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::User;
 use BOM::User::Password;
+use Test::MockModule;
 
 sub create_user {
     my $hash_pwd = BOM::User::Password::hashpw('passW0rd');
@@ -113,6 +115,7 @@ subtest 'copy_status_to_all_accounts' => sub {
     my $btc_client    = create_client($user, 'BTC');
     my $eth_client    = create_client($user, 'ETH');
     my $usd_vr_client = create_client($user, 'USD', broker_code => 'VRTC');
+    my @clients       = ($usd_client, $btc_client, $eth_client, $usd_vr_client);
 
     $usd_client->status->set($status_code, 'user01', 'reason');
 
@@ -151,6 +154,119 @@ subtest 'copy_status_to_all_accounts' => sub {
     ok $usd_vr_client->status->$status_code, "USD VRTC client has been synced with $status_code";
     is $usd_vr_client->status->$status_code->{staff_name}, 'user02', "USD VRTC client's status has been set with the correct staff name";
     is $usd_vr_client->status->$status_code->{reason},     'reason', "USD VRTC client's status has been set with the correct reason";
+
+    cmp_bag(
+        $usd_client->clear_status_and_sync_to_siblings($status_code),
+        [$usd_client->loginid, $btc_client->loginid, $eth_client->loginid, $usd_vr_client->loginid],
+        'disabled removed from all clients'
+    );
+
+    $usd_client    = BOM::User::Client->new({loginid => $usd_client->loginid});
+    $btc_client    = BOM::User::Client->new({loginid => $btc_client->loginid});
+    $eth_client    = BOM::User::Client->new({loginid => $eth_client->loginid});
+    $usd_vr_client = BOM::User::Client->new({loginid => $usd_vr_client->loginid});
+
+    $usd_client->status->set($status_code, 'user01', 'reason');
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    $client_mock->mock(
+        get_open_contracts => sub {
+            my $self = shift;
+            if ($self->loginid eq $eth_client->loginid) {
+                return [1];
+            }
+            return [];
+        });
+
+    cmp_bag(
+        $usd_client->copy_status_to_siblings($status_code, 'user02', 1),
+        [$btc_client->loginid, $usd_vr_client->loginid],
+        'returns an array with the loginid of the updated accounts(eth loginid is not updated).'
+    );
+
+    ok $usd_client->status->$status_code, "USD client is set with $status_code";
+    is $usd_client->status->$status_code->{staff_name}, 'user01', "USD client's status has been set with the correct staff name";
+    is $usd_client->status->$status_code->{reason},     'reason', "USD client's status has been set with the correct reason";
+
+    ok $btc_client->status->$status_code, "BTC client has been synced with $status_code";
+    is $btc_client->status->$status_code->{staff_name}, 'user02', "BTC client's status has been set with the correct staff name";
+    is $btc_client->status->$status_code->{reason},     'reason', "BTC client's status has been set with the correct reason";
+
+    is $eth_client->status->$status_code, undef, "ETH client has not been synced with $status_code due to open contracts.";
+
+    ok $usd_vr_client->status->$status_code, "USD VRTC client has been synced with $status_code";
+    is $usd_vr_client->status->$status_code->{staff_name}, 'user02', "USD VRTC client's status has been set with the correct staff name";
+    is $usd_vr_client->status->$status_code->{reason},     'reason', "USD VRTC client's status has been set with the correct reason";
+
+    $client_mock->unmock_all();
+};
+
+subtest 'copy_status_to_all_accounts duplicate_account' => sub {
+    my $status_code = 'duplicate_account';
+
+    my $user          = create_user();
+    my $usd_client    = create_client($user, 'USD');
+    my $btc_client    = create_client($user, 'BTC');
+    my $eth_client    = create_client($user, 'ETH');
+    my $usd_vr_client = create_client($user, 'USD', broker_code => 'VRTC');
+    my $usd_mf_client = create_client($user, 'USD', broker_code => 'MF');
+    my @clients       = ($usd_client, $btc_client, $eth_client, $usd_vr_client, $usd_mf_client);
+
+    my $m = BOM::Platform::Token::API->new;
+    foreach my $client (@clients) {
+        my $token = $m->create_token($client->loginid, 'api', ['read', 'write']);
+        is $m->get_tokens_by_loginid($client->loginid)->[0]{token}, $token, "" . $client->loginid . " has api token $token";
+    }
+
+    $usd_client->status->set($status_code, 'user01', 'reason');
+
+    # prerequisites
+    ok $usd_client->status->$status_code, "USD client has been set with $status_code";
+    is $btc_client->status->$status_code,    undef, "BTC client has NOT been set with $status_code";
+    is $eth_client->status->$status_code,    undef, "ETH client has NOT been set with $status_code";
+    is $usd_vr_client->status->$status_code, undef, "USD VRTC client has NOT been set with $status_code";
+    is $usd_mf_client->status->$status_code, undef, "USD MF client has NOT been set with $status_code";
+
+    cmp_bag(
+        $usd_client->copy_status_to_siblings($status_code, 'user02', 1),
+        [$btc_client->loginid, $eth_client->loginid, $usd_vr_client->loginid, $usd_mf_client->loginid],
+        'returns an array with the loginid of the updated accounts'
+    );
+
+    cmp_bag($usd_client->copy_status_to_siblings($status_code, 'user02', 1), [], 'returns an empty array');
+
+    $usd_client    = BOM::User::Client->new({loginid => $usd_client->loginid});
+    $btc_client    = BOM::User::Client->new({loginid => $btc_client->loginid});
+    $eth_client    = BOM::User::Client->new({loginid => $eth_client->loginid});
+    $usd_vr_client = BOM::User::Client->new({loginid => $usd_vr_client->loginid});
+    $usd_mf_client = BOM::User::Client->new({loginid => $usd_mf_client->loginid});
+
+    ok $usd_client->status->$status_code, "USD client is set with $status_code";
+    is $usd_client->status->$status_code->{staff_name}, 'user01', "USD client's status has been set with the correct staff name";
+    is $usd_client->status->$status_code->{reason},     'reason', "USD client's status has been set with the correct reason";
+
+    ok $btc_client->status->$status_code, "BTC client has been synced with $status_code";
+    is $btc_client->status->$status_code->{staff_name}, 'user02', "BTC client's status has been set with the correct staff name";
+    is $btc_client->status->$status_code->{reason},     'reason', "BTC client's status has been set with the correct reason";
+
+    ok $eth_client->status->$status_code, "ETH client has been synced with $status_code";
+    is $eth_client->status->$status_code->{staff_name}, 'user02', "ETH client's status has been set with the correct staff name";
+    is $eth_client->status->$status_code->{reason},     'reason', "ETH client's status has been set with the correct reason";
+
+    ok $usd_vr_client->status->$status_code, "USD VRTC client has been synced with $status_code";
+    is $usd_vr_client->status->$status_code->{staff_name}, 'user02', "USD VRTC client's status has been set with the correct staff name";
+    is $usd_vr_client->status->$status_code->{reason},     'reason', "USD VRTC client's status has been set with the correct reason";
+
+    ok $usd_mf_client->status->$status_code, "USD MF client has been synced with $status_code";
+    is $usd_mf_client->status->$status_code->{staff_name}, 'user02', "USD MF client's status has been set with the correct staff name";
+    is $usd_mf_client->status->$status_code->{reason},     'reason', "USD MF client's status has been set with the correct reason";
+
+    shift @clients
+        ;    #main source is removed already before call, https://github.com/regentmarkets/bom-backoffice/blob/master/untrusted_client_edit.cgi#L104
+    foreach my $client (@clients) {
+        is $m->get_tokens_by_loginid($client->loginid)->[0]{token}, undef, "" . $client->loginid . " does not have api token ";
+    }
+
 };
 
 subtest 'clear_status_and_sync_to_siblings' => sub {

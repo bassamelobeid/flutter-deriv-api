@@ -64,6 +64,7 @@ use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::User::IdentityVerification;
 use BOM::Platform::Utility qw(error_map);
+use BOM::Platform::Token::API;
 use BOM::Platform::Token;
 use BOM::User::Onfido;
 
@@ -6576,17 +6577,28 @@ Returns an arrayref containing the loginids of the clients that have been update
 =cut
 
 sub copy_status_to_siblings {
-    my ($self, $status_code, $staff_name, $all_accounts) = @_;
+    my ($self, $status_code, $staff_name, $all_accounts, $reason) = @_;
 
     $status_code                or die 'No status code provided';
     $staff_name                 or die 'No staff name provided';
     $self->status->$status_code or die $self->loginid . ": Can't copy $status_code to its siblings because it hasn't been set yet";
+    $reason = $reason // $self->status->reason($status_code);
 
     if ($all_accounts) {
-        die "Only sync disabled status to all accounts" if $status_code ne 'disabled';
         my @to_update;
-        foreach ($self->user->clients) {
-            push(@to_update, $_->loginid) if $_->status->setnx($status_code, $staff_name, $self->status->reason($status_code));
+
+        foreach my $client ($self->user->clients) {
+            next if $client->status->$status_code;
+            next
+                if $status_code eq 'disabled'
+                && $client->get_open_contracts->@*;    ## current use case is in BO, if there is open contract shouldn't  set to disabled.
+
+            if ($status_code eq 'duplicate_account') {
+                my $token = BOM::Platform::Token::API->new;
+                $token->remove_by_loginid($client->loginid);
+            }
+
+            push(@to_update, $client->loginid) if $client->status->setnx($status_code, $staff_name, $reason);
         }
         return [@to_update];
     } else {
@@ -6611,7 +6623,7 @@ sub clear_status_and_sync_to_siblings {
     $status_code or die 'No status code provided';
 
     if ($all_accounts) {
-        die "Only clear disabled status from all accounts" if $status_code ne 'disabled';
+
         my @to_update;
         foreach ($self->user->clients(include_disabled => 1)) {
             my $clear_function = "clear_$status_code";
