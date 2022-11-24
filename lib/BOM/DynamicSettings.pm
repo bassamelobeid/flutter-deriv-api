@@ -414,7 +414,6 @@ sub get_settings_by_group {
                 system.suspend.cryptocurrencies_withdrawal
                 system.suspend.experimental_currencies
                 payments.crypto.restricted_countries
-                payments.crypto.withdrawal.min_usd
                 payments.crypto.auto_update.approve
                 payments.crypto.auto_update.reject
                 payments.transfer_between_accounts.limits.fiat_to_crypto
