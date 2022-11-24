@@ -185,7 +185,13 @@ sub debug_link {
 
     my $bet = $self->bet;
 
-    my $tabs_content = $bet->category_code eq 'multiplier' ? $self->_debug_content_for_multiplier() : $self->_debug_content();
+    my $tabs_content;
+    # No loginid for mutliplier contracts causes an exception.
+    if ($bet->category_code eq 'multiplier' && $self->client_loginid) {
+        $tabs_content = $self->_debug_content_for_multiplier();
+    } elsif ($bet->category_code ne 'multiplier') {
+        $tabs_content = $self->_debug_content();
+    }
 
     my $debug_link;
     BOM::Backoffice::Request::template()->process(

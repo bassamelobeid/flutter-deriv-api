@@ -101,13 +101,16 @@ if ($bet) {
             $bet,
             {
                 date_pricing    => $start,
-                landing_company => $landing_company
+                landing_company => $landing_company,
+                bo_inspection   => 1
             });
         $debug_link = BOM::PricingDetails->new({
                 bet            => $start_bet,
                 transaction_id => $transaction_id,
                 client_loginid => $loginid
-            })->debug_link();
+            }
+        )->debug_link()
+            unless ($bet->category_code eq 'multiplier' && !$loginid);
 
     } catch ($e) {
         code_exit_BO("<pre>$e</pre>");

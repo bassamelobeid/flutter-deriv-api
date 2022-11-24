@@ -71,7 +71,12 @@ sub get_graph_data_for_multiplier {
     my (@pnls, @bid_prices, @epochs, @spots);
 
     while ($graph_more) {
-        $bet = make_similar_contract($bet, {priced_at => $when});
+        $bet = make_similar_contract(
+            $bet,
+            {
+                priced_at     => $when,
+                bo_inspection => 1
+            });
 
         if (not $bet->current_spot) {
             # do not proceed if spot is undefined
