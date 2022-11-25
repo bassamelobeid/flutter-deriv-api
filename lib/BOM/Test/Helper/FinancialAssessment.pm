@@ -33,7 +33,7 @@ my $types = {
 =cut
 
 sub get_fulfilled_hash {
-    my $type = shift // 'first';
+    my $type = shift // 'max';
     die "Types can be: ", join ', ', (keys %$types) unless defined $types->{$type};
     return _get_with_selector($types->{$type});
 }
@@ -50,27 +50,58 @@ sub _get_with_selector {
 }
 
 sub mock_maltainvest_fa {
+    my $raw  = shift;
     my %data = (
-        "forex_trading_experience"             => "Over 3 years",                                     # +2
-        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",           # +0
-        "binary_options_trading_experience"    => "1-2 years",                                        # +1
-        "binary_options_trading_frequency"     => "40 transactions or more in the past 12 months",    # +2
-        "cfd_trading_experience"               => "1-2 years",                                        # +1
-        "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",           # +0
-        "other_instruments_trading_experience" => "Over 3 years",                                     # +2
-        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",          # +1
-        "employment_industry"                  => "Finance",                                          # +15
-        "education_level"                      => "Secondary",                                        # +1
-        "income_source"                        => "Self-Employed",                                    # +0
-        "net_income"                           => '$25,000 - $50,000',                                # +1
-        "estimated_worth"                      => '$100,000 - $250,000',                              # +1
-        "occupation"                           => 'Managers',                                         # +0
-        "employment_status"                    => "Self-Employed",                                    # +0
-        "source_of_wealth"                     => "Company Ownership",                                # +0
-        "account_turnover"                     => 'Less than $25,000',                                # +0
+        "risk_tolerance"                           => "Yes",
+        "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+        "cfd_experience"                           => "Less than a year",
+        "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+        "trading_experience_financial_instruments" => "Less than a year",
+        "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+        "cfd_trading_definition"                   => "Speculate on the price movement.",
+        "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+        "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+        "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
+        "employment_industry"                      => "Finance",                                                                                 # +15
+        "education_level"                          => "Secondary",                                                                               # +1
+        "income_source"                            => "Self-Employed",                                                                           # +0
+        "net_income"                               => '$25,000 - $50,000',                                                                       # +1
+        "estimated_worth"                          => '$100,000 - $250,000',                                                                     # +1
+        "occupation"                               => 'Managers',                                                                                # +0
+        "employment_status"                        => "Self-Employed",                                                                           # +0
+        "source_of_wealth"                         => "Company Ownership",                                                                       # +0
+        "account_turnover"                         => 'Less than $25,000',                                                                       # +0
     );
-
+    return \%data if $raw;
     return encode_json_utf8(\%data);
+}
+
+sub mock_maltainvest_set_fa {
+    my $data = {
+        "trading_experience_regulated" => {
+            "risk_tolerance"                           => "Yes",
+            "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+            "cfd_experience"                           => "Less than a year",
+            "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+            "trading_experience_financial_instruments" => "Less than a year",
+            "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+            "cfd_trading_definition"                   => "Speculate on the price movement.",
+            "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+            "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+            "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
+        },
+        "financial_information" => {
+            "employment_industry" => "Finance",
+            "education_level"     => "Secondary",
+            "income_source"       => "Self-Employed",
+            "net_income"          => '$25,000 - $50,000',
+            "estimated_worth"     => '$100,000 - $250,000',
+            "occupation"          => 'Managers',
+            "employment_status"   => "Self-Employed",
+            "source_of_wealth"    => "Company Ownership",
+            "account_turnover"    => 'Less than $25,000',
+        }};
+    return $data;
 }
 
 1;
