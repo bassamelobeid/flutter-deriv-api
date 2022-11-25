@@ -22,7 +22,6 @@ for my $country_config (values $brand_countries_obj->get_idv_config->%*) {
 subtest 'Get Filters data' => sub {
     my $filter_data = BOM::Backoffice::IdentityVerification::get_filter_data;
     my $idv_config  = BOM::Config::identity_verification();
-
     cmp_deeply $filter_data, +{
         document_types => +{
             map { ($_ => $document_types->{$_}) }

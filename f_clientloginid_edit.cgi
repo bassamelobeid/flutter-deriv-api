@@ -1719,14 +1719,14 @@ sub is_fa_needs_completion {
     my $client = shift;
 
     # Note: we need to refactor some codes regarding https://trello.com/c/UbfQSLTO to handle below code duplication.
-    my $sc                   = $client->landing_company->short;
+    my $lc                   = $client->landing_company->short;
     my $financial_assessment = BOM::User::FinancialAssessment::decode_fa($client->financial_assessment());
 
     my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information');
 
-    return !$is_FI if $sc ne 'maltainvest';
+    return !$is_FI if $lc ne 'maltainvest';
 
-    my $is_TE = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'trading_experience');
+    my $is_TE = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'trading_experience', $lc);
 
     return !($is_FI && $is_TE);
 }
@@ -1759,13 +1759,15 @@ sub update_fa {
     return BOM::User::FinancialAssessment::update_financial_assessment($client->user, $args);
 }
 
-my $built_fa =
-    BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
+my $built_fa = BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
 my $fa_score = $built_fa->{scores};
 
 my $user_edd_status = $user->get_edd_status();
+my @sections        = qw(trading_experience financial_information);
 
-for my $section_name (qw(trading_experience financial_information)) {
+push(@sections, 'trading_experience_regulated') if $client->landing_company->short eq 'maltainvest';
+
+for my $section_name (@sections) {
     next unless ($built_fa->{$section_name});
 
     my $is_financial_information = $section_name eq 'financial_information';
@@ -1773,6 +1775,8 @@ for my $section_name (qw(trading_experience financial_information)) {
 
     my $title         = join ' ', map { ucfirst } split '_', $section_name;
     my $content_class = $show_edd_form ? 'grid2col border' : 'grid2col';
+
+    $content_class = '' if $section_name eq 'trading_experience_regulated';
     Bar($title, {content_class => $content_class});
 
     print "<div class='card__content'>";
@@ -1787,6 +1791,8 @@ for my $section_name (qw(trading_experience financial_information)) {
     print "<hr><div class='row'><span class='right'>$title score:</span>&nbsp;<strong>" . $fa_score->{$section_name} . '</strong></div>';
     print '<div><span class="right">CFD Score:</span>&nbsp;<strong>' . $fa_score->{cfd_score} . '</strong></div>'
         if ($section_name eq 'trading_experience');
+    print '<div><span class="right">CFD Score:</span>&nbsp;<strong>' . $fa_score->{cfd_score} . '</strong></div>'
+        if ($section_name eq 'trading_experience_regulated');
     print '</div>';
 
     print_edd_status_form($user_edd_status, $client, $section_name, $self_href, $is_compliance) if ($show_edd_form);
@@ -1798,9 +1804,10 @@ sub print_fa_table {
     my @hdr    = ('Question', 'Answer', 'Score');
     my $config = BOM::Config::financial_assessment_fields();
 
+    $is_editable = 0 if $section_name eq 'trading_experience' && $client->landing_company->short eq 'maltainvest';
     print "<form method='post' action='$self_href#$section_name'><input type='hidden' name='whattodo' value='$section_name'>"
         if $is_editable;
-    print '<table class="sortable alternate hover small"><thead><tr>';
+    print '<table class="sortable alternate hover meduim"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     for my $key (sort keys %section) {
