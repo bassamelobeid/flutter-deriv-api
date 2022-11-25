@@ -18,11 +18,7 @@ sub create_account {
         @{$args}{'from_client', 'user', 'country', 'details', 'params'};
 
     my $accept_risk = $params->{accept_risk};
-
     my $should_warn = should_warn($params);
-
-    # show Risk disclosure warning if client haven't accepted risk yet and FA score matches warning conditions
-    return {error => 'show risk disclaimer'} if !$accept_risk && $should_warn;
 
     my $register = BOM::Platform::Account::Real::default::create_account({
         user        => $user,
@@ -32,6 +28,7 @@ sub create_account {
     return $register if ($register->{error});
 
     my $client = $register->{client};
+
     update_financial_assessment($client->user, $params, new_mf_client => 1);
 
     # after_register_client sub save client so no need to call it here

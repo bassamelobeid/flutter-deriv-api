@@ -181,6 +181,7 @@ sub error_map {
         WithdrawalLockedStatus            => localize('Your account is locked for withdrawals.'),
         HighRiskNotAuthenticated          => localize('Please authenticate your account.'),
         PotentialFraud                    => localize('Please authenticate your account.'),
+        AppropriatenessTestFailed         => localize('Failed to reach an acceptable trading experience score.'),
 
         # Payment validation
         CurrencyMismatch           => localize("Payment currency [_1] not client currency [_2]."),    # test it!
