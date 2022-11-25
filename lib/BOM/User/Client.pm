@@ -26,6 +26,7 @@ use JSON::MaybeXS;
 use Encode;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use POSIX                      qw(ceil);
+use JSON::MaybeUTF8            qw(encode_json_utf8);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
@@ -685,10 +686,10 @@ Check if the client has filled out the financial assessment information:
 sub is_financial_assessment_complete {
     my $self = shift;
 
-    my $sc                   = $self->landing_company->short;
+    my $lc                   = $self->landing_company->short;
     my $financial_assessment = BOM::User::FinancialAssessment::decode_fa($self->financial_assessment());
 
-    my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information');
+    my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information', $lc);
 
     my $is_fa_required =
            $self->status->financial_assessment_required
@@ -696,14 +697,14 @@ sub is_financial_assessment_complete {
         || $self->risk_level_sr() eq 'high'
         || $self->was_locked_for_high_risk;
 
-    if ($sc ne 'maltainvest') {
+    if ($lc ne 'maltainvest') {
         return 0 if ($is_fa_required && !$is_FI);
         return 1;
     }
 
-    my $is_TE = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'trading_experience');
+    my $is_TE = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'trading_experience', $lc);
 
-    return 0 unless ($is_FI and $is_TE);
+    return 0 unless ($is_FI and $is_TE and $self->risk_level_aml() =~ /low/);
 
     return 1;
 }
@@ -749,6 +750,36 @@ sub get_financial_assessment {
     }
 
     return $value;
+}
+
+=head2 set_financial_assessment
+
+Sets clien't financial assessment
+It will set the the keys provided and will not override the whole JSON object
+
+=over
+
+=item * C<BOM::User> - required.
+
+=item * C<Financial Assessment> - A hash reference of Financial Assessment:
+
+=back
+
+=cut
+
+sub set_financial_assessment {
+    my $self = shift;
+    my $data = shift;
+
+    try {
+        return $self->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_array('SELECT * FROM betonmarkets.set_financial_assessment(?, ?)', undef, $self->loginid, encode_json_utf8($data));
+            });
+
+    } catch ($e) {
+        die $log->errorf('An error occurred setting the financial assessment of client %s : %s', $self->loginid, $e);
+    }
 }
 
 =head2 fully_authenticated

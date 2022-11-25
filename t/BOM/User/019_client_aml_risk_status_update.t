@@ -19,6 +19,7 @@ use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 populate_exchange_rates();
 
 my $email    = 'abc' . rand . '@binary.com';
+my $email_mf = 'abc' . rand . '@binary.com';
 my $hash_pwd = BOM::User::Password::hashpw('test');
 
 # Since the database function get_recent_high_risk_clients fails in circleci (because of the included dblink),
@@ -32,6 +33,11 @@ $mock_aml->mock(
 
 my $user = BOM::User->create(
     email    => $email,
+    password => $hash_pwd,
+);
+
+my $user_mf = BOM::User->create(
+    email    => $email_mf,
     password => $hash_pwd,
 );
 
@@ -56,10 +62,33 @@ my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     binary_user_id => $user->id
 });
 
+my $client_vr_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'VRTC',
+    email          => $email_mf,
+    residence      => 'de',
+    binary_user_id => $user_mf->id
+});
+
+my $client_mf_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'MF',
+    email          => $email_mf,
+    residence      => 'de',
+    binary_user_id => $user_mf->id
+});
+
+my $client_mf_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'MF',
+    email          => $email_mf,
+    residence      => 'de',
+    binary_user_id => $user_mf->id
+});
+
 $user->add_client($client_vr);
 $user->add_client($client_cr);
 $user->add_client($client_cr2);
 
+$user_mf->add_client($client_mf_1);
+$user_mf->add_client($client_mf_2);
 my $res;
 
 my $c = BOM::User::Script::AMLClientsUpdate->new();
@@ -86,6 +115,24 @@ subtest 'low aml risk client CR company' => sub {
     ok !$client_cr->status->withdrawal_locked, 'client is not withdrawal-locked';
 
     clear_clients($client_cr);
+};
+
+subtest 'low aml risk client MF company' => sub {
+    my $landing_company = 'MF';
+    $client_mf_1->aml_risk_classification('high');
+    $res = $client_mf_1->save;
+    $client_mf_1->aml_risk_classification('low');
+    $res = $client_mf_1->save;
+
+    is($client_mf_1->aml_risk_classification, 'low', "aml risk is low");
+
+    $expected_db_rows = [];
+    my $aml_high_clients = $c->update_aml_high_risk_clients_status($landing_company);
+
+    ok(!@$aml_high_clients, 'no client found having aml risk high.');
+    ok !$client_mf_1->status->withdrawal_locked,     'client is not withdrawal-locked';
+    ok !$client_mf_1->status->allow_document_upload, "client is not allow_document_upload";
+
 };
 
 subtest 'aml risk becomes high CR landing company' => sub {
@@ -131,6 +178,61 @@ subtest 'aml risk becomes high CR landing company' => sub {
     ok $client_cr->status->allow_document_upload,  "client is allow_document_upload";
     ok $client_cr2->status->withdrawal_locked,     "sibling account is withdrawal_locked";
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
+
+    clear_clients($client_cr, $client_cr2);
+};
+
+subtest 'high aml risk client MF company' => sub {
+    my $landing_company = 'MF';
+    $client_mf_1->aml_risk_classification('low');
+    $res = $client_mf_1->save;
+    $client_mf_1->aml_risk_classification('high');
+    $res = $client_mf_1->save;
+
+    is($client_mf_1->aml_risk_classification, 'high', "aml risk is high");
+
+    $expected_db_rows = [];
+    my $aml_high_clients = $c->update_aml_high_risk_clients_status($landing_company);
+    ok(!@$aml_high_clients, 'no client found having aml risk high.');
+    ok !$client_mf_1->status->withdrawal_locked,   'client is not withdrawal-locked';
+    ok !$client_cr->status->allow_document_upload, "client is not allow_document_upload";
+    clear_clients($client_mf_1);
+};
+
+subtest 'aml risk becomes standard MF landing company' => sub {
+    my $landing_company = 'MF';
+
+    $client_mf_1->aml_risk_classification('standard');
+    $client_mf_1->save;
+
+    $expected_db_rows = [{login_ids => $client_mf_1->loginid}];
+    my $result = $c->update_aml_high_risk_clients_status($landing_company);
+
+    is @$result, 1, 'Correct number of affected users';
+    is_deeply $result, [{login_ids => $client_mf_1->loginid}], 'Returned client ids are correct';
+
+    ok $client_mf_1->status->withdrawal_locked, "client is withdrawal_locked";
+    is $client_mf_1->status->withdrawal_locked->{reason}, 'FA needs to be completed';
+    ok !$client_mf_2->status->withdrawal_locked, "sibling account is not withdrawal_locked";
+
+    $expected_db_rows = [];
+
+    $result = $c->update_aml_high_risk_clients_status($landing_company);
+    is @$result, 0, 'No result after withdrawal locked';
+
+    #Two standard risk siblings
+    $client_mf_2->aml_risk_classification('standard');
+    $client_mf_2->save;
+    $client_mf_1->status->clear_withdrawal_locked();
+    $client_mf_2->status->clear_withdrawal_locked();
+
+    $expected_db_rows = [{login_ids => join(',', sort($client_mf_1->loginid, $client_mf_2->loginid))}];
+    $result           = $c->update_aml_high_risk_clients_status($landing_company);
+    is @$result, @$expected_db_rows, 'Correct number of affected users';
+    is_deeply $result, $expected_db_rows, 'Returned client ids are correct';
+
+    ok $client_mf_1->status->withdrawal_locked, "client is withdrawal_locked";
+    ok $client_mf_2->status->withdrawal_locked, "sibling account is withdrawal_locked";
 
     clear_clients($client_cr, $client_cr2);
 };
@@ -464,7 +566,9 @@ subtest 'AML risk update' => sub {
         $mock_landing_company->unmock_all;
         $mock_config->unmock_all;
     };
-
+    $client_cr->aml_risk_classification('low');
+    $client_cr->save;
+    $client_cr->status->clear_withdrawal_locked;
     $mock_script->unmock_all;
     $mock_user->unmock_all;
 };

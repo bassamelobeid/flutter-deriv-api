@@ -179,7 +179,6 @@ sub update_aml_high_risk_clients_status {
     my $clientdb = $connection_builder->db->dbic;
 
     my $recent_high_risk_clients = _get_recent_high_risk_clients($clientdb);
-
     my @result;
     foreach my $client_info (@$recent_high_risk_clients) {
         my @loginid_list;
@@ -189,11 +188,20 @@ sub update_aml_high_risk_clients_status {
 
             # filter out authenticated and FA-completed clients
             next if $client->fully_authenticated && $client->is_financial_assessment_complete && !$client->documents->expired;
-            # filter out clients with risk classification = High Risk Override
-            next if $client->aml_risk_classification ne 'high';
 
-            $client->status->setnx('withdrawal_locked', 'system', 'Pending authentication or FA');
-            $client->status->upsert('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
+            # Set clients with risk classification = standard
+            if (LandingCompany::Registry->by_broker($landing_company)->short eq 'maltainvest') {
+                next if $client->aml_risk_classification ne 'standard';
+                $client->status->setnx('withdrawal_locked', 'system', 'FA needs to be completed');
+
+            } else {
+                # filter out clients with risk classification = High Risk Override
+                next if $client->aml_risk_classification ne 'high';
+
+                $client->status->setnx('withdrawal_locked', 'system', 'Pending authentication or FA');
+                $client->status->upsert('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
+
+            }
 
             push @loginid_list, $client_loginid;
             $locked = 1;
