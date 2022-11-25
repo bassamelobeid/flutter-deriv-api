@@ -1197,7 +1197,7 @@ sub _is_financial_assessment_complete {
 
         my $is_FI =
             (first { $_ eq 'financial_information' } @{$args{financial_assessment_requirements}})
-            ? is_section_complete($financial_assessment, 'financial_information')
+            ? is_section_complete($financial_assessment, 'financial_information', $client->landing_company->short)
             : 1;
 
         # The `financial information` section is enough for `CR (svg)` clients. No need to check `trading_experience` section
@@ -1205,7 +1205,7 @@ sub _is_financial_assessment_complete {
 
         my $is_TE =
             (first { $_ eq 'trading_experience' } @{$args{financial_assessment_requirements}})
-            ? is_section_complete($financial_assessment, 'trading_experience')
+            ? is_section_complete($financial_assessment, 'trading_experience', $client->landing_company->short)
             : 1;
 
         ($is_FI and $is_TE) ? return 1 : return 0;

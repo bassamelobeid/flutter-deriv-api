@@ -1,20 +1,6 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "additionalProperties" : false,
-   "required" : [
-      "education_level",
-      "stash",
-      "occupation",
-      "net_income",
-      "financial_information_score",
-      "estimated_worth",
-      "cfd_score",
-      "trading_score",
-      "income_source",
-      "employment_industry",
-      "total_score",
-      "account_turnover"
-   ],
    "type" : "object",
    "properties" : {
       "education_level" : {

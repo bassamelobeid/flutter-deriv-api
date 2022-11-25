@@ -72,6 +72,56 @@ my $assessment_keys = {
     ],
 };
 
+my %financial_data_mf = (
+    "risk_tolerance"                           => "Yes",
+    "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+    "cfd_experience"                           => "Less than a year",
+    "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+    "trading_experience_financial_instruments" => "Less than a year",
+    "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+    "cfd_trading_definition"                   => "Speculate on the price movement.",
+    "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+    "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+    "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
+    "employment_industry"                      => "Finance",
+    "education_level"                          => "Secondary",
+    "income_source"                            => "Self-Employed",
+    "net_income"                               => '$25,000 - $50,000',
+    "estimated_worth"                          => '$100,000 - $250,000',
+    "account_turnover"                         => '$25,000 - $50,000',
+    "occupation"                               => 'Managers',
+    "employment_status"                        => "Self-Employed",
+    "source_of_wealth"                         => "Company Ownership",
+);
+
+my $assessment_keys_mf = {
+    financial_info => [
+        qw/
+            occupation
+            education_level
+            source_of_wealth
+            estimated_worth
+            account_turnover
+            employment_industry
+            income_source
+            net_income
+            employment_status/
+    ],
+    trading_experience => [
+        qw/
+            risk_tolerance
+            source_of_experience
+            cfd_experience
+            cfd_frequency
+            trading_experience_financial_instruments
+            trading_frequency_financial_instruments
+            cfd_trading_definition
+            leverage_impact_trading
+            leverage_trading_high_risk_stop_loss
+            required_initial_margin/
+    ],
+};
+
 my @emit_args;
 my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_emitter->mock(
@@ -1120,9 +1170,14 @@ sub create_mt5_account {
 
 sub financial_assessment {
     my ($client, $type) = @_;
-
-    my %data = map { $_ => $financial_data{$_} } ($assessment_keys->{$type}->@*);
-    %data = %financial_data if $type eq 'full';
+    my %data;
+    if ($client->landing_company->short eq 'maltainvest') {
+        %data = map { $_ => $financial_data_mf{$_} } ($assessment_keys_mf->{$type}->@*);
+        %data = %financial_data_mf if $type eq 'full';
+    } else {
+        %data = map { $_ => $financial_data{$_} } ($assessment_keys->{$type}->@*);
+        %data = %financial_data if $type eq 'full';
+    }
 
     $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%data)});
     $client->save();

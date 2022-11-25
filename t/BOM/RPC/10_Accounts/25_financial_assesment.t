@@ -170,25 +170,30 @@ subtest 'get financial assessment' => sub {
 $method = 'set_financial_assessment';
 subtest 'set financial assessment' => sub {
     my $args = {
-        "set_financial_assessment"             => 1,
-        "forex_trading_experience"             => "Over 3 years",                                     # +2
-        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",           # +0
-        "binary_options_trading_experience"    => "1-2 years",                                        # +1
-        "binary_options_trading_frequency"     => "40 transactions or more in the past 12 months",    # +2
-        "cfd_trading_experience"               => "1-2 years",                                        # +1
-        "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",           # +0
-        "other_instruments_trading_experience" => "Over 3 years",                                     # +2
-        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",          # +1
-        "employment_industry"                  => "Finance",                                          # +15
-        "education_level"                      => "Secondary",                                        # +1
-        "income_source"                        => "Self-Employed",                                    # +0
-        "net_income"                           => '$25,000 - $50,000',                                # +1
-        "estimated_worth"                      => '$100,000 - $250,000',                              # +1
-        "occupation"                           => 'Managers',                                         # +0
-        "employment_status"                    => "Self-Employed",                                    # +0
-        "source_of_wealth"                     => "Company Ownership",                                # +0
-        "account_turnover"                     => 'Less than $25,000',                                # +0
-    };
+        "set_financial_assessment" => 1,
+        "financial_information"    => {
+            "employment_industry" => "Finance",                # +15
+            "education_level"     => "Secondary",              # +1
+            "income_source"       => "Self-Employed",          # +0
+            "net_income"          => '$25,000 - $50,000',      # +1
+            "estimated_worth"     => '$100,000 - $250,000',    # +1
+            "occupation"          => 'Managers',               # +0
+            "employment_status"   => "Self-Employed",          # +0
+            "source_of_wealth"    => "Company Ownership",      # +0
+            "account_turnover"    => 'Less than $25,000',
+        },
+        "trading_experience_regulated" => {
+            "risk_tolerance"                           => "Yes",
+            "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+            "cfd_experience"                           => "Less than a year",
+            "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+            "trading_experience_financial_instruments" => "Less than a year",
+            "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+            "cfd_trading_definition"                   => "Speculate on the price movement.",
+            "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+            "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+            "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
+        }};
 
     my $res = $c->tcall(
         $method,
@@ -204,7 +209,7 @@ subtest 'set financial assessment' => sub {
             args  => $args,
             token => $token
         });
-    is($res->{total_score}, 27, "Got correct total score");
+    is($res->{total_score}, 28, "Got correct total score");
 
     # test that setting this for one client also sets it for client with different landing company
     is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
@@ -277,29 +282,34 @@ subtest $method => sub {
     is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key';
 };
 
-# Second set financial assessment test to test for changes only. (in this case forex_trading_experience went from "Over 3 years" to "1-2 years")
+# Second set financial assessment test to test for changes only. (in this case cfd_experience went from "Less than a year" to "1 - 2 years")
 $method = 'set_financial_assessment';
 subtest $method => sub {
     my $args = {
-        "set_financial_assessment"             => 1,
-        "forex_trading_experience"             => "1-2 years",                                        # +1
-        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",           # +0
-        "binary_options_trading_experience"    => "1-2 years",                                        # +1
-        "binary_options_trading_frequency"     => "40 transactions or more in the past 12 months",    # +2
-        "cfd_trading_experience"               => "1-2 years",                                        # +1
-        "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",           # +0
-        "other_instruments_trading_experience" => "Over 3 years",                                     # +2
-        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",          # +1
-        "employment_industry"                  => "Finance",                                          # +15
-        "education_level"                      => "Secondary",                                        # +1
-        "income_source"                        => "Self-Employed",                                    # +0
-        "net_income"                           => '$25,000 - $50,000',                                # +1
-        "estimated_worth"                      => '$100,000 - $250,000',                              # +1
-        "occupation"                           => 'Managers',                                         # +0
-        "employment_status"                    => "Self-Employed",                                    # +0
-        "source_of_wealth"                     => "Company Ownership",                                # +0
-        "account_turnover"                     => 'Less than $25,000',                                # +0
-    };
+        "set_financial_assessment" => 1,
+        "financial_information"    => {
+            "employment_industry" => "Finance",                # +15
+            "education_level"     => "Secondary",              # +1
+            "income_source"       => "Self-Employed",          # +0
+            "net_income"          => '$25,000 - $50,000',      # +1
+            "estimated_worth"     => '$100,000 - $250,000',    # +1
+            "occupation"          => 'Managers',               # +0
+            "employment_status"   => "Self-Employed",          # +0
+            "source_of_wealth"    => "Company Ownership",      # +0
+            "account_turnover"    => 'Less than $25,000',
+        },
+        "trading_experience_regulated" => {
+            "risk_tolerance"                           => "Yes",
+            "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+            "cfd_experience"                           => "1 - 2 years",
+            "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+            "trading_experience_financial_instruments" => "Less than a year",
+            "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+            "cfd_trading_definition"                   => "Speculate on the price movement.",
+            "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+            "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+            "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
+        }};
 
     mailbox_clear();
     $c->tcall(
@@ -308,12 +318,12 @@ subtest $method => sub {
             args  => $args,
             token => $token
         });
-    is($c->tcall('get_financial_assessment', {token => $token})->{forex_trading_experience}, "1-2 years", "forex_trading_experience changed");
+    is($c->tcall('get_financial_assessment', {token => $token})->{cfd_experience}, "1 - 2 years", "cfd_experience changed");
 
     is $emit_args[0], 'set_financial_assessment', 'correct event name';
     is_deeply $emit_args[1],
         {
-        'params'  => {'forex_trading_experience' => '1-2 years'},
+        'params'  => {'cfd_experience' => '1 - 2 years'},
         'loginid' => 'MF90000000'
         },
         'event args are correct';

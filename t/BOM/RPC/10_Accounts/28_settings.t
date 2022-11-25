@@ -15,6 +15,7 @@ use Email::Address::UseXS;
 use Digest::SHA      qw(hmac_sha256_hex);
 use BOM::Test::Email qw(:no_event);
 use Scalar::Util     qw/looks_like_number/;
+use JSON::MaybeUTF8  qw(encode_json_utf8);
 use BOM::Platform::Token::API;
 use Guard;
 
@@ -280,10 +281,14 @@ subtest 'get settings' => sub {
     $user_X->update_preferred_language('AZ');
     $params->{token} = $token_X_mf;
     $test_client_X_mf->user->set_tnc_approval;
+
+    $test_client_X_mf->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8({'employment_status' => 'Employed'})});
+    $test_client_X_mf->save();
     $result = $c->tcall($method, $params);
 
     is($result->{client_tnc_status},  $tnc_version, 'tnc status set');
     is($result->{preferred_language}, 'AZ',         'preferred_language set');
+    is($result->{employment_status},  'Employed',   'employment_status set');
 
     $user_Q->update_preferred_language('EN');
     $params->{token} = $token_Q_vr;
@@ -887,6 +892,22 @@ subtest 'set settings' => sub {
             $client->load;
             is $client->non_pep_declaration_time, '2018-02-15 00:00:00', 'Decaration time is changed for siblings if it is null';
         }
+    };
+
+    subtest 'employment_status' => sub {
+        my $res = $c->tcall('get_settings', {token => $token_X_mf});
+        is($res->{employment_status}, 'Employed', "employment_status is Employed");
+        my $data_finacial = {
+            token      => $token_X_mf,
+            language   => 'EN',
+            client_ip  => '127.0.0.1',
+            user_agent => 'agent',
+            args       => {employment_status => 'Pensioner'}};
+
+        $res = $c->tcall($method, $data_finacial);
+        is($res->{status}, 1, 'update successfully');
+        $res = $c->tcall('get_settings', {token => $token_X_mf});
+        is($res->{employment_status}, $data_finacial->{args}{employment_status}, "employment_status update to Pensioner");
     };
 
     $params->{token} = $token_X_mf;

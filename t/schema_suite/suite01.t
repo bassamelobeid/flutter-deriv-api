@@ -111,6 +111,16 @@ test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/te
 fail_test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive_to_fail.json',
     _get_stashed('new_account_real/oauth_token');
 
+# VIRTUAL ACCOUNT OPENING FOR Error (MF)
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'error+mf@binary.com', 'account_opening', 'email';
+test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+    _get_token('error+mf@binary.com'), 'cz', 'error\\\\+mf@binary.com';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
+    _get_stashed('new_account_virtual/oauth_token'), 'cz', 'error\\\\+mf@binary.com';
+
+test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json',
+    _get_stashed('authorize/stash/token'), 'Example First Name MF', 'cz', '0',;
+
 # VIRTUAL ACCOUNT OPENING FOR (MF)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mf@binary.com', 'account_opening', 'email';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
@@ -123,8 +133,6 @@ test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_r
     _get_stashed('authorize/stash/token'), 'Example First Name', 'cz';
 
 # FINANCIAL ACCOUNT OPENING (MF)
-test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json',
-    _get_stashed('authorize/stash/token'), 'Example First Name MF', 'cz', '0';
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json',
     _get_stashed('authorize/stash/token'), 'Example First Name MF', 'cz', '1';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf.json',

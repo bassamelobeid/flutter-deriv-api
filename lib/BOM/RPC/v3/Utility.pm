@@ -553,9 +553,8 @@ sub error_map {
         ),
         'duplicate name DOB' =>
             localize('Sorry, it looks like you already have a real money account with us. Only one real money account is allowed for each client.'),
-        'too young'            => localize('Sorry, you are too young to open an account.'),
-        'show risk disclaimer' => localize('Please agree to the risk disclaimer before proceeding.'),
-        'insufficient score'   => localize(
+        'too young'          => localize('Sorry, you are too young to open an account.'),
+        'insufficient score' => localize(
             'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.'
         ),
         invalid                    => localize('Sorry, account opening is unavailable.'),

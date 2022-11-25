@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+
 use Test::Pod::CoverageChange;
 
 # This hashref indicates packages which contain sub routines that do not have any POD documentation.

@@ -43,6 +43,9 @@
             }
          }
       },
+      "cooling_off_expiration_date" : {
+         "type" : "integer"
+      },
       "country_code" : {
          "type" : "string",
          "pattern" : "^[_2]$"

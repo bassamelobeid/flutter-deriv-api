@@ -20,10 +20,11 @@ my $c = BOM::Test::RPC::QueueClient->new();
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-my $m              = BOM::Platform::Token::API->new;
-my %ACCOUNTS       = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
-my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
-my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
+my $m                 = BOM::Platform::Token::API->new;
+my %ACCOUNTS          = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
+my %DETAILS           = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+my %financial_data    = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
+my %financial_data_mf = %Test::BOM::RPC::Accounts::FINANCIAL_DATA_MF;
 
 my $mt5_config = BOM::Config::Runtime->instance->app_config->system->mt5;
 $mt5_config->suspend->real->p01_ts03->all(0);
@@ -89,7 +90,7 @@ subtest 'create mt5 client with different currency' => sub {
         $client->tax_residence('gb');
         $client->tax_identification_number('111-222-333');
         $client->email($new_email);
-        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
         $client->save();
 
         my $user = BOM::User->create(
@@ -128,7 +129,7 @@ subtest 'create mt5 client with different currency' => sub {
         $client->tax_residence('de');
         $client->tax_identification_number('111-222-333');
         $client->email($new_email);
-        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
         $client->save();
 
         my $user = BOM::User->create(
@@ -166,7 +167,7 @@ subtest 'create mt5 client with different currency' => sub {
         $client->tax_residence('de');
         $client->tax_identification_number('111-222-333');
         $client->email($new_email);
-        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
         $client->save();
 
         $user = BOM::User->create(
@@ -190,7 +191,7 @@ subtest 'create mt5 client with different currency' => sub {
         $client->tax_residence('de');
         $client->tax_identification_number('111-222-333');
         $client->email($new_email);
-        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
         $client->save();
 
         $user = BOM::User->create(
@@ -228,7 +229,7 @@ subtest 'create mt5 client with different currency' => sub {
         $client->tax_residence('de');
         $client->tax_identification_number('111-222-333');
         $client->email($new_email);
-        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+        $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
         $client->save();
 
         my $user = BOM::User->create(

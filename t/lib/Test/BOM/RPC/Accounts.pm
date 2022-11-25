@@ -122,3 +122,25 @@ our %FINANCIAL_DATA = (
     "source_of_wealth"                     => "Company Ownership",
 );
 
+our %FINANCIAL_DATA_MF = (
+    "risk_tolerance"                           => "Yes",
+    "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
+    "cfd_experience"                           => "Less than a year",
+    "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
+    "trading_experience_financial_instruments" => "Less than a year",
+    "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
+    "cfd_trading_definition"                   => "Speculate on the price movement.",
+    "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
+    "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
+    "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
+    "employment_industry"                      => "Finance",
+    "education_level"                          => "Secondary",
+    "income_source"                            => "Self-Employed",
+    "net_income"                               => '$25,000 - $50,000',
+    "estimated_worth"                          => '$100,000 - $250,000',
+    "account_turnover"                         => '$25,000 - $50,000',
+    "occupation"                               => 'Managers',
+    "employment_status"                        => "Self-Employed",
+    "source_of_wealth"                         => "Company Ownership",
+);
+

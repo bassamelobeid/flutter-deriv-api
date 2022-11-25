@@ -19,11 +19,12 @@ use Array::Utils    qw( intersect );
 use List::Util      qw(  any  sum0  first  min  uniq  none  );
 use Digest::SHA     qw( hmac_sha256_hex );
 use Text::Trim      qw( trim );
-use JSON::MaybeUTF8 qw( decode_json_utf8 );
+use JSON::MaybeUTF8 qw( decode_json_utf8 encode_json_utf8);
 use URI;
 
 use BOM::User::Client;
-use BOM::User::FinancialAssessment qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment);
+use BOM::User::FinancialAssessment
+    qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD);
 use LandingCompany::Registry;
 use Format::Util::Numbers            qw/formatnumber financialrounding/;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
@@ -898,9 +899,10 @@ rpc get_account_status => sub {
     # check whether the user need to perform financial assessment
     my $client_fa = decode_fa($client->financial_assessment());
 
-    push(@$status, 'financial_information_not_complete') unless is_section_complete($client_fa, "financial_information");
+    push(@$status, 'financial_information_not_complete')
+        unless is_section_complete($client_fa, "financial_information", $client->landing_company->short);
 
-    push(@$status, 'trading_experience_not_complete') unless is_section_complete($client_fa, "trading_experience");
+    push(@$status, 'trading_experience_not_complete') unless is_section_complete($client_fa, "trading_experience", $client->landing_company->short);
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
@@ -1668,6 +1670,12 @@ rpc get_settings => sub {
 
     my $user = $client->user;
 
+    my $cooling_off_period =
+        BOM::Config::Redis::redis_replicated_read()->ttl(APPROPRIATENESS_TESTS_COOLING_OFF_PERIOD . $client->{binary_user_id});
+
+    my $financial_assessment = $client->financial_assessment() // '';
+    $financial_assessment = decode_fa($financial_assessment) if $financial_assessment;
+
     my $settings = {
         email     => $user->email,
         country   => $country,
@@ -1684,6 +1692,13 @@ rpc get_settings => sub {
               ($user and BOM::Config::third_party()->{elevio}{account_secret})
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
             : ())};
+
+    if ($cooling_off_period > 0) {
+        $settings->{cooling_off_expiration_date} = time + $cooling_off_period;
+    }
+    if ($financial_assessment && $financial_assessment->{employment_status} && $client->landing_company->short eq 'maltainvest') {
+        $settings->{employment_status} = $financial_assessment->{employment_status};
+    }
 
     my @clients = grep { not $_->is_virtual } $user->clients(include_disabled => 0);
     my ($real_client) = sort { $b->date_joined cmp $a->date_joined } @clients;
@@ -1741,7 +1756,7 @@ rpc set_settings => sub {
         ($args->{residence}, $args->{allow_copiers});
     my $tax_residence             = $args->{'tax_residence'}             // $current_client->tax_residence             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // $current_client->tax_identification_number // '';
-
+    my $employment_status         = $args->{'employment_status'};
     # Residence is used in validating other fields like address_state
     $args->{residence} ||= $current_client->residence;
     unless ($current_client->is_virtual) {
@@ -1938,6 +1953,14 @@ rpc set_settings => sub {
 
     BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $current_client->loginid}) if $needs_verify_address_trigger;
     $current_client->add_note('Update Address Notification', $cil_message)                       if $cil_message;
+
+    if (defined $employment_status && $current_client->landing_company->short eq 'maltainvest') {
+        my $data_to_be_saved = {employment_status => $employment_status};
+        my @all_clients      = $user->clients();
+        foreach my $cli (@all_clients) {
+            $current_client->set_financial_assessment($data_to_be_saved);
+        }
+    }
 
     # send email only if there was any changes
     if (scalar keys %$updated_fields_for_track) {
@@ -2847,9 +2870,101 @@ rpc set_account_currency => sub {
 };
 
 rpc set_financial_assessment => sub {
-    my $params         = shift;
-    my $client         = $params->{client};
-    my $client_loginid = $client->loginid;
+    my $params = shift;
+
+    # This is kept here for a transitional state only
+    my @new_version = qw(trading_experience trading_experience_regulated financial_information);
+    my @keys        = keys $params->{args}->%*;
+    my @sections;
+    if (!intersect(@new_version, @keys)) {
+        return _deprecated_financial_assessment($params);
+    }
+
+    my $client  = $params->{client};
+    my $company = $client->landing_company->short;
+
+    if ($company eq 'maltainvest' && $params->{args}->{trading_experience}) {
+        return BOM::RPC::v3::Utility::permission_error;
+    }
+    if ($company ne 'maltainvest' && !$params->{args}->{financial_information}) {
+        return BOM::RPC::v3::Utility::permission_error;
+    }
+
+    my $old_financial_assessment = decode_fa($client->financial_assessment());
+    my $financial_assessment;
+    my %changed_items;
+
+    #extract needed params
+    foreach my $fa_information (@keys) {
+        # This is kept here for a transitional state only
+        next unless any { $fa_information eq $_ } qw{trading_experience trading_experience_regulated financial_information};
+
+        #disregard trading_experience value if landing company is maltainvest
+        next if $fa_information eq 'trading_experience' && $company eq 'maltainvest';
+
+        #disregard trading_experience_regulated value if landing company is not maltainvest
+        next if $fa_information eq 'trading_experience_regulated' && $company ne 'maltainvest';
+
+        next if $fa_information eq 'set_financial_assessment';
+        push @sections, $fa_information;
+        foreach my $key (keys %{$params->{args}->{$fa_information}}) {
+            $financial_assessment->{$key} = $params->{args}->{$fa_information}->{$key};
+            if (!exists($old_financial_assessment->{$key}) || $params->{args}->{$fa_information}->{$key} ne $old_financial_assessment->{$key}) {
+                $changed_items{$key} = $params->{args}->{$fa_information}->{$key};
+            }
+        }
+    }
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    try {
+        $rule_engine->verify_action(
+            'set_financial_assessment', $financial_assessment->%*,
+            loginid => $client->loginid,
+            keys    => \@sections
+        );
+    } catch ($error) {
+        return BOM::RPC::v3::Utility::rule_engine_error($error);
+    }
+
+    update_financial_assessment($client->user, $financial_assessment);
+
+    if ($company eq 'maltainvest') {
+        $financial_assessment->{calculate_appropriateness} = 1;
+    }
+
+    my $response = build_financial_assessment($financial_assessment)->{scores};
+    $response->{financial_information_score} = delete $response->{financial_information};
+
+    $response->{trading_score} = delete $response->{trading_experience};
+
+    if ($company eq 'maltainvest') {
+        $response->{trading_score} = delete $response->{trading_experience_regulated};
+        if ($response->{trading_score} == 0) {
+            $client->status->upsert('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+        } else {
+            $client->status->upsert('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
+        }
+    }
+
+    BOM::Platform::Event::Emitter::emit(
+        'set_financial_assessment',
+        {
+            loginid => $client->loginid,
+            params  => \%changed_items,
+        }) if (%changed_items);
+    return $response;
+};
+
+=head2 _deprecated_financial_assessment
+
+This is kept here for a transitional state only
+
+=cut
+
+sub _deprecated_financial_assessment {
+    my $params = shift;
+    my $client = $params->{client};
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
@@ -2867,7 +2982,7 @@ rpc set_financial_assessment => sub {
 
     $response->{financial_information_score} = delete $response->{financial_information};
     $response->{trading_score}               = delete $response->{trading_experience};
-
+    delete $response->{trading_experience_regulated};
     my %changed_items;
     foreach my $key (keys %{$params->{args}}) {
         if (!exists($old_financial_assessment->{$key}) || $params->{args}->{$key} ne $old_financial_assessment->{$key}) {
@@ -2883,15 +2998,17 @@ rpc set_financial_assessment => sub {
             params  => \%changed_items,
         }) if (%changed_items);
     return $response;
-};
+}
 
 rpc get_financial_assessment => sub {
     my $params = shift;
-
+    my $args   = $params->{args};
     my $client = $params->{client};
+
     # We should return FA for VRTC that has financial or gaming account
     # Since we have independent financial and gaming.
     my @siblings = grep { not $_->is_virtual } $client->user->clients(include_disabled => 0);
+
     return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual and not @siblings);
     my $response;
     foreach my $sibling (@siblings) {
@@ -2900,14 +3017,21 @@ rpc get_financial_assessment => sub {
             last;
         }
     }
-
+    my $company = $client->landing_company->short;
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
     if (keys %$response) {
+        if ($company eq 'maltainvest') {
+            $response->{calculate_appropriateness} = 1;
+        }
         my $scores = build_financial_assessment($response)->{scores};
 
         $scores->{financial_information_score} = delete $scores->{financial_information};
         $scores->{trading_score}               = delete $scores->{trading_experience};
 
+        if ($company eq 'maltainvest') {
+            $scores->{trading_score} = $scores->{trading_experience_regulated};
+        }
+        delete $scores->{trading_experience_regulated};
         $response = {%$response, %$scores};
     }
 

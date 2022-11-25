@@ -121,7 +121,7 @@ rpc new_account_real => sub {
     my $broker       = $account_type->get_single_broker_code($company);
 
     # Send error if a maltainvest account  is going to be created here;
-    # because they should be creaed using new_account_maltainvest call
+    # because they should be created using new_account_maltainvest call
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount')
         unless ($company // '' and $company ne 'maltainvest');
 

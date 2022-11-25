@@ -29,10 +29,10 @@ my $c = BOM::Test::RPC::QueueClient->new();
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-my %accounts       = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
-my %details        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
-my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
-
+my %accounts          = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
+my %details           = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+my %financial_data    = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
+my %financial_data_mf = %Test::BOM::RPC::Accounts::FINANCIAL_DATA_MF;
 # Setup a test user
 my $test_client    = create_client('CR');
 my $test_client_vr = create_client('VRTC');
@@ -448,7 +448,7 @@ subtest 'MF to MLT account switching' => sub {
     $mlt_switch_client->residence('at');
     $mlt_switch_client->account_opening_reason('speculative');
 
-    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
     $mf_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
@@ -511,7 +511,7 @@ subtest 'MLT to MF account switching' => sub {
     $mlt_switch_client->set_default_account('EUR');
     $mlt_switch_client->residence('at');
 
-    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
     $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
@@ -577,7 +577,7 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     $vr_switch_client->set_default_account('USD');
     $vr_switch_client->residence('at');
 
-    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data_mf)});
     $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();

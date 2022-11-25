@@ -15,7 +15,15 @@
             },
             "code" : {
                "type" : "string",
-               "pattern" : "^show risk disclaimer$"
+               "pattern" : "^AppropriatenessTestFailed$"
+            },
+            "details" : {
+               "type" : "object",
+               "properties": {
+                  "cooling_off_expiration_date": {
+                     "type" : "integer"
+                  }
+               }
             }
          },
          "required" : [

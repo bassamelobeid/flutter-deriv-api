@@ -304,7 +304,7 @@ subtest 'get account status' => sub {
 
         subtest 'maltainvest account' => sub {
             # test 'financial_assessment_not_complete'
-            my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+            my $data = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
 
             # function to repeatedly test financial assessment
             sub test_financial_assessment {
@@ -317,6 +317,9 @@ subtest 'get account status' => sub {
 
                 ok($res, $msg);
             }
+
+            # 'financial_assessment_not_complete' should not present when everything is complete
+            test_financial_assessment($data, 0, 'financial_assessment_not_complete should not be present when low risk');
 
             # 'financial_assessment_not_complete' should not present when everything is complete
             test_financial_assessment($data, 0, 'financial_assessment_not_complete should not be present when questions are answered properly');
