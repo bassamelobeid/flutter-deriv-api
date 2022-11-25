@@ -69,9 +69,11 @@ my %EVENT_PROPERTIES = (
     derivx_account_deactivated  => [qw(email first_name closure_date account)],
     document_upload             => [qw(document_type expiration_date file_name id upload_date uploaded_manually_by_staff)],
     set_financial_assessment    => [
-        qw(education_level employment_industry estimated_worth income_source net_income occupation account_turnover binary_options_trading_experience
-            binary_options_trading_frequency cfd_trading_experience cfd_trading_frequency employment_status forex_trading_experience forex_trading_frequency other_instruments_trading_experience
-            other_instruments_trading_frequency source_of_wealth)
+        qw(education_level employment_industry estimated_worth income_source net_income occupation account_turnover source_of_wealth employment_status
+            risk_tolerance source_of_experience cfd_trading_experience cfd_trading_frequency binary_options_trading_experience
+            binary_options_trading_frequency employment_status forex_trading_experience forex_trading_frequency other_instruments_trading_experience
+            other_instruments_trading_frequency source_of_wealth cfd_experience cfd_experience trading_experience_financial_instruments trading_frequency_financial_instruments
+            cfd_trading_definition leverage_impact_trading leverage_trading_high_risk_stop_loss required_initial_margin)
     ],
     self_exclude            => [qw(unsubscribed)],
     p2p_advertiser_approved => [],
