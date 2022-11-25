@@ -67,6 +67,12 @@
                   }
                }
             },
+            "cooling_off_expiration_date": {
+               "type": [
+                   "null",
+                   "integer"
+               ]
+           },
             "trading_hub" : {
                "type" : "integer",
                "enum" : [

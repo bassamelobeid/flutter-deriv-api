@@ -336,7 +336,7 @@ $res = $t->await::reality_check({reality_check => 1});
 ok(ref $res->{reality_check});
 is $call_params->{token}, $token;
 
-$res = $t->await::set_financial_assessment({%{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}, set_financial_assessment => 1});
+$res = $t->await::set_financial_assessment({%{BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()}, set_financial_assessment => 1});
 ok(ref $res->{set_financial_assessment});
 
 is $call_params->{token}, $token;
@@ -446,7 +446,7 @@ $t->await::get_financial_assessment({get_financial_assessment => 1});
 $t->await::reality_check({reality_check => 1});
 $t->await::set_financial_assessment({
         set_financial_assessment => 1,
-        %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}});
+        %{BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()}});
 $t->await::login_history({login_history => 1});
 $t->await::get_account_status({get_account_status => 1});
 $t->await::change_password({

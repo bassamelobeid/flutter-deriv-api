@@ -1,0 +1,128 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "properties" : {
+      "get_financial_assessment" : {
+         "properties" : {
+            "source_of_wealth" : {
+               "pattern" : "^Company Ownership$",
+               "type" : "string"
+            },
+            "financial_information_score" : {
+               "description" : "Financial Information Score",
+               "type" : "integer",
+               "enum" : [[_4]]
+            },
+            "trading_score" : {
+               "type" : "integer",
+               "description" : "Trading Experience Score",
+               "enum" : [[_3]]
+            },
+            "total_score" : {
+               "description" : "Total Score",
+               "type" : "integer",
+               "enum" : [[_1]]
+            },
+            "net_income" : {
+               "pattern" : "^\\$25\\,000 \\- \\$50\\,000$",
+               "type" : "string"
+            },
+            "estimated_worth" : {
+               "pattern" : "^\\$100\\,000 \\- \\$250\\,000$",
+               "type" : "string"
+            },
+            "employment_status" : {
+               "pattern" : "^Self-Employed$",
+               "type" : "string"
+            },
+            "employment_industry" : {
+               "pattern" : "^Finance$",
+               "type" : "string"
+            },
+            "education_level" : {
+               "pattern" : "^Secondary$",
+               "type" : "string"
+            },
+            "cfd_trading_experience" : {
+               "type" : "string",
+               "pattern" : "^1\\-2 years$"
+            },
+            "income_source" : {
+               "pattern" : "^Self\\-Employed$",
+               "type" : "string"
+            },
+            "account_turnover" : {
+               "type" : "string",
+               "pattern" : "^Less than \\$25\\,000$"
+            },
+            "cfd_score" : {
+               "enum" : [[_2]],
+               "description" : "CFD Score",
+               "type" : "integer"
+            },
+            "cfd_experience": {
+               "type": "string",
+               "pattern" : "^Less than a year$"
+            },
+            "cfd_frequency": {
+               "type": "string",
+               "pattern" : "^1 - 5 transactions in the past 12 months$"
+            },
+            "cfd_trading_definition": {
+               "type": "string",
+               "pattern" : "^Speculate on the price movement.$"
+            },
+            "leverage_impact_trading": {
+               "type": "string",
+               "pattern" : "^Leverage lets you open larger positions for a fraction of the trade's value.$"
+            },
+            "leverage_trading_high_risk_stop_loss": {
+               "type": "string",
+               "pattern" : "^Close your trade automatically when the loss is more than or equal to a specific amount.$"
+            },
+            "required_initial_margin": {
+               "type": "string",
+               "pattern" : "^When opening a Leveraged CFD trade.$"
+            },
+            "risk_tolerance": {
+               "type": "string",
+               "pattern" : "^Yes$"
+            },
+            "source_of_experience": {
+               "type": "string",
+               "pattern" : "^I have an academic degree, professional certification, and/or work experience.$"
+            },
+            "trading_experience_financial_instruments": {
+               "type": "string",
+               "pattern" : "^Less than a year$"
+            },
+            "trading_frequency_financial_instruments": {
+               "type": "string",
+               "pattern" : "^1 - 5 transactions in the past 12 months$"
+           }
+         },
+         "type" : "object",
+         "required" : [
+            "source_of_wealth",
+            "net_income",
+            "estimated_worth",
+            "employment_status",
+            "employment_industry",
+            "education_level",
+            "income_source"
+         ]
+      },
+      "msg_type" : {
+         "pattern" : "^get_financial_assessment$",
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
+}

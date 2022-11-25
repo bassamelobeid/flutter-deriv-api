@@ -50,7 +50,7 @@ my $mf_details = {
     accept_risk             => 1,
     account_opening_reason  => 'Speculative',
     address_line_1          => 'Test',
-    %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}};
+    %{BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1)}};
 
 subtest 'trying to create duplicate accounts' => sub {
     subtest 'create duplicate CR account' => sub {

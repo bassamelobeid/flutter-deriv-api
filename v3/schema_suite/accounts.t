@@ -98,6 +98,13 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', $currencies, $length;
 
+test_sendrecv 'set_financial_assessment/test_send.json',        'set_financial_assessment/test_receive.json';
+test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive.json',
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/total_score'),
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/cfd_score'),
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/trading_score'),
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/financial_information_score');
+
 # READ SCOPE CALLS (CR) BEFORE CHANGE
 test_sendrecv 'get_limits/test_send.json',   'get_limits/test_receive_cr.json';
 test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_cr_before.json';
@@ -161,6 +168,20 @@ test_sendrecv 'balance/test_send.json',            'balance/test_receive_error.j
 test_sendrecv 'get_account_status/test_send.json', 'get_account_status/test_receive_error.json';
 
 # VIRTUAL ACCOUNT OPENING FOR (MF)
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'error@binary.com', 'account_opening';
+test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+    $suite->get_token('error@binary.com'), 'error@binary.com', 'dk';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
+    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'error@binary.com';
+
+test_sendrecv 'logout/test_send.json', 'logout/test_receive.json';
+
+# FINANCIAL ACCOUNT OPENING error (MF)
+test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json', '0', 'Jack', 'dk', 81,
+    '+61234567006',
+    '1112223334';
+
+# VIRTUAL another ACCOUNT OPENING FOR (MF)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'mf@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     $suite->get_token('mf@binary.com'), 'mf@binary.com', 'dk';
@@ -168,9 +189,6 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
     $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'mf@binary.com';
 
 # FINANCIAL ACCOUNT OPENING (MF)
-test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json', '0', 'Jack', 'dk', 81,
-    '+61234567006',
-    '1112223334';
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'Jack', 'dk', 81, '+61234567008',
     '1112223334';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf.json',
@@ -180,8 +198,8 @@ test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|JPY)', 3;
 
 # ADMIN SCOPE CALLS (MF)
-test_sendrecv 'set_financial_assessment/test_send.json', 'set_financial_assessment/test_receive.json';
-test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive.json',
+test_sendrecv 'set_financial_assessment/test_send_mf.json',     'set_financial_assessment/test_receive.json';
+test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive_mf.json',
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/total_score'),
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/cfd_score'),
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/trading_score'),

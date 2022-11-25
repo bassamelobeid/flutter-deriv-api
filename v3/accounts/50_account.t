@@ -252,22 +252,22 @@ ok($res->{get_limits});
 is $res->{msg_type},                     'get_limits';
 is $res->{get_limits}->{open_positions}, 100;
 test_schema('get_limits', $res);
-
 my $args = {
     "set_financial_assessment" => 1,
-    %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}};
-my $val = delete $args->{estimated_worth};
+    %{BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()}};
+my $val = delete $args->{trading_experience_regulated}->{cfd_experience};
 $res = $t->await::set_financial_assessment($args);
-is($res->{error}->{code}, 'InputValidationFailed', 'Missing required field: estimated_worth');
+is($res->{error}->{code}, 'InputValidationFailed', 'Missing required field: cfd_experience');
 
-$args->{estimated_worth} = $val;
+$args->{trading_experience_regulated}->{cfd_experience} = $val;
 $res = $t->await::set_financial_assessment($args);
-is($res->{set_financial_assessment}->{total_score}, 8, "Total score for set ok");
+
+is($res->{set_financial_assessment}->{total_score}, 28, "Total score for set ok");
 note("set_financial_assessment json :: ");
 note explain $res;
 
 $res = $t->await::get_financial_assessment({get_financial_assessment => 1});
-is($res->{get_financial_assessment}->{total_score}, 8, "Total score for get ok");
+is($res->{get_financial_assessment}->{total_score}, 28, "Total score for get ok");
 
 $t->finish_ok;
 
