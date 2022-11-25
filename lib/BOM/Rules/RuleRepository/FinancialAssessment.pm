@@ -14,18 +14,27 @@ use strict;
 use warnings;
 
 use BOM::Rules::Registry           qw(rule);
-use BOM::User::FinancialAssessment qw(is_section_complete);
+use BOM::User::FinancialAssessment qw(is_section_complete appropriateness_tests);
 
 rule 'financial_assessment.required_sections_are_complete' => {
     description => "Checks the financial assessment in action args and dies if any required section is incomplete.",
     code        => sub {
         my ($self, $context, $args) = @_;
-
-        my $is_FI_complete = is_section_complete($args, "financial_information");
-        my $is_TE_complete = is_section_complete($args, "trading_experience");
+        my $client         = $context->client($args);
+        my $is_FI_complete = is_section_complete($args, "financial_information", $context->landing_company($args));
+        my $is_TE_complete = is_section_complete($args, "trading_experience",    $context->landing_company($args));
 
         $self->fail('IncompleteFinancialAssessment')
-            unless ($context->landing_company($args) eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
+            if ($context->landing_company($args) eq "svg" && !$is_FI_complete);
+
+        my $checks = $is_TE_complete && $is_FI_complete;
+        my $keys   = $args->{keys} // undef;
+
+        if ($keys && scalar $keys->@* == 1) {
+            $checks = $keys->[0] eq 'financial_information' ? $is_FI_complete : $is_TE_complete;
+        }
+        $self->fail('IncompleteFinancialAssessment')
+            if ($context->landing_company($args) eq "maltainvest" && !$checks);
 
         return 1;
     },
@@ -38,6 +47,25 @@ rule 'financial_asssessment.completed' => {
         my $client = $context->client($args);
 
         $self->fail('FinancialAssessmentRequired') unless $client->is_financial_assessment_complete();
+
+        return 1;
+    },
+};
+
+rule 'financial_asssessment.appropriateness_test' => {
+    description => "Checks if the client have passed the appropriateness test question and by-pass if the user is not new.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
+        return 1 if $args->{account_type} && $args->{account_type} eq 'affiliate';
+        my $app_test = appropriateness_tests($client, $args);
+        if (!$app_test->{result}) {
+            if ($app_test->{cooling_off_expiration_date}) {
+                $self->fail('AppropriatenessTestFailed', details => {cooling_off_expiration_date => $app_test->{cooling_off_expiration_date}});
+            } else {
+                $self->fail('AppropriatenessTestFailed');
+            }
+        }
 
         return 1;
     },

@@ -28,7 +28,9 @@ new_account:
       rules_per_value:
         malta: &from_eu
           - profile.no_pobox_in_address
-        maltainvest: *from_eu
+        maltainvest: 
+          - profile.no_pobox_in_address
+          - financial_asssessment.appropriateness_test
         iom: *from_eu
     - type: conditional
       on: residence
