@@ -879,6 +879,14 @@ subtest 'backtest for Onfido disabled country' => sub {
             return $country_supported;
         });
 
+    my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+    my $age_verification;
+    $status_mock->mock(
+        'age_verification',
+        sub {
+            return $age_verification;
+        });
+
     my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
     my $onfido_document_sub_result;
     my $onfido_check_result;
@@ -920,7 +928,18 @@ subtest 'backtest for Onfido disabled country' => sub {
             expected          => {
                 status => 'verified',
             },
-            name => 'verified status, supported country',
+            age_verification => 1,
+            name             => 'verified status, supported country',
+        },
+        {
+            check_result      => 'clear',
+            docum_result      => undef,
+            country_supported => 1,
+            expected          => {
+                status => 'rejected',
+            },
+            age_verification => 0,
+            name             => 'rejected status, supported country',
         },
         {
             check_result      => 'consider',
@@ -947,7 +966,18 @@ subtest 'backtest for Onfido disabled country' => sub {
             expected          => {
                 status => 'verified',
             },
-            name => 'verified status, unsupported country',
+            age_verification => 1,
+            name             => 'verified status, unsupported country',
+        },
+        {
+            check_result      => 'clear',
+            docum_result      => undef,
+            country_supported => 0,
+            expected          => {
+                status => 'rejected',
+            },
+            age_verification => 0,
+            name             => 'rejected status, unsupported country',
         },
         {
             docum_result      => 'awaiting_applicant',
@@ -959,7 +989,8 @@ subtest 'backtest for Onfido disabled country' => sub {
         }];
 
     for my $test ($tests->@*) {
-        ($onfido_document_sub_result, $onfido_check_result, $country_supported) = @$test{qw/docum_result check_result country_supported/};
+        ($onfido_document_sub_result, $onfido_check_result, $country_supported, $age_verification) =
+            @$test{qw/docum_result check_result country_supported age_verification/};
 
         subtest $test->{name} => sub {
             my $result = $c->tcall('get_account_status', {token => $token_disabled_country});
@@ -980,6 +1011,7 @@ subtest 'backtest for Onfido disabled country' => sub {
     }
 
     $onfido_mock->unmock_all;
+    $status_mock->unmock_all;
 };
 
 subtest 'IDV Validated account' => sub {
