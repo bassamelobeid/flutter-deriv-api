@@ -1655,6 +1655,14 @@ subtest 'Onfido status' => sub {
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
     my $mocked_config = Test::MockModule->new('BOM::Config::Onfido');
     my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
+    my $age_verification;
+
+    $mocked_status->mock(
+        'age_verification',
+        sub {
+            return $age_verification;
+        });
 
     # backtest to prove that the onfido country supported status does not change the results!
     my $is_supported_country;
@@ -1737,7 +1745,18 @@ subtest 'Onfido status' => sub {
             docs                   => {
                 is_expired => 0,
             },
-            status => 'verified'
+            status           => 'verified',
+            age_verification => 1,
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'clear',
+            docs                   => {
+                is_expired => 0,
+            },
+            status           => 'rejected',
+            age_verification => 0,
         },
         {
             is_supported_country   => 1,
@@ -1820,7 +1839,8 @@ subtest 'Onfido status' => sub {
             docs                   => {
                 is_expired => 0,
             },
-            status => 'verified'
+            status           => 'verified',
+            age_verification => 1,
         },
         {
             is_supported_country   => 0,
@@ -1884,12 +1904,12 @@ subtest 'Onfido status' => sub {
         my $status;
 
         (
-            $is_supported_country, $onfido_document_status, $onfido_check_result, $onfido_sub_result, $docs, $status,
-            $is_document_expiry_check_required,
-            $pending_flag
+            $is_supported_country,              $onfido_document_status, $onfido_check_result,
+            $onfido_sub_result,                 $docs,                   $status,
+            $is_document_expiry_check_required, $pending_flag,           $age_verification
             )
             = @{$test}{
-            qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status is_document_expiry_check_required pending_flag/
+            qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status is_document_expiry_check_required pending_flag age_verification/
             };
 
         if ($pending_flag) {
@@ -1905,6 +1925,7 @@ subtest 'Onfido status' => sub {
     $mocked_config->unmock_all;
     $mocked_client->unmock_all;
     $mocked_documents->unmock_all;
+    $mocked_status->unmock_all;
 };
 
 subtest 'Manual POI status' => sub {

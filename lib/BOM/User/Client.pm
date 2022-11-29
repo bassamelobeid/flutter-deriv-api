@@ -7309,7 +7309,9 @@ sub get_onfido_status {
 
         return 'expired' if $is_poi_expired;
 
-        return 'verified';
+        return 'verified' if $self->status->age_verification;
+
+        return 'rejected';
     }
 
     return 'suspected' if $report_document_sub_result eq 'suspected';
