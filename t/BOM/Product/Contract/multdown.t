@@ -195,23 +195,27 @@ subtest 'minmum stake' => sub {
     is $error->message_to_client->[1], '1.00';
 };
 
-subtest 'take profit cap' => sub {
-    my $args = {
-        bet_type    => 'MULTDOWN',
-        underlying  => 'R_100',
-        amount_type => 'stake',
-        amount      => 10,
-        multiplier  => 10,
-        currency    => 'USD',
-        limit_order => {
-            take_profit => 10000 + 0.01,
-        },
+SKIP: {
+    skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
+
+    subtest 'take profit cap' => sub {
+        my $args = {
+            bet_type    => 'MULTDOWN',
+            underlying  => 'R_100',
+            amount_type => 'stake',
+            amount      => 10,
+            multiplier  => 10,
+            currency    => 'USD',
+            limit_order => {
+                take_profit => 10000 + 0.01,
+            },
+        };
+        my $c     = produce_contract($args);
+        my $error = exception { $c->is_valid_to_buy };
+        is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
+        is $error->message_to_client->[1], '90.00', 'max at 90.00';
     };
-    my $c     = produce_contract($args);
-    my $error = exception { $c->is_valid_to_buy };
-    is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
-    is $error->message_to_client->[1], '90.00', 'max at 90.00';
-};
+}
 
 subtest 'deal cancellation duration check' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [102, $now->epoch + 1, 'R_100'],);
