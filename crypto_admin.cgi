@@ -333,9 +333,7 @@ $request_type->{not_general_req} = sub {
         $func_map->{$input{req_type}}();
     } catch ($e) {
         $template_details->{response} = +{error => $e};
-        BOM::Backoffice::Request::template()
-            ->process('backoffice/crypto_admin/result_' . lc($template_currency_mapper->{$currency_selected} // $currency_selected) . '.html.tt',
-            $template_details, undef, {binmode => ':utf8'});
+        _render_template($currency_selected, $template_details);
     };
 };
 
@@ -832,6 +830,11 @@ sub _get_function_map {
         bump_eth_transaction     => $bump_transaction,
         }
         if $currency eq 'ETH';
+
+    return +{
+        get_wallet_balance => $get_wallet_balance,
+        }
+        if $currency eq 'tUSDT';
 }
 
 =head2 _error_handler
@@ -866,6 +869,30 @@ sub _error_handler {
     return undef;
 }
 
+=head2 _render_template
+
+renders the template with the provided template details.
+Receives the following parameters:
+
+=over 4
+
+=item * C<currency_code> - string (required)
+
+=item * C<details> - hashref (required) template details
+
+=cut
+
+sub _render_template {
+    my ($selected_currency, $details) = @_;
+    my $currency      = $currencies_info->{'currency_info_' . $selected_currency};
+    my $currency_code = lc($template_currency_mapper->{$selected_currency} // $selected_currency);
+
+    $currency_code = 'external' if ($currency->{is_external});
+
+    BOM::Backoffice::Request::template()
+        ->process('backoffice/crypto_admin/result_' . $currency_code . '.html.tt', $details, undef, {binmode => ':utf8'});
+}
+
 =head2 _response_handler
 
 parses response for functions mapped under _get_function_map sub only for now.
@@ -892,14 +919,14 @@ Parse the input and display the result on result_CURRENCY_CODE.html.tt page.
 sub _response_handler {
     my $template_details  = shift;
     my $currency_selected = $template_details->{currency};
+
     try {
         $template_details->{response_json} = encode_json($template_details->{response});
     } catch ($e) {
         $template_details->{response_json} = $template_details->{response};
     }
-    BOM::Backoffice::Request::template()
-        ->process('backoffice/crypto_admin/result_' . lc($template_currency_mapper->{$currency_selected} // $currency_selected) . '.html.tt',
-        $template_details, undef, {binmode => ':utf8'});
+
+    _render_template($currency_selected, $template_details);
 }
 
 # ========== Requesting ==========

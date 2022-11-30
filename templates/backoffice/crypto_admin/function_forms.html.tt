@@ -14,6 +14,7 @@
         BTC => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_blockchain_info', 'get_estimate_smartfee'],
         UST => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_blockchain_info', 'get_estimate_smartfee'],
         ETH => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_accounts',        'get_gas_price',         'get_syncing'],
+        tUSDT => ['get_wallet_balance'],
     };
     all_forms = {
         get_address_balance => {

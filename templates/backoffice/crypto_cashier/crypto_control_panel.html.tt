@@ -50,15 +50,15 @@
     <br><br>
     Pending Client Payouts : <strong> [% pending_withdrawal_amount %] [% currency %] </strong>
 <!-- Tools -->
-    [% IF !is_external %]
     <br><br>
     <button type="submit" class="btn btn--primary" name="view_action" value="run">Run</button>
     <select name="command">
         <option value="getwallet" [% IF cmd == "getwallet" %] selected="selected" [% END %]>Get Wallet Balance</option>
+        [% IF !is_external %]
         <option value="getavailablepayout" [% IF cmd == "getavailablepayout" %] selected="selected" [% END %]>Get Available Balance for payout</option>
         <option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get Info</option>
+        [% END %]
     </select>
-    [% END %]
 </form>
 
 <style type="text/css">
