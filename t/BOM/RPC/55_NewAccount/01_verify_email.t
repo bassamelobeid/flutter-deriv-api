@@ -482,7 +482,19 @@ subtest 'Affiliate self tagging requests' => sub {
     my @emitted;
     my $myaffiliate_email = 'dummy@binary.com';
     no warnings 'redefine';
-    local *BOM::Platform::Event::Emitter::emit = sub { push @emitted, @_ };
+
+    my $mock_verify_email = Test::MockModule->new("BOM::RPC::v3::VerifyEmail::Functions");
+    $mock_verify_email->redefine(create_client => sub { return "OK"; });
+
+    my $myaffiliate_obj = {
+        "TOKEN" => {
+            "USER_ID" => "",
+            "USER"    => {"EMAIL" => $myaffiliate_email}}};
+    my $mock_myaffiliates = Test::MockModule->new('BOM::MyAffiliates');
+    $mock_myaffiliates->redefine(get_affiliate_details => sub { return $myaffiliate_obj });
+
+    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_events->redefine(emit => sub { push @emitted, $_[1] if $_[0] eq 'self_tagging_affiliates' });
 
     $params[1]->{args}->{verify_email}                      = 'dummy@binary.com';
     $params[1]->{args}->{type}                              = 'account_opening';
@@ -494,6 +506,12 @@ subtest 'Affiliate self tagging requests' => sub {
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+
+    is scalar @emitted, 1, "self_tagging_affiliates event is triggered";
+
+    $mock_events->unmock_all();
+    $mock_myaffiliates->unmock_all();
+    $mock_verify_email->unmock_all();
 };
 
 done_testing();
