@@ -134,6 +134,7 @@ my $prepare_transaction = sub {
         $reprocess_info->{trx_id} = request()->param('trx_id_to_reprocess');
         my $address  = request()->param('address_to_reprocess');
         my $currency = request()->param('trx_currency_to_reprocess');
+        my $loginid  = request()->param('loginID');
 
         unless (has_manual_credit($address, $currency, $loginid)) {
 

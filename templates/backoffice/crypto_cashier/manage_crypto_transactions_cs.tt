@@ -154,7 +154,7 @@
                             <td valign="top" align="center">
                                 [% IF trx.type == 'deposit' and !trx.is_external %]
                                     <form method="POST">
-                                        <input type="hidden" name="loginID" value="[% loginid %]" />
+                                        <input type="hidden" name="loginID" value="[% trx.loginid %]" />
                                         <input type="hidden" name="trx_id_to_reprocess" value="[% trx.id %]" />
                                         <input type="hidden" name="trx_currency_to_reprocess" value="[% trx.currency_code %]" />
                                         <input type="hidden" name="address_to_reprocess" value="[% trx.address %]" />
