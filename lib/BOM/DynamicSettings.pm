@@ -278,9 +278,11 @@ sub get_settings_by_group {
                 system.mt5.load_balance.demo.all.p01_ts01
                 system.mt5.load_balance.demo.all.p01_ts02
                 system.mt5.load_balance.demo.all.p01_ts03
+                system.mt5.load_balance.demo.all.p01_ts04
                 system.mt5.load_balance.real.all.p01_ts01
                 system.mt5.load_balance.real.europe_synthetic.p01_ts04
                 system.mt5.load_balance.real.africa_synthetic.p02_ts02
+                system.mt5.load_balance.real.africa_derivez.p02_ts01
                 system.mt5.load_balance.real.africa_synthetic.p01_ts02
                 system.mt5.load_balance.real.asia_synthetic.p01_ts03
                 system.mt5.suspend.all
@@ -291,6 +293,7 @@ sub get_settings_by_group {
                 system.mt5.suspend.demo.p01_ts01.all
                 system.mt5.suspend.demo.p01_ts02.all
                 system.mt5.suspend.demo.p01_ts03.all
+                system.mt5.suspend.demo.p01_ts04.all
                 system.mt5.suspend.real.p01_ts01.all
                 system.mt5.suspend.real.p01_ts01.deposits
                 system.mt5.suspend.real.p01_ts01.withdrawals
@@ -303,6 +306,9 @@ sub get_settings_by_group {
                 system.mt5.suspend.real.p01_ts04.all
                 system.mt5.suspend.real.p01_ts04.deposits
                 system.mt5.suspend.real.p01_ts04.withdrawals
+                system.mt5.suspend.real.p02_ts01.all
+                system.mt5.suspend.real.p02_ts01.deposits
+                system.mt5.suspend.real.p02_ts01.withdrawals
                 system.mt5.suspend.real.p02_ts02.all
                 system.mt5.suspend.real.p02_ts02.deposits
                 system.mt5.suspend.real.p02_ts02.withdrawals
