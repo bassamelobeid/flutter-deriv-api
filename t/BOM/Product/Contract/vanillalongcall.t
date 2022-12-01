@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 8;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -106,6 +106,25 @@ subtest 'shortcode' => sub {
     is $c->number_of_contracts,  $c_shortcode->number_of_contracts,  'same number of contracts';
 };
 
+subtest 'shortcode S1P' => sub {
+    $args->{date_pricing} = $now->plus_time_interval('1s')->epoch;
+    my $c         = produce_contract($args);
+    my $shortcode = 'VANILLALONGCALL_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_S116181P_0.02075';
+
+    # 68258.19 + 1161.81 = 69420
+
+    my $c_shortcode;
+    lives_ok {
+        $c_shortcode = produce_contract($shortcode, 'USD');
+    }
+    'does not die trying to produce contract from short code';
+
+    is $c->code,                 $c_shortcode->code,                 'same code';
+    is $c->pricing_code,         $c_shortcode->pricing_code,         'same pricing code';
+    is $c->barrier->as_absolute, $c_shortcode->barrier->as_absolute, 'same strike price';
+    is $c->date_start->epoch,    $c_shortcode->date_start->epoch,    'same date start';
+    is $c->number_of_contracts,  $c_shortcode->number_of_contracts,  'same number of contracts';
+};
 subtest 'longcode' => sub {
     my $c = produce_contract($args);
     is_deeply(
@@ -179,6 +198,31 @@ subtest 'entry and exit tick' => sub {
         cmp_ok $c->exit_tick->quote, 'eq', '69327.58', 'correct exit tick';
     }
     'losing the contract';
+};
+
+subtest 'pricing an expired option' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch + 3600,
+        quote      => 99999.99,
+    });
+
+    lives_ok {
+        $args->{duration}     = '10m';
+        $args->{date_pricing} = $now->plus_time_interval('10m');
+        my $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        my $contract_value = $c->value;
+
+        $args->{duration}     = '10m';
+        $args->{date_pricing} = $now->plus_time_interval('1h');
+        $c                    = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        is $c->value,     $contract_value, 'contract value is same regardless when we price it';
+        is $c->bid_price, $contract_value, 'contract price is same regardless when we price it';
+    }
+    'winning the contract';
+
 };
 
 done_testing;

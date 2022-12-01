@@ -6,6 +6,7 @@ with 'BOM::Product::Role::Vanilla', 'BOM::Product::Role::SingleBarrier', 'BOM::P
 
 use BOM::Product::Pricing::Engine::BlackScholes;
 use BOM::Product::Exception;
+use Format::Util::Numbers qw/financialrounding/;
 
 =head1 DESCRIPTION
 
@@ -45,10 +46,12 @@ sub check_expiry_conditions {
     my $self = shift;
 
     if ($self->exit_tick) {
+        my $exit_quote = $self->exit_tick->quote;
         my $value =
-              ($self->exit_tick->quote < $self->barrier->as_absolute)
-            ? ($self->barrier->as_absolute - $self->current_spot) * $self->number_of_contracts
+              ($exit_quote < $self->barrier->as_absolute)
+            ? ($self->barrier->as_absolute - $exit_quote) * $self->number_of_contracts
             : 0;
+        $value = financialrounding('price', $self->currency, $value);
         $self->value($value);
     }
 

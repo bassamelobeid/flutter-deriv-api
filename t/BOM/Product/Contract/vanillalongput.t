@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -165,4 +165,29 @@ subtest 'entry and exit tick' => sub {
     }
     'losing the contract';
 };
+
+subtest 'pricing an expired option' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch + 3600,
+        quote      => 0.99,
+    });
+
+    lives_ok {
+        $args->{duration}     = '10m';
+        $args->{date_pricing} = $now->plus_time_interval('10m');
+        my $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        my $contract_value = $c->value;
+
+        $args->{date_pricing} = $now->plus_time_interval('1h');
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        is $c->value,     $contract_value, 'contract value is same regardless when we price it';
+        is $c->bid_price, $contract_value, 'contract price is same regardless when we price it';
+    }
+    'losing the contract';
+
+};
+
 done_testing;
