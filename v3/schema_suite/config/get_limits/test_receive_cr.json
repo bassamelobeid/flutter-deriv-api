@@ -46,8 +46,7 @@
                ]
             },
             "account_balance" : {
-               "enum" : ["0","300000"],
-               "type" : "number"
+               "type" : ["null", "number"]
             },
             "num_of_days_limit" : {
                "enum" : [
