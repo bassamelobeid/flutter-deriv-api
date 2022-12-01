@@ -421,6 +421,11 @@ rpc get_limits => sub {
         open_positions  => $client->get_limit_for_open_positions,
     };
 
+    # Returns account balance as null when unlimited account is configured and amount is zero
+    $limit->{account_balance} = undef
+        if $client->landing_company->unlimited_balance
+        && $limit->{account_balance} == 0;
+
     my $market_specifics = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
     for my $limits (values %$market_specifics) {
         for my $market (@$limits) {

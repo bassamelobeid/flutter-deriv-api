@@ -101,7 +101,13 @@ subtest 'CR - USD' => sub {
         $c->call_ok('get_limits', $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
         $client->status->clear_disabled;
         $client->status->set('cashier_locked', 1, 'test');
-        ok $c->call_ok('get_limits', $params)->has_no_error->result->{account_balance}, "Got limits for cashier locked clients";
+
+        my $account_limit = $c->call_ok('get_limits', $params)->has_no_error->result->{account_balance};
+        if ($client->landing_company->unlimited_balance) {
+            is($account_limit, undef, "No limits for cashier locked clients");
+        } else {
+            ok $account_limit, "Got limits for cashier locked clients";
+        }
 
         $client->status->clear_cashier_locked;
     };
@@ -117,7 +123,9 @@ subtest 'CR - USD' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'USD', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -154,7 +162,9 @@ subtest 'CR - USD' => sub {
             source_bypass_verification => 0,
             source_type                => 'official',
         },
-        'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
+        'account_balance' => $client->landing_company->unlimited_balance
+        ? undef
+        : formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
         'open_positions'                      => $client->get_limit_for_open_positions,
         'payout'                              => formatnumber('price', 'USD', $client->get_limit_for_payout),
         'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -194,7 +204,13 @@ subtest 'CR - USD' => sub {
             checksum                   => 'CE114E4501D2F4E2DCEA3E17B546F339'
         });
         $client->save;
-        ok $c->call_ok('get_limits', $params)->has_no_error->result->{account_balance}, "Got limits for client with expired docs";
+
+        my $account_limit = $c->call_ok('get_limits', $params)->has_no_error->result->{account_balance};
+        if ($client->landing_company->unlimited_balance) {
+            is($account_limit, undef, "No limits for clients");
+        } else {
+            ok $account_limit, "Got limits for client with expired docs";
+        }
     };
 };
 
@@ -235,7 +251,9 @@ subtest 'CR-EUR' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -282,7 +300,9 @@ subtest 'CR-EUR' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -335,7 +355,9 @@ subtest 'CR-BTC' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'BTC', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'BTC', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'BTC', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -390,7 +412,9 @@ subtest 'CR-BTC' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'BTC', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'BTC', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'BTC', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -442,7 +466,9 @@ subtest 'MLT' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -485,7 +511,9 @@ subtest 'MLT' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -538,7 +566,9 @@ subtest 'MX' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -581,7 +611,9 @@ subtest 'MX' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
@@ -611,7 +643,9 @@ subtest 'MX' => sub {
                 source_bypass_verification => 0,
                 source_type                => 'official',
             },
-            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
+            'account_balance' => $client->landing_company->unlimited_balance
+            ? undef
+            : formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
             'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
