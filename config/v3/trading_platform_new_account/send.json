@@ -13,7 +13,6 @@
         "trading_platform_new_account",
         "account_type",
         "market_type",
-        "password",
         "platform"
     ],
     "properties": {
@@ -31,6 +30,11 @@
                 "demo",
                 "real"
             ]
+        },
+        "company": {
+            "description": "[Optional] Name of the client's company (For DerivEZ only)",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,@/-]{0,64}$"
         },
         "currency": {
             "description": "[Optional] Trading account currency, the default value will be the qualified account currency.",
@@ -56,7 +60,7 @@
             ]
         },
         "password": {
-            "description": "The master password of the account. For validation (Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address). This field is required.",
+            "description": "The master password of the account. For validation (Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address). Only for DXTrade.",
             "type": "string",
             "pattern": "^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$",
             "sensitive": 1
@@ -65,7 +69,8 @@
             "description": "Name of trading platform.",
             "type": "string",
             "enum": [
-                "dxtrade"
+                "dxtrade",
+                "derivez"
             ]
         },
         "sub_account_type": {

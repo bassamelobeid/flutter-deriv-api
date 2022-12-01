@@ -23,7 +23,15 @@
                     "type": "string",
                     "enum": [
                         "demo",
-                        "real"
+                        "real",
+                        "all"
+                    ]
+                },
+                "agent": {
+                    "description": "Agent Details.",
+                    "type": [
+                        "null",
+                        "string"
                     ]
                 },
                 "balance": {
@@ -72,7 +80,8 @@
                     "description": "Name of trading platform.",
                     "type": "string",
                     "enum": [
-                        "dxtrade"
+                        "dxtrade",
+                        "derivez"
                     ]
                 },
                 "sub_account_type": {

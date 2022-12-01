@@ -39,7 +39,8 @@
             "description": "Name of trading platform.",
             "type": "string",
             "enum": [
-                "dxtrade"
+                "dxtrade",
+                "derivez"
             ]
         },
         "to_account": {

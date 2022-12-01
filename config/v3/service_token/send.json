@@ -32,7 +32,7 @@
             "pattern": "^https?://(?:[0-9a-zA-Z\\.-]+|\\*)[-a-zA-Z0-9()@:%_\\+.~#?&/=]*$"
         },
         "server": {
-            "description": "Server (dxtrade only).",
+            "description": "Server (dxtrade and derivez).",
             "type": "string",
             "enum": [
                 "demo",

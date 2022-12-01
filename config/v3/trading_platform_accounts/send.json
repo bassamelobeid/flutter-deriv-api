@@ -26,7 +26,8 @@
             "type": "string",
             "enum": [
                 "dxtrade",
-                "mt5"
+                "mt5",
+                "derivez"
             ]
         },
         "passthrough": {
