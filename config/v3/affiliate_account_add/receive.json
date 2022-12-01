@@ -52,11 +52,13 @@
                 },
                 "first_name": {
                     "description": "First name of the created affiliate.",
-                    "type": "string"
+                    "type": "string",
+                    "sensitive": 1
                 },
                 "last_name": {
                     "description": "Last name of the created affiliate",
-                    "type": "string"
+                    "type": "string",
+                    "sensitive": 1
                 },
                 "non_pep_declaration": {
                     "description": "PEP declaration status of the created affiliate.",
@@ -68,7 +70,8 @@
                 },
                 "phone": {
                     "description": "Registered phone number of the created affiliate.",
-                    "type": "string"
+                    "type": "string",
+                    "sensitive": 1
                 },
                 "real": {
                     "description": "Real created account details",

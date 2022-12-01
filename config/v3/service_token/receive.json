@@ -21,7 +21,8 @@
                     "properties": {
                         "token": {
                             "description": "Created order id reference token.",
-                            "type": "string"
+                            "type": "string",
+                            "sensitive": 1
                         },
                         "url": {
                             "description": "Banxa order checkout url.",
@@ -40,7 +41,8 @@
                     "properties": {
                         "token": {
                             "description": "Deriv X login token.",
-                            "type": "string"
+                            "type": "string",
+                            "sensitive": 1
                         }
                     }
                 },
@@ -51,7 +53,8 @@
                     "properties": {
                         "token": {
                             "description": "Onfido token.",
-                            "type": "string"
+                            "type": "string",
+                            "sensitive": 1
                         }
                     }
                 },
@@ -70,7 +73,8 @@
                         },
                         "token": {
                             "description": "Sendbird token.",
-                            "type": "string"
+                            "type": "string",
+                            "sensitive": 1
                         }
                     }
                 },
@@ -81,7 +85,8 @@
                     "properties": {
                         "token": {
                             "description": "Wyre reservation id token",
-                            "type": "string"
+                            "type": "string",
+                            "sensitive": 1
                         },
                         "url": {
                             "description": "Wyre reservation URL",
