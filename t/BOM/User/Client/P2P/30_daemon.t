@@ -209,10 +209,10 @@ subtest 'advertisers online/offline' => sub {
     my $daemon = BOM::User::Script::P2PDaemon->new;
 
     my @items = (
-        time()      => 'CR001',
-        time() - 89 => 'CR002',
-        time() - 90 => 'CR003',
-        time() - 91 => 'CR004',
+        time()      => 'CR001::za',
+        time() - 89 => 'CR002::id',
+        time() - 90 => 'CR003::ng',
+        time() - 91 => 'CR004::pt',
     );
 
     $p2p_redis->zadd('P2P::USERS_ONLINE', @items);
@@ -235,7 +235,7 @@ subtest 'advertisers online/offline' => sub {
         'expected p2p_advertiser_updated events emitted'
     );
 
-    $p2p_redis->zadd('P2P::USERS_ONLINE', time() - 91, 'CR001');
+    $p2p_redis->zadd('P2P::USERS_ONLINE', time() - 91, 'CR001::za');
     $emitted_events = {};
     $daemon->on_sec;
 
@@ -250,7 +250,7 @@ subtest 'advertisers online/offline' => sub {
         'advertiser goes offline'
     );
 
-    $p2p_redis->zadd('P2P::USERS_ONLINE', time(), 'CR004');
+    $p2p_redis->zadd('P2P::USERS_ONLINE', time(), 'CR004::pt');
     $emitted_events = {};
     $daemon->on_sec;
 

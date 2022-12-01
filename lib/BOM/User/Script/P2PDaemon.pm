@@ -335,7 +335,7 @@ sub process_advertisers_online {
 
     $log->debugf('users new online: %s',  [keys %new_online])  if %new_online;
     $log->debugf('users new offline: %s', [keys %new_offline]) if %new_offline;
-    push $self->{advertisers_updated}->@*, keys %new_online, keys %new_offline;
+    push $self->{advertisers_updated}->@*, map { $_ =~ /^(\w+?)::/ } keys %new_online, keys %new_offline;
 }
 
 =head2 notify_unreviewable_orders
