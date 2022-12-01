@@ -180,19 +180,21 @@ sub _generate_server_info {
     my ($self, $group_type, $servers) = @_;
 
     my $webapi_config     = $self->webapi_config;
-    my @exclusive_servers = $group_type eq 'real' ? ('p01_ts01') : ('p01_ts01', 'p01_ts02', 'p01_ts03');
+    my @exclusive_servers = $group_type eq 'real' ? ('p01_ts01') : ('p01_ts01', 'p01_ts02', 'p01_ts03', 'p01_ts04');
     my $app_config        = BOM::Config::Runtime->instance->app_config->system->mt5;
     my @response;
 
     foreach my $server (@$servers) {
+        my $supported_accounts = (any { $_ eq $server } @exclusive_servers) ? ['gaming', 'financial', 'financial_stp'] : ['gaming'];
+        $supported_accounts = ['all'] if (($server eq 'p01_ts04' and $group_type eq "demo") or ($server eq 'p02_ts01'));
 
         push @response, {
-            disabled           => ($app_config->suspend->all || $app_config->suspend->$group_type->$server->all) ? 1 : 0,
-            environment        => $webapi_config->{$group_type}{$server}{environment},
-            geolocation        => $webapi_config->{$group_type}{$server}{geolocation},
-            id                 => $server,
-            recommended        => $servers->[0] eq $server                   ? 1 : 0,    # server list is sorted by priority
-            supported_accounts => (any { $_ eq $server } @exclusive_servers) ? ['gaming', 'financial', 'financial_stp'] : ['gaming'],
+            disabled    => ($app_config->suspend->all || $app_config->suspend->$group_type->$server->all) ? 1 : 0,
+            environment => $webapi_config->{$group_type}{$server}{environment},
+            geolocation => $webapi_config->{$group_type}{$server}{geolocation},
+            id          => $server,
+            recommended => $servers->[0] eq $server ? 1 : 0,                                                       # server list is sorted by priority
+            supported_accounts => $supported_accounts,
         };
     }
 

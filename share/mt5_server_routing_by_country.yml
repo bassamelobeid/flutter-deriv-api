@@ -24,6 +24,9 @@ demo:
         - 'p01_ts01'
         - 'p01_ts02'
         - 'p01_ts03'
+    all:
+      servers:
+        - 'p01_ts04'
   cz: *demo # Czechia
   dk: *demo # Denmark
   ee: *demo # Estonia
@@ -278,6 +281,9 @@ real:
     financial:
       servers:
         - 'p01_ts01'
+    all:
+      servers:
+        - 'p02_ts01'
   bg: *p01_ts01 # Bulgaria
   cy: *p01_ts01 # Cyprus
   cz: *p01_ts01 # Czechia
@@ -322,6 +328,9 @@ real:
     financial:
       servers:
         - 'p01_ts01'
+    all:
+      servers:
+        - 'p02_ts01'
   bj: *p01_ts02 # Benin
   bf: *p01_ts02 # Burkina Faso
   sz: *p01_ts02 # Swaziland
@@ -378,6 +387,9 @@ real:
     financial:
       servers:
         - 'p01_ts01'
+    all:
+      servers:
+        - 'p02_ts01'
   in: *p01_ts03 # India
   nz: *p01_ts03 # New Zealand
   bn: *p01_ts03 # Brunei Darussalam
@@ -413,6 +425,9 @@ real:
     financial:
       servers:
         - 'p01_ts01'
+    all:
+      servers:
+        - 'p02_ts01'
   bo: *p01_ts04 # Bolivia
   br: *p01_ts04 # Brazil
   cl: *p01_ts04 # Chile

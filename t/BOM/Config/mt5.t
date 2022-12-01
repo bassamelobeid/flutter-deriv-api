@@ -123,6 +123,16 @@ subtest 'servers' => sub {
                 }}
         },
         {
+            'p01_ts04' => {
+                'environment' => 'Deriv-Demo',
+                'geolocation' => {
+                    'group'    => 'derivez',
+                    'location' => 'Frankfurt',
+                    'region'   => 'Europe',
+                    'sequence' => 1
+                }}
+        },
+        {
             'p01_ts01' => {
                 'environment' => 'Deriv-Server',
                 'geolocation' => {
@@ -164,6 +174,16 @@ subtest 'servers' => sub {
             },
         },
         {
+            'p02_ts01' => {
+                'environment' => 'Deriv-Server-02',
+                'geolocation' => {
+                    'group'    => 'africa_derivez',
+                    'location' => 'South Africa',
+                    'region'   => 'Africa',
+                    'sequence' => 2
+                }}
+        },
+        {
             'p02_ts02' => {
                 'environment' => 'Deriv-Server-02',
                 'geolocation' => {
@@ -179,16 +199,16 @@ subtest 'servers' => sub {
     cmp_bag($all_servers, $expected_structure, 'Correct structure for servers');
 
     $mt5_obj = BOM::Config::MT5->new(group_type => 'demo');
-    is scalar @{$mt5_obj->servers()}, 3, 'correct number of demo servers';
+    is scalar @{$mt5_obj->servers()}, 4, 'correct number of demo servers';
 
     $mt5_obj = BOM::Config::MT5->new(group => 'demo\p01_ts01\synthetic\svg_std_usd');
-    is scalar @{$mt5_obj->servers()}, 3, 'correct number of demo servers with group';
+    is scalar @{$mt5_obj->servers()}, 4, 'correct number of demo servers with group';
 
     $mt5_obj = BOM::Config::MT5->new(group_type => 'real');
-    is scalar @{$mt5_obj->servers()}, 5, 'correct number of demo servers retrieved with group_type';
+    is scalar @{$mt5_obj->servers()}, 6, 'correct number of demo servers retrieved with group_type';
 
     $mt5_obj = BOM::Config::MT5->new(group => 'real\p01_ts01\synthetic\svg_std_usd');
-    is scalar @{$mt5_obj->servers()}, 5, 'correct number of demo servers retrieved with group';
+    is scalar @{$mt5_obj->servers()}, 6, 'correct number of demo servers retrieved with group';
 };
 
 subtest 'symmetrical servers' => sub {
@@ -227,6 +247,20 @@ subtest 'server by country' => sub {
     my $mt5      = BOM::Config::MT5->new();
     my $expected = {
         'demo' => {
+            'all' => [{
+                    'geolocation' => {
+                        'group'    => 'derivez',
+                        'location' => 'Frankfurt',
+                        'region'   => 'Europe',
+                        'sequence' => 1
+                    },
+                    'supported_accounts' => ['all'],
+                    'recommended'        => 1,
+                    'id'                 => 'p01_ts04',
+                    'disabled'           => 0,
+                    'environment'        => 'Deriv-Demo',
+                },
+            ],
             'financial' => [{
                     'geolocation' => {
                         'sequence' => 1,
@@ -307,8 +341,18 @@ subtest 'server by country' => sub {
                     'environment'        => 'Deriv-Demo'
                 }]}};
     my $result = $mt5->server_by_country('id', {group_type => 'demo'});
+
     is_deeply($result, $expected, 'output expected for demo server on Indonesia');
 
+    $result = $mt5->server_by_country(
+        'id',
+        {
+            group_type  => 'demo',
+            market_type => 'all'
+        });
+    is_deeply($result->{demo}{all}, $expected->{demo}{all}, 'output expected for demo derivez server on Indonesia');
+
+    delete $expected->{demo}{all};
     delete $expected->{demo}{financial};
     $result = $mt5->server_by_country(
         'id',
@@ -320,6 +364,20 @@ subtest 'server by country' => sub {
     is_deeply($result, $expected, 'output expected for demo synthetic server on Indonesia');
     $expected = {
         'real' => {
+            'all' => [{
+                    'disabled'    => 0,
+                    'environment' => 'Deriv-Server-02',
+                    'geolocation' => {
+                        'group'    => 'africa_derivez',
+                        'location' => 'South Africa',
+                        'region'   => 'Africa',
+                        'sequence' => 2
+                    },
+                    'id'                 => 'p02_ts01',
+                    'recommended'        => 1,
+                    'supported_accounts' => ['all']
+                },
+            ],
             'financial' => [{
                     'environment' => 'Deriv-Server',
                     'disabled'    => 0,
@@ -390,8 +448,18 @@ subtest 'server by country' => sub {
     $result = $mt5->server_by_country('id', {group_type => 'real'});
 
     is_deeply($result, $expected, 'output expected for real server on Indonesia');
-    delete $expected->{real}{financial};
 
+    $result = $mt5->server_by_country(
+        'id',
+        {
+            group_type  => 'real',
+            market_type => 'all'
+        });
+
+    is_deeply($result->{real}{all}, $expected->{real}{all}, 'output expected for demo derivez server on Indonesia');
+
+    delete $expected->{real}{all};
+    delete $expected->{real}{financial};
     $result = $mt5->server_by_country(
         'id',
         {
@@ -408,12 +476,12 @@ subtest 'available_groups' => sub {
     # - total group per landing company
     my @test_cases = ({
             filter  => {server_type => 'real'},
-            count   => 83,
+            count   => 86,
             comment => 'real groups'
         },
         {
             filter  => {server_type => 'demo'},
-            count   => 27,
+            count   => 28,
             comment => 'demo groups'
         },
         {
@@ -421,7 +489,7 @@ subtest 'available_groups' => sub {
                 server_type => 'real',
                 company     => 'svg'
             },
-            count   => 38,
+            count   => 41,
             comment => 'real svg groups'
         },
         {
@@ -447,7 +515,7 @@ subtest 'available_groups' => sub {
                 server_type => 'demo',
                 company     => 'svg'
             },
-            count   => 9,
+            count   => 10,
             comment => 'demo svg groups'
         },
         {
@@ -788,6 +856,25 @@ subtest 'available_groups' => sub {
             count   => 0,
             comment => 'demo labuan synthetic groups'
         },
+        {
+            filter => {
+                server_type => 'demo',
+                company     => 'svg',
+                market_type => 'all'
+            },
+            count   => 1,
+            comment => 'demo svg derivez groups'
+        },
+        {
+            filter => {
+                server_type => 'real',
+                company     => 'svg',
+                market_type => 'all'
+            },
+            count   => 3,
+            comment => 'real svg derivez groups'
+        },
+
     );
 
     foreach my $test (@test_cases) {

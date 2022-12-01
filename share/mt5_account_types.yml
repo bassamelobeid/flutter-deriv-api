@@ -493,3 +493,17 @@ real\p02_ts02\synthetic\seychelles_ibt_usd:
   market_type: synthetic
   sub_account_type: financial
   server: p02_ts02
+
+real\p02_ts01\all\svg_ez_usd: &real_p02_ts01_svg_derivez
+  account_type: real
+  landing_company_short: svg
+  market_type: all
+  server: p02_ts01
+real\p02_ts01\all\svg_ez-hr_usd: *real_p02_ts01_svg_derivez
+
+demo\p01_ts04\all\svg_ez_usd: &demo_p01_ts04_svg_derivez
+  account_type: demo
+  landing_company_short: svg
+  market_type: all
+  server: p01_ts04
+real\p01_ts04\all\svg_ez-hr_usd: *demo_p01_ts04_svg_derivez

@@ -571,6 +571,11 @@ payments:
               description: 'Limits the numbers of daily transfers between binary accounts and Deriv X accounts'
               default: 6
               global: 1
+            derivez:
+              isa: Num
+              description: 'Limits the numbers of daily transfers between binary accounts and DerivEZ accounts'
+              default: 10
+              global: 1
         exchange_rate_expiry:
           isa: section
           description: 'Exchange Rates expiry age in seconds e.g. allow conversion from BTC to USD if last known rate IS NOT OLDER THAN 1800 second'
@@ -667,6 +672,11 @@ payments:
               description: 'Minimum amount for transferring between binary accounts and Deriv X accounts per the brand. ("default" applies to all brands that are not in the config)'
               default: '{"default":{"currency":"USD","amount":1}}'
               global: 1
+            derivez:
+              isa: json_string
+              description: 'Minimum amount for transferring between binary accounts and DerivEZ accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":0.01},"derivcrypto":{"currency":"BTC","amount":0.00008}}'
+              global: 1
         maximum:
           isa: section
           description: 'Transfer maximum amount'
@@ -685,6 +695,11 @@ payments:
               isa: json_string
               description: 'Maximum amount for transferring between binary accounts and Deriv X accounts per the brand. ("default" applies to all brands that are not in the config)'
               default: '{"default":{"currency":"USD","amount":2500}}'
+              global: 1
+            derivez:
+              isa: json_string
+              description: 'Maximum amount for transferring between binary accounts and DerivEZ accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":15000},"derivcrypto":{"currency":"BTC","amount":0.25}}'
               global: 1
     experimental_currencies_allowed:
       description: "List of emails that allowed to deposit using experimental currencies"
@@ -1335,6 +1350,15 @@ system:
                       isa: Num
                       default: 0
                       global: 1
+                derivez:
+                  description: "Demo trade server load balancer configuration for derivez"
+                  isa: section
+                  contains:
+                    p01_ts04:
+                      description: "Weight for demo p01_ts04"
+                      isa: Num
+                      default: 0
+                      global: 1
             real:
               description: "Real trade server load balancer configuration financial (contains old synthetic accounts too)"
               isa: section
@@ -1380,6 +1404,15 @@ system:
                       isa: Num
                       default: 100
                       global: 1
+                africa_derivez:
+                  description: "Real trade server load balancer configuration for africa derivez"
+                  isa: section
+                  contains:
+                    p02_ts01:
+                      description: "Weight for real p02_ts01"
+                      isa: Num
+                      default: 100
+                      global: 1
         http_proxy:
           description: "HTTP Proxy API switch config for MT5"
           isa: section
@@ -1400,6 +1433,11 @@ system:
                   global: 1
                 p01_ts03:
                   description: "Demo p01_ts03 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts04:
+                  description: "Demo p01_ts04 HTTP Proxy API switch config for MT5"
                   isa: Bool
                   default: 0
                   global: 1
@@ -1424,6 +1462,11 @@ system:
                   global: 1
                 p01_ts04:
                   description: "Real p01_ts04 HTTP Proxy API switch config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p02_ts01:
+                  description: "Real p02_ts01 HTTP Proxy API switch config for MT5"
                   isa: Bool
                   default: 0
                   global: 1
@@ -1489,6 +1532,15 @@ system:
                   contains:
                     all:
                       description: "Suspend MT5 API calls on p01_ts03"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p01_ts04:
+                  description: "Configuration to suspend mt5 p01_ts04"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts04"
                       isa: Bool
                       default: 0
                       global: 1
@@ -1569,6 +1621,25 @@ system:
                       global: 1
                     withdrawals:
                       description: "Suspend MT5 withdrawals on p01_ts04"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p02_ts01:
+                  description: "Configuration to suspend mt5 p02_ts01"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p02_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    deposits:
+                      description: "Suspend MT5 deposits on p02_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                    withdrawals:
+                      description: "Suspend MT5 withdrawals on p02_ts01"
                       isa: Bool
                       default: 0
                       global: 1
