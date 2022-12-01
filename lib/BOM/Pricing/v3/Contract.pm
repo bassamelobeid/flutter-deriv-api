@@ -187,7 +187,9 @@ sub _get_ask {
             }
 
             if (not $contract->is_binary) {
-                $response->{contract_parameters}->{multiplier}        = $contract->multiplier        if not $contract->user_defined_multiplier;
+                $response->{contract_parameters}->{multiplier} = $contract->multiplier
+                    if $contract->can('multiplier')
+                    and not $contract->user_defined_multiplier;
                 $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
             }
 
@@ -203,7 +205,14 @@ sub _get_ask {
                 $response->{spot} = $contract->current_spot;
             }
 
-            $response->{multiplier} = $contract->multiplier unless $contract->is_binary;
+            $response->{multiplier} = $contract->multiplier if $contract->can('multiplier');
+
+            if ($contract->category_code eq 'vanilla') {
+                $response->{min_stake}           = $contract->min_stake;
+                $response->{max_stake}           = $contract->max_stake;
+                $response->{number_of_contracts} = $contract->number_of_contracts;
+                $response->{barrier_choices}     = $contract->strike_price_choices;
+            }
 
             if ($contract->category_code eq 'multiplier') {
                 my $display = $contract->available_orders_for_display;
@@ -226,7 +235,8 @@ sub _get_ask {
                 # the ask_price is defined by the user and the output of limit order (take profit or stop out),
                 # is dependent of the stake and multiplier provided by the client.
                 # There is no probability calculation involved. Hence, not optimising anything.
-                $response->{skip_basis_override} = 1 if $contract->code =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD)$/;
+                # Since vanilla has no payout, adding it here as well
+                $response->{skip_basis_override} = 1 if $contract->code =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD|VANILLALONGCALL|VANILLALONGPUT)$/;
             }
         }
         my $pen = $contract->pricing_engine_name;
@@ -723,7 +733,7 @@ sub _build_bid_response {
         $response->{barrier}       = undef;
     }
     $response->{reset_time}       = 0 + $contract->reset_spot->epoch if $contract->reset_spot;
-    $response->{multiplier}       = $contract->multiplier                 unless ($contract->is_binary);
+    $response->{multiplier}       = $contract->multiplier            if $contract->can('multiplier');
     $response->{validation_error} = localize($params->{validation_error}) unless $params->{is_valid_to_sell};
     $response->{current_spot}     = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
     $response->{tick_count}       = $contract->tick_count   if $contract->expiry_type eq 'tick';
@@ -793,6 +803,13 @@ sub _build_bid_response {
                 date_expiry => $contract->cancellation_expiry->epoch,
             };
         }
+    }
+
+    if ($contract->category_code eq 'vanilla') {
+        $response->{min_stake}           = $contract->min_stake;
+        $response->{max_stake}           = $contract->max_stake;
+        $response->{number_of_contracts} = $contract->number_of_contracts;
+        $response->{barrier_choices}     = $contract->strike_price_choices;
     }
 
     if (    $contract->exit_tick
