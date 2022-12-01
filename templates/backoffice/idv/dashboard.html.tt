@@ -17,18 +17,22 @@
         <TR>
             [% FOREACH cfg IN schema %]
                 <TD>
-                    [% IF cfg.field == 'loginids' %]
-                        [% PROCESS loginids %]
-                    [% ELSIF cfg.field == 'status_messages' %]
-                        [% PROCESS status_messages %]
-                    [% ELSIF cfg.field == 'response' %]
-                        [% PROCESS json_viewer %]
-                    [% ELSIF cfg.field == 'request' %]
-                        [% PROCESS json_viewer %]
-                    [% ELSIF cfg.field == 'report' %]
-                        [% PROCESS json_viewer %]
+                    [% IF record.${cfg.field}.defined %]
+                        [% IF cfg.field == 'loginids' %]
+                            [% PROCESS loginids %]
+                        [% ELSIF cfg.field == 'status_messages' %]
+                            [% PROCESS status_messages %]
+                        [% ELSIF cfg.field == 'response' %]
+                            [% PROCESS json_viewer %]
+                        [% ELSIF cfg.field == 'request' %]
+                            [% PROCESS json_viewer %]
+                        [% ELSIF cfg.field == 'report' %]
+                            [% PROCESS json_viewer %]
+                        [% ELSE %]
+                            [% record.${cfg.field} %]
+                        [% END %]
                     [% ELSE %]
-                        [% record.${cfg.field} %]
+                        [% PROCESS not_available %]
                     [% END %]
                 </TD>
             [% END %]
@@ -60,11 +64,22 @@
 [% END %]
 
 [% BLOCK status_messages %]
-    [% FOREACH msg IN record.${cfg.field}%]
-        <DIV>[% msg %]</DIV>
+    [% IF record.${cfg.field}.empty %]
+        [% PROCESS empty_array %]
+    [% ELSE %]
+        [% FOREACH msg IN record.${cfg.field}%]
+            <DIV>[% msg %]</DIV>
+        [% END %]
     [% END %]
 [% END %]
 
+[% BLOCK not_available %]
+    <I>N/A</I>
+[% END %]
+
+[% BLOCK empty_array %]
+    &nbsp;
+[% END %]
 
 [% IF offset > 0 || !dashboard.empty %]
     <DIV STYLE="text-align:center;padding-top:20px;">

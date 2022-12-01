@@ -88,7 +88,7 @@ if (request()->http_method eq 'POST') {
         print $csv->string;
 
         for my $row ($dashboard->@*) {
-            my @row_array = map { $_->{skip_csv} ? () : $row->{$_->{field}} } $schema->@*;
+            my @row_array = map { $_->{skip_csv} ? () : $row->{$_->{field}} // 'N/A' } $schema->@*;
             $csv->combine(@row_array);
             print $csv->string;
         }

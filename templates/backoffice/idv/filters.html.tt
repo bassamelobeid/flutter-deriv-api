@@ -1,6 +1,6 @@
 <h3>[% title %]</h3>
 
-<form id="idv_filters" action="[% url %]" method="POST" class="row">
+<form id="idv_filters" action="[% url %]" method="POST" class="row" onSubmit="return idvFiltersValidation()">
 
 <div class="row">
     <div class="col-4">
@@ -78,13 +78,15 @@
 
 <input type="hidden" name="offset" value="[% offset %]" />
 <button name="csv" value="1" class="btn btn--primary" onclick="return idv_dashboard_jump(0)">Export CSV</button>
-<button name="submit" value="1" class="btn btn--primary" onclick="return idv_dashboard_jump(0)">Show records</button>
+<button name="submitBtn" value="1" class="btn btn--primary" onclick="return idv_dashboard_jump(0)">Show records</button>
 </form>
 
 <script>
+    const dateRangeFrom = \$('#idv_date_range_from');
+    const dateRangeTo = \$('#idv_date_range_to');
 
-      \$('#idv_date_range_from').datepicker({dateFormat: "yy-mm-dd"});
-      \$('#idv_date_range_to').datepicker({dateFormat: "yy-mm-dd"});
+    dateRangeFrom.datepicker({dateFormat: "yy-mm-dd"});
+    dateRangeTo.datepicker({dateFormat: "yy-mm-dd"});
 
     function idv_dashboard_jump(offset) {
         const offsetInput = document.getElementsByName('offset')[0];
@@ -92,6 +94,22 @@
 
         offsetInput.value = offset;
 
-        return form.submit();
+        if (idvFiltersValidation()) {
+            return form.submit();
+        }
+
+        return false;
+    }
+
+    function idvFiltersValidation() {
+        const drf = new Date(dateRangeFrom.val());
+        const drt = new Date(dateRangeTo.val());
+
+        if (drf.getDate() > drt.getDate()) {
+            alert('Date Range From must be before or equal to Date Range To');
+            return false;
+        }
+
+        return true;
     }
 </script>
