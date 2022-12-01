@@ -119,6 +119,7 @@ subtest 'identify_vetification.yml integrity check' => sub {
                 UNDERAGE
                 UNDESIRED_HTTP_CODE
                 TIMEOUT
+                NEEDS_TECHNICAL_INVESTIGATION
                 /
         ],
         providers => {
