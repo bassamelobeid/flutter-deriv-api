@@ -389,6 +389,13 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
 
             var result = el.find("span.save_result");
 
+            //Comment is required
+            if(comment === ''){
+                result.css('color', 'var(--color-red)');
+                result.text('Comment is required');
+                return;
+            }
+
             //Both start_time and end_time should be empty or fill
             if((start_time === '' && end_time !== '') || (start_time !== '' && end_time === '')) {
                 result.css('color', 'var(--color-red)');
