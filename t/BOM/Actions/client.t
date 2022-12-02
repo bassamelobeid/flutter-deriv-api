@@ -400,6 +400,86 @@ subtest 'upload document' => sub {
             }
         };
 
+        subtest 'Unsupported country' => sub {
+            my $events_mock = Test::MockModule->new('BOM::Event::Actions::Client');
+            my $upload_onfido_docs;
+
+            $events_mock->mock(
+                '_upload_onfido_documents',
+                sub {
+                    $upload_onfido_docs = 1;
+                    return $events_mock->original('_upload_onfido_documents')->(@_);
+                });
+
+            my $current_residence      = $test_client->residence;
+            my $current_place_of_birth = $test_client->place_of_birth;
+
+            my $tests = [{
+                    title            => 'Not a POI document',
+                    document_type    => 'utility_bill',
+                    checksum         => '1utility_bill_forged' . time,
+                    country          => 'cd',
+                    onfido_supported => 0,
+                },
+                {
+                    title            => 'POI passport',
+                    document_type    => 'passport',
+                    checksum         => '1passport_forged_1' . time,
+                    country          => 'cd',
+                    onfido_supported => 0,
+                },
+                {
+                    title            => 'POI passport',
+                    document_type    => 'passport',
+                    checksum         => '2passport_forged_1' . time,
+                    country          => 'br',
+                    onfido_supported => 1,
+                },
+            ];
+
+            for my $test ($tests->@*) {
+                $upload_onfido_docs = 0;
+
+                my ($title, $document_type, $checksum, $country, $onfido_supported) =
+                    @{$test}{qw/title document_type checksum country onfido_supported/};
+
+                $test_client->place_of_birth($country);
+                $test_client->residence($country);
+                $test_client->save;
+
+                subtest $title => sub {
+                    my $args = {
+                        document_type     => $document_type,
+                        document_format   => 'PNG',
+                        document_id       => undef,
+                        expiration_date   => undef,
+                        expected_checksum => $checksum,
+                        page_type         => undef,
+                    };
+
+                    my $upload_info = start_document_upload($args, $test_client);
+
+                    $test_client->db->dbic->run(
+                        ping => sub {
+                            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+                        });
+
+                    BOM::Event::Actions::Client::document_upload({
+                            loginid => $test_client->loginid,
+                            file_id => $upload_info->{file_id}})->get;
+
+                    $onfido_supported ? ok $upload_onfido_docs, 'The Onfido upload sub was called' : ok !$upload_onfido_docs,
+                        'The Onfido upload sub was not called';
+                };
+            }
+
+            $test_client->place_of_birth($current_place_of_birth);
+            $test_client->residence($current_residence);
+            $test_client->save;
+
+            $events_mock->unmock_all;
+        };
+
         subtest 'password reset' => sub {
             my $req = BOM::Platform::Context::Request->new(
                 brand_name => 'deriv',

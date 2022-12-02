@@ -317,7 +317,7 @@ async sub document_upload {
             uploaded_by_staff => $uploaded_manually_by_staff,
         };
         return await _upload_poa_document($document_args) if $is_poa_document;
-        return await _upload_to_onfido($document_args)    if $is_onfido_document;
+        return await _upload_poi_document($document_args) if $is_onfido_document;
         return await _upload_pow_document($document_args) if $is_pow_document;
 
     } catch ($e) {
@@ -437,18 +437,23 @@ async sub _upload_poa_document {
     await _send_email_notification_for_poa(client => $client) unless $uploaded_by_staff;
 }
 
-=head2 _upload_to_onfido
+=head2 _upload_poi_document
 
 This subroutine handles uploading POI documents to onfido.
 
 =cut
 
-async sub _upload_to_onfido {
+async sub _upload_poi_document {
     die 'Onfido is suspended' if BOM::Config::Runtime->instance->app_config->system->suspend->onfido;
 
     my $data = shift;
 
     my ($args, $client, $document_entry, $uploaded_by_staff) = @{$data}{qw/args client document_entry uploaded_by_staff/};
+
+    my $country                     = $client->place_of_birth // $client->residence;
+    my $is_onfido_supported_country = BOM::Config::Onfido::is_country_supported($country);
+
+    return unless $is_onfido_supported_country;    # unsupported countries should not attempt to create onfido applicant
 
     $log->debugf('Applying Onfido verification process for client %s', $client->loginid);
 
@@ -462,7 +467,7 @@ async sub _upload_to_onfido {
                 %$document_entry
             }});
 
-    await _upload_documents(
+    await _upload_onfido_documents(
         onfido                     => _onfido(),
         client                     => $client,
         document_entry             => $document_entry,
@@ -2009,7 +2014,7 @@ async sub _get_document_s3 {
     return $file->decoded_content;
 }
 
-async sub _upload_documents {
+async sub _upload_onfido_documents {
     my (%args) = @_;
 
     my $onfido         = $args{onfido};

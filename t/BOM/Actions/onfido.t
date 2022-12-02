@@ -765,7 +765,7 @@ subtest 'Upload document' => sub {
     };
 
     $log->clear();
-    BOM::Event::Actions::Client::_upload_documents($args->%*)->get;
+    BOM::Event::Actions::Client::_upload_onfido_documents($args->%*)->get;
 
     $log->contains_ok(qr/An error occurred while uploading document to Onfido for/, 'expected log found');
     cmp_deeply \%request,
@@ -788,7 +788,7 @@ subtest 'Upload document' => sub {
         },
     };
     $log->clear();
-    BOM::Event::Actions::Client::_upload_documents($args->%*)->get;
+    BOM::Event::Actions::Client::_upload_onfido_documents($args->%*)->get;
 
     $log->contains_ok(qr/An error occurred while uploading document to Onfido for/, 'expected log found');
     cmp_deeply \%request,
