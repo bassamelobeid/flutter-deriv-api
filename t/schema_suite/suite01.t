@@ -99,6 +99,9 @@ test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currenc
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', _get_stashed('authorize/stash/token'), 'USD', 1;
 test_sendrecv_params 'set_financial_assessment/test_send.json', 'set_financial_assessment/test_receive.json',
     _get_stashed('new_account_real/oauth_token');
+
+test_sendrecv_params 'set_financial_assessment/test_send_new.json', 'set_financial_assessment/test_receive.json',
+    _get_stashed('new_account_real/oauth_token');
 test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive.json',
     _get_stashed('new_account_real/oauth_token'),       _get_stashed('set_financial_assessment/total_score'),
     _get_stashed('set_financial_assessment/cfd_score'), _get_stashed('set_financial_assessment/financial_information_score'),

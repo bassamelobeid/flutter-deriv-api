@@ -1,0 +1,27 @@
+{
+  "token":"[_1]",
+  "args":{
+     "set_financial_assessment":1,
+     "financial_information":{
+        "account_turnover":"Over $500,000",
+        "education_level":"Tertiary",
+        "employment_industry":"Health",
+        "employment_status":"Self-Employed",
+        "estimated_worth":"Less than $100,000",
+        "income_source":"Investments & Dividends",
+        "net_income":"Over $500,000",
+        "occupation":"Managers",
+        "source_of_wealth":"Company Ownership"
+     },
+     "trading_experience":{
+        "forex_trading_experience":"1-2 years",
+        "forex_trading_frequency":"40 transactions or more in the past 12 months",
+        "binary_options_trading_experience":"Over 3 years",
+        "binary_options_trading_frequency":"0-5 transactions in the past 12 months",
+        "cfd_trading_experience":"Over 3 years",
+        "cfd_trading_frequency":"40 transactions or more in the past 12 months",
+        "other_instruments_trading_experience":"1-2 years",
+        "other_instruments_trading_frequency":"40 transactions or more in the past 12 months"
+     }
+  }
+}

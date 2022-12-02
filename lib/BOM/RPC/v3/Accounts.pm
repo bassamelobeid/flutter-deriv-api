@@ -2945,6 +2945,8 @@ rpc set_financial_assessment => sub {
         } else {
             $client->status->upsert('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
         }
+    } else {
+        delete $response->{trading_experience_regulated};
     }
 
     BOM::Platform::Event::Emitter::emit(
