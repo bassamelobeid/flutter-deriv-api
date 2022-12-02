@@ -143,7 +143,15 @@ use this function to parse parameters like stop_out and take_profit from financi
 sub extract_limit_orders {
     my $contract_parameters = shift;
 
-    return $contract_parameters->{bet_class} eq 'multiplier'
+    my $is_multiplier_contract = 0;
+
+    if ($contract_parameters->{bet_class}) {
+        $is_multiplier_contract = 1 if ($contract_parameters->{bet_class} eq 'multiplier');
+    } else {
+        $is_multiplier_contract = 1 if ($contract_parameters->{short_code} =~ /MULT/i);
+    }
+
+    return $is_multiplier_contract
         ? _extract_multiplier_limit_orders($contract_parameters)
         : _extract_accumulator_limit_orders($contract_parameters);
 }
