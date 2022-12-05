@@ -7501,6 +7501,8 @@ sub needs_pow_verification {
     $documents //= $self->documents->uploaded();
     my $user = $self->user;
 
+    return 1 if $self->status->allow_poinc_resubmission;
+
     return 1 if $user->get_edd_status->{status} && (grep { $user->get_edd_status->{status} eq $_ } qw{pending in_progress rejected locked});
 
     return 0;

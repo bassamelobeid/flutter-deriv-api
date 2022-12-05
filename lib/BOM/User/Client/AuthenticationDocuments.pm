@@ -802,4 +802,33 @@ sub _build_pow_types {
     return $pow;
 }
 
+=head2 get_poinc_count
+
+Returns the number of proof of income documents a client have 
+
+=over 4
+
+=item * C<get_poinc_count> - client instance
+
+=item * C<docs> - client documents
+
+=back
+
+=cut
+
+sub get_poinc_count {
+    my ($self, $docs) = @_;
+
+    return 0 unless $docs;
+    my @poinc_doctypes = $self->pow_types->@*;
+    my $poinc_count;
+    foreach my $doc (@$docs) {
+        my $doc_type = $doc->{'document_type'};
+        if (grep({ /^$doc_type$/ } @poinc_doctypes)) {
+            $poinc_count++;
+        }
+    }
+    return $poinc_count;
+}
+
 1;
