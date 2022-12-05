@@ -18,7 +18,7 @@ use BOM::Config::Redis;
 use Format::Util::Numbers qw(financialrounding);
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
-use List::Util   qw(min max first);
+use List::Util   qw(min max first any);
 use Data::Dumper;
 use DateTime::Format::Pg;
 use Date::Utility;
@@ -44,7 +44,8 @@ my $db = BOM::Database::ClientDB->new({
         operation   => 'write'
     })->db->dbic;
 
-my $can_set_band = BOM::Backoffice::Auth0::has_authorisation(['P2PAdmin', 'AntiFraud']);
+$output{can_set_band}     = BOM::Backoffice::Auth0::has_authorisation(['P2PAdmin', 'AntiFraud']);
+$output{can_edit_general} = $output{can_set_band} || BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite']);
 
 if ($input{create}) {
     try {
@@ -57,53 +58,82 @@ if ($input{create}) {
     }
 }
 
-if ($input{update}) {
+if (my $id = $input{update}) {
     try {
         my $id   = $input{update_id};
         my $name = $input{update_name};
 
-        my ($existing) = $db->run(
+        my ($dupe_name) = $db->run(
             fixup => sub {
                 $_->selectrow_array('SELECT * FROM p2p.advertiser_list_v2(NULL,NULL,NULL,?,NULL) WHERE id != ?', undef, $name, $id);
             });
 
-        die "There is already another advertiser with this nickname\n" if $existing;
-        die "You do not have permission to set band level\n"           if $input{trade_band} && !$can_set_band;
+        die "There is already another advertiser with this nickname\n" if $dupe_name;
+        die "You do not have permission to set band level\n"           if !$output{can_set_band} && $input{trade_band};
 
-        if ($input{blocked_until}) {
-            try {
-                my $dt = DateTime::Format::Pg->parse_datetime($input{blocked_until});
-                $input{blocked_until} = DateTime::Format::Pg->format_datetime($dt);
-            } catch {
-                die "Invalid date format\n";
+        my $existing = $db->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM p2p.advertiser_list_v2(?,NULL,NULL,NULL,NULL)', undef, $id);
+            });
+
+        if ($output{can_edit_general}) {
+
+            if ($input{blocked_until}) {
+                try {
+                    my $dt = DateTime::Format::Pg->parse_datetime($input{blocked_until});
+                    $input{blocked_until} = DateTime::Format::Pg->format_datetime($dt);
+                } catch {
+                    die "Invalid date format\n";
+                }
+            }
+
+            my $update = $db->run(
+                fixup => sub {
+                    $_->selectrow_hashref(
+                        "UPDATE p2p.p2p_advertiser SET name = ?, is_enabled = ?, is_listed = ?, blocked_until = NULLIF(?,'')::TIMESTAMP, default_advert_description = ?, 
+                            payment_info = ?, contact_info = ?, trade_band = COALESCE(?,trade_band), show_name = ? WHERE id = ? RETURNING *",
+                        undef,
+                        @input{
+                            qw/update_name is_enabled is_listed blocked_until default_advert_description payment_info contact_info trade_band show_name update_id/
+                        },
+                    );
+                });
+            die "Invalid advertiser ID\n" unless $update;
+
+            my $redis = BOM::Config::Redis->redis_p2p_write();
+            if (my $blocked_until = $update->{blocked_until}) {
+                my $blocked_du = Date::Utility->new($blocked_until);
+                if ($blocked_du->is_after(Date::Utility->new)) {
+                    $redis->zadd(P2P_ADVERTISER_BLOCK_ENDS_AT, $blocked_du->epoch, $existing->{client_loginid});
+                }
+            } else {
+                $redis->zrem(P2P_ADVERTISER_BLOCK_ENDS_AT, $existing->{client_loginid});
+            }
+
+            if ($name ne $input{current_name}) {
+                my $sendbird_api = BOM::User::Utility::sendbird_api();
+                WebService::SendBird::User->new(
+                    user_id    => $existing->{chat_user_id},
+                    api_client => $sendbird_api
+                )->update(nickname => $name);
             }
         }
 
-        $output{advertiser} = $db->run(
-            fixup => sub {
-                $_->selectrow_hashref(
-                    "UPDATE p2p.p2p_advertiser SET name = ?, is_enabled = ?, is_listed = ?, blocked_until = NULLIF(?,'')::TIMESTAMP, default_advert_description = ?, 
-                        payment_info = ?, contact_info = ?, trade_band = COALESCE(?,trade_band), show_name = ? WHERE id = ? RETURNING *",
-                    undef,
-                    @input{
-                        qw/update_name is_enabled is_listed blocked_until default_advert_description payment_info contact_info trade_band show_name update_id/
-                    });
-            });
-        die "Invalid advertiser ID\n" unless $output{advertiser};
+        my ($extra_sell, $extra_sell_orig) = @input{qw(extra_sell_amount current_extra_sell_amount)};
+        die "Invalid Additional sell allowance value\n" unless looks_like_number($extra_sell) and $extra_sell >= 0;
+        if (looks_like_number($extra_sell_orig) and $extra_sell != $extra_sell_orig) {
+            die "Additional sell allowance has changed while the page was open, please try again.\n"
+                if $extra_sell_orig != $existing->{extra_sell_amount};
 
-        my $redis = BOM::Config::Redis->redis_p2p_write();
-        if (my $blocked_until = $output{advertiser}->{blocked_until}) {
-            my $blocked_du = Date::Utility->new($blocked_until);
-            if ($blocked_du->is_after(Date::Utility->new)) {
-                $redis->zadd(P2P_ADVERTISER_BLOCK_ENDS_AT, $blocked_du->epoch, $output{advertiser}->{client_loginid});
-            }
-        } else {
-            $redis->zrem(P2P_ADVERTISER_BLOCK_ENDS_AT, $output{advertiser}->{client_loginid});
+            $db->run(
+                fixup => sub {
+                    $_->do('SELECT p2p.set_advertiser_totals(?, NULL, NULL, NULL, ?)', undef, $id, $extra_sell);
+                });
         }
 
         BOM::Platform::Event::Emitter::emit(
             p2p_advertiser_updated => {
-                client_loginid => $output{advertiser}->{client_loginid},
+                client_loginid => $existing->{client_loginid},
             },
         );
 
@@ -111,14 +141,6 @@ if ($input{update}) {
             p2p_adverts_updated => {
                 advertiser_id => $id,
             });
-
-        if ($name ne $input{current_name}) {
-            my $sendbird_api = BOM::User::Utility::sendbird_api();
-            WebService::SendBird::User->new(
-                user_id    => $output{advertiser}->{chat_user_id},
-                api_client => $sendbird_api
-            )->update(nickname => $name);
-        }
 
         $output{message} = "Advertiser $id details saved.";
     } catch ($err) {
@@ -150,10 +172,13 @@ if ($output{advertiser}) {
         $output{advertiser}->{barred} = Date::Utility->new($blocked_until)->is_after(Date::Utility->new);
     }
 
-    for (qw/daily_buy daily_sell withdrawal_limit/) {
-        $output{advertiser}->{$_} = financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{$_})
+    for (qw/daily_buy daily_sell withdrawal_limit extra_sell_pending/) {
+        $output{$_ . '_formatted'} = financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{$_})
             if defined $output{advertiser}->{$_};
     }
+
+    $output{extra_sell_amount_formatted} =
+        financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{extra_sell_amount} // 0);
 
     $output{advertiser}->{$_} =
         defined $output{advertiser}->{$_}
@@ -214,7 +239,7 @@ if ($output{advertiser}) {
                 undef, $output{advertiser}->{residence});
         });
     $output{bands}                 = [map { $_->[0] } @$bands];
-    $output{p2p_balance}           = financialrounding('amount', $output{advertiser}->{account_currency}, $client->balance_for_cashier('p2p'));
+    $output{p2p_balance}           = $client->p2p_balance;
     $output{age_verification}      = $client->status->age_verification;
     $output{not_approved_statuses} = [qw/cashier_locked disabled unwelcome duplicate_account withdrawal_locked no_withdrawal_or_trading/];
     $output{not_approved_by} =
@@ -241,11 +266,6 @@ if ($output{advertiser}) {
     $output{error} = 'No such client: ' . $input{loginID} unless $output{client};
 }
 
-BOM::Backoffice::Request::template()->process(
-    'backoffice/p2p/p2p_advertiser_manage.tt',
-    {
-        %output,
-        can_set_band => $can_set_band,
-    });
+BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_advertiser_manage.tt', \%output);
 
 code_exit_BO();

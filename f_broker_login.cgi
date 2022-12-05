@@ -220,42 +220,51 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'Compliance'])) {
 }
 
 # P2P
-if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud', 'PaymentsAdmin'])) {
     print qq~
     <div class="card">
         <div class="card__label toggle">
             P2P
-        </div>
-        <div class="card__content grid2col border">
-            <div class="card__content">
-                <h3>Search orders</h3>
-                <form action="~ . request()->url_for('backoffice/p2p_order_list.cgi') . qq~" method="get">
-                    <label>$brokerselection</label>
-                    <input type="submit" class="btn btn--primary" value="Go">
-                </form>
-            </div>
-            <div class="card__content">
-                <h3>Order details/management</h3>
-                <form action="~ . request()->url_for('backoffice/p2p_order_manage.cgi') . qq~" method="get">
-                    <label>$brokerselection</label>
-                    <input type="submit" class="btn btn--primary" value="Go">
-                </form>
-            </div>
-            <div class="card__content">
-                <h3>Search advertisers</h3>
-                <form action="~ . request()->url_for('backoffice/p2p_advertiser_list.cgi') . qq~" method="get">
-                    <label>$brokerselection</label>
-                    <input type="submit" class="btn btn--primary" value="Go">
-                </form>
-            </div>            
-            <div class="card__content">
-                <h3>Advertiser details/management</h3>
-                <form action="~ . request()->url_for('backoffice/p2p_advertiser_manage.cgi') . qq~" method="get">
-                    <label>$brokerselection</label>
-                    <input type="submit" class="btn btn--primary" value="Go">
-                </form>
-            </div>~;
+        </div>~;
 
+    # order pages
+    if (BOM::Backoffice::Auth0::has_authorisation(['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud'])) {
+        print qq~
+            <div class="card__content grid2col border">
+                <div class="card__content">
+                    <h3>Search orders</h3>
+                    <form action="~ . request()->url_for('backoffice/p2p_order_list.cgi') . qq~" method="get">
+                        <label>$brokerselection</label>
+                        <input type="submit" class="btn btn--primary" value="Go">
+                    </form>
+                </div>
+                <div class="card__content">
+                    <h3>Order details/management</h3>
+                    <form action="~ . request()->url_for('backoffice/p2p_order_manage.cgi') . qq~" method="get">
+                        <label>$brokerselection</label>
+                        <input type="submit" class="btn btn--primary" value="Go">
+                    </form>
+                </div>~;
+    }
+
+    # advertiser pages
+    print qq~
+        <div class="card__content">
+            <h3>Search advertisers</h3>
+            <form action="~ . request()->url_for('backoffice/p2p_advertiser_list.cgi') . qq~" method="get">
+                <label>$brokerselection</label>
+                <input type="submit" class="btn btn--primary" value="Go">
+            </form>
+        </div>            
+        <div class="card__content">
+            <h3>Advertiser details/management</h3>
+            <form action="~ . request()->url_for('backoffice/p2p_advertiser_manage.cgi') . qq~" method="get">
+                <label>$brokerselection</label>
+                <input type="submit" class="btn btn--primary" value="Go">
+            </form>
+        </div>~;
+
+    # settings pages
     if (BOM::Backoffice::Auth0::has_authorisation(['P2PAdmin', 'AntiFraud'])) {
         print qq~
             <div class="card__content">

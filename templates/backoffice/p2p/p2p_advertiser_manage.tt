@@ -31,7 +31,7 @@
         <tr [% IF !advertiser.is_enabled %]style="background:#ffaaaa;"[% END %]>
             <td>Enabled</td>
             <td>
-                <select name="is_enabled">
+                <select name="is_enabled" [% !can_edit_general && 'disabled' %]>
                     <option value="1" [% advertiser.is_enabled && 'selected' %]>YES</option>
                     <option value="0" [% !advertiser.is_enabled && 'selected' %]>NO</option>
                 </select>
@@ -77,7 +77,7 @@
         <tr>
             <td>Adverts are listed</td>
             <td>
-                <select name="is_listed">
+                <select name="is_listed" [% !can_edit_general && 'disabled' %]>
                     <option value="1" [% advertiser.is_listed && 'selected' %]>YES</option>
                     <option value="0" [% !advertiser.is_listed && 'selected' %]>NO</option>
                 </select>
@@ -86,14 +86,14 @@
         </tr>
         <tr [% IF advertiser.barred %]style="background:#ffaaaa;"[% END %]>
             <td>Blocked until</td>
-            <td><input type="text" name="blocked_until" value="[% advertiser.blocked_until %]" size=24 data-lpignore="true" />
+            <td><input type="text" name="blocked_until" value="[% advertiser.blocked_until %]" [% !can_edit_general && 'disabled' %] size=24 data-lpignore="true" / >
             &nbsp;&nbsp;YYYY-MM-DD or YYYY-MM-DD HH:MM:SS, blank to clear
             <br/>Advertiser will be barred for [% config.cancellation_barring.bar_time %] hours after [% config.cancellation_barring.count %] cancelled orders in [% config.cancellation_barring.period %] hours.
             </td>
         </tr>
         <tr>
             <td>Nickname</td>
-            <td><input type="text" name="update_name" value="[% advertiser.name %]" size=50 data-lpignore="true" /></td>
+            <td><input type="text" name="update_name" value="[% advertiser.name %]" [% !can_edit_general && 'disabled' %] size=50 data-lpignore="true" /></td>
         </tr>
         <tr>
             <td>Real name</td>
@@ -102,7 +102,7 @@
         <tr>
             <td>Show real name</td>
             <td>
-                <select name="show_name">
+                <select name="show_name" [% !can_edit_general && 'disabled' %]>
                     <option value="1" [% advertiser.show_name && 'selected' %]>YES</option>
                     <option value="0" [% !advertiser.show_name && 'selected' %]>NO</option>
                 </select>
@@ -110,15 +110,15 @@
         </tr>         
         <tr>
             <td>Default advert description</td>
-            <td><input type="text" name="default_advert_description" value="[% advertiser.default_advert_description %]" size=80 data-lpignore="true" /></td>
+            <td><input type="text" name="default_advert_description" value="[% advertiser.default_advert_description %]" [% !can_edit_general && 'disabled' %] size=80 data-lpignore="true" /></td>
         </tr>         
         <tr>
             <td>Payment info</td>
-            <td><input type="text" name="payment_info" value="[% advertiser.payment_info %]" size=80 data-lpignore="true" /></td>
+            <td><input type="text" name="payment_info" value="[% advertiser.payment_info %]" [% !can_edit_general && 'disabled' %] size=80 data-lpignore="true" /></td>
         </tr>
         <tr>
             <td>Contact info</td>
-            <td><input type="text" name="contact_info" value="[% advertiser.contact_info %]" size=80 data-lpignore="true" /></td>
+            <td><input type="text" name="contact_info" value="[% advertiser.contact_info %]" [% !can_edit_general && 'disabled' %] size=80 data-lpignore="true" /></td>
         </tr>
         <tr>
             <td>Band level</td>
@@ -139,16 +139,23 @@
         </tr>
         <tr>
             <td>Today turnover</td>
-            <td>Buy: [% advertiser.account_currency %] [% advertiser.daily_buy %]<br/>
-            Sell: [% advertiser.account_currency %] [% advertiser.daily_sell %]</td>
+            <td>Buy: [% advertiser.account_currency %] [% daily_buy_formatted %]<br/>
+            Sell: [% advertiser.account_currency %] [% daily_sell_formatted %]</td>
         </tr>        
         <tr>
             <td>P2P available balance</td>
             <td>[% advertiser.account_currency %] [% p2p_balance %]</td>
         </tr>
-         <tr>
+        <tr>
+            <td>Additional sell allowance</td>
+            <td>
+                [% advertiser.account_currency %]&nbsp;&nbsp;<input type="text" name="extra_sell_amount" value="[% extra_sell_amount_formatted %]" size=5 data-lpignore="true" />
+                [% IF advertiser.extra_sell_pending %][% advertiser.account_currency %] [% extra_sell_pending_formatted %] of allowance is currently in escrow and will increase the allowance if these orders are cancelled.[% END %]
+            </td>
+        </tr>        
+        <tr>
             <td>Withdrawal limit</td>
-            <td>[% IF advertiser.withdrawal_limit.length %][% advertiser.account_currency %] [% advertiser.withdrawal_limit %] (calculated daily)[% ELSE %]none[% END %]</td>
+            <td>[% IF advertiser.withdrawal_limit.length %][% advertiser.account_currency %] [% withdrawal_limit_formatted %] (calculated daily)[% ELSE %]none[% END %]</td>
         </tr>        
         <tr>
             <td>Sendbird ID</td>
@@ -166,6 +173,7 @@
     <br/>
     <input type="hidden" name="update_id" value="[% advertiser.id %]"/>
     <input type="hidden" name="current_name" value="[% advertiser.name %]"/>
+    <input type="hidden" name="current_extra_sell_amount" value="[% advertiser.extra_sell_amount || 0 %]"/>
     <button class="btn btn--primary" type="submit" name="update" value="1">Update advertiser</button>
     </form>
     

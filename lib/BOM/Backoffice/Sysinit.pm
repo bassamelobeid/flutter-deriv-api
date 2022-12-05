@@ -94,9 +94,8 @@ my $permissions = {
     'fetch_client_details.cgi'          => ['CS'],
     'p2p_order_list.cgi'        => ['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud'],
     'p2p_order_manage.cgi'      => ['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud'],    # P2PRead is restricted from handling disputes in the page
-    'p2p_advertiser_list.cgi'   => ['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud'],
-    'p2p_advertiser_manage.cgi' => ['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud']
-    ,    # P2PRead and P2PWrite are restricted from changing band level in page
+    'p2p_advertiser_list.cgi'   => ['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud', 'PaymentsAdmin'],    # Additional checks wihin page
+    'p2p_advertiser_manage.cgi' => ['P2PRead', 'P2PWrite', 'P2PAdmin', 'AntiFraud', 'PaymentsAdmin'],    # same
     'p2p_dynamic_settings.cgi'          => ['P2PAdmin',   'AntiFraud'],
     'p2p_payment_method_manage.cgi'     => ['P2PAdmin',   'AntiFraud'],
     'p2p_advert_rates_manage.cgi'       => ['P2PAdmin',   'AntiFraud'],
