@@ -52,6 +52,9 @@ use Net::Async::Redis;
 # we will not use exchange rates older than 1 day
 use constant EXCHANGE_RATES_DELAY_THRESHOLD => 86400;
 
+# to not use exchange rates older than 2 days for weekends
+use constant WEEKEND_EXCHANGE_RATES_DELAY_THRESHOLD => 172800;
+
 =head2 date
 
 The date string supported by L<Date::Utility>
@@ -788,10 +791,13 @@ async sub _load_exchange_rates {
     my %rates;
     my $redis = $self->redis_exchangerates;
     my $keys  = await $redis->keys('exchange_rates::*');
+    # Sunday is the 0th day of the week
+    my $day_of_week = Date::Utility->new->day_of_week;
     foreach my $key ($keys->@*) {
         my $data = await $redis->hmget($key, 'quote', 'offer_to_clients', 'epoch');
         my ($quote, $offer_to_clients, $exchange_epoch) = $data->@*;
-        if ($offer_to_clients and $exchange_epoch and time - $exchange_epoch < EXCHANGE_RATES_DELAY_THRESHOLD) {
+        my $exchange_rates_delay_threshold = $day_of_week ? EXCHANGE_RATES_DELAY_THRESHOLD : WEEKEND_EXCHANGE_RATES_DELAY_THRESHOLD;
+        if ($offer_to_clients and $exchange_epoch and time - $exchange_epoch < $exchange_rates_delay_threshold) {
             $key =~ s/exchange_rates:://;
             $rates{$key} = {
                 quote => $quote,

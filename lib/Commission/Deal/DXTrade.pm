@@ -75,11 +75,11 @@ sub loginid {
 
 =head2 deal_id
 
-The unique identifier of deal on DXTrade
+The unique identifier of deal on DXTrade. actionCode is the deal id instead of orderCode. 
 
 =cut
 
-sub deal_id { shift->{orderCode} }
+sub deal_id { shift->{actionCode} }
 
 =head2 transaction_time
 
