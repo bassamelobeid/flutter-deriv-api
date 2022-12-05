@@ -131,7 +131,7 @@ Returns true if the app is present in official_apps table
 sub is_official_app {
     my ($self, $app_id) = @_;
 
-    return 0 if $app_id !~ /^\d+$/;
+    return 0 unless $app_id and $app_id =~ /^\d+$/;
 
     my ($is_official) = $self->dbic->run(
         fixup => sub {
@@ -158,7 +158,7 @@ Returns true if the app is official and primary.
 sub is_primary_website {
     my ($self, $app_id) = @_;
 
-    return 0 if $app_id !~ /^\d+$/;
+    return 0 unless $app_id and $app_id =~ /^\d+$/;
 
     my ($is_primary_website) = $self->dbic->run(
         fixup => sub {
@@ -188,7 +188,7 @@ Returns true if the app is an internal one false otherwise.
 sub is_internal {
     my ($self, $app_id) = @_;
 
-    return 0 if $app_id !~ /^\d+$/;
+    return 0 unless $app_id and $app_id =~ /^\d+$/;
 
     my ($is_internal) = $self->dbic->run(
         fixup => sub {
