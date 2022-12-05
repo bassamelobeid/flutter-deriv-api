@@ -300,6 +300,9 @@ async sub document_upload {
 
         $client->propagate_clear_status('allow_poi_resubmission') if $is_poi_document || $is_onfido_document;
 
+        #clear allow_poinc_resubmission status when a new document of this type is uploaded
+        $client->propagate_clear_status('allow_poinc_resubmission') if $is_pow_document;
+
         # If is a POI document but not Onfido supported, send an email to CS
         if ($is_poi_document && !$is_onfido_document && !$uploaded_manually_by_staff) {
             _notify_onfido_unsupported_document($client, $document_entry);
