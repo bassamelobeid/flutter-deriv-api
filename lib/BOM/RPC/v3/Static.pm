@@ -27,6 +27,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
 use Unicode::UTF8              qw(decode_utf8);
 use JSON::MaybeXS              qw(decode_json);
 use POSIX                      qw( floor );
+use Math::BigFloat;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -379,7 +380,7 @@ rpc website_status => sub {
             review_period           => $p2p_config->review_period,
             fixed_rate_adverts      => $p2p_advert_config->{fixed_ads},
             float_rate_adverts      => $p2p_advert_config->{float_ads},
-            float_rate_offset_limit => $float_range / 2,
+            float_rate_offset_limit => Math::BigFloat->new($float_range)->bdiv(2)->bfround(-2, 'trunc')->bstr,
             $p2p_advert_config->{deactivate_fixed}       ? (fixed_rate_adverts_end_date => $p2p_advert_config->{deactivate_fixed}) : (),
             ($exchange_rate->{source} // '') eq 'manual' ? (override_exchange_rate      => $exchange_rate->{quote})                : (),
             feature_level    => $p2p_config->feature_level,
