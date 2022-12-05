@@ -359,7 +359,7 @@ sub run {
 
         my @lines = (
             '<p>The following currency(s) have countries with floating rate adverts enabled in P2P, and the FOREX market has been open more than 24 hours since the exchange rate was updated.<br>Actions needed:</p>',
-            '<ul><li>Check the feed</li><li>Enter a manual quote in backoffiice P2P advert rates management</li><li>Consider switching the countries to fixed rate adverts</li></ul>',
+            '<ul><li>Check the feed</li><li>Enter a manual quote in backoffice P2P advert rates management</li><li>Consider switching the countries to fixed rate adverts</li></ul>',
             '<table border=1 style="border-collapse:collapse;"><tr><th>Currency</th><th>Age (hours)</th><th>Source</th><th>Time</th><th>Quote</th><th>Float rate country(s)</th></tr>',
         );
 
@@ -382,11 +382,11 @@ sub run {
 
         send_email({
                 from                  => 'x-backend@binary.com',
-                to                    => 'x-trading-ops@deriv.com',
+                to                    => 'x-p2p-system-notifications@binary.com',
                 subject               => 'Outdated exchange rates for P2P Float Rate countries on ' . $now->date,
                 email_content_is_html => 1,
                 message               => \@lines,
-            }) or $log->warn('Failed to send rate alert email to quants');
+            }) or $log->warn('Failed to send outdated exchange rates alert email to p2p team');
 
     }
 
