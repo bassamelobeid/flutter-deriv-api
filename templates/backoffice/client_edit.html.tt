@@ -666,6 +666,37 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     <br>
     <tr>
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Proof of Income</td>
+    </tr>
+    <tr>
+        <td class="label"></td>
+        <td>
+            Submissions left: [% poinc_submissions_left %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label" style="vertical-align:middle">Allow Proof of Income Resubmission</td>
+        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poinc_resubmission" value="1" [% IF poinc_resubmission_allowed %] checked="checked" [% END %]>
+        <span id="allow_poinc_resubmission_toggle" [% IF poinc_resubmission_allowed %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
+        <label for="poinc_reasons">REASON:</label>
+        <select name="poinc_reason" >
+                <option value="unselected"  [% IF poinc_resubmission_allowed && poinc_resubmission_allowed=="unselected" %] selected [% END %] > Please Select </option>
+                [% FOREACH option IN poinc_reasons %]
+                  <option value="[% option.index %]" [% IF poinc_resubmission_allowed && poinc_resubmission_allowed==option.index %] selected [% END %] >[% option.reason %]</option>
+                [% END %]
+                <option value="other"  [% IF poinc_resubmission_allowed && poinc_resubmission_allowed=="other" %] selected [% END %] > Other </option>
+            </select>
+        </span>
+        </td>
+    </tr>
+
+    <tr>
+        <td class="label" >Resubmission Counter</td>
+        <td>: [% poinc_resubmission_count %]</td>
+    </tr>
+
+    <tr>
     [% IF proof_of_ownership_list.size %]
         <td class="label" colspan="2">
             <table width="100%" class="collapsed hover alternate">

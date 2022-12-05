@@ -155,6 +155,16 @@ if ($input{allow_poa_resubmission} or $input{poa_reason}) {
     $client->propagate_status('allow_poa_resubmission', $clerk, $poa_status_reason);
 }
 
+my $poinc_status_reason = $input{poinc_reason} // $client->status->reason('allow_poinc_resubmission') // 'unselected';
+
+if ($input{allow_poinc_resubmission} or $input{poinc_reason}) {
+    $client->propagate_status('allow_poinc_resubmission', $clerk, $poinc_status_reason);
+} elsif (defined $input{allow_poinc_resubmission}) {
+    $client->propagate_clear_status('allow_poinc_resubmission');
+} elsif ($client->status->allow_poinc_resubmission) {
+    $client->propagate_status('allow_poinc_resubmission', $clerk, $poinc_status_reason);
+}
+
 if ($input{kyc_email_checkbox}) {
     my $poi_reason = ($input{poi_reason} || $client->status->reason('allow_poi_resubmission'));
     $poi_reason =~ s/\skyc_email$//;
@@ -284,38 +294,11 @@ if ($input{document_list}) {
             }
         } else {
             $doc->status($new_doc_status);
-            if (!$doc->save) {
-                $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:</b> did not update <b>$file_name</b> record from db</div>";
-            } else {
-                my $is_pow_document = any { $_ eq $doc->{document_type} } @pow_doctypes;
-                $full_msg .= "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been <b>$new_doc_status</b>!</div>";
-                if ($is_pow_document && $new_doc_status eq 'rejected') {
-                    my $dbic = BOM::Database::ClientDB->new({
-                            client_loginid => $loginid,
-                            operation      => 'backoffice_replica',
-                        })->db->dbic;
-                    if (!$dbic) {
-                        $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:</b>[$0] cannot create connection</div>";
-                        print $full_msg;
-                        code_exit_BO();
-                    }
-
-                    my $count_rejected = $dbic->run(
-                        fixup => sub {
-                            $_->selectrow_array(
-                                'SELECT COUNT(*) FROM betonmarkets.client_authentication_document 
-                            WHERE client_loginid = ? AND status = ? AND document_type = ANY(?)',
-                                undef, $loginid, $new_doc_status, \@pow_doctypes
-                            );
-                        });
-
-                    if ($count_rejected > 2) {
-                        $client->status->clear_allow_document_upload();
-                    }
-
-                    _update_mt5_status($client, 'poa_rejected');
-                }
-            }
+            $full_msg .= (
+                $doc->save
+                ? "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been <b>$new_doc_status</b>!</div>"
+                : "<div class=\"notify notify--warning\"><b>ERROR:</b> did not update <b>$file_name</b> record from db</div>"
+            );
         }
     }
     print $full_msg;
@@ -765,8 +748,9 @@ if ($input{whattodo} eq 'save_edd_status') {
             comment          => $input{edd_comment},
             reason           => $input{edd_reason});
 
-        my $unwelcome_reason = "Pending EDD docs/info for withdrawal request";
-        my $disabled_reason  = "Failed to submit EDD docs/info for withdrawal request";
+        my $unwelcome_reason             = "Pending EDD docs/info for withdrawal request";
+        my $disabled_reason              = "Failed to submit EDD docs/info for withdrawal request";
+        my $allow_document_upload_reason = "Pending EDD docs/info";
 
         my @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } $user_clients->@*;
 
@@ -778,8 +762,17 @@ if ($input{whattodo} eq 'save_edd_status') {
             # trigger unwlecome when EDD status = 'in_progress' or 'pending'
             # remove unwlecome when EDD status = 'passed', 'n/a', 'contacted'
             # trigger disable when EDD status = 'failed'
-
-            if ($edd_status eq 'passed' or $edd_status eq 'contacted' or $edd_status eq 'n/a') {
+            if ($edd_status eq 'passed') {
+                if ($client_to_update->status->reason('unwelcome') eq $unwelcome_reason) {
+                    $client_to_update->status->clear_unwelcome();
+                }
+                if ($client_to_update->status->reason('disabled') eq $disabled_reason) {
+                    $client_to_update->status->clear_disabled();
+                }
+                if ($client_to_update->status->reason('allow_document_upload') eq $allow_document_upload_reason) {
+                    $client_to_update->status->clear_allow_document_upload();
+                }
+            } elsif ($edd_status eq 'contacted' or $edd_status eq 'n/a') {
                 if ($client_to_update->status->reason('unwelcome') eq $unwelcome_reason) {
                     $client_to_update->status->clear_unwelcome();
                 }

@@ -134,6 +134,44 @@ my $POA_REASONS = {
     },
 };
 
+my $POINC_REASONS = {
+    old => {
+        reason => 'old',
+    },
+    cropped => {
+        reason => 'cropped',
+    },
+    blurred => {
+        reason => 'blurred/flashlight',
+    },
+    screenshot => {
+        reason => 'screenshot',
+    },
+    envelope => {
+        reason => 'envelope',
+    },
+    different_name => {
+        reason => 'different name',
+    },
+    different_address => {
+        reason => 'different address',
+    },
+    capitec_stat_no_match => {
+        reason => 'capitec stat no match',
+    },
+    suspicious => {
+        reason => 'suspicious',
+    },
+    password_protected => {
+        reason => 'password protected',
+    },
+    unsupported_format => {
+        reason => 'unsupported format',
+    },
+    irrelevant_documnets => {
+        reason => 'irrelevant documents',
+    }};
+
 my $UNTRUSTED_STATUS = [{
         'linktype'    => 'disabledlogins',
         'comments'    => 'Disabled Accounts',
@@ -548,12 +586,13 @@ SQL
 
     my $poa_resubmission_allowed = $client->status->reason('allow_poa_resubmission') // '';
     $poa_resubmission_allowed =~ s/\skyc_email$//;    # Match the dropdown reasons to avoid user confusion
+    my $poinc_submission_count = $client->documents->get_poinc_count($docs) // 0;
 
-    my $balance =
-        $client->default_account
-        ? formatnumber('amount', $client->default_account->currency_code, client_balance($client))
-        : '--- no currency selected';
-
+    #max allowed submissions 3
+    my $poinc_submissions_left     = $poinc_submission_count < 3 ? 3 - $poinc_submission_count : 0;
+    my $poinc_resubmission_allowed = $client->status->reason('allow_poinc_resubmission') // '';
+    #resubmission is allowed submission minus current submissions of type proof of income
+    my $poinc_resubmission_count = $poinc_submission_count > 3 ? $poinc_submission_count - 3 : 0;
     my @poi_reasons_tpl =
         map  { {index => $_, reason => $POI_REASONS->{$_}->{reason}} }
         sort { $POI_REASONS->{$a}->{reason} cmp $POI_REASONS->{$b}->{reason} }
@@ -562,6 +601,15 @@ SQL
         map  { {index => $_, reason => $POA_REASONS->{$_}->{reason}} }
         sort { $POA_REASONS->{$a}->{reason} cmp $POA_REASONS->{$b}->{reason} }
         keys $POA_REASONS->%*;
+    my @poinc_reasons_tpl =
+        map  { {index => $_, reason => $POINC_REASONS->{$_}->{reason}} }
+        sort { $POINC_REASONS->{$a}->{reason} cmp $POINC_REASONS->{$b}->{reason} }
+        keys $POINC_REASONS->%*;
+
+    my $balance =
+        $client->default_account
+        ? formatnumber('amount', $client->default_account->currency_code, client_balance($client))
+        : '--- no currency selected';
 
     my $redis_oauth  = BOM::Config::Redis::redis_auth_write();
     my $login_locked = $redis_oauth->ttl('oauth::blocked_by_user::' . $client->user->id);
@@ -680,6 +728,9 @@ SQL
         onfido_check_url                             => $onfido_check->{results_uri} // '',
         onfido_resubmission                          => $onfido_allow_resubmission_flag,
         poa_resubmission_allowed                     => $poa_resubmission_allowed,
+        poinc_resubmission_allowed                   => $poinc_resubmission_allowed,
+        poinc_submissions_left                       => $poinc_submissions_left,
+        poinc_resubmission_count                     => $poinc_resubmission_count,
         text_validation_info                         => client_text_field_validation_info($client, secret_answer => $secret_answer),
         aml_risk_levels                              => [get_aml_risk_classicications()],
         is_staff_compliance                          => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
@@ -687,6 +738,7 @@ SQL
         account_opening_reasons                      => ACCOUNT_OPENING_REASONS,
         poi_reasons                                  => \@poi_reasons_tpl,
         poa_reasons                                  => \@poa_reasons_tpl,
+        poinc_reasons                                => \@poinc_reasons_tpl,
         onfido_submissions_left                      => BOM::User::Onfido::submissions_left($client),
         onfido_submissions_reset                     => BOM::User::Onfido::submissions_reset_at($client),
         onfido_reported_properties                   => BOM::User::Onfido::reported_properties($client),
