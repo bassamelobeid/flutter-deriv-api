@@ -2900,7 +2900,7 @@ sub p2p_order_create {
         $amount_client     = -$amount;
         my @payment_method_ids = ($param{payment_method_ids} // [])->@*;
 
-        die +{error_code => 'OrderCreateFailClientBalance'} if $amount > $self->balance_for_cashier('p2p');
+        die +{error_code => 'OrderCreateFailClientBalance'} if $amount > $self->p2p_balance;
         die +{error_code => 'OrderPaymentInfoRequired'} unless trim($param{payment_info}) or @payment_method_ids;
         die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
 
@@ -2929,7 +2929,7 @@ sub p2p_order_create {
         $amount_advertiser = -$amount;
         $amount_client     = $amount;
 
-        die +{error_code => 'OrderCreateFailAmountAdvertiser'} if $amount > $advertiser->balance_for_cashier('p2p');
+        die +{error_code => 'OrderCreateFailAmountAdvertiser'} if $amount > $advertiser->p2p_balance;
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'}
             if $payment_info
             or $contact_info
@@ -4591,7 +4591,7 @@ sub _advertiser_details {
         $details->{chat_user_id}      = $advertiser->{chat_user_id};
         $details->{chat_token}        = $advertiser->{chat_token} // '';
         $details->{show_name}         = $advertiser->{show_name};
-        $details->{balance_available} = $self->balance_for_cashier('p2p');
+        $details->{balance_available} = $self->p2p_balance;
         $details->{withdrawal_limit} =
             defined $advertiser->{withdrawal_limit}
             ? financialrounding('amount', $advertiser->{account_currency}, $advertiser->{withdrawal_limit})
@@ -7508,9 +7508,26 @@ sub needs_pow_verification {
     return 0;
 }
 
+=head2 p2p_balance
+
+Returns the balance available for p2p
+
+=cut
+
+sub p2p_balance {
+    my ($self) = @_;
+
+    my $amount = $self->balance_for_cashier('p2p');
+    $amount += ($self->_p2p_advertiser_cached->{extra_sell_amount} // 0);
+    $amount = min($amount, $self->account->balance);
+    return financialrounding('amount', $self->currency, $amount);
+}
+
 =head2 balance_for_cashier
 
 Returns the irreversible balance available for the specified cashier.
+
+=cut
 
 =over 4
 
@@ -7528,13 +7545,13 @@ sub balance_for_cashier {
     my $global_limit = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->$cashier;
     my $lookback     = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
 
-    my ($result) = $self->db->dbic->run(
+    my ($amount) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array('SELECT * FROM payment.get_available_balance_by_cashier(?,?,?,?)',
                 undef, $self->loginid, $cashier, $global_limit / 100, $lookback);
         });
 
-    return financialrounding('amount', $self->currency, $result);
+    return $amount;
 }
 
 =head2 balance_for_doughflow

@@ -68,7 +68,7 @@ subtest 'sell ads' => sub {
     lives_ok { $order = $client->p2p_order_create(advert_id => $advert->{id}, amount => 25, rule_engine => $rule_engine) }
     'can create order after advertiser limit raised';
 
-    cmp_ok($advertiser->balance_for_cashier('p2p'), '==', 0, 'advertiser balance is zero');
+    cmp_ok($advertiser->p2p_balance, '==', 0, 'advertiser balance is zero');
 
     $client->p2p_order_cancel(id => $order->{id});
     cmp_ok($advertiser->p2p_advertiser_info->{balance_available}, '==', 25, 'advertiser got balance back');
@@ -80,6 +80,14 @@ subtest 'sell ads' => sub {
         payment_processor => 'goldbars',
     );
     cmp_ok($advertiser->p2p_advertiser_info->{balance_available}, '==', 125, 'non reversible deposit completely included');
+
+    $advertiser->db->dbic->dbh->do('SELECT p2p.set_advertiser_totals(?,NULL,NULL,NULL,?)', undef, $advertiser->_p2p_advertiser_cached->{id}, 10);
+    delete $advertiser->{_p2p_advertiser_cached};
+    cmp_ok $advertiser->p2p_balance, '==', 135, 'extra_sell_amount increases p2p_balance';
+
+    $advertiser->db->dbic->dbh->do('SELECT p2p.set_advertiser_totals(?,NULL,NULL,NULL,?)', undef, $advertiser->_p2p_advertiser_cached->{id}, 1000);
+    delete $advertiser->{_p2p_advertiser_cached};
+    cmp_ok $advertiser->p2p_balance, '==', $advertiser->account->balance, 'extra_sell_amount increases p2p_balance no higher than account balance';
 };
 
 subtest 'buy ads' => sub {
