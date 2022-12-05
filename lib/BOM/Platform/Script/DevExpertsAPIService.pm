@@ -70,7 +70,7 @@ Takes the following named parameters:
 sub configure {
     my ($self, %args) = @_;
 
-    for (qw(listen_port demo_host demo_port demo_user demo_pass real_host real_port real_user real_pass)) {
+    for (qw(listen_port demo_host demo_port demo_user demo_pass real_host real_port real_user real_pass close_after_request connections timeout)) {
         $self->{$_} = delete $args{$_} if exists $args{$_};
     }
 

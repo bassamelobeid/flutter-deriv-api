@@ -59,18 +59,24 @@ sub _add_to_loop {
 
     $self->add_child(
         $self->{clients}{demo} = WebService::Async::DevExperts::DxWeb::Client->new(
-            host => $self->{demo_host},
-            port => $self->{demo_port},
-            user => $self->{demo_user},
-            pass => $self->{demo_pass},
+            host                => $self->{demo_host},
+            port                => $self->{demo_port},
+            user                => $self->{demo_user},
+            pass                => $self->{demo_pass},
+            close_after_request => $self->{close_after_request},
+            connections         => $self->{connections},
+            timeout             => $self->{timeout},
         ));
 
     $self->add_child(
         $self->{clients}{real} = WebService::Async::DevExperts::DxWeb::Client->new(
-            host => $self->{real_host},
-            port => $self->{real_port},
-            user => $self->{real_user},
-            pass => $self->{real_pass},
+            host                => $self->{real_host},
+            port                => $self->{real_port},
+            user                => $self->{real_user},
+            pass                => $self->{real_pass},
+            connections         => $self->{connections},
+            timeout             => $self->{timeout},
+            close_after_request => $self->{close_after_request},
         ));
 
     $self->add_child(
