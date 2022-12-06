@@ -245,7 +245,7 @@ sub _build_encoder {
 }
 
 has 'redis_read' => (
-    is         => 'ro',
+    is         => 'rw',
     lazy_build => 1,
 );
 
@@ -254,7 +254,7 @@ sub _build_redis_read {
 }
 
 has 'redis_write' => (
-    is         => 'ro',
+    is         => 'rw',
     lazy_build => 1,
 );
 
