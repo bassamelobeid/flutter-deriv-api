@@ -240,6 +240,19 @@ sub redis_feed_master {
     return _redis('feed', 'master-read');
 }
 
+=head2 redis_feed_replica
+
+    my $redis = BOM::Config::Redis::redis_feed_replica();
+
+Returns a read-only L<RedisDB> handle to local feed Redis replica service.
+
+=cut
+
+sub redis_feed_replica {
+    $config->{feed} //= BOM::Config::redis_feed_config();
+    return _redis('feed', 'replica-read');
+}
+
 =head2 redis_feed_master_write
 
     my $redis = BOM::Config::Redis::redis_feed_master_write();
