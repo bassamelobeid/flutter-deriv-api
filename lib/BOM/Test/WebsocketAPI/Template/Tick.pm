@@ -44,7 +44,7 @@ publish tick => sub {
     ($ask, $bid) = ($bid, $ask) unless $bid <= $ask;
 
     return {
-        "DISTRIBUTOR_FEED::$symbol" => {
+        "TICK_ENGINE::$symbol" => {
             symbol => $symbol,
             epoch  => time,
             bid    => $bid,
