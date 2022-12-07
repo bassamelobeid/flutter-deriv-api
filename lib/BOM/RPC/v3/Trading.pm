@@ -21,6 +21,7 @@ use BOM::User;
 use BOM::User::Password;
 use BOM::Product::Listing;
 use List::Util qw(first none);
+use BOM::Config::Redis;
 
 requires_auth('trading', 'wallet');
 
@@ -450,6 +451,20 @@ async_rpc trading_platform_investor_password_reset => auth => ['trading', 'walle
     }
     };
 
+=head2 check_account_is_merging
+
+Checks if account is under merging
+
+=cut
+
+sub check_account_is_merging {
+
+    my $account = shift;
+    my $redis   = BOM::Config::Redis->redis_rpc_write();
+
+    return $redis->sismember('LOCK_DX_ACCOUNT_WHILE_MERGING', $account);
+}
+
 =head2 deposit
 
 Platform deposit implementation.
@@ -467,6 +482,10 @@ sub deposit {
     my $is_demo = $to_account =~ /^DXD/;
 
     try {
+
+        my $check_redis_lock = check_account_is_merging($from_account);
+        die +{error_code => 'PlatformTransferTemporarilyUnavailable'} if $check_redis_lock;
+
         die +{error_code => 'PlatformTransferRealParams'} unless $is_demo or ($from_account and $amount);
 
         my $client = $is_demo ? $params->{client} : get_transfer_client($params, $from_account);
@@ -499,7 +518,11 @@ sub withdrawal {
     my $params = shift;
 
     my ($from_account, $to_account, $amount, $currency) = $params->{args}->@{qw/from_account to_account amount currency/};
+    my $redis = BOM::Config::Redis->redis_rpc_write();
     try {
+        my $check_redis_lock = check_account_is_merging($to_account);
+        die +{error_code => 'PlatformTransferTemporarilyUnavailable'} if $check_redis_lock;
+
         my $client = get_transfer_client($params, $to_account);
 
         my $platform = BOM::TradingPlatform->new(

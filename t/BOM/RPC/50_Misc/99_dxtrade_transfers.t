@@ -20,6 +20,7 @@ BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
 BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->demo(1);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->enable_all_market_type->real(1);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
@@ -54,7 +55,15 @@ $currency_config_mock->mock(
         return $is_experimental_currency;
     });
 
-my ($dx_demo, $dx_real, $dx_synthetic);
+my $is_account_merging;
+my $account_under_merging_mock = Test::MockModule->new('BOM::RPC::v3::Trading');
+$account_under_merging_mock->mock(
+    'check_account_is_merging',
+    sub {
+        return $is_account_merging;
+    });
+
+my ($dx_demo, $dx_real);
 
 subtest 'platform deposit and withdrawal' => sub {
 
@@ -76,20 +85,12 @@ subtest 'platform deposit and withdrawal' => sub {
     $params->{args} = {
         platform     => 'dxtrade',
         account_type => 'real',
-        market_type  => 'financial',
+        market_type  => 'all',
         password     => 'Abcd1234',
         currency     => 'USD',
     };
 
     $dx_real = $c->call_ok('trading_platform_new_account', $params)->result;
-    $params->{args} = {
-        platform     => 'dxtrade',
-        account_type => 'real',
-        market_type  => 'gaming',
-        password     => 'Abcd1234',
-        currency     => 'USD',
-    };
-    $dx_synthetic = $c->call_ok('trading_platform_new_account', $params)->result;
 
     $params->{args} = {
         platform   => 'dxtrade',
@@ -272,14 +273,6 @@ subtest 'transfer between accounts' => sub {
                 'market_type'  => $dx_real->{market_type},
                 'demo_account' => 0,
             },
-            {
-                'account_type' => 'dxtrade',
-                'balance'      => num(0),
-                'currency'     => $dx_synthetic->{currency},
-                'loginid'      => $dx_synthetic->{account_id},
-                'market_type'  => 'synthetic',
-                'demo_account' => 0,
-            },
         ),
         'all real and demo accounts returned'
     );
@@ -381,7 +374,7 @@ subtest 'transfer between accounts' => sub {
     );
 
     $params->{args}{account_from} = $client1->loginid;
-    $params->{args}{account_to}   = $dx_synthetic->{account_id};
+    $params->{args}{account_to}   = $dx_real->{account_id};
     $params->{args}{amount}       = 100;
     $res = $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('deposit to synthetic ok')->result;
 
@@ -396,16 +389,16 @@ subtest 'transfer between accounts' => sub {
             {
                 'account_type' => 'dxtrade',
                 'balance'      => num(100),
-                'currency'     => $dx_synthetic->{currency},
-                'loginid'      => $dx_synthetic->{account_id},
-                'market_type'  => 'synthetic',
+                'currency'     => $dx_real->{currency},
+                'loginid'      => $dx_real->{account_id},
+                'market_type'  => 'all',
             },
         ),
         'affected accounts returned'
     );
 
     # Transfer from Deriv X to a crypto
-    $params->{args}{account_from} = $dx_synthetic->{account_id};
+    $params->{args}{account_from} = $dx_real->{account_id};
     $params->{args}{account_to}   = $client_btc->loginid;
     $params->{token}              = $token_btc;
     $params->{args}{amount}       = 100;
@@ -422,9 +415,9 @@ subtest 'transfer between accounts' => sub {
             {
                 'account_type' => 'dxtrade',
                 'balance'      => num(0),
-                'currency'     => $dx_synthetic->{currency},
-                'loginid'      => $dx_synthetic->{account_id},
-                'market_type'  => 'synthetic',
+                'currency'     => $dx_real->{currency},
+                'loginid'      => $dx_real->{account_id},
+                'market_type'  => 'all',
             },
         ),
         'affected accounts returned'
