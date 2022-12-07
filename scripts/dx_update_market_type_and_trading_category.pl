@@ -17,7 +17,8 @@ use WebService::Async::DevExperts::Dxsca::Client;
 use WebService::Async::DevExperts::DxWeb::Client;
 use Future::Utils qw( fmap_void try_repeat);
 use Future::AsyncAwait;
-use YAML::XS qw(LoadFile);
+use YAML::XS                   qw(LoadFile);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 =head1 NAME
 
@@ -103,24 +104,35 @@ async sub update_trading_category {
     );
 
     $log->infof("%s finished processing account '%s'", Date::Utility->new->db_timestamp, $login);
+    stats_inc("derivx.update.trading.category.success", {tags => ["account:" . $login]});
 }
 
 async sub get_dx_accounts {
-    $log->infof("Fetching %s %s via PSQL...", $account_type, $market_type);
+    $log->infof("Updating %s %s 'market_type' via PSQL...", $account_type, $market_type);
 
     try {
         $updated_loginids = $user_db->dbic->run(
             fixup => sub {
                 my $query = $_->prepare(
                     "SET statement_timeout = 0;
-                        SELECT loginid
-                        FROM users.loginid
-                        WHERE account_type = ?
-                        AND status IS NULL
-                        AND attributes->> 'market_type' = 'all'
-                        AND platform = 'dxtrade';"
+                        UPDATE users.loginid AS u
+                        SET attributes = jsonb_set(u.attributes, '{market_type}', '\"all\"')
+                        WHERE u.status IS NULL 
+                        AND u.platform = 'dxtrade' 
+                        AND u.account_type = ?
+                        AND u.attributes->> 'market_type' = ?
+                        AND NOT EXISTS (
+                        SELECT *
+                        FROM users.loginid AS u2
+                        WHERE u2.attributes->> 'market_type' = ?
+                        AND u2.platform = 'dxtrade'
+                        AND u2.status IS NULL
+                        AND u2.account_type = ?
+                        AND u2.binary_user_id=u.binary_user_id
+                        )
+                        RETURNING u.loginid"
                 );
-                $query->execute($account_type);
+                $query->execute($account_type, $market_type, $other_market_type, $account_type);
                 $query->fetchall_arrayref();
             });
     } catch ($e) {
@@ -128,7 +140,7 @@ async sub get_dx_accounts {
         return;
     };
 
-    $log->infof("Finished fetching %s %s ...", $account_type, $market_type);
+    $log->infof("Finished updating %s %s 'market_type'...", $account_type, $market_type);
 
     $log->infof("Updating %s %s 'Trading' category...", $account_type, $market_type);
 
@@ -150,12 +162,13 @@ async sub get_dx_accounts {
                 until => sub {
                     my $request = shift;
                     return $request if $request->is_done;
-                    $log->infof("Retrying ------");
+                    print "Retrying ------ \n";
                     return 1 unless ($retry--);
                     return 0;
                 }
             } catch ($e) {
                 $log->errorf("An error has occured while processing %s : %s", $updated_loginid->[0], $e);
+                stats_inc("derivx.update.trading.category.failure", {tags => ["account:" . $updated_loginid->[0], "error:$e"]});
             }
 
             $log->info("-------");
