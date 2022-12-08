@@ -19,6 +19,33 @@ subtest 'exceptions' => sub {
     lives_ok { BOM::Product::Listing->new->by_country('id', [123]) } 'throws exception if app is unknown';
 };
 
+subtest 'product listing - deriv smarttrader' => sub {
+    my $app_id        = 22168;
+    my $deriv_dtrader = BOM::Product::Listing->new->by_country('id', [$app_id]);
+
+    cmp_bag $deriv_dtrader->{$app_id}->{available_markets},     ['Commodities', 'Forex', 'Stock Indices', 'Derived'], 'available markets matched';
+    cmp_bag $deriv_dtrader->{$app_id}->{available_trade_types}, ['Options'],                                          'available trade types matched';
+    is scalar $deriv_dtrader->{$app_id}->{product_list}->@*, 69, '69 listing';
+    # check the structure
+    cmp_bag [keys $deriv_dtrader->{$app_id}->{product_list}->[0]->%*],
+        ['available_account_types', 'available_trade_types', 'symbol', 'market', 'submarket'],
+        'data structure matched';
+};
+
+subtest 'product listing - deriv binarybot' => sub {
+    my $app_id          = 29864;
+    my $deriv_binarybot = BOM::Product::Listing->new->by_country('id', [$app_id]);
+
+    cmp_bag $deriv_binarybot->{$app_id}->{available_markets},     ['Commodities', 'Forex', 'Stock Indices', 'Derived'], 'available markets matched';
+    cmp_bag $deriv_binarybot->{$app_id}->{available_trade_types}, ['Options'], 'available trade types matched';
+    is scalar $deriv_binarybot->{$app_id}->{product_list}->@*, 69, '69 listing';
+    # check the structure
+    cmp_bag [keys $deriv_binarybot->{$app_id}->{product_list}->[0]->%*],
+        ['available_account_types', 'available_trade_types', 'symbol', 'market', 'submarket'],
+        'data structure matched';
+
+};
+
 # we will only be testing for certain platforms, since it's a data structure test rather than testing the correctness of data.
 subtest 'product listing - deriv dtrader' => sub {
     my $app_id        = 16929;
