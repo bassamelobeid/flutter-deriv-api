@@ -6,10 +6,8 @@ use warnings;
 use IO::Async::Loop;
 use Future::AsyncAwait;
 use Pod::Usage;
-use Log::Any qw($log);
-use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 use Getopt::Long;
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
+use Log::Any::Adapter qw(Stdout), log_level => 'info';
 use Log::Any qw($log);
 use BOM::Database::UserDB;
 use BOM::Config::CurrencyConfig;
@@ -343,6 +341,7 @@ async sub process_account {
                 try {
                     $deposit_result = await deposit_to_synthetic($dx, $deposit_data);
                 } catch ($e) {
+                    write_to_file($deposit_data);
                     die "$e. Tried to deposit $balance $client->currency to $synthetic_account. The account has not been archived.";
                 }
 
@@ -411,13 +410,13 @@ async sub merge_accounts {
 
             try {
                 await process_account($dx_account);
-                stats_inc("derivx.merging.success", {tags => ["account:$dx_account"]});
+                stats_inc("derivx.merging.success", {tags => ["client:$account_id"]});
             } catch ($e) {
-                $log->warnf("An error has occured when processing '%s' : %s", $dx_account, $e);
-                stats_inc("derivx.merging.failure", {tags => ["account:$dx_account", "error:$e"]});
-            } finally {
-                $redis->srem('LOCK_DX_ACCOUNT_WHILE_MERGING', $cr_account);
+                $log->warnf("An error has occured when processing client '%s' : %s", $account_id, $e);
+                stats_inc("derivx.merging.failure", {tags => ["client:$account_id", "error:$e"]});
             }
+
+            await $redis->srem('LOCK_DX_ACCOUNT_WHILE_MERGING', $cr_account);
 
             $log->info("-------");
             $counter++;
@@ -445,7 +444,7 @@ async sub deposit_to_synthetic {
 
         if ($balance_before == $balance_after) {
             $e = $e->{error_code} if ref($e) eq "HASH";
-            return $e;
+            die $e;
         }
     }
 
