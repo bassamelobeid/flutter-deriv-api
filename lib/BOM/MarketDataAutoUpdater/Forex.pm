@@ -100,16 +100,14 @@ has surfaces_from_file => (
     lazy_build => 1,
 );
 
-use Data::Dumper; $Data::Dumper::Maxdepth=2;
 sub _build_surfaces_from_file {
     my $self = shift;
     my (@volsurface, $vol_data, $surface);
-    warn "$self->update_for" . $self->update_for;
     # For BBDL source, we are subscrbing full surface every 4 hours, the remaining hours , we only subscribe ON and 1W vol smile , hence it need to this appending with existing surface.
     if ($self->source eq 'BBDL') {
         $vol_data = Bloomberg::VolSurfaces::BBDL->new->parser($self->update_for, $self->root_path);
         $surface  = $self->process_volsurface($vol_data);
-warn '_build_surfaces_from_file'.Dumper($surface);
+
         if ($self->update_for eq 'all') {
             foreach my $underlying (keys %{$surface}) {
                 # We request full volsurface every 4 hours, hence on other hours, we will only get ON and 1W vol. Hence the vol point we are receiving will be just  2.
@@ -281,7 +279,6 @@ sub process_volsurface {
             }
         }
         my ($surface_data, $rr_bf_flag, $error) = _get_surface_data($data->{$underlying_symbol});
-warn "process_volsurface $underlying_symbol ($surface_data, $rr_bf_flag, $error)";
 
         if ($error) {
             $self->report->{'frx' . $underlying_symbol} = {
@@ -292,6 +289,7 @@ warn "process_volsurface $underlying_symbol ($surface_data, $rr_bf_flag, $error)
         }
 
         _do_flatten_ON($surface_data);
+
         $vol_surface->{'frx' . $underlying_symbol} = {
             surface       => $surface_data,
             type          => 'delta',
@@ -346,7 +344,7 @@ Mapping the vol spread and vol smile of each term
 sub _get_surface_data {
     my ($data) = @_;
     my ($surface_vol, $rr_bf_flag, $error) = _process_smiles_spread($data);
-warn "_get_surface_data ($surface_vol, $rr_bf_flag, $error)";
+
     return ($surface_vol, $rr_bf_flag, $error) if defined $error;
     my %surface_data =
         map { $_ => {smile => $surface_vol->{$_}->{smile}, vol_spread => $surface_vol->{$_}->{vol_spread}} } keys %$surface_vol;
@@ -393,8 +391,7 @@ sub _check_vol_point {
     my $rr_bf_flag = 0;
     foreach my $term (keys %{$vol_surf}) {
         next                                                         if $term eq 'volupdate_time';
-        warn "term $term";
-        return ({}, 0, "MISL: Missing ATM vol for $term") if (not defined $vol_surf->{$term}->{smile}->{'ATM'});
+        return ({}, 0, "MISSING_ATM_VOL: Missing ATM vol for $term") if (not defined $vol_surf->{$term}->{smile}->{'ATM'});
 
         if (not defined $vol_surf->{$term}->{smile}->{'25RR'}) {
             $vol_surf->{$term}->{smile}->{'25RR'} = 0;
