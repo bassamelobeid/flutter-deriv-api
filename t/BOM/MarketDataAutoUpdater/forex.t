@@ -380,6 +380,37 @@ subtest 'surfaces_from_file' => sub {
     $surfaces = $auf->surfaces_from_file;
     ok !$surfaces->{'frxUSDJPY'}{'rr_bf_status'}, 'rr_bf_status false for BVOL';
     is_deeply($surfaces->{'frxUSDJPY'}{'surface'}, $expected, 'surface data matches');
+
+    $surface_data = {
+        USDJPY => {
+            '1' => {
+                'spread' => {ATM => '0.14'},
+                'smile'  => {ATM => '0.14'}
+            },
+            '7' => {
+                'spread' => {ATM => '0.21'},
+                'smile'  => {ATM => '0.21'}
+
+            }
+        },
+        EURJPY => {
+            '1' => {
+                'spread' => {ATM => '0.1'},
+                'smile'  => {ATM => '0.1'}}
+        },
+
+    };
+    my $mocked_surface = Test::MockModule->new('BOM::MarketData::Fetcher::VolSurface');
+    $mocked_surface->mock('fetch_surface' => sub { return $fake_surface; });
+    $mocked_bbdl->mock('parser' => sub { return $surface_data });
+    $auf = BOM::MarketDataAutoUpdater::Forex->new(
+        update_for => 'all',
+        source     => 'BBDL'
+    );
+    $surfaces = $auf->surfaces_from_file;
+    ok $surfaces->{'frxUSDJPY'}, 'get frxUSDJPY';
+    ok $surfaces->{'frxEURJPY'}, 'get frxEURJPY';
+
 };
 
 restore_time();
