@@ -499,15 +499,18 @@ subtest 'surfaces_from_file BVOL' => sub {
     $surface_data = {
         USDJPY => {
             '1' => {
+                'tenor'  => '9M',
                 'spread' => {ATM => '0.14'},
                 'smile'  => {ATM => '0.14'}
             },
             '7' => {
+                'tenor'  => '9M',
                 'spread' => {ATM => '0.21'},
                 'smile'  => {ATM => '0.21'}}
         },
         EURJPY => {
             '9' => {
+                'tenor'  => '9M',
                 'spread' => {ATM => '0.1'},
                 'smile'  => {ATM => '0.1'}}
         },
