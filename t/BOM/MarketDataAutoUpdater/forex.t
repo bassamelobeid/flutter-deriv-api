@@ -333,16 +333,20 @@ subtest 'do not update one hour after rollover' => sub {
     ok $au->report->{frxUSDJPY}->{success}, 'update successful';
 };
 
-subtest 'surfaces_from_file' => sub {
+subtest 'surfaces_from_file BBDL' => sub {
 
     my $surface_data = {
         USDJPY => {
-            '1' => {
+            error => 'OUTDATED_VOL',
+            ON    => {
                 'spread' => {ATM => '0.14'},
                 'tenor'  => '9M',
                 'smile'  => {ATM => '0.14'}}
         },
-        Dummy => {'7' => {'smile' => {}}}};
+        R_25  => {error => 'error'},
+        Dummy => {
+            error => 'OUTDATED_VOL',
+            '7'   => {'smile' => {}}}};
 
     my $mocked_bbdl = Test::MockModule->new('Bloomberg::VolSurfaces::BBDL');
     $mocked_bbdl->mock('parser' => sub { return $surface_data });
@@ -354,6 +358,128 @@ subtest 'surfaces_from_file' => sub {
     my $surfaces = $auf->surfaces_from_file;
     ok $surfaces->{'frxUSDJPY'},                 'keyname frxUSDJPY';
     ok $surfaces->{'frxUSDJPY'}{'rr_bf_status'}, 'rr_bf_status true for BBDL';
+
+    my $surface_result = {
+        'vol_spread' => {
+            '75' => '0.2',
+            '25' => '0.2',
+            '50' => '0.14'
+        },
+        'smile' => {
+            '75' => '0.14',
+            '25' => '0.14',
+            '50' => '0.14'
+        }};
+
+    my $expected = {
+        'frxUSDJPY' => {
+            'type'          => 'delta',
+            'creation_date' => undef,
+            'surface'       => {'ON' => $surface_result},
+            'rr_bf_status'  => 1
+        }};
+
+    is_deeply($surfaces, $expected, 'surface data matches');
+
+    $surface_data = {
+        USDJPY => {
+            'ON' => {
+                'tenor'  => 'ON',
+                'spread' => {ATM => '0.14'},
+                'smile'  => {
+                    ATM    => '0.14',
+                    '25RR' => '0.01',
+                    '25BF' => '-0.01',
+                }
+            },
+            '7' => {
+                'tenor'  => '1W',
+                'spread' => {ATM => '0.21'},
+                'smile'  => {ATM => '0.21'}}
+        },
+        EURJPY => {
+            '1' => {
+                'tenor'  => '9M',
+                'spread' => {ATM => '0.14'},
+                'smile'  => {ATM => '0.14'}}
+        },
+    };
+    my $mocked_surface = Test::MockModule->new('BOM::MarketData::Fetcher::VolSurface');
+    $mocked_surface->mock('fetch_surface' => sub { return $fake_surface; });
+    $mocked_bbdl->mock('parser' => sub { return $surface_data });
+    $auf = BOM::MarketDataAutoUpdater::Forex->new(
+        update_for => 'all',
+        source     => 'BBDL'
+    );
+
+    my $frxUSDJPY_data = {
+        'ON' => {
+            'vol_spread' => {
+                '75' => '0.2',
+                '25' => '0.2',
+                '50' => '0.14'
+            },
+            'smile' => {
+                '75' => '0.135',
+                '25' => '0.145',
+                '50' => '0.14'
+            }
+        },
+        '7' => {
+            'smile' => {
+                '75' => '0.21',
+                '25' => '0.21',
+                '50' => '0.21'
+            },
+            'vol_spread' => {
+                '25' => '0.3',
+                '75' => '0.3',
+                '50' => '0.21'
+            }}};
+
+    my $frxEURJPY_data = {
+        '1' => {
+            'vol_spread' => {
+                '25' => '0.2',
+                '75' => '0.2',
+                '50' => '0.14'
+            },
+            'smile' => {
+                '50' => '0.14',
+                '75' => '0.14',
+                '25' => '0.14'
+            }}};
+
+    $surfaces = $auf->surfaces_from_file;
+    ok $surfaces->{'frxUSDJPY'}, 'get frxUSDJPY';
+    is_deeply($surfaces->{'frxUSDJPY'}{'surface'}, $frxUSDJPY_data, 'frxUSDJPY data mathes');
+
+    ok $surfaces->{'frxEURJPY'}, 'get frxEURJPY';
+    is_deeply($surfaces->{'frxEURJPY'}{'surface'}, $frxEURJPY_data, 'frxEURJPY data mathes');
+
+};
+
+subtest 'surfaces_from_file BVOL' => sub {
+
+    my $surface_data = {
+        USDJPY => {
+            '1' => {
+                'spread' => {ATM => '0.14'},
+                'tenor'  => '9M',
+                'smile'  => {ATM => '0.14'}}
+        },
+        Dummy => {'7' => {'smile' => {}}}};
+
+    my $mocked_bvol = Test::MockModule->new('Bloomberg::VolSurfaces::BVOL');
+    $mocked_bvol->mock('parser' => sub { return $surface_data });
+
+    my $auf = BOM::MarketDataAutoUpdater::Forex->new(
+        update_for => 'all',
+        source     => 'BVOL'
+    );
+    my $surfaces = $auf->surfaces_from_file;
+    ok $surfaces->{'frxUSDJPY'},                 'keyname frxUSDJPY';
+    ok $surfaces->{'frxUSDJPY'}{'rr_bf_status'}, 'rr_bf_status false for BVOL';
 
     my $expected = {
         '1' => {
@@ -370,17 +496,6 @@ subtest 'surfaces_from_file' => sub {
 
     is_deeply($surfaces->{'frxUSDJPY'}{'surface'}, $expected, 'surface data matches');
 
-    my $mocked_bvol = Test::MockModule->new('Bloomberg::VolSurfaces::BVOL');
-    $mocked_bvol->mock('parser' => sub { return $surface_data });
-
-    $auf = BOM::MarketDataAutoUpdater::Forex->new(
-        update_for => 'all',
-        source     => 'BVOL'
-    );
-    $surfaces = $auf->surfaces_from_file;
-    ok !$surfaces->{'frxUSDJPY'}{'rr_bf_status'}, 'rr_bf_status false for BVOL';
-    is_deeply($surfaces->{'frxUSDJPY'}{'surface'}, $expected, 'surface data matches');
-
     $surface_data = {
         USDJPY => {
             '1' => {
@@ -389,28 +504,66 @@ subtest 'surfaces_from_file' => sub {
             },
             '7' => {
                 'spread' => {ATM => '0.21'},
-                'smile'  => {ATM => '0.21'}
-
-            }
+                'smile'  => {ATM => '0.21'}}
         },
         EURJPY => {
-            '1' => {
+            '9' => {
                 'spread' => {ATM => '0.1'},
                 'smile'  => {ATM => '0.1'}}
         },
-
     };
     my $mocked_surface = Test::MockModule->new('BOM::MarketData::Fetcher::VolSurface');
     $mocked_surface->mock('fetch_surface' => sub { return $fake_surface; });
-    $mocked_bbdl->mock('parser' => sub { return $surface_data });
+    $mocked_bvol->mock('parser' => sub { return $surface_data });
     $auf = BOM::MarketDataAutoUpdater::Forex->new(
         update_for => 'all',
-        source     => 'BBDL'
+        source     => 'BVOL'
     );
+
+    my $frxUSDJPY_data = {
+        '7' => {
+            'smile' => {
+                '75' => '0.21',
+                '50' => '0.21',
+                '25' => '0.21'
+            },
+            'vol_spread' => {
+                '75' => '0.3',
+                '25' => '0.3',
+                '50' => '0.21'
+            }
+        },
+        '1' => {
+            'vol_spread' => {
+                '25' => '0.2',
+                '50' => '0.14',
+                '75' => '0.2'
+            },
+            'smile' => {
+                '25' => '0.14',
+                '50' => '0.14',
+                '75' => '0.14'
+            }}};
+
+    my $frxEURJPY_data = {
+        '9' => {
+            'vol_spread' => {
+                '25' => '0.142857142857143',
+                '75' => '0.142857142857143',
+                '50' => '0.1'
+            },
+            'smile' => {
+                '50' => '0.1',
+                '75' => '0.1',
+                '25' => '0.1'
+            }}};
+
     $surfaces = $auf->surfaces_from_file;
     ok $surfaces->{'frxUSDJPY'}, 'get frxUSDJPY';
-    ok $surfaces->{'frxEURJPY'}, 'get frxEURJPY';
+    is_deeply($surfaces->{'frxUSDJPY'}{'surface'}, $frxUSDJPY_data, 'frxUSDJPY data mathes');
 
+    ok $surfaces->{'frxEURJPY'}, 'get frxEURJPY';
+    is_deeply($surfaces->{'frxEURJPY'}{'surface'}, $frxEURJPY_data, 'frxEURJPY data mathes');
 };
 
 restore_time();
