@@ -1,16 +1,7 @@
-use strict;
-use warnings;
-
-use Storable qw(dclone);
-use Test::MockObject::Extends;
-use Test::Exception;
-use File::Basename qw( dirname );
-use File::Temp;
-use Test::Deep     qw( cmp_deeply );
+use Test::Most;
 use Test::MockTime qw( restore_time set_absolute_time );
-use Test::More     qw( no_plan );
 use Test::MockModule;
-use File::Spec;
+use Storable                            qw(dclone);
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = 0;
@@ -20,9 +11,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::MarketDataAutoUpdater::Forex;
-use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
-use BOM::MarketData::Types;
 
 # Prep:
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
@@ -570,3 +559,4 @@ subtest 'surfaces_from_file BVOL' => sub {
 };
 
 restore_time();
+done_testing;
