@@ -400,7 +400,7 @@ subtest 'create order (buy)' => sub {
     # not returned from order list
     delete $order->{payment_method_details};
     delete $order_info->{payment_method_details};
-    $order->{advertiser_details}{is_recommended} = undef;
+    $order->{advertiser_details}{is_recommended}   = undef;
     $order->{advertiser_details}{last_online_time} = ignore();
     $order->{client_details}{last_online_time}     = ignore();
 

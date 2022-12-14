@@ -152,7 +152,7 @@ $rpc_client_mock->mock('call', sub { shift; return $_[2]->('') });
 }
 
 {
-    local $SIG{'__WARN__'} = sub{};
+    local $SIG{'__WARN__'} = sub { };
     $res = $t->await::website_status({website_status => 1});
 }
 

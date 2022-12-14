@@ -65,7 +65,7 @@
                "minItems" : 1,
                "items" : {
                   "type" : "string",
-                  "pattern" : "^multiplier$"
+                  "pattern" : "^multiplier|turbos$"
                }
             },
             "legal_allowed_markets" : {

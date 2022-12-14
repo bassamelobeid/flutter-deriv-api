@@ -59,7 +59,7 @@
                "type" : "array",
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs|multiplier|vanilla|accumulator)$"
+                  "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs|multiplier|vanilla|accumulator|turbos)$"
                }
             },
             "address" : {

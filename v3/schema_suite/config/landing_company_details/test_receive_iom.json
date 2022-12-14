@@ -49,6 +49,7 @@
                      "reset",
                      "runs",
                      "multiplier",
+                     "turbos",
                      "vanilla"
                   ],
                   "type" : "string"
