@@ -382,7 +382,7 @@ sub build_contract_update_response {
         };
     } elsif ($category eq 'accumulator') {
         my $display_name = localize(BOM::Product::Static::get_generic_mapping()->{take_profit});
-        my $order_amount = $self->update_params->{take_profit} // 'null';
+        my $order_amount = $self->update_params->{take_profit} // undef;
         my $order_date   = $contract->date_pricing->epoch;
 
         return {

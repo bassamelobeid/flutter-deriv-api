@@ -7,9 +7,6 @@ use Test::MockModule;
 use Test::More;
 use Test::Exception;
 use Test::Warnings;
-use ExpiryQueue;
-
-use Data::Dumper;
 
 use BOM::Test::Data::Utility::UnitTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
@@ -69,14 +66,14 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 100,
 });
 
+#creat some ticks to be able to sell accumulator contracts
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+    [100, $now->epoch,     $underlying->symbol],
+    [101, $now->epoch + 1, $underlying->symbol],
+    [101, $now->epoch + 2, $underlying->symbol]);
+
 my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_u->mock('spot_tick', sub { return $current_tick });
-
-#TODO Remove the following two mocks after implementing accumulator expiry conditions
-my $mocked_exp = Test::MockModule->new('ExpiryQueue');
-$mocked_exp->mock('enqueue_new_transaction', sub { return () });
-my $mocked_trx = Test::MockModule->new('BOM::Transaction');
-$mocked_trx->mock('_get_params_for_expiryqueue', sub { return () });
 
 initialize_realtime_ticks_db();
 
@@ -190,23 +187,19 @@ subtest 'buy ACCU', sub {
             purchase_date => $contract->date_start,
         });
 
-        #TODO: For now we skip tnx validation because accumulator contract type is not yet
-        #implemented into our offerings.
-        my %options = (skip_validation => 1);
-        my $error   = $txn->buy(%options);
+        my $error = $txn->buy();
         ok !$error, 'buy without error';
 
         subtest 'transaction report', sub {
             note $txn->report;
             my $report = $txn->report;
-            like $report, qr/\ATransaction Report:$/m,                      'header';
-            like $report, qr/^\s*Client: \Q${\$cl}\E$/m,                    'client';
-            like $report, qr/^\s*Contract: \Q${\$contract->code}\E$/m,      'contract';
-            like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,             'price';
-            like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,           'payout';
-            like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m, 'amount_type';
-            #TODO: This test would pass after implementing offerings
-            # like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
+            like $report, qr/\ATransaction Report:$/m,                                                    'header';
+            like $report, qr/^\s*Client: \Q${\$cl}\E$/m,                                                  'client';
+            like $report, qr/^\s*Contract: \Q${\$contract->code}\E$/m,                                    'contract';
+            like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
+            like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
+            like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
+            like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
             like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
             like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
             like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
@@ -231,7 +224,7 @@ subtest 'buy ACCU', sub {
         };
 
         subtest 'fmb row', sub {
-            plan tests => 18;
+            plan tests => 19;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,            'account_id';
             is $fmb->{bet_class},     'accumulator',           'bet_class';
@@ -243,8 +236,7 @@ subtest 'buy ACCU', sub {
             is $fmb->{is_expired},    0,                       'is_expired';
             is $fmb->{is_sold},       0,                       'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            #TODO: This test would pass after implementing offerings
-            # like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
+            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
             is $fmb->{sell_price},      undef, 'sell_price';
             is $fmb->{sell_time},       undef, 'sell_time';
             is $fmb->{settlement_time}, undef, 'settlement_time';
@@ -269,16 +261,15 @@ subtest 'sell a bet', sub {
         $args->{date_pricing} = $args->{date_start}->epoch + 1;
         my $contract = produce_contract($args);
 
-        my %options = (skip_validation => 1);
-        my $txn     = BOM::Transaction->new({
+        my $txn = BOM::Transaction->new({
             purchase_date => $contract->date_start->epoch + 1,
             client        => $cl,
             contract      => $contract,
             contract_id   => $fmb->{id},
-            price         => $contract->bid_price,
+            price         => 100,
             source        => 23,
         });
-        my $error = $txn->sell(%options);
+        my $error = $txn->sell();
         is $error, undef, 'no error';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
@@ -288,7 +279,7 @@ subtest 'sell a bet', sub {
             is $trx->{account_id},              $acc_usd->id,             'account_id';
             is $trx->{action_type},             'sell',                   'action_type';
             is $trx->{amount} + 0,              $contract->bid_price + 0, 'amount';
-            is $trx->{balance_after} + 0,       4999.01,                  'balance_after';
+            is $trx->{balance_after} + 0,       5000,                     'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id},               'financial_market_bet_id';
             is $trx->{payment_id},              undef,                    'payment_id';
             is $trx->{quantity},                1,                        'quantity';
@@ -300,7 +291,7 @@ subtest 'sell a bet', sub {
         };
 
         subtest 'fmb row', sub {
-            plan tests => 18;
+            plan tests => 19;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,            'account_id';
             is $fmb->{bet_class},     'accumulator',           'bet_class';
@@ -312,8 +303,7 @@ subtest 'sell a bet', sub {
             is $fmb->{is_expired},    0,                       'is_expired';
             ok $fmb->{is_sold}, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            #TODO: This test would pass after implementing offerings
-            # like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
+            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
             is $fmb->{settlement_time}, undef, 'settlement_time';
@@ -348,24 +338,20 @@ subtest 'buy ACCU with take profit', sub {
             purchase_date => $contract->date_start,
         });
 
-        #TODO: For now we skip tnx validation because accumulator contract type is not yet
-        #implemented into our offerings.
-        my %options = (skip_validation => 1);
-        my $error   = $txn->buy(%options);
+        my $error = $txn->buy();
         ok !$error, 'buy without error';
 
         subtest 'transaction report', sub {
-            plan tests => 10;
+            plan tests => 11;
             note $txn->report;
             my $report = $txn->report;
-            like $report, qr/\ATransaction Report:$/m,                      'header';
-            like $report, qr/^\s*Client: \Q${\$cl}\E$/m,                    'client';
-            like $report, qr/^\s*Contract: \Q${\$contract->code}\E$/m,      'contract';
-            like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,             'price';
-            like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,           'payout';
-            like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m, 'amount_type';
-            #TODO: This test would pass after implementing offerings
-            # like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
+            like $report, qr/\ATransaction Report:$/m,                                                    'header';
+            like $report, qr/^\s*Client: \Q${\$cl}\E$/m,                                                  'client';
+            like $report, qr/^\s*Contract: \Q${\$contract->code}\E$/m,                                    'contract';
+            like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
+            like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
+            like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
+            like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
             like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
             like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
             like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
@@ -379,7 +365,7 @@ subtest 'buy ACCU with take profit', sub {
             is $trx->{account_id},              $acc_usd->id,           'account_id';
             is $trx->{action_type},             'buy',                  'action_type';
             is $trx->{amount} + 0,              -100,                   'amount';
-            is $trx->{balance_after} + 0,       4999.01 - 100,          'balance_after';
+            is $trx->{balance_after} + 0,       5000 - 100,             'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id},             'financial_market_bet_id';
             is $trx->{payment_id},              undef,                  'payment_id';
             is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
@@ -390,7 +376,7 @@ subtest 'buy ACCU with take profit', sub {
         };
 
         subtest 'fmb row', sub {
-            plan tests => 18;
+            plan tests => 19;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,            'account_id';
             is $fmb->{bet_class},     'accumulator',           'bet_class';
@@ -402,8 +388,7 @@ subtest 'buy ACCU with take profit', sub {
             is $fmb->{is_expired},    0,                       'is_expired';
             is $fmb->{is_sold},       0,                       'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            #TODO: This test would pass after implementing offerings
-            # like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
+            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
             is $fmb->{sell_price},      undef, 'sell_price';
             is $fmb->{sell_time},       undef, 'sell_time';
             is $fmb->{settlement_time}, undef, 'settlement_time';
@@ -427,21 +412,20 @@ subtest 'sell a bet with take profit', sub {
         $args->{date_pricing} = $args->{date_start}->epoch + 1;
         $args->{limit_order}  = {
             take_profit => {
-                amount => 5,
-                date   => $now,
+                order_amount => 5,
+                order_date   => $now,
             }};
         my $contract = produce_contract($args);
 
-        my %options = (skip_validation => 1);
-        my $txn     = BOM::Transaction->new({
+        my $txn = BOM::Transaction->new({
             purchase_date => $contract->date_start->epoch + 1,
             client        => $cl,
             contract      => $contract,
             contract_id   => $fmb->{id},
-            price         => $contract->bid_price,
+            price         => 100,
             source        => 23,
         });
-        my $error = $txn->sell(%options);
+        my $error = $txn->sell();
         is $error, undef, 'no error';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
@@ -451,7 +435,7 @@ subtest 'sell a bet with take profit', sub {
             is $trx->{account_id},              $acc_usd->id,             'account_id';
             is $trx->{action_type},             'sell',                   'action_type';
             is $trx->{amount} + 0,              $contract->bid_price + 0, 'amount';
-            is $trx->{balance_after} + 0,       4998.02,                  'balance_after';
+            is $trx->{balance_after} + 0,       5000,                     'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id},               'financial_market_bet_id';
             is $trx->{payment_id},              undef,                    'payment_id';
             is $trx->{quantity},                1,                        'quantity';
@@ -463,7 +447,7 @@ subtest 'sell a bet with take profit', sub {
         };
 
         subtest 'fmb row', sub {
-            plan tests => 18;
+            plan tests => 19;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id},    $acc_usd->id,            'account_id';
             is $fmb->{bet_class},     'accumulator',           'bet_class';
@@ -475,8 +459,7 @@ subtest 'sell a bet with take profit', sub {
             is $fmb->{is_expired},    0,                       'is_expired';
             ok $fmb->{is_sold}, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            #TODO: This test would pass after implementing offerings
-            # like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
+            like $fmb->{remark}, qr/\btrade\[100\.00000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
             is $fmb->{settlement_time}, undef, 'settlement_time';
@@ -505,27 +488,6 @@ my $mock_date = Test::MockModule->new('Date::Utility');
 
 $mock_date->mock('hour' => sub { return 20 });
 
-subtest 'buy accumulator on synthetic with CR' => sub {
-    my $cr = create_client('CR');
-    top_up $cr, 'USD', 5000;
-
-    my $contract = produce_contract($args);
-
-    my $txn = BOM::Transaction->new({
-        client        => $cr,
-        contract      => $contract,
-        price         => 100,
-        amount        => 100,
-        amount_type   => 'stake',
-        source        => 19,
-        purchase_date => $contract->date_start,
-    });
-
-    my %options = (skip_validation => 1);
-    my $error   = $txn->buy(%options);
-    ok !$error, 'synthetic buy successful';
-};
-
 subtest 'buy accumulator on crash/boom with VRTC' => sub {
     my $vr = create_client('VRTC');
     top_up $vr, 'USD', 5000;
@@ -543,8 +505,7 @@ subtest 'buy accumulator on crash/boom with VRTC' => sub {
         purchase_date => $contract->date_start,
     });
 
-    my %options = (skip_validation => 1);
-    my $error   = $txn->buy(%options);
+    my $error = $txn->buy();
     ok !$error, 'crash symbol buy successful';
 
     $args->{underlying} = $underlying->symbol;
@@ -556,17 +517,14 @@ subtest 'sell failure due to update' => sub {
     my $txn = BOM::Transaction->new({
         client        => $cl,
         contract      => $contract,
-        price         => $contract->bid_price,
+        price         => 100,
         source        => 23,
         purchase_date => $contract->date_start,
         amount        => 100,
         amount_type   => 'stake',
     });
 
-    #TODO: For now we skip tnx validation because accumulator contract type is not yet
-    #implemented into our offerings.
-    my %options = (skip_validation => 1);
-    my $error   = $txn->buy(%options);
+    my $error = $txn->buy();
     ok !$error, 'buy without error';
 
     ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db accumulator => $txn->transaction_id;
@@ -602,7 +560,7 @@ subtest 'sell failure due to update' => sub {
 
     ok $updater->is_valid_to_update, 'valid to update';
     $updater->update;
-    $error = $sell_txn->sell(%options);
+    $error = $sell_txn->sell();
     ok $error, 'sell failed after contract is updated';
     is $error->{-mesg}, 'Contract is updated while attempting to sell', 'error mesg Contract is updated while attempting to sell';
     is $error->{-type}, 'SellFailureDueToUpdate',                       'error type SellFailureDueToUpdate';
@@ -628,17 +586,14 @@ subtest 'sell failure due to update' => sub {
                 $txn = BOM::Transaction->new({
                     client        => $cl,
                     contract      => $contract,
-                    price         => $contract->bid_price,
+                    price         => 100,
                     source        => 19,
                     purchase_date => $contract->date_start,
                     amount        => 100,
                     amount_type   => 'stake',
                 });
 
-                #TODO: For now we skip tnx validation because accumulator contract type is not yet
-                #implemented into our offerings.
-                my %options = (skip_validation => 1);
-                my $error   = $txn->buy(%options);
+                my $error = $txn->buy();
                 ok !$error, 'buy without error';
             }
 

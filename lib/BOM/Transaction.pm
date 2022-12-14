@@ -2314,7 +2314,7 @@ sub sell_expired_contracts {
                     $item->{fmb}->%*,
                     buy_transaction_id  => $item->{buy_txn_id},
                     sell_transaction_id => $item->{txn}{id}});
-            if ($bet->{bet_class} eq 'multiplier') {
+            if ($bet->{bet_class} eq 'multiplier' or $bet->{bet_class} eq 'accumulator') {
                 $poc_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
             }
 

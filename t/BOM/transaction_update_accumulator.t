@@ -393,8 +393,8 @@ subtest 'update take profit' => sub {
                     landing_company => $cl->landing_company->short,
                     limit_order     => {
                         take_profit => {
-                            amount => $last_updated_record->{take_profit_order_amount},
-                            date   => $last_updated_record->{take_profit_order_date},
+                            order_amount => $last_updated_record->{take_profit_order_amount},
+                            order_date   => $last_updated_record->{take_profit_order_date},
                         }
                     },
                 },

@@ -644,7 +644,7 @@ subtest 'sell failure due to update' => sub {
             # expiring the contract by setting current tick to 101.15 (the value of take profit)
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                 underlying => $underlying->symbol,
-                epoch      => $now->epoch + 1,
+                epoch      => $contract->date_pricing->epoch,
                 quote      => 101.15,
             });
             sleep 1;
@@ -658,7 +658,7 @@ subtest 'sell failure due to update' => sub {
         subtest 'sell_expired_contract without contract id' => sub {
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                 underlying => $underlying->symbol,
-                epoch      => $now->epoch + 2,
+                epoch      => $contract->date_pricing->epoch + 1,
                 quote      => 0,
             });
             sleep 1;
