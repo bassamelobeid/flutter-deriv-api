@@ -10,16 +10,24 @@ use Format::Util::Numbers qw(financialrounding);
 use Scalar::Util::Numeric qw(isint);
 use YAML::XS              qw(LoadFile);
 use POSIX                 qw(floor ceil);
-use List::Util            qw(any min max);
+use List::Util            qw(any min max first);
 use BOM::Config::Quants   qw(maximum_stake_limit);
 use JSON::MaybeXS         qw(decode_json);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+my $config;
 
-my $config = {
-    tick_size_barrier => LoadFile('/home/git/regentmarkets/bom/config/files/default_tick_size_barrier_accumulator.yml'),
-    loss_probability  => LoadFile('/home/git/regentmarkets/bom/config/files/default_loss_probability_accumulator.yml'),
-};
+=head2 _load_config 
+
+get config of accumulator
+
+=cut
+
+sub _load_config {
+    $config //= {
+        tick_size_barrier => LoadFile('/home/git/regentmarkets/bom-config/share/default_tick_size_barrier_accumulator.yml'),
+    };
+}
 
 =head2 BUILD
 
@@ -38,12 +46,22 @@ sub BUILD {
         );
     }
 
-    my $allowable_growth_rate = $self->symbol_config->{growth_rate};
-    unless (any { $_ == $self->growth_rate } @$allowable_growth_rate) {
+    my $acceptable_growth_rate = $self->symbol_config->{growth_rate};
+    unless (any { $_ == $self->growth_rate } @$acceptable_growth_rate) {
         BOM::Product::Exception->throw(
-            error_code => 'InvalidAccumulatorGrowthRate',
-            error_args => [$self->growth_rate, $self->symbol_config->{growth_rate}],
+            error_code => 'GrowthRateOutOfRange',
+            error_args => [join(', ', @$acceptable_growth_rate)],
             details    => {field => 'basis'},
+        );
+    }
+
+    my $max_stake =
+        min(maximum_stake_limit($self->currency, $self->landing_company, $self->underlying->market->name, $self->category->code), $self->max_payout);
+    if ($self->_user_input_stake > $max_stake) {
+        BOM::Product::Exception->throw(
+            error_code => 'StakeLimitExceeded',
+            error_args => [financialrounding('price', $self->currency, $max_stake)],
+            details    => {field => 'stake'},
         );
     }
 }
@@ -93,12 +111,19 @@ Initilazing symbol config
 sub _build_symbol_config {
     my $self = shift;
 
-    my $lc          = (defined $self->landing_company and $self->landing_company ne 'virtual') ? $self->landing_company : 'common';
-    my $symbol      = $self->underlying->symbol;
-    my $all_records = decode_json($self->app_config->get("quants.accumulator.symbol_config.$lc.$symbol"));
-    my $key         = _closest_key_to_value($all_records, $self->date_start->epoch);
+    my $lc     = $self->landing_company ? $self->landing_company : 'common';
+    my $symbol = $self->underlying->symbol;
 
-    return $all_records->{$key};
+    if ($self->app_config->quants->accumulator->symbol_config->can($lc) and $self->app_config->quants->accumulator->symbol_config->$lc->can($symbol))
+    {
+        my $all_records = decode_json($self->app_config->get("quants.accumulator.symbol_config.$lc.$symbol"));
+        my $key         = _closest_key_to_value($all_records, $self->date_start->epoch);
+
+        return $all_records->{$key};
+    } else {
+        # throw error because configuration is unsupported for the symbol and landing company pair.
+        BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
+    }
 }
 
 =head2 growth_start_step
@@ -159,8 +184,8 @@ sub _build_take_profit {
         };
     }
     return {
-        amount => $self->_order->{take_profit}{amount},
-        date   => Date::Utility->new($self->_order->{take_profit}{date})};
+        amount => financialrounding('price', $self->currency, $self->_order->{take_profit}{order_amount}),
+        date   => Date::Utility->new($self->_order->{take_profit}{order_date})};
 }
 
 =head2 duration
@@ -186,6 +211,7 @@ the spot that is used for barrier calculation
 for a new contract we use current_spot (just to be able to show a pair of barriers in FE if needed).
 in other cases bais_spot = previous_spot.
 since entry_tick is the first tick of the contract there is no previous spot, so basis_spot = undef
+for a closed contract basis_spot = tick_before_close_tick
 
 =head2 tick_count_after_entry
 
@@ -212,7 +238,7 @@ sub _build_max_duration {
     my $self = shift;
 
     my $coefficient = $self->symbol_config->{max_duration_coefficient};
-    return floor($coefficient / $config->{loss_probability}{"growthRate_" . $self->growth_rate});
+    return floor($coefficient / $self->growth_rate);
 }
 
 =head2 _build_duration
@@ -290,7 +316,7 @@ initializing tick_size_barrier
 sub _build_tick_size_barrier {
     my $self = shift;
 
-    return $config->{tick_size_barrier}{$self->underlying->symbol}{"growthRate_" . $self->growth_rate};
+    return $self->_load_config->{tick_size_barrier}{$self->underlying->symbol}{"growth_rate_" . $self->growth_rate};
 }
 
 =head2 _build_basis_spot
@@ -303,6 +329,8 @@ sub _build_basis_spot {
     my $self = shift;
 
     return $self->current_spot if $self->pricing_new;
+
+    return $self->previous_spot_before($self->close_tick->epoch) if $self->close_tick;
 
     return ($self->entry_tick and $self->date_pricing->epoch > $self->entry_tick->epoch)
         ? $self->previous_spot_before($self->date_pricing->epoch)
@@ -386,6 +414,24 @@ override '_build_ticks_for_tick_expiry' => sub {
 
     return [] unless $self->entry_tick;
 
+    # we need to cater for back-pricing capabilities in the code. Currently the code either get ticks:
+    # - between entry tick epoch + 1 to contract sell time
+    # - between entry tick epoch + 1 to maximum allowed ticks (based on max duration, max payout or take profit)
+    my $end_time   = $self->is_sold ? $self->sell_time : $self->underlying->for_date ? $self->underlying->for_date->epoch : undef;
+    my $start_time = $self->entry_tick->epoch + 1;
+
+    if ($end_time and $end_time >= $start_time) {
+        my @ticks =
+            reverse @{
+            $self->_tick_accessor->ticks_in_between_start_end({
+                    start_time => $start_time,
+                    end_time   => $end_time
+                })};
+
+        return [@ticks[0 .. $self->ticks_to_expiry - 1]] if scalar @ticks > $self->ticks_to_expiry;
+        return \@ticks;
+    }
+
     return $self->_tick_accessor->ticks_in_between_start_limit({
         start_time => $self->entry_tick->epoch + 1,
         limit      => $self->ticks_to_expiry,
@@ -425,6 +471,25 @@ override '_build_ask_price' => sub {
     my $self = shift;
 
     return $self->_user_input_stake;
+};
+
+override '_build_tick_stream' => sub {
+    my $self = shift;
+
+    # tick_stream is used to build the chart in contract details page while contract is running. since accumulator duration can
+    # be much higher than other tick_expiry contracts, the design of that chart for accumulator has changed in a way that we only
+    # need to stream last 10 ticks in POC response
+    my $end_time = $self->close_tick ? $self->close_tick->epoch : time;
+    my $limit    = min($self->tick_count_after_entry, 10);
+    #to include entry_tick
+    $limit++ if $limit < 10 and $self->entry_tick;
+    my @ticks = reverse @{
+        $self->_tick_accessor->ticks_in_between_end_limit({
+                end_time => $end_time,
+                limit    => $limit
+            })};
+
+    return [map { {epoch => $_->epoch, tick => $_->quote, tick_display_value => $self->underlying->pipsized_value($_->quote)} } @ticks];
 };
 
 =head2 _build_payout
@@ -539,26 +604,6 @@ sub _validate_decimal {
     return;
 }
 
-=head2 _validate_maximum_stake
-
-stake can't be greater than maximum stake limit
-
-=cut
-
-sub _validate_maximum_stake {
-    my $self = shift;
-
-    my $default_max_stake = maximum_stake_limit($self->currency, $self->landing_company, $self->underlying->market->name, $self->category->code);
-    if ($self->_user_input_stake > $default_max_stake) {
-        return {
-            message           => 'maximum stake limit',
-            message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $default_max_stake)],
-            details           => {field => 'stake'},
-        };
-    }
-    return;
-}
-
 =head2 _validation_methods
 
 all validation methods needed for accumulator
@@ -571,8 +616,7 @@ sub _validation_methods {
     my @validation_methods = qw(_validate_offerings
         _validate_input_parameters
         _validate_feed
-        validate_take_profit
-        _validate_maximum_stake);
+        validate_take_profit);
     push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
 
     return \@validation_methods;
@@ -703,7 +747,7 @@ sub is_valid_to_sell {
 
     return 1 if $self->is_expired;
 
-    foreach my $method (qw(_validate_trading_times _validate_feed _validate_sell_time)) {
+    foreach my $method (qw(_validate_trading_times _validate_feed _validate_sell_time _validate_sell_price)) {
         if (my $error = $self->$method($args)) {
             $self->_add_error($error);
             return 0;
@@ -731,11 +775,49 @@ sub _validate_sell_time {
     return;
 }
 
+=head2 _validate_sell_price
+
+sell_price shouldn't be less than initial stake
+
+=cut
+
+sub _validate_sell_price {
+    my $self = shift;
+
+    if ($self->_user_input_stake > $self->bid_price) {
+        return {
+            message           => 'sell price should be more than stake',
+            message_to_client => $ERROR_MAPPING->{PriceLessThanStake},
+        };
+    }
+    return;
+}
+
 override 'is_after_expiry' => sub {
     my $self = shift;
 
     return $self->exit_tick ? 1 : 0;
 };
+
+=head2 available_orders
+
+Shows the most recent limit orders for a contract.
+
+This is formatted in a way that it can be directly put into PRICER_ARGS.
+
+=cut
+
+sub available_orders {
+    my $self = shift;
+
+    my @available_orders = ();
+
+    if ($self->take_profit) {
+        push @available_orders, ('take_profit', ['order_amount', $self->take_profit->{amount}, 'order_date', $self->take_profit->{date}->epoch]);
+    }
+
+    return \@available_orders;
+}
 
 =head2 _closest_key_to_value
 

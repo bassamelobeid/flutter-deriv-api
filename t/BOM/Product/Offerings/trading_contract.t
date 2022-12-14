@@ -78,7 +78,6 @@ subtest 'by landing company' => sub {
             'staysinout'    => 4,
             'touchnotouch'  => 6,
             'callputspread' => 4,
-            'accumulator'   => 1,
             'vanilla'       => 8,
         );
         lives_ok {

@@ -54,7 +54,7 @@ subtest 'product listing - deriv dtrader' => sub {
         ['Commodities', 'Cryptocurrencies', 'Forex', 'Stock Indices', 'Derived'],
         'available markets matched';
     cmp_bag $deriv_dtrader->{$app_id}->{available_trade_types}, ['Options', 'Spreads', 'Multipliers'], 'available trade types matched';
-    is scalar $deriv_dtrader->{$app_id}->{product_list}->@*, 81, '81 listing';
+    is scalar $deriv_dtrader->{$app_id}->{product_list}->@*, 79, '79 listing';
     # check the structure
     cmp_bag [keys $deriv_dtrader->{$app_id}->{product_list}->[0]->%*],
         ['available_account_types', 'available_trade_types', 'symbol', 'market', 'submarket'],

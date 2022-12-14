@@ -366,7 +366,15 @@ subtest 'deal cancellation active hit stop out' => sub {
 
     $args->{is_sold}   = 1;
     $args->{sell_time} = $args->{date_pricing};
-    $c                 = produce_contract($args);
+    #TODO: after calling $c->is_expired, cancellation will be added to limit_order. this needs to be checked
+    # $args->{limit_order} = {
+    #     stop_out => {
+    #         order_type   => 'stop_out',
+    #         order_amount => -100,
+    #         order_date   => $now->epoch,
+    #         basis_spot   => '100.00',
+    #     }};
+    $c = produce_contract($args);
     ok $c->is_expired,   'contract expired';
     ok $c->is_cancelled, 'contract cancelled';
     is $c->value,         '100.00',         'value of contract is 100.00';

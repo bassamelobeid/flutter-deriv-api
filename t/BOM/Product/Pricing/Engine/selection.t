@@ -47,9 +47,9 @@ subtest 'test everything' => sub {
         foreach my $ref (
             @{
                 BOM::Product::ContractFinder::Basic::decorate({
-                        offerings             => get_contracts({symbol => $symbol}),
-                        symbol                => $symbol,
-                        landing_company_short => 'virtual'
+                        offerings            => get_contracts({symbol => $symbol}),
+                        symbol               => $symbol,
+                        landing_company_name => 'virtual'
                     }
                 )->{available}})
         {

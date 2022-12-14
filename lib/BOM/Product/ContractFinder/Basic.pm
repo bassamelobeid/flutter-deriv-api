@@ -8,14 +8,20 @@ use Date::Utility;
 use Time::Duration::Concise;
 use VolSurface::Utils   qw(get_strike_for_spot_delta);
 use Number::Closest::XS qw(find_closest_numbers_around);
+use YAML::XS            qw(LoadFile);
 use Quant::Framework;
 use Cache::LRU;
+use Syntax::Keyword::Try;
+use Log::Any      qw($log);
+use JSON::MaybeXS qw(decode_json);
+use List::Util    qw(max);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Contract::Strike;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
+use BOM::Config::Runtime;
 
 my $cache = Cache::LRU->new(size => 500);
 
@@ -64,7 +70,7 @@ sub decorate {
 
         # This key is being used to decide whether to show additional
         # barrier field on the frontend.
-        if ($contract_category =~ /^(?:staysinout|endsinout)$/) {
+        if ($contract_category =~ /^(?:staysinout|endsinout|accumulator)$/) {
             $o->{barriers} = 2;
         } elsif ($contract_category eq 'lookback'
             or $contract_category eq 'asian'
@@ -82,6 +88,18 @@ sub decorate {
         if ($contract_category eq 'multiplier' and my $config = _get_multiplier_config($lc_short, $underlying->symbol)) {
             $o->{multiplier_range}   = $config->{multiplier_range};
             $o->{cancellation_range} = $config->{cancellation_duration_range};
+        }
+
+        if ($contract_category eq 'accumulator') {
+            my $app_config = BOM::Config::Runtime->instance->app_config;
+            try {
+                my $all_records = decode_json($app_config->get("quants.accumulator.symbol_config.$lc_short.$symbol"));
+                my $key         = max grep { $_ <= time } keys %{$all_records};
+                $o->{growth_rate_range} = $all_records->{$key}->{growth_rate};
+
+            } catch {
+                $log->warn("no accumulator config is available for $symbol symbol in $lc_short landing company.");
+            }
         }
         # The reason why we have to append 't' to tick expiry duration
         # is because in the backend it is easier to handle them if the
@@ -210,7 +228,9 @@ sub _get_multiplier_config {
 }
 
 =head2 _get_callputspread_barrier_range
-    _get_callputspread_barrier_range will return the callputspread barrier_range name.
+
+_get_callputspread_barrier_range will return the callputspread barrier_range name.
+
 =cut
 
 sub _get_callputspread_barrier_range {

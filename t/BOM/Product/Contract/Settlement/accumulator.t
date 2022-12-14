@@ -60,13 +60,16 @@ subtest 'hit barrier' => sub {
     is $c->value,           '0',                   'correct value';
     is $c->pnl,             '-100.00',             'correct pnl';
     ok $c->is_valid_to_sell, 'valid to sell';
+    is $c->entry_tick->epoch,      $now->epoch + 1, 'currect entry_tick';
+    is $c->tick_count_after_entry, 1,               'no ticks after entry_tick';
+    is scalar @{$c->tick_stream},  2,               'two ticks available from enty tick';
 };
 
 subtest 'hit take profit' => sub {
     $args->{limit_order} = {
         take_profit => {
-            amount => 2,
-            date   => $now->epoch,
+            order_amount => 2,
+            order_date   => $now->epoch,
         }};
     $args->{date_pricing} = $now->plus_time_interval('4s');
 
@@ -108,8 +111,8 @@ subtest 'hit take profit and barrier at the same time' => sub {
 
     $args->{limit_order} = {
         take_profit => {
-            amount => 2,
-            date   => $now->epoch,
+            order_amount => 2,
+            order_date   => $now->epoch,
         }};
     $args->{date_pricing} = $now->plus_time_interval('4s');
 
@@ -142,6 +145,9 @@ subtest 'hit tick expiry' => sub {
     is $c->value,            '102.01',              'correct value';
     is $c->pnl,              '2.01',                'correct pnl';
     ok $c->is_valid_to_sell, 'valid to sell';
+    is $c->entry_tick->epoch,      $now->epoch + 1, 'currect entry_tick';
+    is $c->tick_count_after_entry, 3,               '3 ticks after entry_tick';
+    is scalar @{$c->tick_stream},  4,               'one tick available from enty tick';
 };
 
 subtest 'hit tick expiry and barrier at the same time' => sub {

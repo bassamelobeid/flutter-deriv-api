@@ -1213,15 +1213,20 @@ sub _get_tick_details {
     my $quote_epoch = 0 + $args->{quote}{epoch};
     my $quote_name  = $args->{quote}{name};
 
-    my $limit = ($self->tick_expiry) ? 2 : 3;
-
     my @ticks_all;
     my @ticks_after;
     if ($self->tick_expiry) {
+        #Accumulator contracts tend to get closed much sooner than their tick duration, to avoid sending pointless
+        # data, tick_count_after_entry is used instead of ticks_to_expiry in calculating $limit for them.
+        #we want to get ticks from entry tick to one tick after contract expired.
+        my $limit = $self->category_code eq 'accumulator'
+            ? $self->tick_count_after_entry + 2    # +2 to include entry_tick and an extra tick in the end
+            : $self->ticks_to_expiry + 1;          # +1 to include an extra tick in the end
+
         my @tmp_ticks = @{
             $self->underlying->ticks_in_between_start_limit({
                     start_time => $epoch + 1,
-                    limit      => $self->ticks_to_expiry + 1,
+                    limit      => $limit,
                 }
             ) // []};
         push @ticks_all, @tmp_ticks;
@@ -1235,6 +1240,7 @@ sub _get_tick_details {
         push @ticks_after, @tmp_ticks;
     }
 
+    my $limit        = ($self->tick_expiry) ? 2 : 3;
     my @ticks_before = reverse @{
         $self->underlying->ticks_in_between_end_limit({
                 end_time => 0 + $epoch,

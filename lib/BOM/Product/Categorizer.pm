@@ -82,6 +82,7 @@ sub BUILD {
             $self->_validate_barrier;
             $self->_validate_stake_min_max;
             $self->_validate_multiplier;
+            $self->_validate_limit_order;
         }
 
         $self->_initialize_barrier();
@@ -591,7 +592,36 @@ sub _validate_multiplier {
     }
 
     return;
+}
 
+=head2 _validate_limit_order
+
+some fields of limit_order are only allowed for a specific contract type.
+
+=cut
+
+sub _validate_limit_order {
+    my $self = shift;
+
+    my $params              = $self->_parameters;
+    my $category            = $params->{category};
+    my %allowed_limit_order = map { $_ => 1 } $category->allowed_limit_order->@*;
+    my $orders              = $params->{limit_order};
+
+    if ($orders = ref($orders) eq 'ARRAY' ? _to_hashref($orders) : $orders) {
+        foreach my $order_name (keys $orders->%*) {
+            # TODO:cancellation isn't a limit_order. but in "available_orders" method, it is considered as one.
+            # line bellow is added to skip validation on that. this needs to be fixed
+            next if $order_name eq 'cancellation' and $category->code eq 'multiplier';
+            unless ($allowed_limit_order{$order_name}) {
+                BOM::Product::Exception->throw(
+                    error_code => 'InvalidInput',
+                    error_args => [$order_name, $params->{bet_type}],
+                    details    => {},
+                );
+            }
+        }
+    }
 }
 
 sub _to_hashref {

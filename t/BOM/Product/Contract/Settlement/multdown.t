@@ -337,7 +337,6 @@ subtest 'deal cancellation active hit stop out' => sub {
     is $c->bid_price + 0, $c->cancel_price, 'bid price of contract equals to cancel price';
 
     # status still unchanged as date pricing moved passed cancellation expiry
-    $args->{date_pricing} = $now->epoch + 3601;
     $c = produce_contract($args);
     ok $c->is_expired,   'contract expired';
     ok $c->is_cancelled, 'contract cancelled';

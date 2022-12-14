@@ -21,10 +21,15 @@ sub check_expiry_conditions {
                     start_time => $self->date_start->epoch + 1,
                     limit      => $self->ticks_to_expiry
                 })};
-        my $low  = $self->get_low_barrier($ticks[-2]->quote);
-        my $high = $self->get_high_barrier($ticks[-2]->quote);
 
-        my $value = ($self->exit_tick->quote < $high && $self->exit_tick->quote > $low) ? $self->calculate_payout(scalar @ticks) : 0;
+        my $value = 0;
+
+        if (scalar(@ticks) >= 2) {
+            my $low  = $self->get_low_barrier($ticks[-2]->quote);
+            my $high = $self->get_high_barrier($ticks[-2]->quote);
+
+            $value = $self->calculate_payout(scalar @ticks) if ($self->exit_tick->quote < $high && $self->exit_tick->quote > $low);
+        }
 
         $self->value($value);
     }
