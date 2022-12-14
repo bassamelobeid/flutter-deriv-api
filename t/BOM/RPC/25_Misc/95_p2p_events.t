@@ -243,6 +243,56 @@ subtest 'p2p order create and cancel' => sub {
         'expected events emitted for cancellation'
     );
 
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+    $app_config->set({'payments.p2p.create_order_chat' => 1});
+
+    @emitted = ();
+    $order   = BOM::RPC::v3::P2P::p2p_order_create({
+            client => $client,
+            args   => {
+                advert_id => $advert->{id},
+                amount    => 10,
+            },
+        });
+
+    cmp_deeply(
+        \@emitted,
+        bag([
+                'p2p_order_created',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                },
+            ],
+            [
+                'p2p_order_chat_create',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                },
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $client->p2p_advertiser_info->{id},
+                }]
+        ),
+        'expected events for order create with enabled order_chat_create'
+    );
+
 };
 
 subtest 'Order dispute (type buy)' => sub {
