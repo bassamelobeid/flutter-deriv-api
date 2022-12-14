@@ -15,6 +15,7 @@ use Syntax::Keyword::Try;
 use BOM::Config::Runtime;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 use Log::Any                          qw($log);
+use YAML::XS                          qw(LoadFile);
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
@@ -37,11 +38,24 @@ if ($r->param('save_accumulator_config')) {
         my $symbol             = $r->param('symbol')          // die 'symbol is undef';
         my $landing_company    = $r->param('landing_company') // die 'landing_company is undef';
         my $accumulator_config = decode_json_utf8($app_config->get("quants.accumulator.symbol_config.$landing_company.$symbol"));
+        my $tick_size_barrier  = LoadFile('/home/git/regentmarkets/bom-config/share/default_tick_size_barrier_accumulator.yml');
+        my $growth_rate        = decode_json_utf8($r->param('growth_rate'));
+
+        #checking if there exists tick size barrier for each growth rate
+        foreach my $gr (@$growth_rate) {
+            unless (exists($tick_size_barrier->{$symbol}{"growth_rate_" . $gr})) {
+                $output = {error => "There is no tick size barrier defined for $gr growth rate"};
+                print encode_json_utf8($output);
+                return;
+            }
+        }
+
         $accumulator_config->{$now} = {
             max_payout               => decode_json_utf8($r->param('max_payout')),
             max_duration_coefficient => $r->param('max_duration_coefficient'),
             growth_start_step        => $r->param('growth_start_step'),
-            growth_rate              => decode_json_utf8($r->param('growth_rate'))};
+            growth_rate              => $growth_rate
+        };
 
         my $encoded_accumulator_config = encode_json_utf8($accumulator_config);
         $app_config->set({"quants.accumulator.symbol_config.$landing_company.$symbol" => $encoded_accumulator_config});

@@ -26,7 +26,8 @@ sub get_info {
     } else {
         try {
             my $contract_parameters = shortcode_to_parameters($fmb->{short_code}, $currency);
-            $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
+            $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb)
+                if $fmb->{bet_class} =~ /^(multiplier|accumulator)$/;
             my $contract = produce_contract($contract_parameters);
             $info->{longcode} = BOM::Backoffice::Request::localize($contract->longcode);
             if (not $fmb->{is_sold}) {
