@@ -998,6 +998,86 @@ subtest 'testing pass status and underage' => sub {
     );
 
 };
+subtest 'testing pass status and underage in messages' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
+
+    my $email = 'test_verify_pass+underage_message@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    my $args = {
+        loginid => $client->loginid,
+    };
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->id);
+    $updates  = 0;
+    @requests = ();
+
+    $idv_model->add_document({
+        issuing_country => 'br',
+        number          => '123.456.789-33',
+        type            => 'cpf'
+    });
+
+    my $redis = BOM::Config::Redis::redis_events();
+    $redis->set(IDV_LOCK_PENDING . $client->binary_user_id, 1);
+
+    $client->address_line_1('Fake St 123');
+    $client->address_line_2('apartamento 22');
+    $client->address_postcode('12345900');
+    $client->residence('br');
+    $client->first_name('John');
+    $client->last_name('Doe');
+    $client->date_of_birth('2005-02-12');
+    $client->save();
+
+    $resp = Future->done(
+        HTTP::Response->new(
+            200, undef, undef,
+            encode_json_utf8({
+                    status   => 'pass',
+                    messages => ['UNDERAGE'],
+                    report   => {
+                        full_name => "John Doe",
+                        birthdate => "2005-02-12"
+                    }})));
+
+    ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    ok $client->status->disabled, 'Client status properly disabled due to underage';
+
+    my $document = $idv_model->get_last_updated_document;
+
+    cmp_deeply(
+        $document,
+        {
+            'document_number'          => '123.456.789-33',
+            'status'                   => 'refuted',
+            'document_expiration_date' => undef,
+            'is_checked'               => 1,
+            'issuing_country'          => 'br',
+            'status_messages'          => '["UNDERAGE"]',
+            'id'                       => '11',
+            'document_type'            => 'cpf'
+        },
+        'Document has refuted from pass -  status underage'
+    );
+
+};
 
 subtest 'testing refuted status and expired' => sub {
     my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{identity_verification_requested};
@@ -1058,7 +1138,11 @@ subtest 'testing refuted status and expired' => sub {
                         expiry_date => "2009-05-12",
                     }})));
 
+    $client->status->set('age_verification', 'staff', 'age verified manually');
+
     ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    ok !$client->status->age_verification, 'age verification was clared';
 
     my $document = $idv_model->get_last_updated_document;
 
@@ -1071,7 +1155,7 @@ subtest 'testing refuted status and expired' => sub {
             'is_checked'               => 1,
             'issuing_country'          => 'br',
             'status_messages'          => '["EXPIRED"]',
-            'id'                       => '11',
+            'id'                       => '12',
             'document_type'            => 'cpf'
         },
         'Document has refuted from pass -  status underage'
@@ -1137,7 +1221,11 @@ subtest 'testing refuted status and dob mismatch' => sub {
                         birthdate => "1997-03-12",
                     }})));
 
+    $client->status->set('age_verification', 'staff', 'age verified manually');
+
     ok $idv_event_handler->($args)->get, 'the event processed without error';
+
+    ok !$client->status->age_verification, 'age verification was clared';
 
     my $document = $idv_model->get_last_updated_document;
 
@@ -1150,7 +1238,7 @@ subtest 'testing refuted status and dob mismatch' => sub {
             'is_checked'               => 1,
             'issuing_country'          => 'br',
             'status_messages'          => '["DOB_MISMATCH"]',
-            'id'                       => '12',
+            'id'                       => '13',
             'document_type'            => 'cpf'
         },
         'Document has refuted from pass -  status underage'
@@ -1218,6 +1306,8 @@ subtest 'testing refuted status and name mismatch' => sub {
 
     ok $idv_event_handler->($args)->get, 'the event processed without error';
 
+    ok $client->status->poi_name_mismatch, 'POI name mismatch status applied properly';
+
     my $document = $idv_model->get_last_updated_document;
 
     cmp_deeply(
@@ -1229,7 +1319,7 @@ subtest 'testing refuted status and name mismatch' => sub {
             'is_checked'               => 1,
             'issuing_country'          => 'br',
             'status_messages'          => '["NAME_MISMATCH"]',
-            'id'                       => '13',
+            'id'                       => '14',
             'document_type'            => 'cpf'
         },
         'Document has refuted from pass -  status underage'
@@ -1369,7 +1459,7 @@ subtest 'testing connection refused' => sub {
             'is_checked'               => 1,
             'issuing_country'          => 'br',
             'status_messages'          => '["CONNECTION_REFUSED"]',
-            'id'                       => $document->{id},
+            'id'                       => '16',
             'document_type'            => 'cpf'
         },
         'Document has unavailable status'
@@ -1444,7 +1534,7 @@ subtest 'testing unexpected error' => sub {
             'is_checked'               => 1,
             'issuing_country'          => 'br',
             'status_messages'          => '["UNAVAILABLE_MICROSERVICE"]',
-            'id'                       => $document->{id},
+            'id'                       => '17',
             'document_type'            => 'cpf'
         },
         'Document has unavailable status'

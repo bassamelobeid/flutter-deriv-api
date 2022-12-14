@@ -211,11 +211,11 @@ async sub verify_process {
 
     await $callback->({
         client              => $client,
-        messages            => [@messages],
+        messages            => \@messages,
         document            => $document,
         provider            => $provider,
         response_hash       => $response_hash,
-        common_datadog_tags => [@common_datadog_tags],
+        common_datadog_tags => \@common_datadog_tags,
         errors              => _messages_to_hashref(@messages),
     });
 
@@ -268,11 +268,16 @@ async sub idv_refuted {
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
     push $messages->@*,
-        _apply_side_effects({
-            client   => $client,
-            errors   => $errors,
-            provider => $provider,
+        _resolve_error_messages({
+            client => $client,
+            errors => $errors,
         });
+
+    _apply_side_effects({
+        client   => $client,
+        messages => $messages,
+        provider => $provider,
+    });
 
     $idv_model->update_document_check({
         document_id     => $document->{id},
@@ -398,9 +403,9 @@ sub _messages_to_hashref {
     return +{map { exists $mappings->{$_} ? ($mappings->{$_} => 1) : () } @_};
 }
 
-=head2 _apply_side_effects
+=head2 _resolve_error_messages
 
-Given a hashref of possible validaiton errors, applies the side effects required.
+Given a hashref of possible validation errors, resolves the error messages.
 
 It takes the following arguments as hashref:
 
@@ -410,51 +415,86 @@ It takes the following arguments as hashref:
 
 =item C<errors> - the hashref with validations errors to process.
 
-=item C<provider> - the name of the IDV provider.
-
 =back
 
 Returns a list of possible error messages.
 
 =cut
 
-sub _apply_side_effects {
+sub _resolve_error_messages {
     my $args = shift;
-    my ($client, $errors, $provider) = @{$args}{qw/client errors provider/};
+    my ($client, $errors) = @{$args}{qw/client errors/};
 
     my @messages;
-    my $clear_age_verification;
 
     unless (exists $errors->{Expired}) {
         if (exists $errors->{NameMismatch}) {
             push @messages, "NAME_MISMATCH";
-
-            $client->propagate_status('poi_name_mismatch', 'system', "Client's name doesn't match with provided name by $provider");
-            $clear_age_verification = 1;
         }
 
         if (exists $errors->{UnderAge}) {
             push @messages, 'UNDERAGE';
 
-            BOM::Event::Actions::Common::handle_under_age_client($client, $provider);
-            $clear_age_verification = 1;
         }
 
         if (exists $errors->{DobMismatch}) {
             push @messages, 'DOB_MISMATCH';
+        }
+    } else {
+        push @messages, 'EXPIRED';
+    }
+
+    return @messages;
+}
+
+=head2 _apply_side_effects
+
+Given a hashref of possible validation errors, applies the side effects required.
+
+It takes the following arguments as hashref:
+
+=over 4
+
+=item C<client> - the L<BOM::User::Client> instance.
+
+=item C<messages> - the hashref with messages to process.
+
+=item C<provider> - the name of the IDV provider.
+
+=back
+
+Returns undef.
+
+=cut
+
+sub _apply_side_effects {
+    my $args = shift;
+    my ($client, $messages, $provider) = @{$args}{qw/client messages provider/};
+    my $clear_age_verification;
+
+    unless (any { $_ eq 'EXPIRED' } $messages->@*) {
+        if (any { $_ eq 'NAME_MISMATCH' } $messages->@*) {
+            $client->propagate_status('poi_name_mismatch', 'system', "Client's name doesn't match with provided name by $provider");
+            $clear_age_verification = 1;
+        }
+
+        if (any { $_ eq 'UNDERAGE' } $messages->@*) {
+            BOM::Event::Actions::Common::handle_under_age_client($client, $provider);
+            $clear_age_verification = 1;
+        }
+
+        if (any { $_ eq 'DOB_MISMATCH' } $messages->@*) {
             $client->propagate_status('poi_dob_mismatch', 'system', "Client's DOB doesn't match with provided DOB by $provider");
             $clear_age_verification = 1;
         }
 
         BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id);    # no second attempts allowed
     } else {
-        push @messages, 'EXPIRED';
         $clear_age_verification = 1;
     }
 
     $client->propagate_clear_status('age_verification') if $clear_age_verification;
-
-    return @messages;
+    return undef;
 }
 
 =head2 _trigger
