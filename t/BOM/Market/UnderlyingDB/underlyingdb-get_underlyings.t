@@ -19,7 +19,7 @@ lives_ok {
 eq_or_diff [sort keys %{Finance::Contract::Category->get_all_contract_categories}],
     [
     sort
-        qw(callput endsinout touchnotouch staysinout asian digits vanilla lookback reset runs highlowticks callputspread callputequal multiplier accumulator)
+        qw(callput endsinout touchnotouch staysinout asian digits vanilla lookback reset runs highlowticks callputspread callputequal multiplier accumulator turbos)
     ],
     "Correct list of all contract categories";
 
