@@ -450,6 +450,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.fees.default.stable_fiat
                 payments.transfer_between_accounts.fees.default.stable_stable
                 payments.transfer_between_accounts.fees.by_currency
+                payments.p2p.create_order_chat
                 payments.p2p.enabled
                 payments.p2p.available
                 payments.p2p.clients

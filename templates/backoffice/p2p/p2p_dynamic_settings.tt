@@ -1,3 +1,65 @@
+<head>
+    <style>
+        .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        }
+
+        .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        }
+
+        .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+        }
+
+        .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+        }
+
+        input:checked + .slider {
+        background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+        box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+        }
+        .slider.round {
+        border-radius: 34px;
+        }
+
+        .slider.round:before {
+        border-radius: 50%;
+        }
+    </style>
+</head>
+
 <form action="[% request.url_for('backoffice/p2p_dynamic_settings.cgi') %]" method="post">
     <input type="hidden" name="revision" value="[% revision %]"/>
     <button type="submit" class="btn btn--primary" name="save" value="1">Save Dynamic Settings</button></td>
@@ -8,11 +70,17 @@
         <h3>[% setting %]</h3>
         <p>[% settings.$setting.description %]</p>
         [% IF settings.$setting.type == 'Bool' %]
-        <select name="[% setting %]" style="width: 70px;">
-            <option value="1" [% settings.$setting.value && 'selected' %]>Yes</option>
-            <option value="0" [% !settings.$setting.value && 'selected' %]>No</option>
-        </select>
-        &nbsp;&nbsp;current: [% IF settings.$setting.value %]Yes[% ELSE %]No[% END %]
+            <label class="switch" style="bottom:16px;">
+                [% IF settings.$setting.value %]
+                    <input type="checkbox" name="[% setting %]" [% 'checked' %]>
+                [% ELSE %]
+                    <input type="checkbox" name="[% setting %]" >
+                [% END %]
+                <span class="slider round"></span> 
+            </label>
+            <span style="bottom:500px;">
+                &nbsp;&nbsp;current: [% IF settings.$setting.value %]Yes[% ELSE %]No[% END %]
+            </span>
         [% ELSIF settings.$setting.type == 'ArrayRef' %]
             <table border="0"><tr>
             <!-- textarea min lines of 2, grows by number of lines + 1 -->
@@ -37,3 +105,4 @@
     <hr/>
     <button type="submit" class="btn btn--primary" name="save" value="1">Save Dynamic Settings</button></td>
 </form>
+
