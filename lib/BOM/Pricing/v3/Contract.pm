@@ -22,6 +22,7 @@ use BOM::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 use BOM::Product::ContractFactory qw(produce_contract);
 use Finance::Contract::Longcode   qw( shortcode_to_parameters);
 use LandingCompany::Registry;
@@ -228,6 +229,40 @@ sub _get_ask {
                 }
             }
 
+            if ($contract->category_code eq 'accumulator') {
+                if ($contract->take_profit) {
+                    $response->{limit_order} = {
+                        'take_profit' => {
+                            'display_name' => 'Take profit',
+                            'order_date'   => $contract->take_profit->{date}->epoch,
+                            'order_amount' => $contract->take_profit->{amount}}};
+                }
+
+                my $redis_replicated    = BOM::Config::Redis::redis_replicated_write();
+                my $unerlying_key       = join('::', $contract->underlying->symbol, 'growth_rate_' . $contract->growth_rate);
+                my $last_tick_processed = decode_json($redis_replicated->hget("accumulator::previous_tick_barrier_status", $unerlying_key));
+                my $stat_key            = join('::', 'accumulator', 'stat_history', $unerlying_key);
+
+                #if the request is coming from Websocket we should return all data(100 numbers) to build the stat chart.
+                #after that(when the request is coming from pricer) we only need to return the last value to update it
+                my $ticks_stayed_in =
+                      $streaming_params->{from_pricer}
+                    ? $redis_replicated->lrange($stat_key, -1, -1)
+                    : $redis_replicated->lrange($stat_key, 0,  -1);
+
+                my $high_barrier = $contract->underlying->pipsized_value($contract->get_high_barrier($contract->current_spot));
+                my $low_barrier  = $contract->underlying->pipsized_value($contract->get_low_barrier($contract->current_spot));
+
+                $response->{contract_details} = {
+                    'maximum_payout'    => $contract->max_payout,
+                    'maximum_ticks'     => $contract->max_duration,
+                    'tick_size_barrier' => $contract->tick_size_barrier,
+                    'high_barrier'      => $high_barrier,
+                    'low_barrier'       => $low_barrier,
+                    'ticks_stayed_in'   => $ticks_stayed_in,
+                    'last_tick_epoch'   => $last_tick_processed->{tick_epoch}};
+            }
+
             # On websocket, we are setting 'basis' to payout and 'amount' to 1000 to increase the collission rate.
             # This logic shouldn't be in websocket since it is business logic.
             unless ($streaming_params->{from_pricer}) {
@@ -236,7 +271,8 @@ sub _get_ask {
                 # is dependent of the stake and multiplier provided by the client.
                 # There is no probability calculation involved. Hence, not optimising anything.
                 # Since vanilla has no payout, adding it here as well
-                $response->{skip_basis_override} = 1 if $contract->code =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD|VANILLALONGCALL|VANILLALONGPUT)$/;
+                $response->{skip_basis_override} = 1
+                    if $contract->code =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD|ACCU|VANILLALONGCALL|VANILLALONGPUT)$/;
             }
         }
         my $pen = $contract->pricing_engine_name;
@@ -382,6 +418,12 @@ sub get_bid {
 
                 $response->{profit}            = formatnumber('price', $currency, $profit);
                 $response->{profit_percentage} = roundcommon(0.01, $profit / $main_contract_price * 100);
+
+                #we don't want to show negative profit at the beginning of the accumulator contract to client
+                if ($contract->category_code eq 'accumulator' and $profit < 0 and not $is_sold) {
+                    delete $response->{profit};
+                    delete $response->{profit_percentage};
+                }
             }
             # (M)
 
@@ -490,7 +532,7 @@ sub get_contract_details {
     try {
         $bet_params =
             shortcode_to_parameters($params->{short_code}, $params->{currency});
-        if ($bet_params->{bet_type} =~ /^(?:MULTUP|MULTDOWN)$/) {
+        if ($bet_params->{bet_type} =~ /^(?:MULTUP|MULTDOWN|ACCU)$/) {
             my $poc_parameters = BOM::Pricing::v3::Utility::get_poc_parameters($params->{contract_id}, $params->{landing_company});
             $bet_params->{limit_order} = $poc_parameters->{limit_order};
         }
@@ -525,7 +567,7 @@ sub get_contract_details {
     # do not have any other information on legacy contract
     return $response if $contract->is_legacy;
 
-    if ($contract->two_barriers) {
+    if ($contract->two_barriers and $contract->high_barrier and $contract->low_barrier) {
         $response->{high_barrier} = $contract->high_barrier->supplied_barrier;
         $response->{low_barrier}  = $contract->low_barrier->supplied_barrier;
     } elsif ($contract->can('barrier')) {
@@ -746,8 +788,7 @@ sub _build_bid_response {
 
     if ($params->{is_sold} and $params->{is_expired}) {
         # here sell_price is used to parse the status of contracts that settled from Back Office
-        # For non binary , there is no concept of won or lost, hence will return empty status if it is already expired and sold
-        #$response->{status} = !$contract->is_binary ? undef : ($params->{sell_price} == $contract->payout ? "won" : "lost");
+        # For non binary (except accumulator), there is no concept of won or lost, hence will return empty status if it is already expired and sold
         $response->{status} = undef;
         if ($contract->is_binary) {
             $response->{status} = ($params->{sell_price} == $contract->payout ? "won" : "lost");
@@ -768,13 +809,9 @@ sub _build_bid_response {
         $response->{entry_tick_time} = 0 + $contract->entry_spot_epoch;
     }
 
-    if ($contract->two_barriers) {
-        if ($contract->high_barrier->supplied_type eq 'absolute') {
-            $response->{high_barrier} = $contract->high_barrier->as_absolute;
-            $response->{low_barrier}  = $contract->low_barrier->as_absolute;
-        } elsif ($contract->entry_spot) {
-            # supplied_type 'difference' and 'relative' will need entry spot
-            # to calculate absolute barrier value
+    if ($contract->two_barriers and $contract->high_barrier) {
+        # supplied_type 'difference' and 'relative' will need entry spot to calculate absolute barrier value
+        if ($contract->high_barrier->supplied_type eq 'absolute' or $contract->entry_spot) {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
             $response->{low_barrier}  = $contract->low_barrier->as_absolute;
         }
@@ -805,6 +842,29 @@ sub _build_bid_response {
         }
     }
 
+    # for accumulator, we want to return maximum_ticks and growth_rate and limit_order.
+    if ($contract->category_code eq 'accumulator') {
+        if ($contract->take_profit) {
+            $response->{limit_order} = {
+                'take_profit' => {
+                    'display_name' => 'Take profit',
+                    'order_date'   => $contract->take_profit->{date}->epoch,
+                    'order_amount' => $contract->take_profit->{amount}}};
+        }
+        $response->{growth_rate} = $contract->growth_rate;
+        $response->{tick_count}  = $contract->max_duration;
+        $response->{tick_passed} = $contract->tick_count_after_entry;
+
+        #status of accumulator is determined differently from other non-binary contracts
+        if ($params->{is_sold} and $params->{is_expired}) {
+            $response->{status} = ($contract->pnl >= 0 ? "won" : "lost");
+        } elsif ($params->{is_sold} and not $params->{is_expired}) {
+            #user can only sell the contract if pnl > 0, so it will considered as a 'win'
+            $response->{status} = 'won';
+        } else {    # not sold
+            $response->{status} = 'open';
+        }
+    }
     if ($contract->category_code eq 'vanilla') {
         $response->{min_stake}           = $contract->min_stake;
         $response->{max_stake}           = $contract->max_stake;
