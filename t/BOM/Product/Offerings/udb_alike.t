@@ -39,6 +39,7 @@ subtest 'Sets match' => sub {
                 }
             }
 
+            push(@udb_result, 'turbos') if $udb_method eq 'available_contract_categories';
             eq_or_diff([sort @result], [sort @udb_result], $po . ' list match with UnderlyingDB->' . $udb_method);
 
         }
