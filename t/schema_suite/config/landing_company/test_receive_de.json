@@ -184,7 +184,7 @@
             "legal_allowed_contract_categories": {
                "type": "array",
                "items": {
-                  "pattern": "^multiplier$",
+                  "pattern": "^multiplier|turbos$",
                   "type": "string"
                },
                "minItems": 1

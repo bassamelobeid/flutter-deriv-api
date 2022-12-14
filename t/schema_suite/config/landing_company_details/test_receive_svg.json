@@ -241,7 +241,7 @@
          "type" : "array",
          "items" : {
             "type" : "string",
-            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier|vanilla|accumulator)$"
+            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier|vanilla|accumulator|turbos)$"
          }
       }
    }
