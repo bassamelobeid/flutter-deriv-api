@@ -15,10 +15,7 @@ our %save_result;
 my $mocked = Test::MockModule->new('Quant::Framework::VolSurface');
 $mocked->mock('save' => sub { my $calss = shift; $calss = ref $calss; $save_result{$calss} += 1; });
 
-my $au = BOM::MarketDataAutoUpdater::Flat->new(
-    source     => 'BBDL',
-    update_for => 'all',
-);
+my $au = BOM::MarketDataAutoUpdater::Flat->new();
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
         underlying => $_,
