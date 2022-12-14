@@ -548,7 +548,7 @@ rpc "sell",
         $contract_parameters->{language} = $params->{language};
     }
 
-    $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
+    $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} =~ /^(multiplier|accumulator)$/;
 
     my $purchase_date = time;
     my $trx           = BOM::Transaction->new({
@@ -760,7 +760,7 @@ rpc cancel => sub {
         landing_company => $client->landing_company->short,
     };
 
-    $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
+    $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} =~ /^(multiplier|accumulator)$/;
 
     my $purchase_date = time;
     my $trx           = BOM::Transaction->new({
