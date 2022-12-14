@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::MarketDataAutoUpdater::ImpliedInterestRates;
 
-my $data_dir = dirname(__FILE__) . '/../../../../data/bbdl/implied_interest_rates';
+my $data_dir = dirname(__FILE__) . '/../../data/bbdl/implied_interest_rates';
 
 subtest 'invalid input' => sub {
     lives_ok {
