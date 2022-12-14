@@ -121,4 +121,10 @@ subtest 'currency config' => sub {
     is BOM::Config::P2P::currency_float_range('AAA'), 20, 'use custom max range';
 };
 
+subtest 'p2p chat create' => sub {
+
+    is $config->create_order_chat, 0, 'defualt is 0';
+
+};
+
 done_testing();

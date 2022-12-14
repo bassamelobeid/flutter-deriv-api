@@ -510,6 +510,11 @@ payments:
           description: 'Flag to enable new features. Currently, cross border ads are enabled at >= 2.'
           default: 1
           global: 1
+        create_order_chat:
+          description: 'To be enabled new version of order chat creating for FE.'
+          isa: Bool
+          global: 1
+          default: 0
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
