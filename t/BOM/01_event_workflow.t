@@ -120,7 +120,8 @@ subtest 'process - generic jobs' => sub {
                 signup profile_change
                 p2p_advertiser_created p2p_advertiser_updated
                 p2p_advert_updated
-                p2p_order_created p2p_order_updated p2p_order_expired p2p_timeout_refund p2p_dispute_expired p2p_chat_received
+                p2p_order_created p2p_order_updated p2p_order_expired p2p_order_chat_create
+                p2p_timeout_refund p2p_dispute_expired p2p_chat_received
                 affiliate_sync_initiated withdrawal_limit_reached
                 crypto_withdrawal
                 client_promo_codes_upload onfido_doc_ready_for_upload shared_payment_method_found

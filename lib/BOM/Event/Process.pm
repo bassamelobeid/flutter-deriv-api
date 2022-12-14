@@ -75,6 +75,7 @@ my $action_mapping = {
         p2p_order_created                           => \&BOM::Event::Actions::P2P::order_created,
         p2p_order_updated                           => \&BOM::Event::Actions::P2P::order_updated,
         p2p_order_expired                           => \&BOM::Event::Actions::P2P::order_expired,
+        p2p_order_chat_create                       => \&BOM::Event::Actions::P2P::order_chat_create,
         p2p_advertiser_created                      => \&BOM::Event::Actions::P2P::advertiser_created,
         p2p_advertiser_updated                      => \&BOM::Event::Actions::P2P::advertiser_updated,
         p2p_chat_received                           => \&BOM::Event::Actions::P2P::chat_received,

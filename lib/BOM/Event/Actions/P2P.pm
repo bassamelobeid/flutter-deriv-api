@@ -544,6 +544,36 @@ sub p2p_advertiser_approval_changed {
         })->get;
 }
 
+=head2 order_chat_create
+
+An order chat has been created against an order.
+
+It returns a Future object.
+
+=cut
+
+sub order_chat_create {
+    my $data = shift;
+    my @args = qw(client_loginid order_id);
+
+    if (grep { !$data->{$_} } @args) {
+        $log->info('Fail to process order_updated: Invalid event data', $data);
+        return 0;
+    }
+
+    my ($loginid, $order_id) = @{$data}{@args};
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    try {
+        $client->p2p_create_order_chat(order_id => $order_id);
+    } catch ($e) {
+        $log->warnf("Failed to create  p2p order chat: %s", $e);
+        return 0;
+    }
+
+    return 1;
+}
+
 =head2 advertiser_cancel_at_fault
 
 An order has been manually cancelled or expired without paying.

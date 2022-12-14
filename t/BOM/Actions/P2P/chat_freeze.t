@@ -23,7 +23,7 @@ my ($client, $order) = BOM::Test::Helper::P2P::create_order(
     amount    => 100
 );
 
-$client->p2p_chat_create(order_id => $order->{id});
+$client->p2p_create_order_chat(order_id => $order->{id});
 
 my %tests = (
     'pending'           => undef,
