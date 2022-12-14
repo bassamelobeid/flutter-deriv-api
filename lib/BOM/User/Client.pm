@@ -2333,48 +2333,58 @@ Returns the advertiser info or dies with error code.
 
 sub p2p_advertiser_create {
     my ($self, %param) = @_;
+    my $name = trim($param{name});
 
     die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertiser_cached;
 
-    my $name = trim($param{name});
     die +{error_code => 'AdvertiserNameRequired'} unless $name;
     die +{error_code => 'AdvertiserNameTaken'} if $self->_p2p_advertisers(unique_name => $name)->[0];
 
-    my ($id) = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_array("SELECT nextval('p2p.advertiser_serial')");
-        });
+    my $lc_withdrawal_limit   = BOM::Config::payment_limits()->{withdrawal_limits}{$self->landing_company->short}{lifetime_limit};
+    my $p2p_create_order_chat = BOM::Config::Runtime->instance->app_config->payments->p2p->create_order_chat;
 
-    my $sb_api     = BOM::User::Utility::sendbird_api();
-    my $sb_user_id = join '_', 'p2puser', $self->broker_code, $id, time;
-    my $sb_user;
-    try {
-        $sb_user = $sb_api->create_user(
-            user_id             => $sb_user_id,
-            nickname            => $name,
-            profile_url         => '',
-            issue_session_token => 'true'
-        );
-    } catch {
-        die +{error_code => 'AdvertiserCreateChatError'};
-    }
-
-    # sb api returns milliseconds timestamps
-    my ($token, $expiry) = ($sb_user->session_tokens->[0]{session_token}, int($sb_user->session_tokens->[0]{expires_at} / 1000));
-
-    # sb call can take a while, so we must check again
-    die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertiser_cached;
-
-    my $lc_withdrawal_limit = BOM::Config::payment_limits()->{withdrawal_limits}{$self->landing_company->short}{lifetime_limit};
-
-    my $advertiser = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref(
-                'SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef,             $id,    $self->loginid, $name, @param{qw/default_advert_description payment_info contact_info/},
-                $sb_user->user_id, $token, $expiry,        $lc_withdrawal_limit
+    my ($advertiser, $token, $expiry);
+    unless ($p2p_create_order_chat) {
+        my ($id) = $self->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_array("SELECT nextval('p2p.advertiser_serial')");
+            });
+        my $sb_api     = BOM::User::Utility::sendbird_api();
+        my $sb_user_id = join '_', 'p2puser', $self->broker_code, $id, time;
+        my $sb_user;
+        try {
+            $sb_user = $sb_api->create_user(
+                user_id             => $sb_user_id,
+                nickname            => $name,
+                profile_url         => '',
+                issue_session_token => 'true'
             );
-        });
+        } catch {
+            die +{error_code => 'AdvertiserCreateChatError'};
+        }
+        # sb api returns milliseconds timestamps
+        ($token, $expiry) = ($sb_user->session_tokens->[0]{session_token}, int($sb_user->session_tokens->[0]{expires_at} / 1000));
+
+        die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertiser_cached;
+
+        $advertiser = $self->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref(
+                    'SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    undef,             $id,    $self->loginid, $name, @param{qw/default_advert_description payment_info contact_info/},
+                    $sb_user->user_id, $token, $expiry,        $lc_withdrawal_limit
+                );
+            });
+    } else {
+        $advertiser = $self->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref(
+                    'SELECT * FROM p2p.advertiser_create_v2(?, ?, ?, ?, ?, ?)',
+                    undef, $self->loginid, $name, @param{qw/default_advert_description payment_info contact_info/},
+                    $lc_withdrawal_limit
+                );
+            });
+    }
 
     unless ($self->status->age_verification or $self->status->allow_document_upload) {
         $self->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
@@ -3026,6 +3036,16 @@ sub p2p_order_create {
             client_loginid => $self->loginid,
             order_id       => $order->{id},
         });
+
+    my $p2p_create_order_chat = BOM::Config::Runtime->instance->app_config->payments->p2p->create_order_chat;
+    if ($p2p_create_order_chat) {
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_chat_create => {
+                client_loginid => $self->loginid,
+                order_id       => $order->{id},
+            });
+    }
+
     for my $order_loginid ($order->{client_loginid}, $order->{advertiser_loginid}) {
         BOM::Platform::Event::Emitter::emit(
             p2p_advertiser_updated => {
@@ -3330,13 +3350,42 @@ Both clients of the order must be P2P advertisers.
 
 =cut
 
-sub p2p_chat_create {
+sub p2p_chat_create {    #This function and feature create_order_chat will be remove after successful realease,
+                         #We are keeping just for backward compatibility
+
     my ($self, %param) = @_;
+
+    my $p2p_create_order_chat = BOM::Config::Runtime->instance->app_config->payments->p2p->create_order_chat;
+    if (!$p2p_create_order_chat) {
+        return $self->p2p_create_order_chat(%param);
+    }
 
     my $order_id = $param{order_id}                         // die +{error_code => 'OrderNotFound'};
     my $order    = $self->_p2p_orders(id => $order_id)->[0] // die +{error_code => 'OrderNotFound'};
 
+    if (!(($order->{advertiser_loginid} eq $self->loginid) || ($order->{client_loginid} eq $self->loginid))) {
+        die +{error_code => 'PermissionDenied'};
+    }
+    return {
+        channel_url => $order->{chat_channel_url},
+        order_id    => $order_id,
+    };
+}
+
+=head2 p2p_create_order_chat
+
+This method  is called by event p2p_order_chat_create in bom-events and p2p_chat_create in this module.
+Creates a sendbird chat channel for an order, and users if required.
+Both clients of the order must be P2P advertisers.
+
+=cut
+
+sub p2p_create_order_chat {
+    my ($self, %param) = @_;
+    my $order_id = $param{order_id}                         // die +{error_code => 'OrderNotFound'};
+    my $order    = $self->_p2p_orders(id => $order_id)->[0] // die +{error_code => 'OrderNotFound'};
     my $counterparty_loginid;
+
     if ($order->{advertiser_loginid} eq $self->loginid) {
         $counterparty_loginid = $order->{client_loginid};
     } elsif ($order->{client_loginid} eq $self->loginid) {
@@ -3346,19 +3395,58 @@ sub p2p_chat_create {
     }
 
     die +{error_code => 'OrderChatAlreadyCreated'} if $order->{chat_channel_url};
-    my $advertiser_info = $self->_p2p_advertiser_cached // die +{error_code => 'AdvertiserNotFoundForChat'};
+    die +{error_code => 'AdvertiserNotFoundForChat'}        unless $self->_p2p_advertiser_cached;
+    die +{error_code => 'CounterpartyNotAdvertiserForChat'} unless $self->_p2p_advertisers(loginid => $counterparty_loginid)->[0];
 
-    my $counterparty_advertiser = $self->_p2p_advertisers(loginid => $counterparty_loginid)->[0]
-        // die +{error_code => 'CounterpartyNotAdvertiserForChat'};
+    my $sb_api = BOM::User::Utility::sendbird_api();
 
-    my $sb_api     = BOM::User::Utility::sendbird_api();
+    my $sb_advertiser_user_id = $order->{advertiser_chat_user_id};
+    my $sb_client_user_id     = $order->{client_chat_user_id};
+    foreach (0 .. 1) {
+        my $sb_user_id;
+        if ($_ and not $order->{advertiser_chat_user_id}) {
+            $sb_advertiser_user_id = $sb_user_id = join '_', 'p2puser', $self->broker_code, $order->{advertiser_id}, time;
+        } elsif (not $order->{client_chat_user_id}) {
+            $sb_client_user_id = $sb_user_id = join '_', 'p2puser', $self->broker_code, $order->{client_id}, time;
+        }
+        if ($sb_user_id) {
+            my $sb_user;
+            my $nickname      = $_ ? $order->{advertiser_name} : $order->{client_name};
+            my $advertiser_id = $_ ? $order->{advertiser_id}   : $order->{client_id};
+
+            try {
+                $sb_user = $sb_api->create_user(
+                    user_id             => $sb_user_id,
+                    nickname            => $nickname,
+                    profile_url         => '',
+                    issue_session_token => 'true'
+                );
+            } catch {
+                die +{error_code => 'AdvertiserCreateChatError'};
+            }
+
+            my ($sb_user_token, $sb_user_expiry) =
+                ($sb_user->session_tokens->[0]{session_token}, int($sb_user->session_tokens->[0]{expires_at} / 1000));
+            $self->db->dbic->run(
+                fixup => sub {
+                    $_->do('SELECT * FROM p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?, NULL, NULL, NULL, NULL, NULL)',
+                        undef, $advertiser_id, $sb_user_id, $sb_user_token, $sb_user_expiry);
+                });
+
+            BOM::Platform::Event::Emitter::emit(
+                p2p_advertiser_updated => {
+                    client_loginid => $_ ? $order->{advertiser_loginid} : $order->{client_loginid},
+                });
+        }
+    }
+
     my $sb_channel = join '_', ('p2porder', $self->broker_code, $order_id, time);
-
     my $sb_chat;
+
     try {
         $sb_chat = $sb_api->create_group_chat(
             channel_url => $sb_channel,
-            user_ids    => [$advertiser_info->{chat_user_id}, $counterparty_advertiser->{chat_user_id}],
+            user_ids    => [$sb_advertiser_user_id, $sb_client_user_id],
             name        => 'Chat about order ' . $order_id,
         );
     } catch {
@@ -3391,8 +3479,7 @@ Creates one if it doesn't exist or has expired.
 =cut
 
 sub p2p_chat_token {
-    my ($self) = @_;
-
+    my ($self)          = @_;
     my $advertiser_info = $self->_p2p_advertiser_cached // die +{error_code => 'AdvertiserNotFoundForChatToken'};
     my $sendbird_api    = BOM::User::Utility::sendbird_api();
 
@@ -3403,14 +3490,27 @@ sub p2p_chat_token {
             expiry_time => $expiry,
             app_id      => $sendbird_api->app_id,
         };
-    } else {
-        my $sb_user = WebService::SendBird::User->new(
-            user_id    => $advertiser_info->{chat_user_id},
-            api_client => $sendbird_api
-        );
+    } elsif ($advertiser_info->{chat_user_id}) {
         try {
+            my $sb_user = WebService::SendBird::User->new(
+                user_id    => $advertiser_info->{chat_user_id},
+                api_client => $sendbird_api
+            );
             ($token, $expiry) = $sb_user->issue_session_token()->@{qw(session_token expires_at)};
         } catch {
+            die +{error_code => 'ChatTokenError'};
+        }
+    } else {
+        try {
+            $advertiser_info->{chat_user_id} = join('_', 'p2puser', $self->broker_code, $advertiser_info->{id}, time);
+            my $sb_user = $sendbird_api->create_user(
+                user_id             => $advertiser_info->{chat_user_id},
+                nickname            => $advertiser_info->{name},
+                profile_url         => '',
+                issue_session_token => 'true'
+            );
+            ($token, $expiry) = ($sb_user->session_tokens->[0]{session_token}, int($sb_user->session_tokens->[0]{expires_at} / 1000));
+        } catch ($e) {
             die +{error_code => 'ChatTokenError'};
         }
     }
@@ -3420,8 +3520,10 @@ sub p2p_chat_token {
     $self->db->dbic->run(
         fixup => sub {
             $_->do(
-                'SELECT * FROM p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, NULL, NULL, NULL, NULL, NULL)',
-                undef,  $advertiser_info->{id},
+                'SELECT * FROM p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?, NULL, NULL, NULL, NULL, NULL)',
+                undef,
+                $advertiser_info->{id},
+                $advertiser_info->{chat_user_id},
                 $token, $expiry
             );
         });

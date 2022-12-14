@@ -505,7 +505,8 @@ subtest 'Buyer tries to place an order for an advert with a different currency' 
 };
 
 subtest 'Buy adverts' => sub {
-    my $amount = 100;
+    my $amount       = 100;
+    my $order_amount = 40;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
 
@@ -522,7 +523,7 @@ subtest 'Buy adverts' => sub {
 
     my %params = (
         advert_id    => $advert_info->{id},
-        amount       => $amount,
+        amount       => $order_amount,
         expiry       => 7200,
         payment_info => 'order pay info',
         contact_info => 'order contact info',
@@ -571,15 +572,63 @@ subtest 'Buy adverts' => sub {
         'events emitted: p2p_order_created, p2p_advertiser_updated, p2p_adverts_updated'
     );
 
-    ok($escrow->account->balance == $amount, 'Money is deposited to Escrow account');
-    ok($client->account->balance == 0,       'Money is withdrawn from Client account');
+    ok($escrow->account->balance == $order_amount,           'Money is deposited to Escrow account');
+    ok($client->account->balance == $amount - $order_amount, 'Money is withdrawn from Client account');
 
     is($order->{status}, 'pending', 'Status for new order is correct');
-    ok($order->{amount} == $amount, 'Amount for new order is correct');
+    ok($order->{amount} == $order_amount, 'Amount for new order is correct');
     is($order->{advert_details}{type}, $advert_info->{type},              'advert type is correct');
     is($order->{type},                 $advert_info->{counterparty_type}, 'order type is correct');
     is($order->{payment_info},         $params{payment_info},             'payment_info is correct');
     is($order->{contact_info},         $params{contact_info},             'contact_info is correct');
+
+    $advertiser->p2p_order_confirm(id => $order->{id});
+    $client->p2p_order_confirm(id => $order->{id});
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+    $app_config->set({'payments.p2p.create_order_chat' => 1});
+
+    @emitted_events = ();
+    $order          = $client->p2p_order_create(%params);
+
+    cmp_deeply(
+        \@emitted_events,
+        bag([
+                'p2p_order_created',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                }
+            ],
+            [
+                'p2p_order_chat_create',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $advertiser->p2p_advertiser_info->{id},
+                }
+            ],
+        ),
+        'events emitted: p2p_order_created, p2p_order_chat_create, p2p_advertiser_updated, p2p_adverts_updated'
+    );
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
