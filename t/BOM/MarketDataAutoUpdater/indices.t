@@ -6,8 +6,6 @@ use BOM::MarketDataAutoUpdater::Indices;
 use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
-use Data::Dumper;
-$Data::Dumper::Maxdepth = 2;
 
 my $fake_date = Date::Utility->new('2012-12-12 15:55:55');
 set_absolute_time($fake_date->epoch);
