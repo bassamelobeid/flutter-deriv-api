@@ -17,7 +17,7 @@ BEGIN {
     unless ($pid) {
         local $ENV{NO_PURGE_REDIS} = 1;
         exec($^X, '-MBOM::Test', '/home/git/regentmarkets/cpan/local/bin/morbo',
-            '-l', $ENV{ONFIDO_URL}, '-m', 'production', '/home/git/regentmarkets/cpan-private/local/bin/mock_onfido.pl');
+            '-l', $ENV{ONFIDO_URL}, '-m', 'production', '/home/git/regentmarkets/cpan/local/bin/mock_onfido.pl');
     }
 
     sleep 1;    # waiting for server start
