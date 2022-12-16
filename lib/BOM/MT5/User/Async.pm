@@ -18,7 +18,8 @@ use Log::Any        qw($log);
 use YAML::XS        qw(LoadFile);
 use Locale::Country qw(country2code);
 use Future;
-use Scalar::Util qw(blessed);
+use Scalar::Util                                qw(blessed);
+use BOM::TradingPlatform::Helper::HelperDerivEZ qw(is_derivez get_derivez_prefix set_deriv_prefix_to_mt5);
 
 use BOM::MT5::Utility::CircuitBreaker;
 use BOM::Config::Runtime;
@@ -94,7 +95,7 @@ sub _get_error_mapping {
 }
 
 sub _get_create_user_fields {
-    return (@common_fields, qw/mainPassword investPassword agent group rights/);
+    return (@common_fields, qw/mainPassword investPassword agent group rights platform/);
 }
 
 sub _get_user_fields {
@@ -188,9 +189,15 @@ sub _get_prefix {
     my ($param) = @_;
 
     if ($param->{login}) {
-        return 'MT'  if $param->{login} =~ /^MT\d+$/;
-        return 'MTR' if $param->{login} =~ /^MTR\d+$/;
-        return 'MTD' if $param->{login} =~ /^MTD\d+$/;
+
+        # We need to cater for derivez as the Server are using MT5
+        if (is_derivez($param)) {
+            return set_deriv_prefix_to_mt5($param);
+        } else {
+            return 'MT'  if $param->{login} =~ /^MT\d+$/;
+            return 'MTR' if $param->{login} =~ /^MTR\d+$/;
+            return 'MTD' if $param->{login} =~ /^MTD\d+$/;
+        }
 
         die "Unexpected login id format $param->{login}";
     }
@@ -216,6 +223,12 @@ It removes login id prefixes form login and agent fields
 sub _prepare_params {
     my %param = @_;
 
+    # We need to cater for derivez as the Server are using MT5
+    if (is_derivez({login => $param{login}})) {
+        my $set_deriv_prefix_to_mt5 = set_deriv_prefix_to_mt5({login => $param{login}});
+        my ($loginid_number) = $param{login} =~ /([0-9]+)/;
+        $param{login} = $set_deriv_prefix_to_mt5 . $loginid_number;
+    }
     $param{$_} && $param{$_} =~ s/^MT[DR]?// for (qw(login agent));
 
     return \%param;
@@ -302,7 +315,17 @@ sub _invoke_mt5 {
         return Future->fail(_future_error({code => 'General'}));
     }
 
-    my $dd_tags             = ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
+    # Setting up derivez prefix
+    $prefix = get_derivez_prefix($param) if is_derivez($param);
+
+    # Setting up datadog for derivez
+    my $dd_tags;
+    if (is_derivez($param)) {
+        $dd_tags = ["derivez:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
+    } else {
+        $dd_tags = ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
+    }
+
     my $circuit_breaker_key = $srv_type . "_" . $srv_key;
     my $circuit_breaker     = do {
         $circuit_breaker_cache->{$circuit_breaker_key} //= BOM::MT5::Utility::CircuitBreaker->new(
@@ -458,7 +481,14 @@ It returns a L<Future> with the response of the invocation.
 sub _invoke_using_proxy {
     my ($cmd, $srv_type, $srv_key, $prefix, $param, $loop) = @_;
 
-    my $dd_tags       = ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
+    # Setting up datadog for derivez
+    my $dd_tags;
+    if (is_derivez($param)) {
+        $dd_tags = ["derivez:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
+    } else {
+        $dd_tags = ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
+    }
+
     my $f             = $loop->new_future;
     my $request_start = [Time::HiRes::gettimeofday];
     state $http;
@@ -565,7 +595,6 @@ sub _invoke_using_proxy {
 
             return $f->fail($error, mt5 => $cmd);
         });
-
 }
 
 =head2 _invoke_using_php

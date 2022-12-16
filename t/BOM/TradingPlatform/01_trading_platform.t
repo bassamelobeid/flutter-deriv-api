@@ -26,6 +26,11 @@ subtest 'Instantiate trading platform' => sub {
             class    => 'BOM::TradingPlatform::DXTrader',
         },
         {
+            platform => 'derivez',
+            lives    => 1,
+            class    => 'BOM::TradingPlatform::DerivEZ',
+        },
+        {
             platform => 'dummy',
             lives    => 0,
         }];
@@ -71,6 +76,16 @@ subtest 'Implementation completeness' => sub {
             get_accounts             => 1,
             get_open_positions       => 1,
         },
+        derivez => {
+            new_account              => 1,
+            change_investor_password => 0,
+            change_password          => 0,
+            deposit                  => 1,
+            withdraw                 => 1,
+            get_account_info         => 0,
+            get_accounts             => 1,
+            get_open_positions       => 0,
+        },
     };
 
     for my $platform (keys $tests->%*) {
@@ -102,6 +117,7 @@ subtest 'Instantiate the platform without factory' => sub {
         qw/
             BOM::TradingPlatform::MT5
             BOM::TradingPlatform::DXTrader
+            BOM::TradingPlatform::DerivEZ
             /
     ];
 

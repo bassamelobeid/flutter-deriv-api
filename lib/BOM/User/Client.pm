@@ -7034,7 +7034,7 @@ sub get_all_comments {
     my $comments = [];
 
     for my $loginid ($self->user->loginids) {
-        next if $loginid =~ /^(DX|MT)/;
+        next if $loginid =~ /^(DX|MT|EZ)/;
 
         my $client = BOM::User::Client->new({loginid => $loginid});
 

@@ -28,6 +28,7 @@ the rest of our system.
 use Syntax::Keyword::Try;
 use BOM::TradingPlatform::DXTrader;
 use BOM::TradingPlatform::MT5;
+use BOM::TradingPlatform::DerivEZ;
 use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use Format::Util::Numbers            qw(financialrounding);
@@ -37,6 +38,7 @@ use List::Util                       qw(first);
 use constant CLASS_DICT => {
     mt5     => 'BOM::TradingPlatform::MT5',
     dxtrade => 'BOM::TradingPlatform::DXTrader',
+    derivez => 'BOM::TradingPlatform::DerivEZ',
 };
 use constant INTERFACE => qw(
     new_account

@@ -269,7 +269,7 @@ sub parse_mt5_group {
         $server_type      = '01';              # default to 01 for old group
         $market_type      = (not $subtype)                            ? 'synthetic' : 'financial';
         $sub_account_type = (defined $subtype and $subtype =~ /stp$/) ? 'stp'       : 'std';
-    } elsif ($group =~ /^(real|demo)(?:\\p(\d{2})_ts)?(\d{2})\\(synthetic|financial)\\([a-z]+)_(.*)_(\w+)(?:\\\d{2})?$/) {
+    } elsif ($group =~ /^(real|demo)(?:\\p(\d{2})_ts)?(\d{2})\\(synthetic|financial|all)\\([a-z]+)_(.*)_(\w+)(?:\\\d{2})?$/) {
         $account_type          = $1;
         $platform_type         = $2;
         $server_type           = $3;

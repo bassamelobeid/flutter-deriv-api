@@ -81,6 +81,9 @@ use constant {
     DXTRADE_REGEX        => qr/^DX[DR]\d{4,}/,
     DXTRADE_REAL_REGEX   => qr/^DXR(?=\d+$)/,
     DXTRADE_DEMO_REGEX   => qr/^DXD(?=\d+$)/,
+    EZR_REGEX            => qr/^EZ[DR]?(?=\d+$)/,
+    EZR_REAL_REGEX       => qr/^EZ[R]?(?=\d+$)/,
+    EZR_DEMO_REGEX       => qr/^EZD(?=\d+$)/,
 };
 
 sub create {
@@ -492,7 +495,7 @@ get client non-mt5 login ids
 
 sub bom_loginids {
     my $self = shift;
-    return grep { $_ !~ MT5_REGEX && $_ !~ DXTRADE_REGEX } $self->loginids;
+    return grep { $_ !~ MT5_REGEX && $_ !~ DXTRADE_REGEX && $_ !~ EZR_REGEX } $self->loginids;
 }
 
 =head2 bom_real_loginids
@@ -503,7 +506,7 @@ get non-mt5 real login ids
 
 sub bom_real_loginids {
     my $self = shift;
-    return grep { $_ !~ MT5_REGEX && $_ !~ DXTRADE_REGEX && $_ !~ VIRTUAL_REGEX } $self->loginids;
+    return grep { $_ !~ MT5_REGEX && $_ !~ DXTRADE_REGEX && $_ !~ EZR_REGEX && $_ !~ VIRTUAL_REGEX } $self->loginids;
 }
 
 =head2 bom_virtual_loginid
@@ -955,6 +958,27 @@ sub get_mt5_loginids {
     $type = 'all'  if $args{type_of_account} eq 'all';
 
     my @loginids = sort $self->get_trading_platform_loginids('mt5', $type // 'all');
+    @loginids = @{$self->filter_active_ids(\@loginids)} unless $args{include_all_status};
+
+    return @loginids;
+}
+
+=head2 get_derivez_loginids
+
+Getting derivez accounts based on their type_of_account
+
+=cut
+
+sub get_derivez_loginids {
+    my ($self, %args) = @_;
+    $args{type_of_account}    //= 'all';
+    $args{include_all_status} //= 0;
+
+    my $type = 'real';
+    $type = 'demo' if $args{type_of_account} eq 'demo';
+    $type = 'all'  if $args{type_of_account} eq 'all';
+
+    my @loginids = sort $self->get_trading_platform_loginids('derivez', $type // 'all');
     @loginids = @{$self->filter_active_ids(\@loginids)} unless $args{include_all_status};
 
     return @loginids;
@@ -1657,6 +1681,11 @@ sub get_trading_platform_loginids {
             real => MT5_REAL_REGEX,
             demo => MT5_DEMO_REGEX,
             all  => MT5_REGEX,
+        },
+        derivez => {
+            real => EZR_REAL_REGEX,
+            demo => EZR_DEMO_REGEX,
+            all  => EZR_REGEX,
         }};
 
     my $regex = $regex_stash->{$platform}->{$account_type} or return ();
