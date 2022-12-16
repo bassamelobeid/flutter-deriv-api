@@ -67,6 +67,10 @@ my $transfer_limits       = {
     dxtrade => {
         allowed   => $transfer_limit_config->dxtrade,
         available => $transfer_limit_config->dxtrade
+    },
+    derivez => {
+        allowed   => $transfer_limit_config->derivez,
+        available => $transfer_limit_config->derivez
     }};
 
 # Test for CR accounts which use USD as the currency

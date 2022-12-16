@@ -216,6 +216,7 @@ sub _currencies_config {
     my $transfer_limits_mt5     = BOM::Config::CurrencyConfig::platform_transfer_limits('MT5', $brand_name);
     my $transfer_fees           = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
     my $transfer_limits_dxtrade = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade', $brand_name);
+    my $transfer_limits_derivez = BOM::Config::CurrencyConfig::platform_transfer_limits('derivez', $brand_name);
 
     # Get available currencies
     my @all_currencies = LandingCompany::Registry::all_currencies();
@@ -235,6 +236,7 @@ sub _currencies_config {
                 limits         => $transfer_limits->{$_},
                 limits_mt5     => $transfer_limits_mt5->{$_},
                 limits_dxtrade => $transfer_limits_dxtrade->{$_},
+                limits_derivez => $transfer_limits_derivez->{$_},
                 fees           => $transfer_fees->{$_},
             }}
     } @all_currencies;

@@ -54,6 +54,7 @@ use BOM::Platform::Event::Emitter;
 use BOM::TradingPlatform;
 use BOM::Config::Redis;
 use BOM::Rules::Engine;
+use BOM::TradingPlatform::Helper::HelperDerivEZ;
 
 requires_auth('trading', 'wallet');
 
@@ -64,6 +65,9 @@ use constant {
     HANDOFF_TOKEN_TTL             => 5 * 60,
     TRANSFER_OVERRIDE_ERROR_CODES => [qw(FinancialAssessmentRequired)],
     CRYPTO_CONFIG_RPC_REDIS       => "rpc::cryptocurrency::crypto_config",
+    MT5                           => 'mt5',
+    DXTRADE                       => 'dxtrade',
+    DERIVEZ                       => 'derivez',
 };
 
 my $payment_limits = BOM::Config::payment_limits;
@@ -482,11 +486,15 @@ rpc get_limits => sub {
             },
             mt5 => {
                 config  => 'MT5',
-                counter => 'mt5',
+                counter => MT5,
             },
             dxtrade => {
-                config  => 'dxtrade',
-                counter => 'dxtrade',
+                config  => DXTRADE,
+                counter => DXTRADE,
+            },
+            derivez => {
+                config  => DERIVEZ,
+                counter => DERIVEZ,
             },
         };
 
@@ -1231,7 +1239,7 @@ rpc transfer_between_accounts => sub {
                     {
                     loginid      => $mt5_acc->{login},
                     balance      => $mt5_acc->{display_balance},
-                    account_type => 'mt5',
+                    account_type => MT5,
                     mt5_group    => $mt5_acc->{group},
                     currency     => $mt5_acc->{currency},
                     demo_account => ($mt5_acc->{account_type} eq 'demo') ? 1 : 0,
@@ -1241,7 +1249,7 @@ rpc transfer_between_accounts => sub {
         }
 
         my $dxtrade = BOM::TradingPlatform->new(
-            platform => 'dxtrade',
+            platform => DXTRADE,
             client   => $client,
         );
         my @dxtrade_accounts = $dxtrade->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
@@ -1252,12 +1260,30 @@ rpc transfer_between_accounts => sub {
                     {
                     loginid      => $dxtrade_account->{account_id},
                     balance      => $dxtrade_account->{display_balance},
-                    account_type => 'dxtrade',
+                    account_type => DXTRADE,
                     market_type  => $dxtrade_account->{market_type},
                     currency     => $dxtrade_account->{currency},
                     demo_account => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
                     };
             }
+        }
+
+        my $derivez = BOM::TradingPlatform->new(
+            platform => DERIVEZ,
+            client   => $client,
+        );
+        my @derivez_accounts = $derivez->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
+        for my $derivez_account (grep { not $_->{error} } @derivez_accounts) {
+            push @available_siblings_for_transfer,
+                {
+                loginid       => $derivez_account->{login},
+                balance       => $derivez_account->{display_balance},
+                account_type  => DERIVEZ,
+                derivez_group => $derivez_account->{group},
+                currency      => $derivez_account->{currency},
+                demo_account  => ($derivez_account->{account_type} eq 'demo') ? 1 : 0,
+                status        => $derivez_account->{status},
+                };
         }
 
         return {
@@ -1272,9 +1298,13 @@ rpc transfer_between_accounts => sub {
 
     my %loginid_details = $client->user->loginid_details->%*;
     my @dxtrade_loginids =
-        grep { ($loginid_details{$_}->{platform} // '') eq 'dxtrade' and $loginid_details{$_}->{account_type} eq 'real' } keys %loginid_details;
+        grep { ($loginid_details{$_}->{platform} // '') eq DXTRADE and $loginid_details{$_}->{account_type} eq 'real' } keys %loginid_details;
     my $is_dxtrade_loginid_from = any { $loginid_from eq $_ } @dxtrade_loginids;
     my $is_dxtrade_loginid_to   = any { $loginid_to eq $_ } @dxtrade_loginids;
+
+    my @derivez_logins          = $client->user->get_derivez_loginids();
+    my $is_derivez_loginid_from = any { $loginid_from eq $_ } @derivez_logins;
+    my $is_derivez_loginid_to   = any { $loginid_to eq $_ } @derivez_logins;
 
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same user
@@ -1296,9 +1326,11 @@ rpc transfer_between_accounts => sub {
     # be caught in one of the BOM::RPC::v3::MT5::Account functions
     my $account_type_from;
     if ($is_mt5_loginid_from) {
-        $account_type_from = 'mt5';
+        $account_type_from = MT5;
     } elsif ($is_dxtrade_loginid_from) {
-        $account_type_from = 'dxtrade';
+        $account_type_from = DXTRADE;
+    } elsif ($is_derivez_loginid_from) {
+        $account_type_from = DERIVEZ;
     } elsif ($client_from) {
         $account_type_from = $client_from->is_wallet ? 'wallet' : 'trading';
     } else {
@@ -1309,9 +1341,11 @@ rpc transfer_between_accounts => sub {
 
     my $account_type_to;
     if ($is_mt5_loginid_to) {
-        $account_type_to = 'mt5';
+        $account_type_to = MT5;
     } elsif ($is_dxtrade_loginid_to) {
-        $account_type_to = 'dxtrade';
+        $account_type_to = DXTRADE;
+    } elsif ($is_derivez_loginid_to) {
+        $account_type_to = DERIVEZ;
     } elsif ($client_to) {
         $account_type_to = $client_to->is_wallet ? 'wallet' : 'trading';
     } else {
@@ -1320,8 +1354,14 @@ rpc transfer_between_accounts => sub {
                 message_to_client => localize("You are not allowed to transfer to this account.")});
     }
 
-    my $is_internal_transfer = !($is_mt5_loginid_from || $is_mt5_loginid_to || $is_dxtrade_loginid_to || $is_dxtrade_loginid_from);
-    my $rule_engine          = BOM::Rules::Engine->new(client => [$client, $client_from // (), $client_to // ()]);
+    my $is_internal_transfer =
+        !( $is_mt5_loginid_from
+        || $is_mt5_loginid_to
+        || $is_dxtrade_loginid_to
+        || $is_dxtrade_loginid_from
+        || $is_derivez_loginid_to
+        || $is_derivez_loginid_from);
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client, $client_from // (), $client_to // ()]);
     try {
         $rule_engine->verify_action(
             'transfer_between_accounts',
@@ -1416,7 +1456,7 @@ rpc transfer_between_accounts => sub {
                             loginid      => $mt5_login,
                             balance      => $setting->{display_balance},
                             currency     => $setting->{currency},
-                            account_type => 'mt5',
+                            account_type => MT5,
                             mt5_group    => $setting->{group},
                             demo_account => ($setting->{group} =~ qr/demo/ ? 1 : 0),
                             }
@@ -1434,7 +1474,7 @@ rpc transfer_between_accounts => sub {
 
     if ($is_dxtrade_loginid_to or $is_dxtrade_loginid_from) {
         $params->{args}->@{qw/from_account to_account/} = delete $params->{args}->@{qw/account_from account_to/};
-        $params->{args}{platform} = 'dxtrade';
+        $params->{args}{platform} = DXTRADE;
     }
 
     if ($is_dxtrade_loginid_to) {
@@ -1457,7 +1497,7 @@ rpc transfer_between_accounts => sub {
                     loginid      => $loginid_to,
                     balance      => $deposit->{balance},
                     currency     => $deposit->{currency},
-                    account_type => 'dxtrade',
+                    account_type => DXTRADE,
                     market_type  => $market_type,
                 },
             ]};
@@ -1484,10 +1524,80 @@ rpc transfer_between_accounts => sub {
                     loginid      => $loginid_from,
                     balance      => $withdrawal->{balance},
                     currency     => $withdrawal->{currency},
-                    account_type => 'dxtrade',
+                    account_type => DXTRADE,
                     market_type  => $market_type,
                 },
             ]};
+    }
+
+    # this transfer involves an Derivez account
+    if ($is_derivez_loginid_from or $is_derivez_loginid_to) {
+        my ($method, $binary_login, $derivez_login);
+        my $resp = {};
+        if ($is_derivez_loginid_to) {
+            return _transfer_between_accounts_error(localize("You can only transfer from the current authorized client's account."))
+                unless ($client->loginid eq $loginid_from)
+                or $token_type eq 'oauth_token'
+                or $client_from->is_virtual;
+
+            return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
+                if ($siblings->{$loginid_from}->{currency} ne $currency);
+
+            $method                                 = \&BOM::RPC::v3::Trading::deposit;
+            $params->{args}{from_account}           = $binary_login  = $loginid_from;
+            $params->{args}{to_account}             = $derivez_login = $loginid_to;
+            $params->{args}{platform}               = DERIVEZ;
+            $params->{args}{return_derivez_details} = 1;         # to get derivez account holder name
+        }
+
+        if ($is_derivez_loginid_from) {
+            return _transfer_between_accounts_error(localize("You can only transfer to the current authorized client's account."))
+                unless ($client->loginid eq $loginid_to)
+                or $token_type eq 'oauth_token'
+                or $client_to->is_virtual;
+
+            $method                         = \&BOM::RPC::v3::Trading::withdrawal;
+            $params->{args}{from_account}   = $derivez_login = $loginid_from;
+            $params->{args}{to_account}     = $binary_login  = $loginid_to;
+            $params->{args}{platform}       = DERIVEZ;
+            $params->{args}{currency_check} = $currency;    # Check that derivez account currency matches $currency
+        }
+
+        my $do_request = $method->($params);
+        return $do_request if $do_request->{error};
+
+        my $derivez_data = delete $do_request->{derivez_data};
+        $resp->{transaction_id}      = delete $do_request->{transaction_id};
+        $resp->{client_to_loginid}   = $loginid_to;
+        $resp->{client_to_full_name} = $client->full_name;
+
+        my $binary_client = BOM::User::Client->get_client_instance($binary_login);
+        push @{$resp->{accounts}},
+            {
+            loginid      => $binary_login,
+            balance      => $binary_client->default_account->balance,
+            currency     => $binary_client->default_account->currency_code,
+            account_type => $binary_client->account_type,
+            demo_account => $binary_client->is_virtual,
+            };
+
+        return BOM::TradingPlatform::Helper::HelperDerivEZ::_get_settings($client, $derivez_login)->then(
+            sub {
+                my ($setting) = @_;
+                push @{$resp->{accounts}},
+                    {
+                    loginid       => $derivez_login,
+                    balance       => $setting->{display_balance},
+                    currency      => $setting->{currency},
+                    account_type  => DERIVEZ,
+                    derivez_group => $setting->{group},
+                    demo_account  => ($setting->{group} =~ qr/demo/ ? 1 : 0),
+                    }
+                    unless $setting->{error};
+                $resp->{status} = 1;
+
+                return Future->done($resp);
+            })->get;
     }
 
     my $err = validate_amount($amount, $currency);

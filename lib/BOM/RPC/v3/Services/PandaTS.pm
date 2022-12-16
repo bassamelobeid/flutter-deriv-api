@@ -27,6 +27,7 @@ use BOM::Config;
 use BOM::Platform::Context qw( localize );
 use BOM::RPC::v3::Services;
 use BOM::RPC::v3::Utility;
+use BOM::TradingPlatform::Helper::HelperDerivEZ qw(get_loginid_number);
 
 =head2 new
 
@@ -98,16 +99,18 @@ Returns a Future containing token
 =cut
 
 sub generate_token {
-    my ($self) = @_;
+    my ($self, $server) = @_;
 
-    my $email   = $self->client->email;
-    my $loginid = $self->client->loginid;
+    my $email             = $self->client->email;
+    my $loginid           = $self->client->loginid;
+    my ($derivez_loginid) = $self->client->user->get_derivez_loginids(type_of_account => $server);
+    my ($login)           = get_loginid_number($derivez_loginid);
 
     return $self->http_client->GET(
         $self->create_login_url(
             email  => $email,
-            login  => '20000005',    # MT username - hardcoded for testing purposes (only available user)
-            source => 2,             # server
+            login  => $login,                      # MT username - hardcoded for testing purposes (only available user)
+            source => $self->config->{$server},    # server
         ),
         user => $self->config->{username},
         pass => $self->config->{password}

@@ -158,8 +158,11 @@ rpc trading_platform_new_account => sub {
     my $client = $params->{client};
 
     try {
-        my $error = BOM::RPC::v3::Utility::set_trading_password_new_account($params->{client}, $params->{args}{password});
-        die +{error_code => $error} if $error;
+        if ($params->{args}{platform} eq 'dxtrade') {
+            my $error = BOM::RPC::v3::Utility::set_trading_password_new_account($params->{client}, $params->{args}{password});
+            die +{error_code => $error} if $error;
+        }
+
         my $platform = BOM::TradingPlatform->new(
             platform    => $params->{args}{platform},
             client      => $client,
@@ -201,7 +204,7 @@ rpc trading_platform_accounts => sub {
             client   => $params->{client});
 
         # force param will raise an error if any accounts are inaccessible
-        $accounts = $platform->get_accounts             if $params->{args}{platform} eq 'mt5';
+        $accounts = $platform->get_accounts             if $params->{args}{platform} eq 'mt5' or 'derivez';
         $accounts = $platform->get_accounts(force => 1) if $params->{args}{platform} eq 'dxtrade';
 
         return $accounts;
@@ -479,7 +482,7 @@ sub deposit {
     # as they don't pass the `currency` param, we use the account currency instead which should be valid.
 
     my ($from_account, $to_account, $amount, $currency) = $params->{args}->@{qw/from_account to_account amount currency/};
-    my $is_demo = $to_account =~ /^DXD/;
+    my $is_demo = $to_account =~ /^(DX|EZ)(?=D)/;
 
     try {
 
@@ -573,7 +576,7 @@ sub handle_error {
     my $e = shift;
 
     if (ref $e eq 'HASH') {
-        if (my $code = $e->{error_code} // $e->{code}) {
+        if (my $code = $e->{error_code} // $e->{code} // $e->{error}->{code}) {
             if (my $message = $e->{message_to_client} // $ERROR_MAP{$code} // BOM::RPC::v3::Utility::error_map()->{$code}
                 // BOM::Platform::Utility::error_map()->{$code})
             {

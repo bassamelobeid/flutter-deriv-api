@@ -2560,6 +2560,7 @@ async_rpc service_token => sub {
                 $client,
                 {
                     service => $service,
+                    server  => $args->{server},
                 }
             )->then(
                 sub {

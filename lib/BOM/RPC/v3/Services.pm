@@ -67,7 +67,7 @@ sub service_token {
     if ($args->{service} eq 'pandats') {
         my $pandats = BOM::RPC::v3::Services::PandaTS->new(client => $client);
 
-        return $pandats->generate_token();
+        return $pandats->generate_token($args->{server});
     }
 }
 
