@@ -218,6 +218,27 @@ subtest $rule_name => sub {
     $mock_client->redefine(is_financial_assessment_complete => 1);
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if FA is compeleted';
 
+    #simulation
+    $mock_client->redefine(
+        'is_financial_assessment_complete' => sub {
+            my $self          = shift;
+            my $is_withdrwals = shift // 0;
+            return $is_withdrwals ? 0 : 1;
+        });
+
+    $args{action} = 'withdrawal';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'FinancialAssessmentRequired',
+        rule       => $rule_name
+        },
+        'Error for in complete FA for withdrawals';
+
+    $args{action} = 'deposit';
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if FA is compeleted for deposits';
+
+    delete $args{action};
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if FA is compeleted for default';
     $mock_client->unmock_all;
 };
 

@@ -46,7 +46,8 @@ rule 'financial_asssessment.completed' => {
         my ($self, $context, $args) = @_;
         my $client = $context->client($args);
 
-        $self->fail('FinancialAssessmentRequired') unless $client->is_financial_assessment_complete();
+        my $action = $args->{action} // '';
+        $self->fail('FinancialAssessmentRequired') unless $client->is_financial_assessment_complete($action eq 'withdrawal' ? 1 : 0);
 
         return 1;
     },
