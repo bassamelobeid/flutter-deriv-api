@@ -17,15 +17,16 @@ use WebService::Async::DevExperts::Dxsca::Client;
 use WebService::Async::DevExperts::DxWeb::Client;
 use Future::Utils qw( fmap_void try_repeat);
 use Future::AsyncAwait;
-use YAML::XS qw(LoadFile);
+use YAML::XS                   qw(LoadFile);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 =head1 NAME
 
-derivx_accounts_merging.pl
+derivx_update_trading_category.pl
 
 =head1 SYNOPSIS
 
-./derivx_update_market_type.pl [options] 
+./derivx_update_trading_category.pl [options] 
 
 =head1 NOTE
 
@@ -53,6 +54,10 @@ Market type ('financial' or 'synthetic')
 
 Number of concurrent calls to apply to the script (default : 6)
 
+=item B<-d>, B<--delay_processing>
+
+Delay processing of an account (in seconds)
+
 =back
 
 =cut
@@ -61,11 +66,13 @@ my $account_type     = 'demo';
 my $market_type      = 'financial';
 my $help             = 0;
 my $concurrent_calls = 2;
+my $delay_processing = 0;
 
 GetOptions(
     'a|account_type=s'     => \$account_type,
     'm|market_type=s'      => \$market_type,
     'c|concurrent_calls=i' => \$concurrent_calls,
+    'd|delay_processing=i' => \$delay_processing,
     'h|help!'              => \$help,
 );
 
@@ -103,6 +110,7 @@ async sub update_trading_category {
     );
 
     $log->infof("%s finished processing account '%s'", Date::Utility->new->db_timestamp, $login);
+    stats_inc("derivx.update.trading.category.success", {tags => ["account:" . $login]});
 }
 
 async sub get_dx_accounts {
@@ -141,6 +149,8 @@ async sub get_dx_accounts {
 
             my $retry = 5;
 
+            await $loop->delay_future(after => $delay_processing);
+
             try {
                 $log->infof("%s processing account %s", Date::Utility->new->db_timestamp, $updated_loginid->[0]);
 
@@ -156,6 +166,7 @@ async sub get_dx_accounts {
                 }
             } catch ($e) {
                 $log->errorf("An error has occured while processing %s : %s", $updated_loginid->[0], $e);
+                stats_inc("derivx.update.trading.category.failure", {tags => ["account:" . $updated_loginid->[0], "error:$e"]});
             }
 
             $log->info("-------");
