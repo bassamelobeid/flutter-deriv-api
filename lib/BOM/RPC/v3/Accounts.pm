@@ -1833,30 +1833,6 @@ rpc set_settings => sub {
     my $secret_answer          = $args->{secret_answer} ? BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) : '';
     my $secret_question        = $args->{secret_question} // '';
 
-    my ($needs_verify_address_trigger, $cil_message);
-    if (   ($address1 and $address1 ne $current_client->address_1)
-        or ($address2 ne $current_client->address_2)
-        or ($addressTown ne $current_client->city)
-        or ($addressState ne $current_client->state)
-        or ($addressPostcode ne $current_client->postcode))
-    {
-
-        $needs_verify_address_trigger = 1;
-
-        if ($current_client->fully_authenticated()) {
-            $cil_message =
-                  'Authenticated client ['
-                . $current_client->loginid
-                . '] updated his/her address from ['
-                . join(' ',
-                $current_client->address_1,
-                $current_client->address_2,
-                $current_client->city, $current_client->state, $current_client->postcode)
-                . '] to ['
-                . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
-        }
-    }
-
     # If this is a virtual account update, we don't want to change anything else - otherwise
     # let's apply the new fields to all other accounts as well.
     my @loginids = ();
@@ -1950,9 +1926,6 @@ rpc set_settings => sub {
         BOM::Platform::Event::Emitter::emit('check_onfido_rules',  {loginid => $current_client->loginid});
         BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $current_client->loginid});
     }
-
-    BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $current_client->loginid}) if $needs_verify_address_trigger;
-    $current_client->add_note('Update Address Notification', $cil_message)                       if $cil_message;
 
     if (defined $employment_status && $current_client->landing_company->short eq 'maltainvest') {
         my $data_to_be_saved = {employment_status => $employment_status};

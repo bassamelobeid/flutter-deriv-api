@@ -426,10 +426,14 @@ subtest 'get settings' => sub {
     };
     is_deeply($result, $expected, 'return 1 for code of conduct approval');
 
-    $poi_status = 'verified';
-    $result     = $c->tcall($method, $params);
-    $expected->{immutable_fields} =
-        ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
+    # adding the address fields to the list of immutable fields
+    $poi_status                   = 'verified';
+    $result                       = $c->tcall($method, $params);
+    $expected->{immutable_fields} = [
+        'citizen',       'date_of_birth',   'first_name',   'last_name',      'residence',      'salutation',
+        'secret_answer', 'secret_question', 'address_city', 'address_line_1', 'address_line_2', 'address_postcode',
+        'address_state'
+    ];
     is_deeply($result, $expected, 'immutable fields changed after authentication');
 
     # poi name mismatch
@@ -623,6 +627,24 @@ subtest 'set settings' => sub {
     }
 
     $poi_status = 'verified';
+    delete $params->{args}{place_of_birth};
+
+    # dont allow address change after authorisation
+
+    # address_city
+    $params->{args}{address_city} = 'Dubai';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your address cannot be changed.', 'Your address cannot be changed.');
+    delete $params->{args}{address_city};
+
+    # address_line_1
+    $params->{args}{address_line_1} = 'Deriv DMCC';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your address cannot be changed.', 'Your address cannot be changed.');
+    delete $params->{args}{address_line_1};
+
+    # address_line_2
+    $params->{args}{address_line_2} = 'JLT cluster G';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your address cannot be changed.', 'Your address cannot be changed.');
+    delete $params->{args}{address_line_2};
 
     for my $tax_field (qw(tax_residence tax_identification_number)) {
         local $params->{args} = {
@@ -700,6 +722,15 @@ subtest 'set settings' => sub {
     );
     $mocked_client->unmock('save');
 
+    $params->{args} = {%full_args};
+
+    # removing address from params because update wont work as address fields are not allowed
+    delete $params->{args}->{address_city};
+    delete $params->{args}->{address_line_1};
+    delete $params->{args}->{address_line_2};
+    delete $params->{args}->{address_state};
+    delete $params->{args}->{place_of_birth};
+
     # add_note should send an email to support address,
     # but it is disabled when the test is running on travis-ci
     # so I mocked this function to check it is called.
@@ -728,27 +759,43 @@ subtest 'set settings' => sub {
     $mocked_client->redefine('fully_authenticated' => sub { return 1 });
     $params->{args}{tax_identification_number} = '111-222-543';
     $params->{args}{tax_residence}             = 'ru';
+
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+
     my $res = $c->tcall('get_settings', {token => $token_X_mf});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
     is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
-
-    ok($add_note_called, 'add_note is called for authenticated call, so the email should be sent to support address');
 
     subtest 'preferred language setting' => sub {
         $params->{token} = $token_Y_cr_1;
 
         $params->{args} = {%full_args, preferred_language => 'FA'};
+
+        delete $params->{args}->{address_city};
+        delete $params->{args}->{address_line_1};
+        delete $params->{args}->{address_line_2};
+        delete $params->{args}->{address_state};
+
         my $res = $c->tcall($method, $params);
 
         is($c->tcall($method,        $params)->{status},                              1,    'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'FA', 'preferred language updated to FA.');
 
         $params->{args} = {%full_args, preferred_language => undef};
+        delete $params->{args}->{address_city};
+        delete $params->{args}->{address_line_1};
+        delete $params->{args}->{address_line_2};
+        delete $params->{args}->{address_state};
+
         is($c->tcall($method,        $params)->{status},                              1,    'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'FA', 'preferred language didn\'t updated.');
 
         $params->{args} = {%full_args, preferred_language => 'ZH_CN'};
+        delete $params->{args}->{address_city};
+        delete $params->{args}->{address_line_1};
+        delete $params->{args}->{address_line_2};
+        delete $params->{args}->{address_state};
+
         is($c->tcall($method,        $params)->{status},                              1,       'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'ZH_CN', 'preferred language updated to ZH_CN.');
     };
@@ -757,12 +804,24 @@ subtest 'set settings' => sub {
         $params->{token} = $token_Y_cr_1;
 
         $params->{args} = {%full_args, trading_hub => 1};
+
+        delete $params->{args}->{address_city};
+        delete $params->{args}->{address_line_1};
+        delete $params->{args}->{address_line_2};
+        delete $params->{args}->{address_state};
+
         my $res = $c->tcall($method, $params);
 
         is($c->tcall($method,        $params)->{status},                       1, 'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{trading_hub}, 1, 'Trading hub is enabled for the user');
 
         $params->{args} = {%full_args, trading_hub => 0};
+
+        delete $params->{args}->{address_city};
+        delete $params->{args}->{address_line_1};
+        delete $params->{args}->{address_line_2};
+        delete $params->{args}->{address_state};
+
         $res = $c->tcall($method, $params);
 
         is($c->tcall($method,        $params)->{status},                       1, 'update successfully');
@@ -916,6 +975,11 @@ subtest 'set settings' => sub {
     isnt($test_client_X_mf->latest_environment, $old_latest_environment, "latest environment updated");
 
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+
+    delete $emitted->{profile_change}->{properties}->{updated_fields}->{address_city};
+    delete $emitted->{profile_change}->{properties}->{updated_fields}->{address_line_2};
+    delete $emitted->{profile_change}->{properties}->{updated_fields}->{address_state};
+
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
         {
         'address_line_1' => 'address line 1',
