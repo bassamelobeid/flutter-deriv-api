@@ -164,7 +164,7 @@ print qq~
 print '<input type="submit" class="btn btn--primary" value="Submit">';
 print "</form>";
 
-if (BOM::Backoffice::Auth0::has_authorisation(['CS', 'Compliance'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['CS', 'Compliance', 'CostControl', 'IDV'])) {
     Bar("IDV DASHBOARD");
 
     my $filter_data = BOM::Backoffice::IdentityVerification::get_filter_data();

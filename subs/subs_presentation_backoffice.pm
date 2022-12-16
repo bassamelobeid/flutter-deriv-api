@@ -251,6 +251,10 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
         {
             link => 'f_clientloginid',
             text => 'Client Management'
+        },
+        {
+            link => 'f_idv_dashboard',
+            text => 'IDV Dashboard',
         }];
 
     my $misc_tools_list = [{
