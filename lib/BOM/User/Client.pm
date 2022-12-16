@@ -84,9 +84,10 @@ use constant {
     VIRTUAL_REGEX                       => qr/^VR/,
     FALSE_PROFILE_INFO_REGEX            => qr/(potential corporate account|fake profile info)/,
     PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH => [
-        sort qw/account_opening_reason citizen date_of_birth first_name last_name place_of_birth
-            residence salutation secret_answer secret_question tax_residence tax_identification_number /,
+        sort
+            qw/account_opening_reason citizen date_of_birth first_name last_name place_of_birth residence salutation secret_answer secret_question tax_residence tax_identification_number /
     ],
+    ADDRESS_FIELDS_IMMUTABLE_AFTER_AUTH => [sort qw/address_city address_line_1 address_line_2 address_postcode address_state/],
 
     SR_UNWELCOME_REASON => 'Social responsibility thresholds breached - Pending financial assessment',
 
@@ -2205,7 +2206,14 @@ sub immutable_fields {
         }
     }
 
-    return @immutable if $self->get_poi_status() =~ qr/verified|expired/;
+    #Added address properties to immutable if client is verifed|Authenticated
+    if ($self->get_poi_status() =~ qr/verified|expired/) {
+        if ($self->get_poi_status() eq "verified") {
+            #if verifed add address feilds in immutable fields
+            push(@immutable, ADDRESS_FIELDS_IMMUTABLE_AFTER_AUTH->@*);
+        }
+        return @immutable;
+    }
 
     # the remaining part is for un-authenticated clients only
 
