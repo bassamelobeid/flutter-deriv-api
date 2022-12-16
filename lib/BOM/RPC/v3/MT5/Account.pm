@@ -1211,7 +1211,7 @@ sub _is_financial_assessment_complete {
         ($is_FI and $is_TE) ? return 1 : return 0;
     }
 
-    return $client->is_financial_assessment_complete();
+    return $client->is_financial_assessment_complete(1);
 }
 
 sub _check_logins {

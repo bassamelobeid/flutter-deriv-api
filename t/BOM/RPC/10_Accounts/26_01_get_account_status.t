@@ -33,6 +33,7 @@ my $test_client  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 
 $test_client->email($email);
+$test_client->set_default_account('EUR');
 $test_client->save;
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -304,40 +305,45 @@ subtest 'get account status' => sub {
 
         subtest 'maltainvest account' => sub {
             # test 'financial_assessment_not_complete'
-            my $data = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
-
+            my $data = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()->{trading_experience_regulated};
             # function to repeatedly test financial assessment
             sub test_financial_assessment {
-                my ($data, $is_present, $msg) = @_;
+                my ($data, $is_financial_assessment_present, $is_financial_information_present, $msg) = @_;
                 $test_client->financial_assessment({
                     data => encode_json_utf8($data),
                 });
                 $test_client->save();
-                my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token})->{status}}) == $is_present);
-
-                ok($res, $msg);
+                my $result = $c->tcall($method, {token => $token});
+                my $financial_assessment_not_complete =
+                    ((grep { $_ eq 'financial_assessment_not_complete' } @{$result->{status}}) == $is_financial_assessment_present);
+                my $financial_information_not_complete =
+                    ((grep { $_ eq 'financial_information_not_complete' } @{$result->{status}}) == $is_financial_information_present);
+                ok($financial_assessment_not_complete,  $msg);
+                ok($financial_information_not_complete, $msg);
             }
 
             # 'financial_assessment_not_complete' should not present when everything is complete
-            test_financial_assessment($data, 0, 'financial_assessment_not_complete should not be present when low risk');
+            test_financial_assessment($data, 0, 0, 'financial_assessment_not_complete should not be present when low risk and no fa');
 
+            $test_client->aml_risk_classification('high');
+            $test_client->save();
+
+            $data = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa(1);
             # 'financial_assessment_not_complete' should not present when everything is complete
-            test_financial_assessment($data, 0, 'financial_assessment_not_complete should not be present when questions are answered properly');
+            test_financial_assessment($data, 0, 0, 'financial_assessment_not_complete should not be present with when high risk');
 
             # When some questions are not answered
+            # FI is no longer required for all risk for deposits
             delete $data->{account_turnover};
-            test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when questions are not answered');
+            test_financial_assessment($data, 0, 1, 'financial_assessment_not_complete should present when questions are not answered');
 
             # When some answers are empty
             $data->{account_turnover} = "";
-            test_financial_assessment($data, 1, 'financial_assessment_not_complete should be present when some answers are empty');
+            test_financial_assessment($data, 0, 1, 'financial_assessment_not_complete should be present when some answers are empty');
 
-            # When the client's risk classification is different
-            $test_client->aml_risk_classification('high');
-            $test_client->save();
-            test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
             # duplicate_account is not supposed to be shown to the users
             $test_client->status->set('duplicate_account');
+
             my $result = $c->tcall($method, {token => $token_cr});
 
             cmp_deeply(
@@ -401,6 +407,9 @@ subtest 'get account status' => sub {
             $test_client->save();
 
             $result = $c->tcall($method, {token => $token});
+            $test_client->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+            $test_client->status->set('crs_tin_information',     'SYSTEM', 'Client accepted financial risk disclosure');
+
             cmp_deeply(
                 $result,
                 {
@@ -451,12 +460,12 @@ subtest 'get account status' => sub {
                             history => []
                         },
                     },
-                    cashier_validation =>
-                        ['ASK_AUTHENTICATE', 'ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
+                    cashier_validation => ['ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
                 },
                 'prompt for non authenticated MF client'
             );
 
+            $test_client->aml_risk_classification('standard');
             $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
             $test_client->status->set("professional");
             $test_client->save;
@@ -471,8 +480,8 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status                        => superbagof(qw(authenticated)),
-                    risk_classification           => 'low',
+                    status                        => superbagof(qw(authenticated withdrawal_locked)),
+                    risk_classification           => 'standard',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
@@ -512,7 +521,7 @@ subtest 'get account status' => sub {
                             history => []
                         },
                     },
-                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
+                    cashier_validation => ['FinancialAssessmentRequired'],
                 },
                 'authenticated, no deposits so it will not prompt for authentication'
             );
@@ -529,8 +538,8 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status                        => superbagof(qw(document_expired)),
-                    risk_classification           => 'low',
+                    status                        => superbagof(qw(document_expired withdrawal_locked)),
+                    risk_classification           => 'standard',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
@@ -570,7 +579,7 @@ subtest 'get account status' => sub {
                             history => []
                         },
                     },
-                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
+                    cashier_validation => ['FinancialAssessmentRequired'],
                 },
                 'correct account status returned for document expired, please note that this test for status key, authentication expiry structure is tested later'
             );
@@ -603,8 +612,8 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status                        => superbagof(qw(document_expiring_soon)),
-                    risk_classification           => 'low',
+                    status                        => superbagof(qw(document_expiring_soon withdrawal_locked)),
+                    risk_classification           => 'standard',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
@@ -645,7 +654,7 @@ subtest 'get account status' => sub {
                             history => []
                         },
                     },
-                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
+                    cashier_validation => ['FinancialAssessmentRequired'],
                 },
                 'correct account status returned for document expiring in next month'
             );
@@ -2280,10 +2289,8 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status => superbagof(
-                            qw(allow_document_upload age_verification authenticated financial_information_not_complete financial_assessment_not_complete)
-                        ),
-                        risk_classification           => 'low',
+                        status => superbagof(qw(allow_document_upload age_verification authenticated financial_information_not_complete)),
+                        risk_classification           => 'standard',
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
@@ -2373,8 +2380,8 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status => superbagof(qw(age_verification authenticated financial_information_not_complete financial_assessment_not_complete)),
-                        risk_classification           => 'low',
+                        status                        => superbagof(qw(age_verification authenticated financial_information_not_complete)),
+                        risk_classification           => 'standard',
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
@@ -2529,8 +2536,8 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status              => superbagof(qw(age_verification financial_information_not_complete financial_assessment_not_complete)),
-                        risk_classification => 'low',
+                        status                        => superbagof(qw(age_verification financial_information_not_complete)),
+                        risk_classification           => 'standard',
                         prompt_client_to_authenticate => 1,
                         authentication                => {
                             document => {
@@ -2606,8 +2613,8 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status              => superbagof(qw(age_verification financial_information_not_complete financial_assessment_not_complete)),
-                        risk_classification => 'low',
+                        status                        => superbagof(qw(age_verification financial_information_not_complete)),
+                        risk_classification           => 'standard',
                         prompt_client_to_authenticate => 1,
                         authentication                => {
                             identity => {
@@ -2676,8 +2683,8 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status                        => superbagof(qw(financial_information_not_complete financial_assessment_not_complete)),
-                    risk_classification           => 'low',
+                    status                        => superbagof(qw(financial_information_not_complete)),
+                    risk_classification           => 'standard',
                     prompt_client_to_authenticate => 1,
                     authentication                => {
                         document => {
@@ -2731,11 +2738,7 @@ subtest 'get account status' => sub {
 
             $test_client->status->clear_allow_document_upload;
             my $result = $c->tcall($method, {token => $token});
-            cmp_deeply(
-                $result->{status},
-                superbagof(qw(financial_information_not_complete financial_assessment_not_complete)),
-                'no idv_disallowed if no allow_document_upload'
-            );
+            cmp_deeply($result->{status}, superbagof(qw(financial_information_not_complete)), 'no idv_disallowed if no allow_document_upload');
 
             $test_client->status->setnx('unwelcome', 'system', 'reason');
             $result = $c->tcall($method, {token => $token});

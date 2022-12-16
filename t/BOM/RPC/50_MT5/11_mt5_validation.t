@@ -694,6 +694,7 @@ subtest 'MF accout types' => sub {
         'Financial info is not enough for MF clients'
     );
 
+    $client->aml_risk_classification('standard');
     financial_assessment($client, 'trading_experience');
     create_mt5_account->(
         $c, $token, $client,
@@ -702,9 +703,10 @@ subtest 'MF accout types' => sub {
             mt5_account_type => 'financial'
         },
         'FinancialAssessmentRequired',
-        'Trading experience is not enough for MF clients'
+        'Trading experience is not enough for MF clients for standard or high risk clients'
     );
 
+    $client->aml_risk_classification('low');
     financial_assessment($client, 'full');
     $login = create_mt5_account->(
         $c, $token, $client,

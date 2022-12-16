@@ -900,7 +900,7 @@ rpc get_account_status => sub {
     my $client_fa = decode_fa($client->financial_assessment());
 
     push(@$status, 'financial_information_not_complete')
-        unless is_section_complete($client_fa, "financial_information", $client->landing_company->short);
+        unless $client->is_financial_information_complete();
 
     push(@$status, 'trading_experience_not_complete') unless is_section_complete($client_fa, "trading_experience", $client->landing_company->short);
 
@@ -2940,11 +2940,16 @@ rpc set_financial_assessment => sub {
 
     if ($company eq 'maltainvest') {
         $response->{trading_score} = delete $response->{trading_experience_regulated};
-        if ($response->{trading_score} == 0) {
-            $client->status->upsert('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
-        } else {
-            $client->status->upsert('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
+        # if there is a change in trading experience regulated only
+        if ($params->{args}->{trading_experience_regulated}) {
+            $client->status->clear_financial_risk_approval();
+            if ($response->{trading_score} == 0) {
+                $client->status->upsert('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+            } else {
+                $client->status->upsert('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
+            }
         }
+
     } else {
         delete $response->{trading_experience_regulated};
     }
