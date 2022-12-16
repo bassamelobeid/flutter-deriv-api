@@ -679,12 +679,16 @@ sub was_locked_for_high_risk {
 Check if the client has filled out the financial assessment information:
 
 - For non-MF, only the the financial information (FI) is required and (risk level is high or it's forced by staff).
-- For MF, both the FI and trading experience is required, regardless of rish level.
+- For MF trading experience is required, regardless of rish level.
+- For MF, Finacial information is required for standard and high in withdrawals only
 
 =cut
 
 sub is_financial_assessment_complete {
     my $self = shift;
+
+    # only used for MF
+    my $is_withdrwals = shift // 0;
 
     my $lc                   = $self->landing_company->short;
     my $financial_assessment = BOM::User::FinancialAssessment::decode_fa($self->financial_assessment());
@@ -704,7 +708,38 @@ sub is_financial_assessment_complete {
 
     my $is_TE = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'trading_experience', $lc);
 
-    return 0 unless ($is_FI and $is_TE and $self->risk_level_aml() =~ /low/);
+    # trading experience is always required
+    return 0 if (!$is_TE);
+
+    # for withdrwals we are using withdrwawl lock status
+    return 0 if ($self->risk_level_aml() =~ /standard|high/ && $is_withdrwals && !$is_FI);
+
+    return 1;
+}
+
+=head2 is_financial_information_complete
+
+Check if the client has filled out the financial information:
+
+- For MF, the FA is not required for low risk level.
+
+=cut
+
+sub is_financial_information_complete {
+    my $self = shift;
+
+    my $lc                   = $self->landing_company->short;
+    my $financial_assessment = BOM::User::FinancialAssessment::decode_fa($self->financial_assessment());
+
+    my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information', $lc);
+
+    if ($lc ne 'maltainvest') {
+        return 0 unless $is_FI;
+    }
+
+    return 1 if $self->risk_level_aml() =~ /low/;
+
+    return 0 unless $is_FI;
 
     return 1;
 }
