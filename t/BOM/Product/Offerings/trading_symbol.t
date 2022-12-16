@@ -182,6 +182,7 @@ subtest 'trading symbol by app id' => sub {
             27315 => 69,
             31254 => 0,
             29808 => 0,
+            46333 => 0,
 
         );
         my $app = $deriv->whitelist_apps;
@@ -216,6 +217,7 @@ subtest 'trading symbol by app id' => sub {
             15488 => 17,
             29808 => 0,
             31254 => 0,
+            46333 => 0,
         );
         my $app = $binary->whitelist_apps;
         foreach my $app_id (keys %$app) {
