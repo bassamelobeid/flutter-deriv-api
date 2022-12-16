@@ -158,6 +158,13 @@
             "id" : {
                "pattern" : "^de$",
                "type" : "string"
+            },
+            "all_company" : {
+               "type": "string",
+               "enum": [
+                  "svg",
+                  "none"
+               ]
             }
          },
          "type" : "object",

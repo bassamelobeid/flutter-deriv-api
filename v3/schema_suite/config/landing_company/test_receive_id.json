@@ -362,6 +362,33 @@
             "virtual_company" : {
                "pattern" : "^virtual$",
                "type" : "string"
+            },
+            "all_company": {
+               "type": "string",
+               "enum": [
+                  "svg",
+                  "none"
+               ]
+            },
+            "derivez": {
+               "type": "object",
+               "additionalProperties": false,
+               "properties": {
+                   "all": {
+                       "type": "object",
+                       "additionalProperties": false,
+                       "properties": {
+                           "standard": {
+                              "type": "string",
+                              "additionalProperties": false,
+                              "enum": [
+                                 "svg",
+                                 "none"
+                              ]
+                           }
+                       }
+                   }
+               }
             }
          },
          "type" : "object"
