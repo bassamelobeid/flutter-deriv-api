@@ -321,7 +321,7 @@ sub sendmail {
 
     return send_email({
         from                  => $brand->emails('no-reply'),
-        to                    => $brand->emails('accounting'),
+        to                    => $brand->emails('payments_tl'),
         subject               => "Automatically rescinded balances on $broker_code $stamp",
         email_content_is_html => 1,
         message               => \@lines,
