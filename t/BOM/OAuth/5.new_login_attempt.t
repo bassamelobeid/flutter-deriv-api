@@ -52,11 +52,12 @@ $mocked_request->mock('domain_name', 'www.binaryqa.com');
 
 # mock send email
 my $virtual_inbox = [];
-my $platform_mock = Test::MockModule->new('BOM::Platform::Email');
-$platform_mock->mock(
-    'send_email',
+
+my $emitter_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$emitter_mock->mock(
+    'emit',
     sub {
-        push @$virtual_inbox, "email sent";
+        push(@$virtual_inbox, "event emitted") if shift =~ "unknown_login";
     });
 
 sub do_client_login {

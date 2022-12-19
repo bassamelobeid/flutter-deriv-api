@@ -18,7 +18,6 @@ use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
 use BOM::OAuth::Static     qw( get_message_mapping get_valid_device_types );
 use BOM::Platform::Context qw( localize request );
-use BOM::Platform::Email   qw( send_email );
 use BOM::User;
 use BOM::User::AuditLog;
 use BOM::Platform::Account::Virtual;
@@ -187,13 +186,13 @@ sub notify_login {
             password_reset_url        => lc($password_reset_url),
             first_name                => $client->first_name,
         };
-
-        send_email({
-            use_event  => 1,
-            event      => 'unknown_login',
-            loginid    => $client->loginid,
-            properties => $email_data,
-        });
+        BOM::Platform::Event::Emitter::emit(
+            'unknown_login',
+            {
+                event      => 'unknown_login',
+                loginid    => $client->loginid,
+                properties => $email_data,
+            });
     }
 }
 

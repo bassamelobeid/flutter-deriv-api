@@ -115,15 +115,13 @@ $emitter_mock->mock(
         return $emitter_mock->original('emit')->(@_);
     });
 
-BEGIN { use_ok('BOM::Platform::Email', qw(send_email)); }
-
 $redis->del("CLIENT_LOGIN_HISTORY::" . $user->id);
 
 $t = callPost($t, $email, $password, $csrf_token, "ID");
 
-is $events->{send_email}->{event}, 'unknown_login', 'send_email has correct event name';
+is $events->{unknown_login}->{event}, 'unknown_login', 'send_email has correct event name';
 
-cmp_deeply $events->{send_email}->{properties},
+cmp_deeply $events->{unknown_login}->{properties},
     {
     device                    => '',
     lang                      => 'id',
