@@ -92,6 +92,49 @@ subtest 'residence_list' => sub {
         'ng is correct'
     );
 
+    is_deeply(
+        $index->{in},
+        {
+            identity => {
+                services => {
+                    idv => {
+                        is_country_supported => 1,
+                        has_visual_sample    => 0,
+                        documents_supported  => {
+                            drivers_license => {
+                                display_name => 'Drivers License',
+                                format       => '^.{5,255}$',
+                            },
+                            pan => {
+                                display_name => 'PAN Card',
+                                format       => '^.{10}$',
+                            },
+                            epic => {
+                                display_name => 'Voter ID',
+                                format       => '^.{10,23}$',
+                            }
+                        },
+                    },
+                    onfido => {
+                        is_country_supported => 1,
+                        documents_supported  => {
+                            driving_licence                 => {display_name => 'Driving Licence'},
+                            'tax_id_(e-pan_card,_pan_card)' => {display_name => 'Tax Id (E-Pan Card, PAN Card)'},
+                            passport                        => {display_name => 'Passport'},
+                            national_identity_card          => {display_name => 'National Identity Card'},
+                            voter_id                        => {display_name => 'Voter Id'},
+                            visa                            => {display_name => 'Visa'}
+                        },
+                    },
+                }
+            },
+            text       => 'India',
+            phone_idd  => '91',
+            tin_format => ['^[a-zA-Z]{5}\d{4}[a-zA-Z]$'],
+        },
+        'in is correct'
+    );
+
     BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
     $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
     $index  = +{map { (delete $_->{value} => $_) } $result->@*};

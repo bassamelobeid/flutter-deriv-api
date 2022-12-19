@@ -100,8 +100,9 @@ rpc residence_list => sub {
                                     $_ => {
                                         display_name => localize($idv_docs_supported->{$_}->{display_name}),
                                         format       => $idv_docs_supported->{$_}->{format},
+                                        $idv_docs_supported->{$_}->{additional} ? (additional => $idv_docs_supported->{$_}->{additional}) : (),
                                     })
-                            } keys $idv_docs_supported->%*
+                            } grep { !$idv_docs_supported->{$_}->{disabled} } keys $idv_docs_supported->%*
                         },
                         is_country_supported => BOM::Platform::Utility::has_idv(
                             country  => $country_code,

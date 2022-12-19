@@ -299,4 +299,64 @@ subtest 'ignore submissions left when expired status' => sub {
     ok !$idv_model->has_expired_document_chance, 'Expired chance claimed';
 };
 
+subtest 'add document with additional field' => sub {
+    my $user = BOM::User->create(
+        email    => 'additional.example@binary.com',
+        password => 'test_passwd'
+    );
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user->id
+    });
+
+    $user->add_client($client_cr);
+
+    my $token_model = BOM::Platform::Token::API->new;
+    my $token_cr    = $token_model->create_token($client_cr->loginid, 'test token');
+    $client_cr->status->upsert('allow_document_upload', 'system', 'CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT');
+
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client_cr->binary_user_id);
+
+    my $params = {
+        token    => $token_cr,
+        language => 'EN',
+    };
+
+    $params->{args} = {
+        issuing_country => 'in',
+        document_type   => 'passport',
+        document_number => '12345678',
+    };
+
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidDocumentAdditional', 'Invalid document number.');
+
+    $params->{args} = {
+        issuing_country => 'in',
+        document_type   => 'passport',
+        document_number => '12345678',
+        additional      => '0'
+    };
+
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidDocumentAdditional', 'Invalid document number.');
+
+    $params->{args} = {
+        issuing_country     => 'in',
+        document_type       => 'passport',
+        document_number     => '12345678',
+        document_additional => '123456789ABCDEF'
+    };
+
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error->result;
+
+    my $document = $idv_model->get_standby_document();
+    is $document->{document_number},     $params->{args}->{document_number},     'document number submitted correctly';
+    is $document->{document_type},       $params->{args}->{document_type},       'document type submitted correctly';
+    is $document->{issuing_country},     $params->{args}->{issuing_country},     'document issuing country submitted correctly';
+    is $document->{document_additional}, $params->{args}->{document_additional}, 'document additional submitted correctly';
+
+};
+
 done_testing();

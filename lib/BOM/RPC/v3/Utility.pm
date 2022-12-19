@@ -700,7 +700,8 @@ sub error_map {
         ClaimedDocument                => localize(
             "This document number was already submitted for a different account. It seems you have an account with us that doesn't need further verification. Please contact us via live chat if you need help."
         ),
-        ExpiredDocument => localize("The document you used appears to be expired. Please use a valid document."),
+        ExpiredDocument           => localize("The document you used appears to be expired. Please use a valid document."),
+        InvalidDocumentAdditional => localize("It looks like the document details you entered are invalid. Please check and try again."),
     };
 }
 
