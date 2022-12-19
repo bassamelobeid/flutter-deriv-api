@@ -69,7 +69,8 @@ subtest 'add document' => sub {
         $idv_model_ccr->add_document({
             issuing_country => 'ir',
             number          => '1234',
-            type            => 'sejeli'
+            type            => 'sejeli',
+            additional      => 'addme',
         });
     }
     'document added successfully';
@@ -79,9 +80,10 @@ subtest 'add document' => sub {
             $_->selectrow_hashref('SELECT * FROM idv.document WHERE binary_user_id=?::BIGINT', undef, $client_cr->binary_user_id);
         });
 
-    is $document->{issuing_country}, 'ir',      'issuing country persisted';
-    is $document->{status},          'pending', 'status is set to pending correctly';
-    is $document->{expiration_date}, undef,     'expiration date not set correctly';
+    is $document->{issuing_country},     'ir',      'issuing country persisted';
+    is $document->{status},              'pending', 'status is set to pending correctly';
+    is $document->{expiration_date},     undef,     'expiration date not set correctly';
+    is $document->{document_additional}, 'addme',   'additional has been set correctly';
 
     lives_ok {
         $idv_model_cmf->add_document({

@@ -42,15 +42,19 @@ has user_id => (
 
 Add document row filled by provided info by user
 
+It takes a hashref argument:
+
 =over 4
 
-=item * C<$issuing_country> - the document issuing country
+=item * C<issuing_country> - the document issuing country
 
-=item * C<$document_number> - the number of document, can be letters and numbers or combination of them
+=item * C<number> - the number of document, can be letters and numbers or combination of them
 
-=item * C<$document_type> - the type of document
+=item * C<type> - the type of document
 
-=item * C<$expiration_date> - nullable, the document expiry date
+=item * C<expiration_date> - nullable, the document expiry date
+
+=item * C<additional> - (optional) additional info
 
 =back
 
@@ -61,11 +65,8 @@ Returns arrayref.
 sub add_document {
     my ($self, $args) = @_;
 
-    my ($issuing_country, $document_number, $document_type, $expiration_date) = @{$args}{
-        qw/
-            issuing_country   number            type            expiration_date
-            /
-    };
+    my ($issuing_country, $document_number, $document_type, $expiration_date, $document_additional) =
+        @{$args}{qw/issuing_country number type expiration_date additional/};
 
     die 'issuing_country is required' unless $issuing_country;
     die 'document_number is required' unless $document_number;
@@ -74,12 +75,11 @@ sub add_document {
     $expiration_date = Date::Utility->new($expiration_date)->date if $expiration_date;
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-
     try {
         return $dbic->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM idv.add_document(?::BIGINT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TIMESTAMP)',
-                    undef, $self->user_id, $issuing_country, $document_number, $document_type, $expiration_date);
+                $_->selectrow_hashref('SELECT * FROM idv.add_document(?::BIGINT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT)',
+                    undef, $self->user_id, $issuing_country, $document_number, $document_type, $expiration_date, $document_additional);
             });
     } catch ($e) {
         die sprintf("Failed while adding document due to '%s'", $e);
