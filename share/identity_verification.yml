@@ -10,6 +10,9 @@ providers:
   derivative_wealth:
     selfish: 0
     display_name: Derivative Wealth
+  data_zoo:
+    selfish: 1
+    display_name: Data Zoo
 statuses:
   pending: Pending
   verified: Verified

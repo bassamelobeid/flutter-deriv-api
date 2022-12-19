@@ -132,6 +132,10 @@ subtest 'identify_vetification.yml integrity check' => sub {
                 selfish      => 0,
                 display_name => 'Derivative Wealth',
             },
+            data_zoo => {
+                selfish      => 1,
+                display_name => 'Data Zoo',
+            },
             zaig => {
                 selfish      => 1,
                 portal_base  => 'https://dash.zaig.com.br/natural-person/%s',
