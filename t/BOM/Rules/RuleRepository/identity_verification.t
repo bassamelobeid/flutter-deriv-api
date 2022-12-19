@@ -677,15 +677,61 @@ subtest 'rule idv.valid_document_number' => sub {
             },
             idv_config => {document_types => {passport => {format => 'E$'}}},
             error      => 'InvalidDocumentNumber',
-        }];
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => 'E123'
+            },
+            idv_config => {
+                document_types => {
+                    passport => {
+                        format     => '^E',
+                        additional => {format => '^A'}}}
+            },
+            error => 'InvalidDocumentAdditional',
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => '123E',
+                additional      => 'E11'
+            },
+            idv_config => {
+                document_types => {
+                    passport => {
+                        format     => 'E$',
+                        additional => {format => '^A'}}}
+            },
+            error => 'InvalidDocumentAdditional',
+        },
+        {
+            input => {
+                issuing_country => 'ir',
+                type            => 'passport',
+                number          => '123E',
+                additional      => 'A11'
+            },
+            idv_config => {
+                document_types => {
+                    passport => {
+                        format     => 'E$',
+                        additional => {format => '^A'}}}
+            },
+            error => undef,
+        },
+    ];
 
     for my $case ($test_cases->@*) {
         $mock_country_config->mock('get_idv_config' => $case->{idv_config});
 
         my %args = (
-            issuing_country => $case->{input}->{issuing_country},
-            document_type   => $case->{input}->{type},
-            document_number => $case->{input}->{number});
+            issuing_country     => $case->{input}->{issuing_country},
+            document_type       => $case->{input}->{type},
+            document_number     => $case->{input}->{number},
+            document_additional => $case->{input}->{additional});
 
         if (my $error = $case->{error}) {
             is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },

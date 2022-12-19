@@ -169,6 +169,12 @@ rule 'idv.valid_document_number' => {
 
         $self->fail('InvalidDocumentNumber') if $document_number !~ m/$regex/;
 
+        my $additional_config = $configs->{document_types}->{$document_type}->{additional};
+        if ($additional_config) {
+            my $additional = $args->{document_additional} // '';
+            $regex = $additional_config->{format};
+            $self->fail('InvalidDocumentAdditional') if $additional !~ m/$regex/;
+        }
         return undef;
     }
 };
