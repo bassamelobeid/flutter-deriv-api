@@ -8,7 +8,6 @@ use BOM::MT5::User::Async;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw(formatnumber);
 use Log::Any              qw($log);
-use Log::Any::Adapter     qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'debug';
 use BOM::Platform::Event::Emitter;
 use BOM::User::Client;
 use LandingCompany::Registry;

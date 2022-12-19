@@ -19,7 +19,6 @@ use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 use BOM::User::Utility               qw(parse_mt5_group);
 use BOM::User::FinancialAssessment   qw(decode_fa);
 use Log::Any                         qw($log);
-use Log::Any::Adapter                qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'debug';
 
 use base 'Exporter';
 our @EXPORT_OK = qw(
