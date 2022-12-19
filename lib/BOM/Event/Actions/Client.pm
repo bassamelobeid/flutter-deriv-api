@@ -430,8 +430,10 @@ async sub _upload_poa_document {
 
     $client->propagate_clear_status('allow_poa_resubmission');
 
-    await BOM::Event::Services::Track::document_upload({
-            client     => $client,
+    BOM::Platform::Event::Emitter::emit(
+        'document_uploaded',
+        {
+            loginid    => $client->loginid,
             properties => {
                 uploaded_manually_by_staff => $uploaded_by_staff,
                 %$document_entry
@@ -462,8 +464,10 @@ async sub _upload_poi_document {
 
     my $file_data = $args->{content};
 
-    await BOM::Event::Services::Track::document_upload({
-            client     => $client,
+    BOM::Platform::Event::Emitter::emit(
+        'document_uploaded',
+        {
+            loginid    => $client->loginid,
             properties => {
                 issuing_country            => $args->{issuing_country},
                 uploaded_manually_by_staff => $uploaded_by_staff,
@@ -491,8 +495,10 @@ async sub _upload_pow_document {
 
     my ($client, $document_entry, $uploaded_by_staff) = @{$args}{qw/client document_entry uploaded_by_staff/};
 
-    await BOM::Event::Services::Track::document_upload({
-            client     => $client,
+    BOM::Platform::Event::Emitter::emit(
+        'document_uploaded',
+        {
+            loginid    => $client->loginid,
             properties => {
                 uploaded_manually_by_staff => $uploaded_by_staff,
                 %$document_entry
@@ -1281,10 +1287,12 @@ async sub onfido_doc_ready_for_upload {
             };
 
             if ($document_info) {
-                await BOM::Event::Services::Track::document_upload({
-                    client     => $client,
-                    properties => $document_info
-                });
+                BOM::Platform::Event::Emitter::emit(
+                    'document_uploaded',
+                    {
+                        loginid    => $client->loginid,
+                        properties => $document_info
+                    });
             } else {
                 $log->errorf('Could not get document %s from database for client %s', $file_id, $client->loginid);
             }

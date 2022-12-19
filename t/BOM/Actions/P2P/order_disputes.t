@@ -9,12 +9,25 @@ use BOM::Event::Actions::P2P;
 use BOM::Test::Helper::P2P;
 use Date::Utility;
 use Time::Moment;
+use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my @emissions;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->redefine(
+    'emit' => sub {
+        my ($event, $args) = @_;
+        push @emissions,
+            {
+            type    => $event,
+            details => $args
+            };
+    });
 
 my $mock = Test::MockModule->new('BOM::Event::Services::Track');
 my @track_event_args;
@@ -34,7 +47,7 @@ $mock_segment->mock(
     'track',
     sub {
         push @segment_args, {@_[1 .. $#_]};
-        return $mock_segment->original('track')->(@_);
+        return Future->done(1);
     });
 
 BOM::Test::Helper::P2P::create_escrow();
@@ -99,12 +112,15 @@ subtest 'Order disputes' => sub {
             );
 
             @segment_args = ();
+            @emissions    = ();
             BOM::Event::Actions::P2P::order_updated({
                     client_loginid => $parties{$scenario->{disputer}}->loginid,
                     order_id       => $order->{id},
                     order_event    => 'dispute',
                 })->get;
 
+            is scalar @emissions, 1, 'event emitted';
+            BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
             my %common_args = (
                 disputer       => $scenario->{disputer},
                 dispute_reason => $scenario->{reason},
@@ -169,6 +185,7 @@ subtest 'Dispute resolution' => sub {
                 # Then somebody from BO triggers this
                 @track_event_args = ();
                 @segment_args     = ();
+                @emissions        = ();
                 BOM::Event::Actions::P2P::order_updated({
                         client_loginid => $client->loginid,
                         order_id       => $order->{id},
@@ -177,6 +194,9 @@ subtest 'Dispute resolution' => sub {
 
                 # Get fresh order data
                 $order = $advertiser->p2p_order_info(id => $order->{id});
+
+                is scalar @emissions, 1, 'event emitted';
+                BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
 
                 # Check whether the track_events are called
                 is scalar @track_event_args, 2,                  'Two track_event fired';

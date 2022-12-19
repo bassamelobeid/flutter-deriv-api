@@ -64,23 +64,20 @@ Returns 1 if email has been sent, otherwise 0
 sub send_email_generic {
     my ($args) = @_;
 
-    if ($args->{event}) {
-        return send_client_email($args);
-    } else {
-        my $status_code = process_send_email($args);
+    my $status_code = process_send_email($args);
 
-        $log->errorf(
-            'Failed to send the email with subject: %s - template_name: %s - request_brand_name: %s',
-            $args->{subject},
-            $args->{template_name},
-            request()->brand->name
-        ) unless $status_code;
+    $log->errorf(
+        'Failed to send the email with subject: %s - template_name: %s - request_brand_name: %s',
+        $args->{subject},
+        $args->{template_name},
+        request()->brand->name
+    ) unless $status_code;
 
-        return $status_code;
-    }
+    return $status_code;
+
 }
 
-=head2 send_client_email
+=head2 send_client_email_track_event
 
 Handler for sending client's email event.
 
@@ -100,7 +97,7 @@ Note: Client's details ("traits") is already recorded in customer.io, don't send
 
 =cut
 
-sub send_client_email {
+sub send_client_email_track_event {
     my ($args) = @_;
 
     local $BOM::Platform::Context::current_request = request();

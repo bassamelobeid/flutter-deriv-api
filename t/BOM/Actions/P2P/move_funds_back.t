@@ -15,6 +15,7 @@ use BOM::Test::Helper::Client;
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 use BOM::Test::Helper::P2P;
+use BOM::Event::Process;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -158,10 +159,10 @@ subtest 'segment tracking' => sub {
         });
 
     $p2p_mock->mock(
-        '_track_p2p_order_event',
+        'track_p2p_order_event',
         sub {
-            $track_args = {@_};
-            return $p2p_mock->original('_track_p2p_order_event')->(@_);
+            $track_args = shift;
+            return $p2p_mock->original('track_p2p_order_event')->($track_args);
         });
 
     $track_mock->mock(
@@ -176,7 +177,7 @@ subtest 'segment tracking' => sub {
         'track',
         sub {
             push @segment_args, [@_];
-            return $mock_segment->original('track')->(@_);
+            return Future->done(1);
         });
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
@@ -247,8 +248,14 @@ subtest 'segment tracking' => sub {
 
     # Call order updated event
     ok BOM::Event::Actions::P2P::order_updated($update_expected->{p2p_order_updated})->get, 'Order updated event was successful';
+    is scalar @emitted_events, 5, 'track event emitted';
 
-    # Check whether _track_p2p_order_event has the correct arguments
+    my $event   = $emitted_events[$#emitted_events];
+    my $process = BOM::Event::Process->new(category => 'track');
+    $process->actions->{p2p_order_updated_handled} = \&BOM::Event::Actions::P2P::track_p2p_order_event;
+    $process->process({type => $event->[0], details => $event->[1]})->get;
+
+    # Check whether track_p2p_order_event has the correct arguments
     is $track_args->{order_event}, 'timeout_refund', 'The order event is correct';
     is $track_args->{order}{id},   $order->{id},     'The order id is correct';
 

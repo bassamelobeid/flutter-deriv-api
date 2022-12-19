@@ -59,6 +59,18 @@ $s3_mocker->mock(
         return Future->done(1);
     });
 
+my @emissions;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->redefine(
+    'emit' => sub {
+        my ($event, $args) = @_;
+        push @emissions,
+            {
+            type    => $event,
+            details => $args
+            };
+    });
+
 subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
     $onfido_mocker->mock(
         'download_photo',
@@ -88,7 +100,7 @@ subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
     my $f = Future->wait_all(map { $upload_generator->() } (1 .. 10));
     $f->on_ready(
         sub {
-            isnt $exceptions, 0, 'Exception counter is ZERO';
+            is $exceptions, 0, 'Exception counter is ZERO';
             my $keys = $redis_replicated->keys('*ONFIDO_UPLOAD_BAG*');
             is scalar @$keys, 0, 'Lock released';
         });
@@ -151,16 +163,24 @@ subtest 'Onfido lifetime valid' => sub {
                     number          => $doc_id,
                 }});
     };
-
+    undef @emissions;
     $upload->('abcd', '2019-01-01', 'document', 'passport')->get;
+    is scalar @emissions, 1, 'event emitted';
+
+    my $process = BOM::Event::Process->new(category => 'track');
+    $process->actions->{document_uploaded} = \&BOM::Event::Services::Track::document_upload;
+    $process->process($emissions[$#emissions])->get;
+
     is $document->{expiration_date}, '2019-01-01', 'Expected expiration date';
     ok !$document->{lifetime_valid}, 'No lifetime valid doc';
 
     $upload->('qwerty', '', 'document', 'passport')->get;
+    $process->process($emissions[$#emissions])->get;
     ok !$document->{expiration_date}, 'Empty expiration date';
     ok $document->{lifetime_valid},   'Lifetime valid doc';
 
     $upload->('cucamonga', '', 'photo', 'selfie')->get;
+    $process->process($emissions[$#emissions])->get;
     ok !$document->{expiration_date}, 'Empty expiration date';
     ok !$document->{lifetime_valid},  'Lifetime valid does not apply to selfie';
 
@@ -235,8 +255,14 @@ subtest '_get_document_details' => sub {
 
             return Future->done(1);
         });
+    undef @emissions;
 
     $upload->('anotherone', '2019-01-01', 'document', 'passport')->get;
+
+    my $process = BOM::Event::Process->new(category => 'track');
+    $process->actions->{document_uploaded} = \&BOM::Event::Services::Track::document_upload;
+    $process->process($emissions[$#emissions])->get;
+
     cmp_deeply $document,
         +{
         upload_date     => re('\w+'),

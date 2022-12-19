@@ -11,6 +11,19 @@ use BOM::Event::Actions::P2P;
 use BOM::Event::Process;
 use WebService::SendBird;
 
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my @emissions;
+$mock_emitter->redefine(
+    'emit' => sub {
+        my ($track_event, $args) = @_;
+        push @emissions,
+            {
+            event => $track_event,
+            args  => $args
+            };
+        #return Future->done(1);
+    });
+
 BOM::Test::Helper::P2P::bypass_sendbird();
 
 my $escrow = BOM::Test::Helper::P2P::create_escrow();
@@ -46,6 +59,7 @@ $mock_sb->mock('view_group_chat' => $mock_channel);
 
 for my $status (sort keys %tests) {
     undef $frozen;
+    undef @emissions;
     BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
     BOM::Event::Process->new(category => 'generic')->process({
             type    => 'p2p_order_updated',
@@ -56,6 +70,7 @@ for my $status (sort keys %tests) {
         }
         ),
         is $frozen, $tests{$status}, "expected freeze for $status";
+    is $emissions[0]->{event}, 'p2p_order_updated_handled', "event emitted $status";
 }
 
 BOM::Test::Helper::P2P::reset_escrow();

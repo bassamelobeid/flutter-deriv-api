@@ -71,7 +71,7 @@ subtest 'email events - risk disclaimer resubmission' => sub {
     );
     request($req);
 
-    BOM::Event::Actions::Email::send_email_generic({
+    BOM::Event::Actions::Email::send_client_email_track_event({
             language   => 'ES',
             event      => 'risk_disclaimer_resubmission',
             loginid    => $client->loginid,
@@ -111,7 +111,7 @@ subtest 'email event - unknown_login' => sub {
     );
     request($req);
 
-    BOM::Event::Actions::Email::send_email_generic({
+    BOM::Event::Actions::Email::send_client_email_track_event({
             language   => 'EN',
             event      => 'unknown_login',
             loginid    => $client->loginid,

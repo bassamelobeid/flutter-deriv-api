@@ -2329,10 +2329,12 @@ subtest 'segment document upload' => sub {
         });
 
     undef @track_args;
+    undef @emit_args;
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
     $action_handler->({
             loginid => $test_client->loginid,
             file_id => $upload_info->{file_id}})->get;
+    BOM::Event::Process->new(category => 'track')->process({type => $emit_args[0], details => $emit_args[1]})->get;
 
     my ($customer, %args) = @track_args;
     is $args{event},                                    'document_upload',        'track event is document_upload';
@@ -2368,10 +2370,12 @@ subtest 'edd document upload' => sub {
         });
 
     undef @track_args;
+    undef @emit_args;
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{document_upload};
     $action_handler->({
             loginid => $test_client->loginid,
             file_id => $upload_info->{file_id}})->get;
+    BOM::Event::Process->new(category => 'track')->process({type => $emit_args[0], details => $emit_args[1]})->get;
 
     my ($customer, %args) = @track_args;
     is $args{event},                                    'document_upload', 'track event is document_upload';
@@ -4639,7 +4643,7 @@ subtest 'request payment withdraw' => sub {
             language         => 'EN',
         }};
 
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{request_payment_withdraw};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{request_payment_withdraw};
     my $result  = $handler->($args)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
@@ -4672,7 +4676,7 @@ subtest 'verify email closed account other' => sub {
             language         => 'EN',
         }};
 
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_email_closed_account_other};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_other};
 
     my $result = $handler->($args)->get;
     ok $result, 'Success result';
@@ -4706,7 +4710,7 @@ subtest 'verify email closed account reset password' => sub {
             language         => 'EN',
         }};
 
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_email_closed_account_reset_password};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_reset_password};
 
     my $result = $handler->($args)->get;
     ok $result, 'Success result';
@@ -4740,7 +4744,7 @@ subtest 'verify email closed account opening' => sub {
             language         => 'EN',
         }};
 
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{verify_email_closed_account_account_opening};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{verify_email_closed_account_account_opening};
     my $result  = $handler->($args)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';
@@ -4759,7 +4763,7 @@ subtest 'self tagging affiliates' => sub {
 
         }};
 
-    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{self_tagging_affiliates};
+    my $handler = BOM::Event::Process->new(category => 'track')->actions->{self_tagging_affiliates};
     my $result  = $handler->($args)->get;
     ok $result, 'Success result';
     is scalar @track_args, 7, 'Track event is triggered';

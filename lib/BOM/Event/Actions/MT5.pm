@@ -257,12 +257,12 @@ sub new_mt5_signup {
     my $brand            = request()->brand;
     my %track_properties = (
         %$data,
-        client            => $client,
+        loginid           => $client->loginid,
         mt5_dashboard_url => $brand->mt5_dashboard_url({language => request->language}),
         live_chat_url     => $brand->live_chat_url({language => request->language}),
     );
     $track_properties{mt5_loginid} = delete $track_properties{mt5_login_id};
-    return BOM::Event::Services::Track::new_mt5_signup(\%track_properties);
+    return BOM::Platform::Event::Emitter::emit('new_mt5_signup_stored', {%track_properties});
 }
 
 =head2 mt5_change_color

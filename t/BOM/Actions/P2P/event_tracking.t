@@ -15,7 +15,7 @@ use BOM::Platform::Context::Request;
 use BOM::Config::Runtime;
 use Brands;
 
-my (@identify_args, @track_args);
+my (@identify_args, @track_args, @emissions);
 my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
 
 my $brand    = Brands->new->name;
@@ -42,6 +42,15 @@ $mock_segment->redefine(
     });
 
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->redefine(
+    'emit' => sub {
+        my ($event, $args) = @_;
+        push @emissions,
+            {
+            type    => $event,
+            details => $args
+            };
+    });
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $escrow = BOM::Test::Helper::P2P::create_escrow();
@@ -65,11 +74,14 @@ subtest 'p2p order event validation' => sub {
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    0, 'Segment track is not called';
 
+    undef @emissions;
     $handler->({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
         })->get;
+    is scalar @emissions, 1, 'event emitted';
 
+    BOM::Event::Process->new(category => 'track')->process($emissions[0])->get;
     is scalar @identify_args, 0, 'Segment identify is not called - order_type is missing';
     is scalar @track_args,    0, 'Segment track is not called- order_type is missing';
 };
@@ -81,13 +93,18 @@ subtest 'p2p order created' => sub {
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_created};
     undef @identify_args;
     undef @track_args;
+    undef @emissions;
 
     $handler->({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
         })->get;
+    is scalar @emissions, 1, 'event emitted';
+
+    BOM::Event::Process->new(category => 'track')->process($emissions[0])->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
+
     my $order = $client->_p2p_orders(id => $order->{id})->[0];
 
     my ($customer, $args) = @track_args;
@@ -147,12 +164,16 @@ subtest 'p2p order confirmed by buyer' => sub {
     $client->p2p_order_confirm(id => $order->{id});
     my $order = $client->_p2p_orders(id => $order->{id})->[0];
     is $order->{status}, 'buyer-confirmed', 'order status is changed';
+    undef @emissions;
 
     $handler->({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
             order_event    => 'confirmed',
         })->get;
+    is scalar @emissions, 1, 'event emitted';
+
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -213,12 +234,16 @@ subtest 'p2p order confirmed by seller' => sub {
 
     my $order = $client->_p2p_orders(id => $order->{id})->[0];
     is $order->{status}, 'completed', 'order status is changed';
+    undef @emissions;
 
     $handler->({
             client_loginid => $advertiser->loginid,
             order_id       => $order->{id},
             order_event    => 'confirmed',
         })->get;
+    is scalar @emissions, 1, 'events emitted';
+
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -273,6 +298,7 @@ subtest 'p2p order cancelled' => sub {
     my $handler = BOM::Event::Process->new(category => 'generic')->actions->{p2p_order_updated};
     undef @identify_args;
     undef @track_args;
+    undef @emissions;
 
     BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'cancelled');
 
@@ -284,6 +310,10 @@ subtest 'p2p order cancelled' => sub {
             order_id       => $order->{id},
             order_event    => 'cancelled',
         })->get;
+
+    is scalar @emissions, 1, 'events emitted';
+
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -355,11 +385,15 @@ subtest 'pending order expired' => sub {
     $order = $client->_p2p_orders(id => $order->{id})->[0];
     is $order->{status}, 'refunded', 'order status is changed';
 
+    undef @emissions;
     $handler->({
             client_loginid => $advertiser->loginid,
             order_id       => $order->{id},
             order_event    => 'expired',
         })->get;
+    is scalar @emissions, 1, 'events emitted';
+
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 
@@ -418,12 +452,15 @@ subtest 'confirmed order expired' => sub {
     $client->p2p_expire_order(id => $order->{id});
     $order = $client->_p2p_orders(id => $order->{id})->[0];
     is $order->{status}, 'timed-out', 'Payed order status is changed to timed-out after expiration';
-
+    undef @emissions;
     $handler->({
             client_loginid => $advertiser->loginid,
             order_id       => $order->{id},
             order_event    => 'expired',
         })->get;
+    is scalar @emissions, 1, 'event emitted';
+
+    BOM::Event::Process->new(category => 'track')->process($emissions[$#emissions])->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
     is scalar @track_args,    4, 'Segment track is called twice';
 

@@ -115,7 +115,7 @@ subtest 'process - generic jobs' => sub {
                 store_mt5_transaction new_mt5_signup anonymize_client bulk_anonymization
                 document_upload ready_for_authentication client_verification
                 verify_address social_responsibility_check sync_onfido_details
-                authenticated_with_scans qualifying_payment_check
+                qualifying_payment_check
                 payment_deposit send_email
                 signup profile_change
                 p2p_advertiser_created p2p_advertiser_updated
@@ -131,9 +131,7 @@ subtest 'process - generic jobs' => sub {
                 check_name_changes_after_first_deposit p2p_adverts_updated
                 affiliate_loginids_sync p2p_advertiser_approval_changed
                 cms_add_affiliate_client df_anonymization_done account_disabled_sideoffice
-                account_opening_existing self_tagging_affiliates request_payment_withdraw
-                verify_email_closed_account_other verify_email_closed_account_reset_password
-                verify_email_closed_account_account_opening account_verification_for_pending_payout
+                account_verification_for_pending_payout
                 pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast crypto_cashier_transaction_updated
                 update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies mt5_deriv_auto_rescind/
         ),
@@ -238,7 +236,11 @@ subtest 'process - tracking jobs' => sub {
                 trading_platform_investor_password_changed trading_platform_investor_password_change_failed
                 underage_account_closed account_with_false_info_locked self_exclude signup
                 age_verified bonus_approve bonus_reject request_edd_document_upload withdrawal_rejected
-                p2p_order_confirm_verify mt5_change_color poa_verification_expired poa_verification_warning poi_poa_resubmission derivx_account_deactivated /
+                p2p_order_confirm_verify mt5_change_color poa_verification_expired poa_verification_warning poi_poa_resubmission
+                verify_email_closed_account_reset_password verify_email_closed_account_account_opening verify_email_closed_account_other request_payment_withdraw
+                account_opening_existing self_tagging_affiliates authenticated_with_scans document_uploaded new_mt5_signup_stored
+                identity_verification_rejected p2p_advertiser_approved p2p_order_updated_handled
+                risk_disclaimer_resubmission unknown_login derivx_account_deactivated /
         ),
         'Correct number of actions that can be emitted'
     );

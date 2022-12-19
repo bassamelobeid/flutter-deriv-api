@@ -80,7 +80,7 @@ subtest 'send_email with request context language (default)' => sub {
     );
     request($req);
 
-    BOM::Event::Actions::Email::send_email_generic({
+    BOM::Event::Actions::Email::send_client_email_track_event({
             event      => 'test_event_1',
             loginid    => $client->loginid,
             properties => {
@@ -101,7 +101,7 @@ subtest 'send_email with user preferred language' => sub {
     );
     request($req);
 
-    BOM::Event::Actions::Email::send_email_generic({
+    BOM::Event::Actions::Email::send_client_email_track_event({
             event      => 'test_event_2',
             loginid    => $client->loginid,
             properties => {
@@ -120,7 +120,7 @@ subtest 'send_email with explicit language' => sub {
     );
     request($req);
 
-    BOM::Event::Actions::Email::send_email_generic({
+    BOM::Event::Actions::Email::send_client_email_track_event({
             language   => 'ES',               # force a language
             event      => 'test_event_3',
             loginid    => $client->loginid,

@@ -194,7 +194,7 @@ async sub order_updated {
         }
 
         # set $parties->{advertiser} and $parties->{client}
-        $parties->{$client_type =~ s/_loginid//r} = $cur_client;
+        $parties->{$client_type =~ s/_loginid//r} = $cur_client->loginid;
 
         # _order_details() is different for each client, so need to publish both verisons
         $order_response = $cur_client->_order_details([$order])->[0];
@@ -203,17 +203,15 @@ async sub order_updated {
 
     stats_inc('p2p.order.status.updated.count', {tags => ["status:$order->{status}"]});
 
-    try {
-        await _track_p2p_order_event(
+    BOM::Platform::Event::Emitter::emit(
+        'p2p_order_updated_handled',
+        {
             loginid       => $loginid,
             order         => $order,
             order_details => $order_response,
             order_event   => $order_event,
             parties       => $parties,
-        )
-    } catch ($e) {
-        $log->errorf("Failed to track p2p order event %s: %s", $order_event, $e);
-    }
+        });
 
     _freeze_chat_channel($order->{chat_channel_url})
         if $order->{chat_channel_url} and any { $order->{status} eq $_ } qw/completed cancelled refunded dispute-refunded dispute-completed/;
@@ -539,9 +537,7 @@ sub p2p_advertiser_approval_changed {
         $log->warn($e);
     }
 
-    BOM::Event::Services::Track::p2p_advertiser_approved({
-            loginid => $client->loginid,
-        })->get;
+    BOM::Platform::Event::Emitter::emit('p2p_advertiser_approved', {loginid => $client->loginid});
 }
 
 =head2 order_chat_create
@@ -619,7 +615,7 @@ sub update_local_currencies {
     BOM::Config::Redis->redis_p2p_write->set('P2P::LOCAL_CURRENCIES', join ',', uniq sort grep { $_ ne 'AAD' } @currencies);
 }
 
-=head2 _track_p2p_order_event
+=head2 track_p2p_order_event
 
 Emits p2p order events to Segment for tracking. It takes the following list of named arguments:
 
@@ -641,13 +637,16 @@ It returns a Future object.
 
 =cut
 
-sub _track_p2p_order_event {
-    my %args = @_;
-    my ($loginid, $order, $order_details, $order_event, $parties) = @args{qw(loginid order order_details order_event parties)};
+sub track_p2p_order_event {
+    my $args = shift;
+
+    my ($loginid, $order, $order_details, $order_event, $parties) = $args->@{qw(loginid order order_details order_event parties)};
 
     # set seller/buyer objects and nicknames based on order type
     my ($seller, $buyer) = ($order->{type} eq 'sell') ? qw(client advertiser) : qw(advertiser client);
-    @{$parties}{qw(seller buyer)}                        = @{$parties}{$seller, $buyer};
+    $parties->{seller} = $parties->{$seller} ? BOM::User::Client->new({loginid => $parties->{$seller}}) : undef;
+    $parties->{buyer}  = $parties->{$buyer}  ? BOM::User::Client->new({loginid => $parties->{$buyer}})  : undef;
+
     @{$parties}{qw(seller_nickname buyer_nickname)}      = @{$order}{"${seller}_name", "${buyer}_name"};
     @{$parties}{qw(advertiser_nickname client_nickname)} = @{$order}{qw(advertiser_name client_name)};
 

@@ -290,15 +290,15 @@ async sub idv_refuted {
         response_body   => encode_json_text($response_hash->{response_body} // {}),
     });
 
-    await BOM::Event::Services::Track::track_event(
-        event      => 'identity_verification_rejected',
-        loginid    => $client->loginid,
-        properties => {
-            authentication_url => request->brand->authentication_url,
-            live_chat_url      => request->brand->live_chat_url,
-            title              => localize('We were unable to verify your document details'),
-        },
-    );
+    BOM::Platform::Event::Emitter::emit(
+        'identity_verification_rejected',
+        {
+            loginid    => $client->loginid,
+            properties => {
+                authentication_url => request->brand->authentication_url,
+                live_chat_url      => request->brand->live_chat_url,
+                title              => localize('We were unable to verify your document details'),
+            }});
 }
 
 =head2 idv_failed

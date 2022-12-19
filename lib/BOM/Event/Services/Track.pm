@@ -203,6 +203,7 @@ my @COMMON_EVENT_METHODS = qw(
     p2p_order_confirm_verify
     poi_poa_resubmission
     derivx_account_deactivated
+    identity_verification_rejected
 );
 
 my $loop = IO::Async::Loop->new;
@@ -414,7 +415,7 @@ sub new_mt5_signup {
 
     return track_event(
         event      => 'mt5_signup',
-        client     => $args->{client},
+        loginid    => $args->{loginid},
         properties => $args,
     );
 }
@@ -527,7 +528,7 @@ sub document_upload {
 
     return track_event(
         event      => 'document_upload',
-        client     => $args->{client},
+        loginid    => $args->{loginid},
         properties => $properties
     );
 }
@@ -1433,6 +1434,12 @@ It is triggered for each B<poa_verification_warning> event emitted, delivering i
 =head2 poa_verification_expired
 
 It is triggered for each B<poa_verification_expired> event emitted, delivering it to Segment.
+
+=cut
+
+=head2 identity_verification_rejected
+
+It is triggered for each B<identity_verification_rejected> event emitted, delivering it to Segment.
 
 =cut
 

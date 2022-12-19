@@ -57,7 +57,19 @@ $mocked_mt5->mock('update_user', sub { Future->done({}) });
 
 my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my @emitter_args;
-$mocked_emitter->mock('emit', sub { @emitter_args = @_ });
+$mocked_emitter->mock(
+    'emit',
+    sub {
+        @emitter_args = @_;
+        my $request      = request();
+        my $context_info = {
+            brand_name => $request->brand->name,
+            language   => $request->language,
+            app_id     => $request->app_id,
+        };
+        push @emitter_args, $context_info;
+        return 1;
+    });
 
 my $mocked_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
 my @datadog_args;
@@ -142,10 +154,15 @@ subtest 'mt5 track event' => sub {
         };
         undef @identify_args;
         undef @track_args;
+        undef @emitter_args;
 
         my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
-        my $result         = $action_handler->($args)->get;
+        my $result         = $action_handler->($args);
         ok $result, 'Success mt5 new account result';
+        BOM::Event::Process->new(category => 'track')->process({
+                type    => $emitter_args[0],
+                details => $emitter_args[1],
+                context => $emitter_args[2]})->get;
 
         is scalar @track_args, 1;
         my ($customer, %args) = $track_args[0]->@*;
@@ -188,7 +205,7 @@ subtest 'mt5 track event' => sub {
         undef @track_args;
 
         $args->{mt5_login_id} = '';
-        like exception { $action_handler->($args)->get; }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
+        like exception { $action_handler->($args); }, qr/mt5 loginid is required/, 'correct exception when mt5 loginid is missing';
         is scalar @track_args,    0, 'Track is not triggered';
         is scalar @identify_args, 0, 'Identify is not triggered';
     };
@@ -207,10 +224,15 @@ subtest 'mt5 track event' => sub {
         };
         undef @identify_args;
         undef @track_args;
+        undef @emitter_args;
 
         my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
-        my $result         = $action_handler->($args)->get;
+        my $result         = $action_handler->($args);
         ok $result, 'Success mt5 new account result';
+        BOM::Event::Process->new(category => 'track')->process({
+                type    => $emitter_args[0],
+                details => $emitter_args[1],
+                context => $emitter_args[2]})->get;
 
         is scalar @track_args, 1;
         my ($customer, %args) = $track_args[0]->@*;
@@ -343,14 +365,14 @@ subtest 'sanctions' => sub {
     };
 
     my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{new_mt5_signup};
-    is $action_handler->($args)->get, 1, 'Success mt5 new account result';
+    is $action_handler->($args), 1, 'Success mt5 new account result';
 
     is scalar @sanct_args, 0, 'sanctions are not included in signup actions';
 
     $lc_actions = {signup => [qw(sanctions)]};
-    is $action_handler->($args)->get, 1,                                  'Success mt5 new account result';
-    is scalar @sanct_args,            5,                                  'sanction check is called, because it is included in signup actions';
-    is ref($sanct_args[0]),           'BOM::Platform::Client::Sanctions', 'Sanctions object type is correct';
+    is $action_handler->($args), 1,                                  'Success mt5 new account result';
+    is scalar @sanct_args,       5,                                  'sanction check is called, because it is included in signup actions';
+    is ref($sanct_args[0]),      'BOM::Platform::Client::Sanctions', 'Sanctions object type is correct';
     ok $sanct_args[0]->recheck_authenticated_clients, 'recheck for authenticated clients is enabled';
     shift @sanct_args;
     is_deeply \@sanct_args,
