@@ -2679,8 +2679,9 @@ sub notify_resubmission_of_risk_disclaimer {
     my $req = BOM::Backoffice::Request->new(brand_name => $brand->name);
     BOM::Backoffice::Request::request($req);
 
-    send_email({
-            use_event  => 1,
+    BOM::Platform::Event::Emitter::emit(
+        'risk_disclaimer_resubmission',
+        {
             language   => $lang,
             event      => 'risk_disclaimer_resubmission',
             loginid    => $client->loginid,
