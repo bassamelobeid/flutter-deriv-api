@@ -531,6 +531,7 @@ async sub _trigger {
             issuing_country => $document->{issuing_country},
             type            => $document->{document_type},
             number          => $document->{document_number},
+            $document->{document_additional} ? (additional => $document->{document_additional}) : (),
         },
         profile => {
             login_id   => $client->loginid,

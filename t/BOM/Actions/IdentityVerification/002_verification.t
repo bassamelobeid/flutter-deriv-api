@@ -127,7 +127,8 @@ subtest 'verify identity by smile_identity through microservice is passed and da
     $idv_model->add_document({
         issuing_country => 'ke',
         number          => '12345',
-        type            => 'national_id'
+        type            => 'national_id',
+        additional      => 'topside',
     });
 
     my $redis = BOM::Config::Redis::redis_events();
@@ -180,6 +181,7 @@ subtest 'verify identity by smile_identity through microservice is passed and da
             issuing_country => 'ke',
             type            => 'national_id',
             number          => '12345',
+            additional      => 'topside',
         },
         profile => {
             login_id   => 'CR10000',
