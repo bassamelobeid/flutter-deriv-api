@@ -396,7 +396,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 { 'value' => 'low', details => 'Low risk'},
                 { 'value' => 'high', details => 'At risk'},
                 { 'value' => 'manual override high', details => 'At risk - Manual override'},
-                { 'value' => 'problem gambler', details => 'Problem Trader'}
+                { 'value' => 'problem trader', details => 'Problem Trader'}
             ]
         %]
         <td>:
