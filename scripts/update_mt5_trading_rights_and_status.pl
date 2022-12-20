@@ -15,11 +15,11 @@ use Date::Utility;
 use BOM::Config;
 use BOM::User::Client;
 use List::Util qw(min max);
-use Log::Any   qw($log);
 use Syntax::Keyword::Try;
 use BOM::Platform::Event::Emitter;
 use Brands;
-use JSON::MaybeXS qw(decode_json);
+use JSON::MaybeXS              qw(decode_json);
+use DataDog::DogStatsd::Helper qw(stats_event);
 
 use constant BVI_EXPIRATION_DAYS     => 10;
 use constant BVI_WARNING_DAYS        => 8;
@@ -37,6 +37,7 @@ my $users  = $userdb->dbic->run(
             undef, undef, $now->minus_time_interval(min(BVI_WARNING_DAYS, DB_OFFSET_DAYS) . 'd')->db_timestamp);
     });
 
+stats_event('StatusUpdate', 'Gathered ' . scalar(@$users) . ' users from DB', {alert_type => 'info'});
 my $bvi_warning_timestamp        = $now->minus_time_interval(BVI_WARNING_DAYS . 'd');
 my $bvi_expiration_timestamp     = $now->minus_time_interval(BVI_EXPIRATION_DAYS . 'd');
 my $vanuatu_warning_timestamp    = $now->minus_time_interval(VANUATU_WARNING_DAYS . 'd');
@@ -74,6 +75,7 @@ foreach my $data (@$users) {
 
     $attributes     = decode_json($attributes);
     $creation_stamp = Date::Utility->new($creation_stamp);
+    stats_event('StatusUpdate', "Processing client $loginid, created at $creation_stamp, group " . $attributes->{group}, {alert_type => 'info'});
 
     try {
         my $user          = BOM::User->new((id => $binary_user_id));
@@ -87,7 +89,7 @@ foreach my $data (@$users) {
                     loginid        => $loginid,
                     status_code    => undef
                 });
-            $log->infof("The client with loginid $loginid status is updated to clear, because his prove of address status is verified");
+            stats_event('StatusUpdate', "$loginid status changed to clear, poa verified", {alert_type => 'info'});
             next;
         }
 
@@ -106,6 +108,10 @@ foreach my $data (@$users) {
             } elsif ($creation_stamp->days_since_epoch < $bvi_expiration_timestamp->days_since_epoch) {
 
                 my @mt5_accounts_under_same_jurisdiction = get_mt5_accounts_under_same_jurisdiction($user, 'bvi');
+                stats_event(
+                    'StatusUpdate',
+                    "Accounts of $bom_loginid under bvi jurisdiction: " . join(' , ', @mt5_accounts_under_same_jurisdiction),
+                    {alert_type => 'info'});
 
                 for my $mt5_account (@mt5_accounts_under_same_jurisdiction) {
 
@@ -148,6 +154,10 @@ foreach my $data (@$users) {
             } elsif ($creation_stamp->days_since_epoch < $vanuatu_expiration_timestamp->days_since_epoch) {
 
                 my @mt5_accounts_under_same_jurisdiction = get_mt5_accounts_under_same_jurisdiction($user, 'vanuatu');
+                stats_event(
+                    'StatusUpdate',
+                    "Accounts of $bom_loginid under the vanuatu jurisdiction: " . join(' , ', @mt5_accounts_under_same_jurisdiction),
+                    {alert_type => 'info'});
 
                 for my $mt5_account (@mt5_accounts_under_same_jurisdiction) {
 
@@ -176,7 +186,7 @@ foreach my $data (@$users) {
             }
         }
     } catch ($e) {
-        $log->errorf("The script run into an error while processing client $loginid: $e");
+        stats_event('StatusUpdate', "The script ran into an error while processing client $loginid: $e", {alert_type => 'error'});
         push @clients_failed, "<tr><td>$loginid</td><td>" . $attributes->{group} . "</td></tr>";
     }
 
@@ -190,7 +200,7 @@ if (scalar(@clients_warning)) {
     push @lines, '<tr><th>Loginid</th><th>Group</th></tr>';
     push(@lines, @clients_warning);
     push @lines, '</table>';
-    $log->infof('Sent ' . scalar(@clients_warning) . ' warning emails.');
+    stats_event('StatusUpdate', 'Sent ' . scalar(@clients_warning) . ' warning emails.', {alert_type => 'info'});
 }
 
 if (scalar(@clients_expired)) {
@@ -198,7 +208,7 @@ if (scalar(@clients_expired)) {
     push @lines, '<tr><th>Loginid</th><th>Group</th></tr>';
     push(@lines, @clients_expired);
     push @lines, '</table>';
-    $log->infof('Sent ' . scalar(@clients_expired) . ' expiration emails.');
+    stats_event('StatusUpdate', 'Sent ' . scalar(@clients_expired) . ' expiration emails.', {alert_type => 'info'});
 }
 
 if (scalar(@clients_failed)) {
@@ -206,7 +216,7 @@ if (scalar(@clients_failed)) {
     push @lines, '<tr><th>Loginid</th><th>Group</th></tr>';
     push(@lines, @clients_failed);
     push @lines, '</table>';
-    $log->errorf('Failed to process ' . scalar(@clients_expired) . ' clients.');
+    stats_event('StatusUpdate', 'Failed to process ' . scalar(@clients_expired) . ' clients.', {alert_type => 'error'});
 }
 
 if (scalar(@lines)) {
