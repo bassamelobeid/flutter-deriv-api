@@ -12,6 +12,12 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
 use BOM::Rules::RuleRepository::Paymentagent;
 use BOM::Test::Helper::Client;
+use BOM::Test::Helper::P2P;
+
+my $app_config = BOM::Config::Runtime->instance->app_config;
+
+BOM::Test::Helper::P2P::bypass_sendbird;
+BOM::Test::Helper::P2P::create_escrow;
 
 my $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -57,11 +63,165 @@ subtest $rule_name => sub {
     dies_ok { $rule_engine->apply_rules($rule_name, loginid => $client_mf->loginid) } 'This landing company is NOT allowed';
 };
 
-$rule_name = 'paymentagent.paymentagent_shouldnt_already_exist';
+$rule_name = 'paymentagent.paymentagent_status_can_apply_for_pa';
 subtest $rule_name => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => [$pa_client, $client]);
-    dies_ok { $rule_engine->apply_rules($rule_name, loginid => $pa_client->loginid) } 'paymentagent already exists';
-    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) } 'Rule applies for clients without PAs';
+
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) } 'Pass for non-PA client';
+
+    $pa->status('rejected');
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $pa_client->loginid) } 'Pass for PA with status rejected';
+
+    $pa->status('applied');
+    is_deeply(
+        exception { $rule_engine->apply_rules($rule_name, loginid => $pa_client->loginid) },
+        {
+            rule       => $rule_name,
+            error_code => 'PaymentAgentAlreadyApplied',
+        },
+        'Fail with PaymentAgentAlreadyApplied for PA with status applied'
+    );
+
+    for my $status (qw(authorized verified)) {
+        $pa->status($status);
+        is_deeply(
+            exception { $rule_engine->apply_rules($rule_name, loginid => $pa_client->loginid) },
+            {
+                rule       => $rule_name,
+                error_code => 'PaymentAgentAlreadyExists',
+            },
+            "Fail with PaymentAgentAlreadyExists for PA with status $status"
+        );
+    }
+
+    $pa->status('suspended');
+    is_deeply(
+        exception { $rule_engine->apply_rules($rule_name, loginid => $pa_client->loginid) },
+        {
+            rule       => $rule_name,
+            error_code => 'PaymentAgentStatusNotEligible',
+        },
+        'Fail with PaymentAgentAlreadyApplied for PA with status suspended'
+    );
+
+    $pa->status('authorized');
+};
+
+$rule_name = 'paymentagent.client_status_can_apply_for_pa';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client]);
+
+    $client->status->_clear_all;
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) } 'Pass with no status';
+
+    for my $status (qw(cashier_locked shared_payment_method no_withdrawal_or_trading withdrawal_locked unwelcome duplicate_account)) {
+        $client->status->set($status, 'x', 'x');
+
+        is_deeply(
+            exception { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) },
+            {
+                rule       => $rule_name,
+                error_code => 'PaymentAgentClientStatusNotEligible',
+            },
+            "Fail with PaymentAgentClientStatusNotEligible for client with status $status"
+        );
+
+        my $func = "clear_$status";
+        $client->status->$func;
+    }
+};
+
+$rule_name = 'paymentagent.client_has_mininum_deposit';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => [$client]);
+
+    $client->db->dbic->dbh->do('DELETE FROM payment.doughflow_method');
+    $client->db->dbic->dbh->do(
+        "INSERT INTO payment.doughflow_method (payment_processor, reversible, withdrawal_supported) VALUES ('my_method', TRUE, TRUE)");
+
+    $client->payment_doughflow(
+        currency          => $client->currency,
+        remark            => 'x',
+        amount            => 500,
+        payment_processor => 'my_method',
+    );
+
+    $client->payment_doughflow(
+        currency          => $client->currency,
+        remark            => 'x',
+        amount            => 4,
+        payment_processor => 'other_method',
+    );
+
+    $app_config->payment_agents->initial_deposit_per_country('{}');
+
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) } 'Pass with no limit set';
+
+    $app_config->payment_agents->initial_deposit_per_country('{ "default": 5, "xx": 1 }');
+
+    is_deeply(
+        exception { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) },
+        {
+            rule       => $rule_name,
+            error_code => 'PaymentAgentInsufficientDeposit',
+            params     => ['USD', '5.00'],
+        },
+        "Fail with PaymentAgentInsufficientDeposit when global limit not met"
+    );
+
+    $client->payment_doughflow(
+        currency          => $client->currency,
+        remark            => 'x',
+        amount            => 1,
+        payment_processor => 'other_method',
+    );
+
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) } 'Pass when global limit met';
+
+    $app_config->payment_agents->initial_deposit_per_country('{ "default": 5, "' . $client->residence . '": 6 }');
+
+    is_deeply(
+        exception { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) },
+        {
+            rule       => $rule_name,
+            error_code => 'PaymentAgentInsufficientDeposit',
+            params     => ['USD', '6.00'],
+        },
+        "Fail with PaymentAgentInsufficientDeposit when country limit not met"
+    );
+
+    $client->payment_doughflow(
+        currency          => $client->currency,
+        remark            => 'x',
+        amount            => 1,
+        payment_processor => 'other_method',
+    );
+
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) } 'Pass when country limit met';
+
+    $client->p2p_advertiser_create(name => 'x');
+    $client->p2p_advertiser_update(is_approved => 1);
+
+    my ($advertiser, $ad)    = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my (undef,       $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $ad->{id},
+        client    => $client,
+        amount    => 10
+    );
+    $client->p2p_order_confirm(id => $order->{id});
+    $advertiser->p2p_order_confirm(id => $order->{id});
+
+    $app_config->payment_agents->initial_deposit_per_country('{ "default": 5, "' . $client->residence . '": 15 }');
+
+    is_deeply(
+        exception { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) },
+        {
+            rule       => $rule_name,
+            error_code => 'PaymentAgentInsufficientDeposit',
+            params     => ['USD', '15.00'],
+        },
+        'P2P deposit is excluded'
+    );
 };
 
 $rule_name = 'paymentagent.action_is_allowed';
@@ -345,7 +505,7 @@ subtest "rule $rule_name" => sub {
         {
         rule       => $rule_name,
         error_code => 'NotAuthorized',
-        params     => 'CR10000',
+        params     => $pa_client->loginid,
         },
         'Correct  error when payment agent is not authenticated';
 
@@ -488,25 +648,6 @@ subtest "rule $rule_name" => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'No error with different loginids';
 };
 
-$rule_name = 'paymentagent.is_authorized';
-subtest "rule $rule_name" => sub {
-    my $rule_engine = BOM::Rules::Engine->new(client => $pa_client);
-    my %args        = (loginid => $pa_client->loginid);
-
-    my $mock_payment_agent = Test::MockModule->new('BOM::User::Client::PaymentAgent');
-    $mock_payment_agent->redefine(status => 'suspended');
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        {
-        rule       => $rule_name,
-        error_code => 'NotAuthorized',
-        params     => 'CR10000',
-        },
-        'Correct  error when payment agent is not authenticated';
-
-    $mock_payment_agent->redefine(status => 'authorized');
-    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'No error for authenticated PA';
-};
-
 $rule_name = 'paymentagent.amount_is_within_pa_limits';
 subtest "rule $rule_name" => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $pa_client);
@@ -580,7 +721,7 @@ subtest $rule_name => sub {
 
     # testing legacy code
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(1);
+    $app_config->system->suspend->payment_agent_withdrawal_automation(1);
 
     $client->status->set('pa_withdrawal_explicitly_allowed', 'sarah', 'enable withdrawal through payment agent');
 
@@ -607,7 +748,7 @@ subtest $rule_name => sub {
 
     ## new automation
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->payment_agent_withdrawal_automation(0);
+    $app_config->system->suspend->payment_agent_withdrawal_automation(0);
 
     $client->status->set('pa_withdrawal_explicitly_allowed', 'sarah', 'enable withdrawal through payment agent');
 

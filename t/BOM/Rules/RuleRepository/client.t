@@ -261,6 +261,27 @@ subtest $rule_name => sub {
     $mock_documents->unmock_all;
 };
 
+$rule_name = 'client.age_verified';
+subtest $rule_name => sub {
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    my %args = (loginid => $client->loginid);
+
+    $client->status->set('age_verification', 'x', 'x');
+
+    lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Test passes if client has age_verification status';
+
+    $client->status->clear_age_verification;
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+        {
+        error_code => 'NotAgeVerified',
+        rule       => $rule_name
+        },
+        'Error if client does not have age_verification status';
+
+};
+
 $rule_name = 'client.fully_authenticated';
 subtest $rule_name => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $client);

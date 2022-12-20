@@ -125,6 +125,17 @@ rule 'client.documents_not_expired' => {
     }
 };
 
+rule 'client.age_verified' => {
+    description => "Checks if client is age verified (POI).",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('NotAgeVerified') unless $context->client($args)->status->age_verification;
+
+        return 1;
+    }
+};
+
 rule 'client.fully_authenticated' => {
     description => "Checks if client is fully authenticated (POI and POA).",
     code        => sub {

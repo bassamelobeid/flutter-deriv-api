@@ -15,8 +15,9 @@ use warnings;
 
 use List::Util                       qw(none any first sum max);
 use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
-use Format::Util::Numbers            qw(financialrounding);
+use Format::Util::Numbers            qw(financialrounding formatnumber);
 use Date::Utility;
+use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::Rules::Registry qw(rule);
 use BOM::Config::PaymentAgent;
@@ -58,14 +59,69 @@ rule 'paymentagent.pa_allowed_in_landing_company' => {
     },
 };
 
-rule 'paymentagent.paymentagent_shouldnt_already_exist' => {
-    description => "Checks that paymentagent exists if so dies with PaymentAgentAlreadyExists error code.",
+rule 'paymentagent.paymentagent_status_can_apply_for_pa' => {
+
+    description => "Checks that paymentagent status allows a new PA application.",
     code        => sub {
         my ($self, $context, $args) = @_;
-        die +{
-            error_code => 'PaymentAgentAlreadyExists',
-            }
-            if $context->client($args)->get_payment_agent;
+
+        my $pa = $context->client($args)->get_payment_agent or return 1;
+
+        return 1 if (!$pa->status) or $pa->status eq 'rejected';
+
+        $self->fail('PaymentAgentAlreadyApplied') if $pa->status eq 'applied';
+
+        $self->fail('PaymentAgentAlreadyExists') if $pa->status =~ /^(authorized|verified)$/;
+
+        $self->fail('PaymentAgentStatusNotEligible');
+    },
+};
+
+rule 'paymentagent.client_status_can_apply_for_pa' => {
+
+    description => "Checks that client status allows a new PA application.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        $self->fail('PaymentAgentClientStatusNotEligible')
+            if $context->client($args)->status->has_any(qw(
+                cashier_locked
+                shared_payment_method
+                no_withdrawal_or_trading
+                withdrawal_locked
+                unwelcome
+                duplicate_account
+            ));
+
+        return 1;
+    },
+};
+
+rule 'paymentagent.client_has_mininum_deposit' => {
+
+    description => "Checks that client meets minimum deposit requirement for PA application.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $client        = $context->client($args);
+        my $limits        = decode_json_utf8(BOM::Config::Runtime->instance->app_config->payment_agents->initial_deposit_per_country);
+        my $deposit_limit = $limits->{$client->residence} // $limits->{default};
+
+        return 1 unless defined $deposit_limit;
+
+        $deposit_limit = convert_currency($deposit_limit, 'USD', $client->currency);
+
+        my $non_reversible = $client->balance_for_cashier('pa_deposit');
+
+        my ($net_p2p) = $client->db->dbic->run(
+            fixup => sub {
+                return $_->selectrow_array('SELECT payment.aggregate_payments_by_type(?,?,?)', undef, $client->account->id, 'p2p', 120);
+            });
+
+        my $balance = financialrounding('amount', $client->currency, $non_reversible - max($net_p2p // 0, 0));
+
+        $self->fail('PaymentAgentInsufficientDeposit', params => [$client->currency, formatnumber('amount', $client->currency, $deposit_limit)])
+            if $balance < financialrounding('amount', $client->currency, $deposit_limit);
 
         return 1;
     },

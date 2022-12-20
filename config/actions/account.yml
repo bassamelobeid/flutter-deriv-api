@@ -42,6 +42,11 @@ new_account:
 paymentagent_create:
   description: A set of rules to be applied on paymentagent create
   ruleset:
+    - client.is_not_virtual
     - paymentagent.pa_allowed_in_landing_company
-    - paymentagent.paymentagent_shouldnt_already_exist
-
+    - client.has_currency_set
+    - client.age_verified
+    - client.fully_authenticated
+    - paymentagent.paymentagent_status_can_apply_for_pa
+    - paymentagent.client_status_can_apply_for_pa
+    - paymentagent.client_has_mininum_deposit
