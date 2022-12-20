@@ -1,0 +1,8 @@
+"SECURITIES","ERROR CODE","NUM FLDS","ECO_RELEASE_DT","ECO_RELEASE_TIME","PX_LAST","ACTUAL_RELEASE","NAME","BN_SURVEY_MEDIAN","BN_SURVEY_AVERAGE","RELEVANCE_VALUE"
+"FRCPEECM Index",1,5,"31-Aug-17","06:45",.600000  ,.6  ,"France European Harmonised CPI","N.A.","N.A.", ,
+"GRUECHNG Index",0,5,"31-Aug-17","07:55",-5.000000  ,-5.0  ,"Germany Unemployment Change SW","N.A.","N.A.", ,
+"ITCPEM Index",0,5,"31-Aug-17","09:00",-1.900000  , ,"Italy HICP MoM NSA","N.A.","N.A.", ,
+"ACRECOTP Index",0,5,"15-Sep-17","N.A.",.600000  ,.6  ,"Acreage Cotton Planted","N.A.","N.A.",80.000 ,
+"AUBAC Index",1,5,"31-Aug-17","07:55",-5.000000  ,-5.0  ,"Building Approvals MoM","N.A.","N.A.", ,
+"AUEMCHGE Index",0,5,"N.A.","09:00",-1.900000  , ,"Job vacancies","N.A.","N.A.", ,
+"ACRECOTP Index",0,5,"11-Sep-17","09:00",.600000  ,.6  ,"Acreage Cotton Planted","N.A.","N.A.", ,
