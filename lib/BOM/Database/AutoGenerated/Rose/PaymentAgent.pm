@@ -25,7 +25,7 @@ __PACKAGE__->meta->setup(
         affiliate_id          => { type => 'varchar', length => 100 },
         
         code_of_conduct_approval      => { type => 'boolean'},
-        code_of_conduct_approval_time => { type => 'timestamp'},    
+        code_of_conduct_approval_time => { type => 'timestamp'},
         status                        => {
              type => 'enum', 
              check_in => [ 
@@ -41,6 +41,8 @@ __PACKAGE__->meta->setup(
         risk_level                => { type => 'text', not_null => 1 },
         services_allowed_comments => { type => 'text' },
         tier_id                   => { type => 'bigint', default => 1, not_null => 1 },
+        last_application_time     => { type => 'timestamp' },
+        application_attempts      => { type => 'integer' },
     ],
 
     primary_key_columns => [ 'client_loginid' ],
