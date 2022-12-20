@@ -99,6 +99,11 @@ payments:
           isa: Num
           global: 1
           default: 100
+        pa_deposit:
+          description: 'Percentage of reversible deposits included in Payment Agent initial deposit requirement.'
+          isa: Num
+          global: 1
+          default: 0
     reversible_deposits_lookback:
       description: 'Number of days within which a deposit can be counted as reversible.'
       isa: Num
