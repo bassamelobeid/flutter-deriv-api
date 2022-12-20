@@ -2,46 +2,129 @@
 package main;
 use strict;
 use warnings;
+use List::Util qw(max);
+use Syntax::Keyword::Try;
 use BOM::Config;
-use BOM::Backoffice::Config  qw/get_tmp_path_or_die/;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
-use BOM::User::Client::PaymentAgent;
+use BOM::Database::ClientDB;
+use BOM::User::Client;
+use BOM::Rules::Engine;
+use LandingCompany::Registry;
+
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
-my $broker            = request()->broker_code;
-my $result            = {};
-my $action            = request()->param('submit')   // '';
-my $selected_country  = request()->param("country")  // '';
-my $selected_currency = request()->param("currency") // 'USD';
-if ($action and $action eq 'submit') {
-    $result = BOM::User::Client::PaymentAgent->get_payment_agents(
-        country_code => $selected_country,
-        broker_code  => $broker,
-        currency     => $selected_currency,
-    );
+use constant PA_PAGE_LIMIT => 50;
 
-    my $fields = BOM::User::Client::PaymentAgent::details_main_field;
-    for my $res (values %$result) {
-        for my $field (keys %$fields) {
-            $res->{$field} = join ', ', map { $_->{$fields->{$field}} } ($res->$field // [])->@*;
+my %params     = request()->params->%*;
+my $app_config = BOM::Config::Runtime->instance->app_config;
+my %output;
+
+if (request()->http_method eq 'POST') {
+
+    if (my $loginids = $params{process_loginid}) {
+
+        for my $loginid (sort (ref $loginids ? @$loginids : $loginids)) {
+            try {
+                my $client = BOM::User::Client->new({loginid => $loginid})
+                    or die "$loginid is not a valid loginid\n";
+
+                my $pa = $client->get_payment_agent or die "$loginid has not applied to be a Payment Agent.\n";
+
+                if ($params{approve}) {
+                    die "$loginid PA status is already authorized.\n" if $pa->status eq 'authorized';
+
+                    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+                    my $failures    = $rule_engine->apply_rules(
+                        ['paymentagent.client_status_can_apply_for_pa', 'paymentagent.client_has_mininum_deposit'],
+                        loginid             => $client->loginid,
+                        rule_engine_context => {stop_on_failure => 0},
+                    )->failed_rules;
+
+                    if (@$failures) {
+                        for my $error (@$failures) {
+                            if ($error->{error_code} eq 'PaymentAgentClientStatusNotEligible') {
+                                push $output{errors}->@*, "$loginid has an invalid client status.";
+                            }
+                            if ($error->{error_code} eq 'PaymentAgentInsufficientDeposit') {
+                                push $output{errors}->@*, "$loginid deposit is below minimum.";
+                            }
+                        }
+                        next;
+                    }
+
+                    $pa->status('authorized');
+                    $pa->newly_authorized(1);    # set the 'newly_authorized' flag
+                    $pa->save;
+                    push $output{messages}->@*, "$loginid has been authorized.\n";
+                }
+
+                if ($params{reject}) {
+                    die "$loginid is already rejected.\n" if $pa->status eq 'rejected';
+                    $pa->status('rejected');
+                    $pa->save;
+                    push $output{messages}->@*, "$loginid has been rejected.\n";
+                }
+
+                if ($params{suspend}) {
+                    die "$loginid is already suspended.\n" if $pa->status eq 'suspended';
+                    $pa->status('suspended');
+                    $pa->save;
+                    push $output{messages}->@*, "$loginid has been suspended.\n";
+                }
+
+            } catch ($e) {
+                push $output{errors}->@*, $e;
+            }
+
         }
     }
+
+    $params{deposit_reqs}        = $app_config->payment_agents->initial_deposit_per_country;
+    $params{reversible_limit}    = $app_config->payments->reversible_balance_limits->pa_deposit / 100;
+    $params{reversible_lookback} = $app_config->payments->reversible_deposits_lookback;
+    $params{client_statuses}     = [qw(cashier_locked shared_payment_method no_withdrawal_or_trading withdrawal_locked unwelcome duplicate_account)];
+
+    $params{start} //= 0;
+    $params{limit} = PA_PAGE_LIMIT + 1;
+    delete $params{$_} for grep { !length($params{$_}) } qw(status currency country loginid risk_level eligible);
+
+    my $db = BOM::Database::ClientDB->new({
+            broker_code => request()->broker_code,
+            operation   => 'backoffice_replica'
+        })->db->dbic;
+
+    $output{list} = $db->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                'SELECT * FROM betonmarkets.payment_agent_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                {Slice => {}},
+                @params{
+                    qw(country currency status risk_level loginid eligible reversible_limit reversible_lookback client_statuses deposit_reqs limit start)
+                },
+            );
+        });
+
+    $output{prev} = $params{start} > 0                ? max($params{start} - PA_PAGE_LIMIT, 0) : undef;
+    $output{next} = $output{list}->@* > PA_PAGE_LIMIT ? $params{start} + PA_PAGE_LIMIT         : undef;
+    splice($output{list}->@*, PA_PAGE_LIMIT);
 }
 
-BrokerPresentation("Authorized Payment Agent List");
-Bar("Authorized Payment Agent List");
+my @lcs       = grep { $_->{allows_payment_agents} } values LandingCompany::Registry::get_loaded_landing_companies()->%*;
+my %countries = request()->brand->countries_instance->countries_list->%*;
 
-BOM::Backoffice::Request::template()->process(
-    'backoffice/payment_agent_list.html.tt',
-    {
-        submit_form_url   => request()->url_for("backoffice/f_payment_agent_list.cgi?broker=$broker"),
-        countries_list    => request()->brand->countries_instance->countries->{_country_codes},
-        selected_country  => $selected_country,
-        records           => $result,
-        currency_options  => request()->available_currencies,
-        selected_currency => $selected_currency
-    }) || die BOM::Backoffice::Request::template()->error;
+for my $country (keys %countries) {
+    next unless any { $_->{short} eq $countries{$country}->{financial_company} or $_->{short} eq $countries{$country}->{gaming_company} } @lcs;
+    $output{countries}->{$country} = $countries{$country}->{name};
+}
+
+$output{currencies} = request()->available_currencies;
+
+BrokerPresentation('Payment Agent List');
+
+BOM::Backoffice::Request::template()->process('backoffice/payment_agent_list.html.tt', {%output, %params, page_limit => PA_PAGE_LIMIT},)
+    || die BOM::Backoffice::Request::template()->error;
 
 code_exit_BO();

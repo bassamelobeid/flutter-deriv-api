@@ -2,70 +2,122 @@
 form {display: inline-block;}
 </style>
 
-<form action="[% submit_form_url %]" method="post" class="grd-margin-bottom">
-    <label>Select country:</label>
+[% IF messages or errors %]
+<div class="card">
+    <div class="card__content">
+    [% FOREACH e = errors %]<p class="error">[% e %]</p>[% END %]
+    [% FOREACH m = messages %]<p class="success">[% m %]</p>[% END %]
+    </div>
+</div>
+[% END %]
+
+<form action="[% request.url_for('backoffice/f_payment_agent_list.cgi') %]" method="post" class="grd-margin-bottom">
+  <label>Status:</label>
+    <select name="status">
+        <option value="">All</option>
+        [% FOREACH entry IN [ 'applied', 'verified', 'authorized', 'suspended', 'rejected' ] %]
+            <option value="[% entry %]" [% entry == status && 'selected' %]>[% entry %]</option>
+        [% END %]
+    </select>
+    <label>Country:</label>
     <select name="country">
-        [% FOREACH entry IN countries_list.sort %]
-            <option value="[% entry %]"[% IF entry == selected_country %] selected[% END %]>[% countries_list.$entry %]</option>
+        <option value="">All</option>
+        [% FOREACH entry IN countries.keys.sort %]
+            <option value="[% entry %]" [% entry == country && 'selected' %]>[% entry %] - [% countries.$entry %]</option>
         [% END %]
     </select>
     <label>Currency:</label>
     <select name="currency">
-        [% FOREACH entry IN currency_options %]
-            <option value="[% entry %]"[% IF entry == selected_currency %] selected[% END %]>[% entry %]</option>
+        <option value="">All</option>
+        [% FOREACH entry IN currencies.sort %]
+            <option value="[% entry %]" [% entry == currency && 'selected' %]>[% entry %]</option>
         [% END %]
     </select>
-    <input type="submit" class="btn btn--primary" name="submit" value="submit">
-</form>
+    <label>Risk level:</label>
+    <select name="risk_level">
+        <option value="">All</option>
+        [% FOREACH entry IN [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ] %]
+            <option value="[% entry %]" [% entry == risk_level && 'selected' %]>[% entry %]</option>
+        [% END %]
+    </select>
+    <label>Eligible:</label>
+    <select name="eligible">
+        <option value="">All</option>
+        <option value="1" [% eligible == 1 && 'selected' %]>Yes</option>
+        <option value="0" [% eligible == 0 && 'selected' %]>No</option>
+    </select>    
+    <label>Loginid:</label>
+    <input type="text" name="loginid" value="[% loginid %]" size=20 data-lpignore="true" />
+    </label>
+    <input type="submit" class="btn btn--primary" name="search" value="Search">
+    <hr/>
 
-[% IF records.size > 0 %]
-    <span id="count" class="success">Number of payment agents in <strong>[% countries_list.$selected_country %] : [% records.size  %]</strong></span>
+[% IF list.defined && list.size > 0 %]
+
+    <p>
+        <input type="submit" class="btn btn--primary" name="approve" value="Approve selected">
+        <input type="submit" class="btn btn--primary" name="reject" value="Reject selected (can reapply)">
+        <input type="submit" class="btn btn--primary" name="suspend" value="Suspend selected (cannot reapply)">
+    </p>
+
+    <table class="border sortable collapsed hover alternate">
+        <tr>
+            <th></th>
+            <th>Login ID</th>
+            <th>PA name</th>
+            <th>Status</th>
+            <th>Applied on</th>
+            <th>Apply attempts</th>
+            <th>Country</th>
+            <th>Currency</th>
+            <th>Risk Level</th>
+            <th>Desposit</th>
+            <th>POA</th>
+            <th>Bad statuses</th>
+            <th>Eligible</th>
+        </tr>
+        <tbody>
+        [% FOREACH row IN list %]
+            <tr style="white-space:nowrap;">
+                <td>                
+                    <input type="checkbox" name="process_loginid" value="[% row.client_loginid %]">
+                </td>
+                <td>                
+                    <a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => row.client_loginid }) %]">
+                        [% row.client_loginid %]
+                    </a>
+                </td>
+                <td>
+                    <a class="link" href="[% request.url_for('backoffice/f_setting_paymentagent.cgi', { loginid => row.client_loginid, whattodo => 'show' }) %]">
+                        [% row.pa_name %]
+                    </a>
+                </td>
+                <td>[% row.pa_status %]</td>
+                <td>[% row.last_application_time %]</td>
+                <td>[% row.application_attempts %]</td>
+                <td>[% row.pa_countries.join(', ') %]</td>
+                <td>[% row.pa_currency %]</td>
+                <td>[% row.pa_risk_level %]</td>
+                <td[% IF row.deposit_converted < row.deposit_req %] style="background:#ffaaaa;"[% END %]>
+                    <span[%IF row.account_currency != 'USD' %] tooltip="[% row.account_currency %] [% row.deposit %] converted at [% row.conversion_rate %]"[% END %]>
+                    [% row.deposit_converted %] / [% row.deposit_req %]
+                    </span>
+                </td>
+                <td[% row.has_poa ? '>Yes' : ' style="background:#ffaaaa;">No' | none %]</td>
+                <td[% IF row.client_statuses.defined && row.client_statuses.size > 0 %] style="background:#ffaaaa;"[% END %]>[% row.client_statuses.join(', ') %]</td>
+                <td[% row.is_eligible ? '>Yes' : ' style="background:#ffaaaa;">No' | none %]</td>
+            </tr>
+        [% END %]
+        </tbody>
+    </table>
+    
+    <p>
+    [% IF prev.defined %]<button type="submit" name="start" value="[% prev %]">Previous [% page_limit %]</button>[% END %]
+    [% IF next.defined %]<button type="submit" name="start" value="[% next %]">Next [% page_limit %]</button>[% END %]
+    </p>
+
+[% ELSIF request.http_method == 'POST' %]
+    <p>No payment agents found.</p>
 [% END %]
 
-<table class="border sortable collapsed hover alternate">
-    <tr>
-        <th>Login ID</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Phone Number</th>
-        <th>Website URL</th>
-        <th>Max Withdrawal</th>
-        <th>Min Withdrawal</th>
-        <th>Is Listed</th>
-        <th>Information</th>
-        <th>Summary</th>
-        <th>Commission Deposit</th>
-        <th>Commission Withdrawal</th>
-        <th>Supported Payment Methods</th>
-    </tr>
-    <tbody>
-        [% IF records.size == 0 AND selected_country != "" %]
-            <tr><td colspan="13" class="center">
-                <span id="not-found" class="error">
-                    No payment agent is available in <strong>[% countries_list.$selected_country %]</strong> with <strong>[% selected_currency %]</strong> currency
-                </span>
-            </td></tr>
-        [% END %]
-    [% FOREACH entry IN records.keys.sort %]
-        <tr>
-            <td>
-                <a class="link" href="f_clientloginid_edit.cgi?broker=CR&loginID=[% records.$entry.client_loginid %]">
-                    [% records.$entry.client_loginid %]
-                </a>
-            </td>
-            <td>[% records.$entry.payment_agent_name %]</td>
-            <td>[% records.$entry.email %]</td>
-            <td>[% records.$entry.phone_numbers %]</td>
-            <td>[% records.$entry.urls %]</td>
-            <td>[% records.$entry.max_withdrawal %]</td>
-            <td>[% records.$entry.min_withdrawal %]</td>
-            <td>[% records.$entry.is_listed ? 'Yes' : 'No' %]</td>
-            <td>[% records.$entry.information %]</td>
-            <td>[% records.$entry.summary %]</td>
-            <td>[% records.$entry.commission_deposit %]</td>
-            <td>[% records.$entry.commission_withdrawal %]</td>
-            <td>[% records.$entry.supported_payment_methods %]</td>
-        </tr>
-    [% END %]
-   </tbody>
-</table>
+</form>

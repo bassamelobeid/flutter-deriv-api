@@ -212,6 +212,16 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT', 'Compliance'])) {
                     <label>$pa_brokerselection</label>
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>                
+            </div>
+            <div class="card__content">
+                <h3>Search Payment Agents</h3>
+                <form action="~ . request()->url_for('backoffice/f_payment_agent_list.cgi') . qq~" method="get">
+                    <label>$pa_brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>                
+            </div>
+            <div class="card__content">
+                <!-- empty -->
             </div>~;
     }
     print qq~
