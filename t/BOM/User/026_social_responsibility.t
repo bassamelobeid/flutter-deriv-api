@@ -59,10 +59,10 @@ subtest 'update sr_risk_status' => sub {
     like exception { BOM::User::SocialResponsibility->update_sr_risk_status($id, 'p') }, qr/invalidSocialResponsibilityType/,
         'invalid social responsibility type';
 
-    lives_ok { $update_sr_risk_status = BOM::User::SocialResponsibility->update_sr_risk_status($id, 'problem gambler'); }
+    lives_ok { $update_sr_risk_status = BOM::User::SocialResponsibility->update_sr_risk_status($id, 'problem trader'); }
     'sr_risk_status saved';
 
-    is $update_sr_risk_status, 'problem gambler', 'user has set sr_risk_status to problem gambler successfully';
+    is $update_sr_risk_status, 'problem trader', 'user has set sr_risk_status to problem trader successfully';
 };
 
 subtest 'get sr_risk_status' => sub {
@@ -71,7 +71,7 @@ subtest 'get sr_risk_status' => sub {
 
     lives_ok { $sr_risk = BOM::User::SocialResponsibility->get_sr_risk_status($id) } 'get sr_risk_status';
 
-    is $sr_risk, 'problem gambler', 'user has sr_risk_status set to problem gambler';
+    is $sr_risk, 'problem trader', 'user has sr_risk_status set to problem trader';
 
     is $client->risk_level_sr, "high", 'social responsibility risk should be high';
 

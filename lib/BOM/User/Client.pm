@@ -639,7 +639,7 @@ sub risk_level_sr {
         if ($self->landing_company->social_responsibility_check eq 'manual') {
             $risk = BOM::User::SocialResponsibility->get_sr_risk_status($self->binary_user_id) // 'low';
             # 'low', 'high', 'manual override high', 'problem gambler'
-            $risk =~ s/manual override high|problem gambler|problem trader/high/;
+            $risk =~ s/manual override high|problem trader/high/;
         }
 
     }

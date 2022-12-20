@@ -40,7 +40,7 @@ sub update_sr_risk_status {
 
     die 'socialResponsibilityRequired' unless $sr_risk_status;
 
-    die 'invalidSocialResponsibilityType' unless $sr_risk_status =~ qr/low|high|manual override high|problem gambler|problem trader/;
+    die 'invalidSocialResponsibilityType' unless $sr_risk_status =~ qr/low|high|manual override high|problem trader/;
 
     my $status = dbic->run(
         fixup => sub {
