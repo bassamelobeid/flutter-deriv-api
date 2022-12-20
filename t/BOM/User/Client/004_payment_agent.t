@@ -16,6 +16,7 @@ use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 use BOM::Config::Runtime;
 use BOM::Config::PaymentAgent;
+use BOM::Config::Redis;
 
 my $email       = 'JoeSmith@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -380,8 +381,6 @@ subtest 'validate payment agent details' => sub {
         'min_withdrawal'                => $min_max->{minimum},
         'commission_deposit'            => 5,
         'commission_withdrawal'         => 4,
-        'status'                        => undef,
-        'is_listed'                     => 0,
         'supported_payment_methods'     => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '',
@@ -406,8 +405,6 @@ subtest 'validate payment agent details' => sub {
         'min_withdrawal'                => $min_max->{minimum},
         'commission_deposit'            => 5,
         'commission_withdrawal'         => 4,
-        'status'                        => undef,
-        'is_listed'                     => 0,
         'supported_payment_methods'     => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
         'code_of_conduct_approval'      => 1,
         'affiliate_id'                  => '',
@@ -679,7 +676,20 @@ subtest 'services allowed' => sub {
         ok $pa->service_is_allowed($service), "$service is allowed for authorized PA if it's added to the list";
         delete $tier_details->{$service};
     }
+};
 
+subtest 'newly_authorized' => sub {
+    my $pa    = $pa_client->get_payment_agent;
+    my $key   = 'PAYMENT_AGENT::NEWLY_AUTHORIZED::' . $pa_client->loginid;
+    my $redis = BOM::Config::Redis::redis_replicated_read();
+
+    is $pa->newly_authorized,    0, '0 by default';
+    is $pa->newly_authorized(1), 1, 'set to 1';
+    cmp_ok $redis->ttl($key), '>', 2000000, 'ttl of key set';
+    is $pa->newly_authorized,    1,     'returns 1';
+    is $pa->newly_authorized(0), 0,     'set to 0';
+    is $pa->newly_authorized,    0,     'returns 0';
+    is $redis->get($key),        undef, 'key is removed';
 };
 
 done_testing();
