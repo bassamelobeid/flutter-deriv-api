@@ -1,285 +1,388 @@
 use strict;
 use warnings;
 
-use Test::Most;
+use Test::More;
 use Test::MockModule;
 use Test::Deep;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::RPC::QueueClient;
+use BOM::Test::Email;
 use BOM::Platform::Context qw (request);
+use BOM::Config::Runtime;
+use BOM::User;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-subtest 'paymentagent set and get' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+my $app_config  = BOM::Config::Runtime->instance->app_config;
+my $mock_client = Test::MockModule->new('BOM::User::Client');
 
-    my $set_method = 'paymentagent_create';
-    my $set_params = {
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC', email => 'vr@test.com'});
+BOM::User->create(
+    email    => $client_vr->email,
+    password => 'x'
+)->add_client($client_vr);
+my ($token_vr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+
+my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF', email => 'mf@test.com'});
+BOM::User->create(
+    email    => $client_mf->email,
+    password => 'x'
+)->add_client($client_mf);
+my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mf->loginid);
+
+my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', email => 'cr@test.com'});
+BOM::User->create(
+    email    => $client_cr->email,
+    password => 'x'
+)->add_client($client_cr);
+my ($token_cr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr->loginid);
+
+subtest 'Eligibility' => sub {
+
+    my $params = {
         language => 'EN',
-        token    => $token
+        token    => $token_vr,
     };
-    my $get_params = {
+
+    $c->call_ok('paymentagent_create', $params)
+        ->has_error->error_code_is('PermissionDenied', 'VR client gets error code PermissionDenied from paymentagent_create');
+
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_error->result,
+        {
+            stash     => ignore(),
+            can_apply => 0,
+        },
+        'VR client gets can_apply=0 from paymentagent_details'
+    );
+
+    $params->{token} = $token_mf;
+
+    $c->call_ok('paymentagent_create', $params)
+        ->has_error->error_code_is('PaymentAgentNotAvailable', 'MF client gets error code PaymentAgentNotAvailable from paymentagent_create');
+
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_error->result,
+        {
+            stash     => ignore(),
+            can_apply => 0,
+        },
+        'MF client gets can_apply=0 from paymentagent_details'
+    );
+
+    $params->{token} = $token_cr;
+
+    $c->call_ok('paymentagent_create', $params)
+        ->has_error->error_code_is('SetExistingAccountCurrency',
+        'CR account with no currency gets error code NoAccountCurrency from paymentagent_create');
+
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_error->result,
+        {
+            stash     => ignore(),
+            can_apply => 0,
+        },
+        'CR account with no currency gets can_apply=0 from paymentagent_details'
+    );
+
+    $client_cr->set_default_account('USD');
+
+    $c->call_ok('paymentagent_create', $params)
+        ->has_error->error_code_is('NotAgeVerified', 'CR client with no POI and no POA gets error code NotAuthenticated from paymentagent_create');
+
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_error->result,
+        {
+            stash                 => ignore(),
+            can_apply             => 0,
+            eligibilty_validation => bag('NotAuthenticated', 'NotAgeVerified'),
+        },
+        'CR client with no POI and no POA gets can_apply=0 from paymentagent_details'
+    );
+
+    $client_cr->status->set('age_verification', 'x', 'x');
+
+    $c->call_ok('paymentagent_create', $params)
+        ->has_error->error_code_is('NotAuthenticated', 'CR client with no POA gets error code NotAuthenticated from paymentagent_create');
+
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_error->result,
+        {
+            stash                 => ignore(),
+            can_apply             => 0,
+            eligibilty_validation => ['NotAuthenticated'],
+        },
+        'CR client with no POA gets can_apply=0 from paymentagent_details'
+    );
+
+    $mock_client->redefine(fully_authenticated => 1);
+
+    $client_cr->status->set('unwelcome', 'x', 'x');
+
+    $c->call_ok('paymentagent_create', $params)->has_error->error_code_is('PaymentAgentClientStatusNotEligible',
+        'unwelcome CR client gets error code PaymentAgentClientStatusNotEligible from paymentagent_create');
+
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_error->result,
+        {
+            stash                 => ignore(),
+            can_apply             => 0,
+            eligibilty_validation => ['PaymentAgentClientStatusNotEligible'],
+        },
+        'unwelcome CR client gets can_apply=0 from paymentagent_details'
+    );
+
+    $client_cr->status->clear_unwelcome;
+
+    $app_config->payment_agents->initial_deposit_per_country('{ "default": 100 }');
+
+    $c->call_ok('paymentagent_create', $params)->has_error->error_code_is('PaymentAgentInsufficientDeposit',
+        'CR client with insufficient deposit gets error code PaymentAgentInsufficientDeposit from paymentagent_create');
+
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_error->result,
+        {
+            stash                 => ignore(),
+            can_apply             => 0,
+            eligibilty_validation => ['PaymentAgentInsufficientDeposit'],
+        },
+        'CR client with insufficient deposit gets can_apply=0 from paymentagent_details'
+    );
+
+    $app_config->payment_agents->initial_deposit_per_country('{}');
+
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_error->result,
+        {
+            stash     => ignore(),
+            can_apply => 1,
+        },
+        'Authenticated CR account gets can_apply=1 from paymentagent_details'
+    );
+};
+
+subtest 'Input validations' => sub {
+
+    my $params = {
         language => 'EN',
-        token    => $token
+        token    => $token_cr,
     };
 
-    my $mock_client = Test::MockModule->new("BOM::User::Client");
-    $mock_client->redefine(is_virtual => sub { return 1 });
-    $c->call_ok($set_method, $set_params)->has_error->error_message_is('Permission denied.')
-        ->error_code_is('PermissionDenied', 'error code is correct for pa_create request with virtul account.');
-    $c->call_ok('paymentagent_details', $get_params)->has_error->error_message_is('Permission denied.')
-        ->error_code_is('PermissionDenied', 'error code is for pa_details request with virtul account.');
-    $mock_client->unmock_all;
+    cmp_deeply $c->call_ok('paymentagent_create', $params)->has_error->result->{error},
+        {
+        code              => 'InputValidationFailed',
+        message_to_client => 'This field is required.',
+        details           => {
+            fields => bag(
+                'supported_payment_methods', 'information',        'payment_agent_name', 'urls',
+                'code_of_conduct_approval',  'commission_deposit', 'commission_withdrawal'
+            )}
+        },
+        'required fields cannot be empty';
 
-    $c->call_ok($set_method, $set_params)->has_error->error_message_is('Please set the currency for your existing account.', 'no-currency error')
-        ->error_code_is('NoAccountCurrency', 'error code is correct for an account with no currency.');
-    $client->set_default_account('USD');
-
-    subtest 'Input validations' => sub {
-        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
-            {
-            code              => 'InputValidationFailed',
-            message_to_client => 'This field is required.',
-            details           => {
-                fields => bag(
-                    'supported_payment_methods', 'information',        'payment_agent_name', 'urls',
-                    'code_of_conduct_approval',  'commission_deposit', 'commission_withdrawal'
-                )}
-            },
-            'required fields cannot be empty';
-
-        $set_params->{args} = {
-            'payment_agent_name'        => '+_',
-            'information'               => '   ',
-            'urls'                      => [{url => ' &^% '}],
-            'commission_withdrawal'     => 'abcd',
-            'commission_deposit'        => 'abcd',
-            'supported_payment_methods' => [{payment_method => '   '}, {payment_method => 'bank_transfer'}],
-            'code_of_conduct_approval'  => 0,
-        };
-
-        is_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
-            {
-            code              => 'InputValidationFailed',
-            message_to_client => 'Code of conduct should be accepted.',
-            details           => {fields => ['code_of_conduct_approval']}
-            },
-            'COC approval is required';
-
-        $set_params->{args}->{code_of_conduct_approval} = 1;
-
-        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
-            {
-            code              => 'InputValidationFailed',
-            message_to_client => 'This field must contain at least one alphabetic character.',
-            details           => {fields => bag('payment_agent_name', 'information', 'supported_payment_methods', 'urls')}
-            },
-            'String values must contain at least one alphabetic character';
-
-        $set_params->{args}->{$_}                        = 'Valid String' for (qw/payment_agent_name information/);
-        $set_params->{args}->{urls}                      = [{url            => 'https://www.pa.com'}];
-        $set_params->{args}->{supported_payment_methods} = [{payment_method => 'Valid method'}];
-
-        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
-            {
-            code              => 'InputValidationFailed',
-            message_to_client => 'The numeric value is invalid.',
-            details           => {fields => bag('commission_withdrawal', 'commission_deposit')}
-            },
-            'Commission must be a valid number.';
-
-        $set_params->{args}->{commission_withdrawal} = -1;
-        $set_params->{args}->{commission_deposit}    = 4.0001;
-
-        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
-            {
-            code              => 'InputValidationFailed',
-            message_to_client => 'It must be between 0 and 9.',
-            details           => {fields => bag('commission_withdrawal')}
-            },
-            'Commissions should be in range';
-
-        $set_params->{args}->{commission_withdrawal} = 1;
-
-        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
-            {
-            code              => 'InputValidationFailed',
-            message_to_client => 'Only 2 decimal places are allowed.',
-            details           => {fields => bag('commission_deposit')}
-            },
-            'Commission decimal precision is 2';
-        $set_params->{args}->{commission_deposit} = 1;
+    $params->{args} = {
+        'payment_agent_name'        => '+_',
+        'information'               => '   ',
+        'urls'                      => [{url => ' &^% '}],
+        'commission_withdrawal'     => 'abcd',
+        'commission_deposit'        => 'abcd',
+        'supported_payment_methods' => [{payment_method => '   '}, {payment_method => 'bank_transfer'}],
+        'code_of_conduct_approval'  => 0,
     };
 
-    $set_params->{args} = {
-        'payment_agent_name'        => 'Nobody',
-        'information'               => 'Request for pa application',
-        'urls'                      => [{url => 'http://abcd.com'}],
-        'commission_withdrawal'     => 4,
-        'commission_deposit'        => 5,
-        'supported_payment_methods' => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
-        'code_of_conduct_approval'  => 1,
+    is_deeply $c->call_ok('paymentagent_create', $params)->has_error->result->{error},
+        {
+        code              => 'InputValidationFailed',
+        message_to_client => 'Code of conduct should be accepted.',
+        details           => {fields => ['code_of_conduct_approval']}
+        },
+        'COC approval is required';
+
+    $params->{args}{code_of_conduct_approval} = 1;
+
+    cmp_deeply $c->call_ok('paymentagent_create', $params)->has_error->result->{error},
+        {
+        code              => 'InputValidationFailed',
+        message_to_client => 'This field must contain at least one alphabetic character.',
+        details           => {fields => bag('payment_agent_name', 'information', 'supported_payment_methods', 'urls')}
+        },
+        'String values must contain at least one alphabetic character';
+
+    $params->{args}{$_}                        = 'Valid String' for (qw/payment_agent_name information/);
+    $params->{args}{urls}                      = [{url            => 'https://www.pa.com'}];
+    $params->{args}{supported_payment_methods} = [{payment_method => 'Valid method'}];
+
+    cmp_deeply $c->call_ok('paymentagent_create', $params)->has_error->result->{error},
+        {
+        code              => 'InputValidationFailed',
+        message_to_client => 'The numeric value is invalid.',
+        details           => {fields => bag('commission_withdrawal', 'commission_deposit')}
+        },
+        'Commission must be a valid number.';
+
+    $params->{args}{commission_withdrawal} = -1;
+    $params->{args}{commission_deposit}    = 4.0001;
+
+    cmp_deeply $c->call_ok('paymentagent_create', $params)->has_error->result->{error},
+        {
+        code              => 'InputValidationFailed',
+        message_to_client => 'It must be between 0 and 9.',
+        details           => {fields => bag('commission_withdrawal')}
+        },
+        'Commissions should be in range';
+
+    $params->{args}{commission_withdrawal} = 1;
+
+    cmp_deeply $c->call_ok('paymentagent_create', $params)->has_error->result->{error},
+        {
+        code              => 'InputValidationFailed',
+        message_to_client => 'Only 2 decimal places are allowed.',
+        details           => {fields => bag('commission_deposit')}
+        },
+        'Commission decimal precision is 2';
+    $params->{args}->{commission_deposit} = 1;
+};
+
+subtest 'Application for PA' => sub {
+
+    is $client_cr->get_payment_agent, undef, 'Client does not have any payment agent yet';
+
+    my $params = {
+        language => 'EN',
+        token    => $token_cr,
+        args     => {
+            'payment_agent_name'        => 'Nobody',
+            'information'               => 'Request for pa application',
+            'urls'                      => [{url => 'http://abcd.com'}],
+            'commission_withdrawal'     => 4,
+            'commission_deposit'        => 5,
+            'supported_payment_methods' => [map { +{payment_method => $_} } qw/Visa bank_transfer/],
+            'code_of_conduct_approval'  => 1,
+        },
     };
 
-    is my $pa = $client->get_payment_agent, undef, 'Client does not have any payment agent yet';
-    $c->call_ok('paymentagent_details', $get_params)
-        ->has_no_system_error->has_error->error_message_is('You have not applied for being payment agent yet.')->error_code_is('NoPaymentAgent');
+    mailbox_clear();
 
-    $c->call_ok($set_method, $set_params)->has_no_system_error->has_no_error('paymentagent_create is called successfully');
+    $c->call_ok('paymentagent_create', $params)->has_no_system_error->has_no_error('paymentagent_create is called successfully');
 
     my $min_max         = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
-    my $expected_values = {
+    my %expected_values = (
         'payment_agent_name'        => 'Nobody',
         'urls'                      => [{url => 'http://abcd.com'}],
-        'email'                     => $client->email,
-        'phone_numbers'             => [{phone_number => $client->phone}],
+        'email'                     => $client_cr->email,
+        'phone_numbers'             => [{phone_number => $client_cr->phone}],
         'information'               => 'Request for pa application',
         'currency_code'             => 'USD',
-        'target_country'            => $client->residence,
+        'target_country'            => $client_cr->residence,
         'max_withdrawal'            => $min_max->{maximum},
         'min_withdrawal'            => $min_max->{minimum},
         'commission_deposit'        => 5,
         'commission_withdrawal'     => 4,
-        'is_listed'                 => 0,
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => '',
         'supported_payment_methods' => [map { +{payment_method => $_} } qw/bank_transfer Visa/],
-        'status'                    => undef,
-    };
-    my $result = $c->call_ok('paymentagent_details', $get_params)->has_no_system_error->has_no_error->result;
-    delete $result->{stash};
-    is_deeply $result, $expected_values, 'PA details is correct';
+        'newly_authorized'          => 0,
+    );
 
-    delete $client->{payment_agent};
-    ok $pa = $client->get_payment_agent, 'Client has a payment agent now';
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_system_error->has_no_error->result,
+        {
+            %expected_values,
+            status    => 'applied',
+            can_apply => 0,
+            stash     => ignore(),
+        },
+        'paymentagent_details for applied pa'
+    );
+
+    delete $client_cr->{payment_agent};
+    ok my $pa = $client_cr->get_payment_agent, 'Client has a payment agent now';
     is_deeply {
-        map { $_ => $pa->$_ } (keys %$expected_values)
-    }, \%$expected_values, 'PA details are correct';
+        map { $_ => $pa->$_ } keys %expected_values
+    }, \%expected_values, 'PA details are correct';
 
-};
+    ok $pa->last_application_time, 'application time was set';
+    is $pa->application_attempts, 1, 'application attempts is 1';
 
-subtest 'call with non-empty args' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
-    $client->set_default_account('USD');
+    my $email = mailbox_search(subject => 'Payment agent application submitted by ' . $client_cr->loginid);
+    ok $email, 'An email is sent';
 
-    my $email_args;
-    my $mock_email = Test::MockModule->new('BOM::RPC::v3::Accounts');
-    $mock_email->redefine(send_email => sub { $email_args = shift });
-
-    my $set_params = {
-        language => 'EN',
-        token    => $token
-    };
-    my $get_params = {
-        language => 'EN',
-        token    => $token
-    };
-    $set_params->{args} = {
-        'payment_agent_name'        => 'Smith',
-        'urls'                      => [map { +{url => $_} } ('http://test.deriv.com', 'http://youtube.com')],
-        'email'                     => 'abc@test.com',
-        'phone_numbers'             => [map { +{phone_number => $_} } (qw/233445 5432/)],
-        'information'               => 'just for test',
-        'currency_code'             => 'EUR',
-        'target_country'            => 'de',
-        'max_withdrawal'            => 3,
-        'min_withdrawal'            => 2,
-        'commission_withdrawal'     => 4,
-        'commission_deposit'        => 5,
-        'is_listed'                 => 1,
-        'affiliate_id'              => 'test token',
-        'supported_payment_methods' => [map { +{payment_method => $_} } (qw/Bank Visa/)],
-        'code_of_conduct_approval'  => 1,
-        'affiliate_id'              => 'abcd1234',
-        'status'                    => undef,
-    };
-
-    $c->call_ok('paymentagent_create', $set_params)->has_no_error;
-
-    my $expected_values = {
-        $set_params->{args}->%*,
-        is_listed => 0,
-    };
-    my $result = $c->call_ok('paymentagent_details', $get_params)->has_no_system_error->has_no_error->result;
-    delete $result->{stash};
-    is_deeply $result, $expected_values, 'PA get result is correct';
-
-    delete $client->{payment_agent};
-    ok my $pa = $client->get_payment_agent, 'Client has a payment agent now';
-    is_deeply {
-        map { $_ => $pa->$_ } (keys %$expected_values),
-    }, $expected_values, 'PA details are correct';
-
-    $expected_values->{status} //= '';
-
-    ok $email_args, 'An email is sent';
     my $brand = request->brand;
-    is $email_args->{from},    $brand->emails('system'),                                     'email source is correct';
-    is $email_args->{to},      $brand->emails('pa_livechat'),                                'email receiver is correct';
-    is $email_args->{subject}, "Payment agent application submitted by " . $client->loginid, 'Email subject is correct';
+    is $email->{from},    $brand->emails('system'),      'email sender is correct';
+    is $email->{to}->[0], $brand->emails('pa_livechat'), 'email receiver is correct';
 
-    for my $key (keys %$expected_values) {
-        if (ref($expected_values->{$key}) eq 'ARRAY') {
+    for my $key (keys %expected_values) {
+        next if $key =~ /^(status|newly_authorized)$/;
+        my $val = $expected_values{$key};
+        if (ref $val eq 'ARRAY') {
             my $field = $pa->details_main_field->{$key};
-            $expected_values->{$key} = join(',', map { $_->{$field} } $expected_values->{$key}->@*);
+            $val = join(',', sort map { $_->{$field} } @$val);
         }
+        like $email->{body}, qr/$key: \Q$val/, "The field $key is included in the email body";
     }
-    like $email_args->{message}->[0], qr/$_: $expected_values->{$_}/, "The field $_ is included in the email body" for keys %$expected_values;
-};
 
-subtest 'paymentagent create errors' => sub {
+    $c->call_ok('paymentagent_create', $params)
+        ->has_error->error_code_is('PaymentAgentAlreadyApplied',
+        'PA with status applied gets error code PaymentAgentAlreadyApplied from paymentagent_create');
 
-    my $mock_landingcompany = Test::MockModule->new('LandingCompany');
-    $mock_landingcompany->mock('allows_payment_agents', sub { return 0; });
+    $pa->status('authorized');
+    $pa->save;
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
-    $client->set_default_account('USD');
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+    $c->call_ok('paymentagent_create', $params)
+        ->has_error->error_code_is('PaymentAgentAlreadyExists',
+        'PA with status authorized gets error code PaymentAgentAlreadyExists from paymentagent_create');
 
-    my $set_params = {
-        language => 'EN',
-        token    => $token
-    };
-    $set_params->{args} = {
-        'payment_agent_name'        => 'John',
-        'urls'                      => [{url => 'http://john.deriv.com'}],
-        'email'                     => 'john@test.com',
-        'information'               => 'just for test',
-        'currency_code'             => 'USD',
-        'target_country'            => 'de',
-        'max_withdrawal'            => 3,
-        'min_withdrawal'            => 2,
-        'commission_withdrawal'     => 4,
-        'commission_deposit'        => 5,
-        'is_listed'                 => 1,
-        'supported_payment_methods' => [{payment_method => 'Visa'}],
-        'code_of_conduct_approval'  => 1,
-        'affiliate_id'              => 'abcd12347',
-        'status'                    => undef,
-    };
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_system_error->has_no_error->result,
+        {
+            %expected_values,
+            status    => 'authorized',
+            can_apply => 0,
+            stash     => ignore(),
+        },
+        'paymentagent_details for authorized pa'
+    );
 
-    $c->call_ok('paymentagent_create', $set_params)
-        ->has_no_system_error->has_error->error_message_is("The payment agent facility is not available for this account.")
-        ->error_code_is("PaymentAgentNotAvailable");
+    $pa->status('suspended');
+    $pa->save;
 
-    $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
+    $c->call_ok('paymentagent_create', $params)->has_error->error_code_is('PaymentAgentStatusNotEligible',
+        'PA with status suspended gets error code PaymentAgentStatusNotEligible from paymentagent_create');
 
-    $c->call_ok('paymentagent_create', $set_params)->has_no_system_error->has_no_error("paymentagent_create is called successfully");
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_system_error->has_no_error->result,
+        {
+            %expected_values,
+            status    => 'suspended',
+            can_apply => 0,
+            stash     => ignore(),
+        },
+        'paymentagent_details for suspended pa'
+    );
 
-    $c->call_ok('paymentagent_create', $set_params)
-        ->has_no_system_error->has_error->error_message_is("You've already submitted a payment agent application request.")
-        ->error_code_is("PaymentAgentAlreadyExists");
+    $pa->status('rejected');
+    $pa->save;
 
-    $mock_landingcompany->unmock_all;
+    cmp_deeply(
+        $c->call_ok('paymentagent_details', $params)->has_no_system_error->has_no_error->result,
+        {
+            %expected_values,
+            status    => 'rejected',
+            can_apply => 1,
+            stash     => ignore(),
+        },
+        'paymentagent_details for rejected pa'
+    );
+
+    $c->call_ok('paymentagent_create', $params)->has_no_system_error->has_no_error('PA with status rejected can reapply');
+
+    delete $client_cr->{payment_agent};
+    $pa = $client_cr->get_payment_agent;
+
+    is $pa->application_attempts, 2,         'application attempts is now 2';
+    is $pa->status,               'applied', 'status is now applied';
 };
 
 done_testing();

@@ -589,6 +589,7 @@ sub error_map {
         SetExistingAccountCurrency => localize('Please set the currency for your existing account [_1], in order to create more accounts.'),
         P2PRestrictedCountry       => localize("Deriv P2P is unavailable in your country. Please provide a different account opening reason."),
         InputValidationFailed      => localize("This field is required."),
+        NotAgeVerified             => localize('Please verify your identity.'),
 
         # validate_paymentagent_details
         RequiredFieldMissing       => localize('This field is required.'),
@@ -645,7 +646,6 @@ sub error_map {
         ),
         SetSelfExclusionError     => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
         PaymentAgentNotAvailable  => localize('The payment agent facility is not available for this account.'),
-        PaymentAgentAlreadyExists => localize("You've already submitted a payment agent application request."),
         DXSuspended               => localize('Deriv X account management is currently suspended.'),
         DXGeneral                 => localize('This service is currently unavailable. Please try again later.'),
         DXServerSuspended         => localize('This feature is suspended for system maintenance. Please try later.'),
@@ -653,6 +653,15 @@ sub error_map {
         DXNoAccount               => localize('You do not have a Deriv X account on the provided server.'),
         DXTokenGenerationFailed   => localize('Token generation failed. Please try later.'),
         DifferentLandingCompanies => localize('Payment agent transfers are not allowed for the specified accounts.'),
+
+        # Payment agent application
+        PaymentAgentAlreadyApplied          => localize("You've already submitted a payment agent application request."),
+        PaymentAgentAlreadyExists           => localize('You are already an approved payment agent.'),
+        PaymentAgentStatusNotEligible       => localize('You are not eligible to apply to be a payment agent.'),
+        PaymentAgentClientStatusNotEligible => localize('You cannot apply to be a payment agent due to your account status.'),
+        PaymentAgentInsufficientDeposit     => localize(
+            'Your account does not meet the deposit requirement of [_1] [_2]. Note that depposits from credit cards and certain ewallets do not count towards the deposit requirement.'
+        ),
 
         # Paymentagent transfer
         PaymentAgentDailyCountExceeded =>

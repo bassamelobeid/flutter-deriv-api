@@ -3119,12 +3119,9 @@ rpc paymentagent_create => sub {
 
     delete $args->{paymentagent_create};
 
-    # some attributes are editable exclusively from backoffice
-    delete $args->{is_listed};
-
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
-        $rule_engine->verify_action('paymentagent_create', %$args, loginid => $client->loginid);
+        $rule_engine->verify_action('paymentagent_create', loginid => $client->loginid);
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error);
     }
@@ -3139,7 +3136,6 @@ rpc paymentagent_create => sub {
                 InvalidDepositCommission    => [$pa->max_pa_commission()],
                 InvalidWithdrawalCommission => [$pa->max_pa_commission()],
             };
-
             return BOM::RPC::v3::Utility::create_error_by_code($error, ($msg_params->{$error} // [])->@*);
         }
 
@@ -3147,6 +3143,9 @@ rpc paymentagent_create => sub {
     }
 
     $pa->$_($args->{$_}) for keys %$args;
+    $pa->application_attempts(($pa->application_attempts // 0) + 1);
+    $pa->last_application_time(Date::Utility->new->db_timestamp);
+    $pa->status('applied');
     $pa->save();
 
     # create a livechat ticket
@@ -3157,8 +3156,7 @@ rpc paymentagent_create => sub {
         my @values = ($args->{$arg} // '');
         my $field  = $pa->details_main_field->{$arg};
         @values = map { $_->{$field} } $args->{$arg}->@* if defined($args->{$arg}) && ref($args->{$arg}) eq 'ARRAY';
-        $message .= "\n $arg: " . join(',', @values);
-
+        $message .= "\n $arg: " . join(',', sort @values);
     }
 
     send_email({
@@ -3173,22 +3171,39 @@ rpc paymentagent_create => sub {
 
 rpc paymentagent_details => sub {
     my $params = shift;
+
     my $client = $params->{client};
+    my $payment_agent;
+    my $response = {can_apply => 0};
 
-    return BOM::RPC::v3::Utility::permission_error if $client->is_virtual;
+    return $response if $client->is_virtual || !$client->account || !$client->residence;
 
-    my $payment_agent = $client->get_payment_agent;
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'NoPaymentAgent',
-            message_to_client => localize('You have not applied for being payment agent yet.')}) unless $payment_agent;
+    if ($payment_agent = $client->get_payment_agent) {
+        for my $field (
+            qw(payment_agent_name email phone_numbers urls supported_payment_methods information currency_code target_country max_withdrawal min_withdrawal commission_deposit commission_withdrawal status code_of_conduct_approval affiliate_id newly_authorized)
+            )
+        {
+            $response->{$field} = $payment_agent->$field;
+        }
+    }
 
-    my %result = map { $_ => $payment_agent->$_ }
-        qw(payment_agent_name email phone_numbers urls supported_payment_methods information currency_code target_country max_withdrawal min_withdrawal commission_deposit commission_withdrawal status is_listed code_of_conduct_approval affiliate_id);
+    if (!$payment_agent || $payment_agent->status eq 'rejected') {
+        my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
-    # affiliate IDs are null for old payment agents.
-    $result{affiliate_id} //= '';
+        my $failures = $rule_engine->verify_action(
+            'paymentagent_create',
+            loginid             => $client->loginid,
+            rule_engine_context => {stop_on_failure => 0},
+        )->failed_rules;
 
-    return \%result;
+        if (@$failures) {
+            $response->{eligibilty_validation} = [map { $_->{error_code} } grep { ref $_ eq 'HASH' } @$failures];
+        } else {
+            $response->{can_apply} = 1;
+        }
+    }
+
+    return $response;
 };
 
 rpc get_account_types => sub {

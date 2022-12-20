@@ -764,6 +764,8 @@ rpc paymentagent_transfer => sub {
             language      => $params->{language},
         });
 
+    $payment_agent->newly_authorized(0);    # reset the 'newly_authorized' flag
+
     return {
         status              => 1,
         client_to_full_name => $client_to->full_name,
@@ -1100,6 +1102,8 @@ rpc paymentagent_withdraw => sub {
             currency       => $currency,
             language       => $params->{language},
         });
+
+    $paymentagent->newly_authorized(0);    # reset the 'newly_authorized' flag
 
     return {
         status            => 1,
