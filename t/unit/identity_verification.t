@@ -34,10 +34,13 @@ subtest 'Get Filters data' => sub {
                 nin_slip
                 passport
                 ssnit
+                aadhaar
+                epic
+                pan
                 /
         },
-        countries => +{map { ($_ => Locale::Country::code2country($_)) } qw/br gh ke ng ug za zw/},
-        providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) } qw/zaig smile_identity derivative_wealth/},
+        countries => +{map { ($_ => Locale::Country::code2country($_)) } qw/br gh ke ng ug za zw in/},
+        providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) } qw/zaig smile_identity derivative_wealth data_zoo/},
         statuses  => +{map { ($_ => $idv_config->{statuses}->{$_}) } qw/pending failed refuted verified/},
         messages  => $idv_config->{messages},
         },
