@@ -103,6 +103,10 @@ sub _get_user_fields {
     return (@common_fields, qw/login balance group color/, qw/agent rights/);
 }
 
+sub _get_archive_user_fields {
+    return (@common_fields, qw/login balance group color agent rights comment lastaccess/);
+}
+
 sub _get_update_user_fields {
     return (@common_fields, qw/login rights agent color/);
 }
@@ -737,10 +741,8 @@ sub get_user_archive {
     return _invoke_mt5('UserArchiveGet', $param)->then(
         sub {
             my ($response) = @_;
-
-            my $ret    = $response->{user};
-            my @fields = _get_user_fields();
-
+            my $ret        = $response->{user};
+            my @fields     = _get_archive_user_fields();
             my $mt_user;
             $mt_user->{$_} = $ret->{$_} for (@fields);
             return Future->done($mt_user);
@@ -752,6 +754,42 @@ sub user_archive {
     my $param = {login => $login};
 
     return _invoke_mt5('UserArchive', $param)->then(
+        sub {
+            return Future->done({status => 1});
+        });
+}
+
+=head2 user_restore
+
+Restore MT5 user from archived database to current database.
+
+=over 4
+
+=item * C<$mt5_user> MT5 user data retrieved from user_archive call
+
+=back
+
+returns status;
+
+=cut
+
+sub user_restore {
+    my $mt5_user = shift;
+
+    my $user;
+    $user->{ucfirst $_} = $mt5_user->{$_} for keys %$mt5_user;
+    # y/ is the same as tr/, action of transliterate. It does not support regular expression like s/
+    # What it does here is any digit of 0 to 9, matching the complement of that (/c), then replace
+    # to make it empty (/d)-delete. Basically remove everything except 0 to 9. Its more efficient than s/ if no regex is needed.
+    $user->{$_} && $user->{$_} =~ y/0-9//cd for (qw(Login Agent));
+    $user->{LastAccess} = delete $user->{Lastaccess};
+
+    my $param = {
+        login => $mt5_user->{login},
+        user  => $user
+    };
+
+    return _invoke_mt5('UserRestore', $param)->then(
         sub {
             return Future->done({status => 1});
         });
