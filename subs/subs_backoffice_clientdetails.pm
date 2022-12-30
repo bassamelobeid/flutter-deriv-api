@@ -522,9 +522,8 @@ SQL
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
         my $tin_format             = $country->get_tin_format($selected_tax_residence);
         if ($tin_format) {
-            $tin_format_description = $country->get_tin_format_description($selected_tax_residence) // 'Please check TIN documents';
-            my $client_tin = $country->clean_tin_format($client->tax_identification_number, $selected_tax_residence) // '';
-            $is_valid_tin            = any { $client_tin =~ m/$_/ } @$tin_format;
+            $tin_format_description  = $country->get_tin_format_description($selected_tax_residence) // 'Please check TIN documents';
+            $is_valid_tin            = any { $client->tax_identification_number =~ m/$_/ } @$tin_format;
             $tin_validation_required = 1;
         }
     }
