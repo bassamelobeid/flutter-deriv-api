@@ -97,6 +97,49 @@ sub upload {
         });
 }
 
+=head2 upload_binary
+
+This function is used to upload a binary file to the S3 Bucket
+
+=cut 
+
+=over 4
+
+=item * C<$original_filename> - the filename of the photo as a string
+
+=item * C<$binary_file> - the binary photo as a string
+
+=item * C<$checksum> - the checksum of the photo as a string
+
+=back
+
+Returns original file name or error message if not succesful.
+
+=cut
+
+sub upload_binary {
+    my ($self, $original_filename, $binary_file, $checksum) = @_;
+
+    die 'You need to specify a filename' unless $original_filename;
+
+    return $self->{s3}->put_object(
+        key          => $original_filename,
+        value        => $binary_file,
+        value_length => length($binary_file),
+        meta         => {checksum       => $checksum},
+        headers      => {'Content-Type' => Plack::MIME->mime_type($original_filename) // 'application/octet-stream'},
+    )->then(
+        sub {
+            my $result = shift;
+            return Future->done($original_filename) if "\"$checksum\"" eq $result;
+            return Future->fail("Checksum mismatch for: $original_filename");
+        }
+    )->else(
+        sub {
+            return Future->fail("Upload failed for $original_filename, error: " . shift);
+        });
+}
+
 sub download {
     my ($self, $file) = @_;
     return $self->{s3}->get_object(key => $file);
