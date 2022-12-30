@@ -198,10 +198,9 @@ rpc new_account_maltainvest => sub {
     # In case of having more than a tax residence, client residence will replaced.
     my $selected_tax_residence = $args->{tax_residence} =~ /\,/g ? $args->{residence} : $args->{tax_residence};
     my $tin_format             = $countries_instance->get_tin_format($selected_tax_residence);
-    my $client_tin             = $countries_instance->clean_tin_format($args->{tax_identification_number}, $selected_tax_residence);
     if ($tin_format) {
         stats_inc('bom_rpc.v_3.new_account_maltainvest.called_with_wrong_TIN_format.count')
-            unless (any { $client_tin =~ m/$_/ } @$tin_format);
+            unless (any { $args->{tax_identification_number} =~ m/$_/ } @$tin_format);
     }
 
     return {
