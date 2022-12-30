@@ -183,6 +183,8 @@ create new row for details.
 
 =item * C<$expiration_date> - nullable, the document expiry date
 
+=item * C<$photo> - nullable, photo id for idv check if available
+
 =back
 
 Returns void.
@@ -192,9 +194,9 @@ Returns void.
 sub update_document_check {
     my ($self, $args) = @_;
 
-    my ($document_id, $status, $messages, $provider, $report, $request_body, $response_body, $expiration_date) = @{$args}{
+    my ($document_id, $status, $messages, $provider, $report, $request_body, $response_body, $expiration_date, $photo_id) = @{$args}{
         qw/
-            document_id   status   messages   provider  report  request_body   response_body   expiration_date
+            document_id   status   messages   provider  report  request_body   response_body   expiration_date photo
             /
     };
 
@@ -214,12 +216,16 @@ sub update_document_check {
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
+    $photo_id = [$photo_id] if ref($photo_id) ne 'ARRAY';
+
+    $photo_id //= [];
+
     try {
         $dbic->run(
             fixup => sub {
                 $_->do(
-                    'SELECT FROM idv.update_document_check(?::BIGINT, ?::idv.provider, ?::idv.check_status, ?::JSONB, ?::JSONB, ?::JSONB, ?::JSONB, ?::TIMESTAMP)',
-                    undef, $document_id, $provider, $status, $messages, $report, $request_body, $response_body, $expiration_date
+                    'SELECT FROM idv.update_document_check(?::BIGINT, ?::idv.provider, ?::idv.check_status, ?::JSONB, ?::JSONB, ?::JSONB, ?::JSONB, ?::TIMESTAMP, ?::BIGINT[])',
+                    undef, $document_id, $provider, $status, $messages, $report, $request_body, $response_body, $expiration_date, $photo_id
                 );
             });
     } catch ($e) {
