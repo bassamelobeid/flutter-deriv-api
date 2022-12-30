@@ -24,6 +24,9 @@ use Log::Any        qw( $log );
 use Scalar::Util    qw( blessed );
 use Syntax::Keyword::Try;
 use Time::HiRes;
+use MIME::Base64 qw(decode_base64);
+use Digest::MD5  qw(md5_hex);
+use List::Util   qw(first);
 
 use BOM::Config::Services;
 use BOM::Event::Services;
@@ -33,6 +36,9 @@ use BOM::Platform::Context qw( localize request );
 use BOM::Platform::Utility;
 use BOM::User::IdentityVerification;
 use BOM::User::Client;
+use BOM::Platform::S3Client;
+
+use constant IDV_UPLOAD_TIMEOUT_SECONDS => 30;
 
 use constant RESULT_STATUS => {
     pass     => \&idv_pass,
@@ -40,6 +46,12 @@ use constant RESULT_STATUS => {
     failed   => \&idv_failed,
     refuted  => \&idv_refuted,
     callback => \&idv_callback,
+};
+
+use constant DOCUMENT_UPLOAD_STATUS => {
+    failed   => 'rejected',
+    refuted  => 'rejected',
+    verified => 'verified',
 };
 
 my $loop = IO::Async::Loop->new;
@@ -54,6 +66,7 @@ $loop->add(my $services = BOM::Event::Services->new);
     sub _redis_replicated_write {
         return $services->redis_replicated_write();
     }
+
 }
 
 =head2 verify_identity
@@ -203,6 +216,21 @@ async sub verify_process {
 
     my @common_datadog_tags = (sprintf('provider:%s', $provider), sprintf('country:%s', $document->{issuing_country}));
 
+    my $report = $response_hash->{report} // {};
+
+    my $photo = delete $report->{photo};
+    my $photo_file_id;
+
+    my $response_status = $response_hash->{status} // '';
+
+    if ($photo) {
+        $photo_file_id = await _upload_photo({
+            photo  => $photo,
+            client => $client,
+            status => $response_status,
+        });
+    }
+
     my @messages = ref $message eq 'ARRAY' ? $message->@* : ($message // ());
 
     @messages = uniq @messages;
@@ -217,6 +245,7 @@ async sub verify_process {
         response_hash       => $response_hash,
         common_datadog_tags => \@common_datadog_tags,
         errors              => _messages_to_hashref(@messages),
+        photo               => $photo_file_id,
     });
 
     return 1;
@@ -231,7 +260,8 @@ Verified Result Status for IDV, when the document was cleared
 async sub idv_verified {
     my ($args) = @_;
 
-    my ($client, $messages, $document, $provider, $response_hash) = @{$args}{qw/client messages document provider response_hash/};
+    my ($client, $messages, $document, $provider, $response_hash, $photo_file_id) =
+        @{$args}{qw/client messages document provider response_hash photo/};
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
     $client->propagate_clear_status('poi_name_mismatch');
@@ -252,6 +282,7 @@ async sub idv_verified {
         expiration_date => $response_hash->{report}->{expiry_date},
         request_body    => encode_json_text($response_hash->{request_body}  // {}),
         response_body   => encode_json_text($response_hash->{response_body} // {}),
+        photo           => $photo_file_id
     });
 }
 
@@ -264,7 +295,8 @@ Refuted Result Status for IDV, when the document was rejected
 async sub idv_refuted {
     my ($args) = @_;
 
-    my ($client, $document, $provider, $messages, $response_hash, $errors) = @{$args}{qw/client document provider messages response_hash errors/};
+    my ($client, $document, $provider, $messages, $response_hash, $errors, $photo_file_id) =
+        @{$args}{qw/client document provider messages response_hash errors photo/};
     my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
     push $messages->@*,
@@ -288,6 +320,7 @@ async sub idv_refuted {
         provider        => $provider,
         request_body    => encode_json_text($response_hash->{request_body}  // {}),
         response_body   => encode_json_text($response_hash->{response_body} // {}),
+        photo           => $photo_file_id,
     });
 
     BOM::Platform::Event::Emitter::emit(
@@ -628,6 +661,176 @@ sub _get_provider {
         provider => $idv_config->{provider});
 
     return $idv_config->{provider};
+}
+
+=head2 _upload_photo
+
+Gets the client's photo from IDV and uploads to S3
+
+=over 4
+
+=item * C<data> - the data of the current idv object as hashref containing:
+
+=item * C<photo> - the base64 photo as a string
+
+=item * C<client> - the client instance
+
+=item * C<status> - the status returned by the idv check
+
+=back
+
+Returns the file id of the photo uploaded to s3
+
+=cut
+
+async sub _upload_photo {
+    my $data = shift;
+    my ($photo, $client, $status) =
+        @{$data}{qw/photo client status/};
+
+    my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
+
+    my $final_status = DOCUMENT_UPLOAD_STATUS->{$status} // 'uploaded';
+
+    my $decoded_photo = decode_base64($photo);    # here we convert the photo from base64 to binary
+    my $upload_info;
+    my $s3_uploaded;
+    my $file_id;
+    my $new_file_name;
+
+    my $file_type = _detect_mime_type($photo);
+
+    my @file_type_array = split('/', $file_type);
+
+    $file_type = pop(@file_type_array);
+
+    my $file_checksum = md5_hex($decoded_photo);
+
+    # If the following key exists, the document is already being uploaded,
+    # so we can safely drop this event.
+    my $lock_key     = join q{-} => ('IDV_UPLOAD_BAG', $client->loginid, $file_checksum);
+    my $acquire_lock = BOM::Platform::Redis::acquire_lock($lock_key, IDV_UPLOAD_TIMEOUT_SECONDS);
+
+    unless ($acquire_lock) {
+        $log->warn("Document already exists");
+        return;
+    }
+
+    try {
+        my $lifetime_valid = 0;
+        my $new_document   = 1;
+
+        $upload_info = $client->db->dbic->run(
+            ping => sub {
+                $_->selectrow_hashref('SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    undef, $client->loginid, 'photo', $file_type, undef, '', $file_checksum, '', '', undef, $lifetime_valid);
+            });
+
+        if ($upload_info && $upload_info->{file_id}) {
+            ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
+
+            $log->debugf("Starting to upload file_id: $file_id to S3 ");
+            $s3_uploaded = await $s3_client->upload_binary($new_file_name, $decoded_photo, $file_checksum);
+
+        } else {
+            $log->warn(sprintf("Document with this file id already exists, checksum=%s loginid=%s", $file_checksum, $client->loginid));
+
+            # if the document is already present in betonmarkets document table
+            # it should've already been uploaded to s3, we can assume it's there
+            # with this we are only recovering the existing ID from the documents table in order
+            # to inject it into the idv check record
+
+            $upload_info = $client->db->dbic->run(
+                ping => sub {
+                    $_->selectrow_hashref(
+                        'SELECT id, file_name FROM betonmarkets.client_authentication_document WHERE checksum = ? AND client_loginid = ? AND document_type = ?',
+                        undef, $file_checksum, $client->loginid, 'photo'
+                    );
+                });
+
+            ($file_id, $new_file_name) = @{$upload_info}{qw/id file_name/};
+            $s3_uploaded  = $upload_info && $upload_info->{file_id};
+            $new_document = 0;
+        }
+
+        if ($s3_uploaded) {
+
+            # only new documents need to be finished
+            # we can assume existing documents were already finished previously
+
+            if ($new_document) {
+                $log->debugf("Successfully uploaded file_id: $file_id to S3 ");
+                my $finish_upload_result = $client->db->dbic->run(
+                    ping => sub {
+                        $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?::status_type)', undef, $file_id, $final_status);
+                    });
+
+                die "Db returned unexpected file_id on finish. Expected $file_id but got $finish_upload_result. Please check the record"
+                    unless $finish_upload_result == $file_id;
+            }
+
+            my $document_info = {
+                # to avoid a db hit, we can estimate the `upload_date` to the current timestamp.
+                # all the other fields can be derived from current symbols table.
+                upload_date     => Date::Utility->new->datetime_yyyymmdd_hhmmss,
+                file_name       => $new_file_name,
+                id              => $file_id,
+                lifetime_valid  => $lifetime_valid,
+                document_id     => '',
+                comments        => '',
+                expiration_date => undef,
+                document_type   => 'photo'
+            };
+
+            if ($document_info) {
+                await BOM::Event::Services::Track::document_upload({
+                    client     => $client,
+                    properties => $document_info
+                });
+            } else {
+                $log->errorf('Could not get document %s from database for client %s', $file_id, $client->loginid);
+            }
+        }
+    } catch ($error) {
+        $log->errorf("Error in creating record in db and uploading IDV photo to S3 for %s : %s", $client->loginid, $error);
+        exception_logged();
+    }
+
+    BOM::Platform::Redis::release_lock($lock_key);
+
+    return $file_id;
+}
+
+=head2 _detect_mime_type
+
+Detects the mime type based on the starting characters of the string.
+
+=over 4
+
+=item * C<base64_photo> - the base64 photo as a string
+
+=back
+
+Returns string of mime type detected
+
+=cut
+
+sub _detect_mime_type {
+    my $base64_photo = shift;
+
+    my %signatures = (
+        iVBORw0KGgo => "image/png",
+        "/9j/"      => "image/jpg"
+    );
+
+    # These signatures are unique to these specific image mime.
+
+    my $sign = first { index($base64_photo, $_) == 0 } keys %signatures;
+
+    return "application/octet-stream" unless $sign;
+
+    return $signatures{$sign};
+
 }
 
 1
