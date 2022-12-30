@@ -27,7 +27,7 @@ use Email::Stuffer;
 use YAML::XS;
 use Date::Utility;
 use Text::CSV;
-use List::Util qw(any);
+use List::Util qw(any all);
 use Path::Tiny;
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
 use DataDog::DogStatsd::Helper;
@@ -50,6 +50,7 @@ use HTML::Entities;
 
 use constant DAYS_TO_EXPIRE            => 14;
 use constant SECONDS_IN_DAY            => 86400;
+use constant USER_RIGHT_ENABLED        => 0x0000000000000001;
 use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 
 =head2 sync_info
@@ -1475,6 +1476,187 @@ sub update_loginid_status {
     } catch ($e) {
         $log->errorf("update_loginid_status [%s]: Unable to set loginid.status due to error: %s", Time::Moment->now, $e);
     }
+}
+
+=head2 mt5_archive_restore_sync
+
+Update the loginid.status in users DB from archived to null. Restore of MT5 account from MT5 database.
+
+=over 4
+
+=item * C<mt5_accounts> - user's login id
+
+=back
+
+=cut
+
+async sub mt5_archive_restore_sync {
+    my $args         = shift;
+    my @mt5_accounts = @{$args->{mt5_accounts} // []};
+
+    die 'Must provide list of MT5 loginids' unless $args->{mt5_accounts};
+
+    my $process_mt5_success = {};
+    my $process_mt5_fail    = {};
+    foreach my $mt5_account (@mt5_accounts) {
+        my $is_mt5_archived = 0;
+        my $mt5_user;
+        try {
+            $mt5_user = await BOM::MT5::User::Async::get_user($mt5_account);
+            die unless $mt5_user->{email};
+        } catch ($e) {
+            $is_mt5_archived = 1;
+            try {
+                $mt5_user = await BOM::MT5::User::Async::get_user_archive($mt5_account);
+            } catch ($e) {
+                $is_mt5_archived = 0;
+            }
+        }
+
+        unless ($mt5_user->{email}) {
+            _create_error($process_mt5_fail, $mt5_account, 'MT5 Error', 'Failed to retrieve MT5 account data.');
+            next;
+        }
+
+        my $bom_user        = BOM::User->new(email => $mt5_user->{email});
+        my $loginid_details = $bom_user->loginid_details;
+        my $account_data    = $loginid_details->{$mt5_account};
+
+        unless ($account_data) {
+            _create_error($process_mt5_fail, $mt5_account, 'Loginid DB Error', 'Failed to retrieve MT5 account data in Internal Database.');
+            next;
+        }
+
+        my %existing_groups;
+        my @mt5_logins = $bom_user->get_mt5_loginids;
+        foreach my $loginid_mt5 (@mt5_logins) {
+            next if $loginid_mt5 eq $mt5_account;
+            my $loginid_data = $loginid_details->{$loginid_mt5};
+            next unless $loginid_data->{attributes}->{group};
+            $existing_groups{$loginid_data->{attributes}->{group}} = $loginid_data->{loginid};
+        }
+
+        my $current_group = $account_data->{attributes}->{group};
+        unless ($current_group) {
+            _create_error($process_mt5_fail, $mt5_account, 'Loginid DB Error', 'No group data found in loginid DB.');
+            next;
+        }
+
+        if (my $identical = _is_identical_group($current_group, \%existing_groups)) {
+            _create_error($process_mt5_fail, $mt5_account, 'Loginid DB Error', 'Found existing active MT5 account with same group.');
+            next;
+        }
+
+        # Update mt5 account's status to null/undef, which indicated as active account.
+        if (($account_data->{status} // '') eq 'archived') {
+            try {
+                $bom_user->update_loginid_status($mt5_account, undef);
+                $process_mt5_success->{$mt5_account}->{dbcase} = 1;
+            } catch ($e) {
+                _create_error($process_mt5_fail, $mt5_account, 'Loginid DB Error', 'Failed to update MT5 status to null.');
+                next;
+            }
+        }
+
+        # Restore MT5 account from MT5's archive database to current database.
+        if ($is_mt5_archived) {
+            try {
+                my $data = await BOM::MT5::User::Async::user_restore($mt5_user);
+                die unless $data->{status};
+                $process_mt5_success->{$mt5_account}->{mt5servercase} = 1;
+            } catch ($e) {
+                _create_error($process_mt5_fail, $mt5_account, 'MT5 Error', 'Failed to restore account from MT5 archive database.');
+                next;
+            }
+
+            try {
+                delete $mt5_user->{color};
+                await BOM::MT5::User::Async::update_user({
+                    %{$mt5_user},
+                    login  => $mt5_user->{login},
+                    rights => USER_RIGHT_ENABLED
+                });
+            } catch ($e) {
+                _create_error($process_mt5_fail, $mt5_account, 'MT5 Error', 'MT5 restored but failed to enable trading rights.');
+                next;
+            }
+        }
+    }
+
+    my (@success_case, @failed_case, @message);
+    foreach my $mt5 (keys %$process_mt5_success) {
+        my $success_message = "$mt5: ";
+        $success_message .= 'Updated loginid database status. '    if $process_mt5_success->{$mt5}->{dbcase};
+        $success_message .= 'Restored from MT5 archive database. ' if $process_mt5_success->{$mt5}->{mt5servercase};
+        push @success_case, $success_message;
+    }
+
+    foreach my $mt5 (keys %$process_mt5_fail) {
+        my ($error_type) = keys %{$process_mt5_fail->{$mt5}};
+        my $failed_message = "$mt5: " . "$error_type - " . $process_mt5_fail->{$mt5}->{$error_type};
+        push @failed_case, $failed_message;
+    }
+
+    my $section_sep = '-' x 20;
+    push @message, ($section_sep, 'MT5 Successfully Restored:', '<~~~', @success_case, '~~~>') if @success_case;
+    push @message, ($section_sep, 'MT5 Restore Failed:',        '<~~~', @failed_case,  '~~~>') if @failed_case;
+
+    push @message, 'No inconsistency detected, nothing is done.' unless @message;
+
+    BOM::Platform::Email::send_email({
+        to      => 'x-tradingops@regentmarkets.com',
+        from    => '<no-reply@binary.com>',
+        subject => 'MT5 Archive Account Restore and Sync Report',
+        message => \@message,
+    });
+
+    return Future->done(1);
+}
+
+=head2 _get_mt5_account_type_config
+
+Get MT5 Accout Types data
+
+=over 4
+
+=item * C<group_name> - MT5 account's group
+
+=back
+
+=cut
+
+sub _get_mt5_account_type_config {
+    my ($group_name) = shift;
+
+    my $group_accounttype = lc($group_name);
+
+    return BOM::Config::mt5_account_types()->{$group_accounttype};
+}
+
+=head2 _is_identical_group
+
+Check if current MT5 account group already exist in existing group data.
+
+=over 4
+
+=item * C<group> - Current MT5 account's group
+
+=item * C<existing_groups> - hash refetences of MT5 accounts' group.
+
+=back
+
+=cut
+
+sub _is_identical_group {
+    my ($group, $existing_groups) = @_;
+
+    my $group_config = _get_mt5_account_type_config($group);
+
+    foreach my $existing_group (map { _get_mt5_account_type_config($_) } keys %$existing_groups) {
+        return $existing_group if defined $existing_group and all { $group_config->{$_} eq $existing_group->{$_} } keys %$group_config;
+    }
+
+    return undef;
 }
 
 1;

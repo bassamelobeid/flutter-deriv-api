@@ -1605,4 +1605,23 @@ subtest 'link myaffiliate token to mt5' => sub {
     is($process_result->{result}[0], 1, "Correct returned value");
 };
 
+subtest 'mt5 archive restore sync' => sub {
+    my $args = {};
+
+    my $action_handler = BOM::Event::Process->new(category => 'generic')->actions->{mt5_archive_restore_sync};
+
+    like exception { $action_handler->($args)->get; }, qr/Must provide list of MT5 loginids/, 'correct exception when MT5 id list is missing';
+
+    $args->{mt5_accounts} = ['MTR90000'];
+
+    $mocked_mt5->mock('get_user', sub { Future->done({login => "MTR90000", email => 'placeholder@gmail.com'}) });
+    $mocked_user->mock('loginid_details', sub { {'MTR90000' => {status => undef}} });
+
+    my $result = $action_handler->($args)->get;
+    ok $result, 'Success mt5 archive restore sync result';
+
+    $mocked_mt5->unmock_all;
+    $mocked_user->unmock_all;
+};
+
 done_testing();
