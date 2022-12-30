@@ -826,10 +826,7 @@ $ryu_mock->mock(
         return $ryu_mock->original('as_list')->(@_);
     });
 
-# there is a misconception about hrefs https://developers.onfido.com/guide/api-versioning-policy#webhook-events
-# API's href will be `v3.4/`
-# Webhooks' href are just `v3/`
-my $check_href = $check->{href} =~ s/3\.4/3/r;
+my $check_href = $check->{href};
 
 subtest "client_verification" => sub {
     my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');

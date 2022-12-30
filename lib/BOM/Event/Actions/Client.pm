@@ -668,6 +668,8 @@ async sub client_verification {
 
         my ($check_id) = $url =~ m{/v3/checks/([^/]+)};
 
+        ($check_id) = $url =~ m{/v3\.4/checks/([^/]+)} unless $check_id;
+
         # Onfido Sadness. It seems on live we are still getting the old format
         # with v2. We will make the code version agnostic until further notice.
 
