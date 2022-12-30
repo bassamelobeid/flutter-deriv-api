@@ -511,6 +511,40 @@ if ($input{whattodo} eq 'sync_to_MT5') {
     code_exit_BO();
 }
 
+if ($input{whattodo} eq 'restore_archived_MT5') {
+    my $archived_mt5 = $input{archived_mt5_accounts};
+    $archived_mt5 =~ s/\s+//g;
+    my @mt5_accounts = split(',', uc($archived_mt5 || ''));
+
+    unless (@mt5_accounts) {
+        print qq{<p style="font-size:15px;"> No MT5 Accounts Found! </p> <br> <p><a href="$self_href">&laquo;Return to client details</a></p>};
+        code_exit_BO();
+    }
+
+    @mt5_accounts = uniq(@mt5_accounts);
+    my @invalid_mt5 = @{BOM::MT5::BOUtility::valid_mt5_check(\@mt5_accounts)};
+
+    if (@invalid_mt5) {
+        my $display_msg = 'Submission Halted: Incorrect MT5 Account Detected <br>' . join('', @invalid_mt5);
+        print qq{<p style="font-size:15px;"> $display_msg </p> <p><a href="$self_href">&laquo;Return to client details</a></p>};
+        code_exit_BO();
+    }
+
+    BOM::Platform::Event::Emitter::emit('mt5_archive_restore_sync', {mt5_accounts => \@mt5_accounts});
+    my $msg = Date::Utility->new->datetime . " Restore and sync archived MT5 is requested by clerk=$clerk $ENV{REMOTE_ADDR}";
+    BOM::User::AuditLog::log($msg, $loginid, $clerk);
+
+    Bar('RESTORE AND SYNC MT5 ARCHIVED STATUS');
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_edit_msg.tt',
+        {
+            message  => "Successfully requested restore and sync of archived MT5 accounts",
+            self_url => $self_href,
+        },
+    ) || die BOM::Backoffice::Request::template()->error(), "\n";
+    code_exit_BO();
+}
+
 # UPLOAD NEW ID DOC.
 if ($input{whattodo} eq 'uploadID') {
     local $CGI::POST_MAX        = 1024 * 1600;    # max 1600K posts
@@ -1988,6 +2022,19 @@ if (not $client->is_virtual) {
             <input type="hidden" name="whattodo" value="sync_to_MT5">
             <input type="hidden" name="loginID" value="$encoded_loginid">
             <input type="submit" class="btn btn--primary" value="Sync to MT5">
+        </form>
+    };
+    Bar("Restore and Sync MT5 Archived Status", {nav_link => "Restore Archived MT5"});
+    print qq{
+        <p>MT5 accounts to restore and sync database from archived status to active: </p>
+        <form action="$self_post" method="get">
+            <input type="hidden" name="whattodo" value="restore_archived_MT5">
+            <input type="hidden" name="loginID" value="$encoded_loginid">
+            <div class="row">
+                <label>FROM MT5:</label>
+                <input type="text" size="60" name="archived_mt5_accounts" placeholder="[Example: MTR123456, MTR654321] (comma separate accounts)" data-lpignore="true" />
+            </div>
+            <input type="submit" class="btn btn--primary" value="Restore Archived MT5">
         </form>
     };
 }
