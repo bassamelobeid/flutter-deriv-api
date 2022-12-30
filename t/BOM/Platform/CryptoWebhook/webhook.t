@@ -47,7 +47,7 @@ subtest 'Invalid endpoint' => sub {
 
 subtest '/processor_coinspaid' => sub {
     my $mocked_coinspaid = Test::MockModule->new('BOM::Platform::CryptoWebhook::Webhook::PaymentProcessor::Coinspaid');
-    my $endpoint         = "/crypto_webhook/api/v1/coinspaid";
+    my $endpoint         = "/api/v1/coinspaid";
 
     subtest "invalid signature" => sub {
         $mocked_coinspaid->mock(

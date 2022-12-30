@@ -35,7 +35,7 @@ GetOptions(
     "payload=s"    => \my $payload,
 );
 
-$endpoint   //= '/crypto_webhook/api/v1/coinspaid';
+$endpoint   //= '/api/v1/coinspaid';
 $secret_key //= BOM::Config::third_party()->{crypto_webhook}{coinspaid}{secret_key};
 
 # NOTE: Paste the "Request body" from CoinsPaid's Callback inside the single-quotes below:

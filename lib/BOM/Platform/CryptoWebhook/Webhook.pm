@@ -37,7 +37,7 @@ sub startup {
         });
 
     my $r = $app->routes;
-    $r->post('/crypto_webhook/api/v1/coinspaid')->to('Controller#processor_coinspaid');
+    $r->post('/api/v1/coinspaid')->to('Controller#processor_coinspaid');
 
     $r->any('/')->to('Controller#invalid_request');
     $r->any('/*')->to('Controller#invalid_request');
