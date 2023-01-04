@@ -2675,7 +2675,7 @@ sub notify_resubmission_of_risk_disclaimer {
 
     my $brand = Brands->new(name => 'deriv');
 
-    my $req = BOM::Backoffice::Request->new(brand_name => $brand->name);
+    my $req = BOM::Backoffice::Request::Base->new(brand_name => $brand->name);
     BOM::Backoffice::Request::request($req);
 
     BOM::Platform::Event::Emitter::emit(
