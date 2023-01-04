@@ -11,6 +11,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::User::SocialResponsibility;
+use BOM::User::FinancialAssessment qw(is_section_complete);
 
 my $email_cr = 'test-cr-fa' . '@binary.com';
 my $email_mf = 'test-mf-fa' . '@binary.com';
@@ -161,6 +162,69 @@ subtest 'MF is_financial_assessment_complete' => sub {
     lives_ok { $is_financial_assessment_complete = $client_mf_2->is_financial_assessment_complete(1); }
     'is_financial_assessment_complete is needed for withdrawals';
     is $is_financial_assessment_complete, 1, 'TE and FA is completed for high risk for withdrawals';
+};
+
+subtest 'is_section_complete' => sub {
+    my $financial_assessment = {
+        "employment_industry" => "Finance",
+        "education_level"     => "Primary",
+        "income_source"       => "Self-Employed",
+        "net_income"          => '$25,000 - $50,000',
+        "estimated_worth"     => '$100,000 - $250,000',
+        "occupation"          => 'Managers',
+        "employment_status"   => "Self-Employed",
+        "source_of_wealth"    => "Company Ownership",
+        "account_turnover"    => 'Less than $25,000'
+    };
+    my $is_section_complete;
+
+    $is_section_complete = is_section_complete($financial_assessment, 'financial_information');
+
+    is $is_section_complete, 1, 'All FI are present';
+
+    delete $financial_assessment->{employment_industry};
+
+    $is_section_complete = is_section_complete($financial_assessment, 'financial_information');
+
+    is $is_section_complete, 0, 'Missing FI information';
+
+    $is_section_complete = is_section_complete($financial_assessment, 'trading_experience');
+
+    is $is_section_complete, 0, 'Missing TE information';
+
+    my $TE_only = BOM::Test::Helper::FinancialAssessment::mock_maltainvest_set_fa()->{trading_experience_regulated};
+
+    $is_section_complete = is_section_complete($TE_only, 'trading_experience', 'maltainvest');
+
+    is $is_section_complete, 1, 'All TE are present';
+
+    delete $TE_only->{risk_tolerance};
+
+    $is_section_complete = is_section_complete($TE_only, 'trading_experience');
+
+    is $is_section_complete, 0, 'Missing TE information';
+
+    my $fa = {
+        "binary_options_trading_frequency"     => "0-5 transactions in the past 12 months",
+        "forex_trading_experience"             => "0-1 year",
+        "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",
+        "employment_status"                    => "Self-Employed",
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
+        "other_instruments_trading_frequency"  => "0-5 transactions in the past 12 months",
+        "other_instruments_trading_experience" => "0-1 year",
+        "cfd_trading_experience"               => "0-1 year",
+        "binary_options_trading_experience"    => "0-1 year"
+    };
+    $is_section_complete = is_section_complete($fa, 'trading_experience');
+    is $is_section_complete, 1, 'All TE are present';
+
+    $is_section_complete = is_section_complete($fa, 'trading_experience', 'maltainvest');
+    is $is_section_complete, 0, 'old TE present but cfd score was less than zero';
+
+    $fa->{cfd_trading_experience} = '1-2 years';
+    $fa->{cfd_trading_frequency}  = '40 transactions or more in the past 12 months';
+    $is_section_complete          = is_section_complete($fa, 'trading_experience', 'maltainvest');
+    is $is_section_complete, 1, 'old TE present and cfd score was positive';
 };
 
 done_testing();
