@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 12;
 use Test::Warnings;
 use Test::Exception;
 use Test::Deep;
@@ -17,7 +17,7 @@ use BOM::Product::ContractFactory                qw(produce_contract);
 use BOM::Config::Runtime;
 
 initialize_realtime_ticks_db();
-my $now = Date::Utility->new('10-Mar-2015');
+my $now = Date::Utility->new('10-03-2015');
 
 BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
     [68258.19, $now->epoch,       'R_100'],
@@ -42,6 +42,25 @@ my $args = {
     barrier      => '69420',
 };
 
+my $app_config = BOM::Config::Runtime->instance->app_config;
+$app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+my $per_symbol_config = {
+    'vol_markup'              => 0.025,
+    'bs_markup'               => 0,
+    'min_number_of_contracts' => {'USD' => 0},
+    'max_number_of_contracts' => {'USD' => 1000},
+    'delta_config'            => [0.1, 0.3, 0.5, 0.7, 0.9],
+    'max_strike_price_choice' => 10,
+    'risk_profile'            => 'low_risk'
+};
+$per_symbol_config = JSON::MaybeXS::encode_json($per_symbol_config);
+$app_config->set({'quants.vanilla.per_symbol_config.R_100_intraday' => $per_symbol_config});
+
+my $risk_profile_config = {'USD' => 20};
+$risk_profile_config = JSON::MaybeXS::encode_json($risk_profile_config);
+
+$app_config->set({'quants.vanilla.risk_profile.low_risk' => $risk_profile_config});
 subtest 'basic produce_contract' => sub {
 
     my $c = produce_contract($args);
@@ -61,22 +80,22 @@ subtest 'number of contracts' => sub {
     # must be the same
     my $c = produce_contract($args);
     ok $c->pricing_new, 'contract is new';
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.00608', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.0060876192', 'correct number of contracts';
     ok !$c->is_expired, 'not expired';
 
     $args->{date_pricing} = $now->plus_time_interval('2s');
     $c = produce_contract($args);
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.00608', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.0060876192', 'correct number of contracts';
 
     $args->{date_pricing} = $now->plus_time_interval('12h');
     $c = produce_contract($args);
-    cmp_ok sprintf("%.5f", $c->number_of_contracts), '==', '0.00608', 'correct number of contracts';
+    cmp_ok $c->number_of_contracts, '==', '0.0060876192', 'correct number of contracts';
 };
 
 subtest 'shortcode' => sub {
 
     my $c         = produce_contract($args);
-    my $shortcode = 'VANILLALONGPUT_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.00608';
+    my $shortcode = 'VANILLALONGPUT_R_100_10.00_' . $now->epoch . '_' . $now->plus_time_interval('10h')->epoch . '_69420000000_0.0060876192';
 
     my $c_shortcode;
     lives_ok {
@@ -104,7 +123,7 @@ subtest 'longcode' => sub {
                 value => 36000
             },
             '69420.00',
-            '0.00608'
+            '0.0060876192'
         ],
         'longcode matches'
     );
@@ -122,7 +141,7 @@ subtest 'entry and exit tick' => sub {
         cmp_ok $c->barrier->as_absolute,                 'eq', '69420.00', 'correct absolute barrier (it will be pipsized) ';
         cmp_ok $c->entry_tick->quote,                    'eq', '68258.19', 'correct entry tick';
         cmp_ok $c->current_spot,                         'eq', '68258.19', 'correct current spot (it will be pipsized)';
-        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.00860',  'number of contrats are correct';
+        cmp_ok sprintf("%.5f", $c->number_of_contracts), 'eq', '0.00861',  'number of contrats are correct';
 
         $args->{date_pricing} = $now->plus_time_interval('10m');
         $c = produce_contract($args);
@@ -160,7 +179,7 @@ subtest 'entry and exit tick' => sub {
         cmp_ok $c->barrier->as_absolute,                 'eq', '69420.00', 'correct strike';
 
         ok $c->is_expired, 'expired';
-        cmp_ok sprintf("%.2f", $c->value), 'eq', '0.79',     '(exit quote - strike) * number of contracts';
+        cmp_ok sprintf("%.2f", $c->value), 'eq', '0.80',     '(exit quote - strike) * number of contracts';
         cmp_ok $c->exit_tick->quote,       'eq', '69327.58', 'correct exit tick';
     }
     'losing the contract';
@@ -188,6 +207,128 @@ subtest 'pricing an expired option' => sub {
     }
     'losing the contract';
 
+};
+
+subtest 'risk management tools' => sub {
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    $args->{barrier} = 67420;    #69420 is too deep OTM for vol markup to have significant effect
+    lives_ok {
+        my $c                   = produce_contract($args);
+        my $number_of_contracts = $c->number_of_contracts;
+
+        $per_symbol_config               = JSON::MaybeXS::decode_json($per_symbol_config);
+        $per_symbol_config->{vol_markup} = 0.05;
+        $per_symbol_config               = JSON::MaybeXS::encode_json($per_symbol_config);
+        $app_config->set({'quants.vanilla.per_symbol_config.R_100_intraday' => $per_symbol_config});
+
+        $c = produce_contract($args);
+        my $number_of_contracts_with_markup = $c->number_of_contracts;
+
+        ok $number_of_contracts > $number_of_contracts_with_markup, 'contract became more expensive with markup';
+    }
+    'vol markup tool works';
+
+    lives_ok {
+        my $c                   = produce_contract($args);
+        my $number_of_contracts = $c->number_of_contracts;
+
+        $per_symbol_config               = JSON::MaybeXS::decode_json($per_symbol_config);
+        $per_symbol_config->{vol_markup} = 0.025;
+        $per_symbol_config->{bs_markup}  = 0.1;
+        $per_symbol_config               = JSON::MaybeXS::encode_json($per_symbol_config);
+        $app_config->set({'quants.vanilla.per_symbol_config.R_100_intraday' => $per_symbol_config});
+
+        $c = produce_contract($args);
+        my $number_of_contracts_with_markup = $c->number_of_contracts;
+
+        ok $number_of_contracts > $number_of_contracts_with_markup, 'contract became more expensive with markup';
+    }
+    'black scholes markup works';
+
+    lives_ok {
+        $args->{date_start}   = $now;
+        $args->{date_pricing} = $now;
+
+        $per_symbol_config                            = JSON::MaybeXS::decode_json($per_symbol_config);
+        $per_symbol_config->{min_number_of_contracts} = {'USD' => 0};
+        $per_symbol_config->{max_number_of_contracts} = {'USD' => 2};
+        $per_symbol_config                            = JSON::MaybeXS::encode_json($per_symbol_config);
+
+        $app_config->set({'quants.vanilla.per_symbol_config.R_100_intraday' => $per_symbol_config});
+        my $c = produce_contract($args);
+
+        ok !$c->is_valid_to_buy, 'invalid to buy';
+        is $c->primary_validation_error->message,                'maximum stake limit exceeded',   'correct error message';
+        is $c->primary_validation_error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'correct message to client';
+    }
+    'number of contracts validation';
+};
+
+subtest 'strike price choices intraday' => sub {
+    my $c = produce_contract($args);
+
+    my @expected_strike_price_choices = ('+383', '+157', '+1', '-155', '-380');
+
+    cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
+};
+
+subtest 'strike price choices >intraday' => sub {
+    $per_symbol_config                            = JSON::MaybeXS::decode_json($per_symbol_config);
+    $per_symbol_config->{min_number_of_contracts} = {'USD' => 0};
+    $per_symbol_config->{max_number_of_contracts} = {'USD' => 1000};
+    $per_symbol_config->{bs_markup}               = 0;
+    $per_symbol_config                            = JSON::MaybeXS::encode_json($per_symbol_config);
+    $app_config->set({'quants.vanilla.per_symbol_config.R_100_daily' => $per_symbol_config});
+
+    $args->{duration} = '25h';
+    my $c = produce_contract($args);
+
+    my @expected_strike_price_choices =
+        ('64000.00', '65000.00', '66000.00', '67000.00', '68000.00', '69000.00', '70000.00', '71000.00', '72000.00', '73000.00');
+
+    cmp_deeply($c->strike_price_choices, \@expected_strike_price_choices, 'got the right strike price choices');
+};
+
+subtest 'strike price choice validation' => sub {
+    $args->{duration} = '10h';
+    my $c = produce_contract($args);
+
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'InvalidBarrier', 'correct error message';
+    is $c->primary_validation_error->message_to_client->[0], 'Barriers available are +3061, +1260, +39, -1160, -2855',
+        'correct error message to client';
+
+    $args->{duration} = '10h';
+    $args->{barrier}  = '+39';
+    $c                = produce_contract($args);
+
+    ok $c->is_valid_to_buy, 'valid to buy';
+};
+
+subtest 'risk profile max stake per trade validation' => sub {
+    $app_config->set({'quants.vanilla.per_symbol_config.R_100_intraday' => $per_symbol_config});
+
+    my $risk_profile_config = {'USD' => 20};
+    $risk_profile_config = JSON::MaybeXS::encode_json($risk_profile_config);
+
+    $app_config->set({'quants.vanilla.risk_profile.extreme_risk' => $risk_profile_config});
+
+    $args->{stake}    = 200;
+    $args->{duration} = '10h';
+    $args->{barrier}  = '+39';
+    my $c = produce_contract($args);
+
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message,                'maximum stake limit',            'correct error message';
+    is $c->primary_validation_error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'correct error message to client';
+
+    $args->{stake}    = 10;
+    $args->{duration} = '10h';
+    $args->{barrier}  = '+39';
+    $c                = produce_contract($args);
+
+    ok $c->is_valid_to_buy, 'valid to buy now';
 };
 
 done_testing;

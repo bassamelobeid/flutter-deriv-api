@@ -366,7 +366,7 @@ sub may_settle_automatically {
 sub apply_binary_limit {
     my $self = shift;
 
-    my $apply_binary_limit = ($self->category_code eq 'lookback') ? 0 : 1;
+    my $apply_binary_limit = (($self->category_code eq 'lookback') or ($self->category_code eq 'vanilla')) ? 0 : 1;
 
     return $apply_binary_limit;
 }

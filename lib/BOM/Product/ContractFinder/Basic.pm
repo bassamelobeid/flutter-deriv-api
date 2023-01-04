@@ -22,6 +22,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
+use BOM::Product::Contract::Strike::Vanilla;
 
 my $cache = Cache::LRU->new(size => 500);
 
@@ -147,6 +148,20 @@ sub decorate {
         if ($contract_category eq 'callputspread') {
             $o->{barrier_range} = _get_callputspread_barrier_range();
         }
+
+        if ($contract_category eq 'vanilla') {
+            my $barrier_choices = _default_barrier_for_vanilla({
+                    underlying   => $underlying,
+                    duration     => $o->{min_contract_duration},
+                    barrier_kind => 'high',
+                    expiry       => $o->{expiry_type}});
+
+            my $barrier_choices_length = scalar @{$barrier_choices};
+            my $mid_barrier_choices    = $barrier_choices->[floor($barrier_choices_length / 2)];
+
+            $o->{barrier_choices} = $barrier_choices;
+            $o->{barrier}         = $mid_barrier_choices;
+        }
     }
 
     my ($open, $close) = (0, 0);
@@ -163,6 +178,44 @@ sub decorate {
         close        => $close,
         feed_license => $underlying->feed_license
     };
+}
+
+=head2 _default_barrier_for_vanilla
+
+calculates and return default barrier range for vanilla options
+
+=cut
+
+sub _default_barrier_for_vanilla {
+    my $args = shift;
+
+    my ($underlying, $duration, $barrier_kind, $expiry) = @{$args}{'underlying', 'duration', 'barrier_kind', 'expiry'};
+
+    $duration =~ s/t//g;
+    $duration = Time::Duration::Concise->new(interval => $duration)->seconds;
+
+    my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
+    # latest available spot should be sufficient.
+    my $current_tick = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
+    return unless $current_tick;
+
+    # volatility should just be an estimate here, let's take it straight off the surface and
+    # avoid all the craziness.
+    my $tid          = $duration / 86400;
+    my $closest_term = find_closest_numbers_around($tid, $volsurface->original_term_for_smile, 2);
+    my $volatility   = $volsurface->get_surface_volatility($closest_term->[0], $volsurface->atm_spread_point);
+
+    my $tiy = $tid / 365;
+
+    $args = {
+        current_spot => $current_tick->quote,
+        pricing_vol  => $volatility,
+        timeinyears  => $tiy,
+        underlying   => $underlying,
+        is_intraday  => $expiry eq 'intraday' ? 1 : 0
+    };
+
+    return BOM::Product::Contract::Strike::Vanilla::strike_price_choices($args);
 }
 
 sub _default_barrier {

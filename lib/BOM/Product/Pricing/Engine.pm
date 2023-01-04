@@ -111,8 +111,8 @@ sub _build_bs_probability {
         base_amount => $tv,
     });
 
-    # If BS is very high, we don't want that business, even if it makes sense.
-    if ($tv > 0.999) {
+    # If BS is very high for binary options, we don't want that business, even if it makes sense.
+    if (($bet->is_binary) and ($tv > 0.999)) {
         $bs_prob->include_adjustment('add', $self->no_business_probability);
     }
 
