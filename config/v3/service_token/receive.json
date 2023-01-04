@@ -58,6 +58,18 @@
                         }
                     }
                 },
+                "pandats": {
+                    "description": "Deriv EZ data.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "token": {
+                            "description": "Deriv EZ SSO token",
+                            "type": "string",
+                            "sensitive": 1
+                        }
+                    }
+                },
                 "sendbird": {
                     "description": "Sendbird data.",
                     "type": "object",
