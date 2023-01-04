@@ -8,9 +8,9 @@ use Data::Dumper;
 use Error::Base;
 use Path::Tiny;
 use DateTime;
-use Scalar::Util qw(blessed);
-use Time::HiRes  qw(tv_interval gettimeofday time);
-use JSON::MaybeXS;
+use Scalar::Util  qw(blessed);
+use Time::HiRes   qw(tv_interval gettimeofday time);
+use JSON::MaybeXS qw(decode_json);
 use Date::Utility;
 use ExpiryQueue;
 use Syntax::Keyword::Try;
@@ -537,6 +537,25 @@ sub calculate_max_open_bets {
     return $client->get_limit_for_open_positions;
 }
 
+sub get_vanilla_per_symbol_config {
+    my $self = shift;
+
+    my $symbol = $self->contract->underlying->symbol;
+    my $expiry = $self->contract->is_intraday ? 'intraday' : 'daily';
+
+    return decode_json(BOM::Config::Runtime->instance->app_config->get("quants.vanilla.per_symbol_config.$symbol" . "_$expiry"));
+}
+
+sub get_vanilla_user_specific_limit {
+    my $self   = shift;
+    my $client = shift;
+
+    my $user_specific_limit = decode_json(BOM::Config::Runtime->instance->app_config->get("quants.vanilla.user_specific_limits"));
+
+    my $client_binary_user_id = 'binary_user_id::' . $client->binary_user_id;
+    return $user_specific_limit->{clients}->{$client_binary_user_id};
+}
+
 sub calculate_limits {
     my $self   = shift;
     my $client = shift || $self->client;
@@ -589,6 +608,41 @@ sub calculate_limits {
         # volume limits only apply to multiplier contracts.
         if ($self->contract->category_code eq 'multiplier') {
             $limits{volume} = $contract->risk_profile->get_client_volume_limits($client);
+        }
+
+        if ($self->contract->category_code eq 'vanilla') {
+
+            my $vanilla_limits = $self->get_vanilla_per_symbol_config();
+            # we do not want global max open bets limit to affect vanilla
+            delete $limits{max_open_bets};
+
+            $limits{max_open_bets_per_bet_class} = $vanilla_limits->{max_open_position};
+            $limits{max_pnl}                     = {
+                'limit'     => $vanilla_limits->{max_daily_pnl},
+                'bet_class' => 'vanilla',
+                'symbol'    => $self->contract->underlying->symbol
+            };
+
+            my $client_limit = $self->get_vanilla_user_specific_limit($client);
+
+            if ($client_limit) {
+                $limits{max_open_bets_per_bet_class} = $client_limit->{max_open_position};
+                $limits{max_stake_per_trade}         = $client_limit->{max_stake_per_trade};
+                $limits{max_pnl}                     = {
+                    'limit'     => $client_limit->{max_daily_pnl},
+                    'bet_class' => 'vanilla'
+                };
+
+                # override vanilla per symbol config if we have client specific limit
+                $vanilla_limits->{max_daily_volume} = $client_limit->{max_daily_volume};
+            }
+
+            push @{$limits{specific_turnover_limits}},
+                {
+                'name'     => 'vanilla_specific_turnover_limit',
+                'bet_type' => ['VANILLALONGCALL', 'VANILLALONGPUT'],
+                'symbols'  => [$self->contract->underlying->symbol],
+                'limit'    => $vanilla_limits->{max_daily_volume}};
         }
     }
 
@@ -2041,6 +2095,19 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             'You will exceed the maximum exposure limit for this market if you purchase this contract. Please close some of your positions and try again.',
         ),
     ),
+    BI026 => Error::Base->cuss(
+        -quiet             => 1,
+        -type              => 'OpenPositionLimitExceeded',
+        -mesg              => 'Open positions limit exceeded',
+        -message_to_client => BOM::Platform::Context::localize('You have too many open positions for this contract type.'),
+    ),
+    BI027 => Error::Base->cuss(
+        -quiet             => 1,
+        -type              => 'ClientContractProfitLimitExceeded',
+        -mesg              => 'Client contract profit limit exceeded',
+        -message_to_client => BOM::Platform::Context::localize('Maximum daily profit limit exceeded for this contract.'),
+    ),
+
 );
 
 sub _recover {

@@ -159,7 +159,6 @@ sub validate_trx_buy {
 
     $client //= $self->transaction->client;
     my @transaction_checks = $client->landing_company->transaction_checks->@*;
-    my $contract           = $self->transaction->contract;
 
     my @extra_validation_methods = qw/
         _validate_offerings_buy
@@ -171,7 +170,7 @@ sub validate_trx_buy {
 
     push @extra_validation_methods, qw(
         _validate_payout_limit
-        _validate_stake_limit) if $contract->is_binary;
+        _validate_stake_limit);
 
     # We should check pricing time just before DB query. So check this last!
     push @extra_validation_methods, '_validate_date_pricing';
@@ -596,25 +595,41 @@ sub _validate_stake_limit {
     my $self     = shift;
     my $client   = shift;
     my $contract = $self->transaction->contract;
+    my $currency = $contract->currency;
 
-    my $landing_company = $client->landing_company;
-    my $currency        = $contract->currency;
-    my $stake_limit     = $contract->staking_limits->{min};    # minimum is always a stake check
+    if ($contract->is_binary) {
+        my $landing_company = $client->landing_company;
+        my $stake_limit     = $contract->staking_limits->{min};    # minimum is always a stake check
 
-    if ($contract->ask_price < $stake_limit) {
-        return Error::Base->cuss(
-            -quiet => 1,
-            -type  => 'StakeTooLow',
-            -mesg  => $client->loginid . ' stake [' . $contract->ask_price . '] is lower than minimum allowable stake [' . $stake_limit . ']',
-            -message_to_client => localize(
-                "This contract's price is [_2] [_1]. Contracts purchased from [_3] must have a purchase price above [_4] [_1]. Please accordingly increase the contract amount to meet this minimum stake.",
-                $currency,
-                financialrounding('price', $currency, $contract->ask_price),
-                $landing_company->name,
-                financialrounding('amount', $currency, $stake_limit)
-            ),
-        );
+        if ($contract->ask_price < $stake_limit) {
+            return Error::Base->cuss(
+                -quiet => 1,
+                -type  => 'StakeTooLow',
+                -mesg  => $client->loginid . ' stake [' . $contract->ask_price . '] is lower than minimum allowable stake [' . $stake_limit . ']',
+                -message_to_client => localize(
+                    "This contract's price is [_2] [_1]. Contracts purchased from [_3] must have a purchase price above [_4] [_1]. Please accordingly increase the contract amount to meet this minimum stake.",
+                    $currency,
+                    financialrounding('price', $currency, $contract->ask_price),
+                    $landing_company->name,
+                    financialrounding('amount', $currency, $stake_limit)
+                ),
+            );
+        }
+    } else {
+        my $max_stake_per_trade = $self->transaction->limits->{max_stake_per_trade} // undef;
+
+        return undef unless defined($max_stake_per_trade);
+
+        if ($contract->ask_price > $max_stake_per_trade) {
+            return Error::Base->cuss(
+                -type              => 'StakeLimitExceeded',
+                -mesg              => 'Stake Limit Exceeded',
+                -message_to_client => localize("Maximum stake allowed is [_1].", financialrounding('amount', $currency, $max_stake_per_trade)),
+            );
+        }
+
     }
+
     return undef;
 }
 
@@ -655,6 +670,7 @@ sub _validate_payout_limit {
     my ($self, $client) = (shift, shift);
 
     my $contract = $self->transaction->contract;
+    return undef unless $contract->is_binary;
 
     my $rp    = $contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
