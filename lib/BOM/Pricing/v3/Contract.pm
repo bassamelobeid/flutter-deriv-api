@@ -865,12 +865,6 @@ sub _build_bid_response {
             $response->{status} = 'open';
         }
     }
-    if ($contract->category_code eq 'vanilla') {
-        $response->{min_stake}           = $contract->min_stake;
-        $response->{max_stake}           = $contract->max_stake;
-        $response->{number_of_contracts} = $contract->number_of_contracts;
-        $response->{barrier_choices}     = $contract->strike_price_choices;
-    }
 
     if (    $contract->exit_tick
         and $contract->is_valid_exit_tick
