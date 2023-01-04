@@ -961,14 +961,6 @@ async_rpc "mt5_new_account",
                 }
             }
 
-            my @mt5_logins      = $client->user->get_mt5_loginids;
-            my $loginid_details = $client->user->loginid_details;
-            foreach my $loginid_mt5 (@mt5_logins) {
-                my $loginid_data = $loginid_details->{$loginid_mt5};
-                next unless $loginid_data->{attributes}->{group};
-                $existing_groups{$loginid_data->{attributes}->{group}} = $loginid_data->{loginid};
-            }
-
             # Can't create account on the same group. We have subgroups which are identical
             # - real\p01_ts01\synthetic\svg_std_usd\01
             # - real\p01_ts01\synthetic\svg_std_usd\02
