@@ -310,8 +310,9 @@ if ($summary_table or %client_to_be_processed) {
     my $brand = Brands->new(name => 'binary');
     $log->infof('Sending email');
     send_email({
-        'from'     => $brand->emails('support'),
-        'to'       => 'tom@binary.com,jennice@binary.com,x-affiliates@binary.com,poornima@binary.com,' . $brand->emails('accounting'),
+        'from' => $brand->emails('support'),
+        'to'   =>
+            'derek@deriv.com,poornima@deriv.com,ahmad@deriv.com,amanda@deriv.com,raunak@deriv.com,tom@deriv.com,nursyamilah@deriv.com,manjula@deriv.com',
         'subject'  => 'Batch debit/credit ' . $broker . ' client accounts on ' . Date::Utility->new->date_ddmmmyy,
         'message'  => \@clients_has_been_processed,
         attachment => ["$html"],
