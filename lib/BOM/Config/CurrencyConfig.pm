@@ -159,7 +159,7 @@ our %ALL_CURRENCIES = do {
         TOP => 'Tongan Paʻanga',
         UAH => 'Ukrainian Hryvnia',
         VEB => 'Venezuelan Bolívar',
-        VEF => 'Venezuelan Fuente',
+        VEF => 'Venezuelan Bolívar Fuente',
         UYU => 'Uruguayan Peso',
         VES => 'Venezuelan Bolívar Soberano',
         VND => 'Vietnamese Đồng',
@@ -175,7 +175,7 @@ our %ALL_CURRENCIES = do {
         'GHC',    # Ghanaian Cedi
         'MZM',    # Mozambique Metical
         'VEB',    # Venezuelan Bolívar
-        'VEF',    # Venezuelan Fuente
+        'VEF',    # Venezuelan Bolívar Fuente
         'ZMK',    # Zambian Kwacha
         'ZWD',    # Zimbabwe Dollar
     );
