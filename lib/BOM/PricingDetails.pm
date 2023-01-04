@@ -657,6 +657,26 @@ sub _debug_price {
 
     my ($contract, $type) = @{$args};
     my $price_per_unit;
+
+    if ($contract->category->code eq 'vanilla') {
+
+        my $table = '<ul>';
+
+        $table .=
+              '<li><a>'
+            . 'number of contracts' . ' '
+            . $contract->number_of_contracts
+            . '</a></li><li><a>'
+            . $type . ' '
+            . $contract->$type . '</a>'
+            . '</a></li><li><a>'
+            . 'theo price' . ' '
+            . $contract->theo_price * $contract->number_of_contracts;
+
+        $table .= '</li></ul>';
+
+        return $table;
+    }
     if ($contract->is_binary) {
         if ($type eq 'ask_price') {
             $price_per_unit = $contract->_ask_price_per_unit;

@@ -149,10 +149,11 @@ sub get_graph_data_for_others {
     my $when       = $start;
 
     my $value;
+    my %build_parameters = %{$bet->build_parameters};
 
     while ($graph_more) {
-        $bet = make_similar_contract($bet, {priced_at => $when});
-
+        $build_parameters{date_pricing} = $when;
+        $bet = produce_contract(\%build_parameters);
         if (not $bet->current_spot) {
             $graph_more = 0;
         } else {
@@ -173,7 +174,6 @@ sub get_graph_data_for_others {
                     $amount = $expired ? 0 : $bet->_pricing_args->{$attr};
                     $log->warn("$attr is not defined in \$bet->_pricing_args") unless defined $amount;
                 } else {
-                    next if not $bet->is_binary;
                     $amount = ($expired) ? $value : $bet->$attr->amount;
                 }
                 push @{$prices{$attr}}, 0 + financialrounding('amount', $bet->currency, (abs $amount > 3) ? $amount : $amount * 100);

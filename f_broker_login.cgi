@@ -395,6 +395,13 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
             </div>
+            <div class="card__content">
+                <h3>Vanilla risk management tool</h3>
+                <form action="~ . request()->url_for('backoffice/quant/vanilla_risk_management.cgi') . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+
         </div>
     </div>~;
 }
