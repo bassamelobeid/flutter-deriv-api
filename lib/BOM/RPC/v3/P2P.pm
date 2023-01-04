@@ -428,6 +428,19 @@ p2p_rpc p2p_advertiser_adverts => readonly => 1 => sub {
     return {list => $client->p2p_advertiser_adverts($args{params}{args}->%*)};
 };
 
+=head2 p2p_advertiser_list
+
+Retuns list of advertisers has/had order or relationship with requester advertiser.
+
+=cut
+
+p2p_rpc p2p_advertiser_list => readonly => 1 => sub {
+    my (%args) = @_;
+
+    my $client = $args{client};
+    return {list => $client->p2p_advertiser_list($args{params}{args}->%*)};
+};
+
 =head2 p2p_payment_methods
 
 Payment Methods.
