@@ -109,8 +109,8 @@ sub generate_token {
     return $self->http_client->GET(
         $self->create_login_url(
             email  => $email,
-            login  => $login,                      # MT username - hardcoded for testing purposes (only available user)
-            source => $self->config->{$server},    # server
+            login  => $login,                                # MT username - hardcoded for testing purposes (only available user)
+            source => $self->config->{source}->{$server},    # server
         ),
         user => $self->config->{username},
         pass => $self->config->{password}
