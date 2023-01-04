@@ -660,7 +660,7 @@ sub error_map {
         PaymentAgentStatusNotEligible       => localize('You are not eligible to apply to be a payment agent.'),
         PaymentAgentClientStatusNotEligible => localize('You cannot apply to be a payment agent due to your account status.'),
         PaymentAgentInsufficientDeposit     => localize(
-            'Your account does not meet the deposit requirement of [_1] [_2]. Note that depposits from credit cards and certain ewallets do not count towards the deposit requirement.'
+            'Your account does not meet the deposit requirement of [_1] [_2]. Note that deposits from credit cards and certain e-wallets do not count towards the deposit requirement.'
         ),
 
         # Paymentagent transfer
