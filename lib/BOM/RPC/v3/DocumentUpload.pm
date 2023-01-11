@@ -154,6 +154,12 @@ sub successful_upload {
             issuing_country => $issuing_country,
         });
 
+    BOM::Platform::Event::Emitter::emit(
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+        });
+
     return $args;
 }
 

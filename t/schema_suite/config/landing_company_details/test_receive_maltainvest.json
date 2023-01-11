@@ -156,13 +156,29 @@
          "type" : "object",
          "additionalProperties" : false,
          "required" : [
-            "signup"
+            "signup",
+            "compliance"
          ],
          "properties" : {
             "signup" : {
                "type" : "array",
                "items" : {
                   "type" : "string"
+               }
+            },
+            "compliance" : {
+               "type" : "object",
+               "additionalProperties" : false,
+               "required" : [
+                  "mt5"
+               ],
+               "properties": {
+                  "mt5" : {
+                     "type" : "array",
+                     "items": {
+                        "type" : "string"
+                     }
+                  }
                }
             }
          }

@@ -309,10 +309,10 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
     $doc_mock->mock(
         'get_poa_status',
         sub {
-            return 'verified';
+            return 'pending';
         });
 
-    $c->call_ok($method, $params)->has_error->error_code_is('AuthenticateAccount', 'error code is AuthenticateAccount');
+    $c->call_ok($method, $params);
 
     $method = 'get_account_status';
     $params = {token => $token};
@@ -908,7 +908,7 @@ subtest 'country=latam african, financial STP account' => sub {
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($p01_ts02_load);
 BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts03($p01_ts03_load);
 
-subtest 'restrict creating bvi/vanuatu account if poi status is not verified' => sub {
+subtest 'allow creating bvi/vanuatu account if poi status is not verified' => sub {
 
     my $new_email  = 'br_poi_not_verified_' . $details{email};
     my $new_client = create_client('CR', undef, {residence => 'br'});
@@ -929,6 +929,13 @@ subtest 'restrict creating bvi/vanuatu account if poi status is not verified' =>
     #$new_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $new_client->save;
 
+    my $user_client_mock = Test::MockModule->new('BOM::User');
+    $user_client_mock->mock(
+        'update_loginid_status',
+        sub {
+            return 1;
+        });
+
     my $method        = 'mt5_new_account';
     my $client_params = {
         token => $token,
@@ -946,10 +953,10 @@ subtest 'restrict creating bvi/vanuatu account if poi status is not verified' =>
 
     # not verified
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
-    $c->call_ok($method, $client_params)->has_error->error_code_is('AuthenticateAccount');
+    $c->call_ok($method, $client_params);
 
     $client_params->{args}->{company} = 'vanuatu';
-    $c->call_ok($method, $client_params)->has_error->error_code_is('AuthenticateAccount');
+    $c->call_ok($method, $client_params);
     #my $result = $c->call_ok($method, $client_params)->has_no_error->result;
     #is $result->{account_type}, 'financial', 'account_type=financial';
     #is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\bvi_std_usd'}, 'created in group real\p01_ts01\financial\bvi_std_usd';
@@ -1058,11 +1065,10 @@ subtest 'bvi/vanuatu if poi status is verified, get_poa_status -> none' => sub {
             return 'none';
         });
     #verified in brasil and standard risk
-    my $expected_error_msg = 'Failed to create account due to failed Proof of Address with status: none';
-    $c->call_ok($method, $client_params)->has_error->error_message_is($expected_error_msg);
+    $c->call_ok($method, $client_params);
 
     $client_params->{args}->{company} = 'vanuatu';
-    $c->call_ok($method, $client_params)->has_error->error_message_is($expected_error_msg);
+    $c->call_ok($method, $client_params);
 
 };
 

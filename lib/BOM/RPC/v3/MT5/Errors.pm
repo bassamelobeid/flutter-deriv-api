@@ -87,6 +87,7 @@ my %category_message_mapping = do {
         InvalidLoginid               => localize("We can't find this login ID in our database. Please check the details and try again."),
         NoManagerAccountWithdraw     => localize('Withdrawals from MT5 manager accounts is not possible. Please choose another payment method.'),
         AuthenticateAccount          => localize("Please authenticate your [_1] account to proceed with the fund transfer."),
+        AuthenticateAccountCreate    => localize("Please verify your [_1] account to proceed with account creation."),
         MT5TransfersLocked           => localize('It looks like your account is locked for MT5 transfers. Please contact us for more information.'),
         SwitchAccount                => localize('This account does not allow MT5 trading. Please log in to the correct account.'),
         AccountDisabled              => localize("We've disabled your MT5 account. Please contact us for more information."),
@@ -114,6 +115,7 @@ my %category_message_mapping = do {
         ),
         NewAccountPOAFailed   => localize('Failed to create account due to failed Proof of Address with status: [_1]'),
         POAVerificationFailed => localize('Proof of Address verification failed. Withdrawal operation suspended.'),
+        ProofRequirementError => localize('Proof of Identity or Address requirements not met. Operation rejected.'),
     );
 };
 

@@ -154,6 +154,12 @@ $mocked_mt5->mock(
     },
 );
 
+my $mocked_user = Test::MockModule->new('BOM::User');
+$mocked_user->mock(
+    'update_loginid_status' => sub {
+        return 1;
+    });
+
 my $mock_auth_docs = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 my $documents_expired;
 
@@ -396,8 +402,6 @@ subtest 'CR account types - low risk' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial_stp'
         },
-        'AuthenticateAccount',
-        'authentication is required for financial_stp mt5 accounts'
     );
     authenticate($client);
 

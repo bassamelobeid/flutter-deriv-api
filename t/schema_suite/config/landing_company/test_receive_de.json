@@ -73,7 +73,13 @@
                   "address_line_1",
                   "address_city",
                   "account_opening_reason"
-               ]
+               ],
+               "compliance": {
+                  "mt5": [
+                     "fully_authenticated",
+                     "expiration_check"
+                  ]
+               }
             },
             "legal_allowed_contract_categories": [
                "multiplier"
@@ -169,15 +175,29 @@
          ],
          "properties": {
             "requirements": {
-               "patternProperties": {
-                  "^.+$": {
-                     "type": "array",
-                     "items": {
-                        "type": "string"
+               "properties": {
+                  "signup" : {
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string"
+                     }
+                  },
+                  "compliance" : {
+                     "type" : "object",
+                     "additionalProperties" : false,
+                     "required" : [
+                        "mt5"
+                     ],
+                     "properties": {
+                        "mt5" : {
+                           "type" : "array",
+                           "items": {
+                              "type" : "string"
+                           }
+                        }
                      }
                   }
                },
-               "properties": {},
                "additionalProperties": false,
                "type": "object"
             },

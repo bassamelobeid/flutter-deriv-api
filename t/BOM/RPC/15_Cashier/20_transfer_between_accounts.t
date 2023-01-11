@@ -1860,17 +1860,15 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_like(
-        qr/Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier./,
-        'Error message returned from inner MT5 sub when regulated account has expired documents');
+        ->error_message_like(qr/Proof of Identity or Address requirements not met. Operation rejected./,
+        'Error message returned from inner MT5 sub when regulated account has expired documents (labuan case)');
 
     $expired_documents = 0;
 
     $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
-        qr/Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier./,
-        'Error message returned from inner MT5 sub when regulated binary has no expired documents but does not have valid documents'
-        );
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_like(qr/Proof of Identity or Address requirements not met. Operation rejected./,
+        'Error message returned from inner MT5 sub when regulated binary has no expired documents but does not have valid documents (labuan case)');
 
     $has_valid_documents = 1;
     $mock_client->mock(fully_authenticated => sub { return 1 });
@@ -1881,6 +1879,9 @@ subtest 'MT5' => sub {
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
+
+    $mock_client->mock(get_poi_status_jurisdiction => sub { return 'verified' });
+    $mock_client->mock(get_poa_status              => sub { return 'verified' });
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
     $params->{args}{account_to}   = $test_client->loginid;

@@ -1248,7 +1248,8 @@ rpc transfer_between_accounts => sub {
                     currency     => $mt5_acc->{currency},
                     demo_account => ($mt5_acc->{account_type} eq 'demo') ? 1 : 0,
                     status       => $mt5_acc->{status},
-                    };
+                    }
+                    unless any { ($mt5_acc->{status} // '') eq $_ } qw/proof_failed verification_pending/;
             }
         }
 

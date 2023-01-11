@@ -827,7 +827,8 @@ async_rpc "mt5_new_account",
             and not $client->status->crs_tin_information);
     }
 
-    my $poa_status;
+    my $mt5_create_with_status = '';
+
     my %mt5_compliance_requirements = map { ($_ => 1) } $compliance_requirements->{mt5}->@*;
     if ($account_type ne 'demo' && $mt5_compliance_requirements{fully_authenticated}) {
         if ($client->fully_authenticated) {
@@ -836,29 +837,22 @@ async_rpc "mt5_new_account",
                 return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
             }
         } else {
-            if (any { $landing_company_short eq $_ } qw/bvi vanuatu/) {
-                return create_error_future('AuthenticateAccount', {params => $client->loginid})
-                    unless $client->get_poi_status_jurisdiction($landing_company_short) eq 'verified';
+            if (any { $landing_company_short eq $_ } qw/bvi vanuatu labuan maltainvest/) {
+                my $rule_engine = BOM::Rules::Engine->new(client => $client);
+                try {
+                    $rule_engine->verify_action(
+                        'mt5_jurisdiction_validation',
+                        loginid              => $client->loginid,
+                        new_mt5_jurisdiction => $landing_company_short,
+                        loginid_details      => $user->loginid_details,
+                    );
+                } catch ($error) {
+                    my $failed_mt5_status = $error->{params}->{mt5_status};
 
-                $poa_status = $client->get_poa_status();
-                return create_error_future(
-                    'NewAccountPOAFailed',
-                    {
-                        override_code => $error_code,
-                        params        => $poa_status
-                    }) unless any { $poa_status eq $_ } qw/expired rejected pending verified/;
-
-                unless ($poa_status eq 'verified') {
-                    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-                    try {
-                        $rule_engine->verify_action(
-                            'mt5_jurisdiction_validation',
-                            loginid              => $client->loginid,
-                            new_mt5_jurisdiction => $landing_company_short,
-                            loginid_details      => $user->loginid_details,
-                        );
-                    } catch ($error) {
-                        return create_error_future('AuthenticateAccount', {params => $client->loginid});
+                    if (defined $failed_mt5_status) {
+                        $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+                        return create_error_future('AuthenticateAccountCreate', {params => $client->loginid}) if $failed_mt5_status eq 'poa_failed';
+                        $mt5_create_with_status = $failed_mt5_status;
                     }
                 }
             } else {
@@ -1024,15 +1018,7 @@ async_rpc "mt5_new_account",
                     };
 
                     $user->add_loginid($mt5_login, 'mt5', $acc_type, $mt5_currency, $mt5_attributes);
-                    if (defined $poa_status) {
-                        unless ($poa_status eq 'verified') {
-                            if ($poa_status eq 'pending') {
-                                $user->update_loginid_status($mt5_login, 'poa_pending');
-                            } else {
-                                $user->update_loginid_status($mt5_login, 'poa_rejected');
-                            }
-                        }
-                    }
+                    $user->update_loginid_status($mt5_login, $mt5_create_with_status) if $mt5_create_with_status;
 
                     BOM::Platform::Event::Emitter::emit(
                         'new_mt5_signup',
@@ -1903,14 +1889,19 @@ async_rpc "mt5_withdrawal",
             loginid_details => $client->user->loginid_details,
         );
     } catch ($error) {
-        BOM::Platform::Event::Emitter::emit(
-            'mt5_change_color',
-            {
-                loginid => $fm_mt5,
-                color   => 255,
-            }) if $error->{params}->{failed_by_expiry};
+        my $failed_mt5_status = $error->{params}->{mt5_status};
+        if (defined $failed_mt5_status) {
+            BOM::Platform::Event::Emitter::emit(
+                'mt5_change_color',
+                {
+                    loginid => $fm_mt5,
+                    color   => 255,
+                }) if $failed_mt5_status eq 'poa_failed';
 
-        return create_error_future($error->{error_code});
+            return create_error_future($error->{error_code}) unless $failed_mt5_status eq 'poa_pending';
+        } else {
+            return create_error_future($error->{error_code});
+        }
     }
 
     return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, $currency_check)->then(

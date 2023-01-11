@@ -574,6 +574,10 @@ subtest 'labuan withdrawal' => sub {
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    $mocked_client->mock(get_poi_status_jurisdiction => sub { return 'verified' });
+    $mocked_client->mock(get_poa_status              => sub { return 'verified' });
+
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry->by_name('labuan'); });
 
