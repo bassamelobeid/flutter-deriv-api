@@ -369,7 +369,8 @@ subtest 'max profit limit exceeded validation', sub {
         $mock_transaction->mock(
             get_vanilla_per_symbol_config => sub {
                 my %config = (
-                    'max_daily_pnl' => -200,
+                    'max_daily_volume' => 99999,
+                    'max_daily_pnl'    => -200,
                 );
                 return \%config;
             });
@@ -430,6 +431,7 @@ subtest 'max daily volume validation', sub {
             get_vanilla_per_symbol_config => sub {
                 my %config = (
                     'max_daily_volume' => 0,
+                    'max_daily_pnl'    => 99999,
                 );
                 return \%config;
             });
@@ -488,7 +490,11 @@ subtest 'max open position validation', sub {
 
         $mock_transaction->mock(
             get_vanilla_per_symbol_config => sub {
-                my %config = ('max_open_position' => 0);
+                my %config = (
+                    'max_open_position' => 0,
+                    'max_daily_volume'  => 99999,
+                    'max_daily_pnl'     => 99999
+                );
                 return \%config;
             });
 
@@ -547,11 +553,19 @@ subtest 'user specific limit validation', sub {
         # we expect user specific limit to override per symbol limits!
         $mock_transaction->mock(
             get_vanilla_per_symbol_config => sub {
-                my %config = ('max_open_position' => 10);
+                my %config = (
+                    'max_open_position' => 10,
+                    'max_daily_volume'  => 99999,
+                    'max_daily_pnl'     => 99999
+                );
                 return \%config;
             },
             get_vanilla_user_specific_limit => sub {
-                my %config = ('max_open_position' => 0);
+                my %config = (
+                    'max_open_position' => 0,
+                    'max_daily_volume'  => 99999,
+                    'max_daily_pnl'     => 99999
+                );
                 return \%config;
             });
 

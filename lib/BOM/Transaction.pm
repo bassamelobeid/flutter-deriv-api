@@ -19,6 +19,7 @@ use Log::Any                   qw($log);
 
 use Brands;
 use BOM::User::Client;
+use ExchangeRates::CurrencyConverter qw(convert_currency);
 use Finance::Underlying::Market::Types;
 use Finance::Contract::Category;
 use Format::Util::Numbers               qw/formatnumber financialrounding/;
@@ -613,12 +614,13 @@ sub calculate_limits {
         if ($self->contract->category_code eq 'vanilla') {
 
             my $vanilla_limits = $self->get_vanilla_per_symbol_config();
+            my $currency       = $self->contract->currency;
             # we do not want global max open bets limit to affect vanilla
             delete $limits{max_open_bets};
 
             $limits{max_open_bets_per_bet_class} = $vanilla_limits->{max_open_position};
             $limits{max_pnl}                     = {
-                'limit'     => $vanilla_limits->{max_daily_pnl},
+                'limit'     => convert_currency($vanilla_limits->{max_daily_pnl}, 'USD', $currency),
                 'bet_class' => 'vanilla',
                 'symbol'    => $self->contract->underlying->symbol
             };
@@ -629,12 +631,12 @@ sub calculate_limits {
                 $limits{max_open_bets_per_bet_class} = $client_limit->{max_open_position};
                 $limits{max_stake_per_trade}         = $client_limit->{max_stake_per_trade};
                 $limits{max_pnl}                     = {
-                    'limit'     => $client_limit->{max_daily_pnl},
+                    'limit'     => convert_currency($client_limit->{max_daily_pnl}, 'USD', $currency),
                     'bet_class' => 'vanilla'
                 };
 
                 # override vanilla per symbol config if we have client specific limit
-                $vanilla_limits->{max_daily_volume} = $client_limit->{max_daily_volume};
+                $vanilla_limits->{max_daily_volume} = convert_currency($client_limit->{max_daily_volume}, 'USD', $currency);
             }
 
             push @{$limits{specific_turnover_limits}},
@@ -642,7 +644,7 @@ sub calculate_limits {
                 'name'     => 'vanilla_specific_turnover_limit',
                 'bet_type' => ['VANILLALONGCALL', 'VANILLALONGPUT'],
                 'symbols'  => [$self->contract->underlying->symbol],
-                'limit'    => $vanilla_limits->{max_daily_volume}};
+                'limit'    => convert_currency($vanilla_limits->{max_daily_volume}, 'USD', $currency)};
         }
     }
 
