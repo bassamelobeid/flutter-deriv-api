@@ -34,6 +34,7 @@ use BOM::Event::Services::Track;
 use BOM::Event::Utility    qw( exception_logged );
 use BOM::Platform::Context qw( localize request );
 use BOM::Platform::Utility;
+use BOM::Platform::Event::Emitter;
 use BOM::User::IdentityVerification;
 use BOM::User::Client;
 use BOM::Platform::S3Client;
@@ -136,6 +137,12 @@ async sub verify_identity {
                     provider     => $provider,
                     request_body => $request_body
                 });
+
+                BOM::Platform::Event::Emitter::emit(
+                    'sync_mt5_accounts_status',
+                    {
+                        binary_user_id => $client->binary_user_id,
+                    });
             }) // undef;
 
         DataDog::DogStatsd::Helper::stats_timing(
@@ -157,6 +164,12 @@ async sub verify_identity {
             response_hash => $response_hash,
             message       => $message,
         });
+
+        BOM::Platform::Event::Emitter::emit(
+            'sync_mt5_accounts_status',
+            {
+                binary_user_id => $client->binary_user_id,
+            });
     } catch ($e) {
         $log->errorf('An error occurred while triggering IDV for document %s associated by client %s via provider %s due to %s',
             $document->{id}, $loginid, $provider, $e);

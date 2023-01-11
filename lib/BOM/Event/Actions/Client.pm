@@ -633,6 +633,13 @@ async sub ready_for_authentication {
         } else {
             DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.failure', {tags => $tags});
         }
+
+        BOM::Platform::Event::Emitter::emit(
+            'sync_mt5_accounts_status',
+            {
+                binary_user_id => $client->binary_user_id,
+            });
+
     } catch ($e) {
         DataDog::DogStatsd::Helper::stats_inc('event.onfido.ready_for_authentication.failure', {tags => $tags});
         $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
@@ -874,6 +881,13 @@ async sub client_verification {
                 await $redis_events_write->del(APPLICANT_ONFIDO_TIMING . $client->binary_user_id);
 
             }
+
+            BOM::Platform::Event::Emitter::emit(
+                'sync_mt5_accounts_status',
+                {
+                    binary_user_id => $client->binary_user_id,
+                });
+
         } catch ($e) {
             DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
             $log->errorf('Failed to do verification callback - %s', $e);

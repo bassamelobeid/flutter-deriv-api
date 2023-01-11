@@ -52,6 +52,8 @@ use constant DAYS_TO_EXPIRE            => 14;
 use constant SECONDS_IN_DAY            => 86400;
 use constant USER_RIGHT_ENABLED        => 0x0000000000000001;
 use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
+use constant COLOR_RED                 => 255;
+use constant COLOR_NONE                => -1;
 
 =head2 sync_info
 
@@ -1432,6 +1434,101 @@ sub update_loginid_status {
     } catch ($e) {
         $log->errorf("update_loginid_status [%s]: Unable to set loginid.status due to error: %s", Time::Moment->now, $e);
     }
+}
+
+=head2 sync_mt5_accounts_status
+
+Update the loginid.status of mt5 accounts in users DB based on POI and POA.
+
+=over 4
+
+=item * C<binary_user_id> - user's binary user id
+
+=back
+
+=cut
+
+async sub sync_mt5_accounts_status {
+    my $args           = shift;
+    my $binary_user_id = $args->{binary_user_id} // undef;
+    my $user           = BOM::User->new((id => $binary_user_id));
+    my $default_client = $user ? $user->get_default_client : undef;
+
+    die 'Must provide binary_user_id' unless $args->{binary_user_id};
+    die 'User not found'              unless $user;
+    die 'Default client not found'    unless $default_client;
+
+    my $loginid_details = $user->loginid_details;
+
+    my %jurisdiction_mt5_accounts;
+    foreach my $loginid (keys %{$loginid_details}) {
+        my $loginid_data = $loginid_details->{$loginid};
+        next unless ($loginid_data->{platform} // '') eq 'mt5' and $loginid_data->{account_type} eq 'real';
+        my $mt5_jurisdiction;
+        if (defined $loginid_data->{attributes}->{group}) {
+            ($mt5_jurisdiction) = $loginid_data->{attributes}->{group} =~ m/(bvi|vanuatu|labuan|maltainvest)/g;
+        }
+
+        next if not defined $mt5_jurisdiction;
+        next if not defined $loginid_data->{status};
+        next unless any { $loginid_data->{status} eq $_ } ('poa_pending', 'poa_failed', 'poa_rejected', 'proof_failed', 'verification_pending');
+
+        push $jurisdiction_mt5_accounts{$mt5_jurisdiction}->@*, $loginid;
+    }
+
+    my %color_update_result;
+    my %jurisdiction_update_result;
+    foreach my $jurisdiction (keys %jurisdiction_mt5_accounts) {
+        my $proof_failed_with_status;
+        my $rule_failed = 0;
+        my $rule_engine = BOM::Rules::Engine->new(client => $default_client);
+        try {
+            $rule_engine->verify_action(
+                'mt5_jurisdiction_validation',
+                loginid              => $default_client->loginid,
+                new_mt5_jurisdiction => $jurisdiction,
+                loginid_details      => $loginid_details,
+            );
+        } catch ($error) {
+            $proof_failed_with_status = $error->{params}->{mt5_status} if $error->{params}->{mt5_status};
+            $rule_failed              = 1;
+        }
+
+        if ($rule_failed and not defined $proof_failed_with_status) {
+            $log->warn('Unexpected behavior. MT5 accounts sync rule failed without mt5 status');
+            next;
+        }
+
+        my $mt5_ids = $jurisdiction_mt5_accounts{$jurisdiction};
+
+        $jurisdiction_update_result{$jurisdiction} = $proof_failed_with_status;
+        foreach my $mt5_id (@$mt5_ids) {
+            my $current_status = $loginid_details->{$mt5_id}->{status} // '';
+            $user->update_loginid_status($mt5_id, $proof_failed_with_status // undef);
+
+            my $color_code;
+            $color_code = COLOR_RED  if ($proof_failed_with_status // '') eq 'poa_failed';
+            $color_code = COLOR_NONE if $current_status eq 'poa_failed' and not defined $proof_failed_with_status;
+
+            if (defined $color_code) {
+                BOM::Platform::Event::Emitter::emit(
+                    'mt5_change_color',
+                    {
+                        loginid => $mt5_id,
+                        color   => $color_code,
+                    });
+
+                $color_update_result{$jurisdiction} = $color_code;
+            }
+
+        }
+    }
+
+    return Future->done({
+        processed_mt5  => \%jurisdiction_mt5_accounts,
+        updated_status => \%jurisdiction_update_result,
+        updated_color  => \%color_update_result
+    });
 }
 
 =head2 mt5_archive_restore_sync

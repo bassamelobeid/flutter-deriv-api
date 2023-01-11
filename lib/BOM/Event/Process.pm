@@ -107,6 +107,7 @@ my $action_mapping = {
         update_loginid_status                       => \&BOM::Event::Actions::MT5::update_loginid_status,
         bulk_affiliate_loginids_sync                => \&BOM::Event::Actions::MyAffiliate::bulk_affiliate_loginids_sync,
         p2p_update_local_currencies                 => \&BOM::Event::Actions::P2P::update_local_currencies,
+        sync_mt5_accounts_status                    => \&BOM::Event::Actions::MT5::sync_mt5_accounts_status,
         mt5_archive_restore_sync                    => \&BOM::Event::Actions::MT5::mt5_archive_restore_sync,
     },
     track => {

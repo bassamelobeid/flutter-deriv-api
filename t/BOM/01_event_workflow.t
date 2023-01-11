@@ -133,7 +133,7 @@ subtest 'process - generic jobs' => sub {
                 cms_add_affiliate_client df_anonymization_done account_disabled_sideoffice
                 account_verification_for_pending_payout
                 pa_withdraw_confirm pa_transfer_confirm trigger_cio_broadcast crypto_cashier_transaction_updated
-                update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies mt5_deriv_auto_rescind mt5_archive_restore_sync/
+                update_loginid_status bulk_affiliate_loginids_sync p2p_update_local_currencies mt5_deriv_auto_rescind mt5_archive_restore_sync sync_mt5_accounts_status/
         ),
         'Correct number of actions that can be emitted'
     );
