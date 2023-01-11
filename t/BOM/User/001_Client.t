@@ -712,7 +712,7 @@ subtest 'returns correct required_fields for each landing company' => sub {
 
     subtest 'maltainvest' => sub {
         my @list =
-            qw(salutation citizen tax_residence tax_identification_number first_name last_name date_of_birth residence address_line_1 address_city account_opening_reason);
+            qw(salutation citizen tax_residence tax_identification_number first_name last_name date_of_birth residence address_line_1 address_city account_opening_reason expiration_check fully_authenticated);
         my @required_fields = $client_mf->required_fields;
         cmp_bag \@required_fields, \@list, "List of required fields for maltainvest is OK";
         test_validation_on_required_fields(\@list, $client_mf);

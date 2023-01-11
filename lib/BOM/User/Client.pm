@@ -7359,26 +7359,16 @@ sub get_poi_status_jurisdiction {
         idv    => $idv,
         onfido => $onfido
     );
-    my %status               = map { $_ => 1 } ($manual, $idv, $onfido);
     my %allowed_verification = (
-        bvi     => ['idv', 'onfido'],
-        vanuatu => ['onfido']);
+        bvi         => ['idv',    'onfido', 'manual'],
+        labuan      => ['idv',    'onfido', 'manual'],
+        vanuatu     => ['onfido', 'manual'],
+        maltainvest => ['onfido', 'manual']);
+    my %status = map { $poi{$_} => 1 } @{$allowed_verification{$jurisdiction}};
 
-    return 'verified' if any { $poi{$_} eq 'verified' } @{$allowed_verification{$jurisdiction}};
+    return 'verified' if $status{verified};
 
     return 'pending' if $status{pending};
-
-    if ($self->fully_authenticated || $self->status->age_verification) {
-        # IDV does not have 2nd attempt
-        if ($onfido eq 'expired' || $manual eq 'expired') {
-            return 'suspected' if $onfido eq 'suspected';
-            return 'rejected'  if $onfido eq 'rejected';
-            return 'rejected'  if $manual eq 'rejected';
-            return 'expired';
-        }
-
-        return 'verified';
-    }
 
     return 'suspected' if $status{suspected};
 
