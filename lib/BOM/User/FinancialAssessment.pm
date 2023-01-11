@@ -237,7 +237,20 @@ sub is_section_complete {
     my $section = shift;
     my $lc      = shift // '';
     $section .= "_regulated" if ($lc eq 'maltainvest');
-    return 0 + all { $fa->{$_} && defined $config->{$section}->{$_}->{possible_answer}->{$fa->{$_}} } @{_financial_assessment_keys(1)->{$section}};
+    my $result =
+        0 + all { $fa->{$_} && defined $config->{$section}->{$_}->{possible_answer}->{$fa->{$_}} } @{_financial_assessment_keys(1)->{$section}};
+    # check legacy cfd_score
+    if ($section eq 'trading_experience_regulated' && !$result) {
+        my $cfd_score = 0;
+        $section = 'trading_experience';
+        my $old_result =
+            0 + all { $fa->{$_} && defined $config->{$section}->{$_}->{possible_answer}->{$fa->{$_}} } @{_financial_assessment_keys(1)->{$section}};
+        for my $k (qw(cfd_trading_frequency cfd_trading_experience)) {
+            $cfd_score += $config->{$section}{$k}{possible_answer}{$fa->{$k}} if $fa->{$k};
+        }
+        return $cfd_score > 0 && $old_result ? 1 : 0;
+    }
+    return $result;
 }
 
 sub decode_fa {
