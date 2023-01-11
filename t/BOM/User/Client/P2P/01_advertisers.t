@@ -67,27 +67,6 @@ subtest 'advertiser Registration' => sub {
     is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
 };
 
-subtest 'advertiser basic and full verification' => sub {
-
-    my $client = BOM::Test::Helper::Client::create_client();
-    $client->account('USD');
-    my $advertiser = $client->p2p_advertiser_create(name => 'advertiser 1');
-
-    my $advertiser_info = $client->p2p_advertiser_info;
-    ok 1, "empty test";
-
-    ok !$advertiser_info->{basic_verification}, "advertiser has not basic verification";
-    ok !$advertiser_info->{full_verification},  "advertiser has not full verification";
-
-    $client->status->set('age_verification', 'system', 'testing');
-    $client->set_authentication('ID_ONLINE', {status => 'pass'});
-
-    $advertiser_info = $client->p2p_advertiser_info;
-
-    ok $advertiser_info->{basic_verification}, "advertiser has basic verification";
-    ok $advertiser_info->{full_verification},  "advertiser has full verification";
-};
-
 subtest 'advertiser already age verified' => sub {
 
     my $client = BOM::Test::Helper::Client::create_client();

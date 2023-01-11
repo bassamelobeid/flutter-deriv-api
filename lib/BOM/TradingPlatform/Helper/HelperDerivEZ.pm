@@ -1358,7 +1358,7 @@ Returns only the loginid number instead of the Prefix + Number
 =cut
 
 sub get_loginid_number {
-    my $loginid = shift;
+    my $loginid = @_;
     my ($loginid_number) = $loginid =~ /([0-9]+)/;
 
     return $loginid_number;

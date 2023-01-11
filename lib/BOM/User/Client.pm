@@ -2469,47 +2469,6 @@ sub p2p_advertiser_info {
     return $details;
 }
 
-=head2 p2p_advertiser_list
-
-returns advertiser partners
-
-=cut
-
-sub p2p_advertiser_list {
-    my ($self, %param) = @_;
-    my $advertiser_info = $self->_p2p_advertiser_cached;
-
-    die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
-
-    $param{id}             = $advertiser_info->{id};
-    $param{client_loginid} = $advertiser_info->{client_loginid};
-
-    my $list;
-    if ($param{trade_partners}) {
-        $list = $self->_p2p_advertiser_trade_partners(%param);
-    }
-
-    return [map { $self->_advertiser_details($_) } $list->@*];
-}
-
-=head2 _p2p_advertiser_trade_partners
-
-All the trade partners from DB
-
-=cut
-
-sub _p2p_advertiser_trade_partners {
-    my ($self, %param) = @_;
-
-    $self->db->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref(
-                'SELECT * FROM p2p.advertiser_partner_list(?, ?, ?, ?, ?, ?, ?, ?)',
-                {Slice => {}},
-                @param{qw/id advertiser_name is_blocked is_favourite is_recommended limit offset sort_by /});
-        }) // [];
-}
-
 =head2 p2p_advertiser_blocked
 
 Returns true if the advertiser is blocked.
@@ -4764,8 +4723,9 @@ sub _advertiser_details {
     };
 
     if ($advertiser->{show_name}) {
-        $details->{first_name} = $advertiser->{first_name};
-        $details->{last_name}  = $advertiser->{last_name};
+        my $client = $advertiser->{client_loginid} ne $self->loginid ? BOM::User::Client->new({loginid => $advertiser->{client_loginid}}) : $self;
+        $details->{first_name} = $client->first_name;
+        $details->{last_name}  = $client->last_name;
     }
 
     # only advertiser themself can see these fields
@@ -4817,8 +4777,9 @@ sub _advertiser_details {
         }
 
     } else {
-        $details->{basic_verification} = $advertiser->{basic_verification};
-        $details->{full_verification}  = $advertiser->{full_verification};
+        my $auth_client = BOM::User::Client->new({loginid => $loginid});
+        $details->{basic_verification} = $auth_client->status->age_verification ? 1 : 0;
+        $details->{full_verification}  = $auth_client->fully_authenticated      ? 1 : 0;
         $details->{is_blocked}         = $advertiser->{blocked};
         $details->{is_favourite}       = $advertiser->{favourite};
         $details->{is_recommended}     = $advertiser->{recommended};
