@@ -1237,11 +1237,11 @@ Returns the generated CSRF token to be used in forms.
 =cut
 
 sub get_csrf_token {
-    my $auth_token = request()->cookies->{auth_token};
+    my $cookies = request()->cookies;
 
-    die "Can't find auth token" unless $auth_token;
+    die "Can't find auth token" unless $cookies && $cookies->{auth_token};
 
-    return sha256_hex(SALT_FOR_CSRF_TOKEN . $auth_token);
+    return sha256_hex(SALT_FOR_CSRF_TOKEN . $cookies->{auth_token});
 }
 
 1;

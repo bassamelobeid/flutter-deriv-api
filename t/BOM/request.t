@@ -1,11 +1,8 @@
-use strict;
-use warnings;
-
-use Test::More;
+use Test::Most;
 use Test::MockModule;
 use Path::Tiny;
 use Encode;
-
+use BOM::Backoffice::Form;
 use BOM::Backoffice::Request qw(request);
 
 subtest 'Unicode requests' => sub {
@@ -28,6 +25,18 @@ subtest 'Unicode requests' => sub {
 
     my %output = %{request()->params};
     cmp_ok $output{$_}, 'eq', $input{$_} for (keys %input);
+};
+
+subtest 'get_csrf_token' => sub {
+
+    throws_ok { BOM::Backoffice::Form::get_csrf_token() } qr/Can't find auth token/, "Can't find auth token";
+
+    my $mock_request = Test::MockModule->new('BOM::Backoffice::Request::Base');
+    $mock_request->mock('cookies', sub { return {auth_token => 'dummy'} });
+
+    my $csrf_token = BOM::Backoffice::Form::get_csrf_token();
+    is $csrf_token , '476940fb1c4c3d90ed7c959fedaefd9945808e2605bed65e87c0a9e3f3cb0392', 'csrf_token matches';
+
 };
 
 done_testing;
