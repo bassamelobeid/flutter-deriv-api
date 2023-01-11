@@ -149,8 +149,9 @@ my %EVENT_PROPERTIES = (
     authenticated_with_scans                    => [qw(first_name email contact_url live_chat_url)],
     pa_transfer_confirm                         => [qw(loginid email pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
     age_verified                                => [qw(first_name loginid contact_url live_chat_url poi_url)],
-    poa_verification_warning                    => [qw(loginid poa_expiry_date)],
-    poa_verification_expired                    => [qw(loginid)],
+    poa_verification_warning                    => [qw(loginid poa_expiry_date mt5_account)],
+    poa_verification_expired                    => [qw(loginid mt5_account)],
+    poa_verification_failed_reminder            => [qw(loginid mt5_account disabling_date)],
     bonus_approve                               => [qw(full_name website contact_url live_chat_url amount currency tac_url)],
     bonus_reject                                => [qw(full_name website contact_url live_chat_url tac_url poi_url)],
     pa_withdraw_confirm         => [qw(email client_loginid pa_loginid pa_first_name pa_last_name pa_name client_name amount currency)],
@@ -194,6 +195,7 @@ my @COMMON_EVENT_METHODS = qw(
     age_verified
     poa_verification_warning
     poa_verification_expired
+    poa_verification_failed_reminder
     bonus_approve
     bonus_reject
     request_edd_document_upload
@@ -1434,6 +1436,10 @@ It is triggered for each B<poa_verification_warning> event emitted, delivering i
 =head2 poa_verification_expired
 
 It is triggered for each B<poa_verification_expired> event emitted, delivering it to Segment.
+
+=head2 poa_verification_failed_reminder
+
+It is triggered for each B<poa_verification_failed_reminder> event emitted, delivering it to Segment.
 
 =cut
 

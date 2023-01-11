@@ -159,6 +159,7 @@ my $action_mapping = {
         age_verified                                     => \&BOM::Event::Services::Track::age_verified,
         poa_verification_warning                         => \&BOM::Event::Services::Track::poa_verification_warning,
         poa_verification_expired                         => \&BOM::Event::Services::Track::poa_verification_expired,
+        poa_verification_failed_reminder                 => \&BOM::Event::Services::Track::poa_verification_failed_reminder,
         bonus_approve                                    => \&BOM::Event::Services::Track::bonus_approve,
         bonus_reject                                     => \&BOM::Event::Services::Track::bonus_reject,
         withdrawal_rejected                              => \&BOM::Event::Services::Track::withdrawal_rejected,

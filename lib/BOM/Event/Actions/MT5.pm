@@ -384,50 +384,6 @@ sub mt5_inactive_notification {
     return $futures->then(sub { Future->done(1) });
 }
 
-=head2 poa_verification_warning
-
-Sends email to the client with the passed loginid to remind that his prove of address is not verified
-and that his account will be limited in trading rights in poa_expiry_date
-
-=over 4
-
-=item * C<loginid> - Client loginid
-
-=item * C<poa_expiry_date> - The date that the client will be limited in trading rights in the form of YYYY-MM-DD
-
-=back
-
-=cut
-
-sub poa_verification_warning {
-    my $loginid         = shift;
-    my $poa_expiry_date = shift;
-
-    die 'Loginid is required'         unless $loginid;
-    die 'POA expiry date is required' unless $poa_expiry_date;
-    return BOM::Event::Services::Track::poa_verification_warning({loginid => $loginid, poa_expiry_date => $poa_expiry_date});
-}
-
-=head2 poa_verification_expired
-
-Sends email to the client with the passed loginid to inform that his poa verification is failed and
-he is limited in trading rights
-
-=over 4
-
-=item * C<loginid> - Client loginid
-
-=back
-
-=cut
-
-sub poa_verification_expired {
-    my $loginid = shift;
-
-    die 'Loginid is required' unless $loginid;
-    return BOM::Event::Services::Track::poa_verification_expired({loginid => $loginid});
-}
-
 =head2 mt5_inactive_account_closed
 
 Sends emails to a user notifiying them about their inactive mt5 accounts before they're closed.
