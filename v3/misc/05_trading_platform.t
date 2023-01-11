@@ -449,7 +449,8 @@ subtest 'trading_platform_available_accounts' => sub {
                     'salutation',     'citizen',      'tax_residence', 'tax_identification_number',
                     'first_name',     'last_name',    'date_of_birth', 'residence',
                     'address_line_1', 'address_city', 'account_opening_reason'
-                ]
+                ],
+                'compliance' => {'mt5' => ['fully_authenticated', 'expiration_check']}
             },
             'market_type'      => 'financial',
             'shortcode'        => 'maltainvest',
