@@ -515,7 +515,7 @@ SQL
     my $tin_format_description;
     my $country = request()->brand->countries_instance();
     # Remove leading and trailing space
-    my $tax_identification_number = $client->tax_identification_number;
+    my $tax_identification_number = $client->tax_identification_number // '';
     $tax_identification_number =~ s/^\s+|\s+$//g if $tax_identification_number;
     if ($client->tax_residence) {
         # In case of having more than a tax residence, client residence will replaced.
@@ -523,7 +523,7 @@ SQL
         my $tin_format             = $country->get_tin_format($selected_tax_residence);
         if ($tin_format) {
             $tin_format_description  = $country->get_tin_format_description($selected_tax_residence) // 'Please check TIN documents';
-            $is_valid_tin            = any { $client->tax_identification_number =~ m/$_/ } @$tin_format;
+            $is_valid_tin            = any { $tax_identification_number =~ m/$_/ } @$tin_format;
             $tin_validation_required = 1;
         }
     }
