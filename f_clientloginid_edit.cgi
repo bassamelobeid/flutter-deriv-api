@@ -915,7 +915,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     if ($input{client_authentication}) {
         $auth_method = $input{client_authentication};
         $client->set_authentication_and_status($auth_method, $clerk);
-        _update_mt5_status($client, undef) if $auth_method eq 'ID_DOCUMENT';
+        _update_mt5_status($client) if any { $auth_method eq $_ } qw/ID_DOCUMENT NEEDS_ACTION/;
     }
     if ($input{age_verification} and not $client->is_virtual) {
         my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
@@ -938,6 +938,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
         }
 
         $client->update_status_after_auth_fa();
+
+        _update_mt5_status($client) if $input{'age_verification'} eq 'yes';
     }
     if (exists $input{professional_client}) {
         try {
@@ -2387,24 +2389,13 @@ sub update_needed {
 }
 
 sub _update_mt5_status {
-    my ($client, $mt5_status) = @_;
-    my $user            = $client->user;
-    my %loginid_details = $user->loginid_details->%*;
+    my $client = shift;
 
-    foreach my $account (keys %loginid_details) {
-        my $account_data = $loginid_details{$account};
-        if ($account_data->{platform} eq 'mt5' and $account_data->{account_type} eq 'real') {
-            if (any { $account_data->{status} eq $_ } qw/poa_pending poa_rejected poa_failed/) {
-                $user->update_loginid_status($account_data->{loginid}, $mt5_status // undef);
-                BOM::Platform::Event::Emitter::emit(
-                    'mt5_change_color',
-                    {
-                        loginid => $account,
-                        color   => -1,
-                    }) if not defined $mt5_status;
-            }
-        }
-    }
+    BOM::Platform::Event::Emitter::emit(
+        'sync_mt5_accounts_status',
+        {
+            binary_user_id => $client->binary_user_id,
+        });
 }
 
 1;
