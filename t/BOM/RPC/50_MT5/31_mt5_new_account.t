@@ -381,7 +381,7 @@ SKIP: {
                 date_of_birth  => '1989-10-10',
                 affiliate_plan => 'turnover',
                 residence      => 'br',
-                address_line_1 => 'nowhere',
+                address_line_1 => 'nowhere’',
                 affiliate_plan => 'turnover',
                 first_name     => 'test',
                 last_name      => 'asdf',
