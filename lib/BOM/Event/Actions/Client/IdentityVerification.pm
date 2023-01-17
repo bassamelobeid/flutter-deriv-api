@@ -580,7 +580,7 @@ async sub _trigger {
             $document->{document_additional} ? (additional => $document->{document_additional}) : (),
         },
         profile => {
-            login_id   => $client->loginid,
+            id         => $client->loginid,
             first_name => $client->first_name,
             last_name  => $client->last_name,
             birthdate  => $client->date_of_birth,
