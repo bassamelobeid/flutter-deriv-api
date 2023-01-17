@@ -3,11 +3,14 @@ package BOM::Database::Model::OAuth;
 use Moose;
 use Date::Utility;
 use BOM::Database::AuthDB;
+use Carp qw(croak);
 
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
     REFRESH_TOKEN_LENGTH      => 29,
-    REFRESH_TOKEN_TIMEOUT     => 60 * 60 * 24 * 60    # 60 days.
+    REFRESH_TOKEN_TIMEOUT     => 60 * 60 * 24 * 60,    # 60 days.
+    CTRADER_TOKEN_LENGTH      => 29,
+    CTRADER_TOKEN_TTL         => 60 * 60 * 24 * 60,
 };
 
 has 'dbic' => (
@@ -731,6 +734,121 @@ sub revoke_refresh_tokens_by_user_app_id {
     $self->dbic->run(
         ping => sub {
             $_->do("DELETE FROM oauth.refresh_token WHERE binary_user_id = ? AND app_id = ? AND expiry_time > NOW()", undef, $user_id, $app_id);
+        });
+    return 1;
+}
+
+=head2 generate_ctrader_token
+
+Wrapper for the `oauth.create_ctrader_token` function.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<user_id> binary user id.
+=item * C<ctid> source app id.
+=item * C<token_length> length of ctrader token.
+=item * C<expires_in_sec> expiry time required in seconds
+=item * C<retries> (optional) number of retries before giving up
+=item * C<ua_fingerprint> hashsum of UserAgent string
+
+=back
+
+Returns a ctrader token.
+
+=cut
+
+sub generate_ctrader_token {
+    my ($self, $args) = @_;
+
+    $args->{token_length}   //= CTRADER_TOKEN_LENGTH;
+    $args->{expires_in_sec} //= CTRADER_TOKEN_TTL;
+    $args->{retries}        //= TOKEN_GENERATION_ATTEMPTS;
+    $args->{ua_fingerprint} //= '';
+
+    $args->{$_} or croak "$_ is mandatory argument" for (qw[user_id ctid]);
+
+    my $token = $self->dbic->run(
+        fixup => sub {
+            my $db = $_;
+            for (1 .. $args->{retries}) {
+                my ($token) = $db->selectrow_array("SELECT access_token FROM oauth.create_ctrader_token(?::INT, ?::BIGINT, ?::INT, ?::TEXT, ?::TEXT)",
+                    undef, $args->@{qw(token_length user_id expires_in_sec ctid ua_fingerprint)});
+                return $token if $token;
+            }
+
+            return undef;
+        });
+
+    return $token;
+}
+
+=head2 get_details_of_ctrader_token
+
+select user info based on valid ctrader token
+It takes the following arguments:
+
+=over 4
+
+=item * C<$ctrader_token> ctrader token.
+
+=back
+
+Returns a record based on ctrader_token provided.
+
+=cut
+
+sub get_details_of_ctrader_token {
+    my ($self, $ctrader_token) = @_;
+    return $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT * FROM ONLY oauth.ctrader_token WHERE access_token = ? AND expires > NOW()", undef, $ctrader_token);
+        });
+}
+
+=head2 get_ctrader_tokens_by_user_id
+
+select all ctrader tokens accosiated with user_id.
+It takes the following arguments:
+
+=over 4
+
+=item * C<$user_id> binary user id.
+
+=back
+
+Returns list of ctrader_tokens.
+
+=cut
+
+sub get_ctrader_tokens_by_user_id {
+    my ($self, $user_id) = @_;
+    return $self->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT access_token FROM ONLY oauth.ctrader_token WHERE binary_user_id = ? AND expires > NOW()", undef, $user_id);
+        });
+}
+
+=head2 revoke_ctrader_tokens_by_user_id
+
+Deletes all valid ctrader_token from oauth.ctrader_token table for a specific user.
+It takes the following arguments:
+
+=over 4
+
+=item * C<$user_id> binary_user_id.
+
+=back
+
+=cut
+
+sub revoke_ctrader_tokens_by_user_id {
+    my ($self, $user_id) = @_;
+
+    $self->dbic->run(
+        ping => sub {
+            $_->do("DELETE FROM oauth.ctrader_token WHERE binary_user_id = ?", undef, $user_id);
         });
     return 1;
 }
