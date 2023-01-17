@@ -114,12 +114,12 @@ read_csv_row_and_callback(
             $currency, $amount, $statement_comment, $transaction_id,    $cols_expected,  $transaction_type
         );
         if ($format eq 'doughflow') {
-            ($login_id, $action, $trace_id, $payment_processor, $payment_method, $currency, $amount, $statement_comment, $transaction_id) = @_;
+            ($login_id, $action, $trace_id, $payment_processor, $payment_method, $currency, $amount, $transaction_id) = @_;
             $payment_type = 'external_cashier';
             if (($action // '') eq 'credit') {
-                $cols_expected = 9;
-            } else {
                 $cols_expected = 8;
+            } else {
+                $cols_expected = 7;
             }
         } else {
             ($login_id, $action, $payment_type, $currency, $amount, $statement_comment) = @_;
@@ -135,9 +135,9 @@ read_csv_row_and_callback(
             $amount = formatnumber('price', $currency, $amount) if looks_like_number($amount);
 
             die "Found $cols_found fields, needed $cols_expected for $format payments\n" unless $cols_found == $cols_expected;
-            die "Invalid transaction type: $action\n" if $action !~ /^(debit|credit|reversal)$/;
-            die "Invalid $amount: $amount\n"          if $amount !~ $curr_regex or $amount == 0;
-            die "'Statement comment can not be empty\n" unless $statement_comment;
+            die "Invalid transaction type: $action\n"                   if $action !~ /^(debit|credit|reversal)$/;
+            die "Invalid $amount: $amount\n"                            if $amount !~ $curr_regex or $amount == 0;
+            die "'Statement comment can not be empty for this format\n" if $format ne 'doughflow' && !$statement_comment;
 
             $client = BOM::User::Client->new({loginid => $login_id}) or die "Invalid loginid: $login_id\n";
             die "Currency $currency does not match client $login_id currency of " . $client->account->currency_code . "\n"
@@ -157,8 +157,10 @@ read_csv_row_and_callback(
                     $transaction_type = 'withdrawal'          if $action eq 'debit';
                     $transaction_type = 'withdrawal_reversal' if $action eq 'reversal';
                 }
-            }
+                $statement_comment =
+                    _doughflow_tx_statement_comment($transaction_type, $trace_id, $payment_method, $payment_processor, $transaction_id);
 
+            }
             unless ($skip_validation) {
                 $client->validate_payment(
                     currency    => $currency,
@@ -390,6 +392,18 @@ sub read_csv_row_and_callback {
         &$callback(@row_values);
     }
     return;
+}
+
+sub _doughflow_tx_statement_comment {
+    my ($transaction_type, $trace_id, $payment_method, $payment_processor, $transaction_id) = @_;
+
+    my $comment = "DoughFlow $transaction_type trace_id=$trace_id created_by=INTERNET payment_method=$payment_method";
+
+    $comment .= " payment_processor=$payment_processor" if (defined $payment_processor);
+
+    $comment .= " transaction_id=$transaction_id" if (defined $transaction_id);
+
+    return $comment;
 }
 
 code_exit_BO();
