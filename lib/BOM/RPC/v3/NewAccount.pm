@@ -304,11 +304,21 @@ rpc new_account_wallet => sub {
     }
 
     $args->{residence} //= $client->residence;
+
+    if (exists $args->{financial_assessment}) {
+        $args = {%{$args}, %{$args->{financial_assessment}}};
+        delete $args->{financial_assessment};
+    }
+
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;
+    my $company_name       = $countries_instance->wallet_company_for_country($client->residence, 'real') // '';
 
-    my $company_name = $countries_instance->wallet_company_for_country($client->residence, 'real');
-    my $wallet_lc    = LandingCompany::Registry->by_name($company_name // '');
+    # EU must always default to maltainvest, other countries can be under MFW when specified.
+    # For maltainvest, the user needs to fulfill additional requirements within create_new_real_account
+    my $is_maltainvest = $company_name eq 'maltainvest' || ($args->{'company'} && $args->{'company'} eq 'maltainvest');
+    $company_name = 'maltainvest' if $is_maltainvest;
+    my $wallet_lc = LandingCompany::Registry->by_name($company_name // '');
 
     my $currency_type = LandingCompany::Registry::get_currency_type($args->{currency} // '');
     return BOM::RPC::v3::Utility::create_error({
@@ -337,6 +347,28 @@ rpc new_account_wallet => sub {
 
     my $new_client      = $response->{client};
     my $landing_company = $new_client->landing_company;
+
+    if ($is_maltainvest) {
+        # Client's citizenship can only be set from backoffice.
+        # However, when a Deriv Investments (Europe) Limited account is created, the citizenship
+        # is not updated in the new account.
+        # Hence, the following check is necessary
+        $new_client->citizen($client->citizen) if ($client->citizen && !$client->is_virtual);
+        # Save new account
+        if (not $new_client->save) {
+            stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
+            return BOM::RPC::v3::Utility::client_error();
+        }
+
+        # In case of having more than a tax residence, client residence will replaced.
+        my $selected_tax_residence = $args->{tax_residence} =~ /\,/g ? $args->{residence} : $args->{tax_residence};
+        my $tin_format             = $countries_instance->get_tin_format($selected_tax_residence);
+        my $client_tin             = $countries_instance->clean_tin_format($args->{tax_identification_number}, $selected_tax_residence);
+        if ($tin_format) {
+            stats_inc('bom_rpc.v_3.new_account_maltainvest.called_with_wrong_TIN_format.count')
+                unless (any { $client_tin =~ m/$_/ } @$tin_format);
+        }
+    }
 
     return {
         client_id                 => $new_client->loginid,
