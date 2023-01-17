@@ -110,9 +110,9 @@ subtest "Client load and saving." => sub {
         'latest_environment' =>
             '31-May-10 02h09GMT 99.99.99.63 Mozilla 5.0 (X11; U; Linux i686; en-US; rv:1.9.2.3) Gecko 20100401 Firefox 3.6.3 LANG=EN SKIN=',
         'address_city'          => 'Subang Jaya',
-        'address_line_1'        => '†•…‰™œŠŸž€ΑΒΓΔΩαβγδωАБВГДабвгд∀∂∈ℝ∧∪≡∞↑↗↨↻⇣┐┼╔╘░►☺',
+        'address_line_1'        => '†•…‰™œŠŸž€ΑΒΓΔΩαβγδωАБВГДабвгд∀’’∂∈ℝ∧∪≡∞↑↗↨↻⇣┐┼╔╘░►☺',
         'secret_answer'         => '::ecp::52616e646f6d495633363368676674792dd36b78f1d98017',
-        'address_line_2'        => '♀ﬁ�⑀₂ἠḂӥẄɐː⍎אԱა Καλημέρα κόσμε, コンニチハ',
+        'address_line_2'        => '♀ﬁ�⑀₂ἠḂӥẄɐː⍎אԱა’’ Καλημέρα κόσμε, コンニチハ',
         'restricted_ip_address' => '',
         'salutation'            => 'Mr',
         'gender'                => 'm',
@@ -131,8 +131,8 @@ subtest "Client load and saving." => sub {
     is($client2->last_name,  $client_details->{'last_name'},       'compare last_name between client object instantize with client hash ref');
     is($client2->first_name, $client_details->{'first_name'},      'compare first_name between client object instantize with client hash ref');
 
-    is(length($client2->address_1), 50, "treats Unicode chars correctly");
-    is(length($client2->address_2), 37, "treats Unicode chars correctly");
+    is(length($client2->address_1), 52, "treats Unicode chars correctly");
+    is(length($client2->address_2), 39, "treats Unicode chars correctly");
 
     is($client2->date_of_birth, $client_details->{'date_of_birth'}, 'compare date_of_birth between client object instantize with client hash ref');
     is(
