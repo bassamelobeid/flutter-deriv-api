@@ -1509,6 +1509,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        ctrader_oauth_api:
+          description: "Suspend OAuth API for cTrader integration"
+          isa: Bool
+          default: 0
+          global: 1
     services:
       description: "Enable integrations with internal microservices"
       isa: section
@@ -1977,3 +1982,16 @@ payment_agents:
       isa: json_string
       default: '{}'
       global: 1
+oauth:
+  description: "BOM::OAuth dynamic settings "
+  isa: section
+  contains:
+    ctrader_api:
+      description: "cTrader OAuth API dynamic settings"
+      isa: section
+      contains:
+        white_listed_networks:
+          description: 'List of CIDRs which should have access to cTrader OAuth API, empty list disables IP check'
+          isa: ArrayRef
+          default: ['127.0.0.1/32']
+          global: 1
