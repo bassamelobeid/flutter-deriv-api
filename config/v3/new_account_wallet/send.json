@@ -67,6 +67,7 @@
         "financial_assessment": {
             "description": "Required for maltainvest",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "accept_risk": {
                     "description": "Show whether client has accepted risk disclaimer.",
