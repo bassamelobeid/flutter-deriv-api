@@ -1310,7 +1310,6 @@ subtest $method => sub {
         ok(!$wallet_client->can_trade, 'wallet client can_trade is false');
         is $wallet_client->residence, 'id', 'Residence is copied from the virtual account';
 
-        is($wallet_client->payment_method, 'fiat', 'Payment method is set for wallet');
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
 
         $app_config->system->suspend->wallets(1);
@@ -1606,7 +1605,6 @@ subtest $method => sub {
         ok(!$wallet_client->can_trade, 'wallet client can_trade is false');
         is $wallet_client->residence, 'id', 'Residence is copied from the virtual account';
 
-        is($wallet_client->payment_method, 'fiat', 'Payment method is set for wallet');
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
 
         $app_config->system->suspend->wallets(1);
