@@ -323,6 +323,7 @@ sub get_settings_by_group {
                 system.services.fraud_prevention
                 system.services.identity_verification
                 system.backoffice.crypto_cashier_api
+                system.suspend.ctrader_oauth_api
             )
         ],
         quant => [qw(
@@ -352,6 +353,7 @@ sub get_settings_by_group {
         it => [qw(
                 cgi.allowed_languages
                 cgi.terms_conditions_versions
+                oauth.ctrader_api.white_listed_networks
             )
         ],
         payments => [qw(
