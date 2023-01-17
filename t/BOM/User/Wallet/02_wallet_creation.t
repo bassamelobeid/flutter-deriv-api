@@ -22,7 +22,7 @@ my $user = BOM::User->create(
 my $details = {
     broker_code              => 'CRW',
     currency                 => 'USD',
-    payment_method           => 'Skrill',
+    payment_method           => '',                                # Payment method is decommisioned from RoseDB, it'll be replaced with account_type.
     salutation               => 'Ms',
     last_name                => 'last-name',
     first_name               => 'first-name',
@@ -61,7 +61,7 @@ subtest 'create a real wallet' => sub {
 
     is $wallet->is_wallet, 1, 'is wallet client instance';
 
-    is($wallet->payment_method, 'Skrill', 'Wallet Payment Method: ' . $wallet->payment_method);
+    is($wallet->payment_method, undef, 'Payment method is decommisioned from ORM. it will be renamed to account_type');
 
     is($wallet->currency, 'USD', 'Wallet Currecny Code: USD');
 };
