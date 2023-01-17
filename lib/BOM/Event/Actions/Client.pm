@@ -1258,11 +1258,11 @@ async sub onfido_doc_ready_for_upload {
         $upload_info = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_hashref(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin)',
                     undef, $client_loginid, $doc_type, $file_type,
                     $expiration_date || undef,
                     $document_info->{number} || '',
-                    $file_checksum, '', $page_type, undef, $lifetime_valid
+                    $file_checksum, '', $page_type, undef, $lifetime_valid, 'onfido'
                 );
             });
 

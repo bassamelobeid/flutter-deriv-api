@@ -236,11 +236,11 @@ async sub _sync_onfido_bo_document {
         $upload_info = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_hashref(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)',
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin)',
                     undef, $client->loginid, $doc_type, $file_type,
                     $expiration_date || undef,
                     $doc_id_number   || '',
-                    $file_checksum, '', $page_type,
+                    $file_checksum, '', $page_type, undef, 0, 'onfido'
                 );
             });
 

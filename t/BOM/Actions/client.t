@@ -160,11 +160,11 @@ sub start_document_upload {
     return $client->db->dbic->run(
         ping => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
-                $client->loginid,                                                           $document_args->{document_type},
+                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin)', undef,
+                $client->loginid, $document_args->{document_type},
                 $document_args->{document_format}, $document_args->{expiration_date} || undef,
                 $document_args->{document_id} || '', $document_args->{expected_checksum},
-                '', $document_args->{page_type} || '',
+                '', $document_args->{page_type} || '', undef, 0, 'legacy'
             );
         });
 }
@@ -1398,14 +1398,15 @@ subtest 'client_verification after upload document himself' => sub {
     "ready_for_authentication no exception";
 
     my $clientdb      = BOM::Database::ClientDB->new({broker_code => 'CR'});
-    my $doc_file_name = $clientdb->db->dbic->run(
+    my $document_file = $clientdb->db->dbic->run(
         fixup => sub {
-            my $sth = $_->prepare('select file_name from betonmarkets.client_authentication_document where client_loginid=? and document_type=?');
+            my $sth = $_->prepare('select * from betonmarkets.client_authentication_document where client_loginid=? and document_type=?');
             $sth->execute($test_client2->loginid, 'photo');
-            return $sth->fetchall_arrayref({})->[0]{file_name};
+            return $sth->fetchall_arrayref({})->[0];
         });
 
-    like($doc_file_name, qr{\.png$}, 'uploaded document has expected png extension');
+    like($document_file->{file_name}, qr{\.png$}, 'uploaded document has expected png extension');
+    is $document_file->{origin}, 'onfido', 'Onfido is the origin';
 
     my $mocked_user_onfido = Test::MockModule->new('BOM::User::Onfido');
     # simulate the case that 2 processes uploading same documents almost at same time.
