@@ -6,7 +6,7 @@ use Test::Exception;
 use Test::Warnings;
 
 use Getopt::Long;
-use JSON::MaybeUTF8 qw(decode_json_utf8);
+use JSON::MaybeUTF8 qw(decode_json_text);
 use JSON::MaybeXS;
 use List::Util qw(first all);
 use Path::Tiny;
@@ -40,29 +40,23 @@ my @json_schemas = read_all_schemas();
 # decoded json is used in the next subtests
 subtest 'json structure' => sub {
     for my $schema (@json_schemas) {
-        lives_ok(sub { $schema->{json} = decode_json_utf8($schema->{json_text}) }, 'JSON Structure is valid: ' . $schema->{formatted_path});
+        lives_ok(sub { $schema->{json} = decode_json_text($schema->{json_text}) }, 'JSON Structure is valid: ' . $schema->{formatted_path});
     }
 };
 
 =head2 general formatting and order
-
 This mainly tests to make sure the schemas are correct in terms of:
 (Displays a diff in case of error)
-
 - Formatting:
-
     - Indentation uses 4 spaces
     - No space before ':', and one space after
     - No extra empty line in the middle, but empty line at the end
-
 - Order:
-
     - Order of properties is:
         1. The main method name should be always the first
         2. 'required' array should be sorted the same as the order of 'properties' elements
         2. Other properties are tested recursively according to the '$order' hash below and their parent element.
         3. The rest should be ordered alphabetically (excluding enums, arrays of objects)
-
 =cut
 
 my $order = {
