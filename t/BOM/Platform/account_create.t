@@ -304,7 +304,7 @@ subtest 'create account' => sub {
     }
     'create VR wallet account';
 
-    is($vr_wallet_client->payment_method, 'DemoWalletMoney', 'correct payment_method for virtual wallet');
+    is($vr_wallet_client->payment_method, undef, 'Payment method is decommisioned, it will be renamed to account_type in future');
 
     my %t_details = (
         %real_client_details,
