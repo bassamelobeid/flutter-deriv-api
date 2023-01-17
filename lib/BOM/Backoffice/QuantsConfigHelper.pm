@@ -221,21 +221,9 @@ sub decorate_for_display {
             my $type = $record->{type};
             foreach my $key (keys %$record) {
                 my $val = $record->{$key};
-                if ($val eq 'default') {
-                    $record->{$key} = {
-                        data_key      => $val,
-                        display_value => ((
-                                       ($type eq 'symbol_default' and $key eq 'underlying_symbol')
-                                    or ($type eq 'market' and $key eq 'market')
-                            ) ? $val : '-'
-                        ),
-                    };
-                } else {
-                    $record->{$key} = {
-                        data_key      => $val,
-                        display_value => $val,
-                    };
-                }
+                $record->{$key} = {
+                    data_key      => $val,
+                    display_value => _process_default_display_values($val, $key, $type)};
             }
             push @sorted_records, $record;
         }
@@ -518,6 +506,17 @@ sub get_global_config_status {
         }
     }
     return @config_status;
+}
+
+sub _process_default_display_values {
+    my ($val, $key, $type) = @_;
+
+    return $val           if $val ne 'default'         and $key ne 'underlying_symbol';
+    return $val           if $type eq 'market'         and $key eq 'market';
+    return 'each symbol'  if $type eq 'symbol_default' and $key eq 'underlying_symbol';
+    return 'whole market' if $type eq 'market'         and $key eq 'underlying_symbol' and $val eq '-';
+    return $val           if $type eq 'symbol'         and $key eq 'underlying_symbol';
+    return '-';
 }
 
 1;

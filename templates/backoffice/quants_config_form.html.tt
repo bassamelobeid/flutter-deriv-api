@@ -9,8 +9,8 @@
 </ul>
 
 <p>
-default -> if the limit applies to per symbol <br/>
-- -> if the limit applies to all symbols of the market <br/>
+Input "default" in underlying symbol box -> output: "each symbol" -> if the limit applies to each symbol <br/>
+Input nothing in underlying symbol box -> output: "whole market" -> if the limit applies to all symbols of the market <br/>
 underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol <br/>
 </p>
 <p>Risk Profile Guidelines (there's no strict enforcement on limit amount but please use the guidelines so that we don't end up with hundreds of different numbers):</p>
