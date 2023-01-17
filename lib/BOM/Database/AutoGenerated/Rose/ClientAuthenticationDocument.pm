@@ -22,8 +22,9 @@ __PACKAGE__->meta->setup(
         file_name                  => { type => 'varchar', length => 100 },
         checksum                   => { type => 'varchar', length => 40, not_null => 1 },
         upload_date                => { type => 'timestamp' },
-        issue_date            => { type => 'date' },
-        lifetime_valid => { type => 'boolean', default => 0},
+        issue_date                 => { type => 'date' },
+        lifetime_valid             => { type => 'boolean', default => 0},
+        origin                     => { type => 'enum', check_in => [ 'bo', 'client', 'onfido', 'legacy' ], db_type => 'betonmarkets.client_document_origin', 'default' => 'legacy' },
     ],
 
     primary_key_columns => [ 'id' ],
