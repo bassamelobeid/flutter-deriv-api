@@ -798,6 +798,7 @@ async sub _upload_photo {
             if ($document_info) {
                 await BOM::Event::Services::Track::document_upload({
                     client     => $client,
+                    loginid    => $client->loginid,
                     properties => $document_info
                 });
             } else {

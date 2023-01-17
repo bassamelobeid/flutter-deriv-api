@@ -1419,6 +1419,8 @@ subtest 'testing photo being sent as paramter - refuted' => sub {
 
     cmp_deeply $check , [{photo_id => re('\d+')}], 'photo id returned is non null';
 
+    is $track_args->{loginid}, $client->loginid, 'Correct loginid sent';
+
     cmp_deeply(
         $track_args->{properties},
         {
