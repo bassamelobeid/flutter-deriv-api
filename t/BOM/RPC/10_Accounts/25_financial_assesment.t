@@ -352,4 +352,38 @@ subtest $method => sub {
     ok(!$msg, 'no email sent when no change');
 };
 
+$method = 'get_financial_assessment';
+subtest $method => sub {
+    my $args = {"get_financial_assessment" => 1};
+    my $res  = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+
+    is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key for duplicate accounts';
+
+    $test_client->status->set('duplicate_account', 'system', 'Duplicate account - currency change');
+    ok $test_client->status->duplicate_account, "MF Account is set as duplicate_account";
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+    is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key for duplicate accounts';
+
+    $test_client->status->clear_duplicate_account;
+    $test_client->status->set('duplicate_account', 'system', 'Duplicate account - different reason');
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for Duplicate account");
+};
+
 done_testing();

@@ -2990,7 +2990,13 @@ rpc get_financial_assessment => sub {
     # Since we have independent financial and gaming.
     my @siblings = grep { not $_->is_virtual } $client->user->clients(include_disabled => 0);
 
-    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual and not @siblings);
+    if ($client->is_virtual and not @siblings) {
+        @siblings = grep {
+            (not $_->is_virtual) && $_->status->duplicate_account && $_->status->duplicate_account->{reason} =~ /Duplicate account - currency change/
+        } $client->user->clients(include_duplicated => 1);
+
+        return BOM::RPC::v3::Utility::permission_error() unless @siblings;
+    }
     my $response;
     foreach my $sibling (@siblings) {
         if ($sibling->financial_assessment()) {
