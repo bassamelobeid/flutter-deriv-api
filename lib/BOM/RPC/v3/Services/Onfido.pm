@@ -72,7 +72,7 @@ sub onfido_service_token {
     my $onfido  = $services->onfido();
     my $loginid = $client->loginid;
 
-    $country = uc($country || $client->place_of_birth || $client->residence);
+    $country = uc($country || $client->residence || $client->place_of_birth);
 
     return Future->done({
             error => BOM::RPC::v3::Utility::create_error({
