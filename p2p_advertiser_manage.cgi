@@ -60,16 +60,9 @@ if ($input{create}) {
 
 if (my $id = $input{update}) {
     try {
-        my $id   = $input{update_id};
-        my $name = $input{update_name};
+        my $id = $input{update_id} or die "Invalid params\n";
 
-        my ($dupe_name) = $db->run(
-            fixup => sub {
-                $_->selectrow_array('SELECT * FROM p2p.advertiser_list_v2(NULL,NULL,NULL,?,NULL) WHERE id != ?', undef, $name, $id);
-            });
-
-        die "There is already another advertiser with this nickname\n" if $dupe_name;
-        die "You do not have permission to set band level\n"           if !$output{can_set_band} && $input{trade_band};
+        die "You do not have permission to set band level\n" if !$output{can_set_band} && $input{trade_band};
 
         my $existing = $db->run(
             fixup => sub {
@@ -77,6 +70,16 @@ if (my $id = $input{update}) {
             });
 
         if ($output{can_edit_general}) {
+
+            if (($input{current_name} // '') ne ($input{update_name} // '')) {
+                my ($dupe_name) = $db->run(
+                    fixup => sub {
+                        $_->selectrow_array('SELECT * FROM p2p.advertiser_list_v2(NULL,NULL,NULL,?,NULL) WHERE id != ?',
+                            undef, $input{update_name}, $id);
+                    });
+
+                die "There is already another advertiser with this nickname\n" if $dupe_name;
+            }
 
             if ($input{blocked_until}) {
                 try {
@@ -110,12 +113,12 @@ if (my $id = $input{update}) {
                 $redis->zrem(P2P_ADVERTISER_BLOCK_ENDS_AT, $existing->{client_loginid});
             }
 
-            if ($name ne $input{current_name}) {
+            if (($input{current_name} // '') ne ($input{update_name} // '')) {
                 my $sendbird_api = BOM::User::Utility::sendbird_api();
                 WebService::SendBird::User->new(
                     user_id    => $existing->{chat_user_id},
                     api_client => $sendbird_api
-                )->update(nickname => $name);
+                )->update(nickname => $input{update_name});
             }
         }
 
@@ -123,7 +126,7 @@ if (my $id = $input{update}) {
         die "Invalid Additional sell allowance value\n" unless looks_like_number($extra_sell) and $extra_sell >= 0;
         if (looks_like_number($extra_sell_orig) and $extra_sell != $extra_sell_orig) {
             die "Additional sell allowance has changed while the page was open, please try again.\n"
-                if $extra_sell_orig != $existing->{extra_sell_amount};
+                if $extra_sell_orig != ($existing->{extra_sell_amount} // 0);
 
             $db->run(
                 fixup => sub {
