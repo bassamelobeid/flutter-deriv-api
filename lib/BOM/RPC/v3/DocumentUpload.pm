@@ -75,7 +75,8 @@ sub start_document_upload {
             expiration_date => $expiration_date,
             checksum        => $args->{expected_checksum} || '',
             page_type       => $args->{page_type}         || '',
-            lifetime_valid  => $lifetime_valid
+            lifetime_valid  => $lifetime_valid,
+            origin          => 'client',
         });
 
         return create_upload_error('duplicate_document') unless ($upload_info);

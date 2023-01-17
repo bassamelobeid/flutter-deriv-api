@@ -527,6 +527,8 @@ subtest 'get account status' => sub {
             );
 
             my $mocked_client = Test::MockModule->new(ref($test_client));
+            my @latest_poi_by;
+            $mocked_client->mock('latest_poi_by',  sub { return @latest_poi_by });
             $mocked_client->mock('get_poi_status', sub { return 'expired' });
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
@@ -690,6 +692,7 @@ subtest 'get account status' => sub {
 
                 my $documents              = $test_client->documents->uploaded();
                 my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
+                @latest_poi_by = ('manual');
                 ok !$test_client->fully_authenticated,     'Not fully authenticated';
                 ok $test_client->status->age_verification, 'Age verified';
                 ok $is_poi_already_expired,                'POI expired';
@@ -1045,6 +1048,8 @@ subtest 'get account status' => sub {
                 # we don't need to have a check for expiry of documents for svg
 
                 my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+                my @latest_poi_by;
+                $mocked_client->mock('latest_poi_by',    sub { return @latest_poi_by });
                 $mocked_status->mock('age_verification', sub { return 1 });
                 $documents_uploaded = {
                     proof_of_identity => {
@@ -1071,7 +1076,8 @@ subtest 'get account status' => sub {
                 ok !$test_client_cr->fully_authenticated,     'Not fully authenticated';
                 ok $test_client_cr->status->age_verification, 'Age verified';
                 ok $is_poi_already_expired,                   'POI expired';
-                $result = $c->tcall($method, {token => $token_cr});
+                @latest_poi_by = ('manual');
+                $result        = $c->tcall($method, {token => $token_cr});
 
                 cmp_deeply(
                     $result,
@@ -1139,6 +1145,8 @@ subtest 'get account status' => sub {
 
             subtest 'Fully authenticated CR have to check for expired documents' => sub {
                 my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+                my @latest_poi_by;
+                $mocked_client->mock('latest_poi_by',       sub { return @latest_poi_by });
                 $mocked_client->mock('fully_authenticated', sub { return 1 });
                 $mocked_status->mock('age_verification',    sub { return 1 });
                 $documents_expired  = 1;
@@ -1177,7 +1185,8 @@ subtest 'get account status' => sub {
                 ok !$test_client_cr->landing_company->is_authentication_mandatory, 'Authentication is not mandatory';
                 ok $test_client_cr->documents->expired(),                          'Client expiry is required';
                 ok $test_client_cr->fully_authenticated,                           'Account is fully authenticated';
-                $result = $c->tcall($method, {token => $token_cr});
+                @latest_poi_by = ('manual');
+                $result        = $c->tcall($method, {token => $token_cr});
 
                 cmp_deeply(
                     $result,
@@ -1844,6 +1853,8 @@ subtest 'get account status' => sub {
                 $mocked_status->mock('age_verification', sub { return 1 });
                 $documents_expired = 1;
                 $mocked_client->mock('has_deposits', sub { return 1 });
+                my @latest_poi_by;
+                $mocked_client->mock('latest_poi_by', sub { return @latest_poi_by });
                 $documents_uploaded = {
                     proof_of_identity => {
                         documents => {
@@ -1866,7 +1877,8 @@ subtest 'get account status' => sub {
                 ok !$test_client_mlt->fully_authenticated,     'Not fully authenticated';
                 ok $test_client_mlt->status->age_verification, 'Age verified';
                 ok $is_poi_already_expired,                    'POI expired';
-                $result = $c->tcall($method, {token => $token_mlt});
+                @latest_poi_by = ('manual');
+                $result        = $c->tcall($method, {token => $token_mlt});
                 cmp_deeply(
                     $result,
                     {
@@ -2162,6 +2174,10 @@ subtest 'get account status' => sub {
             $mocked_status->unmock_all;
 
             subtest "Age verified client, check for expiry of documents" => sub {
+                my $mocked_client = Test::MockModule->new('BOM::User::Client');
+                $mocked_client->mock('has_deposits', sub { return 1 });
+                my @latest_poi_by;
+                $mocked_client->mock('latest_poi_by', sub { return @latest_poi_by });
                 # For age verified clients
                 # we will only check for iom and malta. (expiry of documents)
 
@@ -2191,7 +2207,8 @@ subtest 'get account status' => sub {
                 ok !$test_client_mx->fully_authenticated,     'Not fully authenticated';
                 ok $test_client_mx->status->age_verification, 'Age verified';
                 ok $is_poi_already_expired,                   'POI expired';
-                $result = $c->tcall($method, {token => $token_mx});
+                @latest_poi_by = ('manual');
+                $result        = $c->tcall($method, {token => $token_mx});
 
                 cmp_deeply(
                     $result,
@@ -2271,6 +2288,8 @@ subtest 'get account status' => sub {
     subtest "account authentication" => sub {
         subtest "fully authenicated" => sub {
             my $mocked_client = Test::MockModule->new(ref($test_client));
+            my @latest_poi_by;
+            $mocked_client->mock('latest_poi_by', sub { return @latest_poi_by });
             # mark as fully authenticated
             $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
             $test_client->save;
@@ -2370,6 +2389,7 @@ subtest 'get account status' => sub {
                     },
                 };
 
+                @latest_poi_by = ('manual');
                 my $result = $c->tcall($method, {token => $token});
                 cmp_deeply(
                     $result,
@@ -2519,6 +2539,9 @@ subtest 'get account status' => sub {
 
         subtest "age verified" => sub {
             my $mocked_client = Test::MockModule->new(ref($test_client));
+            my @latest_poi_by;
+            $mocked_client->mock('latest_poi_by', sub { return @latest_poi_by });
+
             my $mocked_status = Test::MockModule->new(ref($test_client->status));
             $mocked_status->mock('age_verification', sub { return 1 });
 
@@ -2586,6 +2609,7 @@ subtest 'get account status' => sub {
             };
 
             subtest "with expired documents" => sub {
+                @latest_poi_by      = ('manual');
                 $documents_uploaded = {
                     proof_of_identity => {
                         documents => {

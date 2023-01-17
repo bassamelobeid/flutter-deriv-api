@@ -1014,6 +1014,166 @@ subtest 'backtest for Onfido disabled country' => sub {
     $status_mock->unmock_all;
 };
 
+subtest 'backtest from onfido rejected to manual expired' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'co',
+    });
+    $client->email('backtest+1234@binary.com');
+    $client->set_default_account('USD');
+    $client->save;
+
+    my $client_mock = Test::MockModule->new(ref($client));
+    my @latest_poi_by;
+    $client_mock->mock(
+        'latest_poi_by',
+        sub {
+            return @latest_poi_by;
+        });
+
+    my $user = BOM::User->create(
+        email    => 'backtest+1234@binary.com',
+        password => 'hey you'
+    );
+
+    $user->add_client($client);
+
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    my $onfido_document_sub_result;
+    my $onfido_check_result;
+
+    $onfido_mock->mock(
+        'submissions_left',
+        sub {
+            return 0;
+        });
+
+    $onfido_mock->mock(
+        'get_latest_check',
+        sub {
+            return {
+                report_document_status     => 'complete',
+                report_document_sub_result => $onfido_document_sub_result,
+                user_check                 => {
+                    result => $onfido_check_result,
+                },
+            };
+        });
+
+    my $token = $m->create_token($client->loginid, 'my token');
+    my $result;
+
+    @latest_poi_by              = ('onfido');
+    $onfido_check_result        = 'suspected';
+    $onfido_document_sub_result = 'suspected';
+    $result                     = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{identity},
+        +{
+        services => {
+            idv => {
+                status              => 'none',
+                submissions_left    => 3,
+                reported_properties => {},
+                last_rejected       => []
+            },
+            manual => {status => 'none'},
+            onfido => {
+                submissions_left     => 0,
+                status               => 'suspected',
+                is_country_supported => 1,
+                country_code         => 'COL',
+                reported_properties  => {},
+                last_rejected        => [],
+                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit (Cedula de Extrajeria)']}
+        },
+        status => 'suspected'
+        };
+
+    @latest_poi_by      = ('manual');
+    $documents_uploaded = {
+        proof_of_identity => {
+            documents => {
+                $client->loginid
+                    . '_brokerage_statement.1319_back' => {
+                    expiry_date => undef,
+                    format      => "png",
+                    id          => 123,
+                    status      => "verified",
+                    type        => "passport",
+                    },
+            },
+            is_pending => 1,
+        },
+    };
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{identity},
+        +{
+        services => {
+            idv => {
+                status              => 'none',
+                submissions_left    => 3,
+                reported_properties => {},
+                last_rejected       => []
+            },
+            manual => {status => 'pending'},
+            onfido => {
+                submissions_left     => 0,
+                status               => 'suspected',
+                is_country_supported => 1,
+                country_code         => 'COL',
+                reported_properties  => {},
+                last_rejected        => [],
+                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit (Cedula de Extrajeria)']}
+        },
+        status => 'pending'
+        };
+
+    $documents_uploaded = {
+        proof_of_identity => {
+            documents => {
+                $client->loginid
+                    . '_brokerage_statement.1319_back' => {
+                    expiry_date => '2010-01-01',
+                    format      => "png",
+                    id          => 123,
+                    status      => "verified",
+                    type        => "passport",
+                    },
+            },
+            is_expired => 1,
+        },
+    };
+
+    $client_mock->mock('is_document_expiry_check_required', sub { return 1 });
+
+    $result = $c->tcall('get_account_status', {token => $token});
+
+    cmp_deeply $result->{authentication}->{identity},
+        +{
+        services => {
+            idv => {
+                status              => 'none',
+                submissions_left    => 3,
+                reported_properties => {},
+                last_rejected       => []
+            },
+            manual => {status => 'expired'},
+            onfido => {
+                submissions_left     => 0,
+                status               => 'suspected',
+                is_country_supported => 1,
+                country_code         => 'COL',
+                reported_properties  => {},
+                last_rejected        => [],
+                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit (Cedula de Extrajeria)']}
+        },
+        status => 'expired'
+        };
+};
+
 subtest 'IDV Validated account' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     my $user   = BOM::User->create(
@@ -1032,6 +1192,7 @@ subtest 'IDV Validated account' => sub {
             return $ignore_age_verification;
         });
 
+    $documents_uploaded      = {};
     $ignore_age_verification = 0;
     $client->status->set('age_verification', 'test', 'test');
     $result = $c->tcall('get_account_status', {token => $token});
@@ -1061,7 +1222,7 @@ subtest 'IDV Validated account' => sub {
             },
             'status' => 'verified'
         },
-        'income'   => {'status' => 'locked'},
+        'income'   => {'status' => 'none'},
         'attempts' => {
             'latest'  => undef,
             'history' => [],
@@ -1100,7 +1261,7 @@ subtest 'IDV Validated account' => sub {
             },
             'status' => 'none'
         },
-        'income'   => {'status' => 'locked'},
+        'income'   => {'status' => 'none'},
         'attempts' => {
             'latest'  => undef,
             'history' => [],
@@ -1117,10 +1278,11 @@ subtest 'IDV Validated account' => sub {
 subtest 'IDV Validated, but high_risk manual upload pending' => sub {
     my $client        = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     my $mocked_client = Test::MockModule->new(ref($client));
+    my @latest_poi_by;
     $mocked_client->mock(
         'latest_poi_by',
         sub {
-            return ('idv');
+            return @latest_poi_by;
         });
     my $user = BOM::User->create(
         email    => 'test1234556@binary.com',
@@ -1142,8 +1304,8 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
         });
 
     $client->status->set('age_verification', 'test', 'test');
-
-    $result = $c->tcall('get_account_status', {token => $token});
+    @latest_poi_by = ('idv');
+    $result        = $c->tcall('get_account_status', {token => $token});
     cmp_deeply $result->{authentication},
         +{
         'needs_verification' => ['income'],
@@ -1169,7 +1331,7 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
             },
             'status' => 'verified'
         },
-        'income'   => {'status' => 'locked'},
+        'income'   => {'status' => 'none'},
         'attempts' => {
             'latest'  => undef,
             'history' => [],
@@ -1210,7 +1372,7 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
             },
             'status' => 'none'
         },
-        'income'   => {'status' => 'locked'},
+        'income'   => {'status' => 'none'},
         'attempts' => {
             'latest'  => undef,
             'history' => [],
@@ -1222,6 +1384,7 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
         },
         'Suddenly, the client is marked as AML high risk';
 
+    @latest_poi_by = ('manual');
     my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
     $documents_mock->mock(
         'uploaded',

@@ -468,6 +468,7 @@ subtest 'Lifetime valid' => sub {
     my ($document) = $mx_client->client_authentication_document;
     ok $document->lifetime_valid,   'Document uploaded is lifetime valid';
     ok !$document->expiration_date, 'Expiration date is empty';
+    is $document->origin, 'client', 'Client is the origin of the document';
 
     subtest 'POA' => sub {
         my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -599,6 +600,7 @@ subtest 'Proof of ownership upload' => sub {
     my ($document) = $client->client_authentication_document;
     is $document->status,        'uploaded',           'Document uploaded';
     is $document->document_type, 'proof_of_ownership', 'Doc type is POO';
+    is $document->origin,        'client',             'Client is the origin of the document';
 
     my $list = $client->proof_of_ownership->list();
     ($poo) = $list->@*;
