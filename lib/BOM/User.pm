@@ -76,15 +76,19 @@ use constant {
     MT5_REGEX            => qr/^MT[DR]?(?=\d+$)/,
     MT5_REAL_REGEX       => qr/^MT[R]?(?=\d+$)/,
     MT5_DEMO_REGEX       => qr/^MTD(?=\d+$)/,
-    VIRTUAL_REGEX        => qr/^VR[TC|CH]/,
-    VIRTUAL_WALLET_REGEX => qr/^VRW\d+/,
-    DXTRADE_REGEX        => qr/^DX[DR]\d{4,}/,
+    VIRTUAL_REGEX        => qr/^VR(?:TC|CH)(?=\d+$)/,
+    VIRTUAL_WALLET_REGEX => qr/^VRW(?=\d+$)/,
+    DXTRADE_REGEX        => qr/^DX[DR](?=\d+$)/,
     DXTRADE_REAL_REGEX   => qr/^DXR(?=\d+$)/,
     DXTRADE_DEMO_REGEX   => qr/^DXD(?=\d+$)/,
+    CTRADE_REGEX         => qr/^CT[DR](?=\d+$)/,
+    CTRADE_REAL_REGEX    => qr/^CTR(?=\d+$)/,
+    CTRADE_DEMO_REGEX    => qr/^CTD(?=\d+$)/,
     EZR_REGEX            => qr/^EZ[DR]?(?=\d+$)/,
     EZR_REAL_REGEX       => qr/^EZ[R]?(?=\d+$)/,
     EZR_DEMO_REGEX       => qr/^EZD(?=\d+$)/,
 };
+use constant ALL_TRADING_PLATFORMS_LOGINS => qr/${\(MT5_REGEX)}|${\(DXTRADE_REGEX)}|${\(CTRADE_REGEX)}|${\(EZR_REGEX)}/;
 
 sub create {
     my ($class, %args) = @_;
@@ -495,7 +499,7 @@ get client non-mt5 login ids
 
 sub bom_loginids {
     my $self = shift;
-    return grep { $_ !~ MT5_REGEX && $_ !~ DXTRADE_REGEX && $_ !~ EZR_REGEX } $self->loginids;
+    return grep { $_ !~ ALL_TRADING_PLATFORMS_LOGINS } $self->loginids;
 }
 
 =head2 bom_real_loginids
@@ -506,7 +510,7 @@ get non-mt5 real login ids
 
 sub bom_real_loginids {
     my $self = shift;
-    return grep { $_ !~ MT5_REGEX && $_ !~ DXTRADE_REGEX && $_ !~ EZR_REGEX && $_ !~ VIRTUAL_REGEX } $self->loginids;
+    return grep { $_ !~ ALL_TRADING_PLATFORMS_LOGINS && $_ !~ VIRTUAL_REGEX } $self->loginids;
 }
 
 =head2 bom_virtual_loginid
@@ -597,6 +601,19 @@ sub dxtrade_loginids {
     my ($self, $type) = @_;
 
     my @loginids = sort $self->get_trading_platform_loginids('dxtrader', $type);
+    return @loginids;
+}
+
+=head2 ctrade_loginids
+
+get ctrade loginids for the user
+
+=cut
+
+sub ctrade_loginids {
+    my ($self, $type) = @_;
+
+    my @loginids = sort $self->get_trading_platform_loginids('ctrader', $type);
     return @loginids;
 }
 
@@ -1602,6 +1619,8 @@ sub get_account_by_loginid {
     )->get_account_info($loginid)
         if $loginid =~ DXTRADE_REGEX;
 
+    #TODO: add logic for cTrader here when it's ready
+
     my $client = first { $_->loginid eq $loginid && !$_->is_wallet } $self->clients;
 
     die "InvalidTradingAccount\n" unless ($client);
@@ -1682,11 +1701,17 @@ sub get_trading_platform_loginids {
             demo => MT5_DEMO_REGEX,
             all  => MT5_REGEX,
         },
+        ctrader => {
+            real => CTRADE_REAL_REGEX,
+            demo => CTRADE_DEMO_REGEX,
+            all  => CTRADE_REGEX,
+        },
         derivez => {
             real => EZR_REAL_REGEX,
             demo => EZR_DEMO_REGEX,
             all  => EZR_REGEX,
-        }};
+        },
+    };
 
     my $regex = $regex_stash->{$platform}->{$account_type} or return ();
 
