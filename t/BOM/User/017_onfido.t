@@ -1053,7 +1053,7 @@ subtest 'applicant info' => sub {
             street          => 301,
             state           => 'LA',
             town            => 'Beverly Hills',
-            country         => 'CHN',
+            country         => 'IDN',
             postcode        => 232323,
             building_number => 'Civic Center'
         },

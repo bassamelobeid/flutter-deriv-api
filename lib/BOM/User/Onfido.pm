@@ -869,7 +869,7 @@ sub applicant_info {
 
     my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
 
-    $country //= uc($client->place_of_birth || $client->residence);
+    $country //= uc($client->residence || $client->place_of_birth);
 
     my $details = {
         (map { $_ => $client->$_ } qw(first_name last_name email)),
