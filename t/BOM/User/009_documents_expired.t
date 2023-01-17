@@ -64,9 +64,10 @@ subtest 'client documents expiry' => sub {
             $test = 'BOM::User::Client->documents->expired returns 0 if there are no documents';
             is($client->documents->expired(), 0, $test);
 
-            $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+            $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
             $sth_doc_new = $dbh->prepare($SQL);
-            $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 55555, '75bada1e034d13b417083507db47ee4a', 'none', 'front');
+            $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 55555, '75bada1e034d13b417083507db47ee4a',
+                'none', 'front', undef, 0, 'legacy');
 
             $id1 = $sth_doc_new->fetch()->[0];
             $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
@@ -131,7 +132,8 @@ subtest 'client documents expiry' => sub {
 
             $test = q{BOM::User::Client->documents->expired returns 0 if all documents have no expiration date};
 ## Create a second document
-            $sth_doc_new->execute($client->loginid, 'passport', 'PNG', undef, 66666, '204a5098dac0dc176c88e4ab5312dbd5', 'none', 'front');
+            $sth_doc_new->execute($client->loginid, 'passport', 'PNG', undef, 66666, '204a5098dac0dc176c88e4ab5312dbd5',
+                'none', 'front', undef, 0, 'legacy');
             $id2 = $sth_doc_new->fetch()->[0];
 
             $SQL = 'SELECT COUNT(*) from betonmarkets.client_authentication_document WHERE client_loginid = ?';
@@ -159,9 +161,10 @@ subtest 'client documents expiry' => sub {
             $client->client_authentication_document(undef);
             is($client->documents->expired(), 0, $test);
 
-            $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+            $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
             $sth_doc_new = $dbh->prepare($SQL);
-            $sth_doc_new->execute($client->loginid, 'bankstatement', 'PNG', 'yesterday', 65555, '75bada1e034d13b417083507db47ee4b', 'none', 'front');
+            $sth_doc_new->execute($client->loginid, 'bankstatement', 'PNG', 'yesterday', 65555, '75bada1e034d13b417083507db47ee4b',
+                'none', 'front', undef, 0, 'legacy');
             $id1            = $sth_doc_new->fetch()->[0];
             $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
             $sth_doc_finish = $dbh->prepare($SQL);
@@ -363,15 +366,17 @@ subtest 'documents uploaded' => sub {
 
         # We need to push one more poa doc
         my $dbh         = $client->db->dbic->dbh;
-        my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+        my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
         my $sth_doc_new = $dbh->prepare($SQL);
-        $sth_doc_new->execute($client->loginid, 'other_kind', 'PNG', 'yesterday', 1618, '15bada1e034d13b417083507db47ee4b', 'none', 'front');
+        $sth_doc_new->execute($client->loginid, 'other_kind', 'PNG', 'yesterday', 1618, '15bada1e034d13b417083507db47ee4b',
+            'none', 'front', undef, 0, 'legacy');
         my $id1 = $sth_doc_new->fetch()->[0];
         $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
         my $sth_doc_finish = $dbh->prepare($SQL);
         $sth_doc_finish->execute($id1);
 
-        $sth_doc_new->execute($client->loginid, 'other_kind', 'PNG', 'yesterday', 2618, '14bada1e034d13b417083507db47ee4b', 'none', 'front');
+        $sth_doc_new->execute($client->loginid, 'other_kind', 'PNG', 'yesterday', 2618, '14bada1e034d13b417083507db47ee4b',
+            'none', 'front', undef, 0, 'legacy');
         my $id2 = $sth_doc_new->fetch()->[0];
         $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
         $sth_doc_finish = $dbh->prepare($SQL);
@@ -588,18 +593,20 @@ subtest 'rejected and uploaded' => sub {
     my $id;
     my $id2;
 
-    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
     $sth_doc_new = $dbh->prepare($SQL);
-    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 12345, '75bada1e034d13b417083507db47ee4a', 'none', 'front');
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 12345, '75bada1e034d13b417083507db47ee4a',
+        'none', 'front', undef, 0, 'legacy');
     $id = $sth_doc_new->fetch()->[0];
 
     $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'rejected\'::status_type)';
     $sth_doc_new = $dbh->prepare($SQL);
     $sth_doc_new->execute($id);
 
-    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
     $sth_doc_new = $dbh->prepare($SQL);
-    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 54321, '75bada1e034d13b417083507db47ee4b', 'none', 'front');
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 54321, '75bada1e034d13b417083507db47ee4b',
+        'none', 'front', undef, 0, 'legacy');
     $id2 = $sth_doc_new->fetch()->[0];
 
     $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
@@ -705,9 +712,9 @@ subtest 'rejected and uploaded' => sub {
     # Now the client uploads fresh document
     # When age_verification is true and we have fresh docs the status should be pending again
 
-    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
     $sth_doc_new = $dbh->prepare($SQL);
-    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 618900, 'checsum18515', 'none', 'front');
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 618900, 'checsum18515', 'none', 'front', undef, 0, 'legacy');
     $id = $sth_doc_new->fetch()->[0];
 
     $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
@@ -857,18 +864,20 @@ subtest 'rejected an accepted' => sub {
     my $id;
     my $id2;
 
-    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
     $sth_doc_new = $dbh->prepare($SQL);
-    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 12345, '75bada1e034d13b417083507db47ee4a', 'none', 'front');
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 12345, '75bada1e034d13b417083507db47ee4a',
+        'none', 'front', undef, 0, 'legacy');
     $id = $sth_doc_new->fetch()->[0];
 
     $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
     $sth_doc_new = $dbh->prepare($SQL);
     $sth_doc_new->execute($id);
 
-    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
     $sth_doc_new = $dbh->prepare($SQL);
-    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 54321, '75bada1e034d13b417083507db47ee4b', 'none', 'front');
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 54321, '75bada1e034d13b417083507db47ee4b',
+        'none', 'front', undef, 0, 'legacy');
     $id2 = $sth_doc_new->fetch()->[0];
 
     $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
@@ -905,9 +914,10 @@ subtest 'rejected an accepted' => sub {
 
     # New doc comes in, time valid verification kicks in
 
-    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
     $sth_doc_new = $dbh->prepare($SQL);
-    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 789, '75bada1e034d13b417083507db47ee43', 'none', 'front');
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 789, '75bada1e034d13b417083507db47ee43',
+        'none', 'front', undef, 0, 'legacy');
     $id2 = $sth_doc_new->fetch()->[0];
 
     $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
@@ -1057,6 +1067,7 @@ subtest 'Lifetime Valid Documents' => sub {
             page_type       => 'front',
             issue_date      => undef,
             lifetime_valid  => undef,
+            origin          => 'legacy',
         }
         ),
         'Expired document uploaded';
@@ -1078,6 +1089,7 @@ subtest 'Lifetime Valid Documents' => sub {
             issue_date      => undef,
             lifetime_valid  => undef,
             status          => 'uploaded',
+            origin          => 'legacy',
         }
         ),
         'Expired document uploaded';
@@ -1100,6 +1112,7 @@ subtest 'Lifetime Valid Documents' => sub {
             page_type       => 'back',
             issue_date      => undef,
             lifetime_valid  => 1,
+            origin          => 'legacy',
         }
         ),
         'Lifetime valid document uploaded';
@@ -1117,10 +1130,10 @@ subtest 'Lifetime Valid Documents' => sub {
 sub upload_new_doc {
     my ($client, $document) = @_;
     my $dbh         = $client->db->dbic->dbh;
-    my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?)';
+    my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?,?)';
     my $sth_doc_new = $dbh->prepare($SQL);
     $sth_doc_new->execute($client->loginid,
-        @{$document}{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid/});
+        @{$document}{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid origin/});
 
     my $id     = $sth_doc_new->fetch()->[0];
     my $status = $document->{status} // 'verified';

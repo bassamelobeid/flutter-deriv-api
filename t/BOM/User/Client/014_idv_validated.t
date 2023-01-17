@@ -89,6 +89,18 @@ subtest 'onfido after idv validated' => sub {
     $user->add_client($client);
 
     my $mock = Test::MockModule->new(ref($client));
+    my @latest_poi_by;
+    my @latest_verified_by;
+    $mock->mock(
+        'latest_poi_by',
+        sub {
+            my (undef, $args) = @_;
+
+            return @latest_verified_by if $args->{only_verified};
+
+            return @latest_poi_by;
+        });
+
     my $get_last_updated_document;
     my $idv_mock = Test::MockModule->new('BOM::User::IdentityVerification');
     $idv_mock->mock(
@@ -110,6 +122,8 @@ subtest 'onfido after idv validated' => sub {
     $get_last_updated_document = 'verified';
     $client->status->set('age_verification', 'test', 'test');
 
+    @latest_poi_by      = ('idv');
+    @latest_verified_by = ('idv');
     ok $client->is_idv_validated(), 'IDV validated';
     is $client->get_onfido_status(),     'none',     'Should not be onfido validated';
     is $client->get_manual_poi_status(), 'none',     'Should not be manually validated';
@@ -117,6 +131,9 @@ subtest 'onfido after idv validated' => sub {
     is $client->get_idv_status(),        'verified', 'idv status should be verified';
 
     # Make user account into AML risk high (once user become AML risk high their identity .status will become none)
+
+    @latest_poi_by      = ('idv');
+    @latest_verified_by = ('idv');
     $client->aml_risk_classification('high');
     ok $client->is_idv_validated(), 'IDV validated';
     is $client->get_onfido_status(),     'none',     'Should not be onfido validated';
@@ -136,6 +153,8 @@ subtest 'onfido after idv validated' => sub {
             };
         });
     $current_onfido_status = 'rejected';
+    @latest_poi_by         = ('onfido');
+    @latest_verified_by    = ('idv');
 
     ok $client->is_idv_validated(), 'is IDV validated';
     is $client->get_onfido_status(),     'rejected', 'Should be onfido rejected';
@@ -156,6 +175,8 @@ subtest 'onfido after idv validated' => sub {
             };
         });
     $current_onfido_status = 'clear';
+    @latest_poi_by         = ('onfido');
+    @latest_verified_by    = ('onfido');
 
     ok !$client->is_idv_validated(), 'is not IDV validated';
     is $client->get_onfido_status(),     'verified', 'Should be onfido verified';
@@ -177,6 +198,8 @@ subtest 'onfido after idv validated' => sub {
         });
     $current_onfido_status = 'clear';
 
+    @latest_poi_by      = ('onfido');
+    @latest_verified_by = ('idv');
     ok $client->is_idv_validated(), 'is IDV validated';
     is $client->get_onfido_status(),     'verified', 'Should be onfido verified';
     is $client->get_manual_poi_status(), 'none',     'Should be manually none';

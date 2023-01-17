@@ -284,17 +284,159 @@ subtest 'latest poi by' => sub {
             expected => 'idv'
         },
         {
+            title             => 'Only IDV - Pending',
+            idv               => undef,
+            idv_pending_check => 1,
+            onfido            => undef,
+            expected          => 'idv'
+        },
+        {
+            title             => 'IDV - Pending but Onfido is more recent',
+            idv               => undef,
+            idv_pending_check => 1,
+            onfido            => {
+                created_at => Date::Utility->new->date_yyyymmdd,
+            },
+            expected => 'onfido'
+        },
+        {
             title    => 'none',
             idv      => undef,
             onfido   => undef,
             expected => undef,
-        }];
+        },
+        # we will combine manual cases
+        {
+            title  => 'Only Manual - Origin B.O.',
+            manual => {
+                upload_date => '2020-10-10 00:00:01',
+                origin      => 'bo',
+            },
+            idv      => undef,
+            onfido   => undef,
+            expected => 'manual',
+        },
+        {
+            title  => 'Only Manual - Origin Client',
+            manual => {
+                upload_date => '2020-10-10 00:00:01',
+                origin      => 'client',
+            },
+            idv      => undef,
+            onfido   => undef,
+            expected => 'manual',
+        },
+        {
+            title  => 'Manual and IDV, manual is more recent',
+            manual => {
+                upload_date => '2020-10-10 00:00:01',
+                origin      => 'client',
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            onfido   => undef,
+            expected => 'manual',
+        },
+        {
+            title  => 'Manual and IDV, IDV is more recent',
+            manual => {
+                upload_date => '2020-10-10 00:00:00',
+                origin      => 'bo',
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:01',
+            },
+            onfido   => undef,
+            expected => 'idv',
+        },
+        {
+            title  => 'Manual and Onfido, manual is more recent',
+            manual => {
+                upload_date => '2020-10-10 00:00:01',
+                origin      => 'bo',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:00',
+            },
+            IDV      => undef,
+            expected => 'manual',
+        },
+        {
+            title  => 'Manual and Onfido, onfido is more recent',
+            manual => {
+                upload_date => '2020-10-10 00:00:00',
+                origin      => 'bo',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:01',
+            },
+            idv      => undef,
+            expected => 'onfido',
+        },
+        {
+            title  => 'Manual + Onfido + IDV, manual is more recent',
+            manual => {
+                upload_date => '2020-10-10 00:00:01',
+                origin      => 'bo',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:00',
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            expected => 'manual',
+        },
+        {
+            title  => 'Manual + Onfido + IDV, onfido is more recent',
+            manual => {
+                upload_date => '2020-10-10 00:00:00',
+                origin      => 'bo',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:01',
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            expected => 'onfido',
+        },
+        {
+            title  => 'Manual + Onfido + IDV, IDV is more recent',
+            manual => {
+                upload_date => '2020-10-10 00:00:00',
+                origin      => 'bo',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:00',
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:01',
+            },
+            expected => 'idv',
+        },
+    ];
 
     my $mock_onfido = Test::MockModule->new('BOM::User::Onfido');
     my $idv_mock    = Test::MockModule->new('BOM::User::IdentityVerification');
+    my $doc_mock    = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 
     my $onfido_latest;
     my $idv_latest;
+    my $manual_latest;
+    my $idv_pending_check;
+
+    $doc_mock->mock(
+        'latest',
+        sub {
+            my ($self) = @_;
+            my $doc = $manual_latest;
+
+            $self->_clear_latest;
+
+            return $doc;
+        });
 
     $mock_onfido->mock(
         'get_latest_check',
@@ -305,12 +447,17 @@ subtest 'latest poi by' => sub {
     $idv_mock->mock(
         'get_last_updated_document',
         sub {
-            return {
-                binary_user_id  => $client->user->id,
-                document_type   => 'bvn',
-                issuing_country => 'ng',
-                document_number => '124124123412',
-            };
+            if ($idv_latest || $idv_pending_check) {
+                return {
+                    binary_user_id  => $client->user->id,
+                    document_type   => 'bvn',
+                    issuing_country => 'ng',
+                    document_number => '124124123412',
+                    submitted_at    => '2020-10-10',
+                };
+            }
+
+            return undef;
         });
 
     $idv_mock->mock(
@@ -328,12 +475,16 @@ subtest 'latest poi by' => sub {
         });
 
     for my $test ($tests->@*) {
-        my ($onfido, $idv, $title, $expected) = @{$test}{qw/onfido idv title expected/};
+        my ($onfido, $idv, $title, $expected, $manual, $idv_pending) = @{$test}{qw/onfido idv title expected manual idv_pending_check/};
 
         subtest $title => sub {
             $onfido_latest = {user_check => $onfido};
 
             $idv_latest = $idv;
+
+            $idv_pending_check = $idv_pending;
+
+            $manual_latest = $manual;
 
             my ($name, $check) = $client->latest_poi_by;
 
@@ -341,9 +492,14 @@ subtest 'latest poi by' => sub {
 
             is $check, undef, 'Undef check' unless defined $expected;
 
-            $expected //= '';
-            isa_ok $check, 'HASH', 'Expected IDV check'    if $expected eq 'idv';
-            isa_ok $check, 'HASH', 'Expected Onfido check' if $expected eq 'onfido';
+            if ($idv_pending_check && $name eq 'idv') {
+                is $check, undef, 'Expected undef check';
+            } else {
+                $expected //= '';
+                isa_ok $check, 'HASH', 'Expected IDV check'    if $expected eq 'idv';
+                isa_ok $check, 'HASH', 'Expected Onfido check' if $expected eq 'onfido';
+            }
+
         };
     }
 };

@@ -26,6 +26,7 @@ subtest 'Start Document Upload' => sub {
                 document_id     => '1618',
                 checksum        => 'checkthis',
                 page_type       => 'front',
+                origin          => 'client',
             })
     }
     'No exception seen';
@@ -36,6 +37,9 @@ subtest 'Start Document Upload' => sub {
         file_id   => re('\d+'),
         },
         'Successfully started the upload';
+
+    my ($document) = $test_client->client_authentication_document;
+    is $document->origin, 'client', 'Client is the origin of the document';
 };
 
 subtest 'Finish Document Upload' => sub {
@@ -45,6 +49,22 @@ subtest 'Finish Document Upload' => sub {
     'No exception seen';
 
     is $id, $file->{file_id}, 'Expected result for a finished upload';
+
+    my ($doc) = $test_client->find_client_authentication_document(query => [id => $id]);
+
+    is $doc->status, 'uploaded', 'Expected status';
 };
 
+subtest 'Finish Document Upload -> verified status' => sub {
+    lives_ok {
+        $id = $test_client->finish_document_upload($file->{file_id}, 'verified')
+    }
+    'No exception seen';
+
+    is $id, $file->{file_id}, 'Expected result for a finished upload';
+
+    my ($doc) = $test_client->find_client_authentication_document(query => [id => $id]);
+
+    is $doc->status, 'verified', 'Expected status';
+};
 done_testing();

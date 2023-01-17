@@ -477,8 +477,8 @@ sub status {
     my ($self, $document) = @_;
 
     # if lock exists return pending right away
-    my $redis = BOM::Config::Redis::redis_events();
-    return 'pending' if $redis->get(IDV_LOCK_PENDING . $self->user_id);
+
+    return 'pending' if ($self->get_pending_lock() // 0) > 0;
 
     $document //= $self->get_last_updated_document();
 

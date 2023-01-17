@@ -166,12 +166,16 @@ subtest 'get_poa_status' => sub {
 };
 
 subtest 'get_poi_status' => sub {
+    my @latest_poi_by;
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
-    my ($onfido_document_status, $onfido_sub_result);
+    my ($onfido_document_status, $onfido_sub_result, $user_check_result);
     $mocked_onfido->mock(
         'get_latest_check',
         sub {
             return {
+                user_check => {
+                    result => $user_check_result,
+                },
                 report_document_status     => $onfido_document_status,
                 report_document_sub_result => $onfido_sub_result,
             };
@@ -203,7 +207,10 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status expired for uploaded files' => sub {
-            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('fully_authenticated',               sub { return 0 });
+            $mocked_client->mock('latest_poi_by',                     sub { return @latest_poi_by });
+            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
+            @latest_poi_by = ('manual');
 
             $uploaded = {
                 proof_of_identity => {
@@ -274,7 +281,8 @@ subtest 'get_poi_status' => sub {
 
         subtest 'POI status is pending' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 0 });
-            $mocked_client->mock('latest_poi_by',       sub { return undef });
+            $mocked_client->mock('latest_poi_by',       sub { return @latest_poi_by });
+            @latest_poi_by = ('manual');
 
             $uploaded = {
                 proof_of_identity => {
@@ -345,6 +353,8 @@ subtest 'get_poi_status' => sub {
 
         subtest 'POI status verified' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 1 });
+            $mocked_client->mock('latest_poi_by',       sub { return @latest_poi_by });
+            @latest_poi_by = ('manual');
 
             $uploaded = {
                 proof_of_identity => {
@@ -365,7 +375,7 @@ subtest 'get_poi_status' => sub {
 
             my $authenticated_test_scenarios = sub {
                 $uploaded = {
-                    proof_of_identity => {
+                    onfido => {
                         is_expired => 0,
                         documents  => {},
                     }};
@@ -376,8 +386,9 @@ subtest 'get_poi_status' => sub {
 
                 $onfido_document_status = 'complete';
                 $onfido_sub_result      = 'clear';
+                $user_check_result      = 'clear';
                 $uploaded               = {
-                    proof_of_identity => {
+                    onfido => {
                         is_expired => 1,
                         documents  => {test => 1},
                     }};
@@ -385,8 +396,9 @@ subtest 'get_poi_status' => sub {
 
                 $onfido_document_status = 'complete';
                 $onfido_sub_result      = 'rejected';
+                $user_check_result      = 'consider';
                 $uploaded               = {
-                    proof_of_identity => {
+                    onfido => {
                         is_expired => 1,
                         documents  => {test => 1},
                     }};
@@ -415,19 +427,21 @@ subtest 'get_poi_status' => sub {
 
             my $authenticated_test_scenarios = sub {
                 $uploaded = {
-                    proof_of_identity => {
+                    onfido => {
                         is_expired => 0,
                         documents  => {},
                     }};
                 $onfido_document_status = 'complete';
                 $onfido_sub_result      = 'suspected';
+                $user_check_result      = 'suspected';
                 is $test_client_cr->get_poi_status, 'verified',
                     'POI status of an authenticated client is <verified> - even with suspected onfido check';
 
                 $onfido_document_status = 'complete';
                 $onfido_sub_result      = 'clear';
+                $user_check_result      = 'clear';
                 $uploaded               = {
-                    proof_of_identity => {
+                    onfido => {
                         is_expired => 1,
                         documents  => {test => 1},
                     }};
@@ -435,8 +449,9 @@ subtest 'get_poi_status' => sub {
 
                 $onfido_document_status = 'complete';
                 $onfido_sub_result      = 'suspected';
+                $user_check_result      = 'suspected';
                 $uploaded               = {
-                    proof_of_identity => {
+                    onfido => {
                         is_expired => 1,
                         documents  => {test => 1},
                     }};
@@ -564,7 +579,9 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status - IDV rejected first, then manual uploads' => sub {
-            my $idv = 'none';
+            my $idv         = 'none';
+            my @last_poi_by = ('idv');
+            $mocked_client->mock('latest_poi_by', sub { return @last_poi_by });
             $mocked_client->mock(
                 'get_idv_status',
                 sub {
@@ -584,7 +601,8 @@ subtest 'get_poi_status' => sub {
             is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
             is $test_client_cr->get_manual_poi_status, 'none',     'manual status = none';
 
-            $uploaded = {
+            @last_poi_by = ('manual');
+            $uploaded    = {
                 proof_of_identity => {
                     is_pending => 1,
                     documents  => {
@@ -633,6 +651,7 @@ subtest 'get_poi_status' => sub {
                 },
             };
 
+            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
             is $test_client_cr->get_poi_status,        'expired',  'poi status = expired';
             is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
             is $test_client_cr->get_manual_poi_status, 'expired',  'manual status = expired';
@@ -725,9 +744,11 @@ subtest 'get_poi_status' => sub {
         undef $onfido_sub_result;
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
-        subtest 'POI status none' => sub {
-            $mocked_client->mock('fully_authenticated', sub { return 0 });
+        my @last_poi_by   = ('manual');
+        $mocked_client->mock('latest_poi_by',       sub { return @last_poi_by });
+        $mocked_client->mock('fully_authenticated', sub { return 0 });
 
+        subtest 'POI status none' => sub {
             $uploaded = {
                 proof_of_identity => {
                     is_expired => 0,
@@ -735,11 +756,10 @@ subtest 'get_poi_status' => sub {
                 }};
 
             is $test_client_mf->get_poi_status, 'none', 'Client POI status is none';
-            $mocked_client->unmock_all;
         };
 
         subtest 'POI status expired' => sub {
-            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
 
             $uploaded = {
                 proof_of_identity => {
@@ -791,7 +811,7 @@ subtest 'get_poi_status' => sub {
             $mocked_client->mock('latest_poi_by',       sub { return 'onfido' });
 
             $uploaded = {
-                proof_of_identity => {
+                onfido => {
                     is_expired => 0,
                     documents  => {},
                 }};
@@ -1693,7 +1713,7 @@ subtest 'Onfido status' => sub {
         'uploaded',
         sub {
             return {
-                proof_of_identity => {
+                onfido => {
                     defined $docs ? $docs->%* : (),
                     documents => {},
                 }};
@@ -2199,6 +2219,28 @@ subtest 'POI attempts' => sub {
         broker_code => 'CR',
     });
 
+    my $mocked_docs = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    my $manual_latest;
+
+    $mocked_docs->mock(
+        'latest',
+        sub {
+            my ($self) = @_;
+            my $latest = $manual_latest;
+
+            $self->_clear_latest;
+
+            return $latest;
+        });
+
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    my $manual_status;
+    $mocked_client->mock(
+        'get_manual_poi_status',
+        sub {
+            return $manual_status;
+        });
+
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
     my $onfido_list;
 
@@ -2427,13 +2469,139 @@ subtest 'POI attempts' => sub {
                 }
             ],
         },
+
+        {
+            title  => 'Only Manual pending',
+            manual => {
+                status      => 'pending',
+                origin      => 'bo',
+                id          => 1,
+                uploaded_at => $now->datetime_yyyymmdd_hhmmss,
+            },
+            onfido  => undef,
+            idv     => undef,
+            results => [{
+                    service      => 'manual',
+                    status       => 'pending',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 1,
+                    timestamp    => re('\d+'),
+                }
+            ],
+        },
+        {
+            title  => 'Only Manual rejected',
+            manual => {
+                status      => 'rejected',
+                origin      => 'bo',
+                id          => 1,
+                uploaded_at => $now->datetime_yyyymmdd_hhmmss,
+            },
+            onfido  => undef,
+            idv     => undef,
+            results => [{
+                    service      => 'manual',
+                    status       => 'rejected',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 1,
+                    timestamp    => re('\d+'),
+                }
+            ],
+        },
+        {
+            title  => 'Only Manual verified',
+            manual => {
+                status      => 'verified',
+                origin      => 'bo',
+                id          => 1,
+                uploaded_at => $now->datetime_yyyymmdd_hhmmss,
+            },
+            onfido  => undef,
+            idv     => undef,
+            results => [{
+                    service      => 'manual',
+                    status       => 'verified',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 1,
+                    timestamp    => re('\d+'),
+                }
+            ],
+        },
+        {
+            title  => 'Only Manual expired',
+            manual => {
+                status      => 'expired',
+                origin      => 'bo',
+                id          => 1,
+                uploaded_at => $now->datetime_yyyymmdd_hhmmss,
+            },
+            onfido  => undef,
+            idv     => undef,
+            results => [{
+                    service      => 'manual',
+                    status       => 'expired',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 1,
+                    timestamp    => re('\d+'),
+                }
+            ],
+        },
+
+        {
+            title  => 'Manual should be the first in the list',
+            onfido => [{
+                    status     => 'in_progress',
+                    result     => undef,
+                    id         => 'onfido-test-1',
+                    created_at => $before->_minus_years(1)->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            manual => {
+                status      => 'pending',
+                origin      => 'bo',
+                id          => 1,
+                uploaded_at => $after->datetime_yyyymmdd_hhmmss,
+            },
+            idv => [{
+                    issuing_country => 'ke',
+                    status          => 'verified',
+                    id              => 4,
+                    submitted_at    => $before->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            results => [{
+                    service      => 'manual',
+                    status       => 'pending',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 1,
+                    timestamp    => re('\d+'),
+                },
+                {
+                    service      => 'idv',
+                    status       => 'verified',
+                    country_code => 'ke',
+                    id           => '4',
+                    timestamp    => re('\d+'),
+                },
+                {
+                    service      => 'onfido',
+                    status       => 'pending',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 'onfido-test-1',
+                    timestamp    => re('\d+'),
+                }
+            ],
+        },
     ];
 
     for my $test ($tests->@*) {
-        my ($title, $onfido, $idv, $results) = @{$test}{qw/title onfido idv results/};
+        my ($title, $onfido, $idv, $results, $manual) = @{$test}{qw/title onfido idv results manual/};
 
         $onfido_list = $onfido;
         $idv_list    = $idv;
+
+        $manual_status = $manual ? delete $manual->{status} : undef;
+        $manual_latest = $manual;
 
         subtest $title => sub {
             cmp_deeply $client->poi_attempts,
@@ -2448,6 +2616,8 @@ subtest 'POI attempts' => sub {
 
     $mocked_onfido->unmock_all;
     $mocked_idv->unmock_all;
+    $mocked_client->unmock_all;
+    $mocked_docs->unmock_all;
 };
 
 done_testing();

@@ -7340,38 +7340,41 @@ Returns,
 sub get_poi_status {
     my ($self) = @_;
 
-    my $manual = $self->get_manual_poi_status();
-    my $idv    = $self->get_idv_status();
-    my $onfido = $self->get_onfido_status();
-    my %status = map { $_ => 1 } ($manual, $idv, $onfido);
+    my ($poi_by) = $self->latest_poi_by;
 
-    return 'pending' if $status{pending};
+    $poi_by //= 'none';
+
+    my $status = 'none';
+
+    $status = $self->get_manual_poi_status() if $poi_by eq 'manual';
+
+    $status = $self->get_onfido_status() if $poi_by eq 'onfido';
+
+    $status = $self->get_idv_status() if $poi_by eq 'idv';
+
+    return 'pending' if $status eq 'pending';
 
     if (!$self->ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
-        # IDV does not have 2nd attempt
-        if ($onfido eq 'expired' || $manual eq 'expired') {
-            return 'suspected' if $onfido eq 'suspected';
-            return 'rejected'  if $onfido eq 'rejected';
-            return 'rejected'  if $manual eq 'rejected';
-            return 'expired';
-        }
+        my $expired;
+
+        $expired = $self->documents->expired(undef) if $poi_by eq 'manual';
+
+        $expired = $self->documents->expired(undef, 'onfido') if $poi_by eq 'onfido';
+
+        return $status if $expired;
 
         return 'verified';
     }
 
-    return 'suspected' if $status{suspected};
+    return 'suspected' if $status eq 'suspected';
 
     return 'rejected' if $self->status->poi_name_mismatch || $self->status->poi_dob_mismatch;
 
-    return 'rejected' if $status{rejected};
+    return 'rejected' if $status eq 'rejected';
 
-    return 'expired' if $status{expired};
+    return 'expired' if $status eq 'expired';
 
-    # TODO: remove when latest poi by supports manual
-    # manual status is not reported by latest poi by function, until we bring support for it we may patch it like this
-    if ($self->ignore_age_verification) {
-        return 'verified' if $manual eq 'verified';
-    }
+    return 'verified' if $self->get_manual_poi_status eq 'verified';
 
     return 'none';
 }
@@ -7479,7 +7482,7 @@ sub get_onfido_status {
     # (it would yield verified otherwise). Far from perfect but better than null.
 
     if ($check_result eq 'clear') {
-        my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
+        my $is_poi_expired = $self->documents->uploaded->{onfido}->{is_expired};
 
         return 'expired' if $is_poi_expired;
 
@@ -7935,6 +7938,8 @@ It takes a hashref containing the following parameters:
 
 =item * C<lifetime_valid> boolean that indicates whether the document is lifetime valid.
 
+=item * C<origin> enum for the origin of the document: bo, client, onfido or legacy.
+
 =back
 
 Returns a hashref containing:
@@ -7951,13 +7956,13 @@ Returns a hashref containing:
 
 sub start_document_upload {
     my ($self, $params) = @_;
-    my ($document_type, $document_format, $expiration_date, $document_id, $checksum, $comments, $page_type, $issue_date, $lifetime_valid) =
-        @$params{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid/};
+    my ($document_type, $document_format, $expiration_date, $document_id, $checksum, $comments, $page_type, $issue_date, $lifetime_valid, $origin) =
+        @$params{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid origin/};
 
     return $self->db->dbic->run(
         ping => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 $self->loginid,
                 $document_type,
@@ -7969,6 +7974,7 @@ sub start_document_upload {
                 $page_type,
                 $issue_date,
                 $lifetime_valid ? 1 : 0,
+                $origin // 'legacy',
             );
         });
 }
@@ -7986,6 +7992,8 @@ It takes the following parameters:
 
 =item C<file_id> the id of the document being finished (yeah, tricky name indeed).
 
+=item C<status> the status of the document after finishing (uploaded by default).
+
 =back
 
 Returns the same C<file_id> given when no exception is seen.
@@ -7993,11 +8001,11 @@ Returns the same C<file_id> given when no exception is seen.
 =cut
 
 sub finish_document_upload {
-    my ($self, $file_id) = @_;
+    my ($self, $file_id, $status) = @_;
 
     return $self->db->dbic->run(
         ping => sub {
-            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $file_id);
+            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?::status_type)', undef, $file_id, $status // 'uploaded');
         });
 }
 
@@ -8076,18 +8084,30 @@ sub latest_poi_by {
     my ($self, $args) = @_;
     my @triplets;
 
+    my $idv = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
+
     my $onfido_check = BOM::User::Onfido::get_latest_check($self, $args)->{user_check} // {};
 
     if (my $onfido_created_at = $onfido_check->{created_at}) {
         push @triplets, ['onfido', $onfido_check, Date::Utility->new($onfido_created_at)->epoch];
     }
 
-    my $idv = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
     if (my $idv_document = $idv->get_last_updated_document($args)) {
         if (my $idv_document_check = $idv->get_document_check_detail($idv_document->{id})) {
             push @triplets,
                 ['idv', +{$idv_document_check->%*, status => $idv_document->{status}},
                 Date::Utility->new($idv_document_check->{requested_at})->epoch];
+        } elsif (!($args->{only_verified} // 0)) {
+            # no check but still a pending document
+            push @triplets, ['idv', undef, Date::Utility->new($idv_document->{submitted_at})->epoch];
+        }
+    }
+
+    if (my $document = $self->documents->latest) {
+        my $origin = $document->{origin} // '';
+
+        if ($origin eq 'client' || $origin eq 'bo') {
+            push @triplets, ['manual', $document, Date::Utility->new($document->{upload_date})->epoch];
         }
     }
 
@@ -8109,6 +8129,8 @@ The following services are supported:
 =item * C<onfido>
 
 =item * C<idv>
+
+=item * C<manual>
 
 =back
 
@@ -8189,6 +8211,22 @@ sub poi_attempts {
                 country_code => $idv_check->{issuing_country},
                 timestamp    => Date::Utility->new($idv_check->{submitted_at})->epoch,
                 };
+        }
+    }
+
+    if (my $document = $self->documents->latest) {
+        my $origin = $document->{origin} // '';
+
+        if ($origin eq 'client' || $origin eq 'bo') {
+            my $manual_status = $self->get_manual_poi_status();    # docs are more liquid than idv/onfido checks
+
+            push $attempts->@*, {
+                id           => $document->{id},
+                status       => $manual_status,
+                service      => 'manual',
+                country_code => $self->place_of_birth // $self->residence,    # as for now we don't have a column for country on the documents table
+                timestamp    => Date::Utility->new($document->{upload_date})->epoch,
+            };
         }
     }
 

@@ -814,7 +814,7 @@ sub pending_request {
 
     my $redis = BOM::Config::Redis::redis_events();
 
-    return $redis->get(ONFIDO_REQUEST_PENDING_PREFIX . $user_id);
+    return ($redis->get(ONFIDO_REQUEST_PENDING_PREFIX . $user_id) // 0) > 0;
 }
 
 =head2 maybe_pending

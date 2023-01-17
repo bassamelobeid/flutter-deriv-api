@@ -113,7 +113,8 @@ Gets the uploaded documents in a fancy hashref structure, the scan is made upon 
 its siblings, will discard documents not in the `uploaded` status. 
 
 Each key corresponds to a category of documents (e.g. proof_of_identity, proof_of_address, proof_of_income) 
-and it may contain:
+Note that `onfido` is a special separate category.
+It may contain:
 
 =over 4
 
@@ -160,6 +161,7 @@ sub _build_uploaded {
 
         foreach my $single_document ($each_sibling->client_authentication_document) {
             my $doc_status = $single_document->status // '';
+            my $origin     = $single_document->origin // 'legacy';
 
             # consider only uploaded documents
             next if $doc_status eq 'uploading';
@@ -168,11 +170,12 @@ sub _build_uploaded {
             my $category_config = $self->get_category_config($document_type);
             next unless $category_config;
 
-            my $category = $category_config->{category} // 'other';
-            $documents{$category}{documents}{$single_document->file_name} = $doc_structure->($single_document);
+            my $category     = $category_config->{category} // 'other';
+            my $category_key = $origin eq 'onfido' ? 'onfido' : $category;
+            $documents{$category_key}{documents}{$single_document->file_name} = $doc_structure->($single_document);
 
             if ($category eq 'proof_of_income' || $category eq 'proof_of_identity') {
-                $documents{$category}{'is_' . $doc_status} += 1;
+                $documents{$category_key}{'is_' . $doc_status} += 1;
             }
 
             # The expiration analysis starts right here
@@ -181,18 +184,18 @@ sub _build_uploaded {
 
             # If doc is in Needs Review and age_verification is true, then flag the category as pending
             # note that this is a `maybe pending` and can be cancelled some lines below outside the looping
-            $documents{proof_of_identity}{is_pending} = 1
+            $documents{$category_key}{is_pending} = 1
                 if $doc_status eq 'uploaded' && $category eq 'proof_of_identity';
 
             # only verified documents pass for expiration analysis
             next if $doc_status ne 'verified';
 
             # Populate the lifetime valid hashref per category
-            $has_lifetime_valid->{$category} = 1 if $single_document->lifetime_valid;
-            next                                 if $has_lifetime_valid->{$category};
+            $has_lifetime_valid->{$category_key} = 1 if $single_document->lifetime_valid;
+            next                                     if $has_lifetime_valid->{$category_key};
 
             # and the document should report a expiration date
-            my $expires = $documents{$category}{documents}{$single_document->file_name}{expiry_date};
+            my $expires = $documents{$category_key}{documents}{$single_document->file_name}{expiry_date};
             next unless $expires;
 
             # We have two strategies, max and min
@@ -201,21 +204,21 @@ sub _build_uploaded {
             my $expiration_strategy = $category_config->{expiration_strategy};
             next unless ($expiration_strategy // '') =~ /\bmin|max\b/;
 
-            my $existing_expiry_date_epoch = $documents{$category}{expiry_date} // $expires;
+            my $existing_expiry_date_epoch = $documents{$category_key}{expiry_date} // $expires;
             my $expiry_date;
 
             $expiry_date = max($expires, $existing_expiry_date_epoch) if $expiration_strategy eq 'max';
             $expiry_date = min($expires, $existing_expiry_date_epoch) if $expiration_strategy eq 'min';
 
-            $documents{$category}{expiry_date} = $expiry_date;
-            $documents{$category}{is_expired}  = Date::Utility->new->epoch > $expiry_date ? 1 : 0;
+            $documents{$category_key}{expiry_date} = $expiry_date;
+            $documents{$category_key}{is_expired}  = Date::Utility->new->epoch > $expiry_date ? 1 : 0;
         }
     }
 
     # Remove expiration from category if lifetime valid doc was observed
-    for my $category (keys $has_lifetime_valid->%*) {
-        delete $documents{$category}->{expiry_date};
-        delete $documents{$category}->{is_expired};
+    for my $category_key (keys $has_lifetime_valid->%*) {
+        delete $documents{$category_key}->{expiry_date};
+        delete $documents{$category_key}->{is_expired};
     }
 
     if ($documents{proof_of_identity}) {
@@ -227,6 +230,16 @@ sub _build_uploaded {
                 if $self->client->status->age_verification
                 and not $self->client->ignore_age_verification
                 and not $documents{proof_of_identity}{is_expired};
+        }
+    }
+
+    if ($documents{onfido}) {
+        $documents{onfido}{is_pending} //= 0;
+
+        # Cancel the is_pending for an age_verified account that does not have verified expired docs
+        if ($documents{onfido}{is_pending}) {
+            $documents{onfido}{is_pending} = 0
+                if $self->client->status->age_verification and not $documents{onfido}{is_expired};
         }
     }
 
@@ -288,6 +301,8 @@ It may take the following argument:
 
 =item * enforce, (optional) activate this flag to always check for expired docs no matter the context
 
+=item * category, (optional) defaults to proof_of_identity
+
 =back
 
 It returns the computed flag.
@@ -295,11 +310,13 @@ It returns the computed flag.
 =cut
 
 sub expired {
-    my ($self, $enforce) = @_;
+    my ($self, $enforce, $category) = @_;
 
-    # no POI documents
-    return 0 unless defined $self->uploaded->{proof_of_identity}{documents};
-    return $self->valid('proof_of_identity', $enforce) ? 0 : 1;
+    $category //= 'proof_of_identity';
+
+    return 0 unless defined $self->uploaded->{$category}{documents};
+
+    return $self->valid($category, $enforce) ? 0 : 1;
 }
 
 =head2 valid
@@ -800,6 +817,43 @@ sub _build_pow_types {
     }
 
     return $pow;
+}
+
+=head2 latest
+
+Gets the latest POI document uploaded (not in the uploading status).
+
+=cut
+
+has latest => (
+    is      => 'lazy',
+    clearer => '_clear_latest',
+);
+
+=head2 _build_latest
+
+Retrieves the latest uploaded document.
+
+Returns hashref or C<undef> if there is no such a document.
+
+=cut
+
+sub _build_latest {
+    my ($self) = @_;
+
+    my ($latest) = $self->client->db->dbic->run(
+        fixup => sub {
+            return $_->selectall_array(
+                "SELECT * FROM betonmarkets.get_latest_document(?, ?)",
+                {Slice => {}},
+                $self->client->binary_user_id,
+                $self->poi_types,
+            );
+        });
+
+    return undef if !$latest || !$latest->{id};
+
+    return $latest;
 }
 
 =head2 get_poinc_count
