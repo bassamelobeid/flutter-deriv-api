@@ -58,6 +58,8 @@ categories:
     broker_codes:
       svg: 
         - CRW
+      maltainvest:
+        - MFW
     brands:
       - deriv
     groups:

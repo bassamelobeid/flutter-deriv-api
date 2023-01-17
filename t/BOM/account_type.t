@@ -223,10 +223,15 @@ subtest 'account type class' => sub {
     is $account_type->is_demo,                        0,                                                              'account type is not demo';
     is $account_type->linkable_to_different_currency, 0, 'it is not linkable to a different currency';
 
-    is_deeply $account_type->brands,                            ['deriv'], 'Brands are the same as the category';
-    is_deeply $account_type->groups,                            [],        'Groups are empty';
-    is_deeply $account_type->services,                          [],        'Services are empty (no group)';
-    is_deeply $account_type->broker_codes, {svg => ['CRW']},    'Broker codes are the same as the category';
+    is_deeply $account_type->brands,   ['deriv'], 'Brands are the same as the category';
+    is_deeply $account_type->groups,   [],        'Groups are empty';
+    is_deeply $account_type->services, [],        'Services are empty (no group)';
+    is_deeply $account_type->broker_codes,
+        {
+        svg         => ['CRW'],
+        maltainvest => ['MFW']
+        },
+        'Broker codes are the same as the category';
     is_deeply $account_type->linkable_wallet_types,             [], 'No linkable wallet types';
     is_deeply $account_type->currencies,                        [], 'No limited currency';
     is_deeply $account_type->currency_types,                    [], 'Currency type is not limited';
