@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use Test::Warnings;
 
-use JSON::MaybeUTF8 qw(decode_json_text);
+use JSON::MaybeUTF8 qw(decode_json_utf8);
 use List::Util      qw(pairgrep);
 use Path::Tiny;
 use constant BASE_PATH => 'config/v3/';
@@ -16,7 +16,7 @@ for my $file (qx{git ls-files @{[BASE_PATH]}}) {
     my ($method, $type) = ($file =~ m{^@{[BASE_PATH]}([a-z0-9_]+)/([a-z]+)\.json$});
     next if $type eq 'example';
 
-    my $schema = decode_json_text(path($file)->slurp_utf8);
+    my $schema = decode_json_utf8(path($file)->slurp_utf8);
     my $items  = get_items($schema->{properties});
     $elements{"$method/$type" . $_->{path}} = $_->{item} for @$items;
 }
