@@ -31,11 +31,12 @@ around BUILDARGS => sub {
     my %cache = map { "client_" . $_->loginid => $_ } @$client_list;
 
     my $stop_on_failure = $constructor_args{stop_on_failure} // 1;
-
+    my $siblings        = $constructor_args{siblings}        // {};
     return $class->$orig(
         _cache          => \%cache,
         stop_on_failure => $stop_on_failure,
         client_list     => $client_list,
+        siblings        => $siblings,
         action          => $constructor_args{action},
     );
 };
@@ -47,7 +48,7 @@ Creates a copy of the context object. It is also possible to override the object
 =over 4
 
 item C<client_list> An array-ref of context clients.
-
+item C<siblings> A hash-ref with client loginid as a key and corresponding siblings as value.
 item C<stop_on_failure> Rule engine's operation mode (die on failure or report all rules checked)
 
 =back
@@ -59,6 +60,7 @@ sub clone {
 
     return BOM::Rules::Context->new(
         client_list     => $self->client_list,
+        siblings        => $self->siblings,
         stop_on_failure => $self->stop_on_failure,
         %override
     );
@@ -71,6 +73,16 @@ The list of known clients.
 =cut
 
 has client_list => (is => 'ro');
+
+=head2 siblings
+
+The hash-ref of known clients siblings.
+
+=cut
+
+has siblings => (
+    is      => 'ro',
+    default => sub { return +{}; });
 
 =head2 stop_on_failure
 
@@ -130,6 +142,29 @@ sub client {
         or die "Client with id $loginid was not found";
 
     return $client;
+}
+
+=head2 client_siblings
+
+Retrieves the siblings list by getting a loginid. It accepts one argument:
+
+=over 4
+
+item C<args> event args as a hashref; expected to contain a B<loginid> key.
+
+=back
+
+It returns an array-ref of corresponding siblings if loginid passed;
+
+=cut
+
+sub client_siblings {
+    my ($self, $args) = @_;
+    my $loginid = $args->{loginid};
+
+    die 'Client loginid is missing' unless $loginid;
+
+    return $self->siblings->{$loginid};
 }
 
 =head2 landing_company_object

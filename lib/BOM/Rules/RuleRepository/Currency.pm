@@ -164,7 +164,11 @@ sub _currency_is_available {
 
     return 1 unless $currency;
 
-    my @siblings = values $context->client($args)->real_account_siblings_information(
+    my $cached_siblings = $context->client_siblings($args);
+    my @siblings =
+        (ref $cached_siblings eq 'ARRAY')
+        ? $cached_siblings->@*
+        : values $context->client($args)->real_account_siblings_information(
         exclude_disabled_no_currency => 1,
         include_self                 => $include_self
     )->%*;
