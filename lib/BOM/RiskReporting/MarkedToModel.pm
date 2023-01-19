@@ -120,14 +120,14 @@ sub check_open_bets {
                                 $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                                     undef, $open_fmb_id, $value);
                             } elsif ($bet->waiting_for_settlement_tick) {
-                                # If settlement tick does not update after a day, that is something wrong. Manual settlement is needed.
-                                if ((Date::Utility->new->epoch - $bet->date_expiry->epoch) < 60 * 60 * 24) {
-                                    $waiting_for_settlement++;
-                                } else {
+                                # Daily contract will be settled on the opening of the next trading day. Only report if contract is not sold one hour after settlement time.
+                                if ((Date::Utility->new->epoch - $bet->date_settlement->epoch) > 3600) {
                                     push @manually_settle_fmbid,
                                         get_fmb_for_manual_settlement($open_fmb, $bet, 'Settlement tick is missing. Please check.');
                                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                                         undef, $open_fmb_id, $value);
+                                } else {
+                                    $waiting_for_settlement++;
                                 }
                             } else {
                                 push @mail_content, "Contract expired but could not be settled [$last_fmb_id,  $open_fmb->{short_code}]";
