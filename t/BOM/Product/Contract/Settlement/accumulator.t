@@ -187,16 +187,18 @@ subtest 'close tick' => sub {
     subtest 'sell at sell_time tick' => sub {
         $args->{sell_price} = 101.00;
         my $c = produce_contract($args);
-        ok !$c->exit_tick,        'has exit_tick';
+        ok !$c->exit_tick,        'no exit_tick';
         ok !$c->is_valid_to_sell, 'is not valid to sell';
-        is $c->close_tick->quote, '100.3', 'correct close tick';
+        is $c->close_tick->quote,      '100.3', 'correct close tick';
+        is $c->tick_count_after_entry, 2,       'correct number of ticks after entry tick';
     };
     subtest 'sell at previous tick' => sub {
         $args->{sell_price} = 100.00;
         my $c = produce_contract($args);
-        ok !$c->exit_tick,        'has exit_tick';
+        ok !$c->exit_tick,        'no exit_tick';
         ok !$c->is_valid_to_sell, 'is not valid to sell';
-        is $c->close_tick->quote, '100.2', 'correct close tick';
+        is $c->close_tick->quote,      '100.2', 'correct close tick';
+        is $c->tick_count_after_entry, 1,       'correct number of ticks after entry tick';
     };
 
     delete $args->{date_pricing};

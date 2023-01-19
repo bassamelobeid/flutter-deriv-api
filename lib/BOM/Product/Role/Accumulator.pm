@@ -429,6 +429,14 @@ override '_build_ticks_for_tick_expiry' => sub {
                 })};
 
         return [@ticks[0 .. $self->ticks_to_expiry - 1]] if scalar @ticks > $self->ticks_to_expiry;
+
+        #sometimes a contract is sold at time t, but since tick for that second is not recieved yet we use
+        #previous tick to sell it. in that case tick at sell_time shouldn't be included here
+        if ($self->is_sold and $self->sell_price > 0) {
+            my $tick_count_till_sell = $self->tickcount_for($self->sell_price);
+            return [@ticks[0 .. $tick_count_till_sell - 1]];
+        }
+
         return \@ticks;
     }
 
