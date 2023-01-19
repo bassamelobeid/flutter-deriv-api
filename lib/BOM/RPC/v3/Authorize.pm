@@ -33,8 +33,13 @@ sub _get_upgradeable_landing_companies {
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence)    // '';
     my $financial_company = $countries_instance->financial_company_for_country($client->residence) // '';
 
+    my @siblings = values $client->real_account_siblings_information(
+        exclude_disabled_no_currency => 1,
+        include_self                 => 1
+    )->%*;
     my $rule_engine = BOM::Rules::Engine->new(
         client          => $client,
+        siblings        => {$client->loginid => \@siblings},
         stop_on_failure => 0
     );
     for my $lc (uniq($gaming_company, $financial_company)) {
