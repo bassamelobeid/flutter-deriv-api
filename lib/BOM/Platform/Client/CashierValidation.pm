@@ -183,9 +183,6 @@ sub check_availability {
     _add_error_by_code($errors, 'SystemMaintenance')
         if (BOM::Config::CurrencyConfig::is_payment_suspended());
 
-    _add_error_by_code($errors, 'SystemMaintenance')
-        if (BOM::Config::CurrencyConfig::is_payment_suspended());
-
     _add_error_by_code($errors, 'VirtualAccount')
         if $client->is_virtual;
 
