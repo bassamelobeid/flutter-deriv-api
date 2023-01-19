@@ -194,9 +194,9 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result->{status},
                 [
-                    'cashier_locked',                     'dxtrade_password_not_set',
-                    'financial_information_not_complete', 'mt5_password_not_set',
-                    'trading_experience_not_complete'
+                    'allow_document_upload',    'cashier_locked',
+                    'dxtrade_password_not_set', 'financial_information_not_complete',
+                    'mt5_password_not_set',     'trading_experience_not_complete'
                 ],
                 "cashier is locked correctly."
             );
@@ -206,7 +206,11 @@ subtest 'get account status' => sub {
 
             cmp_deeply(
                 $result->{status},
-                ['dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set', 'trading_experience_not_complete'],
+                [
+                    'allow_document_upload',              'dxtrade_password_not_set',
+                    'financial_information_not_complete', 'mt5_password_not_set',
+                    'trading_experience_not_complete'
+                ],
                 "cashier is not locked for correctly"
             );
 
@@ -215,9 +219,9 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result->{status},
                 [
-                    'dxtrade_password_not_set', 'financial_information_not_complete',
-                    'mt5_password_not_set',     'trading_experience_not_complete',
-                    'withdrawal_locked'
+                    'allow_document_upload',              'dxtrade_password_not_set',
+                    'financial_information_not_complete', 'mt5_password_not_set',
+                    'trading_experience_not_complete',    'withdrawal_locked'
                 ],
                 "withdrawal is locked correctly"
             );
@@ -226,7 +230,11 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set', 'trading_experience_not_complete'],
+                [
+                    'allow_document_upload',              'dxtrade_password_not_set',
+                    'financial_information_not_complete', 'mt5_password_not_set',
+                    'trading_experience_not_complete'
+                ],
                 "withdrawal is not locked correctly"
             );
 
@@ -235,9 +243,9 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result->{status},
                 [
-                    'deposit_locked',                     'dxtrade_password_not_set',
-                    'financial_information_not_complete', 'mt5_password_not_set',
-                    'trading_experience_not_complete'
+                    'allow_document_upload',    'deposit_locked',
+                    'dxtrade_password_not_set', 'financial_information_not_complete',
+                    'mt5_password_not_set',     'trading_experience_not_complete'
                 ],
                 "deposit is not locked correctly"
             );
@@ -246,7 +254,11 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set', 'trading_experience_not_complete'],
+                [
+                    'allow_document_upload',              'dxtrade_password_not_set',
+                    'financial_information_not_complete', 'mt5_password_not_set',
+                    'trading_experience_not_complete'
+                ],
                 "deposit is not locked correctly"
             );
 
@@ -258,9 +270,9 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result->{status},
                 [
-                    'cashier_locked',                     'dxtrade_password_not_set',
-                    'financial_information_not_complete', 'mt5_password_not_set',
-                    'trading_experience_not_complete'
+                    'allow_document_upload',    'cashier_locked',
+                    'dxtrade_password_not_set', 'financial_information_not_complete',
+                    'mt5_password_not_set',     'trading_experience_not_complete'
                 ],
                 "cashier_locked when both deposit and withdrawal are locked"
             );
@@ -780,7 +792,9 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status => [qw(dxtrade_password_not_set financial_information_not_complete mt5_password_not_set trading_experience_not_complete)],
+                    status => [
+                        qw(allow_document_upload dxtrade_password_not_set financial_information_not_complete mt5_password_not_set trading_experience_not_complete)
+                    ],
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
@@ -1182,11 +1196,18 @@ subtest 'get account status' => sub {
                 };
 
                 # This test would be useless if this company authentication is mandatory
+                my $mocked_lc = Test::MockModule->new('LandingCompany');
+                $mocked_lc->mock(
+                    'is_authentication_mandatory',
+                    sub {
+                        return 0;
+                    });
                 ok !$test_client_cr->landing_company->is_authentication_mandatory, 'Authentication is not mandatory';
                 ok $test_client_cr->documents->expired(),                          'Client expiry is required';
                 ok $test_client_cr->fully_authenticated,                           'Account is fully authenticated';
                 @latest_poi_by = ('manual');
                 $result        = $c->tcall($method, {token => $token_cr});
+                $mocked_lc->unmock('is_authentication_mandatory');
 
                 cmp_deeply(
                     $result,
@@ -1505,6 +1526,12 @@ subtest 'get account status' => sub {
         };
 
         subtest 'futher resubmission allowed' => sub {
+            my $mocked_lc = Test::MockModule->new('LandingCompany');
+            $mocked_lc->mock(
+                'is_authentication_mandatory',
+                sub {
+                    return 0;
+                });
             my $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply $result->{authentication}->{needs_verification}, noneof(qw/document identity/),     'Make sure needs verification is empty';
             cmp_deeply $result->{status},                               noneof(qw/allow_document_upload/), 'Make sure allow_document_upload is off';
@@ -1631,6 +1658,8 @@ subtest 'get account status' => sub {
 
                 $test_client_cr->status->clear_allow_poa_resubmission;
             };
+
+            $mocked_lc->unmock('is_authentication_mandatory');
         };
 
         subtest 'malta account' => sub {
@@ -3432,7 +3461,8 @@ subtest 'Social identity provider' => sub {
         {
             social_identity_provider => 'google',
             status                   => bag(
-                qw(dxtrade_password_not_set social_signup financial_information_not_complete mt5_password_not_set trading_experience_not_complete)),
+                qw(allow_document_upload dxtrade_password_not_set social_signup financial_information_not_complete mt5_password_not_set trading_experience_not_complete)
+            ),
             currency_config => {
                 'USD' => {
                     is_deposit_suspended    => 0,
@@ -3526,8 +3556,8 @@ subtest 'affiliate code of conduct' => sub {
     cmp_deeply(
         $result->{status},
         [
-            'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set',
-            'trading_experience_not_complete'
+            'allow_document_upload', 'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete',
+            'mt5_password_not_set',  'trading_experience_not_complete'
         ],
         "needs_affiliate_coc_approval status is not added when code_of_conduct_approval is undef"
     );
@@ -3540,7 +3570,7 @@ subtest 'affiliate code of conduct' => sub {
     cmp_deeply(
         $result->{status},
         [
-            'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete',
+            'allow_document_upload', 'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete',
             'mt5_password_not_set',
             'needs_affiliate_coc_approval', 'trading_experience_not_complete',
 
@@ -3556,8 +3586,8 @@ subtest 'affiliate code of conduct' => sub {
     cmp_deeply(
         $result->{status},
         [
-            'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set',
-            'trading_experience_not_complete'
+            'allow_document_upload', 'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete',
+            'mt5_password_not_set',  'trading_experience_not_complete'
         ],
         "needs_affiliate_coc_approval status is removed when code_of_conduct_approval is 1"
     );

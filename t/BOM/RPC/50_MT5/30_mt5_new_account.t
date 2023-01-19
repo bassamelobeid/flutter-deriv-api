@@ -288,7 +288,8 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
     my $params = {token => $token};
     $c->call_ok($method, $params);
     my $status = $c->result->{status};
-    ok(!grep(/^allow_document_upload$/, @$status), 'allow_document_upload status not present');
+
+    ok !$test_client->status->allow_document_upload, 'allow_document_upload status not present';
 
     $method = 'mt5_new_account';
     $params = {
@@ -318,7 +319,9 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
     $params = {token => $token};
     $c->call_ok($method, $params);
     $status = $c->result->{status};
-    ok(grep(/^allow_document_upload$/, @$status), 'allow_document_upload status present');
+
+    $test_client->status->_build_all;
+    ok $test_client->status->allow_document_upload, 'allow_document_upload status set';
 
     $test_client->set_authentication('ID_DOCUMENT', {status => $ID_DOCUMENT});
     $test_client->save;
