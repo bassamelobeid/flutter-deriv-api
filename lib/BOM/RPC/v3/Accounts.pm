@@ -989,6 +989,10 @@ rpc get_account_status => sub {
         $status = [grep { $_ ne 'poi_name_mismatch' } @$status];
     }
 
+    if ($client->status->age_verification || $client->fully_authenticated) {
+        $status = [grep { $_ ne 'poi_dob_mismatch' } @$status];
+    }
+
     return {
         status                        => [sort(uniq(@$status))],
         risk_classification           => $risk_sr eq 'high' ? $risk_sr : $risk_aml // '',
