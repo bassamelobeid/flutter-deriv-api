@@ -848,13 +848,12 @@ subtest 'country=latam african, financial STP account' => sub {
 
     #qw(dz ao ai ag ar aw bs bb bz bj bo bw bv br io bf bi cv cm ky cf td cl co km cg cd cr ci cu cw dj dm do ec eg sv gq er sz et fk gf tf ga gm gh gd gp gt gn gw gy ht hn jm ke ls lr ly mg mw ml mq mr mu yt mx ms ma mz na ni ne ng pa pe re bl sh kn lc mf vc st sn sc sl sx so za gs sd sr tz tg tt tn tc ug uy ve eh zm zw ss);
     my @latam_african_countries =
-        qw(dz ao ai ag ar bs bz bj bo bw br bi cv cm cf td cl co km cg cr ci cu dj dm do ec eg sv gq er sz et ga gm gh gd gt gn gw gy hn ke ls lr mg mw mu mx ms mz na ne ng pa pe kn lc vc st sc sl so za sd sr tz tg tt tn tc uy ve zm zw);
+        qw(dz ao ai ag ar bs bz bj bo bw br bi cv cm cf td cl co km cg cr ci dj dm do ec eg sv gq er sz et ga gm gh gd gt gn gw gy hn ke ls lr mg mw mu mx ms mz na ne ng pa pe kn lc vc st sc sl so za sd sr tz tg tt tn tc uy ve zm zw);
 
-    my @high_risk_countries =
-        ('al', 'bb', 'bf', 'kh', 'ky', 'ht', 'jm', 'jo', 'ml', 'mm', 'ma', 'ni', 'pk', 'ph', 'ru', 'sn', 'ss', 'sy', 'tr', 'ug', 'ye');
+    my @high_risk_countries      = ('al', 'bb', 'bf', 'kh', 'ky', 'ht', 'jm', 'jo', 'ml', 'ma', 'ni', 'pk', 'ph', 'ru', 'sn', 'ss', 'tr', 'ug', 'ye');
     my @onfido_blocked_countries = (
-        'af', 'by', 'cn', 'cd', 'iq', 'ly', 'ru', 'sy', 'aq', 'bq', 'bv', 'io', 'cx', 'cc',  'ck', 'cw', 'fk', 'gf', 'tf', 'gp',
-        'hm', 'mq', 'yt', 'nc', 'nu', 'nf', 're', 'sh', 'pm', 'sx', 'gs', 'sj', 'tl', 'tk',, 'wf', 'eh', 'ax'
+        'af', 'by', 'cn', 'cd', 'iq', 'ly', 'ru', 'aq', 'bq', 'bv', 'io', 'cx', 'cc',  'ck', 'cw', 'fk', 'gf', 'tf', 'gp', 'hm',
+        'mq', 'yt', 'nc', 'nu', 'nf', 're', 'sh', 'pm', 'sx', 'gs', 'sj', 'tl', 'tk',, 'wf', 'eh', 'ax'
     );
     foreach my $country (@latam_african_countries) {
         my $new_email  = $country . $details{email};
