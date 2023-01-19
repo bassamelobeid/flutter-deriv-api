@@ -1568,8 +1568,8 @@ async sub _get_onfido_applicant {
             }
         }
 
-        $log->warn($e);
         exception_logged();
+        die $e;
     }
 
     return undef;
@@ -2061,17 +2061,8 @@ async sub _upload_onfido_documents {
             country                    => $country
         );
 
-        my $loginid = $client->loginid;
-
-        die(      'No applicant created for '
-                . $loginid
-                . ' with country '
-                . $country
-                . ', place of birth '
-                . $client->place_of_birth
-                . ' and residence '
-                . $client->residence)
-            unless $applicant;
+        # Unsupported onfido country, we should do nothing.
+        return 1 unless $applicant;
 
         $log->debugf('Applicant created: %s, uploading %d bytes for document', $applicant->id, length($file_data));
 

@@ -1080,7 +1080,7 @@ subtest '_get_onfido_applicant' => sub {
             },
             uploaded_manually_by_staff => 0,
             is_country_supported       => 1,
-            logs                       => [qr/\bgot so far\b/],
+            logs                       => [],
             dog                        => {
                 timing => undef,
                 inc    => undef,
@@ -1101,7 +1101,7 @@ subtest '_get_onfido_applicant' => sub {
             },
             uploaded_manually_by_staff => 0,
             is_country_supported       => 1,
-            logs                       => [qr/\bsome exception\b/, qr/\bOnfido http exception: .*invalid postcode.*\b/,],
+            logs                       => [qr/\bOnfido http exception: .*invalid postcode.*\b/],
             dog                        => {
                 timing => undef,
                 inc    => undef,
@@ -1150,12 +1150,14 @@ subtest '_get_onfido_applicant' => sub {
             $store_applicant = [];
             $log->clear();
 
-            my $applicant = BOM::Event::Actions::Client::_get_onfido_applicant(
-                client                     => $client,
-                onfido                     => $onfido,
-                uploaded_manually_by_staff => $uploaded_manually_by_staff,
-                country                    => $country
-            )->get;
+            my $applicant = eval {
+                BOM::Event::Actions::Client::_get_onfido_applicant(
+                    client                     => $client,
+                    onfido                     => $onfido,
+                    uploaded_manually_by_staff => $uploaded_manually_by_staff,
+                    country                    => $country
+                )->get;
+            };
 
             if (not defined $result) {
                 is $applicant, undef, 'No applicant returned';
