@@ -13,7 +13,16 @@
 </div>
 
 <div class="row">
+    <label>Custom Transfer Amount:</label>
+    <input type="text" size="20" name="custom_transfer_amount" placeholder="optional" data-lpignore="true" />
+</div>
+
+<div class="row">
     <label><input type="checkbox" name="skip_validation" value="on" id="skip_validation5" />Override status checks?</label>
+</div>
+
+<div class="row">
+    <label><input type="checkbox" name="skip_archive" value="on" />Skip archive process?</label>
 </div>
 
 <button type="submit" class="btn btn--primary" name="ttype" value="TRANSFER">Confirm transfer</button>
