@@ -14,6 +14,7 @@ use constant {
     DEFAULT_UPLOAD_TIMEOUT => 120,
     DEFAULT_REGION         => 'ap-southeast-1',
     DEFAULT_EXPIRY         => 600,
+    DEFAULT_STALL_TIMEOUT  => 60,
 };
 
 sub new {
@@ -23,19 +24,21 @@ sub new {
         and $config->{aws_secret_access_key}
         and $config->{aws_bucket};
 
-    $config->{timeout}    //= DEFAULT_UPLOAD_TIMEOUT;
-    $config->{aws_region} //= DEFAULT_REGION;
+    $config->{timeout}       //= DEFAULT_UPLOAD_TIMEOUT;
+    $config->{stall_timeout} //= DEFAULT_STALL_TIMEOUT;
+    $config->{aws_region}    //= DEFAULT_REGION;
 
     state %s3_services;
     my $s3_hash_key = sprintf("%s %s %s", $config->{aws_access_key_id}, $config->{aws_bucket}, $config->{aws_region});
     my $s3          = $s3_services{$s3_hash_key};
     unless ($s3) {
         $s3 = Net::Async::Webservice::S3->new(
-            access_key => $config->{aws_access_key_id},
-            secret_key => $config->{aws_secret_access_key},
-            bucket     => $config->{aws_bucket},
-            timeout    => $config->{timeout},
-            ssl        => 1,
+            access_key    => $config->{aws_access_key_id},
+            secret_key    => $config->{aws_secret_access_key},
+            bucket        => $config->{aws_bucket},
+            timeout       => $config->{timeout},
+            stall_timeout => $config->{stall_timeout},
+            ssl           => 1,
         );
         IO::Async::Loop->new->add($s3);
         $s3_services{$s3_hash_key} = $s3;
@@ -169,8 +172,10 @@ sub delete {
     my ($self, $filename) = @_;
     # s3 delete_object needs filename and bucket in HTTP request header
     return $self->{s3}->delete_object(
-        key    => $filename,
-        bucket => $self->{config}->{aws_bucket},
+        key           => $filename,
+        bucket        => $self->{config}->{aws_bucket},
+        timeout       => $self->{config}->{timeout},
+        stall_timeout => $self->{config}->{stall_timeout},
     );
 }
 
