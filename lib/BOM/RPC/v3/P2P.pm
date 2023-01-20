@@ -201,6 +201,7 @@ our %ERROR_MAP = do {
             localize("It looks like you've made too many attempts to confirm this order. Please try again after [_1] minutes."),
         InvalidVerificationToken      => localize('The link that you used appears to be invalid. Please check and try again.'),
         ExcessiveVerificationRequests => localize('Please wait for [_1] seconds before requesting another email.'),
+        InvalidLocalCurrency          => localize('Invalid currency provided.'),
     );
 };
 
@@ -453,7 +454,7 @@ p2p_rpc p2p_payment_methods => readonly => 1 => sub {
     my (%args) = @_;
 
     my $client = $args{client};
-    return $client->p2p_payment_methods();
+    return $client->p2p_payment_methods($client->residence);
 };
 
 =head2 p2p_advertiser_payment_methods
