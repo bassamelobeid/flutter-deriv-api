@@ -7497,6 +7497,10 @@ sub get_onfido_status {
 
     return 'rejected' if $check_result eq 'consider';
 
+    my $submissions_left = BOM::User::Onfido::submissions_left($self);
+
+    return 'rejected' if $submissions_left < BOM::User::Onfido::limit_per_user();
+
     return 'none';
 }
 

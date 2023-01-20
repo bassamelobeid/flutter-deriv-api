@@ -1915,6 +1915,11 @@ subtest 'Onfido status' => sub {
             },
             status => 'none'
         },
+        {
+            is_supported_country => 1,
+            status               => 'rejected',
+            incr                 => 1,
+        },
     ];
 
     for my $test ($tests->@*) {
@@ -1922,15 +1927,20 @@ subtest 'Onfido status' => sub {
         my $redis       = BOM::Config::Redis::redis_events();
         my $pending_flag;
         my $status;
+        my $incr;
 
         (
-            $is_supported_country,              $onfido_document_status, $onfido_check_result,
-            $onfido_sub_result,                 $docs,                   $status,
-            $is_document_expiry_check_required, $pending_flag,           $age_verification
+            $is_supported_country, $onfido_document_status, $onfido_check_result,               $onfido_sub_result,
+            $docs,                 $status,                 $is_document_expiry_check_required, $pending_flag,
+            $age_verification,     $incr
             )
             = @{$test}{
-            qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status is_document_expiry_check_required pending_flag age_verification/
+            qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status is_document_expiry_check_required pending_flag age_verification incr/
             };
+
+        if ($incr) {
+            $redis->incr(+BOM::User::Onfido::ONFIDO_REQUEST_PER_USER_PREFIX . $user->id);
+        }
 
         if ($pending_flag) {
             $redis->set($pending_key, 1);
