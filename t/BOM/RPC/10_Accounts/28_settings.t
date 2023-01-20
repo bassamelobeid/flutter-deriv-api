@@ -276,6 +276,7 @@ subtest 'get settings' => sub {
             'preferred_language'             => 'FA',
             'feature_flag'                   => {wallet => 0},
             'trading_hub'                    => 0,
+            'dxtrade_user_exception'         => 0,
         });
 
     $user_X->update_preferred_language('AZ');
@@ -346,6 +347,7 @@ subtest 'get settings' => sub {
             'preferred_language'             => 'AZ',
             'feature_flag'                   => {wallet => 0},
             'trading_hub'                    => 0,
+            'dxtrade_user_exception'         => 0,
         },
         'vr client return real account information when it has sibling'
     );
@@ -387,6 +389,7 @@ subtest 'get settings' => sub {
         'preferred_language'             => 'FA',
         'feature_flag'                   => {wallet => 0},
         'trading_hub'                    => 0,
+        'dxtrade_user_exception'         => 0,
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
 
@@ -423,6 +426,7 @@ subtest 'get settings' => sub {
         'preferred_language'             => 'FA',
         'feature_flag'                   => {wallet => 0},
         'trading_hub'                    => 0,
+        'dxtrade_user_exception'         => 0,
     };
     is_deeply($result, $expected, 'return 1 for code of conduct approval');
 
