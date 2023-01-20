@@ -663,6 +663,8 @@ SQL
         client_loginid => $client->loginid,
     });
 
+    my $expected_address     = $client->documents->poa_address_mismatch();
+    my $poa_address_mismatch = $client->status->poa_address_mismatch();
     my $idv_submissions_left = $idv_model->submissions_left();
 
     $idv_submissions_left = $idv_model->has_expired_document_chance() ? 1 : 0 if $idv_submissions_left <= 0 && $client->get_idv_status() eq 'expired';
@@ -756,6 +758,9 @@ SQL
         disallow_residence_change                    => @countries_disallow_residence_change,
         onfido_pending_request                       => BOM::User::Onfido::pending_request($client->binary_user_id),
         onfido_supported_country => BOM::Config::Onfido::is_country_supported(uc($client->place_of_birth || $client->residence // '')),
+        poa_address_mismatch     => $poa_address_mismatch,
+        expected_address         => $expected_address,
+        broker_code              => $client->broker_code,
         idv_pending_lock         => $idv_model->get_pending_lock() // -1,
         idv_submissions_left     => $idv_submissions_left,
         doughflow_methods        => $doughflow_methods,
