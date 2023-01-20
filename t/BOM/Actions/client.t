@@ -28,6 +28,7 @@ use BOM::Event::Process;
 use BOM::User::Onfido;
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
+use HTTP::Response;
 
 use Time::HiRes;
 use constant APPLICANT_ONFIDO_TIMING => 'ONFIDO::APPLICANT::TIMING::';
@@ -777,6 +778,58 @@ subtest "ready for run authentication" => sub {
         $lock_mock->unmock_all;
     };
 
+    # assume any onfido API call can fail and so disrupt the process
+    # under this scenario we will delete the pending flag
+
+    subtest 'ready for authentication - unexpected status code' => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+        my $user = BOM::User->create(
+            email          => 'error+test@test.com',
+            password       => "hello",
+            email_verified => 1,
+            email_consent  => 1,
+        );
+
+        $user->add_client($client);
+        $client->binary_user_id($user->id);
+        $client->save;
+
+        my $applicant = $onfido->applicant_create(
+            first_name => 'Mary',
+            last_name  => 'Jane',
+            dob        => '1999-02-02',
+        )->get;
+
+        BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
+
+        $onfido_mocker->mock(
+            'applicant_update',
+            sub {
+                my $response = HTTP::Response->new(429, 'Too Many Requests');
+                Future->fail('429', http => $response);
+            });
+
+        $log->clear();
+
+        is $client->get_onfido_status, 'none', 'None status';
+
+        my $redis = BOM::Config::Redis::redis_events();
+        $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $user->id, 1);
+        $redis->incr(+BOM::User::Onfido::ONFIDO_REQUEST_PER_USER_PREFIX . $user->id);
+        is $client->get_onfido_status, 'pending', 'Pending status';
+
+        BOM::Event::Actions::Client::ready_for_authentication({
+                loginid      => $client->loginid,
+                applicant_id => $applicant->id,
+                documents    => [qw/aaa bbb ccc/],
+            })->get;
+
+        ok !BOM::User::Onfido::pending_request($user->id), 'pending flag is gone';
+        is $client->get_onfido_status, 'rejected', 'Rejected due to failure';
+    };
+
     $onfido_mocker->unmock_all;
     $ryu_mock->unmock_all;
     $dog_mock->unmock_all;
@@ -886,7 +939,10 @@ subtest "client_verification" => sub {
     lives_ok {
         $dd_bag  = {};
         @metrics = ();
+        my $redis = BOM::Config::Redis::redis_events();
+        $redis->set(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $test_client->binary_user_id, 1);
         BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+        ok !BOM::User::Onfido::pending_request($test_client->binary_user_id), 'pending flag is gone';
 
         cmp_deeply $dd_bag,
             {

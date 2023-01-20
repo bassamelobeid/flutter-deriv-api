@@ -523,6 +523,8 @@ everything should be ready to do the verification step.
 async sub ready_for_authentication {
     my ($args) = @_;
     my $tags = [];
+    my $client;
+    my $res;
 
     try {
         my $loginid = $args->{loginid}
@@ -537,7 +539,7 @@ async sub ready_for_authentication {
 
         $log->debugf('Processing ready_for_authentication event for %s (applicant ID %s)', $loginid, $applicant_id);
 
-        my $client = BOM::User::Client->new({loginid => $loginid})
+        $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
 
         my $redis_events_write = _redis_events_write();
@@ -616,8 +618,7 @@ async sub ready_for_authentication {
         }
 
         await _save_request_context($applicant_id);
-
-        my $res = await Future->wait_any(
+        $res = await Future->wait_any(
             $loop->timeout_future(after => VERIFICATION_TIMEOUT)
                 ->on_fail(sub { $log->errorf('Time out waiting for Onfido verification.'); return undef }),
 
@@ -646,6 +647,12 @@ async sub ready_for_authentication {
         exception_logged();
     }
 
+    unless ($res) {
+        # release the pending lock under check failure scenario
+        my $redis_events_write = _redis_events_write();
+        await $redis_events_write->del(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id);
+    }
+
     return;
 }
 
@@ -665,6 +672,8 @@ Some extra validation rules are applied such as: dob mismatch, name mismatch.
 async sub client_verification {
     my ($args) = @_;
     my $brand = request->brand;
+    my $client;
+    my $redis_events_write;
 
     $log->debugf('Client verification with %s', $args);
     DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.dispatch');
@@ -713,7 +722,7 @@ async sub client_verification {
             my ($loginid) = grep { /^[A-Z]+[0-9]+$/ } @tags
                 or die "No login ID found in tags: @tags";
 
-            my $client = BOM::User::Client->new({loginid => $loginid})
+            $client = BOM::User::Client->new({loginid => $loginid})
                 or die 'Could not instantiate client for login ID ' . $loginid;
             $log->debugf('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
 
@@ -721,10 +730,6 @@ async sub client_verification {
             my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
             push @common_datadog_tags, sprintf("country:$country_tag");
 
-            # release the applicant check lock
-            # release the get_account_status pending lock
-            my $redis_events_write = _redis_events_write();
-            await $redis_events_write->del(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id);
             BOM::Platform::Redis::release_lock(APPLICANT_CHECK_LOCK_PREFIX . $client->binary_user_id);
 
             # check if the applicant already exist for this check. If not, store the applicant record in db
@@ -742,6 +747,10 @@ async sub client_verification {
             await _store_applicant_documents($applicant_id, $client, \@all_report);
 
             my $pending_key = ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id;
+
+            $redis_events_write = _redis_events_write();
+
+            await $redis_events_write->connect;
 
             my $args = await $redis_events_write->get($pending_key);
 
@@ -764,7 +773,9 @@ async sub client_verification {
 
             # Consume resubmission context
             my $redis_replicated_write = _redis_replicated_write();
+
             await $redis_replicated_write->connect;
+
             await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
             # Skip facial similarity:
@@ -897,6 +908,13 @@ async sub client_verification {
         DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.failure');
         $log->errorf('Exception while handling client verification result: %s', $e);
         exception_logged();
+    }
+
+    # release the applicant check lock
+    # release the get_account_status pending lock
+    if ($client) {
+        $redis_events_write //= _redis_events_write();
+        await $redis_events_write->del(+BOM::User::Onfido::ONFIDO_REQUEST_PENDING_PREFIX . $client->binary_user_id);
     }
 
     return;
@@ -1342,6 +1360,8 @@ async sub sync_onfido_details {
     my $client  = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
     die "Virtual account should not meddle with Onfido" if $client->is_virtual;
 
+    my $client_details_onfido;
+
     try {
         my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
         my $applicant_id   = $applicant_data->{id};
@@ -1350,7 +1370,7 @@ async sub sync_onfido_details {
         return unless $applicant_id;
 
         # Instantiate client and onfido object
-        my $client_details_onfido = BOM::User::Onfido::applicant_info($client);
+        $client_details_onfido = BOM::User::Onfido::applicant_info($client);
 
         $client_details_onfido->{applicant_id} = $applicant_id;
 
@@ -1359,6 +1379,7 @@ async sub sync_onfido_details {
         return $response;
 
     } catch ($e) {
+        local $log->context->{applicant_info} = $client_details_onfido->{address} if $client_details_onfido && $client_details_onfido->{address};
         $log->errorf('Failed to update details in Onfido for %s : %s', $data->{loginid}, $e);
         exception_logged();
     }
@@ -2234,7 +2255,9 @@ async sub _check_applicant {
                         $loginid);
                     $args->{is_pending} = 1;
                 } else {
-                    local $log->context->{request} = encode_json_utf8(\%request);
+                    local $log->context->{request}  = encode_json_utf8(\%request);
+                    local $log->context->{response} = $response->content if $response and $response->content;
+
                     $log->errorf('An error occurred while processing Onfido verification for %s : %s', $loginid, join(' ', @_));
                 }
             }
