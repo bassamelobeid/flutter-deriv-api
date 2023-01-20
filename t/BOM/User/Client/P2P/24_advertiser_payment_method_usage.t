@@ -63,10 +63,12 @@ subtest 'adverts' => sub {
     $_->{used_by_adverts} = [$advert->{id}] for (values %methods);
     cmp_deeply $advert->{payment_method_details}, \%methods, 'payment method details from advert create';
 
-    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
+    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}, method2 => {mode => 'exclude'}}));
     my $ad_info = $client->p2p_advert_info(id => $advert->{id});
-    cmp_deeply $ad_info->{payment_method_names},   ['Method 1', 'Method 2'], 'payment method names when a method is disbled in country';
-    cmp_deeply $ad_info->{payment_method_details}, \%methods,                'payment method details when a method is disbled in country';
+    cmp_deeply $ad_info->{payment_method_names},                      ['Method 1', 'Method 2'], 'disabled pms shown in advert info to advert owner';
+    cmp_deeply $client->p2p_advert_list()->[0]{payment_method_names}, ['Method 2'], 'disabled pms not shown in advert list to advert owner';
+    cmp_deeply $ad_info->{payment_method_details},                    \%methods,    'payment method details when a method is disbled in country';
+
     BOM::Test::Helper::P2P::create_payment_methods();    # reset
 
     is exception {
@@ -316,11 +318,6 @@ subtest 'buy ads / sell orders' => sub {
 
     cmp_deeply $order_info->{payment_method_details}, $pm_details, 'counterparty gets payment_method_details';
 
-    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
-    cmp_deeply $advertiser->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details,
-        'counterparty gets payment_method_details even if pm disabled in country';
-    BOM::Test::Helper::P2P::create_payment_methods();    # reset
-
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(update => {$methods_by_tag{m1} => {is_enabled => 0}}) },
         {
@@ -447,11 +444,6 @@ subtest 'sell ads / buy orders' => sub {
 
     delete $pm_details{$_}->@{qw/used_by_adverts used_by_orders/} for keys %pm_details;
     cmp_deeply $order->{payment_method_details}, \%pm_details, 'payment_method_details returned from order_create (minus some fields)';
-
-    $runtime_config->payment_method_countries($json->encode({method1 => {mode => 'include'}}));
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, \%pm_details,
-        'buyer gets payment_method_details even if pm disabled in country';
-    BOM::Test::Helper::P2P::create_payment_methods();    # reset
 
     %advertiser_methods = $advertiser->p2p_advertiser_payment_methods(update => {$methods_by_tag{m3} => {is_enabled => 1}})->%*;
 
@@ -628,6 +620,193 @@ subtest 'legacy sell ads' => sub {
         id                 => $ad->{id},
         payment_method_ids => [$method]);
     ok !$ad->{payment_method}, 'set payment_method_ids clears payment method';
+};
+
+subtest 'cross border ads' => sub {
+    $runtime_config->payment_method_countries(
+        $json->encode({
+                method1 => {
+                    mode      => 'include',
+                    countries => ['ng', 'za']
+                },
+                method2 => {
+                    mode      => 'include',
+                    countries => ['ng', 'za']
+                },
+                method3 => {
+                    mode      => 'include',
+                    countries => ['ng', 'za']}}));
+
+    my $client_ng = BOM::Test::Helper::P2P::create_advertiser(
+        balance        => 1000,
+        client_details => {residence => 'ng'});
+    my $client_za = BOM::Test::Helper::P2P::create_advertiser(
+        balance        => 1000,
+        client_details => {residence => 'za'});
+
+    my %methods = $client_ng->p2p_advertiser_payment_methods(
+        create => [{
+                method => 'method1',
+                tag    => 'm1',
+            },
+            {
+                method => 'method2',
+                tag    => 'm2',
+            },
+            {
+                method => 'method3',
+                tag    => 'm3',
+            }])->%*;
+
+    my %method_ids = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
+
+    my (undef, $ad_ng) = BOM::Test::Helper::P2P::create_advert(
+        client             => $client_ng,
+        type               => 'sell',
+        payment_method_ids => [keys %methods]);
+
+    my (undef, $ad_za) = BOM::Test::Helper::P2P::create_advert(
+        client               => $client_za,
+        type                 => 'buy',
+        payment_method_names => ['method1', 'method2', 'method3']);
+
+    $runtime_config->payment_method_countries(
+        $json->encode({
+                method1 => {
+                    mode      => 'include',
+                    countries => ['ng']
+                },
+                method2 => {
+                    mode      => 'include',
+                    countries => ['za']
+                },
+                method3 => {
+                    mode      => 'include',
+                    countries => []}}));
+
+    my $ads = $client_za->p2p_advert_list(local_currency => 'NGN');
+    ok !@$ads, 'sell ad not returned from advert_list when no compatible pms';
+
+    $ads = $client_ng->p2p_advert_list(local_currency => 'ZAR');
+    ok !@$ads, 'no buy ad not returned from advert_list when no compatible pms';
+
+    cmp_deeply(
+        $client_ng->p2p_advert_info(id => $ad_ng->{id})->{payment_method_names},
+        ['Method 1', 'Method 2', 'Method 3'],
+        'ad owner sees disabled sell ad pms in advert info'
+    );
+
+    is $client_za->p2p_advert_info(id => $ad_ng->{id})->{payment_method_names}, undef,
+        'other client does not see disabled sell ad pms in advert info';
+
+    cmp_deeply(
+        $client_za->p2p_advert_info(id => $ad_za->{id})->{payment_method_names},
+        ['Method 1', 'Method 2', 'Method 3'],
+        'ad owner sees disabled buy ad pms in advert info'
+    );
+
+    is $client_ng->p2p_advert_info(id => $ad_za->{id})->{payment_method_names}, undef, 'other client does not see disabled buy ad pms in advert info';
+
+    cmp_deeply(
+        exception { $client_ng->p2p_order_create(advert_id => $ad_za->{id}, amount => 1, rule_engine => $rule_engine) },
+        {error_code => 'AdvertNotFound'},
+        'canot place order on buy ad with no compatible pms'
+    );
+
+    cmp_deeply(
+        exception { $client_za->p2p_order_create(advert_id => $ad_ng->{id}, amount => 1, rule_engine => $rule_engine) },
+        {error_code => 'AdvertNotFound'},
+        'canot place order on sell ad with no compatible pms'
+    );
+
+    $runtime_config->payment_method_countries(
+        $json->encode({
+                method1 => {
+                    mode      => 'include',
+                    countries => ['ng']
+                },
+                method2 => {
+                    mode      => 'include',
+                    countries => ['za']
+                },
+                method3 => {
+                    mode      => 'include',
+                    countries => ['ng', 'za']}}));
+
+    cmp_deeply(
+        exception { $client_ng->p2p_advert_list(local_currency => 'XXX') },
+        {error_code => 'InvalidLocalCurrency'},
+        'cannot search by invalid local currency'
+    );
+
+    $ads = $client_za->p2p_advert_list(local_currency => 'NGN');
+    cmp_deeply([map { $_->{id} } @$ads],        [$ad_ng->{id}], 'sell ad with partial matching pms returned when search by local currency');
+    cmp_deeply($ads->[0]{payment_method_names}, ['Method 3'],   'invalid pms filtered out');
+
+    $ads = $client_ng->p2p_advert_list(local_currency => 'ZAR');
+    cmp_deeply([map { $_->{id} } @$ads],        [$ad_za->{id}], 'buy ad with partial matching pms returned when search by local currency');
+    cmp_deeply($ads->[0]{payment_method_names}, ['Method 3'],   'invalid pms filtered out');
+
+    $ads = $client_za->p2p_advert_list(
+        local_currency => 'NGN',
+        payment_method => ['method1', 'method2']);
+    ok !@$ads, 'cannot retrieve sell ad by searching for invalid pms';
+
+    $ads = $client_ng->p2p_advert_list(
+        local_currency => 'ZAR',
+        payment_method => ['method1', 'method2']);
+    ok !@$ads, 'cannot retrieve buy ad by searching for invalid pms';
+
+    cmp_deeply(
+        $client_ng->p2p_advert_info(id => $ad_ng->{id})->{payment_method_names},
+        ['Method 1', 'Method 2', 'Method 3'],
+        'ad owner sees disabled sell ad pms in advert info'
+    );
+
+    cmp_deeply($client_za->p2p_advert_info(id => $ad_ng->{id})->{payment_method_names},
+        ['Method 3'], 'other client does not see disabled sell ad pms in advert info');
+
+    cmp_deeply(
+        $client_za->p2p_advert_info(id => $ad_za->{id})->{payment_method_names},
+        ['Method 1', 'Method 2', 'Method 3'],
+        'ad owner sees disabled buy ad pms in advert info'
+    );
+
+    cmp_deeply($client_ng->p2p_advert_info(id => $ad_za->{id})->{payment_method_names},
+        ['Method 3'], 'other client does not see disabled buy ad pms in advert info');
+
+    my %params = (
+        advert_id    => $ad_za->{id},
+        amount       => 1,
+        rule_engine  => $rule_engine,
+        contact_info => 'x'
+    );
+
+    cmp_deeply(
+        exception { $client_ng->p2p_order_create(%params, payment_method_ids => [$method_ids{m1}]) },
+        {
+            error_code     => 'PaymentMethodNotInAd',
+            message_params => ['Method 1']
+        },
+        'cannot order from ad when pm id disabled in my country'
+    );
+    cmp_deeply(
+        explain exception { $client_ng->p2p_order_create(%params, payment_method_ids => [$method_ids{m2}]) },
+        {
+            error_code     => 'PaymentMethodNotInAd',
+            message_params => ['Method 2']
+        },
+        'cannot order from ad when pm id disabled in advertisers country'
+    );
+
+    is(exception { $client_ng->p2p_order_create(%params, payment_method_ids => [$method_ids{m3}]) },
+        undef, 'can create an sell order when pm is enabled in both countries');
+
+    my $order;
+    is(exception { $order = $client_za->p2p_order_create(advert_id => $ad_ng->{id}, amount => 1, rule_engine => $rule_engine) },
+        undef, 'can create buy order when pm is enabled in both countries');
+
+    cmp_deeply([keys $order->{payment_method_details}->%*], [$method_ids{m3}], 'only enabled pm is returned in order details');
 
 };
 

@@ -2761,9 +2761,13 @@ sub p2p_advert_info {
         $list = $self->_p2p_adverts(%param);
         return undef unless @$list;
 
-        $list->[0]{payment_method_details} =
-            $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $param{id}))
-            if $self->loginid eq $list->[0]{advertiser_loginid};
+        if ($self->loginid eq $list->[0]{advertiser_loginid}) {
+            $list->[0]{payment_method_details} =
+                $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $param{id}));
+        } else {
+            # remove invalid pms for other viewers
+            $list->[0] = $self->filter_ad_payment_methods($list->[0]);
+        }
 
     } elsif ($param{subscribe}) {
         # at this point, advertiser is subscribing to all their ads
@@ -2811,22 +2815,26 @@ sub p2p_advert_list {
         $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};
     }
 
+    my @countries = $self->residence;
     if ($param{local_currency}) {
-        # filter out ads in other countries which don't have compatible payment methods
-        $param{payment_method} //= [keys $self->p2p_payment_methods->%*, 'none'];
+        my $config = $BOM::Config::CurrencyConfig::ALL_CURRENCIES{uc $param{local_currency}} or die +{error_code => 'InvalidLocalCurrency'};
+        push @countries, $config->{countries}->@*;
     } else {
         $param{country} = $self->residence;
     }
 
+    my %country_payment_methods = map { $_ => [keys $self->p2p_payment_methods($_)->%*] } @countries;
+
     my $list = $self->_p2p_adverts(
         %param,
-        is_active              => 1,
-        can_order              => 1,
-        advertiser_is_approved => 1,
-        advertiser_is_listed   => 1,
-        client_loginid         => $self->loginid,
-        account_currency       => $self->currency,
-        hide_blocked           => 1,
+        is_active               => 1,
+        can_order               => 1,
+        advertiser_is_approved  => 1,
+        advertiser_is_listed    => 1,
+        client_loginid          => $self->loginid,
+        account_currency        => $self->currency,
+        hide_blocked            => 1,
+        country_payment_methods => $json->encode(\%country_payment_methods),
     );
 
     return $self->_advert_details($list, $param{amount});
@@ -2957,11 +2965,15 @@ sub p2p_order_create {
         advertiser_is_listed   => 1,
         account_currency       => $self->currency,
         client_loginid         => $self->loginid,
-        payment_method         => [keys $self->p2p_payment_methods->%*, 'none']
-        ,    # filter out ads in other countries which don't have compatible payment methods
     )->[0];
 
     die +{error_code => 'AdvertNotFound'} unless $advert and $advert_id;
+
+    my $legacy_ad = !($advert->{payment_method_names} and $advert->{payment_method_names}->@*);
+
+    $advert = $self->filter_ad_payment_methods($advert);
+    die +{error_code => 'AdvertNotFound'} unless $legacy_ad or $advert->{payment_method_names}->@*;
+
     die +{error_code => 'InvalidAdvertOwn'}      if $advert->{advertiser_loginid} eq $self->loginid;
     die +{error_code => 'AdvertiserBlocked'}     if $advert->{advertiser_blocked};
     die +{error_code => 'InvalidAdvertForOrder'} if $advert->{client_blocked};
@@ -2997,7 +3009,7 @@ sub p2p_order_create {
         die +{error_code => 'OrderPaymentInfoRequired'} unless trim($param{payment_info}) or @payment_method_ids;
         die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
 
-        if ($advert->{payment_method_names} and $advert->{payment_method_names}->@*) {
+        if (!$legacy_ad) {
             my $methods = $self->_p2p_advertiser_payment_methods(advertiser_id => $client_info->{id});
             die +{error_code => 'InvalidPaymentMethods'} unless all { exists $methods->{$_} } @payment_method_ids;
             my @order_methods = map { $methods->{$_}{method} } grep { $methods->{$_}{is_enabled} } @payment_method_ids;
@@ -3009,7 +3021,7 @@ sub p2p_order_create {
             } @order_methods;
 
             if ($invalid_method) {
-                my $method_defs = $self->p2p_payment_methods(all => 1);
+                my $method_defs = $self->p2p_payment_methods();
                 die +{
                     error_code     => 'PaymentMethodNotInAd',
                     message_params => [$method_defs->{$invalid_method} ? $method_defs->{$invalid_method}{display_name} : $invalid_method]};
@@ -4122,12 +4134,12 @@ sub _p2p_adverts {
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
                         client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method
-                        use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map/
+                        use_client_limits favourites_only hide_blocked market_rate rate_type local_currency market_rate_map country_payment_methods/
                 });
         }) // [];
 }
@@ -4453,7 +4465,7 @@ sub _validate_advert_payment_method_ids {
 
         my @used_methods = map { ($_->{advert_payment_method_names} // [])->@* } @$orders;
         if (my ($removed_method) = array_minus(@used_methods, @method_names)) {
-            my $method_defs = $self->p2p_payment_methods(all => 1);
+            my $method_defs = $self->p2p_payment_methods();
 
             my @payment_methods_display_name_array;
             foreach (@used_methods) {
@@ -4485,7 +4497,7 @@ sub _validate_advert_payment_method_names {
 
     die +{error_code => 'AdvertPaymentMethodNamesNotAllowed'} if $param{type} eq 'sell';
 
-    my $method_defs = $self->p2p_payment_methods;
+    my $method_defs = $self->p2p_payment_methods($self->residence);
 
     if (my $invalid_method = first { not exists $method_defs->{$_} } $param{payment_method_names}->@*) {
         die +{
@@ -4527,7 +4539,7 @@ Format advertiser payment methods for websocket response.
 
 sub _p2p_advertiser_payment_method_details {
     my ($self, $methods) = @_;
-    my $defs = $self->p2p_payment_methods(all => 1);
+    my $defs = $self->p2p_payment_methods();
 
     for my $id (keys %$methods) {
         my $method_def = $defs->{$methods->{$id}{method}};
@@ -4567,6 +4579,15 @@ sub _p2p_order_payment_method_details {
         );
 
     return unless %$methods;
+
+    my @client_pms     = keys $self->p2p_payment_methods($order->{client_country})->%*;
+    my @advertiser_pms = keys $self->p2p_payment_methods($order->{advertiser_country})->%*;
+    my @valid_pms      = intersect(@client_pms, @advertiser_pms);
+    my @invalid_ids    = grep {
+        my $method = $methods->{$_}{method};
+        none { $_ eq $method } @valid_pms
+    } keys %$methods;
+    delete $methods->@{@invalid_ids};
 
     return $self->_p2p_advertiser_payment_method_details($methods);
 }
@@ -4916,11 +4937,14 @@ sub _advert_details {
             }
         }
 
-        if ($advert->{payment_method_names} and $advert->{payment_method_names}->@*) {
-            $payment_method_defs //= $self->p2p_payment_methods(all => 1);
+        my $payment_method_names = $advert->{available_payment_method_names};
+        $payment_method_names = $advert->{payment_method_names} unless @$payment_method_names;
+
+        if (@$payment_method_names) {
+            $payment_method_defs //= $self->p2p_payment_methods();
             $result->{payment_method_names} = [
                 sort map { $payment_method_defs->{$_}{display_name} }
-                grep     { exists $payment_method_defs->{$_} } $advert->{payment_method_names}->@*
+                grep     { exists $payment_method_defs->{$_} } @$payment_method_names
             ];
         }
 
@@ -5066,7 +5090,7 @@ sub _order_details {
                 delete $result->{payment_method_details}{$_}->@{qw(used_by_adverts used_by_orders)} for keys $result->{payment_method_details}->%*;
             }
         } elsif ($order->{payment_method}) {
-            $payment_method_defs //= $self->p2p_payment_methods(all => 1);
+            $payment_method_defs //= $self->p2p_payment_methods();
             $result->{payment_method_names} =
                 [map { $payment_method_defs->{$_}{display_name} } grep { exists $payment_method_defs->{$_} } split ',', $order->{payment_method}];
         }
@@ -5676,7 +5700,7 @@ sub p2p_order_status_history {
 
 =head2 p2p_payment_methods
 
-Returns P2P payment methods available in the client's residence.
+Returns P2P payment methods optionally filtered by availability in a country.
 
 The payment_method_countries config (json) is set in backoffice. Each method has 2 keys in the config:
     - countries: list of 2 digit country codes
@@ -5688,18 +5712,17 @@ Takes the following arguments:
 
 =over 4
 
-=item * all: if true, methods are not filtered by client's residence
+=item * country: if not provided all pms are returned
 
 =back
 
 =cut
 
 sub p2p_payment_methods {
-    my ($self, %param) = @_;
+    my ($self, $country) = @_;
 
     my $methods        = BOM::Config::p2p_payment_methods();
     my $country_config = $json->decode(BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries);
-    my $residence      = $self->residence;
     my $result         = {};
 
     for my $method (keys %$methods) {
@@ -5707,8 +5730,8 @@ sub p2p_payment_methods {
         my $mode      = $config->{mode}            // 'include';
         my $countries = $config->{countries}       // [];
 
-        next if not($param{all}) and $mode eq 'include' and none { $_ eq $residence } @$countries;
-        next if not($param{all}) and $mode eq 'exclude' and any { $_ eq $residence } @$countries;
+        next if $country and $mode eq 'include' and none { $_ eq $country } @$countries;
+        next if $country and $mode eq 'exclude' and any { $_ eq $country } @$countries;
 
         my $method_def = $methods->{$method};
         my %fields     = map {
@@ -5734,6 +5757,33 @@ sub p2p_payment_methods {
     }
 
     return $result;
+}
+
+=head2 filter_ad_payment_methods
+
+Filters disabled payment methods from an advert's payment_method_names field.
+Used when we don't/can't send country_payment_methods param to p2p.advert_list db function.
+
+=over 4
+
+=item * ad: advert as returned from p2p.advert_list()
+
+=back
+
+Returns modified ad.
+
+=cut
+
+sub filter_ad_payment_methods {
+    my ($self, $ad) = @_;
+
+    my @my_pms         = keys $self->p2p_payment_methods($self->residence)->%*;
+    my @advertiser_pms = keys $self->p2p_payment_methods($ad->{country})->%*;
+    my @ad_pms         = $ad->{payment_method_names}->@*;
+    my @valid_pms      = intersect(@my_pms, @advertiser_pms);
+    $ad->{payment_method_names} = [intersect(@ad_pms, @valid_pms)];
+
+    return $ad;
 }
 
 =head2 p2p_advertiser_payment_methods
@@ -5840,7 +5890,7 @@ Returns $existing with updated items.
 sub _p2p_advertiser_payment_method_update {
     my ($self, $existing, $updates) = @_;
 
-    my $method_defs = $self->p2p_payment_methods(all => 1);    # pm can be updated after being disabled in country
+    my $method_defs = $self->p2p_payment_methods();    # pm can be updated after being disabled in country
 
     my (@disabled_ids, @updated_ids);
     for my $id (keys %$updates) {
@@ -5918,7 +5968,7 @@ Returns undef.
 sub _p2p_advertiser_payment_method_create {
     my ($self, $existing, $new) = @_;
 
-    my $method_defs = $self->p2p_payment_methods;
+    my $method_defs = $self->p2p_payment_methods($self->residence);
 
     for my $item (@$new) {
         my $method = $item->{method};

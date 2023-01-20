@@ -42,11 +42,11 @@ subtest p2p_payment_methods => sub {
         residence   => 'id'
     });
 
-    cmp_deeply($client->p2p_payment_methods, {}, 'no payment methods with empty bo config');
+    cmp_deeply($client->p2p_payment_methods('id'), {}, 'no payment methods with empty bo config');
     $runtime_config->payment_method_countries($json->encode({bigpay => {countries => [qw(id mx)]}}));
 
     cmp_deeply(
-        $client->p2p_payment_methods,
+        $client->p2p_payment_methods('id'),
         {
             bigpay => {
                 display_name => 'Big Pay',
@@ -78,7 +78,7 @@ subtest p2p_payment_methods => sub {
                     countries => [qw(mx)]}}));
 
     cmp_deeply(
-        $client->p2p_payment_methods,
+        $client->p2p_payment_methods('id'),
         {
             other => {
                 display_name => 'Other',

@@ -167,6 +167,15 @@ subtest 'advert list' => sub {
         bag($ad_buy_id_1->{id}, $ad_buy_id_2->{id}),
         'expected id buy ads seen by id user'
     );
+
+    cmp_deeply($advertiser_ng->p2p_advert_info(id => $ad_sell_id_1->{id})->{payment_method_names},
+        ['Method 2'], 'user in other contry does not see incompatible payment methods');
+
+    cmp_deeply(
+        $advertiser_id->p2p_advert_info(id => $ad_sell_id_1->{id})->{payment_method_names},
+        ['Method 1', 'Method 2'],
+        'ad owner sees all payment methods in p2p_advert_info'
+    );
 };
 
 subtest 'orders' => sub {
