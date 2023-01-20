@@ -52,6 +52,7 @@ my %event_stream_mapping = (
     client_promo_codes_upload           => 'PROMO_CODE_IMPORT_LONG_RUNNING_STREAM',
     anonymize_client                    => 'ANONYMIZATION_STREAM',
     bulk_anonymization                  => 'ANONYMIZATION_STREAM',
+    auto_anonymize_candidates           => 'ANONYMIZATION_STREAM',
     multiplier_hit_type                 => 'CONTRACT_STREAM',
     multiplier_near_expire_notification => 'CONTRACT_STREAM',
     multiplier_near_dc_notification     => 'CONTRACT_STREAM',
