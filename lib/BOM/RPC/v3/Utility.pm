@@ -525,11 +525,6 @@ our %ImmutableFieldError = do {
         secret_question           => localize("Your secret question cannot be changed."),
         tax_residence             => localize("Your tax residence cannot be changed."),
         tax_identification_number => localize("Your tax identification number cannot be changed."),
-        address_city              => localize("Your address cannot be changed."),
-        address_line_1            => localize("Your address cannot be changed."),
-        address_line_2            => localize("Your address cannot be changed."),
-        address_postcode          => localize("Your address cannot be changed."),
-        address_state             => localize("Your address cannot be changed."),
     );
 };
 
