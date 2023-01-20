@@ -7,6 +7,7 @@ no indirect;
 use Scalar::Util qw(blessed);
 use Syntax::Keyword::Try;
 use List::MoreUtils qw(none);
+use List::Util      qw(max);
 use JSON::MaybeXS;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
@@ -419,14 +420,7 @@ sub get_bid {
 
                 $response->{profit}            = formatnumber('price', $currency, $profit);
                 $response->{profit_percentage} = roundcommon(0.01, $profit / $main_contract_price * 100);
-
-                #we don't want to show negative profit at the beginning of the accumulator contract to client
-                if ($contract->category_code eq 'accumulator' and $profit < 0 and not $is_sold) {
-                    delete $response->{profit};
-                    delete $response->{profit_percentage};
-                }
             }
-            # (M)
 
             my $pen = $contract->pricing_engine_name;
             $pen =~ s/::/_/g;
@@ -852,12 +846,15 @@ sub _build_bid_response {
                     'order_date'   => $contract->take_profit->{date}->epoch,
                     'order_amount' => $contract->take_profit->{amount}}};
         }
-        $response->{growth_rate} = $contract->growth_rate;
-        $response->{tick_count}  = $contract->max_duration;
-        $response->{tick_passed} = $contract->tick_count_after_entry;
-
+        $response->{growth_rate}  = $contract->growth_rate;
+        $response->{tick_count}   = $contract->max_duration;
+        $response->{tick_passed}  = $contract->tick_count_after_entry;
         $response->{high_barrier} = $contract->display_high_barrier if $contract->display_high_barrier;
         $response->{low_barrier}  = $contract->display_low_barrier  if $contract->display_low_barrier;
+
+        #in the first few ticks of the contract bid_price will be less than stake
+        #but we don't want to show that to users
+        $response->{bid_price} = max($response->{bid_price}, $contract->_user_input_stake) unless $contract->is_expired;
 
         #status of accumulator is determined differently from other non-binary contracts
         if ($params->{is_sold} and $params->{is_expired}) {
