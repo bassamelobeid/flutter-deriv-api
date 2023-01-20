@@ -4803,7 +4803,7 @@ sub _advertiser_details {
 
         # if ad rates are not in the default setting, FE needs to know if advertiser has active ads of each type
         my $advert_config = BOM::Config::P2P::advert_config()->{$self->residence};
-        if ($advert_config->{fixed_ads} ne 'enabled' or $advert_config->{float_ads} ne 'disabled') {
+        if ($advert_config and ($advert_config->{fixed_ads} ne 'enabled' or $advert_config->{float_ads} ne 'disabled')) {
             my $ads = $self->_p2p_adverts(
                 advertiser_id => $advertiser->{id},
                 is_active     => 1,
