@@ -17,6 +17,7 @@ use List::Util qw( any );
 use Log::Any   qw( $log );
 use Template::AutoFilter;
 use Syntax::Keyword::Try;
+use Future::AsyncAwait;
 
 use BOM::Config;
 use BOM::Event::Utility    qw( exception_logged );
@@ -35,13 +36,17 @@ use constant TEMPLATE_PREFIX_PATH => "/home/git/regentmarkets/bom-events/share/t
 
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 
+use constant PENDING_POA_EMAIL_LOCK => "PENDING::POA::EMAIL::LOCK::";
+
+use constant PENDING_POA_EMAIL_LOCK_TTL => 604800;
+
 =head2 set_age_verification
 
-This method sets the specified client as B<age_verification>.
+    This method sets the specified client as B <age_verification> .
 
-It also propagates the status across siblings.
+    It also propagates the status across siblings .
 
-It takes the following arguments:
+    It takes the following arguments :
 
 =over 4
 
@@ -55,8 +60,8 @@ Returns C<1> on success, C<undef> otherwise.
 
 =cut
 
-sub set_age_verification {
-    my ($client, $provider) = @_;
+async sub set_age_verification {
+    my ($client, $provider, $redis) = @_;
 
     my $reason = "$provider - age verified";
     my $staff  = 'system';
@@ -100,8 +105,11 @@ sub set_age_verification {
 
     $client->update_status_after_auth_fa($reason);
 
+    my $key          = PENDING_POA_EMAIL_LOCK . $client->loginid;
+    my $acquire_lock = await $redis->set($key, 1, 'EX', PENDING_POA_EMAIL_LOCK_TTL, 'NX');
+
     # After client age verification, if we find a pending POA, notify CS.
-    if ($client->get_poa_status eq 'pending') {
+    if ($client->get_poa_status eq 'pending' && $acquire_lock) {
         _send_CS_email_POA_pending($client);
     }
     BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client => $client});

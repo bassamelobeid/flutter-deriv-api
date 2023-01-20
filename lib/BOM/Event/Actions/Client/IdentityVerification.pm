@@ -68,6 +68,9 @@ $loop->add(my $services = BOM::Event::Services->new);
         return $services->redis_replicated_write();
     }
 
+    sub _redis_events_write {
+        return $services->redis_events_write();
+    }
 }
 
 =head2 verify_identity
@@ -284,8 +287,10 @@ async sub idv_verified {
         $client->set_authentication('IDV', {status => 'pass'});
         $client->status->clear_unwelcome;
     }
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
 
-    BOM::Event::Actions::Common::set_age_verification($client, $provider);
+    await BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write);
 
     $idv_model->update_document_check({
         document_id     => $document->{id},

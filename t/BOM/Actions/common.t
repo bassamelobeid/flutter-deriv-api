@@ -7,6 +7,9 @@ use Test::Exception;
 use Test::MockModule;
 use Test::Fatal;
 use Test::Deep;
+use Future::AsyncAwait;
+use BOM::Event::Services;
+use IO::Async::Loop;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
@@ -75,6 +78,16 @@ $landing_company_mock->mock(
     sub {
         return $mocked_allowed_landing_companies_for_age_verification_sync;
     });
+
+# Redis
+my $loop = IO::Async::Loop->new;
+$loop->add(my $services = BOM::Event::Services->new);
+
+sub _redis_events_write {
+    return $services->redis_events_write();
+}
+
+my $redis = _redis_events_write();
 
 subtest 'set_age_verification' => sub {
     my $tests = [{
@@ -296,7 +309,10 @@ subtest 'set_age_verification' => sub {
             mailbox_clear();
 
             undef @emissions;
-            my $res = BOM::Event::Actions::Common::set_age_verification($client, $provider);
+
+            my $redis_events_write = _redis_events_write();
+            $redis_events_write->connect->get;
+            my $res = BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write)->get;
 
             my @mailbox = BOM::Test::Email::email_list();
             my $emails  = +{map { $_->{subject} => 1 } @mailbox};
@@ -345,6 +361,15 @@ subtest 'set_age_verification' => sub {
 
             if ($side_effects->{poa_email}) {
                 ok exists $emails->{'Pending POA document for: ' . $client->loginid}, 'Pending POA email sent';
+
+                BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write)->get;
+
+                @mailbox = BOM::Test::Email::email_list();
+
+                ok $redis_events_write->get('PENDING::POA::EMAIL::LOCK::' . $client->loginid), 'redis lock set';
+
+                ok !scalar @mailbox, 'No mail sent';
+
             } else {
                 ok !exists $emails->{'Pending POA document for: ' . $client->loginid}, 'Pending POA email was not sent';
             }
