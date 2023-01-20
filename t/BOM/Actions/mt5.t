@@ -1097,7 +1097,8 @@ subtest 'mt5 deriv auto rescind' => sub {
             });
 
         my $result = $action_get->($args)->get;
-        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'Archive condition not met'}}, 'Got archive condition not met error';
+        is_deeply $result->{failed_case}, {'MTR10000' => {'MT5 Error' => 'Archive condition not met. Remaining Balance: USD 10.00'}},
+            'Got archive condition not met error';
     };
 
     subtest 'Archive process failed' => sub {
@@ -1246,6 +1247,83 @@ subtest 'mt5 deriv auto rescind' => sub {
             'Success Case with Balance 10 USD to USD with Disabled Account';
     };
 
+    subtest 'Success Case with Balance 10 from MT5 USD to Deriv USD, Customer Transfer of USD 5 with Skip Archive' => sub {
+        my $args = {
+            mt5_accounts           => ['MTR10000'],
+            override_status        => 0,
+            custom_transfer_amount => "5.00",
+            skip_archive           => 1,
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_mock{get_user}->(sub { Future->done(\%mt5_user_with_balance) });
+        $mt5_mock{user_balance_change}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{balance} = '5.00';
+                return Future->done({status => 1});
+            });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{success_case}, {
+            $auto_rescind_test_client->email => {
+                bom_user     => $sample_bom_user,
+                mt5_accounts => [\%mt5_user_with_balance],
+                MTR10000     => {
+                    transferred_deriv          => "CR90000",
+                    transferred_deriv_amount   => "5.00",
+                    transferred_deriv_currency => "USD",
+                    transferred_mt5_amount     => "5.00",
+                    transferred_mt5_currency   => "USD",
+
+                },
+                transfer_targets => ["CR90000"],
+            }
+            },
+            'Success Case with Balance 10 and transfer 5 USD to USD';
+    };
+
+    subtest 'Success Case with Balance 5 from MT5 USD to Deriv USD, Customer Transfer of USD 5 without Skip Archive' => sub {
+        my $args = {
+            mt5_accounts           => ['MTR10000'],
+            override_status        => 0,
+            custom_transfer_amount => "5.00",
+        };
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '5.00';
+        $mt5_mock{get_user}->(sub { Future->done(\%mt5_user_with_balance) });
+        $mt5_mock{user_balance_change}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{balance} = '0';
+                return Future->done({status => 1});
+            });
+
+        my $result = $action_get->($args)->get;
+        is_deeply $result->{success_case}, {
+            $auto_rescind_test_client->email => {
+                bom_user     => $sample_bom_user,
+                mt5_accounts => [\%mt5_user_with_balance],
+                MTR10000     => {
+                    transferred_deriv          => "CR90000",
+                    transferred_deriv_amount   => "5.00",
+                    transferred_deriv_currency => "USD",
+                    transferred_mt5_amount     => "5.00",
+                    transferred_mt5_currency   => "USD",
+
+                },
+                transfer_targets => ["CR90000"],
+            }
+            },
+            'Success Case with Balance 5 and transfer 5 USD to USD';
+    };
+
     subtest 'Report Sent for Success Case' => sub {
         my $args = {
             mt5_accounts    => ['MTR10000'],
@@ -1281,6 +1359,54 @@ subtest 'mt5 deriv auto rescind' => sub {
         <br>
         <b>Success Result Details:</b><br>
         <b>-</b> MTR10000 (Archived) Transferred USD 10.00 to CR90000 With Value of USD 10.00 <br>
+        <br>
+        <br>Total MT5 Accounts Processed: 1<br>
+        Total MT5 Accounts Processed (Succeed): 1<br>
+        Total MT5 Accounts Processed (Failed): 0<br>
+        <br><b>###END OF REPORT###</b><br>';
+
+        ok $email, 'MT5 Account Rescind Report sent';
+        my @correct_email  = split(' ', $expected_email);
+        my @received_email = split(' ', $email->{body});
+        is_deeply(\@received_email, \@correct_email, 'correct content');
+    };
+
+    subtest 'Report Sent for Success Case with Skip Archive' => sub {
+        my $args = {
+            mt5_accounts    => ['MTR10000'],
+            override_status => 0,
+            skip_archive    => 1
+        };
+        mailbox_clear();
+
+        $mt5_deriv_auto_rescind_mock_set->();
+        $mt5_deriv_auto_rescind_process_mock_set->();
+        my %mt5_user_with_balance = %$sample_mt5_user;
+        $mt5_user_with_balance{balance} = '10.00';
+        $mt5_mock{get_user}->(sub { Future->done(\%mt5_user_with_balance) });
+        $mt5_mock{user_balance_change}->(
+            sub {
+                my $mt5_ref = \%mt5_user_with_balance;
+                $mt5_ref->{balance} = '0.0';
+                return Future->done({status => 1});
+            });
+
+        my $result = $action_get->($args)->get;
+        my $email  = mailbox_search(
+            email   => 'i-payments-TL@deriv.com',
+            subject => qr/MT5 Account Rescind Report/
+        );
+
+        my $expected_email = '<h1>MT5 Auto Rescind Report</h1><br>
+        <b>MT5 Processed: </b>
+        MTR10000
+        <br>
+        <br><b>###SUCCESS CASE###</b><br>
+        <b>Auto Rescind Successful for: </b>
+        MTR10000
+        <br>
+        <b>Success Result Details:</b><br>
+        <b>-</b> MTR10000 (Archive Skipped) Transferred USD 10.00 to CR90000 With Value of USD 10.00 <br>
         <br>
         <br>Total MT5 Accounts Processed: 1<br>
         Total MT5 Accounts Processed (Succeed): 1<br>
