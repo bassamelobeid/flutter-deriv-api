@@ -1872,21 +1872,23 @@ sub get_client_details {
 
     # If the loginid correspond to a trading platform
     # show a loginid picker page.
-    if ($loginid =~ /^(MT|DX)[DR]?/) {
+    if ($loginid =~ /^(MT|DX|EZ)[DR]?/) {
         if (my $user = BOM::User->new(loginid => $loginid)) {
-            my $logins        = loginids($user);
-            my $mt_logins_ids = $logins->{mt5};
-            my $bom_logins    = $logins->{bom};
-            my $dx_logins_ids = $logins->{dx};
+            my $logins             = loginids($user);
+            my $mt_logins_ids      = $logins->{mt5};
+            my $bom_logins         = $logins->{bom};
+            my $dx_logins_ids      = $logins->{dx};
+            my $derivez_logins_ids = $logins->{derivez};
 
             Bar("$encoded_loginid LOGINIDS");
 
             BOM::Backoffice::Request::template()->process(
                 'backoffice/client_loginids.html.tt',
                 {
-                    bom_logins   => $bom_logins,
-                    mt5_loginids => $mt_logins_ids,
-                    dx_loginids  => $dx_logins_ids,
+                    bom_logins       => $bom_logins,
+                    mt5_loginids     => $mt_logins_ids,
+                    dx_loginids      => $dx_logins_ids,
+                    derivez_loginids => $derivez_logins_ids,
                 },
             ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
@@ -1946,6 +1948,7 @@ sub get_client_details {
         include_all_status => 1
     );
     my @dx_logins       = sort $user->get_trading_platform_loginids('dxtrader');
+    my @derivez_logins  = sort $user->get_trading_platform_loginids('derivez');
     my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
     my $broker          = $client->broker;
     my $encoded_broker  = encode_entities($broker);
@@ -1972,6 +1975,7 @@ sub get_client_details {
         self_post              => $self_post,
         self_href              => $self_href,
         dx_logins              => \@dx_logins,
+        derivez_logins         => \@derivez_logins,
         loginid_details        => $loginid_details,
     );
 }
@@ -2003,6 +2007,7 @@ sub loginids {
     );
     my @bom_logins;
     my @dx_logins;
+    my @derivez_logins;
 
     foreach my $lid (sort $user->bom_loginids()) {
         unless (LandingCompany::Registry->check_broker_from_loginid($lid)) {
@@ -2032,34 +2037,49 @@ sub loginids {
             };
     }
 
-    foreach my $lid ($user->get_trading_platform_loginids('dxtrader')) {
-        my $currency;
-        my $market_type;
-        my $account_type;
-        my $login;
+    my @platforms = ('dxtrader', 'derivez');
 
-        if (my $details = $details->{$lid}) {
-            ($currency, $account_type) = @{$details}{qw/currency account_type/};
+    foreach my $platform (@platforms) {
+        foreach my $lid ($user->get_trading_platform_loginids($platform)) {
+            my $currency;
+            my $market_type;
+            my $account_type;
+            my $login;
 
-            if (my $attributes = $details->{attributes}) {
-                ($market_type, $login) = @{$attributes}{qw/market_type login/};
+            if (my $details = $details->{$lid}) {
+                ($currency, $account_type) = @{$details}{qw/currency account_type/};
+
+                if (my $attributes = $details->{attributes}) {
+                    ($market_type, $login) = @{$attributes}{qw/market_type login/};
+                }
+            }
+
+            my %common_params = (
+                loginid      => encode_entities($lid),
+                market_type  => $market_type  // 'missing market type',
+                account_type => $account_type // 'missing account type',
+                currency     => $currency     // 'missing currency',
+            );
+
+            if ($platform eq 'dxtrader') {
+                push @dx_logins,
+                    +{
+                    %common_params,
+                    dxlogin => $login // 'missing dxlogin',
+                    };
+            }
+
+            if ($platform eq 'derivez') {
+                push @derivez_logins, +{%common_params,};
             }
         }
-
-        push @dx_logins,
-            +{
-            loginid      => encode_entities($lid),
-            market_type  => $market_type  // 'missing market type',
-            account_type => $account_type // 'missing account type',
-            currency     => $currency     // 'missing currency',
-            dxlogin      => $login        // 'missing dxlogin',
-            };
     }
 
     return {
-        mt5 => \@mt_logins,
-        dx  => \@dx_logins,
-        bom => \@bom_logins,
+        mt5     => \@mt_logins,
+        dx      => \@dx_logins,
+        bom     => \@bom_logins,
+        derivez => \@derivez_logins,
     };
 }
 

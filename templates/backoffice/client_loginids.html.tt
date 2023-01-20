@@ -12,5 +12,8 @@
         [% FOREACH entry IN dx_loginids %]
             <li>[% entry.loginid %] ([% entry.currency %]\[% entry.account_type %]\[% entry.market_type %]\dxlogin=[% entry.dxlogin %]) </li>        
         [% END %]
+        [% FOREACH derivez_loginid IN derivez_loginids %]
+            <li>[% derivez_loginid.loginid %]</li>
+        [% END %]
     </ul>
 </div>

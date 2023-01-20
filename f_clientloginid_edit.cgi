@@ -98,6 +98,7 @@ my $self_href       = $details{self_href};
 my $loginid         = $client->loginid;
 my $aff_mt_accounts = $details{affiliate_mt5_accounts};
 my $dx_logins       = $details{dx_logins};
+my $derivez_logins  = $details{derivez_logins};
 my $loginid_details = $details{loginid_details};
 
 if (my $error_message = write_operation_error()) {
@@ -1667,6 +1668,27 @@ foreach my $dx_ac ($dx_logins->@*) {
         my $account_status = $details->{status};
         print " (" . $account_status . ")"         if $account_status;
         print " (" . encode_entities($extra) . ")" if $extra;
+    }
+
+    print "</li>";
+}
+
+# Show Derivez accounts.
+foreach my $derivez_login ($derivez_logins->@*) {
+    print "<li>";
+    print encode_entities($derivez_login);
+    my ($group, $status) = get_mt5_group_and_status($derivez_login);
+
+    if ($group) {
+        my $landing_company = BOM::User::Utility::parse_mt5_group($group)->{landing_company_short};
+
+        my $jurisdiction_risk;
+        $jurisdiction_risk = $mt5_jurisdiction->{$landing_company}->{country_risk}->{$client->residence} if $mt5_jurisdiction->{$landing_company};
+        $jurisdiction_risk //= 'low';
+
+        print " (" . encode_entities($group) . "), jur. risk= $jurisdiction_risk" . " ( $status )";
+    } else {
+        print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
     }
 
     print "</li>";

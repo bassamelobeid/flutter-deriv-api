@@ -72,21 +72,23 @@ if (not $user) {
 
 Bar($title);
 
-my $logins        = loginids($user);
-my $mt_logins_ids = $logins->{mt5};
-my $bom_logins    = $logins->{bom};
-my $dx_logins_ids = $logins->{dx};
+my $logins             = loginids($user);
+my $mt_logins_ids      = $logins->{mt5};
+my $bom_logins         = $logins->{bom};
+my $dx_logins_ids      = $logins->{dx};
+my $derivez_logins_ids = $logins->{derivez};
 
 if (not $input{email_edit}) {
     # list loginids with email
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {
-            list         => 1,
-            email        => $email,
-            bom_logins   => $bom_logins,
-            mt5_loginids => $mt_logins_ids,
-            dx_loginids  => $dx_logins_ids,
+            list             => 1,
+            email            => $email,
+            bom_logins       => $bom_logins,
+            mt5_loginids     => $mt_logins_ids,
+            dx_loginids      => $dx_logins_ids,
+            derivez_loginids => $derivez_logins_ids,
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
@@ -157,12 +159,13 @@ if ($email ne $new_email) {
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {
-            updated      => 1,
-            old_email    => $email,
-            new_email    => $new_email,
-            bom_logins   => $bom_logins,
-            mt5_loginids => $mt_logins_ids,
-            dx_loginids  => $dx_logins_ids,
+            updated          => 1,
+            old_email        => $email,
+            new_email        => $new_email,
+            bom_logins       => $bom_logins,
+            mt5_loginids     => $mt_logins_ids,
+            dx_loginids      => $dx_logins_ids,
+            derivez_loginids => $derivez_logins_ids,
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 } else {
