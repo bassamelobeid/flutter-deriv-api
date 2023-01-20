@@ -152,7 +152,7 @@
             <td>[% order.contact_info %]</td>
         </tr>
         <tr>
-            <td>Instructions</td>
+            <td>Advert Instructions</td>
             <td>[% order.advert_description %]</td>
         </tr>        
         <tr>
