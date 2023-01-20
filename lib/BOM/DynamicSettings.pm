@@ -413,6 +413,7 @@ sub get_settings_by_group {
                 payments.autoapproval.cft.max_mt5_net_transfer
                 payments.p2p_withdrawal_limit
                 payments.p2p_deposits_lookback
+                payments.payment_methods_with_poo
             )
         ],
         crypto => [qw(

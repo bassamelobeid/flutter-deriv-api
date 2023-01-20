@@ -668,9 +668,14 @@ SQL
     my $idv_submissions_left = $idv_model->submissions_left();
 
     $idv_submissions_left = $idv_model->has_expired_document_chance() ? 1 : 0 if $idv_submissions_left <= 0 && $client->get_idv_status() eq 'expired';
+
+    my $app_config            = BOM::Config::Runtime->instance->app_config;
+    my $payment_method_config = $app_config->payments->payment_methods_with_poo;
+
     my $doughflow_methods = $client->db->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM payment.doughflow_deposit_methods_without_poo(?)', undef, $client->binary_user_id);
+            $_->selectall_arrayref('SELECT * FROM payment.doughflow_deposit_methods_without_poo(?, ?)',
+                undef, $client->binary_user_id, $payment_method_config);
         });
     my $proof_of_ownership_list = $client->proof_of_ownership->list();
 
