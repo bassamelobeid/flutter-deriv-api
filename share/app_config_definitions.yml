@@ -70,6 +70,11 @@ payments:
           default: '{"CreditCard": {"limit":5,"days":90,"siblings":[]}}'
           description: High risk payment method settings
           global: 1
+    payment_methods_with_poo:
+        description: "Proof of ownership can be requested for these payment methods"
+        isa: ArrayRef
+        default: ['VISA', 'MasterCard', 'Maestro', 'AdvCash', 'Astropay', 'Beyonic', 'D24Voucher', 'PIX', 'Skrill', 'Neteller', 'OnlineNaira', 'Webmoney', 'Zingpay', 'Sticpay', 'JetonWL']
+        global: 1
     pa_sum_deposits_limit:
       description: 'payment agent sum deposits threshold limit.'
       isa: Num
