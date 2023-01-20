@@ -250,8 +250,9 @@ sub _get_ask {
                     ? $redis_replicated->lrange($stat_key, -1, -1)
                     : $redis_replicated->lrange($stat_key, 0,  -1);
 
-                my $high_barrier = $contract->underlying->pipsized_value($contract->get_high_barrier($contract->current_spot));
-                my $low_barrier  = $contract->underlying->pipsized_value($contract->get_low_barrier($contract->current_spot));
+                #barriers in PP should be calculated based on the current tick
+                my $high_barrier = $contract->display_high_barrier($contract->get_high_barrier($contract->current_spot));
+                my $low_barrier  = $contract->display_low_barrier($contract->get_low_barrier($contract->current_spot));
 
                 $response->{contract_details} = {
                     'maximum_payout'    => $contract->max_payout,
@@ -854,6 +855,9 @@ sub _build_bid_response {
         $response->{growth_rate} = $contract->growth_rate;
         $response->{tick_count}  = $contract->max_duration;
         $response->{tick_passed} = $contract->tick_count_after_entry;
+
+        $response->{high_barrier} = $contract->display_high_barrier if $contract->display_high_barrier;
+        $response->{low_barrier}  = $contract->display_low_barrier  if $contract->display_low_barrier;
 
         #status of accumulator is determined differently from other non-binary contracts
         if ($params->{is_sold} and $params->{is_expired}) {
