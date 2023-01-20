@@ -11,8 +11,7 @@
    ],
    "properties" : {
       "set_settings" : {
-         "type" : "integer",
-         "enum" : [1]
+         "type" : "object"
       },
       "msg_type" : {
          "type" : "string",
