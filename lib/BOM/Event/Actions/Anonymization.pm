@@ -2,12 +2,13 @@ package BOM::Event::Actions::Anonymization;
 
 use strict;
 use warnings;
-
+use BOM::Config::Runtime;
 use Future;
 use Future::AsyncAwait;
 use List::Util qw( uniqstr );
 use Log::Any   qw( $log );
 use Syntax::Keyword::Try;
+use Time::HiRes;
 
 use BOM::User;
 use BOM::User::Client;
@@ -23,8 +24,10 @@ use BOM::Platform::Token::API;
 use IO::Async::Loop;
 use BOM::Event::Services;
 use LandingCompany::Registry;
-use BOM::Platform::Email       qw(send_email);
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use BOM::Platform::Email qw(send_email);
+use BOM::Config::Runtime;
+
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 
 # Load Brands object globally
 my $BRANDS = BOM::Platform::Context::request()->brand();
@@ -105,14 +108,122 @@ async sub bulk_anonymization {
 
     my ($success, $error);
 
-    my @loginids = uniqstr grep { $_ } map { uc $_ } map { s/^\s+|\s+$//gr } map { $_->@* } $data->@*;
+    my @loginids = uniqstr grep { $_ } map { uc $_ } map { s/^\s+|\s+$//gr } map { (ref $_ eq 'ARRAY') ? ($_->@*) : $_ } $data->@*;
+    $error->{'There is no login ID'} = "There was no candidate or file was corrupt" unless scalar @loginids;
+
+    my $start_time = Time::HiRes::time;
     foreach my $loginid (@loginids) {
         my $result = await _anonymize($loginid);
-        $result eq 'successful' ? $success->{$loginid} = $result : $error->{$loginid} = ERROR_MESSAGE_MAPPING->{$result};
+
+        if ($result eq 'successful') {
+            $success->{$loginid} = $result;
+        } else {
+            $error->{$loginid} = ERROR_MESSAGE_MAPPING->{$result} // $result;
+        }
     }
-    $error->{'There is no login ID in file'} = "File corrupted" if @loginids == 0;
-    _send_anonymization_report($error, $success);
+
+    my $type = $args->{title} // 'Bulk Anonymization';
+    stats_timing('anonymization.bulk.duration', Time::HiRes::time - $start_time, {tags => ["type:$type"]});
+
+    _send_anonymization_report($error, $success, $args->{title});
     return 1;
+}
+
+=head2 auto_anonymize_candidates
+
+Anonymizes the clients identified as anonymization candidates and approved by the compliance team.
+This event is emitted by the auto-anonymization cronjob.
+
+=cut
+
+async sub auto_anonymize_candidates {
+    my $collector_db = BOM::Database::ClientDB->new({
+            broker_code => 'FOG',
+            operation   => 'collector',
+        })->db->dbic;
+
+    my @canceled_candidates = $collector_db->run(
+        fixup => sub {
+            return $_->selectall_array(
+                "SELECT * FROM users.get_anonymization_candidates('', ?, FALSE) UNION SELECT * FROM users.get_anonymization_candidates('', ?, FALSE)",
+                {Slice => {}}, 'approved', 'postponed'
+            );
+        });
+
+    for my $candidate (@canceled_candidates) {
+        # reset the reviewed removed anonymization candidates and report them.
+        $collector_db->run(
+            fixup => sub {
+                return $_->do(
+                    "SELECT users.set_anonymization_confirmation_status(?,?,?,?)",
+                    {Slice => {}},
+                    $candidate->{binary_user_id} + 0,
+                    'pending', 'Retention period was reset by user activity', 'system'
+                );
+            });
+    }
+
+    _send_reset_candidates_report(@canceled_candidates) if @canceled_candidates;
+
+    my $limit = BOM::Config::Runtime->instance->app_config->compliance->auto_anonymization_daily_limit;
+    my @data  = $collector_db->run(
+        fixup => sub {
+            # Select clients only if all siblings are ready for anonymization: user_can_anon = TRUE and compliance_confirmation = 'approved'
+            # (we don't expect it happen in normal circumstances; but it's better to safeguard the code against currupt data)
+            return $_->selectcol_arrayref(
+                "SELECT STRING_AGG(loginids, ' ' ORDER BY loginids) FROM users.get_anonymization_candidates(?, ?, TRUE) c"
+                    . " LEFT JOIN users.anonymization_candidates sibling ON c.binary_user_id = sibling.binary_user_id AND NOT (sibling.user_can_anon AND sibling.compliance_confirmation = 'approved')"
+                    . " WHERE sibling.loginid IS NULL"
+                    . " GROUP BY c.binary_user_id LIMIT $limit",
+                undef, '', 'approved'
+            );
+        })->@*;
+
+    # keep just a single logindid for each user to avoid "already anonymized" error
+    @data = map { [split(' ', $_)]->[0] } @data;
+
+    return await bulk_anonymization({
+            data  => \@data,
+            title => 'Auto Anonymization'
+        }) if scalar @data;
+
+    return 1;
+}
+
+=head2 _send_reset_candidates_report
+
+Send email reporitng the list of candidates with retention period reset after compliance confirmation (postponed or approved). 
+It gets a single argument:
+
+=over 3
+
+=item * C<candidates> - A list of candidates whose rentetion period is reset
+
+=back
+
+return undef
+
+=cut
+
+sub _send_reset_candidates_report {
+    my @candidates = @_;
+
+    my $email_subject = 'Auto-anonymization canceled after complinace confirmation ' . Date::Utility->new->date;
+    my $from_email    = $BRANDS->emails('no-reply');
+    my $to_email      = $BRANDS->emails('compliance');
+
+    my $tt = Template->new(ABSOLUTE => 1);
+    $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/anonymization_reset_candidates.html.tt', {data => \@candidates},
+        \my $body);
+    if ($tt->error) {
+        $log->warn("Template error " . $tt->error);
+        return undef;
+    }
+
+    Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($body)->send
+        or warn "Sending email from $from_email to $to_email subject $email_subject failed";
+
+    return undef;
 }
 
 =head2 _send_anonymization_report
@@ -132,10 +243,10 @@ return undef
 =cut
 
 sub _send_anonymization_report {
-    my ($failures, $successes) = @_;
+    my ($failures, $successes, $title) = @_;
     my $number_of_failures  = scalar keys %$failures;
     my $number_of_successes = scalar keys %$successes;
-    my $email_subject       = "Anonymization report for " . Date::Utility->new->date;
+    my $email_subject       = ($title // 'Anonymization') . ' report for ' . Date::Utility->new->date;
 
     my $from_email = $BRANDS->emails('no-reply');
     my $to_email   = $BRANDS->emails('compliance');

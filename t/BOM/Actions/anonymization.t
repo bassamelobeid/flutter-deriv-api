@@ -15,10 +15,11 @@ use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context;
 use Date::Utility;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::Utility                 qw(random_email_address);
-use JSON::MaybeUTF8                            qw(decode_json_utf8);
+use BOM::Test::Data::Utility::UnitTestDatabase          qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase          qw(:init);
+use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
+use BOM::Test::Helper::Utility                          qw(random_email_address);
+use JSON::MaybeUTF8                                     qw(decode_json_utf8);
 use IO::Async::Loop;
 use BOM::Event::Services;
 use LandingCompany::Registry;
@@ -326,6 +327,68 @@ subtest bulk_anonymization => sub {
     cmp_bag $df_partial, $df_anon, 'Expected clientes added to the DF queue';
 
     cmp_bag $df_queue, $redis->zrangebyscore('DF_ANONYMIZATION_QUEUE', '-Inf', '+Inf')->get, 'Clients queued for DF anonymization';
+};
+
+subtest auto_anonymize_candidates => sub {
+    my $collector_db = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
+
+    my @call_args;
+    my $mock_anonymizer = Test::MockModule->new('BOM::Event::Actions::Anonymization');
+    $mock_anonymizer->mock(_anonymize => sub { push @call_args, shift; return Future->done(1); });
+
+    is BOM::Event::Actions::Anonymization::auto_anonymize_candidates()->get(), 1, 'Auto anonymization triggered sucessfully';
+    is scalar @call_args,                                                      0, 'Bulk anonymization is not called';
+
+    $collector_db->run(
+        ping => sub {
+            $_->do(
+                'Insert into users.anonymization_candidates (loginid, binary_user_id, broker_code,  foreign_server, user_can_anon, compliance_confirmation, compliance_confirmation_reason, compliance_confirmation_staff) values '
+                    # single valid candidate
+                    . "('CR101', 1, 'CR', 'cr', true, 'approved', 'test', 'system'),"
+                    # single invlid candidates, p
+                    . "('CR103', 2, 'CR', 'cr', true, 'pending', 'test reason2', 'test'),"
+                    . "('CR104', 3, 'CR', 'cr', true, 'postponed', 'test reason3', 'test'),"
+                    # reviewed users that cannot be anonymized anymore
+                    . "('CR105', 5, 'CR', 'cr', false, 'postponed', 'test reason5', 'agent5'),"
+                    . "('CR106', 6, 'CR', 'cr', false, 'approved', 'test reason6', 'agent6'),"
+
+                    # all siblings are ready
+                    . "('MF101', 11, 'MF', 'mf', true, 'approved', 'test', 'system'),"
+                    . "('MF102', 11, 'MF', 'mf', true, 'approved', 'test', 'system'), "
+                    # some siblings are not approved
+                    . "('MF103', 12, 'mf', 'maltainvest', true, 'approved', 'test', 'system'),"
+                    . "('MF104', 12, 'mf', 'maltainvest', true, 'pending', 'test', 'system'),"
+                    . "('MF105', 13, 'mf', 'maltainvest', true, 'approved', 'test', 'system'),"
+                    . "('MF106', 13, 'mf', 'maltainvest', true, 'postponed', 'test', 'system')"
+            );
+        });
+
+    is BOM::Event::Actions::Anonymization::auto_anonymize_candidates()->get(), 1, 'Auto anonymization triggered sucessfully';
+    is scalar @call_args,                                                      2, 'Anonymization is called twice';
+    is_deeply \@call_args, [qw(CR101 MF101)],
+        'Loginids are correctly passed to the anonymization process - only one of siblings account (MF101, MF102) is processed';
+
+    my $msg = mailbox_search(subject => qr/Auto\-anonymization canceled after complinace confirmation/);
+    ok $msg, 'An email was sent for the rest candidates';
+    like $msg->{body}, qr/CR105.*postponed.*agent5.*test reason5/, "The postponed loginid found with it's old conformation reason";
+    like $msg->{body}, qr/CR106.*approved.*agent6.*test reason6/,  "The approved loginid found with it's old conformation reason";
+
+    my @search_candidate = $collector_db->run(
+        ping => sub {
+            $_->selectcol_arrayref(
+                "SELECT loginid FROM users.anonymization_candidates WHERE compliance_confirmation=? AND compliance_confirmation_reason=? AND compliance_confirmation_staff=?",
+                undef, 'pending', 'Retention period was reset by user activity', 'system'
+            );
+        })->@*;
+    cmp_deeply scalar \@search_candidate, [qw/CR105 CR106/], 'The reset candidates are updated with new status and reason';
+
+    undef @call_args;
+    BOM::Config::Runtime->instance->app_config->compliance->auto_anonymization_daily_limit(1);
+    is BOM::Event::Actions::Anonymization::auto_anonymize_candidates()->get(), 1, 'Auto anonymization triggered sucessfully';
+    is scalar @call_args,                                                      1, 'Anonymization is called twice';
+    is_deeply \@call_args, [qw(CR101)], 'Canidates are limited by the dynamic app config';
+    BOM::Config::Runtime->instance->app_config->compliance->auto_anonymization_daily_limit(50);
+
 };
 
 subtest users_clients_will_set_to_disabled_after_anonymization => sub {
