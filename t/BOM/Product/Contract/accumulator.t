@@ -129,9 +129,51 @@ subtest 'shortcode and longcode' => sub {
     is $params->{bet_type},          'ACCU',                                           'bet_type is ACCU';
 };
 
+subtest 'barrier pip size' => sub {
+    my $c = produce_contract($args);
+    is $c->barrier_pip_size, $c->underlying->pip_size / 10, 'correct barrier pip size';
+};
+
 subtest 'barrier' => sub {
+    subtest 'display_low/high_barrier with argument' => sub {
+        $args->{date_pricing} = $now->epoch + 1;
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([91, $now->epoch, $symbol]);
+        my $c = produce_contract($args);
+
+        subtest 'high_barrier' => sub {
+            my %examples = (
+                '1.23'               => '1.230',
+                '4583'               => '4583.000',
+                '56.4870000000001'   => '56.488',
+                '987.00000000000009' => '987.001',
+                '35.000000000'       => '35.000'
+            );
+            ok !$c->display_high_barrier, 'no display_high_barrier';
+
+            while (my ($raw_barrier, $display_barrier) = each %examples) {
+                is $c->display_high_barrier($raw_barrier), $display_barrier, 'correct display high barrier';
+            }
+        };
+
+        subtest 'low_barrier' => sub {
+            my %examples = (
+                '1.23'               => '1.230',
+                '4583'               => '4583.000',
+                '56.4870000000001'   => '56.487',
+                '987.00000000000009' => '987.000',
+                '35.5278'            => '35.527'
+            );
+            ok !$c->display_low_barrier, 'no display_low_barrier';
+
+            while (my ($raw_barrier, $display_barrier) = each %examples) {
+                is $c->display_low_barrier($raw_barrier), $display_barrier, 'correct display low barrier';
+            }
+        };
+    };
+
     subtest 'pricing_new' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, $symbol], [101, $now->epoch + 1, $symbol]);
+        $args->{date_pricing} = $now;
         my $c = produce_contract($args);
         is $c->low_barrier->supplied_barrier,  98,  'supplied_barrier is correct';
         is $c->high_barrier->supplied_barrier, 102, 'supplied_barrier is correct';
@@ -140,36 +182,40 @@ subtest 'barrier' => sub {
         $c = produce_contract($args);
         is $c->low_barrier->supplied_barrier,  '99.9634',  'low supplied_barrier is correct';
         is $c->low_barrier->as_absolute,       '99.96',    'low barrier as_absolute is correct';
+        is $c->display_low_barrier,            '99.963',   'display low value is correct';
         is $c->high_barrier->supplied_barrier, '100.0366', 'high supplied_barrier is correct';
         is $c->high_barrier->as_absolute,      '100.04',   'high barrier as_absolute is correct';
+        is $c->display_high_barrier,           '100.037',  'display low value is correct';
         is $c->basis_spot,                     '100.00',   'basis_spot is correct';
     };
 
     subtest 'non-pricing_new & no entry_tick' => sub {
         $args->{date_pricing} = $now->epoch + 1;
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([91, $now->epoch, $symbol]);
-        $args->{tick_size_barrier} = 0.02;
 
         my $c = produce_contract($args);
         ok !$c->entry_tick, 'no entry_tick';
         is $c->tick_count_after_entry, 0, 'no tick after entry_tick';
-        ok !$c->pricing_new,  'is not pricing_new';
-        ok !$c->low_barrier,  'no low_barrier';
-        ok !$c->high_barrier, 'no high_barrier';
-        ok !$c->basis_spot,   'no basis_spot';
+        ok !$c->pricing_new,          'is not pricing_new';
+        ok !$c->low_barrier,          'no low_barrier';
+        ok !$c->high_barrier,         'no high_barrier';
+        ok !$c->display_low_barrier,  'no display_low_barrier';
+        ok !$c->display_high_barrier, 'no display_high_barrier';
+        ok !$c->basis_spot,           'no basis_spot';
     };
 
     subtest 'date_pricing equal to entry_tick' => sub {
         $args->{date_pricing} = $now->epoch + 1;
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([91, $now->epoch, $symbol], [90, $now->epoch + 1, $symbol]);
-        $args->{tick_size_barrier} = 0.02;
 
         my $c = produce_contract($args);
         is $c->current_spot,      '90.00',         'current_spot is 90.00';
         is $c->entry_tick->epoch, $now->epoch + 1, 'correct entry_tick';
-        ok !$c->low_barrier,  'no low_barrier';
-        ok !$c->high_barrier, 'no high_barrier';
-        ok !$c->basis_spot,   'no basis_spot';
+        ok !$c->low_barrier,          'no low_barrier';
+        ok !$c->high_barrier,         'no high_barrier';
+        ok !$c->display_low_barrier,  'no display_low_barrier';
+        ok !$c->display_high_barrier, 'no display_high_barrier';
+        ok !$c->basis_spot,           'no basis_spot';
     };
 
     subtest 'date_pricing after entry_tick' => sub {
@@ -182,6 +228,27 @@ subtest 'barrier' => sub {
 
         my $c = produce_contract($args);
         is $c->current_spot,                   '92.00',         'current_spot is 92.00';
+        is $c->entry_tick->epoch,              $now->epoch + 1, 'correct entry_tick';
+        is $c->tick_count_after_entry,         1,               'recieved one tick after entry_tick';
+        is $c->low_barrier->supplied_barrier,  '88.2',          'low supplied_barrier is correct';
+        is $c->low_barrier->as_absolute,       '88.20',         'low barrier as_absolute is correct';
+        is $c->display_low_barrier,            '88.200',        'display_low_barrier is correct';
+        is $c->high_barrier->supplied_barrier, '91.8',          'high supplied_barrier is correct';
+        is $c->high_barrier->as_absolute,      '91.80',         'high barrier as_absolute is correct';
+        is $c->display_high_barrier,           '91.800',        'display_high_barrier is correct';
+        is $c->basis_spot,                     '90',            'basis_spot is correct';
+    };
+
+    subtest 'no tick recieved for date_pricing' => sub {
+        $args->{date_pricing} = $now->epoch + 3;
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [89, $now->epoch,     $symbol],
+            [90, $now->epoch + 1, $symbol],
+            [91, $now->epoch + 2, $symbol]);
+        $args->{tick_size_barrier} = 0.02;
+        my $c = produce_contract($args);
+
+        is $c->current_spot,                   '91.00',         'current_spot is 92.00';
         is $c->entry_tick->epoch,              $now->epoch + 1, 'correct entry_tick';
         is $c->tick_count_after_entry,         1,               'recieved one tick after entry_tick';
         is $c->low_barrier->supplied_barrier,  '88.2',          'low supplied_barrier is correct';

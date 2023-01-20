@@ -6,7 +6,7 @@ with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::AmericanExpiry' =
 
 use BOM::Product::Exception;
 use BOM::Product::Static;
-use Format::Util::Numbers qw(financialrounding);
+use Format::Util::Numbers qw(financialrounding roundcommon);
 use Scalar::Util::Numeric qw(isint);
 use YAML::XS              qw(LoadFile);
 use POSIX                 qw(floor ceil);
@@ -223,7 +223,7 @@ profit and loss of the contract
 
 =cut 
 
-has [qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry pnl)] => (
+has [qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry pnl barrier_pip_size)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -332,8 +332,8 @@ sub _build_basis_spot {
 
     return $self->previous_spot_before($self->close_tick->epoch) if $self->close_tick;
 
-    return ($self->entry_tick and $self->date_pricing->epoch > $self->entry_tick->epoch)
-        ? $self->previous_spot_before($self->date_pricing->epoch)
+    return ($self->entry_tick and $self->current_tick->epoch > $self->entry_tick->epoch)
+        ? $self->previous_spot_before($self->current_tick->epoch)
         : undef;
 }
 
@@ -361,6 +361,23 @@ sub get_high_barrier {
     return $spot * (1 + $self->tick_size_barrier);
 }
 
+=head2 display_high_barrier
+
+high barrier value showed to the client
+to have a clear loss condition, barriers should be rounded up and have one extra digit than the index 
+uses high_barrier by defult but custom $supplied_barrier can also be provided (used in PP response)
+
+=cut
+
+sub display_high_barrier {
+    my ($self, $supplied_barrier) = @_;
+
+    return undef unless $self->high_barrier or $supplied_barrier;
+
+    $supplied_barrier //= $self->high_barrier->supplied_barrier;
+    return roundup($supplied_barrier, $self->barrier_pip_size);
+}
+
 =head2 _build_low_barrier
 
 initializing low_barrier
@@ -383,6 +400,67 @@ sub get_low_barrier {
     my ($self, $spot) = @_;
 
     return $spot * (1 - $self->tick_size_barrier);
+}
+
+=head2 display_low_barrier
+
+low barrier value showed to the client
+to have a clear loss condition, barriers should be rounded down and have one extra digit than the index
+uses low_barrier by defult but custom $supplied_barrier can also be provided (used in PP response)
+
+=cut
+
+sub display_low_barrier {
+    my ($self, $supplied_barrier) = @_;
+
+    return undef unless $self->low_barrier or $supplied_barrier;
+
+    $supplied_barrier //= $self->low_barrier->supplied_barrier;
+    return rounddown($supplied_barrier, $self->barrier_pip_size);
+}
+
+=head2 _build_barrier_pip_size
+
+pip size value uses to build display barriers
+
+=cut
+
+sub _build_barrier_pip_size {
+    my $self = shift;
+
+    return $self->underlying->pip_size / 10;
+}
+
+=head2 roundup
+
+round up a value
+roundup(638.4900001, 0.001) = 638.491
+
+=cut
+
+sub roundup {
+    my ($value_to_round, $precision) = @_;
+
+    $precision = 1 if $precision == 0;
+    my $res = ceil($value_to_round / $precision) * $precision;
+    #use roundcommon on the result to add trailing zeros and return a string
+    return roundcommon($precision, $res);
+}
+
+=head2 rounddown
+
+round down a value
+roundown(638.4209, 0.001) = 638.420
+
+=cut
+
+sub rounddown {
+    my ($value_to_round, $precision) = @_;
+
+    $precision = 1 if $precision == 0;
+    my $res = floor($value_to_round / $precision) * $precision;
+    #use roundcommon on the result to add trailing zeros and return a string
+    return roundcommon($precision, $res);
 }
 
 =head2 _build_pnl
