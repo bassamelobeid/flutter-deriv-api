@@ -105,11 +105,12 @@ my $permissions = {
 
     'f_setting_website_status.cgi' => ['CSWrite'],
 
-    'f_setting_selfexclusion_restricted.cgi' => ['Compliance'],
-    'f_client_anonymization.cgi'             => ['Compliance'],
-    'f_client_anonymization_dcc.cgi'         => ['Compliance'],
-    'bulk_aml_risk.cgi'                      => ['Compliance'],
-    'f_client_bulk_authentication.cgi'       => ['Compliance', 'CS', 'Payments'],
+    'f_setting_selfexclusion_restricted.cgi'  => ['Compliance'],
+    'f_client_anonymization.cgi'              => ['Compliance'],
+    'f_client_anonymization_dcc.cgi'          => ['Compliance'],
+    'f_client_anonymization_confirmation.cgi' => ['Compliance'],
+    'bulk_aml_risk.cgi'                       => ['Compliance'],
+    'f_client_bulk_authentication.cgi'        => ['Compliance', 'CS', 'Payments'],
 
     'download_document.cgi'       => ['CS',       'Compliance', 'Quants', 'IT'],
     'f_client_combined_audit.cgi' => ['CS',       'Compliance'],

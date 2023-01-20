@@ -438,6 +438,7 @@ sub get_settings_by_group {
                 compliance.sanctions.hmt_consolidated_url
                 compliance.enhanced_due_diligence.auto_lock
                 compliance.enhanced_due_diligence.auto_lock_threshold
+                compliance.auto_anonymization_daily_limit
             )
         ],
         # these settings are configured in separate pages. No need to reconfigure them in Dynamic Settings/Others.
@@ -599,6 +600,7 @@ sub get_extra_validation {
         'payments.payment_limits'                                    => \&_validate_payment_min_by_staff,
         'compliance.fake_names.corporate_patterns'                   => \&_validate_corporate_patterns,
         'compliance.fake_names.accepted_consonant_names'             => \&_validate_accepted_consonant_names,
+        'compliance.auto_anonymization_daily_limit'                  => \&_validate_positive_number,
     };
 
     return $setting_validators->{$setting};

@@ -17,6 +17,22 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("CLIENT ANONYMIZATION");
 
+Bar("Auto-anonymization");
+my $collector_db = BOM::Database::ClientDB->new({
+        broker_code => 'FOG',
+        operation   => 'collector',
+    })->db->dbic;
+my ($pending_clients) = $collector_db->run(
+    fixup => sub {
+        return $_->selectrow_array('SELECT count(*) FROM users.get_anonymization_candidates(?,?, TRUE)', undef, '', 'pending');
+    });
+
+print "<a href='"
+    . request()->url_for('backoffice/f_client_anonymization_confirmation.cgi')
+    . "'> Auto-anonymization confirmation " . "("
+    . $pending_clients
+    . " candidates pending) </a>";
+
 my $input            = request()->params;
 my $clerk            = BOM::Backoffice::Auth0::get_staffname();
 my $cgi              = CGI->new;

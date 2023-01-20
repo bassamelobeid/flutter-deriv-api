@@ -1,0 +1,35 @@
+<form action="[% self_url %]&page_number=[%page_number%]" method="POST">
+<table class="hover alternate">
+<tr><th>Loginids</th><th>User ID</th><th>Confirmation</th><th>Reason</th><th>Staff</th><th>Submit</th><tr>
+[% FOREACH client IN clients %]
+    <tr>
+      <td>
+        [% FOR loginid IN client.loginids %]
+          <a href="[% client_url %]?loginID=[% loginid %]">[% loginid %]</a>
+        [% END %]
+      </td>
+      <td>[% client.binary_user_id %]</td>
+      <td><select name="status_[% loop.index %]">
+            <option value="pending" [% IF client.compliance_confirmation == 'pending' %]selected[% END %]>Pending</option>
+            <option value="approved" [% IF client.compliance_confirmation == 'approved' %]selected[% END %]>Approved</option>
+            <option value="postponed" [% IF client.compliance_confirmation == 'postponed' %]selected[% END %]>Postponed</option>
+          </select>
+      </td>
+      <td><input type="text" name="reason_[% loop.index %]" value="[% client.compliance_confirmation_reason %]" /></td>
+      <td>[% client.compliance_confirmation_staff %]</td>
+      <td>
+        <input type="hidden" name="user_id_[% loop.index %]" value="[% client.binary_user_id %]" />
+        <button type="submit" name="save_confirmation" value="[% loop.index %]"> Save Confirmation </button>
+      </td>
+    </tr>
+[% END %]
+</table>
+</form>
+
+<table>
+  <tr>
+    <td>[%IF page_number > 1%] <a href="[% self_url %]&page_number=[% page_number - 1%]"> Prev Page </a> [%END%] </td>
+    <td>Page [%page_number%] of [%page_count%]</td>
+    <td>[%IF page_number < page_count%] <a href="[% self_url %]&page_number=[% page_number + 1%]"> Next Page </a> [%END%] </td>
+  </tr>
+</table>

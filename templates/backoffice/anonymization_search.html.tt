@@ -1,0 +1,16 @@
+<form action="[% search_action %]" method="GET">
+    <table>
+        <tr>
+        <td> Comfirmation Status: 
+            <select name="status">
+            <option value='all' [% status_selected.all %]> ALL </option>
+            <option value='pending' [% status_selected.pending %]> Pending </option>
+            <option value='approved' [% status_selected.approved %]> Approved </option>
+            <option value='postponed' [% status_selected.postponed %]> Postponed </option>
+            </select>
+        </td>
+        <td> Loginid pattern: <input name="loginid_pattern" value="[% loginid_pattern %]" /></td>
+        <td> <input type="submit" name="search_button" value="Search" /> </td>
+        </tr>
+    </table>
+</form>
