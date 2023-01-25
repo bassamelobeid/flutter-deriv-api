@@ -16,7 +16,7 @@ alias:
 - &ssh_keys
   add_ssh_keys:
     fingerprints:
-    - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
+    - 85:5e:13:f8:60:b2:55:a1:df:d1:8e:77:17:4c:3b:2d
 - &update_git
   run:
     name: Update git repositories
