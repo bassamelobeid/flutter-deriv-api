@@ -87,7 +87,8 @@ use constant {
         sort
             qw/account_opening_reason citizen date_of_birth first_name last_name place_of_birth residence salutation secret_answer secret_question tax_residence tax_identification_number /
     ],
-    ADDRESS_FIELDS      => [qw/address_city address_line_1 address_line_2 address_postcode address_state /],
+    ADDRESS_FIELDS_IMMUTABLE_AFTER_AUTH => [sort qw/address_city address_line_1 address_line_2 address_postcode address_state/],
+
     SR_UNWELCOME_REASON => 'Social responsibility thresholds breached - Pending financial assessment',
 
     # Redis key for SR keys expire
@@ -2198,21 +2199,21 @@ sub immutable_fields {
         if ($self->status->poi_name_mismatch) {
             @immutable = grep { $_ !~ qr/(first_name|last_name)/ } @immutable;
         }
+
         # Allow dob edition when poi dob mismatch (should not be locked though)
         if ($self->status->poi_dob_mismatch) {
             @immutable = grep { $_ !~ qr/(date_of_birth)/ } @immutable;
         }
-        # Allow address edition when address mismatch (should not be locked though)
-        if ($self->status->poa_address_mismatch) {
-            @immutable = grep { $_ !~ qr/(address_city|address_line_1|address_line_2|address_postcode|address_state)/ } @immutable;
-        }
-        # Add address fields to immutable array if either fully authenticated or address verified
-        if ($self->fully_authenticated or $self->status->address_verified) {
-            push @immutable, ADDRESS_FIELDS->@*;
-        }
     }
 
-    return @immutable if $self->get_poi_status() =~ qr/verified|expired/;
+    #Added address properties to immutable if client is verifed|Authenticated
+    if ($self->get_poi_status() =~ qr/verified|expired/) {
+        if ($self->get_poi_status() eq "verified") {
+            #if verifed add address feilds in immutable fields
+            push(@immutable, ADDRESS_FIELDS_IMMUTABLE_AFTER_AUTH->@*);
+        }
+        return @immutable;
+    }
 
     # the remaining part is for un-authenticated clients only
 
