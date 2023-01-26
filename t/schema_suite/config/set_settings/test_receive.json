@@ -1,6 +1,7 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "required" : [
+      "status",
       "stash"
    ],
    "type" : "object",
@@ -11,11 +12,11 @@
       "stash" : {
          "type" : "object"
       },
-      "notification" : {
-         "type": [
-            "null",
-            "string"
-        ]
+      "status" : {
+         "type" : "integer",
+         "enum" : [
+            1
+         ]
       }
    }
 }

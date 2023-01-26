@@ -1662,6 +1662,7 @@ sub _send_reset_password_confirmation_email {
 
 rpc get_settings => sub {
     my $params = shift;
+
     my $client = $params->{client};
 
     my ($dob_epoch, $country_code, $country);
@@ -1962,19 +1963,7 @@ rpc set_settings => sub {
             if any { $_ eq 'first_name' or $_ eq 'last_name' } keys %$updated_fields_for_track;
     }
 
-    # check if newly added address matches expected
-    if ($args->{'address_line_1'} || $args->{'address_line_2'}) {
-        if ($current_client->documents->is_poa_address_fixed()) {
-            $current_client->documents->poa_address_fix();
-
-            return {
-                notification => {
-                    code              => "AddressMismatchFixed",
-                    message_to_client => localize("Address has been fixed.")}};
-        }
-    }
-
-    return {notification => undef};
+    return {status => 1};
 };
 
 rpc get_self_exclusion => sub {
