@@ -82,94 +82,66 @@ sub update_financial_assessment {
 # Email to compliance, based on updates on financial assessment
 sub _email_diffs_to_compliance {
     my ($previous, $new, $client_ids, $is_new_mf_client, $landing_company) = @_;
-    my $message;
+    if ($landing_company eq 'maltainvest') {
+        $new->{calculate_appropriateness} = 1;
+    }
+
     $new = build_financial_assessment($new);
-    my $subject = join ", ", grep { $_ !~ /^(?:VR|MT[DR]?)/ } @$client_ids;
+    my $subj_ids = join ", ", grep { $_ !~ /^(?:VR|MT[DR]?)/ } @$client_ids;
+    my ($content, $subject, $message);
+    foreach my $section (keys %$new) {
+        next if $section eq "scores";
+        my $title = join " ", map { ucfirst($_) } split('_', $section);
+        $content->{sections}->{$section} =
+              "<h1>$title</h1>\n"
+            . '<table border="1" cellpadding="5" style="border-collapse:collapse">'
+            . "<tr><th> Question </th><th> Previous Answer </th><th> New Answer </th></tr>\n";
 
-    if (keys %$previous && !$is_new_mf_client) {
-        my $diffs = _build_diffs($new, $previous);
-
-        foreach my $key (keys %$diffs) {
-
-            $message .= "$key : " . $diffs->{$key}->[0] . "  ->  " . $diffs->{$key}->[1] . "\n";
+        foreach my $key (keys %{$new->{$section}}) {
+            my $key_obj         = $new->{$section}->{$key};
+            my $previous_answer = $previous->{$key} // "N/A";
+            my $current_answer  = $key_obj->{answer} && $key_obj->{answer} eq $previous_answer ? "N/A" : $key_obj->{answer} // "N/A";
+            $content->{$section} = 1 if defined $key_obj->{answer} && $current_answer ne "N/A";
+            $content->{sections}->{$section} .= "<tr><td> $key_obj->{label} </td><td> $previous_answer </td><td> $current_answer </td></tr>\n";
         }
-
-        $subject .= ' assessment test details have been updated';
-
-    } elsif ($is_new_mf_client) {
-
-        foreach my $section (keys %$new) {
-
-            next if $section eq "scores";
-
-            foreach my $key (keys %{$new->{$section}}) {
-                my $key_obj = $new->{$section}->{$key};
-                next unless $key_obj->{answer};
-
-                $message .= "$key_obj->{label} : $key_obj->{answer}\n";
-            }
-        }
-
-        $subject .= " has submitted the assessment test";
+        $content->{sections}->{$section} .= "\n</table>";
     }
-
-    return undef unless $message;
-
-    $message .= "\nTotal Score :  " . $new->{scores}->{total_score} . "\n";
-    $message .= "Trading Experience Score :  "
-        . $new->{scores}->{$landing_company eq 'maltainvest' ? 'trading_experience_regulated' : 'trading_experience'} . "\n";
-    $message .= "CFD Score :  " . $new->{scores}->{cfd_score} . "\n";
-    $message .= "Financial Information Score :  " . $new->{scores}->{financial_information};
-
-    if ($is_new_mf_client) {
-        # If it has gotten to this point with should_warn being true, the client would already have had to accept the risk disclosure
-        $message .= "\n\nThe Risk Disclosure was ";
-        $message .= should_warn($new) ? "shown and client accepted the disclosure." : "not shown.";
-    }
-
     my $brand = request()->brand;
 
-    return send_email({
-        from    => $brand->emails('support'),
-        to      => $brand->emails('compliance'),
-        subject => $subject,
-        message => [$message],
-    });
-}
+    # send seperate emails for financial assessment
 
-=head2 _build_diffs
+    if ($content->{financial_information}) {
+        $subject = sprintf "%s has %s the financial assessment", $subj_ids, $is_new_mf_client ? "submitted" : "updated";
+        $message = $content->{sections}->{financial_information};
 
-Takes in a built FA (from client-side) and an unbuilt one (from database) and returns their differences in a hash containing arrays
+        send_email({
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
+            subject => $subject,
+            message => [$message],
+        });
+    }
+    if ($content->{trading_experience} || $content->{trading_experience_regulated}) {
+        $subject = sprintf "%s has %s the trading assessment", $subj_ids, $is_new_mf_client ? "submitted" : "updated";
+        $message = $content->{trading_experience} ? $content->{sections}->{trading_experience} : "";
 
-=cut
-
-sub _build_diffs {
-    my ($new, $previous) = @_;
-    my $diffs;
-
-    for my $sect (sort keys %$new) {
-
-        # Score are not used in finding the difference in Financial Assessment data
-        next if $sect eq 'scores';
-
-        for my $key (sort keys %{$new->{$sect}}) {
-
-            my $new_answer = $new->{$sect}->{$key}->{answer};
-            next unless $new_answer;
-
-            my $previous_answer = $previous->{$key};
-
-            unless ($previous_answer) {
-                $previous_answer = "N/A";
-            } elsif ($previous_answer eq $new_answer) {
-                next;
+        if ($landing_company eq 'maltainvest') {
+            $message .= $content->{sections}->{trading_experience_regulated} // "" if $content->{trading_experience_regulated};
+            if ($new->{scores}->{trading_experience_regulated} == 0) {
+                $message .= '<h3>Result: Client accepted financial risk disclosure</h3>';
+            } else {
+                $message .= '<h3>Result: Financial risk approved based on trading assessment score</h3>';
             }
-
-            $diffs->{$new->{$sect}->{$key}->{label}} = [$previous_answer, $new_answer];
         }
+        send_email({
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
+            subject => $subject,
+            message => [$message],
+        });
     }
 
-    return $diffs;
+    return;
 }
 
 =head2 build_financial_assessment
