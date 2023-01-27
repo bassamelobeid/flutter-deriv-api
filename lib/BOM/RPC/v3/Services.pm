@@ -22,6 +22,7 @@ use WebService::Async::Onfido;
 use BOM::Config;
 use BOM::RPC::v3::Services::Onfido;
 use BOM::RPC::v3::Services::PandaTS;
+use BOM::RPC::v3::Services::Nakala;
 
 sub new {
     my ($class) = @_;
@@ -68,6 +69,12 @@ sub service_token {
         my $pandats = BOM::RPC::v3::Services::PandaTS->new(client => $client);
 
         return $pandats->generate_token($args->{server});
+    }
+
+    if ($args->{service} eq 'nakala') {
+        my $nakala = BOM::RPC::v3::Services::Nakala->new(client => $client);
+
+        return $nakala->generate_token();
     }
 }
 
