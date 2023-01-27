@@ -180,6 +180,14 @@ subtest 'favourites' => sub {
 
     cmp_deeply(
         exception {
+            $me->p2p_advertiser_relations(remove_favourites => [$me->_p2p_advertiser_cached->{id}])
+        },
+        {error_code => 'AdvertiserRelationSelf'},
+        'Cannot unfavourite self'
+    );
+
+    cmp_deeply(
+        exception {
             $me->p2p_advertiser_relations(add_favourites => [-1])
         },
         {error_code => 'InvalidAdvertiserID'},
@@ -368,6 +376,14 @@ subtest 'blocking' => sub {
         },
         {error_code => 'AdvertiserRelationSelf'},
         'Cannot block self'
+    );
+
+    cmp_deeply(
+        exception {
+            $me->p2p_advertiser_relations(remove_blocked => [$me->_p2p_advertiser_cached->{id}])
+        },
+        {error_code => 'AdvertiserRelationSelf'},
+        'Cannot unblock self'
     );
 
     cmp_deeply(

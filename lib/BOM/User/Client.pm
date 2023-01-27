@@ -2595,7 +2595,8 @@ sub p2p_advertiser_relations {
         my $bar_error = $self->_p2p_get_advertiser_bar_error($advertiser_info);
         die $bar_error if $bar_error;
 
-        die +{error_code => 'AdvertiserRelationSelf'} if any { $_ == $advertiser_info->{id} } ($param{add_favourites}->@*, $param{add_blocked}->@*);
+        die +{error_code => 'AdvertiserRelationSelf'}
+            if any { $_ == $advertiser_info->{id} } map { @$_ } @param{qw(add_favourites add_blocked remove_favourites remove_blocked)};
 
         my $advertisers = $self->db->dbic->run(
             fixup => sub {
@@ -2626,7 +2627,6 @@ sub p2p_advertiser_relations {
                 p2p_adverts_updated => {
                     advertiser_id => $advertiser->{id},
                 });
-
         }
     }
 
