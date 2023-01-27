@@ -185,12 +185,12 @@ subtest 'successful verification' => sub {
     ok !$redis->exists('P2P::ORDER::VERIFICATION_ATTEMPT::' . $order->{id}), 'attempts key was deleted';
 
     $info = $client->p2p_order_info(id => $order->{id});
-    is $info->{verification_pending}, 0, 'client order info verification pending now 0';
+    ok !exists $info->{verification_pending},      'client order info verification is not present after order completed';
     ok !exists $info->{verification_next_request}, 'client does not see verification_next_request';
     ok !exists $info->{verification_token_expiry}, 'client does not see verification_token_expiry';
 
     $info = $advertiser->p2p_order_info(id => $order->{id});
-    is $info->{verification_pending}, 0, 'advertiser order info verification pending is now 0';
+    ok !exists $info->{verification_pending},      'advertiser order info verification pending is now 0';
     ok !exists $info->{verification_next_request}, 'advertiser does not see verification_next_request';
     ok !exists $info->{verification_token_expiry}, 'advertiser does not see verification_token_expiry';
 };
@@ -285,14 +285,14 @@ subtest 'bad verification codes' => sub {
     cmp_ok $info->{verification_lockout_until}, '<=', time + (60 * 30), 'advertiser sees lockout until';
     ok !exists $info->{verification_next_request}, 'verification_next_request is not present after block';
     ok !exists $info->{verification_token_expiry}, 'verification_token_expiry is not present after block';
-    is $info->{verification_pending}, 0, 'verification_pending is false after block';
+    is $info->{verification_pending}, 0, 'verification_pending is 0 after block';
 
     $redis->zrem('P2P::ORDER::VERIFICATION_EVENT', 'LOCKOUT|' . $order->{id} . '|' . $advertiser->loginid);
 
     lives_ok { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => $good_code) } 'can confirm after block removed';
 };
 
-subtest 'token timeout' => sub {
+subtest 'token timeout blocking' => sub {
     set_fixed_time(0);
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
@@ -348,6 +348,7 @@ subtest 'token timeout' => sub {
 };
 
 subtest 'extend order expiry' => sub {
+
     set_fixed_time(0);
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
@@ -358,6 +359,8 @@ subtest 'extend order expiry' => sub {
         advert_id => $advert->{id},
         amount    => $advert->{min_order_amount},
     );
+
+    $client->db->dbic->dbh->do('UPDATE p2p.p2p_order SET expire_time = TO_TIMESTAMP(1200) WHERE id = ' . $order->{id});
 
     my $redis_item = $order->{id} . '|' . $client->loginid;
     $redis->zadd('P2P::ORDER::EXPIRES_AT', 1200, $redis_item);
@@ -372,7 +375,13 @@ subtest 'extend order expiry' => sub {
     exception { $advertiser->p2p_order_confirm(id => $order->{id}) };
 
     # token expiry time is 1000 + 600 = 1600
-    is $redis->zscore('P2P::ORDER::EXPIRES_AT', $redis_item), 1600, 'order expiry time was extended';
+    is $redis->zscore('P2P::ORDER::EXPIRES_AT', $redis_item),          1600, 'order expiry time was extended';
+    is $advertiser->p2p_order_info(id => $order->{id})->{expiry_time}, 1600, 'order details expiry time is correct';
+
+    exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => 'x') } for (1 .. 3);
+
+    is $redis->zscore('P2P::ORDER::EXPIRES_AT', $redis_item),          1200, 'order expiry time is reset after block';
+    is $advertiser->p2p_order_info(id => $order->{id})->{expiry_time}, 1200, 'order details expiry time is correct';
 };
 
 subtest 'extend order timeout refund' => sub {
@@ -389,6 +398,8 @@ subtest 'extend order timeout refund' => sub {
         amount    => $advert->{min_order_amount},
     );
 
+    $client->db->dbic->dbh->do('UPDATE p2p.p2p_order SET expire_time = TO_TIMESTAMP(10) WHERE id = ' . $order->{id});
+
     my $redis_item = $order->{id} . '|' . $client->loginid;
     $redis->zadd('P2P::ORDER::TIMEDOUT_AT', 10, $redis_item);
 
@@ -404,6 +415,28 @@ subtest 'extend order timeout refund' => sub {
 
     # token expiry time is current time + 600, timeout should be set 1 day before than that
     is $redis->zscore('P2P::ORDER::TIMEDOUT_AT', $redis_item), 300, 'order timedout time was extended';
+
+    exception { $advertiser->p2p_order_confirm(id => $order->{id}, verification_code => 'x') } for (1 .. 3);
+
+    is $redis->zscore('P2P::ORDER::TIMEDOUT_AT', $redis_item), 10, 'order timedout is reset after block';
+};
+
+subtest 'verification_pending flag' => sub {
+    set_fixed_time(0);
+
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+    ok !exists $order->{verification_pending}, 'flag does not exist on new order';
+
+    $client->p2p_order_confirm(id => $order->{id});
+    ok !exists $advertiser->p2p_order_info(id => $order->{id})->{verification_pending}, 'flag does not exist after buyer confirm';
+
+    eval { $advertiser->p2p_order_confirm(id => $order->{id}) };
+    is $advertiser->p2p_order_info(id => $order->{id})->{verification_pending}, 1, 'flag is 1 after attempting verification';
+
+    set_fixed_time(601);
+    is $advertiser->p2p_order_info(id => $order->{id})->{verification_pending}, 0, 'flag is 0 after token expired';
 };
 
 sub check_verification {

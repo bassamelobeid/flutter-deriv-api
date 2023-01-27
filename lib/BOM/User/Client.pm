@@ -4635,8 +4635,21 @@ sub _p2p_order_confirm_verification {
     if ($redis->zrangebyscore($attempts_key, '-Inf', time)->@* >= P2P_VERIFICATION_MAX_ATTEMPTS) {
         $redis->zadd(P2P_VERIFICATION_EVENT_KEY, time + P2P_VERIFICATION_LOCKOUT_TTL, "LOCKOUT$event_postfix");
         $redis->zrem(P2P_VERIFICATION_EVENT_KEY, "REQUEST_BLOCK$event_postfix", "TOKEN_VALID$event_postfix");
+
         $redis->del($attempts_key);
         $redis->rpush($history_key, time . '|30 minute lockout for too many failures');
+
+        # revert order expiry and timeout
+        my $cli_redis_item  = $order_id . '|' . $order->{client_loginid};         # these items have order client_loginid not seller loginid
+        my $original_expiry = Date::Utility->new($order->{expire_time})->epoch;
+
+        if (my $order_expiry = $redis->zscore(P2P_ORDER_EXPIRES_AT, $cli_redis_item)) {
+            $redis->zadd(P2P_ORDER_EXPIRES_AT, $original_expiry, $cli_redis_item) if $order_expiry > $original_expiry;
+        }
+
+        if (my $order_timedout_at = $redis->zscore(P2P_ORDER_TIMEDOUT_AT, $cli_redis_item)) {
+            $redis->zadd(P2P_ORDER_TIMEDOUT_AT, $original_expiry, $cli_redis_item) if $order_timedout_at > $original_expiry;
+        }
 
         BOM::Platform::Event::Emitter::emit(
             p2p_order_updated => {
@@ -4663,11 +4676,12 @@ sub _p2p_order_confirm_verification {
             die +{error_code => 'InvalidVerificationToken'};
         }
 
-        unless ($param{dry_run}) {
+        if ($param{dry_run}) {
+            $redis->rpush($history_key, time . '|Successful dry run');
+        } else {
             $token->delete_token;
-            $redis->zrem(P2P_VERIFICATION_EVENT_KEY, "REQUEST_BLOCK$event_postfix", "TOKEN_VALID$event_postfix");
-            $redis->rpush($history_key, time . '|Successful verification');
         }
+
     } else {
         # max 1 request per minute
         my $request_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "REQUEST_BLOCK$event_postfix") // 0;
@@ -5106,19 +5120,24 @@ sub _order_details {
             }
         }
 
-        my (undef, $seller) = $self->_p2p_order_parties($order);
-        my $event_postfix = '|' . $order->{id} . '|' . $seller;
-        my $token_expiry  = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "TOKEN_VALID$event_postfix") // 0;
-        $result->{verification_pending} = $token_expiry > time ? 1 : 0;
+        if ($redis->exists(P2P_VERIFICATION_HISTORY_KEY . '::' . $order->{id})) {
+            my (undef, $seller) = $self->_p2p_order_parties($order);
+            my $event_postfix = '|' . $order->{id} . '|' . $seller;
 
-        if ($seller eq $self->loginid) {
-            $result->{verification_token_expiry} = $token_expiry if $result->{verification_pending};
+            my $token_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "TOKEN_VALID$event_postfix");
 
-            my $request_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "REQUEST_BLOCK$event_postfix") // 0;
-            my $lockout_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "LOCKOUT$event_postfix")       // 0;
+            $result->{verification_pending} = ($token_expiry // 0) > time ? 1 : 0;
+            $result->{expiry_time}          = $token_expiry if ($token_expiry // 0) > $result->{expiry_time};
 
-            $result->{verification_next_request}  = $request_expiry if $request_expiry > time;
-            $result->{verification_lockout_until} = $lockout_expiry if $lockout_expiry > time;
+            if ($seller eq $self->loginid) {
+                $result->{verification_token_expiry} = $token_expiry if $result->{verification_pending};
+
+                my $request_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "REQUEST_BLOCK$event_postfix") // 0;
+                my $lockout_expiry = $redis->zscore(P2P_VERIFICATION_EVENT_KEY, "LOCKOUT$event_postfix")       // 0;
+
+                $result->{verification_next_request}  = $request_expiry if $request_expiry > time;
+                $result->{verification_lockout_until} = $lockout_expiry if $lockout_expiry > time;
+            }
         }
 
         push @results, $result;
@@ -5533,11 +5552,13 @@ Takes the following argument:
 
 sub _p2p_order_finalized {
     my ($self, $order) = @_;
-    my $order_id   = $order->{id};
-    my $redis      = BOM::Config::Redis->redis_p2p_write;
+    my $order_id = $order->{id};
+    my $redis    = BOM::Config::Redis->redis_p2p_write;
+
     my @order_keys = map { $order_id . "|" . $_ } $order->@{qw/client_loginid advertiser_loginid/};
-    $redis->del(P2P_VERIFICATION_ATTEMPT_KEY . "::$order_id", P2P_VERIFICATION_HISTORY_KEY . "::$order_id");
     $redis->hdel(P2P_ORDER_LAST_SEEN_STATUS, @order_keys);
+
+    $redis->del(P2P_VERIFICATION_ATTEMPT_KEY . "::$order_id", P2P_VERIFICATION_HISTORY_KEY . "::$order_id");
 }
 
 =head2 _p2p_advertiser_cancellations

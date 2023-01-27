@@ -424,6 +424,7 @@ subtest 'verification events' => sub {
         bag('REQUEST_BLOCK|9|CR009', 'TOKEN_VALID|10|CR0010', 'LOCKOUT|11|CR0011', 'XXX|12|CR0012'),
         'processed items removed'
     );
+
 };
 
 subtest 'update local currencies' => sub {
