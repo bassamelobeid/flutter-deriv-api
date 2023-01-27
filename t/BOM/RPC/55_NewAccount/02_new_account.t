@@ -952,7 +952,7 @@ subtest $method => sub {
         isnt(keys %$result, 0, 'MF client has financial assessment set');
         my $msg = mailbox_search(
             email   => 'compliance@deriv.com',
-            subject => qr/\Qhas submitted the assessment test\E/
+            subject => qr/\Qhas submitted the trading assessment\E/
         );
         ok($msg, "Risk disclosure email received");
         is $cl->get_authentication('ID_DOCUMENT')->status, "pass", 'authentication method should be updated upon signup between MLT and MF';

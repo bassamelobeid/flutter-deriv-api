@@ -330,7 +330,7 @@ subtest $method => sub {
 
     my $msg = mailbox_search(
         email   => 'compliance@deriv.com',
-        subject => qr/assessment test details have been updated/
+        subject => qr/has updated the trading assessment/
     );
     ok($msg, 'send a email to compliance for MF after changing financial assessment');
     # make call again but with same arguments
@@ -346,7 +346,7 @@ subtest $method => sub {
 
     $msg = mailbox_search(
         email   => 'compliance@deriv.com',
-        subject => qr/assessment test details have been updated/
+        subject => qr/has updated the trading assessment/
     );
 
     ok(!$msg, 'no email sent when no change');
