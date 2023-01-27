@@ -875,9 +875,8 @@ subtest 'P2P Order Info' => sub {
             disputer_loginid => undef,
             dispute_reason   => undef
         },
-        is_reviewable        => 0,
-        verification_pending => 0,
-        stash                => {
+        is_reviewable => 0,
+        stash         => {
             source_bypass_verification => 0,
             app_markup_percentage      => '0',
             valid_source               => 1,
