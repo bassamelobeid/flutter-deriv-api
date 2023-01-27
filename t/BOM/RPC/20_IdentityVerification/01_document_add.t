@@ -57,11 +57,6 @@ subtest 'identity_verification_document_add' => sub {
             document_number => 'number',
         }};
 
-    $c->call_ok('identity_verification_document_add', $params)
-        ->has_no_system_error->has_error->error_code_is('NoAuthNeeded',
-        'Add or upload document is not allowed because the corresponding status has not set.');
-
-    $client_cr->status->setnx('allow_document_upload');
     $mock_idv_model->mock('submissions_left' => 0);
 
     $c->call_ok('identity_verification_document_add', $params)
