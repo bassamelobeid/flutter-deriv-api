@@ -110,8 +110,6 @@ rule 'idv.check_verification_necessity' => {
 
         die 'client is missing' unless my $client = $context->client($args);
 
-        $self->fail('NoAuthNeeded') unless $client->status->allow_document_upload;
-
         my $idv_model      = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
         my $expired_bypass = $client->get_idv_status eq 'expired' && $idv_model->has_expired_document_chance();
 

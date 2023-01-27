@@ -452,16 +452,6 @@ subtest 'rule idv.check_verification_necessity' => sub {
     my $mock_identityverification = Test::MockModule->new('BOM::User::IdentityVerification');
 
     my $testCases = [{
-            client         => {statuses => []},
-            idv_disallowed => 0,
-            error          => 'NoAuthNeeded',
-        },
-        {
-            client         => {statuses => []},
-            idv_disallowed => 0,
-            error          => 'NoAuthNeeded',
-        },
-        {
             client         => {statuses => ['allow_document_upload',]},
             idv_disallowed => 0,
             error          => undef,
