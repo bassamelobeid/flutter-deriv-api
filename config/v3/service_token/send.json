@@ -50,8 +50,7 @@
                         "banxa",
                         "wyre",
                         "dxtrade",
-                        "pandats",
-                        "nakala"
+                        "pandats"
                     ]
                 },
                 {
@@ -63,8 +62,7 @@
                             "sendbird",
                             "banxa",
                             "wyre",
-                            "pandats",
-                            "nakala"
+                            "pandats"
                         ],
                         "uniqueItems": true
                     }
