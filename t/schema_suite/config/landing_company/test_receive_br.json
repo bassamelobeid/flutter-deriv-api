@@ -31,7 +31,6 @@
          "additionalProperties" : false,
          "properties" : {
             "legal_allowed_contract_categories" : {
-               "minItems" : 6,
                "items" : {
                   "type" : "string",
                   "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier|vanilla|accumulator|turbos)$"
@@ -61,11 +60,9 @@
                "items" : {
                   "pattern" : "^[a-zA-Z0-9]{2,20}$",
                   "type" : "string"
-               },
-               "minItems" : 4
+               }
             },
             "legal_allowed_markets" : {
-               "minItems" : 4,
                "items" : {
                   "type" : "string",
                   "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$"
@@ -177,29 +174,27 @@
                }
             },
             "country" : {
-               "type" : "string",
-               "pattern" : "^Saint Vincent and the Grenadines$"
+               "type" : "string"
             },
             "shortcode" : {
-               "pattern" : "^svg$",
+               "pattern" : "^(svg|maltainvest)$",
                "type" : "string"
             },
             "support_professional_client" : {
                "type" : "integer",
                "enum" : [
-                  0
+                  0, 1
                ]
             },
             "legal_default_currency" : {
                "type" : "string",
-               "pattern" : "^USD$"
+               "pattern" : "^[a-zA-Z0-9]{2,20}$"
             },
             "address" : {
                "type" : "null"
             },
             "name" : {
-               "type" : "string",
-               "pattern" : "^Deriv \\(SVG\\) LLC$"
+               "type" : "string"
             }
          },
          "required" : [
@@ -221,7 +216,6 @@
       "financial_company" : {
          "properties" : {
             "legal_allowed_currencies" : {
-               "minItems" : 4,
                "type" : "array",
                "items" : {
                   "pattern" : "^[a-zA-Z0-9]{2,20}$",
@@ -229,7 +223,6 @@
                }
             },
             "legal_allowed_markets" : {
-               "minItems" : 4,
                "type" : "array",
                "items" : {
                   "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
@@ -341,29 +334,27 @@
                }
             },
             "country" : {
-               "pattern" : "^Saint Vincent and the Grenadines$",
                "type" : "string"
             },
             "name" : {
-               "pattern" : "^Deriv \\(SVG\\) LLC$",
                "type" : "string"
             },
             "address" : {
                "type" : "null"
             },
             "shortcode" : {
-               "pattern" : "^svg$",
+               "pattern" : "^(svg|maltainvest)$",
                "type" : "string"
             },
             "support_professional_client" : {
                "type" : "integer",
                "enum" : [
-                  0
+                  0, 1
                ]
             },
             "legal_default_currency" : {
                "type" : "string",
-               "pattern" : "^USD$"
+               "pattern" : "^[a-zA-Z0-9]{2,20}$"
             },
             "requirements" : {
                "properties" : {},
@@ -372,7 +363,6 @@
                "additionalProperties" : "false"
             },
             "legal_allowed_contract_categories" : {
-               "minItems" : 6,
                "type" : "array",
                "items" : {
                   "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier|vanilla|accumulator|turbos)$",

@@ -224,6 +224,38 @@ subtest 'dxtrader accounts' => sub {
     }
 };
 
+subtest 'dxtrade for MF + CR' => sub {
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $client_cr->account('USD');
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
+    $client_mf->account('USD');
+
+    my $user = BOM::User->create(
+        email    => 'dxaccounts1@test.com',
+        password => 'test'
+    );
+    $user->add_client($client_mf);
+    $user->add_client($client_cr);
+
+    my $params = {language => 'EN'};
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, 'test token');
+
+    $params->{args} = {
+        platform     => 'dxtrade',
+        account_type => 'real',
+        market_type  => 'synthetic',
+        password     => 'Abcd1234',
+    };
+
+    $c->call_ok('trading_platform_new_account', $params)
+        ->has_no_system_error->error_code_is('GamingAccountMissing', 'Dxtrader not possible to create from MF account');
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
+
+    my $res = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error->result;
+    like $res->{account_id}, qr/^DXR\d+$/, 'DX account was created correctly from CR account';
+};
+
 subtest 'dxtrade password change' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
@@ -670,7 +702,7 @@ subtest 'trading_platform_available_accounts' => sub {
     my $result = $c->call_ok('trading_platform_available_accounts', $params)->has_no_system_error->has_no_error->result;
     ok ref $result eq 'ARRAY', 'result is an array reference';
 
-    my $expected_keys = [qw(market_type name requirements shortcode sub_account_type)];
+    my $expected_keys = [qw(market_type name requirements shortcode sub_account_type linkable_landing_companies)];
     foreach my $account ($result->@*) {
         cmp_bag([keys %$account], $expected_keys, 'response of trading_platform_accounts is as expected');
     }
@@ -699,7 +731,7 @@ subtest 'trading_platform_available_accounts' => sub {
 
     is scalar(@{$result}), 2, 'got correct number of platforms';
     foreach my $account ($result->@*) {
-        ok $account->{shortcode} eq 'svg', 'response of trading_platform_accounts is as expected';
+        like $account->{shortcode}, qr/^svg$/, 'response of trading_platform_accounts is as expected';
     }
     $mock_config->unmock_all;
 };

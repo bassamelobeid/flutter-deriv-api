@@ -105,8 +105,9 @@ my $params = {
 };
 
 my (
-    $email,         $client_vr,     $client_cr,     $cr_dummy,         $client_mlt,       $client_mf, $client_cr_usd,
-    $client_cr_btc, $client_cr_ust, $client_cr_eur, $client_cr_pa_usd, $client_cr_pa_btc, $user,      $token
+    $email,            $client_vr,        $client_cr,     $cr_dummy,      $client_mlt,
+    $client_mf,        $client_cr_usd,    $client_cr_btc, $client_cr_ust, $client_cr_eur,
+    $client_cr_pa_usd, $client_cr_pa_btc, $user,          $token,         $client_cr2
 );
 
 my $btc_usd_rate = 4000;
@@ -146,6 +147,12 @@ subtest 'call params validation' => sub {
         place_of_birth => 'id'
     });
 
+    $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
+    });
+
     $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'MLT',
         email          => $email,
@@ -165,6 +172,7 @@ subtest 'call params validation' => sub {
     );
 
     $user->add_client($client_cr);
+    $user->add_client($client_cr2);
     $user->add_client($client_mlt);
     $user->add_client($client_mf);
     $user->add_client($client_vr);
@@ -173,7 +181,7 @@ subtest 'call params validation' => sub {
     $params->{token}      = $token;
     $params->{token_type} = 'oauth_token';
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns real accounts';
+    is @{$result->{accounts}}, 2, 'if no loginid from or to passed then it returns real accounts within same landing company';
 
     $params->{args} = {
         account_from => $client_cr->loginid,
@@ -904,7 +912,7 @@ subtest 'transfer_between_accounts' => sub {
     subtest 'Transfer between mlt and mf' => sub {
         $params->{args} = {};
         my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-        is scalar(@{$result->{accounts}}), 2, 'two accounts';
+        is scalar(@{$result->{accounts}}), 1, 'two accounts';
         my ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
         is $tmp->{balance}, "0.00", 'balance is 0';
 
@@ -923,11 +931,9 @@ subtest 'transfer_between_accounts' => sub {
         $client_mf->save;
 
         $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-        is scalar(@{$result->{accounts}}), 2, 'two accounts';
+        is scalar(@{$result->{accounts}}), 1, 'two accounts';
         ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
         is $tmp->{balance}, "5000.00", 'balance is 5000';
-        ($tmp) = grep { $_->{loginid} eq $client_mf->loginid } @{$result->{accounts}};
-        is $tmp->{balance}, "0.00", 'balance is 0.00 for other account';
 
         $params->{args} = {
             account_from => $client_mlt->loginid,
@@ -1880,8 +1886,8 @@ subtest 'MT5' => sub {
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
-    $mock_client->mock(get_poi_status_jurisdiction => sub { return 'verified' });
-    $mock_client->mock(get_poa_status              => sub { return 'verified' });
+    $mock_client->mock(get_poi_status => sub { return 'verified' });
+    $mock_client->mock(get_poa_status => sub { return 'verified' });
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'};
     $params->{args}{account_to}   = $test_client->loginid;

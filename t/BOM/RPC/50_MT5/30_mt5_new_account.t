@@ -1057,7 +1057,7 @@ subtest 'bvi/vanuatu if poi status is verified, get_poa_status -> none' => sub {
 
     my $user_client_mock = Test::MockModule->new('BOM::User::Client');
     $user_client_mock->mock(
-        'get_poi_status_jurisdiction',
+        'get_poi_status',
         sub {
             return 'verified';
         });

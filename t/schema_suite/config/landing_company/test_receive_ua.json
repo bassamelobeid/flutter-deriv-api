@@ -48,21 +48,12 @@
                   "type" : "string",
                   "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs|multiplier|vanilla|accumulator|turbos)$"
                },
-               "type" : "array",
-               "minItems" : 6
+               "type" : "array"
             },
             "requirements" : {
                "properties" : {},
-               "patternProperties" : {
-                  "^.+$" : {
-                     "type" : "array",
-                     "items" : {
-                        "type" : "string"
-                     }
-                  }
-               },
                "type" : "object",
-               "additionalProperties" : false
+               "additionalProperties" :true
             },
             "changeable_fields" : {
                "properties" : {},
@@ -188,11 +179,9 @@
                }
             },
             "country" : {
-               "type" : "string",
-               "pattern" : "^Saint Vincent and the Grenadines$"
+               "type" : "string"
             },
             "legal_allowed_markets" : {
-               "minItems" : 4,
                "items" : {
                   "type" : "string",
                   "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$"
@@ -200,7 +189,6 @@
                "type" : "array"
             },
             "legal_allowed_currencies" : {
-               "minItems" : 4,
                "type" : "array",
                "items" : {
                   "type" : "string",
@@ -209,20 +197,19 @@
             },
             "legal_default_currency" : {
                "type" : "string",
-               "pattern" : "^USD$"
+               "pattern" : "^[a-zA-Z0-9]{2,20}$"
             },
             "shortcode" : {
-               "pattern" : "^svg$",
+               "pattern" : "^(svg|maltainvest)$",
                "type" : "string"
             },
             "support_professional_client" : {
                "type" : "integer",
                "enum" : [
-                  0
+                  0, 1
                ]
             },
             "name" : {
-               "pattern" : "^Deriv \\(SVG\\) LLC$",
                "type" : "string"
             },
             "address" : {
@@ -252,7 +239,6 @@
          ],
          "properties" : {
             "country" : {
-               "pattern" : "^Saint Vincent and the Grenadines$",
                "type" : "string"
             },
             "currency_config" : {
@@ -364,19 +350,16 @@
                   "type" : "string",
                   "pattern" : "^[a-zA-Z0-9]{2,20}$"
                },
-               "type" : "array",
-               "minItems" : 4
+               "type" : "array"
             },
             "legal_allowed_markets" : {
                "type" : "array",
                "items" : {
                   "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
                   "type" : "string"
-               },
-               "minItems" : 4
+               }
             },
             "name" : {
-               "pattern" : "^Deriv \\(SVG\\) LLC$",
                "type" : "string"
             },
             "address" : {
@@ -384,16 +367,16 @@
             },
             "legal_default_currency" : {
                "type" : "string",
-               "pattern" : "^USD$"
+               "pattern" : "^[a-zA-Z0-9]{2,20}$"
             },
             "shortcode" : {
-               "pattern" : "^svg$",
+               "pattern" : "^(svg|maltainvest)$",
                "type" : "string"
             },
             "support_professional_client" : {
                "type" : "integer",
                "enum" : [
-                  0
+                  0, 1
                ]
             },
             "requirements" : {

@@ -721,7 +721,9 @@ async_rpc "mt5_new_account",
     return create_error_future($mt5_account_category eq 'swap_free' ? 'MT5SwapFreeNotAllowed' : 'MT5NotAllowed', {params => $company_type})
         if $landing_company_short eq 'none';
 
-    my $binary_company_name = _get_landing_company($client, $company_type);
+    my $binary_company_name = _get_landing_company($client, $landing_company_short);
+
+    return create_error_future('InvalidCompanyInput') if $binary_company_name eq 'none';
 
     my $source_client = $client;
 
@@ -1106,19 +1108,22 @@ Returns a landing company short name.
 =cut
 
 sub _get_landing_company {
-    my ($client, $company_type) = @_;
+    my ($client, $mt_landing_company) = @_;
 
     return $client->landing_company->short if $client->landing_company->is_for_affiliates;
 
-    my $brand = request()->brand;
+    my $mt_lc = LandingCompany::Registry->by_name($mt_landing_company);
 
-    my $countries_instance = $brand->countries_instance;
-
-    my $countries_list = $countries_instance->countries_list;
-
+    my $brand     = request()->brand;
+    my $countries = $brand->countries_instance;
     my $residence = $client->residence;
 
-    return $countries_list->{$residence}->{"${company_type}_company"};
+    for my $deriv_lc ($mt_lc->mt5_require_deriv_account_at->@*) {
+        return $deriv_lc if ($countries->gaming_company_for_country($residence)    // '') eq $deriv_lc;
+        return $deriv_lc if ($countries->financial_company_for_country($residence) // '') eq $deriv_lc;
+    }
+
+    return 'none';
 }
 
 =head2 _get_mt_landing_company

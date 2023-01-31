@@ -90,6 +90,8 @@ my %ERROR_MAP = do {
         InvalidMaxAmount                 => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
         CurrencyTypeNotAllowed           => localize('This currency is temporarily suspended. Please select another currency to proceed.'),
         PlatformPasswordChangeSuspended => localize("We're unable to reset your trading password due to system maintenance. Please try again later."),
+        DifferentLandingCompanies       => localize(
+            "Transfers between EU and non-EU accounts aren't allowed. You can only transfer funds between accounts under the same regulator."),
     );
 };
 

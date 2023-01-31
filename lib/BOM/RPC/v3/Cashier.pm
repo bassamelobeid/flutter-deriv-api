@@ -1228,7 +1228,9 @@ rpc transfer_between_accounts => sub {
 
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
-        my @available_siblings_for_transfer = grep { not $_->{disabled} and ($_->{demo_account} == $client->is_virtual) } values %$siblings;
+        my @available_siblings_for_transfer =
+            grep { !$_->{disabled} && $_->{demo_account} == $client->is_virtual && $lc_short eq $_->{landing_company_name} } values %$siblings;
+
         @available_siblings_for_transfer = map {
             { $_->%{qw/loginid balance account_type currency demo_account/} }
         } @available_siblings_for_transfer;
@@ -1238,6 +1240,10 @@ rpc transfer_between_accounts => sub {
             for my $mt5_acc (grep { not $_->{error} } @mt5_accounts) {
                 my $is_demo = ($mt5_acc->{account_type} eq 'demo') ? 1 : 0;
                 next unless $client->is_virtual == $is_demo;
+
+                # We only should show mt5 account, that can be deposited from current account.
+                my $mt_lc = LandingCompany::Registry->by_name($mt5_acc->{landing_company_short});
+                next unless grep { $lc_short eq $_ } $mt_lc->mt5_require_deriv_account_at->@*;
 
                 push @available_siblings_for_transfer,
                     {
@@ -1260,17 +1266,18 @@ rpc transfer_between_accounts => sub {
         my @dxtrade_accounts = $dxtrade->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
 
         for my $dxtrade_account (@dxtrade_accounts) {
-            if (exists($dxtrade_account->{enabled}) and $dxtrade_account->{enabled}) {
-                push @available_siblings_for_transfer,
-                    {
-                    loginid      => $dxtrade_account->{account_id},
-                    balance      => $dxtrade_account->{display_balance},
-                    account_type => DXTRADE,
-                    market_type  => $dxtrade_account->{market_type},
-                    currency     => $dxtrade_account->{currency},
-                    demo_account => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
-                    };
-            }
+            next unless $dxtrade_account->{enabled};
+            next unless $dxtrade_account->{landing_company_short} eq $lc_short;
+            push @available_siblings_for_transfer,
+                {
+                loginid      => $dxtrade_account->{account_id},
+                balance      => $dxtrade_account->{display_balance},
+                account_type => DXTRADE,
+                market_type  => $dxtrade_account->{market_type},
+                currency     => $dxtrade_account->{currency},
+                demo_account => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
+                };
+
         }
 
         my $derivez = BOM::TradingPlatform->new(
@@ -1279,6 +1286,7 @@ rpc transfer_between_accounts => sub {
         );
         my @derivez_accounts = $derivez->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
         for my $derivez_account (grep { not $_->{error} } @derivez_accounts) {
+            next unless $derivez_account->{landing_company_short} eq $lc_short;
             push @available_siblings_for_transfer,
                 {
                 loginid       => $derivez_account->{login},

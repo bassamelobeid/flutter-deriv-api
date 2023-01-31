@@ -801,7 +801,7 @@ subtest 'upgradeable_landing_companies' => sub {
 
     # Test 12
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client can upgrade to svg.';
+    is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client can upgrade to svg and maltainvest.';
     my $client5 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         residence   => 'id',
@@ -886,7 +886,7 @@ subtest 'upgradeable_landing_companies svg' => sub {
     # Create VRTC account (Indonesia)
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'VRTC',
-        residence      => 'id',
+        residence      => 'za',
         email          => $email,
         binary_user_id => $user->id,
     });
@@ -897,12 +897,12 @@ subtest 'upgradeable_landing_companies svg' => sub {
 
     # Test 1
     my $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client can upgrade to svg.';
+    is_deeply $result->{upgradeable_landing_companies}, ['svg', 'maltainvest'], 'Client can upgrade to svg';
 
     # Create CR account
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
-        residence      => 'id',
+        residence      => 'za',
         email          => $email,
         binary_user_id => $user->id,
     });
@@ -911,13 +911,13 @@ subtest 'upgradeable_landing_companies svg' => sub {
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
     # Test 1
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['svg'],
-        'Client can upgrade to svg becasue his only Real svg account is disabled and he had not selected currency yet.';
+    is_deeply $result->{upgradeable_landing_companies}, ['svg', 'maltainvest'],
+        'Client can upgrade to svg or maltainvest becasue his only Real svg account is disabled and he had not selected currency yet.';
 
     # Create CR account
     my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
-        residence      => 'id',
+        residence      => 'za',
         email          => $email,
         binary_user_id => $user->id,
     });
@@ -930,7 +930,7 @@ subtest 'upgradeable_landing_companies svg' => sub {
 
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code    => 'CR',
-            residence      => 'id',
+            residence      => 'za',
             email          => $email,
             binary_user_id => $user->id,
         });
@@ -940,7 +940,21 @@ subtest 'upgradeable_landing_companies svg' => sub {
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr2->loginid);
 
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, [], 'Client already upgraded to all available svg.';
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client already upgraded to all available svg, but have also maltainvest.';
+
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        residence      => 'za',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $client->account('EUR');
+    $user->add_client($client);
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr2->loginid);
+
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client already upgraded to all available accounts';
 
 };
 

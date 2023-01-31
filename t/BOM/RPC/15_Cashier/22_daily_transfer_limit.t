@@ -172,9 +172,9 @@ subtest 'mt5' => sub {
     my $mock_account = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mock_account->mock(_is_financial_assessment_complete => sub { return 1 });
     my $mock_client = Test::MockModule->new('BOM::User::Client');
-    $mock_client->mock(fully_authenticated         => sub { return 1 });
-    $mock_client->mock(get_poi_status_jurisdiction => sub { return 'verified' });
-    $mock_client->mock(get_poa_status              => sub { return 'verified' });
+    $mock_client->mock(fully_authenticated => sub { return 1 });
+    $mock_client->mock(get_poi_status      => sub { return 'verified' });
+    $mock_client->mock(get_poa_status      => sub { return 'verified' });
     $has_valid_documents = 1;
 
     my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig');

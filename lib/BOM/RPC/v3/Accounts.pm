@@ -3221,10 +3221,9 @@ rpc paymentagent_details => sub {
 rpc get_account_types => sub {
     my $params = shift;
 
-    my $residence          = $params->{client}->residence;
-    my $countries_instance = request()->brand->countries_instance;
-    my $default_company_name =
-        $countries_instance->financial_company_for_country($residence) || $countries_instance->gaming_company_for_country($residence);
+    my $residence            = $params->{client}->residence;
+    my $countries_instance   = request()->brand->countries_instance;
+    my $default_company_name = $countries_instance->real_company_for_country($residence);
 
     return BOM::RPC::v3::Utility::create_error_by_code('PermissionDenied') unless $default_company_name;
 

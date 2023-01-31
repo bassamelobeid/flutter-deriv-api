@@ -294,6 +294,49 @@ subtest 'ignore submissions left when expired status' => sub {
     ok !$idv_model->has_expired_document_chance, 'Expired chance claimed';
 };
 
+subtest 'MF + CR idv test' => sub {
+    my $user = BOM::User->create(
+        email    => 'example+mfcf@binary.com',
+        password => 'test_passwd'
+    );
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        binary_user_id => $user->id,
+        residence      => 'za',
+    });
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        binary_user_id => $user->id,
+        residence      => 'za',
+    });
+
+    $user->add_client($client_cr);
+    $user->add_client($client_mf);
+
+    $client_cr->status->setnx('allow_document_upload');
+    $client_mf->status->setnx('allow_document_upload');
+
+    my $params = {
+        token    => $token_model->create_token($client_mf->loginid, 'test token'),
+        language => 'EN',
+        args     => {
+            issuing_country => 'ng',
+            document_type   => 'nin_slip',
+            document_number => '12345678912',
+        },
+    };
+
+    note 'IDV for MF is not available';
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('IdentityVerificationDisallowed', 'client not allowed to upload data');
+
+    $params->{token} = $token_model->create_token($client_cr->loginid, 'test token');
+
+    note 'IDV for CR is working fine';
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error;
+};
+
 subtest 'add document with additional field' => sub {
     my $user = BOM::User->create(
         email    => 'additional.example@binary.com',

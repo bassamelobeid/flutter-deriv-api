@@ -735,6 +735,8 @@ subtest $method => sub {
         %datadog_args = ();
         $params->{token} = $auth_token;
 
+        $client->residence('ng');
+        $client->save;
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
         is $result->{error}->{code}, 'PermissionDenied', 'It should return error if client residense does not fit for maltainvest';
 
@@ -784,8 +786,8 @@ subtest $method => sub {
         $params->{args}->{citizen} = 'at';
 
         my $mocked_client = Test::MockModule->new('BOM::User::Client');
-        $mocked_client->redefine(residence => sub { return 'id' });
-        $params->{args}->{residence} = 'id';
+        $mocked_client->redefine(residence => sub { return 'ng' });
+        $params->{args}->{residence} = 'ng';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'It should return error if residence does not fit with maltainvest')
             ->error_message_is('Permission denied.', 'It should return error if residence does not fit with maltainvest');
@@ -963,12 +965,12 @@ subtest $method => sub {
         cmp_ok $cl->non_pep_declaration_time, 'ne', $client_mlt->non_pep_declaration_time, 'non_pep declaration time is different from MLT account';
     };
 
-    my $client_mx;
-    subtest 'Init MX MF' => sub {
+    my $client_cr1;
+    subtest 'Init CR MF' => sub {
         lives_ok {
             my $password = 'Abcd33!@';
             my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'mx_email' . rand(999) . '@binary.com';
+            $email = 'cr1_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email          => $email,
                 password       => $hash_pwd,
@@ -977,31 +979,32 @@ subtest $method => sub {
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
                 email       => $email,
-                residence   => 'de',
+                residence   => 'za',
             });
-            $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                    broker_code   => 'MX',
+            $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                    broker_code   => 'CR',
                     email         => $email,
-                    residence     => 'de',
+                    residence     => 'za',
                     secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
-            $auth_token = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
+            $auth_token = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
 
             $user->add_client($client);
-            $user->add_client($client_mx);
+            $user->add_client($client_cr1);
 
-            is $client_mx->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
+            is $client_cr1->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
                 'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args (test create_account call)';
-            $client_mx->non_pep_declaration_time('2020-01-02');
-            $client_mx->status->set('age_verification', 'system', 'Age verified client');
-            $client_mx->save;
+            $client_cr1->non_pep_declaration_time('2020-01-02');
+            $client_cr1->status->set('age_verification', 'system', 'Age verified client');
+            $client_cr1->save;
         }
         'Initial users and clients';
     };
 
-    subtest 'Create new account maltainvest from MX' => sub {
+    subtest 'Create new account maltainvest from CR' => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
-        $params->{args}->{residence}   = 'de';
+        $params->{args}->{residence}   = 'za';
+        $params->{args}->{citizen}     = 'za';
         delete $params->{args}->{non_pep_declaration};
         %datadog_args = ();
 
@@ -1010,9 +1013,8 @@ subtest $method => sub {
         $params->{args}->{phone}         = '+62 21 12345678';
         $params->{args}->{date_of_birth} = '1990-09-09';
 
-        $client_mx->status->set('unwelcome', 'system', 'test');
         my $result = $rpc_ct->call_ok($method, $params)->result;
-        is $result->{error}->{code}, undef, 'Allow to open even if Client KYC is pending and status is unwelcome';
+        is $result->{error}->{code}, undef, 'Allow to open new account';
 
         my $new_loginid = $result->{client_id};
         my $token_db    = BOM::Database::Model::AccessToken->new();
@@ -1023,15 +1025,15 @@ subtest $method => sub {
 
         # make sure data is same, as in first account, regardless of what we have provided
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
-        is $client_mx->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
+        is $client_cr1->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
 
         $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
-        is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
+        is($result->{tax_residence}, 'de,nl', ' client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys %$result, 0, 'MF client has financial assessment set');
 
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
-        ok $cl->status->age_verification,   'age verification synced between mx and mf.';
+        ok $cl->status->age_verification,   'age verification synced between CR and MF.';
         ok $cl->non_pep_declaration_time,   'non_pep_declaration_time is auto-initialized with no non_pep_declaration in args';
         cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
     };
