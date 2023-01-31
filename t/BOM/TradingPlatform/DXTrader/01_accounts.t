@@ -343,6 +343,101 @@ subtest 'suspend user exception list' => sub {
     );
 };
 
+subtest 'Inter landing company transfer' => sub {
+    $dxconfig->suspend->all(0);
+    $dxconfig->suspend->demo(0);
+    $dxconfig->suspend->real(0);
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr->account('USD');
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    $client_mf->account('USD');
+
+    my $user = BOM::User->create(
+        email    => 'inter_lc@deriv.com',
+        password => 'test',
+    );
+    $user->add_client($client_cr);
+    $user->add_client($client_mf);
+
+    BOM::Test::Helper::Client::top_up($client_cr, $client_cr->currency, 10);
+    BOM::Test::Helper::Client::top_up($client_mf, $client_mf->currency, 10);
+
+    my $dxtrader_cr = BOM::TradingPlatform->new(
+        platform    => 'dxtrade',
+        client      => $client_cr,
+        rule_engine => BOM::Rules::Engine->new(client => $client_cr),
+    );
+
+    my $dxtrader_mf = BOM::TradingPlatform->new(
+        platform    => 'dxtrade',
+        client      => $client_mf,
+        rule_engine => BOM::Rules::Engine->new(client => $client_mf),
+    );
+
+    my $account;
+    is(
+        exception {
+            $account = $dxtrader_cr->new_account(
+                account_type => 'real',
+                password     => 'test',
+                market_type  => 'synthetic',
+                currency     => 'USD',
+            )
+        },
+        undef,
+        'create real account'
+    );
+
+    is(
+        exception {
+            $dxtrader_cr->deposit(
+                to_account => $account->{account_id},
+                amount     => 10,
+                currency   => 'USD',
+            )
+        },
+        undef,
+        'SVG to SVG deposit'
+    );
+
+    my $e = exception {
+        $dxtrader_mf->deposit(
+            to_account => $account->{account_id},
+            amount     => 10,
+            currency   => 'USD',
+        )
+    };
+
+    is $e->{error_code}, 'DifferentLandingCompanies', 'MF to SVG deposit';
+
+    is(
+        exception {
+            $dxtrader_cr->withdraw(
+                from_account => $account->{account_id},
+                amount       => 5,
+                currency     => 'USD',
+            )
+        },
+        undef,
+        'SVG to SVG withdraw'
+    );
+
+    $e = exception {
+        $dxtrader_mf->withdraw(
+            from_account => $account->{account_id},
+            amount       => 5,
+            currency     => 'USD',
+        )
+    };
+
+    is $e->{error_code}, 'DifferentLandingCompanies', 'MF to SVG withdraw';
+};
+
 done_testing();
 
 sub _get_transaction_details {

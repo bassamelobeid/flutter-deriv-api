@@ -906,6 +906,7 @@ subtest 'get_wallet_by_loginid' => sub {
 
 my ($dxtrade_account, $dxtrader);
 subtest 'get_account_by_loginid' => sub {
+    $client_cr_new->status->clear_disabled;
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);

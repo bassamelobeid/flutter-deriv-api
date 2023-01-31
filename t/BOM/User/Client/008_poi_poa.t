@@ -1230,9 +1230,9 @@ subtest 'needs_poi_verification' => sub {
                     documents => {},
                 }};
             $mocked_client->mock(
-                'binary_user_id' => sub {
-                    return 'mocked';
-                });
+                binary_user_id          => 'mocked',
+                ignore_age_verification => 0,
+            );
 
             ok !$test_client_mf->needs_poi_verification, 'POI is not needed';
             $mocked_client->unmock_all;
@@ -2628,6 +2628,198 @@ subtest 'POI attempts' => sub {
     $mocked_idv->unmock_all;
     $mocked_client->unmock_all;
     $mocked_docs->unmock_all;
+};
+
+subtest 'Jurisdiction POI status' => sub {
+    my $test_client = BOM::User::Client->rnew(
+        broker_code => 'CR',
+        residence   => 'br',
+        citizen     => 'br',
+        email       => 'jurisdiction-poi-status@email.com',
+        loginid     => 'CR1317184'
+    );
+    my $user = BOM::User->create(
+        email          => 'jurisdiction-poi-status@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
+    $test_client->binary_user_id($user->id);
+
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
+    my ($age_verification, $manual, $idv, $onfido, $landing_company);
+
+    $mocked_client->mock(
+        get_manual_poi_status => sub { return $manual },
+        get_idv_status        => sub { return $idv },
+        get_onfido_status     => sub { return $onfido },
+        is_idv_validated      => sub { return $idv eq 'verified' ? 1 : 0 },
+    );
+
+    $mocked_status->mock(
+        'age_verification',
+        sub {
+            return $age_verification;
+        });
+
+    my $tests = [{
+            name             => 'SVG: no document, not age verified => none',
+            status           => 'none',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => undef,
+            landing_company  => 'svg',
+        },
+        {
+            name             => 'SVG: IDV verified => verified',
+            status           => 'verified',
+            onfido           => 'none',
+            idv              => 'verified',
+            manual           => 'none',
+            age_verification => 1,
+            landing_company  => 'svg',
+        },
+        {
+            name             => 'SVG: Onfido verifed => verified',
+            status           => 'verified',
+            onfido           => 'verified',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => 1,
+            landing_company  => 'svg',
+        },
+        {
+            name             => 'SVG: manualy verifed => verified',
+            status           => 'verified',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'verified',
+            age_verification => 1,
+            landing_company  => 'svg',
+        },
+        {
+            name             => 'SVG: no document, manually verifed=> verified',
+            status           => 'verified',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => 1,
+            landing_company  => 'svg',
+        },
+        {
+            name             => 'Maltainvest: no document, not age verified => none',
+            status           => 'none',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => undef,
+            landing_company  => 'svg',
+        },
+        {
+            name             => 'Maltainvest: IDV verified => none',
+            status           => 'none',
+            onfido           => 'none',
+            idv              => 'verified',
+            manual           => 'none',
+            age_verification => 1,
+            landing_company  => 'maltainvest',
+        },
+        {
+            name             => 'Maltainvest: Onfido verifed => verified',
+            status           => 'verified',
+            onfido           => 'verified',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => 1,
+            landing_company  => 'maltainvest',
+        },
+        {
+            name             => 'Maltainvest: manualy verifed => verified',
+            status           => 'verified',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'verified',
+            age_verification => 1,
+            landing_company  => 'maltainvest',
+        },
+        {
+            name             => 'Maltainvest: no document, manually verifed=> verified',
+            status           => 'verified',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => 1,
+            landing_company  => 'maltainvest',
+        },
+        {
+            name             => 'Maltainvest: no document, not age verified => none',
+            status           => 'none',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => undef,
+            landing_company  => 'maltainvest',
+        },
+        {
+            name             => 'Vanuatu: IDV verified => none',
+            status           => 'none',
+            onfido           => 'none',
+            idv              => 'verified',
+            manual           => 'none',
+            age_verification => 1,
+            landing_company  => 'vanuatu',
+        },
+        {
+            name             => 'Vanuatu: Onfido verifed => verified',
+            status           => 'verified',
+            onfido           => 'verified',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => 1,
+            landing_company  => 'vanuatu',
+        },
+        {
+            name             => 'Vanuatu: manualy verifed => verified',
+            status           => 'verified',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'verified',
+            age_verification => 1,
+            landing_company  => 'vanuatu',
+        },
+        {
+            name             => 'Vanuatu: no document, manually verifed=> verified',
+            status           => 'verified',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => 1,
+            landing_company  => 'vanuatu',
+        },
+        {
+            name             => 'Vanuatu: no document, not age verified => none',
+            status           => 'none',
+            onfido           => 'none',
+            idv              => 'none',
+            manual           => 'none',
+            age_verification => undef,
+            landing_company  => 'vanuatu',
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($name, $status);
+
+        ($name, $age_verification, $status, $manual, $onfido, $idv, $landing_company) =
+            @{$test}{qw/name age_verification status manual onfido idv landing_company/};
+
+        is $test_client->get_poi_status({landing_company => $landing_company}), $status, $name;
+    }
+
+    $mocked_status->unmock_all;
+    $mocked_client->unmock_all;
 };
 
 done_testing();

@@ -139,7 +139,7 @@ sub new_account {
     my $main_password       = generate_password($client->user->{password});
     my $investor_password   = generate_password($client->user->{password});
     my $rights              = new_account_trading_rights();
-    my $binary_company_name = get_landing_company($client, $market_type);
+    my $binary_company_name = get_landing_company($client);
     my $group               = derivez_group({
         residence             => $client->residence,
         landing_company_short => $landing_company_short,

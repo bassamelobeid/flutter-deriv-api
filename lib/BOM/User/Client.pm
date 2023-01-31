@@ -7403,13 +7403,21 @@ sub get_poa_status {
 Resolves the POI status.
 Infers C<status> from onfido/idv latest check, or returns C<verified> if client already has poa or poi.
 
+Arguments:
+
+=over 4
+
+=item landing_company - an optional argument by default current client's landing company is used. Different LCs may have different POI  cdrules. 
+
+=back
+
 Returns,
     string for the current POI status, it can be: none, expired, pending, rejected, suspected, verified.
 
 =cut
 
 sub get_poi_status {
-    my ($self) = @_;
+    my ($self, $args) = @_;
 
     my ($poi_by) = $self->latest_poi_by;
 
@@ -7425,7 +7433,8 @@ sub get_poi_status {
 
     return 'pending' if $status eq 'pending';
 
-    if (!$self->ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
+    my $ignore_age_verification = $self->ignore_age_verification($args);
+    if (!$ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
         my $expired;
 
         $expired = $self->documents->expired(undef) if $poi_by eq 'manual';
@@ -7446,50 +7455,6 @@ sub get_poi_status {
     return 'expired' if $status eq 'expired';
 
     return 'verified' if $self->get_manual_poi_status eq 'verified';
-
-    return 'none';
-}
-
-=head2 get_poi_status_jurisdiction
-
-Resolves the POI status.
-Infers C<status> from onfido/idv latest check, or returns C<verified> if client already has poi.
-support query by jurisdiction type.
-
-Returns,
-    string for the current POI status, it can be: none, expired, pending, rejected, suspected, verified.
-
-=cut
-
-sub get_poi_status_jurisdiction {
-    my ($self, $jurisdiction) = @_;
-
-    my $manual = $self->get_manual_poi_status();
-    my $idv    = $self->get_idv_status();
-    my $onfido = $self->get_onfido_status();
-    my %poi    = (
-        manual => $manual,
-        idv    => $idv,
-        onfido => $onfido
-    );
-    my %allowed_verification = (
-        bvi         => ['idv',    'onfido', 'manual'],
-        labuan      => ['idv',    'onfido', 'manual'],
-        vanuatu     => ['onfido', 'manual'],
-        maltainvest => ['onfido', 'manual']);
-    my %status = map { $poi{$_} => 1 } @{$allowed_verification{$jurisdiction}};
-
-    return 'verified' if $status{verified};
-
-    return 'pending' if $status{pending};
-
-    return 'suspected' if $status{suspected};
-
-    return 'rejected' if $self->status->poi_name_mismatch;
-
-    return 'rejected' if $status{rejected};
-
-    return 'expired' if $status{expired};
 
     return 'none';
 }
@@ -8564,6 +8529,16 @@ Rules:
 
 =item * High Risk profile and IDV validated account
 
+=item * LC may not support IDV as identification method
+
+=back
+
+Arguments:
+
+=over 4
+
+=item landing_company - an optional argument by default current client's  landing company is used. 
+
 =back
 
 It returns 1 when we invalidate the age verification, 0 otherwise.
@@ -8571,12 +8546,15 @@ It returns 1 when we invalidate the age verification, 0 otherwise.
 =cut
 
 sub ignore_age_verification {
-    my ($self) = @_;
+    my ($self, $args) = @_;
 
     # High risk profiles
     my $risk = $self->aml_risk_classification // '';
 
-    if ($risk eq 'high') {
+    my $lc = $args->{landing_company} ? LandingCompany::Registry->by_name($args->{landing_company}) : $self->landing_company;
+
+    # Check if it was validated by IDV, we ignore IDV verification for some LC and high risk clients
+    if ($risk eq 'high' || none { $_ eq 'idv' } $lc->allowed_poi_providers->@*) {
         # Disregard idv authentication under high risk
         return 1 if $self->is_idv_validated;
     }

@@ -178,6 +178,10 @@ Generic validation of transfers and fee calculation. There are no platform-speci
 
 =item * C<account_type>: type of platform account, demo or real
 
+=item * C<landing_company_to>: landing company where we transfer money to 
+
+=item * C<landing_company_from>: landing company where we transfer money from
+
 =over 4 
 
 =item * C<type>: type of trading account, demo or real.
@@ -202,7 +206,8 @@ sub validate_transfer {
     $self->rule_engine->verify_action(
         "trading_account_$action", %args,
         platform => $self->name,
-        loginid  => $self->client->loginid
+        loginid  => $self->client->loginid,
+        %args{qw(landing_company_from landing_company_to account_type)},
     );
 
     die +{error_code => 'PlatformTransferSuspended'} if BOM::Config::Runtime->instance->app_config->system->suspend->payments;

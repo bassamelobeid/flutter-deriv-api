@@ -55,6 +55,10 @@ use constant USER_RIGHT_API            => 0x0000000000000080;
 use constant USER_RIGHT_REPORTS        => 0x0000000000000100;
 use constant USER_RIGHT_TRADE_DISABLED => 0x0000000000000004;
 
+# For now it's only available for sinle landing company.
+# if we'll need to add more companies, then better to move to landing company configuration
+use constant DERIVEZ_AVAILABLE_FOR => 'svg';
+
 =head1 NAME 
 
 BOM::TradingPlatform::Helper::HelperDerivEZ
@@ -198,7 +202,6 @@ sub validate_user {
             and not $client->status->crs_tin_information);
     }
 
-    my $poa_status;
     my %mt5_compliance_requirements = map { ($_ => 1) } $compliance_requirements->{mt5}->@*;
     if ($new_account_params->{account_type} ne 'demo' && $mt5_compliance_requirements{fully_authenticated}) {
         if ($client->fully_authenticated) {
@@ -207,35 +210,8 @@ sub validate_user {
                 return create_error('ExpiredDocumentsMT5', {params => $client->loginid});
             }
         } else {
-            if (any { $new_account_params->{landing_company_short} eq $_ } qw/bvi vanuatu/) {
-                return create_error('AuthenticateAccount', {params => $client->loginid})
-                    unless $client->get_poi_status_jurisdiction($new_account_params->{landing_company_short}) eq 'verified';
-
-                $poa_status = $client->get_poa_status();
-                return create_error(
-                    'NewAccountPOAFailed',
-                    {
-                        override_code => 'MT5CreateUserError',
-                        params        => $poa_status
-                    }) unless any { $poa_status eq $_ } qw/expired rejected pending verified/;
-
-                unless ($poa_status eq 'verified') {
-                    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-                    try {
-                        $rule_engine->verify_action(
-                            'mt5_jurisdiction_validation',
-                            loginid              => $client->loginid,
-                            new_mt5_jurisdiction => $new_account_params->{landing_company_short},
-                            loginid_details      => $client->user->loginid_details,
-                        );
-                    } catch {
-                        return create_error('AuthenticateAccount', {params => $client->loginid});
-                    }
-                }
-            } else {
-                $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
-                return create_error('AuthenticateAccount', {params => $client->loginid});
-            }
+            $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+            return create_error('AuthenticateAccount', {params => $client->loginid});
         }
     }
 
@@ -383,19 +359,17 @@ Return the landing company based on the client residence and market type
 =cut
 
 sub get_landing_company {
-    my ($client, $market_type) = @_;
+    my ($client) = @_;
 
     return $client->landing_company->short if $client->landing_company->is_for_affiliates;
 
-    my $brand = request()->brand;
-
-    my $countries_instance = $brand->countries_instance;
-
-    my $countries_list = $countries_instance->countries_list;
-
+    my $countries = request()->brand->countries_instance;
     my $residence = $client->residence;
 
-    return $countries_list->{$residence}->{"${market_type}_company"};
+    return DERIVEZ_AVAILABLE_FOR if ($countries->gaming_company_for_country($residence)    // '') eq DERIVEZ_AVAILABLE_FOR;
+    return DERIVEZ_AVAILABLE_FOR if ($countries->financial_company_for_country($residence) // '') eq DERIVEZ_AVAILABLE_FOR;
+
+    return 'none';
 }
 
 =head2 is_derivez
@@ -1271,22 +1245,8 @@ sub _validate_client {
 
     my $lc = $client_obj->landing_company->short;
 
-    # Landing companies listed below are an exception for this check as
-    # they have mutual agreement and it is allowed to transfer funds
-    # through gaming/financial MT5 accounts:
-    # - transfers between maltainvest and malta
-    # - svg, vanuatu, and labuan
-
-    my $mt5_lc_short = $mt5_lc->short;
-
-    unless (($lc eq 'svg' and ($mt5_lc_short eq 'vanuatu' or $mt5_lc_short eq 'labuan' or $mt5_lc_short eq 'bvi'))
-        or ($lc eq 'maltainvest' and $mt5_lc_short eq 'malta')
-        or ($lc eq 'malta'       and $mt5_lc_short eq 'maltainvest')
-        or $mt5_lc_short eq $lc)
-    {
-        # Otherwise, Financial accounts should not be able to deposit to, or withdraw from, gaming MT5
-        return 'SwitchAccount';
-    }
+    # We should not allow transfers between svg and maltainvest.
+    return 'SwitchAccount' unless $lc eq DERIVEZ_AVAILABLE_FOR;
 
     # Deposits and withdrawals are blocked for non-authenticated MF clients
     return ('AuthenticateAccount', $loginid)

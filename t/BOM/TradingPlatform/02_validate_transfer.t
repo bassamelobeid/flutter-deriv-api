@@ -10,7 +10,6 @@ use BOM::Test::Helper::Client;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Config::Runtime;
 use BOM::Rules::Engine;
-
 my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
 $mock_fees->mock(
     transfer_between_accounts_fees => sub {
@@ -64,11 +63,13 @@ subtest 'common' => sub {
         cmp_deeply(
             exception {
                 $dxtrader_real->validate_transfer(
-                    action            => $action,
-                    amount            => 10,
-                    platform_currency => 'USD',
-                    account_type      => 'real'
-                )
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
+                );
             },
             {error_code => 'PlatformTransferSuspended'},
             "payments suspended for $action"
@@ -79,10 +80,12 @@ subtest 'common' => sub {
         cmp_deeply(
             exception {
                 $dxtrader_real->validate_transfer(
-                    action            => $action,
-                    amount            => 10,
-                    platform_currency => 'USD',
-                    account_type      => 'real'
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
                 )
             },
             {error_code => 'PlatformTransferSuspended'},
@@ -94,10 +97,12 @@ subtest 'common' => sub {
         cmp_deeply(
             exception {
                 $dxtrader_real->validate_transfer(
-                    action            => $action,
-                    amount            => 10,
-                    platform_currency => 'USD',
-                    account_type      => 'real'
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
                 )
             },
             {error_code => 'PlatformTransferBlocked'},
@@ -108,10 +113,12 @@ subtest 'common' => sub {
         cmp_deeply(
             exception {
                 $dxtrader_vr->validate_transfer(
-                    action            => $action,
-                    amount            => 10,
-                    platform_currency => 'USD',
-                    account_type      => 'real'
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
                 )
             },
             {error_code => 'PlatformTransferNoVirtual'},
@@ -124,7 +131,7 @@ subtest 'common' => sub {
                     action            => $action,
                     amount            => 10,
                     platform_currency => 'USD',
-                    account_type      => 'demo'
+                    account_type      => 'demo',
                 )
             },
             {error_code => 'PlatformTransferNoVirtual'},
@@ -148,10 +155,12 @@ subtest 'common' => sub {
         cmp_deeply(
             exception {
                 $dxtrader_real->validate_transfer(
-                    action            => $action,
-                    amount            => 10,
-                    platform_currency => 'USD',
-                    account_type      => 'real',
+                    action               => $action,
+                    amount               => 10,
+                    platform_currency    => 'USD',
+                    account_type         => 'real',
+                    landing_company_from => 'svg',
+                    landing_company_to   => 'svg',
                 )
             },
             {
@@ -185,10 +194,12 @@ subtest 'deposit' => sub {
     );
 
     my %args = (
-        action            => 'deposit',
-        amount            => 10,
-        platform_currency => 'USD',
-        account_type      => 'real',
+        action               => 'deposit',
+        amount               => 10,
+        platform_currency    => 'USD',
+        account_type         => 'real',
+        landing_company_from => 'svg',
+        landing_company_to   => 'svg',
     );
 
     cmp_deeply(
@@ -307,10 +318,12 @@ subtest 'withdrawal' => sub {
 
     cmp_deeply(
         $dxtrader->validate_transfer(
-            action            => 'withdrawal',
-            amount            => 10,
-            platform_currency => 'USD',
-            account_type      => 'real',
+            action               => 'withdrawal',
+            amount               => 10,
+            platform_currency    => 'USD',
+            account_type         => 'real',
+            landing_company_from => 'svg',
+            landing_company_to   => 'svg',
         ),
         {
             recv_amount               => num(10),
@@ -325,10 +338,12 @@ subtest 'withdrawal' => sub {
 
     cmp_deeply(
         $dxtrader->validate_transfer(
-            action            => 'withdrawal',
-            amount            => 10,
-            platform_currency => 'EUR',
-            account_type      => 'real',
+            action               => 'withdrawal',
+            amount               => 10,
+            platform_currency    => 'EUR',
+            account_type         => 'real',
+            landing_company_from => 'svg',
+            landing_company_to   => 'svg',
         ),
         {
             recv_amount               => num(19),
@@ -371,10 +386,12 @@ subtest 'withdrawal' => sub {
 
     cmp_deeply(
         $dxtrader_btc->validate_transfer(
-            action            => 'withdrawal',
-            amount            => 100,
-            platform_currency => 'USD',
-            account_type      => 'real',
+            action               => 'withdrawal',
+            amount               => 100,
+            platform_currency    => 'USD',
+            account_type         => 'real',
+            landing_company_from => 'svg',
+            landing_company_to   => 'svg',
         ),
         {
             fee_calculated_by_percent => '10',

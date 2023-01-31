@@ -342,13 +342,15 @@ sub available_accounts {
             my $jurisdiction_ratings = BOM::Config::Compliance->new()->get_jurisdiction_risk_rating('mt5')->{$lc->short} // {};
             my $high_risk_countries  = {map { $_ => 1 } @{$jurisdiction_ratings->{high} // []}};
             next if $high_risk_countries->{$args->{country_code}};
+
             push @trading_accounts,
                 +{
-                shortcode        => $lc->short,
-                name             => $lc->name,
-                requirements     => $lc->requirements,
-                sub_account_type => $account->{sub_account_type},
-                market_type      => $account->{market_type},
+                shortcode                  => $lc->short,
+                name                       => $lc->name,
+                requirements               => $lc->requirements,
+                sub_account_type           => $account->{sub_account_type},
+                market_type                => $account->{market_type},
+                linkable_landing_companies => $lc->mt5_require_deriv_account_at,
                 };
         }
     }

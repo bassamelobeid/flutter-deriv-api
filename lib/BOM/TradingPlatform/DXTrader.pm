@@ -541,12 +541,14 @@ sub deposit {
     # 3. Deposit to dxtrade
 
     my $tx_amounts = $self->validate_transfer(
-        action            => 'deposit',
-        amount            => $args{amount},
-        platform_currency => $account->{currency},
-        account_type      => $account->{account_type},
-        currency          => $args{currency},
-        payment_type      => 'dxtrade_transfer',
+        action               => 'deposit',
+        amount               => $args{amount},
+        platform_currency    => $account->{currency},
+        account_type         => $account->{account_type},
+        currency             => $args{currency},
+        payment_type         => 'dxtrade_transfer',
+        landing_company_from => $self->client->landing_company->short,
+        landing_company_to   => $self->account_details($account)->{landing_company_short},
     );
 
     my %txn_details = (
@@ -647,11 +649,13 @@ sub withdraw {
     # 3. Deposit to deriv
 
     my $tx_amounts = $self->validate_transfer(
-        action            => 'withdrawal',
-        amount            => $args{amount},
-        platform_currency => $account->{currency},
-        account_type      => $account->{account_type},
-        currency          => $args{currency},
+        action               => 'withdrawal',
+        amount               => $args{amount},
+        platform_currency    => $account->{currency},
+        account_type         => $account->{account_type},
+        currency             => $args{currency},
+        landing_company_from => $self->account_details($account)->{landing_company_short},
+        landing_company_to   => $self->client->landing_company->short,
     );
 
     my %call_args = (
