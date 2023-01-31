@@ -101,7 +101,16 @@ async sub set_age_verification {
     # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
     my @clients_to_update =
         map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
-    $setter->($_) foreach (@clients_to_update);
+    foreach my $client_to_update (@clients_to_update) {
+
+        # Cheking that destination LC supports verification method
+        if ($client->landing_company->short ne $client_to_update->landing_company->short) {
+            my $status = $client->get_poi_status({landing_company => $client_to_update->landing_company->short});
+            next unless $status =~ /verified|expired/;
+        }
+
+        $setter->($client_to_update);
+    }
 
     $client->update_status_after_auth_fa($reason);
 

@@ -1861,8 +1861,8 @@ subtest 'sync mt5 accounts status' => sub {
         });
 
     my %bom_user_client_mock = (
-        get_poi_status_jurisdiction => sub {
-            $mocked_user_client->mock('get_poi_status_jurisdiction', shift // sub { return 'verified'; });
+        get_poi_status => sub {
+            $mocked_user_client->mock('get_poi_status', shift // sub { return 'verified'; });
         },
         get_poa_status => sub {
             $mocked_user_client->mock('get_poa_status', shift // sub { return 'verified'; });
@@ -1873,7 +1873,7 @@ subtest 'sync mt5 accounts status' => sub {
         $bom_user_mock{get_default_client}->();
         $bom_user_mock{loginid_details}->();
         $bom_user_mock{update_loginid_status}->();
-        $bom_user_client_mock{get_poi_status_jurisdiction}->();
+        $bom_user_client_mock{get_poi_status}->();
         $bom_user_client_mock{get_poa_status}->();
     };
 
@@ -1902,7 +1902,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_bvi_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -1918,7 +1918,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_bvi_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -1939,7 +1939,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -1960,7 +1960,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -1978,7 +1978,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_bvi_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -1994,7 +1994,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_bvi_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'verified' });
 
                 my $result = $action_get->($args);
@@ -2010,7 +2010,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_bvi_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2031,7 +2031,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2052,7 +2052,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2070,7 +2070,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_bvi_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2086,7 +2086,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_bvi_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'verified' });
 
                 my $result = $action_get->($args);
@@ -2102,7 +2102,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_bvi_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2123,7 +2123,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2144,7 +2144,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2179,7 +2179,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_vanuatu_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2195,7 +2195,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_vanuatu_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2216,7 +2216,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_vanuatu_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2237,7 +2237,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_vanuatu_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2255,7 +2255,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_vanuatu_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2271,7 +2271,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_vanuatu_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'verified' });
 
                 my $result = $action_get->($args);
@@ -2287,7 +2287,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_vanuatu_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2308,7 +2308,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_vanuatu_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2329,7 +2329,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_vanuatu_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2347,7 +2347,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_vanuatu_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2363,7 +2363,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_vanuatu_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'verified' });
 
                 my $result = $action_get->($args);
@@ -2379,7 +2379,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_vanuatu_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2400,7 +2400,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_vanuatu_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2421,7 +2421,7 @@ subtest 'sync mt5 accounts status' => sub {
                 my $loginid_data = {%$sample_loginid_details, %expire_vanuatu_mt5};
 
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2456,7 +2456,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_labuan_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2472,7 +2472,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_labuan_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2490,7 +2490,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_labuan_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2506,7 +2506,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_labuan_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'verified' });
 
                 my $result = $action_get->($args);
@@ -2522,7 +2522,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_labuan_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2540,7 +2540,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_labuan_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2556,7 +2556,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_labuan_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'verified' });
 
                 my $result = $action_get->($args);
@@ -2572,7 +2572,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_labuan_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2607,7 +2607,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_maltainvest_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2623,7 +2623,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_maltainvest_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2641,7 +2641,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_maltainvest_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2657,7 +2657,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_maltainvest_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'verified' });
 
                 my $result = $action_get->($args);
@@ -2673,7 +2673,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_maltainvest_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2691,7 +2691,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_maltainvest_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'rejected' });
 
                 my $result = $action_get->($args);
@@ -2707,7 +2707,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_maltainvest_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'verified' });
 
                 my $result = $action_get->($args);
@@ -2723,7 +2723,7 @@ subtest 'sync mt5 accounts status' => sub {
                 $sync_mt5_mock_set->();
                 my $loginid_data = {%$sample_loginid_details, %$sample_maltainvest_mt5};
                 $bom_user_mock{loginid_details}->(sub { $loginid_data });
-                $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'rejected' });
+                $bom_user_client_mock{get_poi_status}->(sub { 'rejected' });
                 $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
                 my $result = $action_get->($args);
@@ -2748,7 +2748,7 @@ subtest 'sync mt5 accounts status' => sub {
             my $loginid_data = {%$sample_loginid_details, %expire_bvi_mt5, %second_bvi_mt5, %$sample_vanuatu_mt5};
 
             $bom_user_mock{loginid_details}->(sub { $loginid_data });
-            $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+            $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
             $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
             my $result = $action_get->($args);
@@ -2777,7 +2777,7 @@ subtest 'sync mt5 accounts status' => sub {
             my $loginid_data   = {%$sample_loginid_details, %$sample_bvi_mt5, %second_bvi_mt5, %$sample_vanuatu_mt5};
 
             $bom_user_mock{loginid_details}->(sub { $loginid_data });
-            $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+            $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
             $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
             my $result = $action_get->($args);
@@ -2805,7 +2805,7 @@ subtest 'sync mt5 accounts status' => sub {
             my $loginid_data = {%$sample_loginid_details};
 
             $bom_user_mock{loginid_details}->(sub { $loginid_data });
-            $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+            $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
             $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
             my $result = $action_get->($args);
@@ -2829,7 +2829,7 @@ subtest 'sync mt5 accounts status' => sub {
             my $loginid_data = {%$sample_loginid_details, %expire_vanuatu_mt5};
 
             $bom_user_mock{loginid_details}->(sub { $loginid_data });
-            $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'pending' });
+            $bom_user_client_mock{get_poi_status}->(sub { 'pending' });
             $bom_user_client_mock{get_poa_status}->(sub { 'pending' });
 
             my $result = $action_get->($args);
@@ -2851,7 +2851,7 @@ subtest 'sync mt5 accounts status' => sub {
             my $loginid_data = {%$sample_loginid_details, %expire_vanuatu_mt5};
 
             $bom_user_mock{loginid_details}->(sub { $loginid_data });
-            $bom_user_client_mock{get_poi_status_jurisdiction}->(sub { 'verified' });
+            $bom_user_client_mock{get_poi_status}->(sub { 'verified' });
             $bom_user_client_mock{get_poa_status}->(sub { 'verified' });
 
             my $result = $action_get->($args);

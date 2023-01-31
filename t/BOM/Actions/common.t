@@ -148,13 +148,13 @@ subtest 'set_age_verification' => sub {
             scenario => {
                 poa_status        => 'none',
                 poi_name_mismatch => 0,
-                allowed_lc_sync   => [qw/malta/]
+                allowed_lc_sync   => [qw/maltainvest/]
             },
             side_effects => {
                 age_verification                => 1,
                 poa_email                       => 0,
                 p2p_advertiser_approval_changed => 1,
-                mlt_age_verified                => 1,
+                mf_age_verified                 => 1,
             }
         },
         {
@@ -167,7 +167,7 @@ subtest 'set_age_verification' => sub {
                 poi_name_mismatch                  => 0,
                 is_experian_validated              => 0,
                 require_age_verified_for_synthetic => 1,
-                allowed_lc_sync                    => [qw/malta/]
+                allowed_lc_sync                    => [qw/maltainvest/]
             },
             side_effects => {
                 df_deposit_requires_poi         => 0,
@@ -175,7 +175,7 @@ subtest 'set_age_verification' => sub {
                 poa_email                       => 0,
                 p2p_advertiser_approval_changed => 1,
                 vr_age_verified                 => 1,
-                mlt_age_verified                => 1,
+                mf_age_verified                 => 1,
             }
         },
         {
@@ -269,8 +269,8 @@ subtest 'set_age_verification' => sub {
                 email       => $email,
             });
 
-            my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MLT',
+            my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'MF',
                 email       => $email,
             });
 
@@ -282,7 +282,7 @@ subtest 'set_age_verification' => sub {
             # since we would like to test change in this status, better to don't mock it
             if ($scenario->{df_deposit_requires_poi}) {
                 $client->status->set('df_deposit_requires_poi', 'test', 'test');
-                $client_mlt->status->set('df_deposit_requires_poi', 'test', 'test');
+                $client_mf->status->set('df_deposit_requires_poi', 'test', 'test');
                 $vr->status->set('df_deposit_requires_poi', 'test', 'test');
             }
 
@@ -299,7 +299,7 @@ subtest 'set_age_verification' => sub {
 
             $user->add_client($vr);
             $user->add_client($client);
-            $user->add_client($client_mlt);
+            $user->add_client($client_mf);
 
             $mocked_countries_list = {$client->residence => {require_age_verified_for_synthetic => $scenario->{require_age_verified_for_synthetic}}};
 
@@ -349,12 +349,12 @@ subtest 'set_age_verification' => sub {
             }
 
             if ($side_effects->{df_deposit_requires_poi}) {
-                ok $client->status->df_deposit_requires_poi,     'DF deposit lock is there';
-                ok $client_mlt->status->df_deposit_requires_poi, 'DF deposit lock is there';
-                ok $vr->status->df_deposit_requires_poi,         'DF deposit lock is there';
+                ok $client->status->df_deposit_requires_poi,    'DF deposit lock is there';
+                ok $client_mf->status->df_deposit_requires_poi, 'DF deposit lock is there';
+                ok $vr->status->df_deposit_requires_poi,        'DF deposit lock is there';
             } else {
                 ok !$client->status->df_deposit_requires_poi, 'DF deposit lock is gone';
-                ok !$client_mlt->status->df_deposit_requires_poi, 'DF deposit lock is gone'
+                ok !$client_mf->status->df_deposit_requires_poi, 'DF deposit lock is gone'
                     if scalar @$mocked_allowed_landing_companies_for_age_verification_sync;
                 ok !$vr->status->df_deposit_requires_poi, 'DF deposit lock is gone';
             }
@@ -394,10 +394,10 @@ subtest 'set_age_verification' => sub {
                 ok !$vr->status->age_verification, 'VRTC not age verified';
             }
 
-            if ($side_effects->{mlt_age_verified}) {
-                ok $client_mlt->status->age_verification, 'MLT Age verified';
+            if ($side_effects->{mf_age_verified}) {
+                ok $client_mf->status->age_verification, 'MF Age verified';
             } else {
-                ok !$client_mlt->status->age_verification, 'MLT not age verified';
+                ok !$client_mf->status->age_verification, 'MF not age verified';
             }
         };
     }
