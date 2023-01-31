@@ -189,12 +189,12 @@ sub _deriv_listing {
     # deriv
     my %result;
     my @lc_short = uniq grep { $_ ne 'none' } map { $country_config->{$_} } qw(financial_company gaming_company);
-    my @available_trade_types;
+    my (@available_markets, @available_trade_types, %product_list);
     foreach my $landing_company (map { LandingCompany::Registry->by_name($_) } @lc_short) {
         my $offerings = $landing_company->basic_offerings_for_country($country_code, $offerings_config, $app->offerings);
         foreach my $market ($offerings->values_for_key('market')) {
             my $market_obj = $market_registry->get($market);
-            push @{$result{available_markets}}, $market_obj->display_name;
+            push @available_markets, $market_obj->display_name;
             foreach my $submarket ($offerings->query({market => $market}, ['submarket'])) {
                 my $submarket_obj = $submarket_registry->get($submarket);
                 foreach my $symbol (
@@ -207,7 +207,8 @@ sub _deriv_listing {
                     my $underlying_obj = Finance::Underlying->by_symbol($symbol);
                     my @trade_types    = $self->_get_deriv_trade_types($offerings, $symbol);
                     push @available_trade_types, @trade_types;
-                    push @{$result{product_list}}, +{
+
+                    $product_list{$symbol} //= +{
                         symbol => {
                             name         => $symbol,
                             display_name => $underlying_obj->display_name,
@@ -220,16 +221,18 @@ sub _deriv_listing {
                             name         => $submarket,
                             display_name => $submarket_obj->display_name,
                         },
-                        available_trade_types   => \@trade_types,
-                        available_account_types => ['Standard']
-                        ,    # there is no different account types in non-CFDs product. Setting it to `Standard` for data structure consistency
-                    };
+                        available_trade_types   => [],
+                        available_account_types => ['Standard']};
+
+                    $product_list{$symbol}{available_trade_types} = [uniq($product_list{$symbol}{available_trade_types}->@*, @trade_types)];
                 }
             }
         }
         $result{name} = $app->display_name if %result;
     }
-    $result{available_trade_types} = [uniq(@available_trade_types)] if @available_trade_types;
+    $result{available_trade_types} = [uniq(@available_trade_types)];
+    $result{available_markets}     = [uniq @available_markets];
+    $result{product_list}          = [values %product_list];
 
     return \%result;
 }
