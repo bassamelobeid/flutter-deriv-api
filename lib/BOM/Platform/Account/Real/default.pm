@@ -65,8 +65,12 @@ sub copy_status_from_siblings {
             next unless $client->status->$status;
             next if $client->status->$status && $cur_client->status->$status;
 
-            my $cur_client_lc = $cur_client->landing_company->short;
-            next if ($status eq 'age_verification' && none { $_ eq $cur_client_lc } @allowed_lc_to_sync);
+            if ($status eq 'age_verification') {
+                my $cur_client_lc = $cur_client->landing_company->short;
+                next if none { $_ eq $cur_client_lc } @allowed_lc_to_sync;
+                my $poi_status = $client->get_poi_status({landing_company => $cur_client->landing_company->short});
+                next unless $poi_status =~ /verified|expired/;
+            }
 
             my $reason = $client->status->$status ? $client->status->$status->{reason} : 'Sync upon signup';
 
