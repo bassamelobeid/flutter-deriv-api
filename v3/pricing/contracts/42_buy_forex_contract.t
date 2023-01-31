@@ -176,9 +176,11 @@ if ($trading_calendar->is_open($underlying->exchange)) {
             'Buy contract with proposal id: price moved error'
         );
 
+        my $adjusted_price = $buy_price;
+        $adjusted_price =~ s/(:?\.\d+)?$/.124/;
         $res = $t->await::buy({
             buy        => 1,
-            price      => $buy_price * 0.81,
+            price      => $adjusted_price,
             parameters => {%contract},
         });
 

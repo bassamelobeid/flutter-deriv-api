@@ -345,11 +345,11 @@ subtest 'unicode character test in required fields for maltainvest account' => s
     };
 };
 
-subtest 'CR client cannot upgrade to MF' => sub {
+subtest 'CR client can from low risk countries upgrade to MF' => sub {
     # create VR acc, authorize
     my ($vr_client, $user) = create_vr_account({
         email           => 'test+id@binary.com',
-        residence       => 'id',
+        residence       => 'za',
         client_password => 'abc123',
     });
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
@@ -358,7 +358,7 @@ subtest 'CR client cannot upgrade to MF' => sub {
     subtest 'create CR acc, authorize' => sub {
         my %details = %client_details;
         $details{first_name} = 'first name ID';
-        $details{residence}  = 'id';
+        $details{residence}  = 'za';
         $details{phone}      = '+442072343457';
 
         my $res = $t->await::new_account_real(\%details);
@@ -372,14 +372,12 @@ subtest 'CR client cannot upgrade to MF' => sub {
         $t->await::authorize({authorize => $token});
     };
 
-    subtest 'CR cannot upgrade to MF' => sub {
+    subtest 'CR can upgrade to MF' => sub {
         my %details = (%client_details, %$mf_details);
         delete $details{new_account_real};
-        my $res = $t->await::new_account_maltainvest(\%details);
-
-        is($res->{msg_type},                'new_account_maltainvest');
-        is($res->{error}->{code},           'PermissionDenied', "no MF upgrade for CR");
-        is($res->{new_account_maltainvest}, undef,              'NO account created');
+        my $res     = $t->await::new_account_maltainvest(\%details);
+        my $loginid = $res->{new_account_maltainvest}{client_id};
+        like($loginid, qr/^MF\d+$/, "got MF client $loginid");
     };
 };
 

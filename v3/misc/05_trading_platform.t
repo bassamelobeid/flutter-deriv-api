@@ -346,8 +346,14 @@ subtest 'trading_platform_available_accounts' => sub {
     # indonesia
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
-        residence   => 'id'
+        residence   => 'za'
     });
+    my $user = BOM::User->create(
+        email    => 'tradingplatform_test@binary.com',
+        password => 'test'
+    );
+    $user->add_client($client);
+
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
 
     $t->await::authorize({authorize => $token});
@@ -364,7 +370,9 @@ subtest 'trading_platform_available_accounts' => sub {
             'sub_account_type' => 'standard',
             'requirements'     => {
                 'withdrawal' => ['address_city', 'address_line_1'],
-                'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']}
+                'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']
+            },
+            'linkable_landing_companies' => ['svg'],
         },
         {
             'name'         => 'Deriv (BVI) Ltd',
@@ -377,7 +385,8 @@ subtest 'trading_platform_available_accounts' => sub {
                     'mt5'             => ['fully_authenticated', 'expiration_check'],
                     'tax_information' => ['tax_residence',       'tax_identification_number']}
             },
-            'sub_account_type' => 'standard'
+            'sub_account_type'           => 'standard',
+            'linkable_landing_companies' => ['svg'],
         },
         {
             'sub_account_type' => 'standard',
@@ -386,9 +395,10 @@ subtest 'trading_platform_available_accounts' => sub {
                 'signup'              => ['citizen', 'place_of_birth', 'tax_residence', 'tax_identification_number', 'account_opening_reason'],
                 'after_first_deposit' => {'financial_assessment' => ['financial_information']}
             },
-            'shortcode'   => 'vanuatu',
-            'market_type' => 'financial',
-            'name'        => 'Deriv (V) Ltd'
+            'shortcode'                  => 'vanuatu',
+            'market_type'                => 'financial',
+            'name'                       => 'Deriv (V) Ltd',
+            'linkable_landing_companies' => ['svg'],
         },
         {
             'requirements' => {
@@ -399,20 +409,22 @@ subtest 'trading_platform_available_accounts' => sub {
                 },
                 'signup' => ['phone', 'citizen', 'account_opening_reason']
             },
-            'sub_account_type' => 'stp',
-            'shortcode'        => 'labuan',
-            'market_type'      => 'financial',
-            'name'             => 'Deriv (FX) Ltd'
+            'sub_account_type'           => 'stp',
+            'shortcode'                  => 'labuan',
+            'market_type'                => 'financial',
+            'name'                       => 'Deriv (FX) Ltd',
+            'linkable_landing_companies' => ['svg'],
         },
         {
             'requirements' => {
                 'withdrawal' => ['address_city', 'address_line_1'],
                 'signup'     => ['first_name',   'last_name', 'residence', 'date_of_birth']
             },
-            'sub_account_type' => 'standard',
-            'shortcode'        => 'svg',
-            'market_type'      => 'gaming',
-            'name'             => 'Deriv (SVG) LLC'
+            'sub_account_type'           => 'standard',
+            'shortcode'                  => 'svg',
+            'market_type'                => 'gaming',
+            'name'                       => 'Deriv (SVG) LLC',
+            'linkable_landing_companies' => ['svg'],
         },
         {
             'requirements' => {
@@ -423,24 +435,51 @@ subtest 'trading_platform_available_accounts' => sub {
                 'after_first_deposit' => {'financial_assessment' => ['financial_information', 'trading_experience']},
                 'signup'              => ['phone', 'citizen', 'account_opening_reason']
             },
-            'sub_account_type' => 'standard',
-            'shortcode'        => 'bvi',
-            'market_type'      => 'gaming',
-            'name'             => 'Deriv (BVI) Ltd'
+            'sub_account_type'           => 'standard',
+            'shortcode'                  => 'bvi',
+            'market_type'                => 'gaming',
+            'name'                       => 'Deriv (BVI) Ltd',
+            'linkable_landing_companies' => ['svg'],
+        },
+        {
+            'requirements' => {
+                'compliance' => {
+                    'mt5'             => ['fully_authenticated', 'expiration_check'],
+                },
+                'signup' => [
+                    'salutation',     'citizen',      'tax_residence', 'tax_identification_number',
+                    'first_name',     'last_name',    'date_of_birth', 'residence',
+                    'address_line_1', 'address_city', 'account_opening_reason'
+                ]
+            },
+            'market_type'                => 'financial',
+            'shortcode'                  => 'maltainvest',
+            'name'                       => 'Deriv Investments (Europe) Limited',
+            'sub_account_type'           => 'standard',
+            'linkable_landing_companies' => ['maltainvest'],
         }];
     $resp = $t->await::trading_platform_available_accounts({
         trading_platform_available_accounts => 1,
         platform                            => 'mt5'
     });
 
-    cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for Indonesia');
+    $resp->{trading_platform_available_accounts}->@* = sort { $a->{name} cmp $b->{name} } $resp->{trading_platform_available_accounts}->@*;
+    $expected_resp->@* = sort { $a->{name} cmp $b->{name} } $expected_resp->@*;
+
+    cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for South Africa with CR and MF accounts');
 
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'gb'
+        broker_code => 'MF',
+        residence   => 'at'
     });
-    $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
 
+    $user = BOM::User->create(
+        email    => 'tradingplatform_test1@binary.com',
+        password => 'test'
+    );
+    $user->add_client($client);
+
+    $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read']);
     $t->await::authorize({authorize => $token});
 
     $expected_resp = [{
@@ -452,17 +491,18 @@ subtest 'trading_platform_available_accounts' => sub {
                 ],
                 'compliance' => {'mt5' => ['fully_authenticated', 'expiration_check']}
             },
-            'market_type'      => 'financial',
-            'shortcode'        => 'maltainvest',
-            'name'             => 'Deriv Investments (Europe) Limited',
-            'sub_account_type' => 'standard'
+            'market_type'                => 'financial',
+            'shortcode'                  => 'maltainvest',
+            'name'                       => 'Deriv Investments (Europe) Limited',
+            'sub_account_type'           => 'standard',
+            'linkable_landing_companies' => ['maltainvest'],
         }];
     $resp = $t->await::trading_platform_available_accounts({
         trading_platform_available_accounts => 1,
         platform                            => 'mt5'
     });
 
-    cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for United Kingdom');
+    cmp_deeply($resp->{trading_platform_available_accounts}, $expected_resp, 'response is correct for Austria');
 
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
