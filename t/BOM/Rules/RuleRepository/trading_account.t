@@ -62,10 +62,13 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
         });
 
         $user->add_client($real);
+        $rule_engine = BOM::Rules::Engine->new(client => $real);
+        $params->{loginid} = $real->loginid;
         ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
 
-        $client->residence('jp');
-        $client->save;
+        $real->residence('jp');
+        $real->save;
+
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'TradingAccountNotAllowed',
@@ -79,33 +82,8 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         # Make the real client disabled and try to open a real account
         $params->{account_type} = 'real';
-        $real->status->set('disabled', 'test', 'test');
-
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-            {
-            error_code     => 'RealAccountMissing',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
-            },
-            'Real account missing again';
-
-        $real->status->clear_disabled;
-        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes again';
 
         # Make the real client duplicate_account and try to open a real account
-        $real->status->set('duplicate_account', 'test', 'test');
-
-        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
-            {
-            error_code     => 'RealAccountMissing',
-            message_params => ['Deriv X'],
-            rule           => $rule_name
-            },
-            'Real account missing again';
-
-        $real->status->clear_duplicate_account;
-        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes again';
-
         $params->{market_type} = 'financial';
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {

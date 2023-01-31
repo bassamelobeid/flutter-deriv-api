@@ -128,8 +128,9 @@ rule 'transfers.landing_companies_are_the_same' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        $self->fail('DifferentLandingCompanies')
-            if $context->landing_company({loginid => $args->{loginid_from}}) ne $context->landing_company({loginid => $args->{loginid_to}});
+        my $lc_from = $args->{landing_company_from} // $context->landing_company({loginid => $args->{loginid_from}});
+        my $lc_to   = $args->{landing_company_to}   // $context->landing_company({loginid => $args->{loginid_to}});
+        $self->fail('DifferentLandingCompanies') if $lc_from ne $lc_to;
 
         return 1;
     },

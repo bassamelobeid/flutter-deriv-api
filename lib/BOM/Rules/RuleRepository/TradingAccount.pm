@@ -39,16 +39,12 @@ rule 'trading_account.should_match_landing_company' => {
         die_with_params($self, 'TradingAccountNotAllowed', $args) if $dx_company eq 'none';
 
         my $account_type = $args->{account_type} // '';
-        return 1 if $account_type eq 'demo';
+        return 1 if $account_type eq 'demo' && $context->client($args)->is_virtual();
 
         if ($client->landing_company->short ne $dx_company) {
-            my @clients = $user->clients_for_landing_company($dx_company);
-            ($client) = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
-        }
-
-        unless ($client) {
             die_with_params($self, 'RealAccountMissing', $args)
                 if (scalar($user->clients) == 1 and $context->client($args)->is_virtual());
+            die_with_params($self, 'AccountShouldBeReal',     $args) if $client->is_virtual();
             die_with_params($self, 'FinancialAccountMissing', $args) if $market_type eq 'financial';
             die_with_params($self, 'GamingAccountMissing',    $args);
         }

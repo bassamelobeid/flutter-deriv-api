@@ -1,6 +1,7 @@
 new_trading_account:
   description: Contains rules to be applied on trading platform account opening
   ruleset:
+    - client.not_disabled
     - client.has_currency_set
     - residence.is_signup_allowed
     - trading_account.should_match_landing_company
@@ -24,6 +25,14 @@ trading_account_deposit:
     - transfers.currency_should_match
     - transfers.daily_limit
     - transfers.limits
+    - type: conditional
+      on: account_type
+      rules_per_value:
+        real:
+          - transfers.landing_companies_are_the_same
+        demo:
+          - pass
+    
 trading_account_withdrawal:
   description: Contains rules to be applied on withdrawal from trading platform accounts
   ruleset:
@@ -31,5 +40,12 @@ trading_account_withdrawal:
     - transfers.currency_should_match
     - transfers.daily_limit
     - transfers.limits
+    - type: conditional
+      on: account_type
+      rules_per_value:
+        real:
+          - transfers.landing_companies_are_the_same
+        demo:
+          - pass
 
 

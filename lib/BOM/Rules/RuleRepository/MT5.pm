@@ -83,7 +83,7 @@ rule 'mt5_account.account_poa_status_allowed' => {
             $self->fail($error_message, params => {mt5_status => 'poa_failed'}) if $poa_failed_by_expiry;
         }
 
-        my $poi_status = $client->get_poi_status_jurisdiction($mt5_jurisdiction);
+        my $poi_status = $client->get_poi_status({landing_company => $mt5_jurisdiction});
         $self->fail($error_message, params => {mt5_status => 'poa_pending'}) if $poi_status eq 'verified';
 
         return 1;
@@ -104,7 +104,7 @@ rule 'mt5_account.account_proof_status_allowed' => {
 
         my %proof_check = (
             poi => sub {
-                $client->get_poi_status_jurisdiction(shift);
+                $client->get_poi_status({landing_company => shift});
             },
             poa => sub {
                 $client->get_poa_status();
