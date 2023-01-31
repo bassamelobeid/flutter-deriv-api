@@ -19,6 +19,17 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
+                    "linkable_landing_companies": {
+                        "description": "A list of Deriv landing companies that can work with this account type",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "svg",
+                                "maltainvest"
+                            ]
+                        }
+                    },
                     "market_type": {
                         "description": "The type of market tradable by this account",
                         "type": "string",
