@@ -817,7 +817,8 @@ async sub client_verification {
                             datadog_tags => \@common_datadog_tags,
                         });
 
-                        if ($age_verified = await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write)) {
+                        if ($age_verified = await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido'))
+                        {
                             push @common_datadog_tags, "result:age_verified";
                             DataDog::DogStatsd::Helper::stats_inc('event.onfido.client_verification.result', {tags => [@common_datadog_tags]});
                         }
@@ -1114,7 +1115,7 @@ async sub check_onfido_rules {
                 my $age_verification_due = $poi_name_mismatch || $poi_dob_mismatch;
 
                 if ($age_verification_due && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0) {
-                    if (await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write)) {
+                    if (await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido')) {
                         if ($tags) {
                             DataDog::DogStatsd::Helper::stats_inc(
                                 'event.onfido.client_verification.result',

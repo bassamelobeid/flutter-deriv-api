@@ -2682,16 +2682,16 @@ subtest 'onfido resubmission' => sub {
         request($req);
 
         $test_client->status->setnx('poi_name_mismatch', 'test', 'test');
-        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
+        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido', undef, 'onfido');
         ok !$test_client->status->age_verification, 'Could not set age verification: poi name mismatch';
 
         $test_client->status->clear_poi_name_mismatch;
         $test_client->status->setnx('poi_dob_mismatch', 'test', 'test');
-        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
+        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido', undef, 'onfido');
         ok !$test_client->status->age_verification, 'Could not set age verification: poi dob mismatch';
 
         $test_client->status->clear_poi_dob_mismatch;
-        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
+        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido', undef, 'onfido');
         ok $test_client->status->age_verification, 'Client is age verified';
         is_deeply \@emit_args,
             [

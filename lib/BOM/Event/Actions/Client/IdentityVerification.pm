@@ -290,7 +290,7 @@ async sub idv_verified {
     my $redis_events_write = _redis_events_write();
     await $redis_events_write->connect;
 
-    await BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write);
+    await BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write, 'idv');
 
     $idv_model->update_document_check({
         document_id     => $document->{id},

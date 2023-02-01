@@ -91,10 +91,11 @@ my $redis = _redis_events_write();
 
 subtest 'set_age_verification' => sub {
     my $tests = [{
-            title    => 'Stopped out early when POI name mismatch',
-            email    => 'test1+mismatch@binary.com',
-            provider => 'onfido',
-            scenario => {
+            title      => 'Stopped out early when POI name mismatch',
+            email      => 'test1+mismatch@binary.com',
+            provider   => 'onfido',
+            poi_method => 'onfido',
+            scenario   => {
                 df_deposit_requires_poi => 1,
                 poa_status              => 'none',
                 poi_name_mismatch       => 1,
@@ -107,10 +108,11 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Age verified - for synthetic',
-            email    => 'test1+vrage@binary.com',
-            provider => 'dummy',
-            scenario => {
+            title      => 'Age verified - for synthetic',
+            email      => 'test1+vrage@binary.com',
+            provider   => 'onfido',
+            poi_method => 'onfido',
+            scenario   => {
                 poa_status                         => 'none',
                 poi_name_mismatch                  => 0,
                 require_age_verified_for_synthetic => 1,
@@ -123,10 +125,11 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Age verified - was df deposit locked',
-            email    => 'test1+df+locked@binary.com',
-            provider => 'dummy',
-            scenario => {
+            title      => 'Age verified - was df deposit locked',
+            email      => 'test1+df+locked@binary.com',
+            provider   => 'onfido',
+            poi_method => 'onfido',
+            scenario   => {
                 df_deposit_requires_poi            => 1,
                 poa_status                         => 'none',
                 poi_name_mismatch                  => 0,
@@ -142,10 +145,11 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Age verified - landing company sync',
-            email    => 'test1+lcsync@binary.com',
-            provider => 'dummy',
-            scenario => {
+            title      => 'Age verified - landing company sync',
+            email      => 'test1+lcsync@binary.com',
+            provider   => 'onfido',
+            poi_method => 'onfido',
+            scenario   => {
                 poa_status        => 'none',
                 poi_name_mismatch => 0,
                 allowed_lc_sync   => [qw/maltainvest/]
@@ -158,10 +162,11 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Age verified - was df deposit locked + landing company sync',
-            email    => 'test1+df+locked+lcsync@binary.com',
-            provider => 'dummy',
-            scenario => {
+            title      => 'Age verified - was df deposit locked + landing company sync',
+            email      => 'test1+df+locked+lcsync@binary.com',
+            provider   => 'onfido',
+            poi_method => 'onfido',
+            scenario   => {
                 df_deposit_requires_poi            => 1,
                 poa_status                         => 'none',
                 poi_name_mismatch                  => 0,
@@ -179,10 +184,11 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Do not send POA email if there is no POA to check',
-            email    => 'test1+onfido@binary.com',
-            provider => 'onfido',
-            scenario => {
+            title      => 'Do not send POA email if there is no POA to check',
+            email      => 'test1+onfido@binary.com',
+            provider   => 'onfido',
+            poi_method => 'onfido',
+            scenario   => {
                 poa_status        => 'none',
                 poi_name_mismatch => 0,
             },
@@ -193,10 +199,11 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Do not send POA email if the POA has been rejected',
-            email    => 'test2+onfido@binary.com',
-            provider => 'onfido',
-            scenario => {
+            title      => 'Do not send POA email if the POA has been rejected',
+            email      => 'test2+onfido@binary.com',
+            provider   => 'onfido',
+            poi_method => 'onfido',
+            scenario   => {
                 poa_status        => 'rejected',
                 poi_name_mismatch => 0,
             },
@@ -207,10 +214,11 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Do not send POA email if the POA has been verified',
-            email    => 'test3+smile_identity@binary.com',
-            provider => 'smile_identity',
-            scenario => {
+            title      => 'Do not send POA email if the POA has been verified',
+            email      => 'test3+smile_identity@binary.com',
+            provider   => 'smile_identity',
+            poi_method => 'idv',
+            scenario   => {
                 poa_status        => 'verified',
                 poi_name_mismatch => 0,
             },
@@ -221,10 +229,11 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Send POA email when the POA is pending',
-            email    => 'test4+zaig@binary.com',
-            provider => 'zaig',
-            scenario => {
+            title      => 'Send POA email when the POA is pending',
+            email      => 'test4+zaig@binary.com',
+            provider   => 'zaig',
+            poi_method => 'idv',
+            scenario   => {
                 poa_status        => 'pending',
                 poi_name_mismatch => 0,
             },
@@ -235,10 +244,11 @@ subtest 'set_age_verification' => sub {
             }
         },
         {
-            title    => 'Should call upsert when IDV verified',
-            email    => 'test5+zaig@binary.com',
-            provider => 'zaig',
-            scenario => {
+            title      => 'Should call upsert when IDV verified',
+            email      => 'test5+zaig@binary.com',
+            provider   => 'zaig',
+            poi_method => 'idv',
+            scenario   => {
                 poa_status        => 'none',
                 poi_name_mismatch => 0,
                 is_idv_validated  => 1,
@@ -251,7 +261,7 @@ subtest 'set_age_verification' => sub {
     ];
 
     for my $test ($tests->@*) {
-        my ($title, $email, $provider, $scenario, $side_effects) = @{$test}{qw/title email provider scenario side_effects/};
+        my ($title, $email, $provider, $scenario, $side_effects, $poi_method) = @{$test}{qw/title email provider scenario side_effects poi_method/};
 
         $mocked_poa_status                                          = $scenario->{poa_status};
         $mocked_poi_name_mismatch                                   = $scenario->{poi_name_mismatch};
@@ -312,7 +322,7 @@ subtest 'set_age_verification' => sub {
 
             my $redis_events_write = _redis_events_write();
             $redis_events_write->connect->get;
-            my $res = BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write)->get;
+            my $res = BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write, $poi_method)->get;
 
             my @mailbox = BOM::Test::Email::email_list();
             my $emails  = +{map { $_->{subject} => 1 } @mailbox};
@@ -362,7 +372,7 @@ subtest 'set_age_verification' => sub {
             if ($side_effects->{poa_email}) {
                 ok exists $emails->{'Pending POA document for: ' . $client->loginid}, 'Pending POA email sent';
 
-                BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write)->get;
+                BOM::Event::Actions::Common::set_age_verification($client, $provider, $redis_events_write, $poi_method)->get;
 
                 @mailbox = BOM::Test::Email::email_list();
 

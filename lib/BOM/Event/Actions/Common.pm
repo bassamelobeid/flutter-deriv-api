@@ -30,6 +30,8 @@ use BOM::Event::Actions::P2P;
 use BOM::Platform::Event::Emitter;
 use BOM::Event::Actions::CustomerIO;
 use Brands;
+use LandingCompany::Registry;
+use Carp;
 
 # Templates prefix path
 use constant TEMPLATE_PREFIX_PATH => "/home/git/regentmarkets/bom-events/share/templates/email/";
@@ -61,7 +63,9 @@ Returns C<1> on success, C<undef> otherwise.
 =cut
 
 async sub set_age_verification {
-    my ($client, $provider, $redis) = @_;
+    my ($client, $provider, $redis, $poi_method) = @_;
+
+    croak 'poi_mehod is required' unless $poi_method;
 
     my $reason = "$provider - age verified";
     my $staff  = 'system';
@@ -96,19 +100,20 @@ async sub set_age_verification {
     }
 
     # We should sync age verification between allowed landing companies.
+    # if verification poi method is supported
 
-    my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
+    my @allowed_lc_to_sync;
+    for my $syncable_lc_name ($client->landing_company->allowed_landing_companies_for_age_verification_sync->@*) {
+        my $syncable_lc = LandingCompany::Registry->by_name($syncable_lc_name);
+        next unless any { $_ eq $poi_method } $syncable_lc->allowed_poi_providers->@*;
+        push @allowed_lc_to_sync, $syncable_lc_name;
+    }
+
     # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
+    my $user = $client->user;
     my @clients_to_update =
-        map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
+        map { [$user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
     foreach my $client_to_update (@clients_to_update) {
-
-        # Cheking that destination LC supports verification method
-        if ($client->landing_company->short ne $client_to_update->landing_company->short) {
-            my $status = $client->get_poi_status({landing_company => $client_to_update->landing_company->short});
-            next unless $status =~ /verified|expired/;
-        }
-
         $setter->($client_to_update);
     }
 
