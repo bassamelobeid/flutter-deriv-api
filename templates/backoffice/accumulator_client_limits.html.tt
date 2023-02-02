@@ -1,0 +1,49 @@
+<form id='accumulator_client_limits'>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table>
+    <tr>
+        <td>Max open positions: </td>
+        <td><input type="text" name="max_open_positions" value="[% existing_config.max_open_positions %]" ></input></td>
+    </tr>
+    <tr>
+        <td>Max daily volume: </td>
+        <td><input type="text" name="max_daily_volume" value="[% existing_config.max_daily_volume %]" ></input></td>
+    </tr>
+    <tr>
+        <td><input type="button" class="btn btn--primary" onClick="SaveAccumulatorClientLimits()" value="Update client limits"></td>
+        <td class="save_accumulator_client_limits"></td>
+    </tr>
+</table>
+</form>
+
+
+<script>
+var accumulator_upload_url = "[% accumulator_upload_url | none %]";
+
+function SaveAccumulatorClientLimits(){
+
+    var el = \$('#accumulator_client_limits');
+    var result = el.find('.save_accumulator_client_limits');
+    var max_open_positions = el.find('input[name="max_open_positions"]').val();
+    var max_daily_volume = el.find('input[name="max_daily_volume"]').val();
+
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: accumulator_upload_url,
+        data: {
+            save_accumulator_client_limits: 1,
+            max_open_positions: max_open_positions,
+            max_daily_volume: max_daily_volume
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('saved').css('color', 'var(--green-2)');
+            }
+        }
+    });
+}
+</script>

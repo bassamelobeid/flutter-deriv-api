@@ -19,8 +19,31 @@ BrokerPresentation('Accumulator Risk Management Tool');
 
 my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
 
-Bar("Accumulator Affiliate Commission");
+Bar("Accumulator Risk Profile Definitions");
+my $limit_defs = BOM::Config::quants()->{risk_profile};
+my @currencies = sort keys %{$limit_defs->{no_business}{accumulator}};
+my @stake_rows;
+foreach my $key (sort keys %{$limit_defs}) {
+    push @stake_rows, [$key, @{$limit_defs->{$key}{accumulator}}{@currencies}];
+}
+BOM::Backoffice::Request::template()->process(
+    'backoffice/accumulator_profile_definitions.html.tt',
+    {
+        currencies  => \@currencies,
+        stake_rows  => \@stake_rows,
+        definitions => $limit_defs,
+    }) || die BOM::Backoffice::Request::template()->error;
 
+Bar("Market or Underlying symbol risk profile");
+BOM::Backoffice::Request::template()->process(
+    'backoffice/accumulator_market_and_underlying_risk_profile.html.tt',
+    {
+        accumulator_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_accumulator_config.cgi'),
+        risk_profiles          => [sort keys %{BOM::Config::quants()->{risk_profile}}],
+        %{_get_existing_market_and_symbol_volume_risk_profile()},
+    }) || die BOM::Backoffice::Request::template()->error;
+
+Bar("Accumulator Affiliate Commission");
 BOM::Backoffice::Request::template()->process(
     'backoffice/accumulator_affiliate_commission.html.tt',
     {
@@ -30,7 +53,6 @@ BOM::Backoffice::Request::template()->process(
     }) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Per symbol configuration");
-
 BOM::Backoffice::Request::template()->process(
     'backoffice/accumulator_per_symbol_configuration.html.tt',
     {
@@ -38,6 +60,55 @@ BOM::Backoffice::Request::template()->process(
         existing_config        => _get_existing_accumulator_config(),
         disabled               => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
+
+Bar("Accumulator Client Limits");
+BOM::Backoffice::Request::template()->process(
+    'backoffice/accumulator_client_limits.html.tt',
+    {
+        accumulator_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_accumulator_config.cgi'),
+        existing_config        => _get_existing_accumulator_client_limits_config(),
+        disabled               => $disabled_write,
+    }) || die BOM::Backoffice::Request::template()->error;
+
+sub _get_existing_market_and_symbol_volume_risk_profile {
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    my $markets    = decode_json_utf8($app_config->get('quants.accumulator.risk_profile.market'));
+    my $symbols    = decode_json_utf8($app_config->get('quants.accumulator.risk_profile.symbol'));
+
+    my @market_risk_profiles;
+    my @symbol_risk_profiles;
+
+    foreach my $market (sort keys %{$markets}) {
+        push @market_risk_profiles,
+            {
+            market       => $market,
+            risk_profile => $markets->{$market}};
+    }
+    foreach my $symbol (sort keys %{$symbols}) {
+        push @symbol_risk_profiles,
+            {
+            symbol       => $symbol,
+            risk_profile => $symbols->{$symbol}};
+    }
+
+    my $offerings = LandingCompany::Registry->by_name('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+
+    my @market_risk_profile_default;
+    foreach my $market ($offerings->query({contract_category => 'accumulator'}, ['market'])) {
+        my $market_obj = Finance::Underlying::Market::Registry->instance->get($market);
+        next unless $market_obj;
+        push @market_risk_profile_default,
+            {
+            market       => $market,
+            risk_profile => $market_obj->{risk_profile}};
+    }
+
+    return {
+        market_risk_profile_default => \@market_risk_profile_default,
+        market_risk_profiles        => \@market_risk_profiles,
+        symbol_risk_profiles        => \@symbol_risk_profiles
+    };
+}
 
 sub _get_existing_accumulator_commission_config {
 
@@ -51,8 +122,7 @@ sub _get_existing_accumulator_commission_config {
 
 sub _get_existing_accumulator_config {
 
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-
+    my $app_config        = BOM::Config::Runtime->instance->app_config;
     my @landing_companies = ('svg', 'virtual');
     my $now               = time;
     my $existing          = {};
@@ -79,6 +149,17 @@ sub _get_existing_accumulator_config {
     }
 
     return $existing;
+}
+
+sub _get_existing_accumulator_client_limits_config {
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    return {
+
+        max_open_positions => $app_config->get('quants.accumulator.client_limits.max_open_positions'),
+        max_daily_volume   => $app_config->get('quants.accumulator.client_limits.max_daily_volume')};
+
 }
 
 code_exit_BO();

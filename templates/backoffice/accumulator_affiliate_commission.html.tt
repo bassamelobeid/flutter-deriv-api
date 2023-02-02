@@ -7,7 +7,7 @@
     </tr>
     <tr>
         <td>Non-Financial Product Commission: </td>
-        <td><input type="text" name="non_financial_commission" value="[% existing_config.non_financial %]" name="non_financial"></input></td>
+        <td><input type="text" name="non_financial_commission" value="[% existing_config.non_financial %]" ></input></td>
     </tr>
     <tr>
         <td><input type="button" class="btn btn--primary" onClick="SaveAccumulatorAffiliateCommission()" value="Update Commission"></td>
