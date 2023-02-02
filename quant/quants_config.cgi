@@ -85,6 +85,12 @@ my $market_group_data = _format_output($market_ref);
 my @existing_market_groups =
     map { {key => Finance::Underlying::Market::Registry->get($_)->display_name, list => $market_group_data->{$_}} } keys %$market_group_data;
 
+my @underlying_symbols = ();
+foreach my $values (@existing_market_groups) {
+    my @split_sub_array = split(", ", $values->{list});
+    push @underlying_symbols, @split_sub_array;
+}
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/quants_config_form.html.tt',
     {
@@ -93,6 +99,7 @@ BOM::Backoffice::Request::template()->process(
         existing_pending_market_group => \%lc_pending_market_group,
         existing_contract_groups      => \@existing_contract_groups,
         existing_market_groups        => \@existing_market_groups,
+        underlying_symbols            => $json->encode(\@underlying_symbols),
         data                          => {
             markets => $json->encode([
                     (map { {value => $_, display_value => Finance::Underlying::Market::Registry->get($_)->display_name} } @$markets),

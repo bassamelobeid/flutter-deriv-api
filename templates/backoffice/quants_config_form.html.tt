@@ -129,6 +129,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
 <script>
 
     var upload_url = "[% upload_url %]";
+    var underlying_symbols = JSON.parse('[% underlying_symbols | none %]');
 
     function deleteMarketGroup(table_id, row_id) {
         var el = \$('table#'+table_id).find('tr#'+row_id);
@@ -388,6 +389,13 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
             el.find('input[name="limit_dates"]').val('');
 
             var result = el.find("span.save_result");
+
+            // validate underlying symbol
+            if(!underlying_symbols.includes(underlying_symbol) && underlying_symbol !== ''){
+                result.css('color', 'var(--color-red)');
+                result.text('Invalid underlying symbol');
+                return;
+            }
 
             //Comment is required
             if(comment === ''){
