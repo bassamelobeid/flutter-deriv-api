@@ -4955,7 +4955,7 @@ sub _advert_details {
         my $payment_method_names = $advert->{available_payment_method_names};
         $payment_method_names = $advert->{payment_method_names} unless @$payment_method_names;
 
-        if (@$payment_method_names) {
+        if ($payment_method_names and @$payment_method_names) {
             $payment_method_defs //= $self->p2p_payment_methods();
             $result->{payment_method_names} = [
                 sort map { $payment_method_defs->{$_}{display_name} }
@@ -5801,7 +5801,7 @@ sub filter_ad_payment_methods {
 
     my @my_pms         = keys $self->p2p_payment_methods($self->residence)->%*;
     my @advertiser_pms = keys $self->p2p_payment_methods($ad->{country})->%*;
-    my @ad_pms         = $ad->{payment_method_names}->@*;
+    my @ad_pms         = ($ad->{payment_method_names} // [])->@*;
     my @valid_pms      = intersect(@my_pms, @advertiser_pms);
     $ad->{payment_method_names} = [intersect(@ad_pms, @valid_pms)];
 
