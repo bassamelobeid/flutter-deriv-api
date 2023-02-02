@@ -8,6 +8,7 @@ use BOM::MyAffiliates::ActivityReporter;
 use BOM::MyAffiliates::TurnoverReporter;
 use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::MyAffiliates::MultiplierReporter;
+use BOM::MyAffiliates::AccumulatorReporter;
 use BOM::MyAffiliates::LookbackReporter;
 use BOM::Config::Runtime;
 
@@ -91,6 +92,12 @@ sub __send_file {
         $file_path = $reporter->output_file_path();
     } elsif ($type eq 'multiplier_report') {
         my $reporter = BOM::MyAffiliates::MultiplierReporter->new(
+            brand           => Brands->new(name => $c->stash('brand')),
+            processing_date => Date::Utility->new($date));
+        $file_name = $reporter->output_file_name();
+        $file_path = $reporter->output_file_path();
+    } elsif ($type eq 'accumulator_report') {
+        my $reporter = BOM::MyAffiliates::AccumulatorReporter->new(
             brand           => Brands->new(name => $c->stash('brand')),
             processing_date => Date::Utility->new($date));
         $file_name = $reporter->output_file_name();
