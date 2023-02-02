@@ -3616,4 +3616,56 @@ sub derivx_account_deactivated {
             account    => $args->{account}});
 }
 
+=head2 payops_event_email
+
+Send email to notifiying though payops IT event.
+Takes a hashref with the following named parameters
+
+=over 4
+
+=item * C<loginid>    - loginid
+
+=item * C<subject>    - subject of email
+
+=item * C<template>   - template of email
+
+=item * C<properties> - properties of email
+
+=item * C<recipient>  - email address 
+
+=back
+
+=cut
+
+async sub payops_event_email {
+    my $args = shift;
+
+    my $subject = $args->{subject};
+    my $loginid = $args->{loginid}
+        or die 'No client loginid found';
+    my $event_name = $args->{event_name};
+    die 'No event specified' unless $event_name;
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+    die 'No client here' unless $client;
+    my $template   = $args->{template};
+    my $properties = $args->{properties};
+    my $contents   = $args->{contents};
+
+    my $recipient = $client->email;
+    die 'No client email found' unless $recipient;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => $event_name,
+        properties => {
+            properties     => $properties,
+            subject        => $subject,
+            email          => $recipient,
+            contents       => $contents,
+            email_template => $template,
+        },
+        loginid => $loginid
+    );
+}
+
 1;

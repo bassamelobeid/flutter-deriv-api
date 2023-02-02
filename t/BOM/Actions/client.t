@@ -4948,4 +4948,59 @@ subtest 'account disabled event for the sideoffice' => sub {
     ok !$client->status->disabled, 'Disabled status was not set if there is contracts are open';
 };
 
+subtest 'payops event email' => sub {
+    my $handler    = BOM::Event::Process->new(category => 'track')->actions->{payops_event_email};
+    my $track_mock = Test::MockModule->new('BOM::Event::Services::Track');
+    my $track_properties;
+
+    $track_mock->mock(
+        'track_event',
+        sub {
+            $track_properties = +{@_};
+
+            return Future->done;
+        });
+
+    ## Test client loginid
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'ingrid@test.com',
+    });
+
+    $client->save;
+
+    $track_properties = undef;
+
+    $handler->({
+            event_name => 'payops_event_email',
+            subject    => 'testing with client login id',
+            loginid    => $client->loginid,
+            template   => 'test',
+            contents   => 'Testing CR',
+            properties => {
+                test => 1,
+                abc  => 'abc',
+            },
+        })->get;
+
+    cmp_deeply $track_properties,
+        +{
+        event      => 'payops_event_email',
+        properties => {
+            email          => 'ingrid@test.com',
+            email_template => 'test',
+            subject        => 'testing with client login id',
+            contents       => 'Testing CR',
+            properties     => {
+                test => 1,
+                abc  => 'abc'
+            }
+        },
+        loginid => $client->loginid,
+        },
+        'Expected track event triggered';
+
+};
+
 done_testing();

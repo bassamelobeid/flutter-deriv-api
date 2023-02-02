@@ -160,6 +160,7 @@ my %EVENT_PROPERTIES = (
     p2p_order_confirm_verify    => [qw(verification_url order_id order_amount order_currency buyer_name code live_chat_url password_reset_url)],
     poi_poa_resubmission        =>
         [qw(first_name poi_reason poi_title poi_subtitle footnote poi_layout poa_reason poa_title poa_subtitle poa_layout title is_eu)],
+    payops_event_email => [qw(contents subject loginid email_template properties)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.

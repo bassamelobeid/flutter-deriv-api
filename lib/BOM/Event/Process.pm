@@ -143,6 +143,7 @@ my $action_mapping = {
         trading_platform_investor_password_change_failed => \&BOM::Event::Actions::Client::trading_platform_investor_password_change_failed,
         verify_change_email                              => \&BOM::Event::Actions::Client::verify_change_email,
         derivx_account_deactivated                       => \&BOM::Event::Actions::Client::derivx_account_deactivated,
+        payops_event_email                               => \&BOM::Event::Actions::Client::payops_event_email,
         mt5_inactive_account_closed                      => \&BOM::Event::Actions::MT5::mt5_inactive_account_closed,
         mt5_inactive_notification                        => \&BOM::Event::Actions::MT5::mt5_inactive_notification,
         mt5_change_color                                 => \&BOM::Event::Actions::MT5::mt5_change_color,
