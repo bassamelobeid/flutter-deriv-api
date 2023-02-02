@@ -78,6 +78,29 @@ sub get_multiplier_commission {
         });
 }
 
+=item get_accumulator_commission
+
+get clients' accumulator contracts trading activity for particular date for myaffiliates reports.
+
+=cut
+
+sub get_accumulator_commission {
+    my ($self, $args) = @_;
+    my $dbic = $self->db->dbic;
+
+    my $sql = q{
+        SELECT * FROM get_myaffiliate_clients_accumulator_trading_activity($1, $2, $3)
+    };
+
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($args->{date}, $args->{include_apps}, $args->{exclude_apps});
+
+            return $sth->fetchall_arrayref;
+        });
+}
+
 =item get_lookback_activity
 
 get clients' lookback contracts trading activity for particular date for myaffiliates reports.
