@@ -903,10 +903,10 @@ async_rpc "mt5_new_account",
         $args->{rights} = USER_RIGHT_TRADE_DISABLED;
     }
 
-    # disable trading for payment agents
+    # disable trading for payment agents except for demo account
     if (defined $client->payment_agent && $client->payment_agent->status eq 'authorized') {
-        $args->{rights} =
-            USER_RIGHT_ENABLED | USER_RIGHT_TRAILING | USER_RIGHT_EXPERT | USER_RIGHT_API | USER_RIGHT_REPORTS | USER_RIGHT_TRADE_DISABLED;
+        $args->{rights} = USER_RIGHT_ENABLED | USER_RIGHT_TRAILING | USER_RIGHT_EXPERT | USER_RIGHT_API | USER_RIGHT_REPORTS;
+        $args->{rights} = $args->{rights} | USER_RIGHT_TRADE_DISABLED unless $account_type eq 'demo';
     }
 
     return get_mt5_logins($client, $account_type)->then(
