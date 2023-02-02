@@ -135,7 +135,7 @@ if (my $id = $input{order_id}) {
             loginid      => $order->{client_loginid},
             db_operation => 'backoffice_replica'
         });
-        my $pm_defs = $client->p2p_payment_methods(all => 1);
+        my $pm_defs = $client->p2p_payment_methods();
         my $json    = JSON::MaybeXS->new;
 
         my $methods =
