@@ -97,7 +97,7 @@ jobs:
         name: unit tests
     - store_test_results:
         path: /var/tmp/test-output
-  syntax_diff:
+  syntax_diff_unit:
     <<: *6
     steps:
     - *1
@@ -108,22 +108,6 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make syntax_diff
         name: Code structure and syntax
-    - store_test_results:
-        path: /var/tmp/test-output
-  schemas_unit:
-    <<: *6
-    steps:
-    - *1
-    - *2
-    - *3
-    - *4
-    - *check_services
-    - run:
-        <<: *5
-        command: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make json_schemas
-        name: Run json_schemas tests
     - run:
         command: make unit
         name: unit tests
@@ -198,21 +182,21 @@ workflows:
   build-workflow:
     jobs:
     - check_git_message
-    - syntax_diff:
+    - syntax_diff_unit:
         requires:
         - check_git_message
         context: perl
-    - schemas_unit:
+    - schema:
         requires:
-        - syntax_diff
+        - syntax_diff_unit
         context: perl
     - core1:
         requires:
-        - syntax_diff
+        - syntax_diff_unit
         context: perl
     - core2:
         requires:
-        - syntax_diff
+        - syntax_diff_unit
         context: perl
   daily:
     jobs:
