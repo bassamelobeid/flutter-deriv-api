@@ -646,6 +646,14 @@ sub calculate_limits {
                 'symbols'  => [$self->contract->underlying->symbol],
                 'limit'    => convert_currency($vanilla_limits->{max_daily_volume}, 'USD', $currency)};
         }
+
+    }
+    # accumulator specific client limits
+    if ($self->contract->category_code eq 'accumulator') {
+        my $max_open_positions = $app_config->get('quants.accumulator.client_limits.max_open_positions');
+        my $max_daily_volume   = decode_json($app_config->get('quants.accumulator.client_limits.max_daily_volume'));
+        $limits{accumulator_client_limits}->{max_open_positions} = $max_open_positions;
+        $limits{accumulator_client_limits}->{max_daily_volume}   = $max_daily_volume->{$contract->currency};
     }
 
     defined($lim = $client->get_limit_for_daily_losses)
@@ -2109,7 +2117,22 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -mesg              => 'Client contract profit limit exceeded',
         -message_to_client => BOM::Platform::Context::localize('Maximum daily profit limit exceeded for this contract.'),
     ),
-
+    BI028 => Error::Base->cuss(
+        -quiet             => 1,
+        -type              => 'ClientMaxOpenPositionReachedForAccumulatorContracts',
+        -mesg              => 'Client max open position limit reached for accumulator contracts',
+        -message_to_client => BOM::Platform::Context::localize(
+            'Maximum open positions exceeded for this contract type. Please close some of your positions and try again.',
+        ),
+    ),
+    BI029 => Error::Base->cuss(
+        -quiet             => 1,
+        -type              => 'ClientMaxDailyVolumeReachedForAccumulatorContracts',
+        -mesg              => 'client max daily volume limit reached for accumulator contracts',
+        -message_to_client => BOM::Platform::Context::localize(
+            'Maximum daily volume exceeded for this contract type. Please close some of your positions and try again.',
+        ),
+    ),
 );
 
 sub _recover {

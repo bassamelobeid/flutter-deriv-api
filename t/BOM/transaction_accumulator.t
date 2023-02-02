@@ -136,6 +136,8 @@ SQL
 
 my $cl;
 my $acc_usd;
+my $app_config = BOM::Config::Runtime->instance->app_config;
+$app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
 ####################################################################
 # real tests begin here
@@ -492,7 +494,7 @@ subtest 'buy accumulator on crash/boom with VRTC' => sub {
     my $vr = create_client('VRTC');
     top_up $vr, 'USD', 5000;
 
-    $args->{underlying} = "CRASH300N";
+    $args->{underlying} = "CRASH500";
     my $contract = produce_contract($args);
 
     my $txn = BOM::Transaction->new({
@@ -512,6 +514,10 @@ subtest 'buy accumulator on crash/boom with VRTC' => sub {
 };
 
 subtest 'sell failure due to update' => sub {
+
+    my $mocked_limits = Test::MockModule->new('BOM::Transaction');
+    $mocked_limits->mock('calculate_limits', sub { return {accumulator_client_limits => {max_open_positions => 10}} });
+
     my $contract = produce_contract($args);
 
     my $txn = BOM::Transaction->new({

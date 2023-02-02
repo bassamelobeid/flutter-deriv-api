@@ -220,20 +220,21 @@ sub _validate_accumulator_update_parameter {
         };
     }
 
-    if ($order_value <= $contract->pnl) {
-        return {
-            code              => 'TakeProfitTooLow',
-            message_to_client => localize($ERROR_MAPPING->{TakeProfitTooLow}, $contract->pnl),
-        };
-    }
-
     if (
         my $error = $contract->validate_take_profit({
                 'amount' => $order_value,
                 'date'   => $order_date
             }))
     {
+        $error->{message_to_client} = localize($error->{message_to_client}->[0], $error->{message_to_client}->[1]);
         return $error;
+    }
+
+    if ($order_value <= $contract->pnl) {
+        return {
+            code              => 'TakeProfitTooLow',
+            message_to_client => localize($ERROR_MAPPING->{TakeProfitTooLow}, $contract->pnl),
+        };
     }
 
     $self->$order_name({
