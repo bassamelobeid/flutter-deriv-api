@@ -46,6 +46,15 @@ sub BUILD {
         );
     }
 
+    if ($self->pricing_new and $self->take_profit) {
+        if ($self->take_profit->{amount} < 0) {
+            BOM::Product::Exception->throw(
+                error_code => 'NegativeTakeProfit',
+                details    => {field => 'take_profit'},
+            );
+        }
+    }
+
     my $acceptable_growth_rate = $self->symbol_config->{growth_rate};
     unless (any { $_ == $self->growth_rate } @$acceptable_growth_rate) {
         BOM::Product::Exception->throw(
@@ -55,15 +64,23 @@ sub BUILD {
         );
     }
 
-    my $max_stake =
-        min(maximum_stake_limit($self->currency, $self->landing_company, $self->underlying->market->name, $self->category->code), $self->max_payout);
-    if ($self->_user_input_stake > $max_stake) {
-        BOM::Product::Exception->throw(
-            error_code => 'StakeLimitExceeded',
-            error_args => [financialrounding('price', $self->currency, $max_stake)],
-            details    => {field => 'stake'},
-        );
+    if ($self->pricing_new and $self->_user_input_stake > $self->max_stake) {
+        if ($self->max_stake) {
+            BOM::Product::Exception->throw(
+                error_code => 'StakeLimitExceeded',
+                error_args => [financialrounding('price', $self->currency, $self->max_stake)],
+                details    => {field => 'stake'},
+            );
+        } else {
+            my $display_name = $self->underlying->display_name;
+            BOM::Product::Exception->throw(
+                error_code => 'TradingAccumulatorIsDisabled',
+                error_args => [$display_name],
+                details    => {field => 'basis'},
+            );
+        }
     }
+
 }
 
 =head2 growth_rate
@@ -221,12 +238,19 @@ number of ticks recieved after entry_tick
 
 profit and loss of the contract
 
-=cut 
+=cut
 
-has [qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry pnl barrier_pip_size)] => (
+=head2 max_stake
+
+maximum allowable stake to buy a contract
+
+=cut
+
+has [qw(max_duration duration max_payout take_profit tick_count tick_size_barrier basis_spot tick_count_after_entry pnl max_stake barrier_pip_size)]
+    => (
     is         => 'ro',
     lazy_build => 1,
-);
+    );
 
 =head2 _build_max_duration
 
@@ -475,6 +499,34 @@ sub _build_pnl {
     return financialrounding('price', $self->currency, $self->bid_price - $self->_user_input_stake);
 }
 
+=head2 _build_max_stake
+
+calculate maximum allowable stake to buy a contract
+
+=cut
+
+sub _build_max_stake {
+    my $self = shift;
+
+    my $per_symbol_risk_profile = decode_json($self->app_config->get('quants.accumulator.risk_profile.symbol'));
+    my $per_market_risk_profile = decode_json($self->app_config->get('quants.accumulator.risk_profile.market'));
+
+    my $risk_profile;
+    if ($per_symbol_risk_profile->{$self->underlying->symbol}) {
+        $risk_profile = $per_symbol_risk_profile->{$self->underlying->symbol};
+    } elsif ($per_market_risk_profile->{$self->market->name}) {
+        $risk_profile = $per_market_risk_profile->{$self->market->name};
+    } else {
+        $risk_profile = $self->market->{risk_profile};
+    }
+
+    my $default_max_stake = maximum_stake_limit($self->currency, $self->landing_company, $self->market->name, $self->category->code);
+    my $limit_definitions = BOM::Config::quants()->{risk_profile};
+
+    # maximum stake should not be greater that maximum payout
+    return min($default_max_stake, $limit_definitions->{$risk_profile}{accumulator}{$self->currency}, $self->max_payout);
+}
+
 override 'shortcode' => sub {
     my $self = shift;
 
@@ -638,8 +690,7 @@ it should be 0 < amount <= max_take_profit
 sub validate_take_profit {
     my $self = shift;
     #take_profit will be an argument if we are validating contract update paramters
-    my $take_profit = shift // $self->take_profit;
-
+    my $take_profit = $self->pricing_new ? $self->take_profit : shift;
     #if there is no take profit order it should be valid
     # amount is undef if we want to cancel and it should always be valid
     return unless ($take_profit and defined $take_profit->{amount});
@@ -647,12 +698,12 @@ sub validate_take_profit {
     if (my $decimal_error = _validate_decimal($take_profit->{amount}, $self->currency)) {
         return $decimal_error;
     }
-
     if ($take_profit->{amount} <= 0) {
         return {
             message           => 'take profit too low',
             message_to_client => [$ERROR_MAPPING->{TakeProfitTooLow}, financialrounding('price', $self->currency, 0)],
             details           => {field => 'take_profit'},
+            code              => 'TakeProfitTooLow'
         };
     }
 
@@ -662,6 +713,7 @@ sub validate_take_profit {
             message           => 'take profit too high',
             message_to_client => [$ERROR_MAPPING->{TakeProfitTooHigh}, financialrounding('price', $self->currency, $max_take_profit)],
             details           => {field => 'take_profit'},
+            code              => 'TakeProfitTooHigh'
         };
     }
 
@@ -699,10 +751,7 @@ all validation methods needed for accumulator
 sub _validation_methods {
     my $self = shift;
 
-    my @validation_methods = qw(_validate_offerings
-        _validate_input_parameters
-        _validate_feed
-        validate_take_profit);
+    my @validation_methods = qw(_validate_offerings _validate_input_parameters _validate_feed validate_take_profit);
     push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
 
     return \@validation_methods;

@@ -295,11 +295,19 @@ subtest 'minmum stake' => sub {
 };
 
 subtest 'maximum stake' => sub {
-    $args->{amount} = 1001;
+    $args->{amount}    = 1000;
+    $args->{max_stake} = 500;
 
     my $error = exception { produce_contract($args) };
-    is $error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'message - Please enter a take profit amount that\'s higher than [_1].';
-    is $error->message_to_client->[1], '1000.00';
+    is $error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'maximum stake limit';
+    is $error->message_to_client->[1], '500.00';
+
+    $args->{max_stake} = 0;
+    $error = exception { produce_contract($args) };
+    is $error->message_to_client->[0], 'Trading accumulator options on [_1] is disabled.', 'maximum stake limit in case of no_business risk profile';
+    is $error->message_to_client->[1], 'Volatility 100 Index';
+
+    delete $args->{max_stake};
 };
 
 subtest 'take_profit' => sub {
