@@ -378,6 +378,21 @@ fmb_multiplier_synthetic_with_dc:
     payout_price: 26.49
     cancellation_price: 2
 
+fmb_accumulator:
+  class_name: 'BOM::Database::Model::FinancialMarketBet::Accumulator'
+  data:
+    __MUST_SELL__: 0
+    __SELL_TIME__:
+    __CREDIT_AMOUNT__: 5000
+    account_id: __DUMMY__
+    underlying_symbol: R_10
+    remark: 'accumulator'
+    purchase_time: '2020-09-14 08:00:00'
+    transaction_time: '2020-09-14 08:00:00'
+    start_time: '2020-09-14 08:00:00'
+    bet_class: accumulator
+    bet_type: ACCU
+
 fmb_lookback_option:
   class_name: 'BOM::Database::Model::FinancialMarketBet::LookbackOption'
   data:
