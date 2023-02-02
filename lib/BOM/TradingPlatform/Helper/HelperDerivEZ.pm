@@ -136,6 +136,10 @@ Return future fail for any failed validation
 sub validate_new_account_params {
     my (%args) = @_;
 
+    if ($args{company} eq 'none') {
+        return 'DerivezNotAllowed';
+    }
+
     return 'InvalidAccountType' if (not $args{account_type} or $args{account_type} !~ /^demo|real$/);
     return 'InvalidMarketType'  if (not $args{market_type}  or $args{market_type}  !~ /^all$/);
     return 'InvalidPlatform'    if $args{platform} ne 'derivez';

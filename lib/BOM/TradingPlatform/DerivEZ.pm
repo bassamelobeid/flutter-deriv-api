@@ -123,6 +123,12 @@ sub new_account {
         }
     }
 
+    # Validate if the client's country support derivez account creation
+    my $all_company_landing_company = get_derivez_landing_company($client);
+    unless ($all_company_landing_company) {
+        return create_error('DerivezNotAllowed');
+    }
+
     # Validate if currency is provided as params
     my $default_currency   = LandingCompany::Registry->by_name($landing_company_short)->get_default_currency($client->residence);
     my $available          = $client->landing_company->available_mt5_currency_group();
