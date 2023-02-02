@@ -1051,12 +1051,12 @@ quants:
             financial:
               description: "Financial contracts accumulator affiliate commission"
               isa: Num
-              default: 0.04
+              default: 0.4
               global: 1
             non_financial:
               description: "Non-financial accumulator contracts affiliate commission"
               isa: Num
-              default: 0.04
+              default: 0.4
               global: 1
     multiplier_affiliate_commission:
       description: "Affiliate commission for multiplier contracts"
