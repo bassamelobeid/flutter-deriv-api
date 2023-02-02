@@ -457,12 +457,18 @@ sub get_mt5_transfer_details {
     my $response;
     # deposit to client account if amount is positive
     if ($txn->{amount} > 0) {
-        $response->{to_login}   = $client->loginid;
-        $response->{from_login} = 'MTR' . $details->{mt5_account};
+        $response->{to_login} = $client->loginid;
+
+        # We need to handle derivez transfer details here since we still using mt5_transfer for derivez
+        $response->{from_login} = 'MTR' . $details->{mt5_account}     if $details->{mt5_account};
+        $response->{from_login} = 'EZR' . $details->{derivez_account} if $details->{derivez_account};
     } else {
         # withdraw from client account
         $response->{from_login} = $client->loginid;
-        $response->{to_login}   = 'MTR' . $details->{mt5_account};
+
+        # We need to handle derivez transfer details here since we still using mt5_transfer for derivez
+        $response->{to_login} = 'MTR' . $details->{mt5_account}     if $details->{mt5_account};
+        $response->{to_login} = 'EZR' . $details->{derivez_account} if $details->{derivez_account};
     }
 
     return $response;
