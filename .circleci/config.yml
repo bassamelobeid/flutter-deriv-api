@@ -67,13 +67,8 @@ jobs:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          # echo something to prevent circleci from thinking test is dead
-          for i in $(seq 1 12)
-            do
-            echo -n "."
-            sleep 300
-            done &
           make test
+        no_output_timeout: 20m
         name: core tests
     - run:
         command: make unit
@@ -94,13 +89,8 @@ jobs:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          # echo something to prevent circleci from thinking test is dead
-          for i in $(seq 1 12)
-            do
-            echo -n "."
-            sleep 300
-            done &
           make test
+        no_output_timeout: 20m
         name: core tests
     - store_test_results:
         path: /var/tmp/test-output
