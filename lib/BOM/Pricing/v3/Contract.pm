@@ -867,6 +867,10 @@ sub _build_bid_response {
         }
     }
 
+    if ($contract->category_code eq 'vanilla') {
+        $response->{number_of_contracts} = $contract->number_of_contracts;
+    }
+
     if (    $contract->exit_tick
         and $contract->is_valid_exit_tick
         and $contract->is_after_settlement)
