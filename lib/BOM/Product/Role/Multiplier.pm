@@ -464,7 +464,7 @@ override '_build_bid_price' => sub {
     return $self->cancel_price if $self->is_cancelled;
     return $self->sell_price   if $self->is_sold;
     return $self->value        if $self->is_expired;
-    return $self->_user_input_stake + $self->current_pnl();
+    return max(0, $self->_user_input_stake + $self->current_pnl());
 };
 
 override '_build_ask_price' => sub {
