@@ -449,8 +449,9 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
                 },
                 success: function(data) {
                     var config = \$.parseJSON(data);
-                    if (config.error) {
-                        result.text(config.error).css('color', 'var(--color-red)');
+                    var error = (typeof config[0] !== 'undefined') ? config[0].error : config.error;
+                    if (error) {
+                        result.text(error).css('color', 'var(--color-red)');
                     } else {
                         result.text('saved').css('color', 'var(--color-green)');
                         \$.each(config, function (index, item) {

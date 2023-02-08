@@ -30,7 +30,10 @@ if (request()->param('save_limit')) {
     my %args = map { $_ => request()->param($_) }
         qw(market new_market expiry_type contract_group underlying_symbol landing_company barrier_type limit_type limit_amount comment start_time end_time limit_dates);
 
-    if ($args{start_time} && Date::Utility->new("2000-01-01 " . $args{start_time})->is_after(Date::Utility->new("2000-01-01 " . $args{end_time}))) {
+    if (   $args{start_time}
+        && !_is_date_time_together($args{start_time})
+        && Date::Utility->new("2000-01-01 " . $args{start_time})->is_after(Date::Utility->new("2000-01-01 " . $args{end_time})))
+    {
         print $json->encode({error => "`start_time` should be less than `end_time`."});
         return;
     }
@@ -38,6 +41,7 @@ if (request()->param('save_limit')) {
     my @output_array;
     my @limit_dates_array = ('none');
     @limit_dates_array = split ', ', $args{limit_dates} if $args{limit_dates};
+    delete $args{limit_dates};
 
     for my $limit_date (@limit_dates_array) {
         my $args_c = dclone(\%args);
@@ -284,7 +288,6 @@ sub _is_limit_date_valid {
     my ($limit_date, $start_time) = @_;
 
     try {
-        my $timecheck = sprintf("%s %s", $limit_date, $start_time);
         return 0 unless Date::Utility->new(sprintf("%s %s", $limit_date, $start_time))->is_after(Date::Utility->new);
         return 1;
     } catch {
@@ -294,3 +297,12 @@ sub _is_limit_date_valid {
     return 0;
 }
 
+sub _is_date_time_together {
+    my ($start_time) = @_;
+
+    if ($start_time =~ m/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/) {
+        return 1;
+    }
+
+    return 0;
+}
