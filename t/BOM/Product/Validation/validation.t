@@ -1243,9 +1243,9 @@ subtest 'sell back validation for volatility indices' => sub {
     });
 
     foreach my $contract_type (qw(CALLE PUTE CALL PUT ONETOUCH NOTOUCH)) {
-        # 1HZ200V & 1HZ300V only has multipliers. So, skipping it here
+        # 1HZ200V & 1HZ300V & 1H250V & 1H150V only has multipliers. So, skipping it here
         foreach my $symbol (
-            grep { $_ !~ /^1HZ(?:2|3)00V$/ } $o->query({
+            grep { $_ !~ /^1HZ(?:20|30|25|15)0V$/ } $o->query({
                     market    => 'synthetic_index',
                     submarket => 'random_index'
                 },

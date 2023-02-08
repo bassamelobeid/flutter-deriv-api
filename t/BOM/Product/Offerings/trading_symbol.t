@@ -34,7 +34,7 @@ subtest 'error check' => sub {
         my $res = get_symbols();
         ok !$res->{error},  'no error';
         ok $res->{symbols}, 'returns symbol list';
-        is $res->{symbols}->@*, 88, '88 active symbols';
+        is $res->{symbols}->@*, 90, '90 active symbols';
     }
     'throws an error when landing company is not provided';
 
@@ -75,39 +75,39 @@ subtest 'with invalid app id - 123' => sub {
         my $lc           = 'virtual';
         my $app_id       = 123;                                               # this will go to default app id offerings
         my %special_case = (
-            'at' => 28,
+            'at' => 30,
             'au' => 19,
             'be' => 0,
-            'bg' => 28,
+            'bg' => 30,
             'cn' => 86,
-            'cy' => 28,
-            'cz' => 28,
-            'de' => 28,
-            'dk' => 28,
-            'ee' => 28,
-            'es' => 28,
-            'fi' => 28,
-            'fr' => 28,
+            'cy' => 30,
+            'cz' => 30,
+            'de' => 30,
+            'dk' => 30,
+            'ee' => 30,
+            'es' => 30,
+            'fi' => 30,
+            'fr' => 30,
             'gb' => 14,
-            'gr' => 28,
-            'hr' => 28,
-            'hu' => 28,
-            'ie' => 28,
+            'gr' => 30,
+            'hr' => 30,
+            'hu' => 30,
+            'ie' => 30,
             'im' => 0,
-            'it' => 28,
+            'it' => 30,
             'jp' => 24,
-            'lt' => 28,
-            'lu' => 28,
-            'lv' => 28,
-            'nl' => 28,
+            'lt' => 30,
+            'lu' => 30,
+            'lv' => 30,
+            'nl' => 30,
             'no' => 24,
-            'pl' => 28,
-            'pt' => 28,
-            'ro' => 28,
-            'se' => 28,
+            'pl' => 30,
+            'pt' => 30,
+            'ro' => 30,
+            'se' => 30,
             'sg' => 52,
-            'si' => 28,
-            'sk' => 28,
+            'si' => 30,
+            'sk' => 30,
             'tw' => 86,
         );
         foreach my $code (keys $countries->%*) {
@@ -116,7 +116,7 @@ subtest 'with invalid app id - 123' => sub {
                 app_id               => $app_id,
                 country_code         => $code,
             });
-            my $expected = $special_case{$code} // 88;
+            my $expected = $special_case{$code} // 90;
             ok $res->{symbols}->@* == $expected, " correct active symbols for $code, got " . scalar($res->{symbols}->@*) . " expected $expected";
         }
     };
@@ -156,7 +156,7 @@ subtest 'with invalid app id - 123' => sub {
                     app_id               => $app_id,
                     country_code         => $code,
                 });
-                my $expected = $special_case{$code} // 28;
+                my $expected = $special_case{$code} // 30;
                 ok $res->{symbols}->@* == $expected, " correct active symbols for $code, got " . scalar($res->{symbols}->@*) . " expected $expected";
             }
         }
@@ -167,18 +167,18 @@ subtest 'trading symbol by app id' => sub {
     subtest 'deriv' => sub {
         my $deriv                 = Brands->new(name => 'deriv');
         my %expected_symbol_count = (
-            30767 => 83,
+            30767 => 85,
             30768 => 69,
-            11780 => 83,
+            11780 => 85,
             1408  => 0,
-            16303 => 83,
-            16929 => 83,
-            19111 => 78,
-            19112 => 78,
+            16303 => 85,
+            16929 => 85,
+            19111 => 80,
+            19112 => 80,
             22168 => 69,
-            23789 => 49,
+            23789 => 51,
             29864 => 69,
-            1411  => 83,
+            1411  => 85,
             27315 => 69,
             31254 => 0,
             29808 => 0,
