@@ -138,6 +138,28 @@ maltainvest:
       3: 0
       4: 0
       5: 0
+  1HZ150V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  1HZ250V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.0005
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
   CRASH300N:
     multiplier_range: [1, 2, 3, 4, 5]
     commission: 0.00005
@@ -638,6 +660,28 @@ common:
   1HZ300V:
     multiplier_range: [1, 2, 3, 4, 5]
     commission: 0.00053
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  1HZ150V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+    stop_out_level:
+      1: 0
+      2: 0
+      3: 0
+      4: 0
+      5: 0
+  1HZ250V:
+    multiplier_range: [1, 2, 3, 4, 5]
+    commission: 0.0005
     cancellation_commission: 0.05
     cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
     stop_out_level:
