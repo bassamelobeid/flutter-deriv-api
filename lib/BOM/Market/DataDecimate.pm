@@ -244,6 +244,10 @@ sub _build_encoder {
     });
 }
 
+has 'tick_by_tick_redis_read' => (
+    is      => 'ro',
+    default => sub { return BOM::Config::Redis::redis_feed_replica(); });
+
 has 'redis_read' => (
     is         => 'rw',
     lazy_build => 1,
@@ -395,7 +399,7 @@ sub data_cache_insert_decimate {
     if (
         my @datas =
         map { $self->decoder->decode($_) }
-        @{$self->redis_read->zrangebyscore($key_raw, $boundary - ($self->sampling_frequency->seconds - 1), $boundary)})
+        @{$self->tick_by_tick_redis_read->zrangebyscore($key_raw, $boundary - ($self->sampling_frequency->seconds - 1), $boundary)})
     {
         #do resampling
         my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, \@datas);

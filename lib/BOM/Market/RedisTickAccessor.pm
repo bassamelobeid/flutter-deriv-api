@@ -8,6 +8,7 @@ use Moo;
 use Carp qw(confess);
 use BOM::Market::DataDecimate;
 use List::Util qw(first);
+use BOM::Config::Redis;
 
 use Postgres::FeedDB::Spot::Tick;
 
@@ -27,7 +28,10 @@ has _tick_source => (
 );
 
 sub _build_tick_source {
-    return BOM::Market::DataDecimate->new;
+    return BOM::Market::DataDecimate->new({
+        # In order to read from "feed-redis-replica", we only need to override the "redis_read" attribute.
+        redis_read => BOM::Config::Redis::redis_feed_replica(),
+    });
 }
 
 =head2 tick_at
