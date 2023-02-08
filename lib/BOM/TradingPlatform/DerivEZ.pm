@@ -308,7 +308,7 @@ sub new_account {
                 leverage        => $derivez_leverage
             };
 
-            $user->add_loginid($derivez_login, 'mt5', $account_type, $derivez_currency, $derivez_attributes);
+            $user->add_loginid($derivez_login, 'derivez', $account_type, $derivez_currency, $derivez_attributes);
 
             # This is for linking new client to affiliate
             my $group_config = get_derivez_account_type_config($group);
