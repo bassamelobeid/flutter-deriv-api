@@ -799,6 +799,8 @@ sub prepare_bet_data_for_buy {
         $bet_params->{barrier}     = $contract->barrier->as_absolute;
         $bet_params->{entry_spot}  = $contract->entry_spot;
         $bet_params->{entry_epoch} = Date::Utility->new($contract->entry_tick->epoch)->db_timestamp;
+        $bet_params->{commission}  = $contract->_user_input_stake *
+            (($contract->ask_probability->amount - $contract->theo_probability->amount) / $contract->ask_probability->amount);
     } else {
         return Error::Base->cuss(
             -quiet             => 1,
