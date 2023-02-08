@@ -16,6 +16,7 @@ __PACKAGE__->meta->setup(
         entry_epoch => { type => 'timestamp' },
         entry_spot => { type => 'numeric' },
         barrier => { type => 'numeric' },
+        commission  => { type => 'numeric' },
     ],
 
     primary_key_columns => ['financial_market_bet_id'],
