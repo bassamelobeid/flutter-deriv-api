@@ -161,10 +161,10 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{tick_expiry}, 'tick_expiry set to 1';
     my $symbols = [
-        '1HZ100V',  '1HZ10V',    '1HZ25V', '1HZ50V', '1HZ75V', 'BOOM1000', 'BOOM500', 'CRASH1000',
-        'CRASH500', 'RDBEAR',    'RDBULL', 'R_10',   'R_100',  'R_25',     'R_50',    'R_75',
-        'stpRNG',   'JD10',      'JD100',  'JD25',   'JD50',   'JD75',     '1HZ200V', '1HZ300V',
-        'BOOM300N', 'CRASH300N', 'WLDAUD', 'WLDEUR', 'WLDGBP', 'WLDUSD',   'WLDXAU'
+        '1HZ100V', '1HZ10V',  '1HZ25V',  '1HZ50V',  '1HZ75V',   'BOOM1000',  'BOOM500', 'CRASH1000', 'CRASH500', 'RDBEAR',
+        'RDBULL',  'R_10',    'R_100',   'R_25',    'R_50',     'R_75',      'stpRNG',  'JD10',      'JD100',    'JD25',
+        'JD50',    'JD75',    '1HZ200V', '1HZ300V', 'BOOM300N', 'CRASH300N', 'WLDAUD',  'WLDEUR',    'WLDGBP',   'WLDUSD',
+        'WLDXAU',  '1HZ150V', '1HZ250V'
     ];
     cmp_bag $param->[0]->{symbols}, $symbols, 'correct symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
