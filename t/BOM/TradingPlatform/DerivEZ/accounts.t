@@ -29,7 +29,8 @@ subtest "able to create new derivez account using svg landing company (demo)" =>
         account_type => 'demo',
         market_type  => 'all',
         platform     => 'derivez',
-        currency     => 'USD'
+        currency     => 'USD',
+        company      => 'svg'
     );
 
     # Check for derivez TradingPlatform
@@ -90,7 +91,8 @@ subtest "able to create new derivez account using svg landing company (real)" =>
         account_type => 'real',
         market_type  => 'all',
         platform     => 'derivez',
-        currency     => 'USD'
+        currency     => 'USD',
+        company      => 'svg'
     );
 
     # Check for derivez TradingPlatform
