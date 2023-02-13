@@ -968,7 +968,9 @@ subtest 'testing pass status and underage' => sub {
     $client->residence('br');
     $client->first_name('John');
     $client->last_name('Doe');
-    $client->date_of_birth('2005-02-12');
+
+    my $underage_date = Date::Utility->new()->minus_years(17)->date_yyyymmdd;
+    $client->date_of_birth($underage_date);
     $client->save();
 
     $resp = Future->done(
@@ -979,7 +981,7 @@ subtest 'testing pass status and underage' => sub {
                     messages => [],
                     report   => {
                         full_name => "John Doe",
-                        birthdate => "2005-02-12"
+                        birthdate => $underage_date
                     }})));
 
     ok $idv_event_handler->($args)->get, 'the event processed without error';
@@ -1046,7 +1048,8 @@ subtest 'testing pass status and underage in messages' => sub {
     $client->residence('br');
     $client->first_name('John');
     $client->last_name('Doe');
-    $client->date_of_birth('2005-02-12');
+    my $underage_date = Date::Utility->new()->minus_years(17)->date_yyyymmdd;
+    $client->date_of_birth($underage_date);
     $client->save();
 
     $resp = Future->done(
@@ -1057,7 +1060,7 @@ subtest 'testing pass status and underage in messages' => sub {
                     messages => ['UNDERAGE'],
                     report   => {
                         full_name => "John Doe",
-                        birthdate => "2005-02-12"
+                        birthdate => $underage_date
                     }})));
 
     ok $idv_event_handler->($args)->get, 'the event processed without error';
