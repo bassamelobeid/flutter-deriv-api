@@ -968,7 +968,6 @@ subtest 'testing pass status and underage' => sub {
     $client->residence('br');
     $client->first_name('John');
     $client->last_name('Doe');
-
     my $underage_date = Date::Utility->new()->minus_years(17)->date_yyyymmdd;
     $client->date_of_birth($underage_date);
     $client->save();
