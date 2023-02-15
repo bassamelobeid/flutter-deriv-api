@@ -191,7 +191,15 @@ subtest 'favourites' => sub {
             $me->p2p_advertiser_relations(add_favourites => [-1])
         },
         {error_code => 'InvalidAdvertiserID'},
-        'Invalid advertiser id'
+        'Cannot favourite invalid advertiser id'
+    );
+
+    cmp_deeply(
+        exception {
+            $me->p2p_advertiser_relations(remove_favourites => [-1])
+        },
+        {error_code => 'InvalidAdvertiserID'},
+        'Cannot unfavourite invalid advertiser id'
     );
 
     # clean up for following tests
@@ -391,7 +399,15 @@ subtest 'blocking' => sub {
             $me->p2p_advertiser_relations(add_blocked => [-1])
         },
         {error_code => 'InvalidAdvertiserID'},
-        'Invalid advertiser id'
+        'Cannot block invalid advertiser id'
+    );
+
+    cmp_deeply(
+        exception {
+            $me->p2p_advertiser_relations(remove_blocked => [-1])
+        },
+        {error_code => 'InvalidAdvertiserID'},
+        'Cannot unblock invalid advertiser id'
     );
 
 };

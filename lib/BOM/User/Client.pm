@@ -2587,25 +2587,22 @@ sub p2p_advertiser_relations {
     my $advertiser_info = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
 
-    $param{$_} //= [] for qw(add_favourites add_blocked remove_favourites remove_blocked);
+    my @relation_ids = map { ($_ // [])->@* } @param{qw(add_favourites add_blocked remove_favourites remove_blocked)};
 
-    if (any { $param{$_}->@* } qw(add_favourites add_blocked remove_favourites remove_blocked)) {
-        die +{error_code => 'AdvertiserNotApprovedForBlock'} if $param{add_blocked}->@* and not $advertiser_info->{is_approved};
+    if (@relation_ids) {
+        die +{error_code => 'AdvertiserNotApprovedForBlock'} if ($param{add_blocked} // [])->@* and not $advertiser_info->{is_approved};
 
         my $bar_error = $self->_p2p_get_advertiser_bar_error($advertiser_info);
         die $bar_error if $bar_error;
 
-        die +{error_code => 'AdvertiserRelationSelf'}
-            if any { $_ == $advertiser_info->{id} } map { @$_ } @param{qw(add_favourites add_blocked remove_favourites remove_blocked)};
+        die +{error_code => 'AdvertiserRelationSelf'} if any { $_ == $advertiser_info->{id} } @relation_ids;
 
-        my $advertisers = $self->db->dbic->run(
+        my %relations = $self->db->dbic->run(
             fixup => sub {
-                $_->selectall_hashref('SELECT * FROM p2p.advertiser_id_check(?)',
-                    'id', undef, [$param{add_favourites}->@*, $param{add_blocked}->@*, $param{remove_favourites}->@*, $param{remove_blocked}->@*]);
-            });
+                $_->selectall_hashref('SELECT * FROM p2p.advertiser_id_check(?)', 'id', undef, \@relation_ids);
+            })->%*;
 
-        # we won't complain if they try to delete an invalid advertiser
-        die +{error_code => 'InvalidAdvertiserID'} unless all { exists $advertisers->{$_} } ($param{add_favourites}->@*, $param{add_blocked}->@*);
+        die +{error_code => 'InvalidAdvertiserID'} unless all { $relations{$_} } @relation_ids;
 
         $self->db->dbic->run(
             fixup => sub {
@@ -2617,15 +2614,15 @@ sub p2p_advertiser_relations {
             });
 
         # is_favourite/is_blocked can change on subscribed advertisers and ads
-        for my $advertiser (values %$advertisers) {
+        for my $id (uniq @relation_ids) {
             BOM::Platform::Event::Emitter::emit(
                 p2p_advertiser_updated => {
-                    client_loginid => $advertiser->{loginid},
+                    client_loginid => $relations{$id}->{loginid},
                 });
 
             BOM::Platform::Event::Emitter::emit(
                 p2p_adverts_updated => {
-                    advertiser_id => $advertiser->{id},
+                    advertiser_id => $id,
                 });
         }
     }
