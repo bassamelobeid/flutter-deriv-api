@@ -1,14 +1,14 @@
 ---
 alias:
-- &1
+- &ssh_keys
   add_ssh_keys:
     fingerprints:
     - 85:5e:13:f8:60:b2:55:a1:df:d1:8e:77:17:4c:3b:2d
-- &2
+- &update_git
   run:
     command: /opt/circle/prepare-test.sh
     name: Update git repositories
-- &3
+- &start_services
   run:
     background: true
     command: |
@@ -16,7 +16,7 @@ alias:
       start_services
       touch /tmp/services.ready
     name: Start services
-- &4
+- &wait_services
   run:
     command: |
       count=0
@@ -26,7 +26,7 @@ alias:
           sleep 1
       done
     name: Wait for services to start up
-- &5
+- &environment
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
@@ -44,7 +44,7 @@ alias:
   image: regentmarkets/debian-ci:stable
   user: nobody
 
-default: &6
+default: &test_config
   docker:
   - *debian-ci
   shell: /bin/bash -leo pipefail
@@ -52,15 +52,15 @@ default: &6
 
 jobs:
   accounts:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make accounts
@@ -68,15 +68,15 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   misc:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make misc
@@ -84,15 +84,15 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   p2p:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make p2p
@@ -100,15 +100,15 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   pricing:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make pricing
@@ -116,15 +116,15 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   schema:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make schema
@@ -132,15 +132,15 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   security:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make security
@@ -148,15 +148,15 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   structure:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make structure
@@ -167,15 +167,15 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   subscriptions:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make subscriptions
@@ -183,15 +183,15 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   backends:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make backends
@@ -199,23 +199,23 @@ jobs:
     - store_test_results:
         path: /var/tmp/test-output
   update_docs:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
+    - *ssh_keys
+    - *update_git
     - run:
-        <<: *5
+        <<: *environment
         command: |
           script/websocket_schema_update.sh
         name: Update developer.binary.com schema documentation
   code_coverage:
-    <<: *6
-    <<: *5
+    <<: *test_config
+    <<: *environment
     steps:
-    - *1
-    - *2
-    - *3
-    - *4
+    - *ssh_keys
+    - *update_git
+    - *start_services
+    - *wait_services
     - *check_services
     - run:
         command: make cover
@@ -245,12 +245,12 @@ jobs:
         name: upload coverage report
         command: cover -report coveralls
   unit:
-    <<: *6
+    <<: *test_config
     steps:
-    - *1
-    - *2
+    - *ssh_keys
+    - *update_git
     - run:
-        <<: *5
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit
