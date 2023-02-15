@@ -753,6 +753,9 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                                 </button>      
                             [% ELSE %]
                                 <i>Waiting for upload</i>
+                                <button class="btn btn--primary" name="delete_proof_of_ownership" value="[% poo.id %]">
+                                    Delete
+                                </button>      
                             [% END %]
                     
                         </td>

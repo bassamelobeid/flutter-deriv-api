@@ -111,6 +111,11 @@ for ($category) {
                 query  => "client_loginid = ?",
                 params => [$loginid],
             },
+            {
+                table  => 'proof_of_ownership',
+                query  => "client_loginid = ?",
+                params => [$loginid],
+            },
             $authentication_documents_queries->@*,
             $user_db_queries->@*,
             $edd_status_queries->@*,
