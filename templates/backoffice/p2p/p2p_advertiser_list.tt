@@ -6,7 +6,7 @@
             <label>Nick name:</label>
                 <input type="text" name="nickname" value="[% input.nickname %]" size=20 data-lpignore="true" />
             <label>Email:</label>
-                <input type="text" name="email" value="[% input.email %]" size=20 data-lpignore="true" />
+                <input type="text" name="email" value="[% input.email %]" pattern="^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$" oninvalid="setCustomValidity('Please enter a valid email address.')" oninput="setCustomValidity('')" size=20 data-lpignore="true" />
             <label>Country:</label>
                 <select name="residence">
                     <option value="">All</option>

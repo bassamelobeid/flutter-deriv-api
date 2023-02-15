@@ -3,11 +3,11 @@
         <div class="row">
             <input type="hidden" name="page" value="1" />
             <label>Order ID:</label>
-            <input type="text" name="order_id" value="[% input.order_id %]" data-lpignore="true" />
+            <input type="number" name="order_id" min="1" value="[% input.order_id %]" data-lpignore="true" />
             <label>Advert ID:</label>
-            <input type="text" name="advert_id" value="[% input.advert_id %]" data-lpignore="true" />
+            <input type="number" name="advert_id" min="1" value="[% input.advert_id %]" data-lpignore="true" />
             <label>Client Login ID:</label>
-            <input type="text" name="loginID" size="15" value="[% input.loginID %]" data-lpignore="true" />
+            <input type="text" name="loginID" size="15" value="[% input.loginID %]" pattern="^[A-Za-z]+[0-9]+$" oninvalid="setCustomValidity('Please enter a valid loginid.')" oninput="setCustomValidity('')" data-lpignore="true" />
             <label>Order Status:</label>
             <select name="status">
                 <option value="">All</option>

@@ -154,10 +154,9 @@ if (my $id = $input{update}) {
 
 !$input{$_} && delete $input{$_} for qw(loginID name);
 $input{loginID} = trim uc $input{loginID} if $input{loginID};
-delete $input{id}   unless looks_like_number($input{id});
-delete $input{days} unless looks_like_number($input{days});
-$output{days} = $input{days};
-$output{days} = 30 unless defined $output{days};
+delete $input{id}                         if defined($input{id})   && $input{id}   !~ m/^[0-9]+$/;
+delete $input{days}                       if defined($input{days}) && $input{days} !~ m/^[0-9]+$/;
+$output{days} = defined($input{days}) ? $input{days} : 30;
 
 if ($input{loginID} || $input{name} || $input{id}) {
     $output{advertiser} = $db->run(
