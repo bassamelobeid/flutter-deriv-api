@@ -311,7 +311,7 @@ sub _build_verification_url {
         utm_source       utm_campaign utm_medium  signup_device   gclid_url      date_first_contact
         affiliate_token  utm_content  utm_term    utm_campaign_id utm_adgroup_id utm_ad_id
         utm_gl_client_id utm_msclk_id utm_fbcl_id utm_adrollclk_id
-        redirect_to
+        redirect_to      bta
     );
     my $extra_params_filtered = BOM::Platform::Utility::extract_valid_params(\@tags_list, $args, $regex_validation);
 

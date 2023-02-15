@@ -36,6 +36,7 @@ use BOM::Config::AccountType::Registry;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Services::CellxpertService;
 use BOM::RPC::v3::VerifyEmail::Functions;
+use Data::Dumper;
 
 use constant {
     TOKEN_GENERATION_ATTEMPTS => 5,
@@ -399,6 +400,7 @@ sub create_virtual_account {
     # Non-PEP declaration is not made for virtual accounts
     delete $args->{non_pep_declaration};
 
+    my $is_affiliate = ($args->{account_opening_reason} // '' eq 'affiliate') ? 1 : 0;
     my ($error);
 
     if ($args->{token_details} and not $args->{verification_code}) {
@@ -427,7 +429,8 @@ sub create_virtual_account {
         $args->{email} = BOM::Platform::Token->new({token => $verification_code})->email unless $args->{email};
 
         $args->{account_created_for} //= 'account_opening';
-        $error = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $args->{email}, $args->{account_created_for})->{error};
+        $error = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $args->{email}, $args->{account_created_for}, $is_affiliate)
+            ->{error};
         die $error if $error;
 
         $error = BOM::RPC::v3::Utility::check_password({
@@ -455,8 +458,9 @@ sub create_virtual_account {
             residence       => $args->{residence},
             source          => $args->{source},
         },
-        utm_data => {},
-        type     => $args->{type},
+        utm_data               => {},
+        type                   => $args->{type},
+        account_opening_reason => $args->{account_opening_reason} // ''
     };
 
     # Clients from Spain and portugal are not allowed to signup via affiliate links hence we are removing their token.
@@ -528,6 +532,88 @@ sub create_virtual_account {
                 utm_tags => BOM::Platform::Utility::extract_valid_params(\@tags_list, $utm_tags, $regex_validation)}});
 
     return $client;
+}
+
+=head2 create_new_real_account_for_affiliate
+Creates a new real account for affiliate.
+=over 4
+=item * C<client> form client which the new real account is being created
+=item * C<args> new account request arguments
+=back
+Returns a C<BOM::User::Client> instance
+=cut
+
+sub create_new_real_account_for_affiliate {
+    my %params = @_;
+    my $client = $params{client};
+    my $args   = $params{args};
+
+    $args->{$_} = $params{$_} for (qw/broker_code account_type market_type source landing_company environment/);
+    my $details_ref = _new_account_pre_process($args, $client);
+    my $error_map   = BOM::RPC::v3::Utility::error_map();
+    if ($details_ref->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $details_ref->{error},
+                message_to_client => $details_ref->{message_to_client} // $error_map->{$details_ref->{error}},
+                details           => $details_ref->{details}});
+    }
+
+    my $user = $client->user;
+    my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
+    my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
+    return $val if $val;
+
+    my $sibling_has_migrated_universal_password_status = any { $_->status->migrated_universal_password } $user->clients;
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
+        $val = _update_migrated_universal_password_existing_clients($clients);
+        return $val if $val;
+    }
+
+    my $lock = BOM::Platform::Redis::acquire_lock($client->user_id, 10);
+    return BOM::RPC::v3::Utility::rate_limit_error() if not $lock;
+
+    my $create_account_sub =
+        $params{landing_company} eq 'maltainvest'
+        ? \&BOM::Platform::Account::Real::maltainvest::create_account
+        : \&BOM::Platform::Account::Real::default::create_account;
+
+    # It's safe to create the new client now
+    my $acc;
+    try {
+        $acc = $create_account_sub->({
+            ip          => $params{ip} // '',
+            country     => uc($client->residence // ''),
+            from_client => $client,
+            user        => $user,
+            details     => $details_ref->{details},
+            params      => $args,
+        });
+    } finally {
+        BOM::Platform::Redis::release_lock($client->user_id);
+    }
+
+    my $error;
+    if ($error = $acc->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $error,
+                message_to_client => $error_map->{$error}});
+    }
+
+    my $new_client = $acc->{client};
+
+    _new_account_post_process(
+        client                                         => $client,
+        new_client                                     => $new_client,
+        args                                           => $args,
+        professional_status                            => $professional_status,
+        professional_requested                         => $professional_requested,
+        sibling_has_migrated_universal_password_status => $sibling_has_migrated_universal_password_status
+    );
+
+    return {
+        client      => $new_client,
+        oauth_token => _create_oauth_token($params{source}, $new_client->loginid),
+    };
 }
 
 =head2 create_new_real_account
@@ -934,9 +1020,9 @@ sub _get_non_pep_declaration_time {
     return minstr(map { $_->date_joined } @same_lc_siblings) || time;
 }
 
-=head2 affiliate_account_add
+=head2 affiliate_add_person
 
-Creates a new affiliate client account.
+Creates a new individual affiliate client account.
 
 Will do:
 
@@ -966,154 +1052,54 @@ Will return the following data:
 
 =cut
 
-rpc "affiliate_account_add",
+rpc "affiliate_add_person",
     auth => [],
     sub {
-    my $params   = shift;
-    my $args     = $params->{args};
-    my $broker   = 'CRA';
-    my $response = {};
+    my $params = shift;
 
-    my ($verification_code, $first_name, $last_name, $non_pep_declaration, $tnc_accepted, $password) =
-        @{$args}{qw/verification_code first_name last_name non_pep_declaration tnc_accepted password/};
-
-    my $email = BOM::Platform::Token->new({token => $verification_code})->email;
-    unless ($email) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'TokenError',
-            message_to_client => 'Can not get email from token',
-        });
-    }
-    my $cx_response =
-        BOM::RPC::v3::Services::CellxpertService::affiliate_account_add($email, $first_name, $last_name, $non_pep_declaration, $tnc_accepted,
-        $password);
-
-    if ($cx_response->{code} eq "CXRuntimeError") {
-        return BOM::RPC::v3::Utility::create_error($cx_response);
-    }
-
-    $args->{token_details} = delete $params->{token_details};
-    $args->{type} //= 'trading';    # affiliate demo account will always be trading if not specified.
-
-    if ($args->{type} eq 'wallet' && BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize("Wallet account creation is currently suspended."),
-        });
-    }
-
-    if ($args->{token_details} and not $args->{verification_code}) {
-        my $scopes = $args->{token_details}->{scopes};
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidToken',
-                message_to_client => localize("The token is invalid, requires 'admin' scope.")}) unless (any { $_ eq 'admin' } @$scopes);
-    }
-
-    my ($client, $account);
-    try {
-        $args->{ip}                  = $params->{client_ip} // '';
-        $args->{environment}         = request()->login_env($params);
-        $args->{source}              = $params->{source};
-        $args->{client_password}     = $args->{password};
-        $args->{residence}           = $args->{country};
-        $args->{account_created_for} = "partner_account_opening";
-
-        # Todo: This fields are temprary set and should get from future FE forms that not yet implemented
-        $args->{affiliate_plan}            = "turnover";
-        $args->{accept_risk}               = 1;
-        $args->{source_of_wealth}          = "trading";
-        $args->{salutation}                = "Mrs";
-        $args->{citizen}                   = $args->{country};
-        $args->{tax_residence}             = $args->{country};
-        $args->{tax_identification_number} = "111-222-333";
-        $args->{account_opening_reason}    = "affiliate";
-        $args->{payment_method}            = "bank_transfer";
-
-        # Pre-set email if client is authorized
-        if ($args->{token_details}) {
-            my $user = BOM::User->new(loginid => $args->{token_details}->{loginid});
-            $args->{email} = $user->{email};
-        }
-
-        $client  = create_virtual_account($args);
-        $account = $client->default_account;
-
-        my $oauth_model = BOM::Database::Model::OAuth->new;
-        my $refresh_token;
-
-        # this is the first account of the user
-        if (scalar $client->user->clients == 1) {
-            $refresh_token = $oauth_model->generate_refresh_token($client->binary_user_id, $params->{source});
-        }
-
-        $response->{demo} = {
-            client_id   => $client->loginid,
-            email       => $client->email,
-            currency    => $account->currency_code(),
-            balance     => formatnumber('amount', $account->currency_code(), $account->balance),
-            oauth_token => _create_oauth_token($params->{source}, $client->loginid),
-            type        => $args->{type},
-            $refresh_token ? (refresh_token => $refresh_token) : (),
-        };
-    } catch ($e) {
-        my $error_map = BOM::RPC::v3::Utility::error_map();
-        my $error->{code} = $e;
-        $error = $e->{error} // $e if (ref $e eq 'HASH');
-        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
-        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $error->{code},
-                message_to_client => $error->{message_to_client},
-                details           => $error->{details}});
+    $params->{third_party_function} = \&BOM::RPC::v3::Services::CellxpertService::affiliate_add_person;
+    return _do_affiliate($params);
     };
 
-    # now we can start creating real account in CRA
-    # TODO: check client residence country for EU/UK
+=head2 affiliate_add_company
 
-    try {
-        my $countries_instance = request()->brand->countries_instance;
-        my $gaming_company     = $countries_instance->gaming_company_for_country($client->residence);
-        unless ($gaming_company) {
-            # for CR countries like Australia (au) where only financial market is available.
-            $gaming_company = $countries_instance->financial_company_for_country($client->residence) // '';
-            return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $gaming_company;
-        }
+Creates a new company affiliate client account.
 
-        my $result = create_new_real_account(
-            client          => $client,
-            args            => $args,
-            account_type    => 'affiliate',
-            broker_code     => $broker,
-            market_type     => 'affiliate',
-            environment     => request()->login_env($params),
-            ip              => $params->{client_ip} // '',
-            source          => $params->{source},
-            landing_company => $gaming_company
-        );
-        return $result if exists $result->{error};
+Will do:
 
-        my $new_client = $result->{client};
+=over 4
 
-        $response->{real} = {
-            client_id                 => $new_client->loginid,
-            landing_company           => $new_client->landing_company->name,
-            landing_company_shortcode => $new_client->landing_company->short,
-            oauth_token               => $response->{oauth_token},
-            $args->{currency} ? (currency => $new_client->currency) : (),
-        };
-    } catch ($e) {
-        my $error_map = BOM::RPC::v3::Utility::error_map();
-        my $error->{code} = $e;
-        $error = $e->{error} // $e if (ref $e eq 'HASH');
-        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
-        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $error->{code},
-                message_to_client => $error->{message_to_client},
-                details           => $error->{details}});
-    }
+=item - The Affiliate account (new broker code)
 
-    return $response;
+=item - Create an MT5 real gaming account
+
+=item - Add a new account in Affiliate System
+
+=back
+
+Will return the following data:
+
+=over 4
+
+=item - C<client_id> the new client loginid
+
+=item - C<landing_company>
+
+=item - C<landing_company_shortcode>
+
+=item - C<Affiliate User ID>
+
+=back
+
+=cut
+
+rpc "affiliate_add_company",
+    auth => [],
+    sub {
+    my $params = shift;
+
+    $params->{third_party_function} = \&BOM::RPC::v3::Services::CellxpertService::affiliate_add_company;
+    return _do_affiliate($params);
     };
 
 =head2 _compute_affiliate_token
@@ -1160,6 +1146,192 @@ sub _compute_affiliate_token {
     }
 
     return $affiliate_token;
+}
+
+=head2 _do_affiliate
+
+Will do: 
+
+1- Create ThirdParty affiliate account (via API)
+2- Create Demo Account in Deriv
+3- Create Real Account in Deriv
+
+=over 4
+
+=item - The Affiliate account (new broker code)
+
+=item - Create an MT5 real gaming account
+
+=item - Add a new account in Affiliate System
+
+=back
+
+Will return the following data:
+
+=over 4
+
+=item - C<client_id> the new client loginid
+
+=item - C<landing_company>
+
+=item - C<landing_company_shortcode>
+
+=item - C<Affiliate User ID>
+
+=back
+
+=cut
+
+sub _do_affiliate {
+    my $params   = shift;
+    my $args     = $params->{args};
+    my $broker   = 'CRA';
+    my $response = {};
+
+    my $verification_token = BOM::Platform::Token->new({token => $args->{verification_code}});
+    my $email              = $verification_token->email;
+    unless ($email) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'TokenError',
+            message_to_client => 'Can not get email from token',
+        });
+    }
+
+    print Dumper($args);
+
+    my $cx_response = $params->{third_party_function}->($email, $args);
+
+    if ($cx_response->{code} eq "CXRuntimeError") {
+        return BOM::RPC::v3::Utility::create_error($cx_response);
+    }
+
+    $args->{address_line_1} = $args->{address_street};
+    $args->{token_details}  = delete $params->{token_details};
+    $args->{type} //= 'trading';    # affiliate demo account will always be trading if not specified.
+
+    if ($args->{type} eq 'wallet' && BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize("Wallet account creation is currently suspended."),
+        });
+    }
+
+    if ($args->{token_details} and not $args->{verification_code}) {
+        my $scopes = $args->{token_details}->{scopes};
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidToken',
+                message_to_client => localize("The token is invalid, requires 'admin' scope.")}) unless (any { $_ eq 'admin' } @$scopes);
+    }
+
+    my ($client, $account);
+    try {
+        $args->{ip}                  = $params->{client_ip} // '';
+        $args->{environment}         = request()->login_env($params);
+        $args->{source}              = $params->{source};
+        $args->{client_password}     = $args->{password};
+        $args->{residence}           = $args->{country};
+        $args->{account_created_for} = "partner_account_opening";
+
+        # Todo: This fields are temprary set and should get from future FE forms that not yet implemented
+        $args->{affiliate_plan}            = "turnover";
+        $args->{accept_risk}               = 1;
+        $args->{source_of_wealth}          = "trading";
+        $args->{salutation}                = "Mrs";
+        $args->{citizen}                   = $args->{country};
+        $args->{tax_residence}             = $args->{country};
+        $args->{tax_identification_number} = "111-222-333";
+        $args->{account_opening_reason}    = "affiliate";
+        $args->{payment_method}            = "bank_transfer";
+
+        # Pre-set email if client is authorized
+        my $user = BOM::User->new(email => $email);
+        if ($user) {
+            $client = BOM::User::Client::get_instance({'loginid' => $user->bom_virtual_loginid});
+        } else {
+            $client = create_virtual_account($args);
+        }
+
+        $account = $client->default_account;
+
+        my $oauth_model = BOM::Database::Model::OAuth->new;
+        my $refresh_token;
+
+        # this is the first account of the user
+        if (scalar $client->user->clients == 1) {
+            $refresh_token = $oauth_model->generate_refresh_token($client->binary_user_id, $params->{source});
+        }
+
+        $response->{demo} = {
+            client_id   => $client->loginid,
+            email       => $client->email,
+            currency    => $account->currency_code(),
+            balance     => formatnumber('amount', $account->currency_code(), $account->balance),
+            oauth_token => _create_oauth_token($params->{source}, $client->loginid),
+            type        => $args->{type},
+            $refresh_token ? (refresh_token => $refresh_token) : (),
+        };
+    } catch ($e) {
+        my $error_map = BOM::RPC::v3::Utility::error_map();
+        my $error->{code} = $e;
+        $error = $e->{error} // $e if (ref $e eq 'HASH');
+        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
+        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
+                details           => $error->{details}});
+    };
+
+    # now we can start creating real account in CRA
+    # TODO: check client residence country for EU/UK
+
+    try {
+        my $result = create_new_real_account_for_affiliate(
+            client          => $client,
+            args            => $args,
+            account_type    => 'affiliate',
+            broker_code     => $broker,
+            market_type     => 'affiliate',
+            environment     => request()->login_env($params),
+            ip              => $params->{client_ip} // '',
+            source          => $params->{source},
+            landing_company => $params->{landing_company} // 'svg'
+        );
+        return $result if exists $result->{error};
+
+        my $new_client = $result->{client};
+
+        my $res = BOM::RPC::v3::Accounts::api_token({
+                client => $new_client,
+                args   => {
+                    new_token        => 'CRA Token',
+                    new_token_scopes => ['read', 'trade', 'payments', 'admin']
+                },
+            });
+        my $cra_token = $res->{tokens}->[0]->{token};
+
+        $response->{real} = {
+            client_id                 => $new_client->loginid,
+            landing_company           => $new_client->landing_company->name  // '',
+            landing_company_shortcode => $new_client->landing_company->short // '',
+            oauth_token               => _create_oauth_token($params->{source}, $new_client->loginid),
+            cra_token                 => $cra_token,
+            $args->{currency} ? (currency => $new_client->currency) : (),
+        };
+    } catch ($e) {
+        my $error_map = BOM::RPC::v3::Utility::error_map();
+        my $error->{code} = $e;
+        $error = $e->{error} // $e if (ref $e eq 'HASH');
+        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
+        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
+                details           => $error->{details}});
+    }
+
+    $verification_token->delete_token;
+    return $response;
 }
 
 1;

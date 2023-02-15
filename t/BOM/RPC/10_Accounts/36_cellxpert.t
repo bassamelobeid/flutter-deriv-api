@@ -51,7 +51,7 @@ subtest 'partner_account_opening test' => sub {
 
 };
 
-subtest 'affiliate_account_add test' => sub {
+subtest 'affiliate_add_person test' => sub {
     my $mocked_cellxpert_service = Test::MockModule->new('WebService::Async::Cellxpert');
 
     subtest 'register_affiliate successfull' => sub {
@@ -62,7 +62,15 @@ subtest 'affiliate_account_add test' => sub {
                 return Future->done("12345678");
             });
 
-        my $response = BOM::RPC::v3::Services::CellxpertService::affiliate_account_add("some_username", "first_name", "last_name", 1, 1, "password");
+        my $args = {
+            password            => 's$cr#tPASS123',
+            first_name          => 'firstname_36_cellxpert',
+            last_name           => 'lastname_36_cellxpert',
+            tnc_accepted        => 1,
+            non_pep_declaration => 1
+        };
+
+        my $response = BOM::RPC::v3::Services::CellxpertService::affiliate_add_person("some_username", $args);
         is $response->{affiliate_id}, 12345678;
 
         $mocked_cellxpert_service->unmock_all();
@@ -77,7 +85,15 @@ subtest 'affiliate_account_add test' => sub {
                 return Future->fail("Some weird error happens from cx side");
             });
 
-        my $response = BOM::RPC::v3::Services::CellxpertService::affiliate_account_add("some_username", "first_name", "last_name", 1, 1, "password");
+        my $args = {
+            password            => 's$cr#tPASS123',
+            first_name          => 'firstname_36_cellxpert',
+            last_name           => 'lastname_36_cellxpert',
+            tnc_accepted        => 1,
+            non_pep_declaration => 1
+        };
+
+        my $response = BOM::RPC::v3::Services::CellxpertService::affiliate_add_person("some_username", $args);
         is $response->{code}, "CXRuntimeError";
 
         $mocked_cellxpert_service->unmock_all();
@@ -92,7 +108,15 @@ subtest 'affiliate_account_add test' => sub {
                 return Future->fail("Email already exist");
             });
 
-        my $response = BOM::RPC::v3::Services::CellxpertService::affiliate_account_add("some_username", "first_name", "last_name", 1, 1, "password");
+        my $args = {
+            password            => 's$cr#tPASS123',
+            first_name          => 'firstname_36_cellxpert',
+            last_name           => 'lastname_36_cellxpert',
+            tnc_accepted        => 1,
+            non_pep_declaration => 1
+        };
+
+        my $response = BOM::RPC::v3::Services::CellxpertService::affiliate_add_person("some_username", $args);
         is $response->{code}, "AlreadyRegistered";
 
         $mocked_cellxpert_service->unmock_all();

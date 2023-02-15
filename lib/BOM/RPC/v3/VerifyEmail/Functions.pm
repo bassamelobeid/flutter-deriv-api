@@ -379,8 +379,11 @@ will call CX service to handle registration
 
 sub partner_account_opening {
     my ($self) = @_;
-    return BOM::RPC::v3::Services::CellxpertService::verify_email($self->{email}, $self->{email_verification}, $self->{existing_user},
-        $self->{language});
+    return BOM::RPC::v3::Services::CellxpertService::verify_email(
+        $self->{email},
+        $self->{email_verification},
+        $self->{existing_user},
+        $self->{language}, $self->{url_params});
 }
 
 =head2 common_payment_withdraw

@@ -390,7 +390,7 @@ SKIP: {
             token => $auth_token,
         };
 
-        my $result = $c->call_ok('affiliate_account_add', $params)->has_no_system_error->has_no_error()->result;
+        my $result = $c->call_ok('affiliate_add_person', $params)->has_no_system_error->has_no_error()->result;
 
         my $mt5_args;
         my $mt5_mock = Test::MockModule->new('BOM::MT5::User::Async');

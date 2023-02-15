@@ -95,14 +95,7 @@ subtest 'Initialization' => sub {
 };
 
 subtest 'new affiliate account successfully created' => sub {
-    my $password = 'Abcd33!@';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'new_aff' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
+    my $email     = 'new_aff' . rand(999) . '@binary.com';
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         email       => $email,
@@ -116,37 +109,77 @@ subtest 'new affiliate account successfully created' => sub {
         })->token;
 
     $params->{args} = {
-        affiliate_account_add => 1,
-        address_city          => "Timbuktu",
-        address_line_1        => "Askia Mohammed Bvd,",
-        address_postcode      => "QXCQJW",
-        address_state         => "Nouaceur",
-        country               => "ma",
-        date_of_birth         => "1992-01-02",
-        first_name            => "John",
-        last_name             => "Doe",
-        non_pep_declaration   => 1,
-        password              => "S3creTp4ssw0rd",
-        phone                 => "+72443598863",
-        tnc_accepted          => 1,
-        verification_code     => $code
+        affiliate_add_person   => 1,
+        address_city           => "Timbuktu",
+        address_street         => "Askia Mohammed Bvd,",
+        address_postcode       => "QXCQJW",
+        address_state          => "Nouaceur",
+        country                => "ma",
+        currency               => "USD",
+        citizenship            => "ma",
+        date_of_birth          => "1992-01-02",
+        first_name             => "John",
+        last_name              => "Doe",
+        non_pep_declaration    => 1,
+        password               => "S3creTp4ssw0rd",
+        phone                  => "+72443598863",
+        tnc_accepted           => 1,
+        tnc_affiliate_accepted => 1,
+        verification_code      => $code
     };
 
-    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('affiliate_add_person', $params)->has_no_system_error->result;
 
-    ok exists $result->{demo}, "Response has demo account details";
-    ok exists $result->{real}, "Response has real account details";
+    ok exists $result->{demo},              "Response has demo account details";
+    ok exists $result->{real},              "Response has real account details";
+    ok exists $result->{real}->{cra_token}, "Response has cra_token in real section";
+};
+
+subtest 'new affiliate account successfully created with BTA' => sub {
+    my $email     = 'new_aff' . rand(999) . '@binary.com';
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'br',
+    });
+
+    my $code = BOM::Platform::Token->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => 'partner_account_opening',
+        })->token;
+
+    $params->{args} = {
+        affiliate_add_person   => 1,
+        address_city           => "Timbuktu",
+        address_street         => "Askia Mohammed Bvd,",
+        address_postcode       => "QXCQJW",
+        address_state          => "Nouaceur",
+        bta                    => 12345,
+        country                => "ma",
+        currency               => "EUR",
+        citizenship            => "ma",
+        date_of_birth          => "1992-01-02",
+        first_name             => "John",
+        last_name              => "Doe",
+        non_pep_declaration    => 1,
+        password               => "S3creTp4ssw0rd",
+        phone                  => "+72443598863",
+        tnc_accepted           => 1,
+        tnc_affiliate_accepted => 1,
+        verification_code      => $code
+    };
+
+    my $result = $rpc_ct->call_ok('affiliate_add_person', $params)->has_no_system_error->result;
+
+    ok exists $result->{demo},              "Response has demo account details";
+    ok exists $result->{real},              "Response has real account details";
+    ok exists $result->{real}->{cra_token}, "Response has cra_token in real section";
+
 };
 
 subtest 'new affiliate account successfully created with EU/UK residence' => sub {
-    my $password = 'Abcd33!@';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'new_aff' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
+    my $email     = 'new_aff' . rand(999) . '@binary.com';
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         email       => $email,
@@ -160,37 +193,77 @@ subtest 'new affiliate account successfully created with EU/UK residence' => sub
         })->token;
 
     $params->{args} = {
-        affiliate_account_add => 1,
-        address_city          => "Alicante",
-        address_line_1        => "Askia Mohammed Bvd,",
-        address_postcode      => "QXCQJW",
-        address_state         => "Alicante",
-        country               => "es",
-        date_of_birth         => "1992-01-02",
-        first_name            => "John",
-        last_name             => "Doe",
-        non_pep_declaration   => 1,
-        password              => "S3creTp4ssw0rd",
-        phone                 => "+72443598863",
-        tnc_accepted          => 1,
-        verification_code     => $code
+        affiliate_add_person   => 1,
+        address_city           => "Timbuktu",
+        address_street         => "Askia Mohammed Bvd,",
+        address_postcode       => "QXCQJW",
+        address_state          => "Alicante",
+        country                => "es",
+        currency               => "EUR",
+        citizenship            => "es",
+        date_of_birth          => "1992-01-02",
+        first_name             => "John",
+        last_name              => "Doe",
+        non_pep_declaration    => 1,
+        password               => "S3creTp4ssw0rd",
+        phone                  => "+72443598863",
+        tnc_accepted           => 1,
+        tnc_affiliate_accepted => 1,
+        verification_code      => $code
     };
 
-    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('affiliate_add_person', $params)->has_no_system_error->result;
 
+    ok exists $result->{demo},              "Response has demo account details";
+    ok exists $result->{real},              "Response has real account details";
+    ok exists $result->{real}->{cra_token}, "Response has cra_token in real section";
+};
+
+subtest 'new affiliate account register twice call: first time typo - second time success' => sub {
+    my $email = 'new_aff' . rand(999) . '@binary.com';
+
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'eu',
+    });
+
+    my $code = BOM::Platform::Token->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => 'partner_account_opening',
+        })->token;
+
+    $params->{args} = {
+        affiliate_add_person   => 1,
+        address_city           => "Alicante",
+        address_street         => "Askia Mohammed Bvd,",
+        address_postcode       => "QXCQJW",
+        address_state          => "Alicante_typo",
+        country                => "es",
+        currency               => "EUR",
+        citizenship            => "es",
+        date_of_birth          => "1992-01-02",
+        first_name             => "John",
+        last_name              => "Doe",
+        non_pep_declaration    => 1,
+        password               => "S3creTp4ssw0rd",
+        phone                  => "+72443598863",
+        tnc_accepted           => 1,
+        tnc_affiliate_accepted => 1,
+        verification_code      => $code
+    };
+
+    $rpc_ct->call_ok('affiliate_add_person', $params)->has_error->error_code_is('InvalidState', 'Error should return');
+
+    $params->{args}->{address_state} = 'Alicante';
+    my $result = $rpc_ct->call_ok('affiliate_add_person', $params)->has_no_system_error->result;
     ok exists $result->{demo}, "Response has demo account details";
     ok exists $result->{real}, "Response has real account details";
 };
 
 subtest 'new affiliate account wrong country and state' => sub {
-    my $password = 'Abcd33!@';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'new_aff' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
+    my $email     = 'new_aff' . rand(999) . '@binary.com';
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         email       => $email,
@@ -204,23 +277,121 @@ subtest 'new affiliate account wrong country and state' => sub {
         })->token;
 
     $params->{args} = {
-        affiliate_account_add => 1,
-        address_city          => "city",
-        address_line_1        => "address line 1",
-        address_postcode      => "someCode",
-        address_state         => "somewhere",
-        country               => "at",
-        date_of_birth         => "1992-01-02",
-        first_name            => "John",
-        last_name             => "Doe",
-        non_pep_declaration   => 1,
-        password              => "S3creTp4ssw0rd",
-        phone                 => "+72443598863",
-        tnc_accepted          => 1,
-        verification_code     => $code
+        affiliate_add_person   => 1,
+        address_city           => "city",
+        address_street         => "address line 1",
+        address_postcode       => "someCode",
+        address_state          => "somewhere",
+        country                => "at",
+        currency               => "EUR",
+        citizenship            => "es",
+        date_of_birth          => "1992-01-02",
+        first_name             => "John",
+        last_name              => "Doe",
+        non_pep_declaration    => 1,
+        password               => "S3creTp4ssw0rd",
+        phone                  => "+72443598863",
+        tnc_accepted           => 1,
+        tnc_affiliate_accepted => 1,
+        verification_code      => $code
     };
 
-    $rpc_ct->call_ok('affiliate_account_add', $params)->has_error->error_code_is('InvalidState', 'Error should return');
+    $rpc_ct->call_ok('affiliate_add_person', $params)->has_error->error_code_is('InvalidState', 'Error should return');
+};
+
+subtest 'new affiliate account restricted countries (iran and north korea)' => sub {
+    my $email = 'new_aff' . rand(999) . '@binary.com';
+
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'br',
+    });
+
+    my %restricted_country_states = (
+        'ir' => 'Tehran',
+        'kp' => 'Chagang'
+    );
+    my @countries = keys %restricted_country_states;
+    for my $country (@countries) {
+        my $code = BOM::Platform::Token->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'partner_account_opening',
+            })->token;
+
+        $params->{args} = {
+            affiliate_add_person   => 1,
+            address_city           => "city",
+            address_street         => "address line 1",
+            address_postcode       => "someCode",
+            address_state          => $restricted_country_states{$country},
+            country                => $country,
+            currency               => "EUR",
+            citizenship            => $country,
+            date_of_birth          => "1992-01-02",
+            first_name             => "John",
+            last_name              => "Doe",
+            non_pep_declaration    => 1,
+            password               => "S3creTp4ssw0rd",
+            phone                  => "+72443598863",
+            tnc_accepted           => 1,
+            tnc_affiliate_accepted => 1,
+            verification_code      => $code
+        };
+
+        $rpc_ct->call_ok('affiliate_add_person', $params)->has_error->error_code_is('invalid residence', 'Error should return');
+
+    }
+};
+
+subtest 'new affiliate account other restricted countries except ir,kp should able to create account' => sub {
+    my %sample_restricted_country_states = (
+        'us' => 'Arizona',
+        'ca' => 'Alberta',
+    );
+    my @countries = keys %sample_restricted_country_states;
+    for my $country (@countries) {
+        my $email = 'new_aff' . rand(999) . '@binary.com';
+
+        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            residence   => 'br',
+        });
+
+        my $code = BOM::Platform::Token->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'partner_account_opening',
+            })->token;
+
+        $params->{args} = {
+            affiliate_add_person   => 1,
+            address_city           => "city",
+            address_street         => "address line 1",
+            address_postcode       => "someCode",
+            address_state          => $sample_restricted_country_states{$country},
+            country                => $country,
+            currency               => "EUR",
+            citizenship            => $country,
+            date_of_birth          => "1992-01-02",
+            first_name             => "John",
+            last_name              => "Doe",
+            non_pep_declaration    => 1,
+            password               => "S3creTp4ssw0rd",
+            phone                  => "+72443598863",
+            tnc_accepted           => 1,
+            tnc_affiliate_accepted => 1,
+            verification_code      => $code
+        };
+        my $result = $rpc_ct->call_ok('affiliate_add_person', $params)->has_no_system_error->result;
+        ok exists $result->{demo},              "Response has demo account details";
+        ok exists $result->{real},              "Response has real account details";
+        ok exists $result->{real}->{cra_token}, "Response has cra_token in real section";
+
+    }
+
 };
 
 subtest 'new affiliate account cellXpert die with AlreadyRegistered email' => sub {
@@ -230,14 +401,7 @@ subtest 'new affiliate account cellXpert die with AlreadyRegistered email' => su
         sub {
             return Future->fail("Email already exist");
         });
-    my $password = 'Abcd33!@';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'new_aff' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
+    my $email     = 'new_aff' . rand(999) . '@binary.com';
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         email       => $email,
@@ -251,26 +415,30 @@ subtest 'new affiliate account cellXpert die with AlreadyRegistered email' => su
         })->token;
 
     $params->{args} = {
-        affiliate_account_add => 1,
-        address_city          => "Timbuktu",
-        address_line_1        => "Askia Mohammed Bvd,",
-        address_postcode      => "QXCQJW",
-        address_state         => "Nouaceur",
-        country               => "ma",
-        date_of_birth         => "1992-01-02",
-        first_name            => "John",
-        last_name             => "Doe",
-        non_pep_declaration   => 1,
-        password              => "S3creTp4ssw0rd",
-        phone                 => "+72443598863",
-        tnc_accepted          => 1,
-        verification_code     => $code
+        affiliate_add_person   => 1,
+        address_city           => "Timbuktu",
+        address_street         => "Askia Mohammed Bvd,",
+        address_postcode       => "QXCQJW",
+        address_state          => "Nouaceur",
+        country                => "ma",
+        currency               => "EUR",
+        citizenship            => "es",
+        date_of_birth          => "1992-01-02",
+        first_name             => "John",
+        last_name              => "Doe",
+        non_pep_declaration    => 1,
+        password               => "S3creTp4ssw0rd",
+        phone                  => "+72443598863",
+        tnc_accepted           => 1,
+        tnc_affiliate_accepted => 1,
+        verification_code      => $code
     };
 
-    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('affiliate_add_person', $params)->has_no_system_error->result;
 
-    ok exists $result->{demo}, "Response has demo account details";
-    ok exists $result->{real}, "Response has real account details";
+    ok exists $result->{demo},              "Response has demo account details";
+    ok exists $result->{real},              "Response has real account details";
+    ok exists $result->{real}->{cra_token}, "Response has cra_token in real section";
 };
 
 subtest 'new affiliate account cellXpert die with CXRuntime error' => sub {
@@ -301,23 +469,26 @@ subtest 'new affiliate account cellXpert die with CXRuntime error' => sub {
         })->token;
 
     $params->{args} = {
-        affiliate_account_add => 1,
-        address_city          => "Timbuktu",
-        address_line_1        => "Askia Mohammed Bvd,",
-        address_postcode      => "QXCQJW",
-        address_state         => "Nouaceur",
-        country               => "ma",
-        date_of_birth         => "1992-01-02",
-        first_name            => "John",
-        last_name             => "Doe",
-        non_pep_declaration   => 1,
-        password              => "S3creTp4ssw0rd",
-        phone                 => "+72443598863",
-        tnc_accepted          => 1,
-        verification_code     => $code
+        affiliate_add_person   => 1,
+        address_city           => "Timbuktu",
+        address_street         => "Askia Mohammed Bvd,",
+        address_postcode       => "QXCQJW",
+        address_state          => "Nouaceur",
+        country                => "ma",
+        currency               => "EUR",
+        citizenship            => "es",
+        date_of_birth          => "1992-01-02",
+        first_name             => "John",
+        last_name              => "Doe",
+        non_pep_declaration    => 1,
+        password               => "S3creTp4ssw0rd",
+        phone                  => "+72443598863",
+        tnc_accepted           => 1,
+        tnc_affiliate_accepted => 1,
+        verification_code      => $code
     };
 
-    $rpc_ct->call_ok('affiliate_account_add', $params)->has_error->error_code_is('CXRuntimeError', 'Error should return');
+    $rpc_ct->call_ok('affiliate_add_person', $params)->has_error->error_code_is('CXRuntimeError', 'Error should return');
 };
 
 done_testing();
