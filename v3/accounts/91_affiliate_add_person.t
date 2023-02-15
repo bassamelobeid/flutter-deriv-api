@@ -22,20 +22,23 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $t = build_wsapi_test();
 
 my %details = (
-    affiliate_account_add => 1,
-    address_city          => "Timbuktu",
-    address_line_1        => "Askia Mohammed Bvd,",
-    address_postcode      => "QXCQJW",
-    address_state         => "Tombouctou",
-    country               => "ml",
-    data_of_birth         => "1992-01-02",
-    first_name            => "John",
-    last_name             => "Doe",
-    non_pep_declaration   => 1,
-    password              => "S3creTp4ssw0rd",
-    phone                 => "+72443598863",
-    tnc_accepted          => 1,
-    username              => "johndoe"
+    affiliate_add_person   => 1,
+    address_city           => "Timbuktu",
+    address_street         => "Askia Mohammed Bvd,",
+    address_postcode       => "QXCQJW",
+    address_state          => "Tombouctou",
+    citizenship            => "ml",
+    country                => "ml",
+    currency               => "USD",
+    data_of_birth          => "1992-01-02",
+    first_name             => "John",
+    last_name              => "Doe",
+    non_pep_declaration    => 1,
+    password               => "S3creTp4ssw0rd",
+    phone                  => "+72443598863",
+    tnc_accepted           => 1,
+    tnc_affiliate_accepted => 1,
+    username               => "johndoe"
 );
 
 my $lc = LandingCompany::Registry->by_broker('CRA');
@@ -48,9 +51,9 @@ subtest 'new affiliate account' => sub {
         residence       => 'au',
     });
 
-    my $res = $t->await::affiliate_account_add(\%details, {timeout => 10});
-    test_schema('affiliate_account_add', $res);
-    is $res->{msg_type}, "affiliate_account_add";
+    my $res = $t->await::affiliate_add_person(\%details, {timeout => 10});
+    test_schema('affiliate_add_person', $res);
+    is $res->{msg_type}, "affiliate_add_person";
     delete($res->{echo_req}->{req_id});
     cmp_deeply $res->{echo_req}, \%details;
 };
