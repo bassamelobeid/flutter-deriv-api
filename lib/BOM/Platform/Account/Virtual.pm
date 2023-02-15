@@ -23,6 +23,7 @@ sub create_account {
     my $date_first_contact     = $details->{date_first_contact};
     my $brand_name             = $details->{brand_name} // request()->brand->name;
     my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
+    my $account_opening_reason = $args->{account_opening_reason} // '';
 
     # The argument `type` stands for a `category` in account type terminology.
     # TODO: The argument sould be renamed to `category` in the API for consistency.
@@ -40,9 +41,15 @@ sub create_account {
             if $category eq 'trading' && $user->bom_virtual_loginid;          # a virtual trading client already exists
     }
 
-    # we will also check for `is_signup_allowed`
-    if ($residence && ($brand_country_instance->restricted_country($residence) || !$brand_country_instance->is_signup_allowed($residence))) {
-        return {error => {code => 'invalid residence'}};
+    if ($account_opening_reason eq 'affiliate') {
+        if ($residence eq 'ir' || $residence eq 'kp') {    # only North-korea and Iran do not allow to open affilate partner account
+            return {error => {code => 'invalid residence'}};
+        }
+    } else {
+        # we will also check for `is_signup_allowed`
+        if ($residence && ($brand_country_instance->restricted_country($residence) || !$brand_country_instance->is_signup_allowed($residence))) {
+            return {error => {code => 'invalid residence'}};
+        }
     }
 
     # set virtual company if residence is provided otherwise use brand name to infer the broker code
