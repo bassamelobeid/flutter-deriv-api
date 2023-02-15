@@ -8,8 +8,8 @@
         "msg_type"
     ],
     "properties": {
-        "affiliate_account_add": {
-            "title": "affiliate_account_add",
+        "affiliate_add_company": {
+            "title": "affiliate_add_company",
             "description": "The information of the affiliate user trying to register.",
             "type": "object",
             "additionalProperties": false,
@@ -18,14 +18,6 @@
                 "real"
             ],
             "properties": {
-                "address_line_1": {
-                    "description": "First line of address.",
-                    "type": "string"
-                },
-                "address_line_2": {
-                    "description": "Second line of address.",
-                    "type": "string"
-                },
                 "address_postcode": {
                     "description": "Postal code of the address.",
                     "type": "string"
@@ -34,8 +26,24 @@
                     "description": "State / Region of the address.",
                     "type": "string"
                 },
+                "address_street": {
+                    "description": "First line of address.",
+                    "type": "string"
+                },
                 "affiliate_id": {
                     "description": "Affiliate ID from CellXperts for the created affiliate",
+                    "type": "string"
+                },
+                "bta": {
+                    "description": "[Optional] BTA id field for master affiliate.",
+                    "type": "integer"
+                },
+                "company_name": {
+                    "description": "Name of the company trying to register.",
+                    "type": "string"
+                },
+                "company_register_number": {
+                    "description": "Company registration number.",
                     "type": "string"
                 },
                 "country": {
@@ -100,7 +108,7 @@
             "description": "Action name of the request made.",
             "type": "string",
             "enum": [
-                "affiliate_account_add"
+                "affiliate_add_company"
             ]
         },
         "req_id": {

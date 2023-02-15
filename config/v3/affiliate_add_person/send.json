@@ -8,8 +8,14 @@
     "auth_scopes": [],
     "additionalProperties": false,
     "required": [
-        "affiliate_account_add",
+        "affiliate_add_person",
+        "address_city",
+        "address_postcode",
+        "address_state",
+        "address_street",
+        "citizenship",
         "country",
+        "currency",
         "date_of_birth",
         "first_name",
         "last_name",
@@ -17,10 +23,11 @@
         "password",
         "phone",
         "tnc_accepted",
+        "tnc_affiliate_accepted",
         "verification_code"
     ],
     "properties": {
-        "affiliate_account_add": {
+        "affiliate_add_person": {
             "description": "[Required] Must be `1`",
             "type": "integer",
             "enum": [
@@ -32,16 +39,6 @@
             "type": "string",
             "pattern": "^\\p{L}[\\p{L}\\s'.-]{0,49}$"
         },
-        "address_line_1": {
-            "description": "Within 70 characters, with no leading whitespaces and may contain letters/numbers and/or any of following characters '.,:;()@#/-",
-            "type": "string",
-            "pattern": "^[\\p{L}\\p{Nd}'.,:;()\\x{b0}@#/-][\\p{L}\\p{Nd}\\s'.,:;()\\x{b0}@#/-]{0,69}$"
-        },
-        "address_line_2": {
-            "description": "[Optional] Within 70 characters.",
-            "type": "string",
-            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()\\x{b0}@#/-]{0,70}$"
-        },
         "address_postcode": {
             "description": "Within 20 characters and may not contain '+'.",
             "type": "string",
@@ -52,10 +49,29 @@
             "type": "string",
             "pattern": "^[\\p{L}\\p{Nd}\\s'.,-]{0,100}$"
         },
-        "country": {
-            "description": "Country of legal citizenship, 2-letter country code.",
+        "address_street": {
+            "description": "Within 70 characters, with no leading whitespaces and may contain letters/numbers and/or any of following characters '.,:;()@#/-",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}'.,:;()\\x{b0}@#/-][\\p{L}\\p{Nd}\\s'.,:;()\\x{b0}@#/-]{0,69}$"
+        },
+        "bta": {
+            "description": "[Optional] BTA id field for master affiliate.",
+            "type": "integer"
+        },
+        "citizenship": {
+            "description": "Country of citizenship, 2-letter country code.",
             "type": "string",
             "pattern": "^([a-z]{2})?$"
+        },
+        "country": {
+            "description": "Name of the country that currently reside, 2-letter country code.",
+            "type": "string",
+            "pattern": "^([a-z]{2})?$"
+        },
+        "currency": {
+            "description": "Currency of affiliate that wants to work with.",
+            "type": "string",
+            "pattern": "^([A-Z]{3})?$"
         },
         "date_of_birth": {
             "description": "Birth date of affiliate user trying to register",
@@ -93,8 +109,35 @@
             "pattern": "^\\+((-|\\s)*[0-9]){8,35}$",
             "sensitive": 1
         },
+        "promote_eu": {
+            "description": "Indicates client is going to promote its account to EU or not.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "receive_marketing_emails": {
+            "description": "Indicates client has agreed to receive marketing emails or not.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "social_media_url": {
+            "description": "Social media URL of the affiliate trying to register.",
+            "type": "string",
+            "pattern": "^[0-9A-Za-z.-]{5,250}$",
+            "sensitive": 1
+        },
         "tnc_accepted": {
             "description": "Indicates client has agreed to the terms and conditions.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "tnc_affiliate_accepted": {
+            "description": "Indicates client has agreed to the terms and conditions for affiliates.",
             "type": "integer",
             "enum": [
                 1
@@ -104,6 +147,12 @@
             "description": "Email verification code (received from a `verify_email` call, which must be done first).",
             "type": "string",
             "pattern": "^\\w{8,128}$"
+        },
+        "website_url": {
+            "description": "Social media URL of the affiliate trying to register.",
+            "type": "string",
+            "pattern": "^[0-9A-Za-z.-]{5,250}$",
+            "sensitive": 1
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",

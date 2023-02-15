@@ -422,7 +422,14 @@ sub actions_config {
             }
         ],
         [
-            'affiliate_account_add',
+            'affiliate_add_person',
+            {
+                stash_params => [qw/ token server_name client_ip user_agent /],
+                msg_group    => 'account',
+            }
+        ],
+        [
+            'affiliate_add_company',
             {
                 stash_params => [qw/ token server_name client_ip user_agent /],
                 msg_group    => 'account',
