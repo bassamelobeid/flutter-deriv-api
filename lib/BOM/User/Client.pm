@@ -7734,8 +7734,9 @@ Returns the balance available for p2p
 sub p2p_balance {
     my ($self) = @_;
 
-    my $amount = $self->balance_for_cashier('p2p');
-    $amount += ($self->_p2p_advertiser_cached->{extra_sell_amount} // 0);
+    my $amount     = $self->balance_for_cashier('p2p');
+    my $advertiser = $self->_p2p_advertiser_cached // {};
+    $amount += ($advertiser->{extra_sell_amount} // 0);
     $amount = min($amount, $self->account->balance);
     return financialrounding('amount', $self->currency, $amount);
 }
