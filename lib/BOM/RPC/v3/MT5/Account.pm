@@ -2000,14 +2000,6 @@ async_rpc "mt5_withdrawal",
                     } catch ($e) {
                         my $error = BOM::Transaction->format_error(err => $e);
                         log_exception('mt5_withdrawal');
-                        _send_email(
-                            loginid      => $to_loginid,
-                            mt5_id       => $fm_mt5,
-                            amount       => $amount,
-                            action       => 'withdraw',
-                            error        => $error->get_mesg,
-                            account_type => $account_type,
-                        );
                         return create_error_future($error_code, {message => $error->{-message_to_client}});
                     }
                 });
