@@ -115,10 +115,11 @@ sub _email_diffs_to_compliance {
         $message = $content->{sections}->{financial_information};
 
         send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
-            subject => $subject,
-            message => [$message],
+            from                  => $brand->emails('support'),
+            to                    => $brand->emails('compliance'),
+            subject               => $subject,
+            message               => [$message],
+            email_content_is_html => 1
         });
     }
     if ($content->{trading_experience} || $content->{trading_experience_regulated}) {
@@ -134,10 +135,11 @@ sub _email_diffs_to_compliance {
             }
         }
         send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
-            subject => $subject,
-            message => [$message],
+            from                  => $brand->emails('support'),
+            to                    => $brand->emails('compliance'),
+            subject               => $subject,
+            message               => [$message],
+            email_content_is_html => 1
         });
     }
 
