@@ -9,7 +9,7 @@ use YAML::XS qw(LoadFile);
 use IO::Async::Loop;
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
-use Log::Any::Adapter qw(Stdout), log_level => 'info';
+use Log::Any::Adapter qw(Stdout), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 use BOM::Database::UserDB;
 use BOM::Config;
 use Date::Utility;
@@ -20,6 +20,7 @@ use BOM::Rules::Engine;
 use BOM::TradingPlatform;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
 use BOM::Platform::Event::Emitter;
+use Data::Dump 'pp';
 
 # Maximum age of accounts (based on creation date) to not archive
 use constant NUMBER_OF_DAYS => 30;
@@ -112,7 +113,7 @@ for my $server_type (@servers) {
 }
 
 async sub get_dx_accounts {
-    $log->infof("Fetching %s DerivX accounts from our database...", $account_type);
+    $log->debugf("Fetching %s DerivX accounts from our database...", $account_type);
 
     my $vrtc_query = "";
 
@@ -149,12 +150,12 @@ async sub get_dx_accounts {
                 );
             });
     } catch ($e) {
-        stats_inc("derivx.archival.fetching.failure", {tags => ["error:$e"]});
-        $log->errorf("An error has occured while fetching accounts : %s", $e);
+        stats_inc("derivx.archival.fetching.failure", {tags => ["error:" . pp($e)]});
+        $log->debugf("An error has occured while fetching accounts : %s", pp($e));
         return;
     };
 
-    $log->infof("Done. Checking fetched %s accounts for archival...", $account_type);
+    $log->debugf("Done. Checking fetched %s accounts for archival...", $account_type);
 
     await fmap_void(
         async sub {
@@ -173,16 +174,16 @@ async sub get_dx_accounts {
                         );
                     });
 
-                stats_inc("derivx.archival.processing.failure", {tags => ["account:" . $derivx_account->{dx_account}, "error:$e"]});
-                $log->errorf("An error has occured while processing '%s' : %s. The status of the account will be reset",
-                    $derivx_account->{dx_account}, $e);
+                stats_inc("derivx.archival.processing.failure", {tags => ["account:" . $derivx_account->{dx_account}, "error:" . pp($e)]});
+                $log->debugf("An error has occured while processing '%s' : %s. The status of the account will be reset",
+                    $derivx_account->{dx_account}, pp($e));
             }
         },
         foreach    => $derivx_accounts,
         concurrent => $concurrent_calls
     );
 
-    $log->infof("Finished checking fetched accounts for archival");
+    $log->debugf("Finished checking fetched accounts for archival");
 }
 
 async sub process_account {
@@ -217,7 +218,7 @@ async sub process_account {
     return if await check_deals($dx_account, $clearing_code, $type);
     return if await check_balance_and_open_positions($dx, $cr_account, $dx_account, $clearing_code, $type);
 
-    $log->infof("Will archive '%s'", $dx_account);
+    $log->debugf("Will archive '%s'", $dx_account);
 
     await $dxweb_client{$type}->account_update(
         clearing_code => $clearing_code,
@@ -235,7 +236,7 @@ async sub process_account {
     unless (scalar(@$active_accounts)) {
         $dx->reset_password($client->user_id);
         stats_inc("derivx.archival.password.reset.success", {tags => ["client:$client->user_id"]});
-        $log->infof("Password for client '%s' has been reset", $client->user_id);
+        $log->debugf("Password for client '%s' has been reset", $client->user_id);
     }
 
     # Sending email only for 'real' accounts, not for demo
@@ -251,8 +252,8 @@ async sub process_account {
     $counter++;
     stats_inc("derivx.archival.success", {tags => ["account:$dx_account"]});
     stats_event("DerivX accounts archival", "Processed $counter accounts", {alert_type => 'info'}) unless $counter % 1000;
-    $log->infof("Account '%s' has been successfully archived", $dx_account);
-    $log->infof("----------------");
+    $log->debugf("Account '%s' has been successfully archived", $dx_account);
+    $log->debugf("----------------");
 }
 
 async sub check_deals {
@@ -307,7 +308,7 @@ sub transfer_remaining_funds {
 
     stats_inc("derivx.archival.transfer.success",
         {tags => ["source_account:$dx_account", "target_account:$cr_account", "amount:$balance $currency"]});
-    $log->infof("Successfully transfered %s %s from '%s' to '%s'", $balance, $currency, $dx_account, $cr_account);
+    $log->debugf("Successfully transfered %s %s from '%s' to '%s'", $balance, $currency, $dx_account, $cr_account);
 }
 
 =head2 get_active_dx_accounts
