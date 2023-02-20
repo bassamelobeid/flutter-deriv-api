@@ -185,6 +185,33 @@ sub get_onfido_checks {
     return;
 }
 
+=head2 get_onfido_check
+
+Gets a check by id.
+
+=cut
+
+sub get_onfido_check {
+    my ($user_id, $applicant_id, $check_id) = @_;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref(
+                    'SELECT * FROM users.get_onfido_checks(?::BIGINT, ?::TEXT) WHERE id=?',
+                    {Slice => {}},
+                    $user_id, $applicant_id, $check_id
+                );
+            });
+    } catch ($e) {
+        die "Fail to get Onfido checks in DB: $e . Please check USER_ID: $user_id";
+    }
+
+    return;
+}
+
 =head2 update_onfido_check
 
 Stores onfido check into the DB

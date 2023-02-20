@@ -152,6 +152,14 @@ subtest 'store & update & fetch check ' => sub {
     my $result;
     lives_ok { $result = BOM::User::Onfido::get_latest_onfido_check($test_client->binary_user_id); } 'get latest onfido check should pass';
 
+    my $first_check_by_id = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $app1->id, "notid");
+
+    is $first_check_by_id->{id}, undef, 'Check was not found in DB';
+
+    my $check_by_id = BOM::User::Onfido::get_onfido_check($test_client->binary_user_id, $app1->id, $check->id);
+
+    is $check_by_id->{id}, $check->id, 'Check was found in DB';
+
     is($result->{id},       $check->id,    'get latest onfido check result ok');
     is($result->{status},   'in_progress', 'the status of check is in_progress');
     is($result->{api_type}, 'deprecated',  'type got deprecated in v3');
