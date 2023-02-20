@@ -127,8 +127,6 @@ sub after_register_client {
 
     BOM::Platform::Client::IDAuthentication->new(client => $client)->run_validation('signup');
 
-    BOM::User::Utility::set_gamstop_self_exclusion($client);
-
     set_allow_document_upload($client) if $client->account_type eq 'trading';
 
     return {
