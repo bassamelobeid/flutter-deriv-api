@@ -79,14 +79,6 @@
         account_secret: ''
       eu_sanctions:
         token: ''
-      gamstop:
-        api_uri: ''
-        batch_uri: ''
-        config:
-          iom:
-            api_key: ''
-          malta:
-            api_key: ''
       isignthis:
         notification_token: some env
       myaffiliates:
