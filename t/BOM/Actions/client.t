@@ -23,6 +23,8 @@ use BOM::Platform::Context           qw(request);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 use WebService::Async::Onfido;
+use WebService::Async::Onfido::Check;
+use WebService::Async::Onfido::Report;
 use BOM::Event::Actions::Client;
 use BOM::Event::Process;
 use BOM::User::Onfido;
@@ -1022,8 +1024,6 @@ subtest "client_verification" => sub {
         $mocked_report->unmock_all;
     }
     "client verification no exception, rejected result";
-
-    $redis_mock->unmock_all;
 
     subtest 'forged email' => sub {
         my $redis_write = $services->redis_events_write();
@@ -4523,6 +4523,99 @@ subtest 'Onfido DOB checks' => sub {
     $mocked_report->unmock_all();
     $mocked_onfido->unmock_all();
     $mocked_emitter->unmock_all();
+};
+
+subtest 'store check coming from webhook even if there is no check record in db' => sub {
+    lives_ok {
+        my $ryu_mock = Test::MockModule->new('Ryu::Source');
+
+        my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
+
+        my $mocked_check = Test::MockModule->new('WebService::Async::Onfido::Check');
+
+        my $events_mock = Test::MockModule->new('BOM::Event::Actions::Client');
+
+        $events_mock->mock(
+            '_store_applicant_documents',
+            sub {
+                return Future->done;
+            });
+
+        $mocked_check->mock(
+            'result',
+            sub {
+                return 'consider';
+            });
+
+        $mocked_check->mock(
+            'onfido',
+            sub {
+                return $onfido;
+            });
+
+        my @reports = (
+            WebService::Async::Onfido::Report->new(
+                id         => 'aaa',
+                result     => 'consider',
+                breakdown  => {},
+                properties => {},
+                name       => 'document'
+            ),
+        );
+        $ryu_mock->mock(
+            'as_list',
+            sub {
+                return Future->done(@reports);
+            });
+
+        my $mocked_report = Test::MockModule->new('WebService::Async::Onfido::Report');
+
+        $mocked_report->mock(
+            'result',
+            sub {
+                return 'consider';
+            });
+
+        $check_href = '/v2/applicants/some-id/checks/newcheck';
+
+        $onfido_mocker->mock(
+            'check_get',
+            sub {
+                return Future->done(
+                    WebService::Async::Onfido::Check->new(
+                        'href'         => '/v3.4/checks/newcheck',
+                        'results_uri'  => 'https://onfido.com/dashboard/information_requests/<REQUEST_ID>',
+                        'result'       => 'consider',
+                        'created_at'   => '2025-01-12 14:29:37',
+                        'stamp'        => '2025-01-12 14:29:37.440662',
+                        'api_type'     => 'deprecated',
+                        'download_uri' => 'http://localhost:4039/v3.4/checks/newcheck/download',
+                        'tags'         => ['automated', 'CR', 'CR10000', 'IDN', 'brand:deriv'],
+                        'applicant_id' => $applicant_id,
+                        'id'           => 'newcheck',
+                        'status'       => 'complete'
+
+                    ));
+            });
+
+        BOM::Event::Actions::Client::client_verification({check_url => $check_href})->get;
+
+        my $check_newdata = BOM::Database::UserDB::rose_db()->dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT)', undef, $test_client->user_id, $applicant_id);
+            });
+
+        is $check_newdata->{id}, 'newcheck', 'the check was stored';
+
+        $mocked_check->unmock_all;
+        $mocked_report->unmock_all;
+        $onfido_mocker->unmock_all;
+        $ryu_mock->unmock_all;
+        $events_mock->unmock_all;
+    }
+    "Check found in db";
+
+    $check_href = '/v2/applicants/some-id/checks/' . $check->{id};
 };
 
 subtest 'crypto_withdrawal_rejected_email' => sub {

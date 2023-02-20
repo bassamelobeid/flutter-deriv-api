@@ -696,6 +696,7 @@ async sub client_verification {
         my $check = await _onfido()->check_get(
             check_id => $check_id,
         );
+
         my $applicant_id = $check->applicant_id;
         my $result       = $check->result;
 
@@ -725,6 +726,10 @@ async sub client_verification {
             $client = BOM::User::Client->new({loginid => $loginid})
                 or die 'Could not instantiate client for login ID ' . $loginid;
             $log->debugf('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
+
+            my $db_check = BOM::User::Onfido::get_onfido_check($client->binary_user_id, $applicant_id, $check_id);
+
+            BOM::User::Onfido::store_onfido_check($applicant_id, $check) unless $db_check;
 
             my $country     = $client->place_of_birth // $client->residence;
             my $country_tag = $country ? uc(country_code2code($country, 'alpha-2', 'alpha-3')) : '';
