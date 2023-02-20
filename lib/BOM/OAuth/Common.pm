@@ -539,7 +539,7 @@ sub activate_accounts {
     my $unknown_location = !$selected_account->user->logged_in_before_from_same_location($environment);
 
     # perform postponed logging and notification
-    $selected_account->user->after_login(undef, $environment, $app->{id}, @$closed_clients);
+    $selected_account->user->after_login(undef, $environment, $app->{id});
     $c->c($selected_account, $unknown_location, $app);
 }
 
