@@ -528,87 +528,6 @@ subtest 'Champion fx users' => sub {
     };
 };
 
-subtest 'GAMSTOP' => sub {
-    my ($email_gamstop, $client_vrgamstop, $client_gamstop, $client_gamstop_mx, $vrgamstop_loginid, $gamstop_loginid, $user_gamstop) =
-        ('gamstop@binary.com');
-    lives_ok {
-        $client_vrgamstop = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-        });
-        $client_gamstop = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MLT',
-        });
-        $client_gamstop_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-        });
-
-        $client_vrgamstop->email($email_gamstop);
-        $client_vrgamstop->residence('gb');
-        $client_vrgamstop->save;
-
-        $client_gamstop->email($email_gamstop);
-        $client_gamstop->residence('gb');
-        $client_gamstop->save;
-
-        $client_gamstop_mx->email($email_gamstop);
-        $client_gamstop_mx->residence('gb');
-        $client_gamstop_mx->save;
-
-        $vrgamstop_loginid = $client_vrgamstop->loginid;
-        $gamstop_loginid   = $client_gamstop->loginid;
-    }
-    'creating clients';
-
-    lives_ok {
-        $user_gamstop = BOM::User->create(
-            email    => $email_gamstop,
-            password => $hash_pwd
-        );
-
-        $user_gamstop->add_client($client_vrgamstop);
-        $user_gamstop->add_client($client_gamstop);
-        $user_gamstop->add_client($client_gamstop_mx);
-    }
-    'create user with loginid';
-
-    my $gamstop_module = Test::MockModule->new('WebService::GAMSTOP');
-    my %params         = (
-        exclusion => 'Y',
-        date      => Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ,
-        unique_id => '111-222-333'
-    );
-    my $default_client;
-    my $date_plus_one_day = Date::Utility->new->plus_time_interval('1d')->date_yyyymmdd;
-
-    subtest 'GAMSTOP - Y - excluded' => sub {
-        $gamstop_module->mock('get_exclusion_for', sub { return WebService::GAMSTOP::Response->new(%params); });
-
-        ok $user_gamstop->login(%args)->{success}, 'can login';
-        is $client_gamstop->get_self_exclusion_until_date, Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd,
-            'Based on Y response from GAMSTOP client was self excluded';
-
-        $client_gamstop->set_exclusion->exclude_until(undef);
-        $client_gamstop->save;
-    };
-
-    subtest 'GAMSTOP - N - not excluded' => sub {
-        $params{exclusion} = 'N';
-        $gamstop_module->mock('get_exclusion_for', sub { return WebService::GAMSTOP::Response->new(%params); });
-
-        ok $user_gamstop->login(%args)->{success}, 'can login';
-        is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
-    };
-
-    subtest 'GAMSTOP - P - previously excluded but not anymore' => sub {
-        $params{exclusion} = 'P';
-
-        $gamstop_module->mock('get_exclusion_for', sub { return WebService::GAMSTOP::Response->new(%params); });
-
-        ok $user_gamstop->login(%args)->{success}, 'can login';
-        is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
-    };
-};
-
 subtest 'MirrorBinaryUserId' => sub {
     use YAML::XS qw/LoadFile/;
     use BOM::User::Script::MirrorBinaryUserId;
@@ -622,8 +541,8 @@ subtest 'MirrorBinaryUserId' => sub {
 
     # at this point we have 9 rows in the queue: 2x VRTC, 7x CR, 2x MT and 1x VRCH
     my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
-
-    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 21, 'got expected number of queue entries';
+    # dependent on clients created by previous tests
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 18, 'got expected number of queue entries';
 
     BOM::User::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';

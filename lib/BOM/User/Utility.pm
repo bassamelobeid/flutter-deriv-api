@@ -14,7 +14,6 @@ use Date::Utility;
 use Encode;
 use Encode::Detect::Detector;
 use Syntax::Keyword::Try;
-use WebService::GAMSTOP;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use YAML::XS qw(LoadFile);
@@ -33,8 +32,6 @@ use Exporter qw(import);
 our @EXPORT_OK = qw(parse_mt5_group p2p_rate_rounding p2p_exchange_rate);
 
 use constant {
-    GAMSTOP_DURATION_IN_MONTHS => 6,
-
     P2P_ADVERT_STATE_PREFIX => 'P2P::ADVERT_STATE::',    # p2p advert state storage
     P2P_ADVERT_STATE_EXPIRY => 7 * 24 * 60 * 60,         # 7 days
     P2P_RATE_PRECISION      => 6,
@@ -76,72 +73,6 @@ sub decrypt_secret_answer {
     }
 
     return $secret_answer;
-}
-
-=head2 set_gamstop_self_exclusion
-
-Marks a client as self-excluded if GAMSTOP tells us that we should.
-
-Our exclusion here is hardcoded to 6 months - GAMSTOP only gives us a simple binary
-"yes/no" for the exclusion query.
-
-=cut
-
-sub set_gamstop_self_exclusion {
-    my $client = shift;
-
-    return undef unless $client and $client->residence;
-
-    # gamstop is only applicable for UK residence
-    return undef unless request()->brand->countries_instance->countries_list->{$client->residence}->{gamstop_company};
-
-    my $gamstop_config = BOM::Config::third_party()->{gamstop};
-
-    my $lc                     = $client->landing_company->short;
-    my $landing_company_config = $gamstop_config->{config}->{$lc};
-    # don't request if we don't have gamstop key per landing company
-    return undef unless $landing_company_config;
-
-    my $gamstop_response;
-    try {
-        my $instance = WebService::GAMSTOP->new(
-            api_url => $gamstop_config->{api_uri},
-            api_key => $landing_company_config->{api_key});
-
-        $gamstop_response = $instance->get_exclusion_for(
-            first_name    => $client->first_name,
-            last_name     => $client->last_name,
-            email         => $client->email,
-            date_of_birth => $client->date_of_birth,
-            postcode      => $client->postcode,
-            mobile        => $client->phone,
-        );
-
-        stats_inc('GAMSTOP_RESPONSE', {tags => ['EXCLUSION:' . ($gamstop_response->get_exclusion() // 'NA'), "landing_company:$lc"]});
-    } catch ($e) {
-        stats_inc('GAMSTOP_CONNECT_FAILURE') if $e =~ /^Error/;
-    }
-
-    return undef unless $gamstop_response;
-
-    return undef if ($client->get_self_exclusion_until_date or not $gamstop_response->is_excluded());
-
-    try {
-        my $exclude_until = set_exclude_until_for($client, GAMSTOP_DURATION_IN_MONTHS);
-
-        my $subject = 'Client ' . $client->loginid . ' was self-excluded via GAMSTOP until ' . $exclude_until;
-        my $content = 'GAMSTOP self-exclusion will end on ' . $exclude_until;
-        # send email to helpdesk.
-        $client->add_note($subject, $content);
-        my $brand = request()->brand();
-        # also send email to compliance
-        Email::Stuffer->from($brand->emails('compliance_alert'))->to($brand->emails('compliance_alert'))->subject($subject)->text_body($content)
-            ->send_or_die;
-    } catch ($e) {
-        warn "An error occurred while setting client exclusion: $e";
-    }
-
-    return undef;
 }
 
 # set exclude_until to n-months from now and returns that in yyyy-mm-dd format

@@ -342,7 +342,7 @@ sub login {
         $error = $self->clients(include_self_closed => 1) ? 'AccountSelfClosed' : 'AccountUnavailable';
     }
 
-    $self->after_login($error, $environment, $app_id, @clients);
+    $self->after_login($error, $environment, $app_id);
 
     state $error_mapping = BOM::User::Static::get_error_mapping();
 
@@ -362,8 +362,6 @@ Finishes the processing of a login attempt by:
 
 1- Saving the result in login history and redis
 
-2- setting gamstop self-exclusion if applicable
-
 It takes following args:
 
 =over 4
@@ -381,7 +379,7 @@ It takes following args:
 =cut
 
 sub after_login {
-    my ($self, $error, $environment, $app_id, @clients) = @_;
+    my ($self, $error, $environment, $app_id) = @_;
     my $log_as_failed = ($error // '' eq 'LoginTooManyAttempts') ? 1 : 0;
 
     state $error_log_msgs = {
@@ -403,14 +401,6 @@ sub after_login {
 
     # store this login attempt in redis
     $self->_save_login_detail_redis($environment);
-
-    my $countries_list = request()->brand->countries_instance->countries_list;
-    my $gamstop_client = first {
-        my $client = $_;
-        any { $client->landing_company->short eq $_ } ($countries_list->{$client->residence}->{gamstop_company} // [])->@*
-    } @clients;
-
-    BOM::User::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
 
     return undef;
 }
