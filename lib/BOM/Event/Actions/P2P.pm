@@ -91,7 +91,6 @@ sub advertiser_updated {
     my $redis = BOM::Config::Redis->redis_p2p_write();
     # channel format is P2P::ADVERTISER::NOTIFICATION::$advertiser_loginid::$subscriber_loginid
     my $channels = $redis->pubsub('channels', "P2P::ADVERTISER::NOTIFICATION::${advertiser_loginid}::*");
-    my $advertiser;
 
     for my $channel (@$channels) {
         my ($subscriber_loginid) = $channel =~ /::(\w+?)$/;
@@ -103,8 +102,8 @@ sub advertiser_updated {
 
         next if $subscriber_client->p2p_is_advertiser_blocked;
 
-        $advertiser //= $subscriber_client->_p2p_advertisers(loginid => $advertiser_loginid)->[0] // return 0;
-        my $details = $subscriber_client->_advertiser_details($advertiser);
+        my $advertiser = $subscriber_client->_p2p_advertisers(loginid => $advertiser_loginid)->[0] // next;
+        my $details    = $subscriber_client->_advertiser_details($advertiser);
         $redis->publish($channel, encode_json_utf8($details));
     }
 

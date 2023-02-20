@@ -27,6 +27,8 @@ my $proc = BOM::Event::Process->new(category => 'generic');
 my $connection_config = BOM::Config::redis_p2p_config()->{p2p}{write};
 
 my $advertiser_id = $advertiser->{_p2p_advertiser_cached}{id};
+$client->p2p_advertiser_relations(add_blocked => [$advertiser_id]);
+
 delete $advertiser->{_p2p_advertiser_cached};    # delete cache
 
 my @data_for_notification_tests = ({
