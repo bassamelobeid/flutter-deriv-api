@@ -236,7 +236,7 @@ subtest 'process - tracking jobs' => sub {
                 trading_platform_investor_password_changed trading_platform_investor_password_change_failed
                 underage_account_closed account_with_false_info_locked self_exclude signup
                 age_verified bonus_approve bonus_reject request_edd_document_upload withdrawal_rejected
-                p2p_order_confirm_verify mt5_change_color poa_verification_expired poa_verification_warning poi_poa_resubmission
+                p2p_order_confirm_verify p2p_limit_changed p2p_limit_upgrade_available mt5_change_color poa_verification_expired poa_verification_warning poi_poa_resubmission
                 verify_email_closed_account_reset_password verify_email_closed_account_account_opening verify_email_closed_account_other request_payment_withdraw
                 account_opening_existing self_tagging_affiliates authenticated_with_scans document_uploaded new_mt5_signup_stored
                 identity_verification_rejected p2p_advertiser_approved p2p_order_updated_handled

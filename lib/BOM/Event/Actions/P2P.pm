@@ -95,6 +95,7 @@ sub advertiser_updated {
     for my $channel (@$channels) {
         my ($subscriber_loginid) = $channel =~ /::(\w+?)$/;
 
+        next if $data->{self_only} and $subscriber_loginid ne $advertiser_loginid;
         my $subscriber_client =
             ($data->{client} and $subscriber_loginid eq $advertiser_loginid)
             ? $data->{client}
