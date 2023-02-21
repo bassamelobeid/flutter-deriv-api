@@ -42,6 +42,17 @@
                }
            }
       },
+      "p2p_status":{
+        "description": "Represent current P2P status of client if client is a P2P advertiser, otherwise return none",
+        "type": "string",
+        "enum": [
+            "none",
+            "active",
+            "temp_ban",
+            "perm_ban"
+        ]
+
+      },
       "stash" : {
          "type" : "object"
       },

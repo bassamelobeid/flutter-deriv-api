@@ -990,6 +990,17 @@ rpc get_account_status => sub {
         $status = [grep { $_ ne 'poi_name_mismatch' } @$status];
     }
 
+    my $p2p_status = "none";
+    if (my $advertiser = $client->_p2p_advertiser_cached) {
+        $p2p_status = "active";
+        if (not $advertiser->{is_enabled}) {
+            $p2p_status = "perm_ban";
+        } elsif ($advertiser->{blocked_until}) {
+            my $block_time = Date::Utility->new($advertiser->{blocked_until});
+            $p2p_status = "temp_ban" if $block_time->epoch > time;
+        }
+    }
+
     if ($client->status->age_verification || $client->fully_authenticated) {
         $status = [grep { $_ ne 'poi_dob_mismatch' } @$status];
     }
@@ -1003,6 +1014,7 @@ rpc get_account_status => sub {
         @cashier_validation     ? (cashier_validation       => [sort(uniq(@cashier_validation))])     : (),
         @cashier_missing_fields ? (cashier_missing_fields   => [sort(uniq(@cashier_missing_fields))]) : (),
         $provider               ? (social_identity_provider => $provider)                             : (),
+        p2p_status => $p2p_status,
     };
 };
 

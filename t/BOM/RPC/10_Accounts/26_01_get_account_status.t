@@ -11,6 +11,7 @@ use JSON::MaybeUTF8                            qw(encode_json_utf8);
 use Encode                                     qw(encode);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
+use BOM::Test::Helper::P2P;
 use BOM::Platform::Token::API;
 use BOM::Platform::Utility;
 use BOM::User::Password;
@@ -18,10 +19,12 @@ use BOM::User;
 use BOM::User::Onfido;
 use BOM::Test::Helper::Token;
 use Test::BOM::RPC::QueueClient;
+use Syntax::Keyword::Try;
 
 use BOM::Config::Redis;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
+BOM::Test::Helper::P2P::bypass_sendbird();
 
 my $idv_limit    = 3;
 my $onfido_limit = BOM::User::Onfido::limit_per_user;
@@ -60,6 +63,7 @@ my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     citizen     => 'at',
 });
+
 $test_client_cr->email('sample@binary.com');
 $test_client_cr->set_default_account('USD');
 $test_client_cr->save;
@@ -70,6 +74,15 @@ my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client
 $test_client_cr_2->email('sample@binary.com');
 $test_client_cr_2->save;
 
+my $test_client_p2p = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    citizen     => 'id',
+});
+
+$test_client_p2p->email('sample@binary.com');
+$test_client_p2p->set_default_account('USD');
+$test_client_p2p->save;
+
 my $user_cr = BOM::User->create(
     email    => 'sample@binary.com',
     password => $hash_pwd
@@ -78,6 +91,7 @@ my $user_cr = BOM::User->create(
 $user_cr->add_client($test_client_cr_vr);
 $user_cr->add_client($test_client_cr);
 $user_cr->add_client($test_client_cr_2);
+$user_cr->add_client($test_client_p2p);
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -134,6 +148,7 @@ my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_client->loginid,          'test token');
 my $token_vr       = $m->create_token($test_client_cr_vr->loginid,    'test token');
 my $token_cr       = $m->create_token($test_client_cr->loginid,       'test token');
+my $token_p2p      = $m->create_token($test_client_p2p->loginid,      'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid,       'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid,      'test token');
@@ -280,6 +295,28 @@ subtest 'get account status' => sub {
             $mocked_cashier_validation->unmock_all();
         };
 
+        subtest 'p2p status' => sub {
+            my $result = $c->tcall('get_account_status', {token => $token_cr});
+            is $result->{p2p_status}, "none", "client is not a P2P advertiser";
+
+            my $advertiser = $test_client_p2p->p2p_advertiser_create(name => "p2p test user");
+
+            $result = $c->tcall('get_account_status', {token => $token_p2p});
+            is $result->{p2p_status}, "active", "client is a P2P advertiser";
+
+            BOM::Test::Helper::P2P::set_advertiser_blocked_until($test_client_p2p, 1);
+            BOM::Test::Helper::P2P::set_advertiser_is_enabled($test_client_p2p, 0);
+            $result = $c->tcall('get_account_status', {token => $token_p2p});
+            is $result->{p2p_status}, "perm_ban", "P2P advertiser is fully blocked, permanent block takes precedence over temporary block";
+
+            BOM::Test::Helper::P2P::set_advertiser_is_enabled($test_client_p2p, 1);
+            $result = $c->tcall('get_account_status', {token => $token_p2p});
+            is $result->{p2p_status}, "temp_ban", "P2P advertiser is temporarily blocked";
+
+            BOM::Test::Helper::P2P::set_advertiser_blocked_until($test_client_p2p, 0);
+
+        };
+
         subtest 'validations' => sub {
             is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
             is(
@@ -367,6 +404,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => 'none',
                     status                        => noneof(qw(duplicate_account)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -473,6 +511,7 @@ subtest 'get account status' => sub {
                         },
                     },
                     cashier_validation => ['ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
+                    p2p_status         => "none",
                 },
                 'prompt for non authenticated MF client'
             );
@@ -534,6 +573,7 @@ subtest 'get account status' => sub {
                         },
                     },
                     cashier_validation => ['FinancialAssessmentRequired'],
+                    p2p_status         => "none",
                 },
                 'authenticated, no deposits so it will not prompt for authentication'
             );
@@ -594,6 +634,7 @@ subtest 'get account status' => sub {
                         },
                     },
                     cashier_validation => ['FinancialAssessmentRequired'],
+                    p2p_status         => "none",
                 },
                 'correct account status returned for document expired, please note that this test for status key, authentication expiry structure is tested later'
             );
@@ -669,6 +710,7 @@ subtest 'get account status' => sub {
                         },
                     },
                     cashier_validation => ['FinancialAssessmentRequired'],
+                    p2p_status         => "none",
                 },
                 'correct account status returned for document expiring in next month'
             );
@@ -719,6 +761,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => superbagof(qw(allow_document_upload document_expired)),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '1',
@@ -771,6 +814,7 @@ subtest 'get account status' => sub {
                             },
                         },
                         cashier_validation => ['ASK_CURRENCY', 'ASK_UK_FUNDS_PROTECTION', 'documents_expired'],
+                        p2p_status         => "none",
                     },
                     "authentication object is correct"
                 );
@@ -792,7 +836,8 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status => [
+                    p2p_status => "none",
+                    status     => [
                         qw(allow_document_upload dxtrade_password_not_set financial_information_not_complete mt5_password_not_set trading_experience_not_complete)
                     ],
                     risk_classification           => 'low',
@@ -893,6 +938,7 @@ subtest 'get account status' => sub {
                         },
                     },
                     cashier_validation => ['withdrawal_locked_status'],
+                    p2p_status         => "none",
                 },
                 'allow_document_upload is automatically added along with withdrawal_locked'
             );
@@ -950,6 +996,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => "none",
                     status                        => superbagof(qw(document_needs_action)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
@@ -1009,6 +1056,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => "none",
                     status                        => superbagof(qw(document_needs_action)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
@@ -1102,6 +1150,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => noneof(qw(document_expired)),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '0',
@@ -1218,6 +1267,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => superbagof(qw(allow_document_upload)),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '0',
@@ -1287,6 +1337,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status => "none",
                     status => superbagof(qw(financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)),
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => '1',
@@ -1352,6 +1403,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => "none",
                     status                        => superbagof(qw(age_verification allow_document_upload)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -1412,7 +1464,8 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status => superbagof(qw(age_verification authenticated financial_information_not_complete trading_experience_not_complete)),
+                    p2p_status => "none",
+                    status     => superbagof(qw(age_verification authenticated financial_information_not_complete trading_experience_not_complete)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
@@ -1476,6 +1529,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => "none",
                     status                        => superbagof(qw()),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -1548,6 +1602,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => superbagof(),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '0',
@@ -1610,6 +1665,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => superbagof(),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '0',
@@ -1676,7 +1732,8 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status => superbagof(
+                    p2p_status => "none",
+                    status     => superbagof(
                         qw(allow_document_upload financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)
                     ),
                     risk_classification           => 'high',
@@ -1747,6 +1804,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status          => "none",
                     status              => superbagof(qw(allow_document_upload financial_information_not_complete trading_experience_not_complete)),
                     risk_classification => 'low',
                     prompt_client_to_authenticate => '0',
@@ -1815,6 +1873,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => "none",
                     status                        => superbagof(qw(financial_information_not_complete trading_experience_not_complete)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
@@ -1917,6 +1976,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => superbagof(qw(allow_document_upload document_expired)),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '1',
@@ -1995,6 +2055,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status => "none",
                     status => superbagof(qw(financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)),
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => '1',
@@ -2072,6 +2133,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => "none",
                     status                        => superbagof(qw(financial_information_not_complete trading_experience_not_complete)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
@@ -2142,6 +2204,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => "none",
                     status                        => superbagof(qw(financial_information_not_complete trading_experience_not_complete)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -2248,6 +2311,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => superbagof(qw(allow_document_upload document_expired)),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '1',
@@ -2337,7 +2401,8 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status => superbagof(qw(allow_document_upload age_verification authenticated financial_information_not_complete)),
+                        p2p_status => "none",
+                        status     => superbagof(qw(allow_document_upload age_verification authenticated financial_information_not_complete)),
                         risk_classification           => 'standard',
                         prompt_client_to_authenticate => '0',
                         authentication                => {
@@ -2429,6 +2494,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => superbagof(qw(age_verification authenticated financial_information_not_complete)),
                         risk_classification           => 'standard',
                         prompt_client_to_authenticate => '0',
@@ -2588,6 +2654,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => superbagof(qw(age_verification financial_information_not_complete)),
                         risk_classification           => 'standard',
                         prompt_client_to_authenticate => 1,
@@ -2666,6 +2733,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
+                        p2p_status                    => "none",
                         status                        => superbagof(qw(age_verification financial_information_not_complete)),
                         risk_classification           => 'standard',
                         prompt_client_to_authenticate => 1,
@@ -2736,6 +2804,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => "none",
                     status                        => superbagof(qw(financial_information_not_complete)),
                     risk_classification           => 'standard',
                     prompt_client_to_authenticate => 1,
@@ -2915,6 +2984,7 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
+                    p2p_status                    => "none",
                     status                        => superbagof(qw(cashier_locked shared_payment_method)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => 0,
@@ -3011,6 +3081,7 @@ subtest "Test onfido is_country_supported" => sub {
                     is_withdrawal_suspended => 0,
                 }
             },
+            p2p_status                    => "none",
             status                        => noneof(qw(authenticated)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
@@ -3068,6 +3139,7 @@ subtest "Test onfido is_country_supported" => sub {
                     is_withdrawal_suspended => 0,
                 }
             },
+            p2p_status                    => "none",
             status                        => noneof(qw(authenticated)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
@@ -3470,6 +3542,7 @@ subtest 'Social identity provider' => sub {
                     is_withdrawal_suspended => 0
                 }
             },
+            p2p_status                    => "none",
             prompt_client_to_authenticate => 0,
             risk_classification           => 'low',
             authentication                => {
