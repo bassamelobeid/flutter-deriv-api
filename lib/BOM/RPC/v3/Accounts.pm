@@ -69,6 +69,7 @@ use BOM::User::Onfido;
 use BOM::User::IdentityVerification;
 use BOM::Rules::Engine;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use BOM::TradingPlatform::CTrader;
 
 use Locale::Country;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
@@ -2580,6 +2581,20 @@ async_rpc service_token => sub {
                         });
                     }
                 });
+        }
+
+        if ($service eq 'ctrader') {
+            try {
+                my $ctrader = BOM::TradingPlatform::CTrader->new(client => $client);
+
+                push @service_futures,
+                    Future->done({
+                        token   => $ctrader->generate_login_token($params->{ua_fingerprint}),
+                        service => 'ctrader',
+                    });
+            } catch ($e) {
+                push @service_futures, Future->fail($e);
+            }
         }
     }
 
