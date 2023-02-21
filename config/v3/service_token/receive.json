@@ -34,6 +34,18 @@
                         }
                     }
                 },
+                "ctrader": {
+                    "description": "CTrader data.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "token": {
+                            "description": "CTrader One Time token",
+                            "type": "string",
+                            "sensitive": 1
+                        }
+                    }
+                },
                 "dxtrade": {
                     "description": "Deriv X data.",
                     "type": "object",

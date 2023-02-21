@@ -509,7 +509,7 @@ sub actions_config {
         [
             'service_token',
             {
-                stash_params => [qw/ referrer source_type /],
+                stash_params => [qw/ referrer source_type ua_fingerprint /],
             }
         ],
         # P2P cashier
