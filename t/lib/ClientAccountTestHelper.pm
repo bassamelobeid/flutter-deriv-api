@@ -78,6 +78,7 @@ sub create_client {
 
     my $client = BOM::User::Client->rnew;
 
+    $client_data->{account_type} //= BOM::Test::Data::Utility::UnitTestDatabase::default_account_types->{$broker_code};
     for (keys %$client_data) {
         $client->$_($client_data->{$_});
     }

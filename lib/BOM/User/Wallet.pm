@@ -109,7 +109,7 @@ sub linked_accounts {
             account_id     => $self->loginid,
             balance        => formatnumber('amount', $self->currency, $self->default_account->balance),
             currency       => $self->currency,
-            payment_method => $self->payment_method,
+            payment_method => $self->get_account_type->name,
         }};
 }
 

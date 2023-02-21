@@ -61,6 +61,7 @@ use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Onfido;
 use BOM::Config::P2P;
+use BOM::Config::AccountType::Registry;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::User::IdentityVerification;
@@ -93,6 +94,8 @@ use constant {
 
     # Redis key for SR keys expire
     SR_30_DAYS_EXP => 86400 * 30,
+
+    LEGACY_ACCOUNT_TYPE => 'binary',
 };
 
 # Redis key prefix for counting DoughFlow payouts
@@ -233,6 +236,7 @@ sub register_and_return_new_client {
         });
 
     $self->loginid("$broker$seqnum[0]");
+
     return $self->save;
 }
 
@@ -1555,17 +1559,15 @@ sub get_siblings_information {
         my $acc     = $cl->default_account;
         my $balance = $acc ? formatnumber('amount', $acc->currency_code(), $acc->balance) : "0.00";
 
-        my $account_type = $cl->is_wallet ? 'wallet' : 'trading';
-
         $siblings->{$cl->loginid} = {
             loginid              => $cl->loginid,
             landing_company_name => $cl->landing_company->short,
             currency             => $acc ? $acc->currency_code() : '',
             balance              => $balance,
-            account_type         => $account_type,
-            ($cl->is_wallet ? (payment_method => $cl->payment_method) : ()),
-            demo_account => $cl->is_virtual,
-            disabled     => $cl->status->disabled ? 1 : 0,
+            account_type         => $cl->get_account_type->name,
+            category             => $cl->get_account_type->category->name,
+            demo_account         => $cl->is_virtual,
+            disabled             => $cl->status->disabled ? 1 : 0,
             }
             unless (!$include_self && ($cl->loginid eq $self->loginid));
     }
@@ -7306,7 +7308,7 @@ sub get_account_details {
     my $created_at    = $self->date_joined ? Date::Utility->new($self->date_joined)->epoch : undef;
 
     return {
-        account_type         => $self->account_type,                                   # 'trading' or 'wallet'
+        account_type         => $self->get_account_type->category->name,               # 'trading' or 'wallet'
         loginid              => $self->loginid,
         currency             => $self->account ? $self->account->currency_code : '',
         landing_company_name => $self->landing_company->short,
@@ -7866,16 +7868,18 @@ sub is_affiliate {
     return 0;
 }
 
-=head2 account_type
+=head2 get_account_type
 
-Returns account type as a string. There are two account types as the moment: trading and wallet.
+Gets the account type as a BOM::Config::AccountType object.
 
 =cut
 
-sub account_type {
+sub get_account_type {
     my $self = shift;
 
-    return $self->is_wallet ? 'wallet' : 'trading';
+    $self->{_account_type_obj} //= BOM::Config::AccountType::Registry->account_type_by_name($self->account_type // LEGACY_ACCOUNT_TYPE);
+
+    return $self->{_account_type_obj};
 }
 
 =head2 can_trade
@@ -8101,7 +8105,7 @@ sub linked_accounts {
                     account_id     => $wallet->loginid,
                     balance        => formatnumber('amount', $wallet->currency, $wallet->default_account->balance),
                     currency       => $wallet->currency,
-                    payment_method => $wallet->payment_method,
+                    payment_method => $wallet->account_type,
                 }
             ],
             account_id => $account->{account_id},

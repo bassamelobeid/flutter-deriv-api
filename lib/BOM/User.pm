@@ -32,6 +32,7 @@ use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::Platform::Redis;
 use LandingCompany::Registry;
+use BOM::Config::AccountType::Registry;
 use BOM::Platform::Context qw(request);
 use Exporter               qw( import );
 our @EXPORT_OK = qw( is_payment_agents_suspended_in_country );
@@ -134,7 +135,11 @@ sub new {
 sub add_client {
     my ($self, $client) = @_;
     croak('need a client') unless $client;
-    $self->add_loginid($client->loginid);
+
+    my $account_type = $client->get_account_type;
+    die 'client does not have a account type' unless $account_type;
+
+    $self->add_loginid($client->loginid, $account_type->platform);
     return $self;
 }
 
@@ -142,6 +147,7 @@ sub add_loginid {
     my ($self, $loginid, $platform, $account_type, $currency, $attributes) = @_;
     croak('need a loginid') unless $loginid;
     $attributes = encode_json($attributes) if $attributes;
+
     my ($result) = $self->dbic->run(
         fixup => sub {
             return $_->selectrow_array('select users.add_loginid(?, ?, ?, ?, ?, ?)',
@@ -184,6 +190,7 @@ sub loginid_details {
     $self->{loginid_details} = {};
     for my $login (@$loginids) {
         $login->{attributes} = decode_json($login->{attributes} // '{}');
+
         $self->{loginid_details}{$login->{loginid}} = $login;
     }
     return $self->{loginid_details};
@@ -258,8 +265,8 @@ sub create_wallet {
         #Check for dublicates
         for my $client ($self->clients(include_disabled => 0)) {
             next unless $client->is_wallet;
-            next unless ($client->payment_method         // '') eq ($args{payment_method} // '');
-            next unless ($client->account->currency_code // '') eq ($args{currency}       // '');
+            next unless ($client->account_type           // '') eq ($args{account_type} // '');
+            next unless ($client->account->currency_code // '') eq ($args{currency}     // '');
 
             die +{error => 'DuplicateWallet'};
         }
@@ -300,6 +307,7 @@ Creates a new affiliate account
 
 sub create_affiliate {
     my ($self, %args) = @_;
+
     $args{binary_user_id} = $self->{id};
     my $client = BOM::User::Affiliate->register_and_return_new_client(\%args);
     $self->add_client($client);

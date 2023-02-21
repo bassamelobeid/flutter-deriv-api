@@ -414,12 +414,17 @@ subtest 'get_siblings_information' => sub {
     $client_disabled->status->set('disabled', 'sysetm', 'test');
     my $disabled_no_currency = create_client($user, undef, broker_code => 'CR');
     $disabled_no_currency->status->set('disabled', 'sysetm', 'test');
-    my $wallet_virtual = create_client($user, 'LTC', broker_code => 'VRW');
+    my $wallet_virtual = create_client(
+        $user, 'LTC',
+        broker_code  => 'VRW',
+        account_type => 'virtual'
+    );
 
     my $all_accounts = {
         $client_real->loginid => {
             'demo_account'         => 0,
-            'account_type'         => 'trading',
+            'account_type'         => 'binary',
+            'category'             => 'trading',
             'disabled'             => 0,
             'balance'              => '0.00000000',
             'currency'             => 'BTC',
@@ -428,7 +433,8 @@ subtest 'get_siblings_information' => sub {
         },
         $client_disabled->loginid => {
             'demo_account'         => 0,
-            'account_type'         => 'trading',
+            'account_type'         => 'binary',
+            'category'             => 'trading',
             'disabled'             => 1,
             'balance'              => '0.00',
             'currency'             => 'EUR',
@@ -437,7 +443,8 @@ subtest 'get_siblings_information' => sub {
         },
         $disabled_no_currency->loginid => {
             'demo_account'         => 0,
-            'account_type'         => 'trading',
+            'account_type'         => 'binary',
+            'category'             => 'trading',
             'disabled'             => 1,
             'balance'              => '0.00',
             'currency'             => '',
@@ -446,17 +453,18 @@ subtest 'get_siblings_information' => sub {
         },
         $wallet_virtual->loginid => {
             'demo_account'         => 1,
-            'account_type'         => 'wallet',
+            'account_type'         => 'virtual',
+            'category'             => 'wallet',
             'disabled'             => 0,
             'balance'              => '0.00000000',
             'currency'             => 'LTC',
             'loginid'              => $wallet_virtual->loginid,
             'landing_company_name' => 'virtual',
-            'payment_method'       => undef,
         },
         $client_virtual->loginid => {
             'demo_account'         => 1,
-            'account_type'         => 'trading',
+            'account_type'         => 'binary',
+            'category'             => 'trading',
             'disabled'             => 0,
             'balance'              => '0.00',
             'currency'             => 'USD',

@@ -75,12 +75,12 @@ sub run {
     my %archival_dates;
     my %brokers;
 
-    # P2P works on `binary` accounts at the moment.
-    # TODO: we should include `wallet` as well, when the appstore is going to launch.
-    my $account_category = BOM::Config::AccountType::Registry->category_by_name('binary');
+    # P2P works on `tra` accounts at the moment.
+    # TODO: we should include `p2p` as well, when the appstore is going to launch.
+    my $p2p_account_type = BOM::Config::AccountType::Registry->account_type_by_name('binary');
 
     for my $lc (grep { $_->p2p_available } LandingCompany::Registry::get_all) {
-        for my $broker ($account_category->broker_codes->{$lc->short}->@*) {
+        for my $broker ($p2p_account_type->broker_codes->{$lc->short}->@*) {
             $brokers{$broker} = {
                 db_write => BOM::Database::ClientDB->new({
                         broker_code => uc $broker,

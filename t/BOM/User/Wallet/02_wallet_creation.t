@@ -22,7 +22,6 @@ my $user = BOM::User->create(
 my $details = {
     broker_code              => 'CRW',
     currency                 => 'USD',
-    payment_method           => '',                                # Payment method is decommisioned from RoseDB, it'll be replaced with account_type.
     salutation               => 'Ms',
     last_name                => 'last-name',
     first_name               => 'first-name',
@@ -42,6 +41,7 @@ my $details = {
     secret_answer            => '',
     binary_user_id           => BOM::Test::Data::Utility::UnitTestDatabase::get_next_binary_user_id(),
     non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
+    account_type             => 'doughflow'
 
 };
 
@@ -61,7 +61,7 @@ subtest 'create a real wallet' => sub {
 
     is $wallet->is_wallet, 1, 'is wallet client instance';
 
-    is($wallet->payment_method, undef, 'Payment method is decommisioned from ORM. it will be renamed to account_type');
+    is($wallet->account_type, 'doughflow', 'Account type is correct');
 
     is($wallet->currency, 'USD', 'Wallet Currecny Code: USD');
 };

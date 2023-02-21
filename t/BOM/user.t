@@ -797,16 +797,16 @@ subtest 'create_client' => sub {
     my $wallet_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRW',
     });
-    is $wallet_client_vr->is_wallet,    1,        'is wallet client instance';
-    is $wallet_client_vr->is_affiliate, 0,        'is wallet client instance';
-    is $wallet_client_vr->account_type, 'wallet', 'Correct accouont type';
+    is $wallet_client_vr->is_wallet,    1,         'is wallet client instance';
+    is $wallet_client_vr->is_affiliate, 0,         'is wallet client instance';
+    is $wallet_client_vr->account_type, 'virtual', 'Correct accouont type';
 
     my $trading_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
-    is $trading_client_vr->is_wallet,    0,         'is trading client instance';
-    is $trading_client_vr->is_affiliate, 0,         'is trading client instance';
-    is $trading_client_vr->account_type, 'trading', 'Correct accouont type';
+    is $trading_client_vr->is_wallet,    0,        'is trading client instance';
+    is $trading_client_vr->is_affiliate, 0,        'is trading client instance';
+    is $trading_client_vr->account_type, 'binary', 'Correct accouont type';
 };
 
 my $wallet;
@@ -865,6 +865,8 @@ subtest 'get_account_by_loginid' => sub {
 };
 
 subtest 'link_wallet' => sub {
+    $client_cr_new->status->clear_disabled;
+    $client_vr->status->clear_disabled;
 
     my $args = {
         wallet_id => $wallet->loginid,
@@ -946,9 +948,9 @@ subtest 'link_wallet' => sub {
             $new_wallet->linked_accounts,
             {
                 wallet => {
-                    linked_to      => [],                            # should be empty
+                    linked_to      => [],                          # should be empty
                     account_id     => $new_wallet->loginid,
-                    payment_method => $new_wallet->payment_method,
+                    payment_method => $new_wallet->account_type,
                     balance        => '0.00',
                     currency       => 'USD',
                 }
@@ -980,7 +982,7 @@ subtest 'link_wallet' => sub {
                         }
                     ],
                     account_id     => $wallet->loginid,
-                    payment_method => $wallet->payment_method,
+                    payment_method => $wallet->account_type,
                     balance        => '10000.00',
                     currency       => 'USD'
                 }
@@ -998,7 +1000,7 @@ subtest 'link_wallet' => sub {
                 trading => {
                     linked_to => [{
                             account_id     => $wallet->loginid,
-                            payment_method => $wallet->payment_method,
+                            payment_method => $wallet->account_type,
                             balance        => '10000.00',
                             currency       => 'USD'
                         }
