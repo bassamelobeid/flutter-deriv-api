@@ -43,6 +43,7 @@ use BOM::Platform::Context qw(localize);
 use BOM::TradingPlatform::DXTrader;
 use BOM::Config::P2P;
 use BOM::Config::Runtime;
+use LandingCompany::Registry;
 
 =head2 residence_list
 
@@ -322,19 +323,19 @@ sub _dxtrade_status {
 }
 
 rpc website_status => sub {
-    my $params = shift;
-
+    my $params     = shift;
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update;
-    my $tnc_config  = $app_config->cgi->terms_conditions_versions;
-    my $tnc_version = decode_json($tnc_config)->{request()->brand->name};
-    my $country     = $params->{residence} // $params->{country_code};
-
-    my $result = {
+    my $tnc_config   = $app_config->cgi->terms_conditions_versions;
+    my $tnc_version  = decode_json($tnc_config)->{request()->brand->name};
+    my $country      = $params->{residence} // $params->{country_code};
+    my $broker_codes = [keys BOM::Config::broker_databases()->%*];
+    my $result       = {
         terms_conditions_version => $tnc_version // '',
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
+        broker_codes             => $broker_codes,
         currencies_config        => _currencies_config(),
         mt5_status               => _mt5_status(),
         dxtrade_status           => _dxtrade_status(),
@@ -390,7 +391,6 @@ rpc website_status => sub {
             local_currencies => \@local_currencies,
         };
     }
-
     return $result;
 };
 

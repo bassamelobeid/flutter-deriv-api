@@ -10,6 +10,7 @@ use BOM::Test::RPC::QueueClient;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
+use BOM::Config;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 
 use BOM::User;
@@ -520,6 +521,16 @@ subtest 'payment_agents config' => sub {
     delete $payment_agents_config->{initial_deposit_per_country}->{br};
     $config->payment_agents->initial_deposit_per_country(encode_json($payment_agents_config->{initial_deposit_per_country}));
     cmp_deeply($c->call_ok(%params)->result->{payment_agents}, $payment_agents_config, 'expected results from runtime config');
+};
+
+subtest 'broker_codes' => sub {
+    my $config = [keys BOM::Config::broker_databases()->%*];
+    my %params = (
+        website_status => {
+            language => 'EN',
+            args     => {website_status => 1}});
+
+    cmp_deeply($c->call_ok(%params)->result->{broker_codes}, $config, 'expected results from runtime config');
 };
 
 done_testing();
