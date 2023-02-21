@@ -101,7 +101,7 @@ sub _update_EDD_clients_status {
             if (!$client_info->{status} || ($client_info->{status} eq 'n/a')) {
                 $client->status->upsert('allow_document_upload', 'system', 'Pending EDD docs/info');
                 $user->update_edd_status(
-                    status           => 'pending',
+                    status           => 'contacted',
                     start_date       => $client_info->{start_date} || $current_date->date_yyyymmdd,
                     last_review_date => $current_date->date_yyyymmdd,
                     comment          => 'client deposited over 20k in cards',
@@ -110,7 +110,7 @@ sub _update_EDD_clients_status {
                 $self->send_mail_to_client($client, $current_date);
                 next;
             }
-            if ($client_info->{status} && ($client_info->{status} eq 'pending') && ($client_info->{reason} eq 'card_deposit_monitoring')) {
+            if ($client_info->{status} && ($client_info->{status} eq 'contacted') && ($client_info->{reason} eq 'card_deposit_monitoring')) {
                 # check if client have been updated more than 7 days ago
                 my $last_review_date = Date::Utility->new($client_info->{last_review_date});
                 next if $last_review_date->is_after($current_date->minus_time_interval('6d'));
