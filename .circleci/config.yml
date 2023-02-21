@@ -18,10 +18,12 @@ alias:
 - &git
   run:
     name: Update git repositories
+    no_output_timeout: 3h
     command: /opt/circle/prepare-test.sh
 - &services
   run:
     name: Start services
+    no_output_timeout: 3h
     command: |
       start_services
       touch /tmp/services.ready
@@ -29,6 +31,7 @@ alias:
 - &wait_services
   run:
     name: Wait for services to start up
+    no_output_timeout: 3h
     command: |
       count=0
       while [ ! -f /tmp/services.ready ]; do
@@ -50,14 +53,17 @@ jobs:
     - *wait_services
     - run:
         <<: *tests
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make test
         name: Core tests
     - run:
+        no_output_timeout: 3h
         command: make syntax_diff
         name: Code structure and syntax
     - run:
+        no_output_timeout: 3h
         command: make unit
         name: unit tests
     - store_test_results:
@@ -70,9 +76,11 @@ jobs:
     - *services
     - *wait_services
     - run:
+        no_output_timeout: 3h
         command: make syntax
         name: Code structure and syntax
     - run:
+        no_output_timeout: 3h
         command: make unit
         name: unit tests
     - store_test_results:
@@ -87,6 +95,7 @@ jobs:
     - run:
         <<: *tests
         name: core tests
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make test
@@ -100,6 +109,7 @@ jobs:
     - run:
         <<: *tests
         name: unit tests
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit
@@ -115,6 +125,7 @@ jobs:
     - run:
         <<: *tests
         name: code coverage tests
+        no_output_timeout: 3h
         command: make cover
 workflows:
   build-workflow:
