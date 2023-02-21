@@ -128,6 +128,41 @@ rpc trading_platform_product_listing => auth => [],
     return $resp;
     };
 
+=head2 trading_platform_asset_listing
+
+Returns asset listing for trading platform
+
+=over 4
+
+=item * platform - a string to represent trading platform. (E.g. binary_bot)
+
+=back
+
+=cut
+
+rpc trading_platform_asset_listing => auth => [],
+    sub {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $args   = $params->{args};
+
+    my $resp = {};
+    try {
+        my $platform = BOM::TradingPlatform->new(
+            platform => $params->{args}{platform},
+            client   => $client,
+        );
+
+        $resp->{$params->{args}{platform}}->{assets} = $platform->get_assets($params->{args}{type} // '');
+
+        return $resp;
+
+    } catch ($e) {
+        handle_error($e);
+    }
+    };
+
 rpc trading_platform_available_accounts => sub {
     my $params = shift;
 
