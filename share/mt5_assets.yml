@@ -1,0 +1,769 @@
+AAL:
+  display_name: American Airlines Group Inc.
+  display_order: 10000
+  market: stocks
+AAPL:
+  display_name: Apple (AAPL)
+  display_order: 2
+  market: stocks
+  type: brief
+ABNB:
+  display_name: Airbnb Inc.
+  display_order: 10000
+  market: stocks
+ADAUSD:
+  display_name: ADA/USD
+  display_order: 6
+  market: cryptocurrency
+  type: brief
+ADS:
+  display_name: Adidas AG
+  display_order: 10000
+  market: stocks
+AIG:
+  display_name: American International Group Inc.
+  display_order: 10000
+  market: stocks
+AIR:
+  display_name: Airbus SE
+  display_order: 10000
+  market: stocks
+AIRF:
+  display_name: Air France KLM SA
+  display_order: 10000
+  market: stocks
+ALGUSD:
+  display_name: ALG/USD
+  display_order: 10000
+  market: cryptocurrency
+AMD:
+  display_name: Advanced Micro Devices Inc
+  display_order: 10000
+  market: stocks
+AMZN:
+  display_name: Amazon.com
+  display_order: 10000
+  market: stocks
+AUDCAD:
+  display_name: AUD/CAD
+  display_order: 10000
+  market: forex
+AUDCADmicro:
+  display_name: AUD/CAD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+AUDCHF:
+  display_name: AUD/CHF
+  display_order: 10000
+  market: forex
+AUDCHFmicro:
+  display_name: AUD/CHF micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+AUDJPY:
+  display_name: AUD/JPY
+  display_order: 10000
+  market: forex
+AUDJPYmicro:
+  display_name: AUD/JPY micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+AUDNZD:
+  display_name: AUD/NZD
+  display_order: 10000
+  market: forex
+AUDNZDmicro:
+  display_name: AUD/NZD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+AUDUSD:
+  display_name: AUD/USD
+  display_order: 5
+  market: forex
+  type: brief
+AUDUSDmicro:
+  display_name: AUD/USD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+AUS_200:
+  display_name: Australian Index
+  display_order: 10000
+  market: indices
+AVAUSD:
+  display_name: AVA/USD
+  display_order: 10000
+  market: cryptocurrency
+BA:
+  display_name: Boeing
+  display_order: 10000
+  market: stocks
+BABA:
+  display_name: Alibaba Group Holding (BABA)
+  display_order: 6
+  market: stocks
+  type: brief
+BAC:
+  display_name: Bank of America Corporation
+  display_order: 10000
+  market: stocks
+BATUSD:
+  display_name: BAT/USD
+  display_order: 10000
+  market: cryptocurrency
+BAY:
+  display_name: Bayer AG
+  display_order: 10000
+  market: stocks
+BCHUSD:
+  display_name: BCH/USD
+  display_order: 10000
+  market: cryptocurrency
+BCHUSD.conv:
+  display_name: BCH/USD conv
+  display_order: 10000
+  market: crypto
+  enabled: 0
+BIIB:
+  display_name: Biogen Biogen Inc
+  display_order: 10000
+  market: stocks
+BMW:
+  display_name: BMW
+  display_order: 10000
+  market: stocks
+BNBUSD:
+  display_name: BNB/USD
+  display_order: 10000
+  market: cryptocurrency
+BOSS:
+  display_name: Hugo Boss AG
+  display_order: 10000
+  market: stocks
+BTCETH:
+  display_name: BTC/ETH
+  display_order: 10000
+  market: cryptocurrency
+BTCLTC:
+  display_name: BTC/LTC
+  display_order: 10000
+  market: cryptocurrency
+BTCUSD:
+  display_name: BTC/USD
+  display_order: 1
+  market: cryptocurrency
+  type: brief
+BTCUSD.conv:
+  display_name: BTC/USD conv
+  display_order: 10000
+  market: crypto
+  enabled: 0
+Boom 300 Index:
+  display_name: Boom 300
+  display_order: 7
+  market: derived
+  type: brief
+C:
+  display_name: Citigroup Inc
+  display_order: 10000
+  market: stocks
+CADCHF:
+  display_name: CAD/CHF
+  display_order: 10000
+  market: forex
+CADJPY:
+  display_name: CAD/JPY
+  display_order: 10000
+  market: forex
+CHFJPY:
+  display_name: CHF/JPY
+  display_order: 10000
+  market: forex
+CONG:
+  display_name: Continental AG
+  display_order: 10000
+  market: stocks
+CRM:
+  display_name: Salesforce
+  display_order: 10000
+  market: stocks
+CSCO:
+  display_name: Cisco Systems Inc.
+  display_order: 10000
+  market: stocks
+Crash 1000 Index:
+  display_name: Crash 1000
+  display_order: 2
+  market: derived
+  type: brief
+Crash 300 Index:
+  display_name: Crash 300
+  display_order: 8
+  market: derived
+  type: brief
+DAL:
+  display_name: Delta Air Lines Inc.
+  display_order: 10000
+  market: stocks
+DAX_40:
+  display_name: German Index
+  display_order: 4
+  market: indices
+  type: brief
+DBK:
+  display_name: Deutsche Bank
+  display_order: 10000
+  market: stocks
+DIS:
+  display_name: Walt Disney Co (DIS)
+  display_order: 3
+  market: stocks
+  type: brief
+DOGUSD:
+  display_name: DOG/USD
+  display_order: 5
+  market: cryptocurrency
+  type: brief
+DOTUSD:
+  display_name: DOT/USD
+  display_order: 10000
+  market: cryptocurrency
+DSHUSD:
+  display_name: DSH/USD
+  display_order: 4
+  market: cryptocurrency
+  type: brief
+EBAY:
+  display_name: eBay Inc.
+  display_order: 10000
+  market: stocks
+EOSUSD:
+  display_name: EOS/USD
+  display_order: 10000
+  market: cryptocurrency
+ESP_35:
+  display_name: Spanish Index
+  display_order: 10000
+  market: indices
+ETCUSD:
+  display_name: ETC/USD
+  display_order: 10000
+  market: cryptocurrency
+ETHUSD:
+  display_name: ETH/USD
+  display_order: 2
+  market: cryptocurrency
+  type: brief
+ETHUSD.conv:
+  display_name: ETH/USD conv
+  display_order: 10000
+  market: crypto
+  enabled: 0
+EURAUD:
+  display_name: EUR/AUD
+  display_order: 10000
+  market: forex
+EURAUDmicro:
+  display_name: EUR/AUD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+EURCAD:
+  display_name: EUR/CAD
+  display_order: 10000
+  market: forex
+EURCADmicro:
+  display_name: EUR/CAD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+EURCHF:
+  display_name: EUR/CHF
+  display_order: 10000
+  market: forex
+EURCHFmicro:
+  display_name: EUR/CHF micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+EURGBP:
+  display_name: EUR/GBP
+  display_order: 10000
+  market: forex
+EURGBPmicro:
+  display_name: EUR/GBP micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+EURJPY:
+  display_name: EUR/JPY
+  display_order: 10000
+  market: forex
+EURJPYmicro:
+  display_name: EUR/JPY micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+EURNOK:
+  display_name: EUR/NOK
+  display_order: 10000
+  market: forex
+EURNZD:
+  display_name: EUR/NZD
+  display_order: 10000
+  market: forex
+EURNZDmicro:
+  display_name: EUR/NZD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+EURPLN:
+  display_name: EUR/PLN
+  display_order: 10000
+  market: forex
+EURSEK:
+  display_name: EUR/SEK
+  display_order: 10000
+  market: forex
+EURUSD:
+  display_name: EUR/USD
+  display_order: 1
+  market: forex
+  type: brief
+EURUSD DFX 10 Index:
+  display_name: EURUSD DFX 10
+  display_order: 3
+  market: derived
+  type: brief
+EURUSDmicro:
+  display_name: EUR/USD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+EUR_50:
+  display_name: Euro 50 Index
+  display_order: 10000
+  market: indices
+FB:
+  display_name: Facebook
+  display_order: 10000
+  market: stocks
+FDX:
+  display_name: FedEx
+  display_order: 10000
+  market: stocks
+FILUSD:
+  display_name: FIL/USD
+  display_order: 10000
+  market: cryptocurrency
+FOX:
+  display_name: Fox Corporation B
+  display_order: 10000
+  market: stocks
+FRA_40:
+  display_name: French Index
+  display_order: 10000
+  market: indices
+GBPAUD:
+  display_name: GBP/AUD
+  display_order: 10000
+  market: forex
+GBPCAD:
+  display_name: GBP/CAD
+  display_order: 10000
+  market: forex
+GBPCHF:
+  display_name: GBP/CHF
+  display_order: 10000
+  market: forex
+GBPCHFmicro:
+  display_name: GBP/CHF micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+GBPJPY:
+  display_name: GBP/JPY
+  display_order: 3
+  market: forex
+  type: brief
+GBPJPYmicro:
+  display_name: GBP/JPY micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+GBPNOK:
+  display_name: GBP/NOK
+  display_order: 10000
+  market: forex
+GBPNZD:
+  display_name: GBP/NZD
+  display_order: 10000
+  market: forex
+GBPSEK:
+  display_name: GBP/SEK
+  display_order: 10000
+  market: forex
+GBPUSD:
+  display_name: GBP/USD
+  display_order: 2
+  market: forex
+  type: brief
+GBPUSDmicro:
+  display_name: GBP/USD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+GM:
+  display_name: General Motors Company
+  display_order: 10000
+  market: stocks
+GOOG:
+  display_name: Alphabet Inc (GOOG)
+  display_order: 4
+  market: stocks
+  type: brief
+GS:
+  display_name: Goldman Sachs Group Inc
+  display_order: 10000
+  market: stocks
+HD:
+  display_name: Home Depot Inc
+  display_order: 10000
+  market: stocks
+HPQ:
+  display_name: HP Inc
+  display_order: 10000
+  market: stocks
+IBM:
+  display_name: IBM
+  display_order: 10000
+  market: stocks
+INTC:
+  display_name: Intel
+  display_order: 10000
+  market: stocks
+IOTUSD:
+  display_name: IOT/USD
+  display_order: 10000
+  market: cryptocurrency
+JNJ:
+  display_name: Johnson & Johnson
+  display_order: 10000
+  market: stocks
+JPM:
+  display_name: JP Morgan Chase & Co.
+  display_order: 10000
+  market: stocks
+JP_225:
+  display_name: Japanese Index
+  display_order: 6
+  market: indices
+  type: brief
+Jump 50 Index:
+  display_name: Jump 50
+  display_order: 4
+  market: derived
+  type: brief
+KO:
+  display_name: Coca-Cola Co
+  display_order: 10000
+  market: stocks
+LHAG:
+  display_name: Lufthansa AG
+  display_order: 10000
+  market: stocks
+LNKUSD:
+  display_name: LNK/USD
+  display_order: 10000
+  market: cryptocurrency
+LTCUSD:
+  display_name: LTC/USD
+  display_order: 3
+  market: cryptocurrency
+  type: brief
+LTCUSD.conv:
+  display_name: LTC/USD conv
+  display_order: 10000
+  market: crypto
+  enabled: 0
+MA:
+  display_name: Mastercard
+  display_order: 10000
+  market: stocks
+MCD:
+  display_name: McDonald's
+  display_order: 10000
+  market: stocks
+MKRUSD:
+  display_name: MKR/USD
+  display_order: 10000
+  market: cryptocurrency
+MRNA:
+  display_name: Moderna Inc
+  display_order: 10000
+  market: stocks
+MSFT:
+  display_name: Microsoft
+  display_order: 10000
+  market: stocks
+MTCUSD:
+  display_name: MTC/USD
+  display_order: 10000
+  market: cryptocurrency
+NED_25:
+  display_name: Dutch Index
+  display_order: 10000
+  market: indices
+NEOUSD:
+  display_name: NEO/USD
+  display_order: 10000
+  market: cryptocurrency
+NESN:
+  display_name: Nestle SA
+  display_order: 10000
+  market: stocks
+NFLX:
+  display_name: NetFlix Inc
+  display_order: 10000
+  market: stocks
+NKE:
+  display_name: Nike Inc.
+  display_order: 10000
+  market: stocks
+NOVN:
+  display_name: Novartis AG
+  display_order: 10000
+  market: stocks
+NVDA:
+  display_name: Nvidia (NVDA)
+  display_order: 5
+  market: stocks
+  type: brief
+NZDCAD:
+  display_name: NZD/CAD
+  display_order: 10000
+  market: forex
+NZDJPY:
+  display_name: NZD/JPY
+  display_order: 10000
+  market: forex
+NZDUSD:
+  display_name: NZD/USD
+  display_order: 10000
+  market: forex
+NZDUSDmicro:
+  display_name: NZD/USD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+OMGUSD:
+  display_name: OMG/USD
+  display_order: 10000
+  market: cryptocurrency
+PEP:
+  display_name: PepsiCo Inc
+  display_order: 10000
+  market: stocks
+PFE:
+  display_name: Pfizer Inc
+  display_order: 10000
+  market: stocks
+PG:
+  display_name: Procter & Gamble
+  display_order: 10000
+  market: stocks
+PSHG:
+  display_name: Porsche Automobil Holding SE Stock
+  display_order: 10000
+  market: stocks
+PUMG:
+  display_name: Puma SE
+  display_order: 10000
+  market: stocks
+PYPL:
+  display_name: Paypal
+  display_order: 10000
+  market: stocks
+Range Break 200 Index:
+  display_name: Range Break 200
+  display_order: 6
+  market: derived
+  type: brief
+SOLUSD:
+  display_name: SOL/USD
+  display_order: 10000
+  market: cryptocurrency
+SONY:
+  display_name: Sony Corporation
+  display_order: 10000
+  market: stocks
+Step Index:
+  display_name: Step
+  display_order: 5
+  market: derived
+  type: brief
+TEVA:
+  display_name: Teva Pharmaceutical Industries Limited
+  display_order: 10000
+  market: stocks
+TRXUSD:
+  display_name: TRX/USD
+  display_order: 10000
+  market: cryptocurrency
+TSLA:
+  display_name: TESLA (TSLA)
+  display_order: 1
+  market: stocks
+  type: brief
+UBER:
+  display_name: Uber Technologies Inc
+  display_order: 10000
+  market: stocks
+UK_100:
+  display_name: UK Index
+  display_order: 5
+  market: indices
+  type: brief
+UNIUSD:
+  display_name: UNI/USD
+  display_order: 10000
+  market: cryptocurrency
+USDCAD:
+  display_name: USD/CAD
+  display_order: 6
+  market: forex
+  type: brief
+USDCADmicro:
+  display_name: USD/CAD micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+USDCHF:
+  display_name: USD/CHF
+  display_order: 10000
+  market: forex
+USDCHFmicro:
+  display_name: USD/CHF micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+USDCNH:
+  display_name: USD/CNH
+  display_order: 10000
+  market: forex
+USDJPY:
+  display_name: USD/JPY
+  display_order: 4
+  market: forex
+  type: brief
+USDJPYmicro:
+  display_name: USD/JPY micro
+  display_order: 10000
+  market: forex
+  enabled: 0
+USDMXN:
+  display_name: USD/MXN
+  display_order: 10000
+  market: forex
+USDNOK:
+  display_name: USD/NOK
+  display_order: 10000
+  market: forex
+USDPLN:
+  display_name: USD/PLN
+  display_order: 10000
+  market: forex
+USDSEK:
+  display_name: USD/SEK
+  display_order: 10000
+  market: forex
+USDZAR:
+  display_name: USD/ZAR
+  display_order: 10000
+  market: forex
+US_100:
+  display_name: US Tech Index
+  display_order: 2
+  market: indices
+  type: brief
+US_30:
+  display_name: Wall Street Index
+  display_order: 1
+  market: indices
+  type: brief
+US_500:
+  display_name: US Index
+  display_order: 3
+  market: indices
+  type: brief
+V:
+  display_name: Visa Inc
+  display_order: 10000
+  market: stocks
+Volatility 75 Index:
+  display_name: Volatility 75
+  display_order: 1
+  market: derived
+  type: brief
+WMT:
+  display_name: Wal-Mart Stores Inc.
+  display_order: 10000
+  market: stocks
+WTI_OIL:
+  display_name: Crude Oil
+  display_order: 6
+  market: commodities
+  type: brief
+XAGUSD:
+  display_name: XAG/USD
+  display_order: 2
+  market: commodities
+  type: brief
+XAUUSD:
+  display_name: XAU/USD
+  display_order: 1
+  market: commodities
+  type: brief
+XCUUSD:
+  display_name: XCU/USD
+  display_order: 5
+  market: commodities
+  type: brief
+XLMUSD:
+  display_name: XLM/USD
+  display_order: 10000
+  market: cryptocurrency
+XMRUSD:
+  display_name: XMR/USD
+  display_order: 10000
+  market: cryptocurrency
+XPDUSD:
+  display_name: XPD/USD
+  display_order: 4
+  market: commodities
+  type: brief
+XPTUSD:
+  display_name: XPT/USD
+  display_order: 3
+  market: commodities
+  type: brief
+XRPUSD:
+  display_name: XRP/USD
+  display_order: 10000
+  market: cryptocurrency
+XTZUSD:
+  display_name: XTZ/USD
+  display_order: 10000
+  market: cryptocurrency
+ZECUSD:
+  display_name: ZEC/USD
+  display_order: 10000
+  market: cryptocurrency
+ZM:
+  display_name: Zoom Video Communications
+  display_order: 10000
+  market: stocks

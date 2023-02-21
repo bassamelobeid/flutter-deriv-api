@@ -712,6 +712,17 @@ sub mt5_account_types {
     return $config;
 }
 
+=head2 mt5_assets_config
+
+Config for MT5 assets
+
+=cut
+
+sub mt5_assets_config {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_assets.yml');
+    return $config;
+}
+
 =head2 mt5_webapi_config
 
 Config for trade server definition for MT5
