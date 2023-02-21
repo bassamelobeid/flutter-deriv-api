@@ -375,6 +375,7 @@ subtest 'CR client can from low risk countries upgrade to MF' => sub {
     subtest 'CR can upgrade to MF' => sub {
         my %details = (%client_details, %$mf_details);
         delete $details{new_account_real};
+
         my $res     = $t->await::new_account_maltainvest(\%details);
         my $loginid = $res->{new_account_maltainvest}{client_id};
         like($loginid, qr/^MF\d+$/, "got MF client $loginid");
@@ -831,7 +832,7 @@ subtest 'gb account' => sub {
 sub create_vr_account {
     my $args   = shift;
     my $params = {
-        details        => {},
+        details        => {account_type => 'binary'},
         email_verified => 1,
     };
 

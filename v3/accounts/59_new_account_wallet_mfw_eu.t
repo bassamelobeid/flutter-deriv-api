@@ -60,9 +60,10 @@ my %details = (
 subtest 'new real wallet eu account' => sub {
     # create VR acc
     my ($vr_client, $user) = create_vr_account({
-        email           => 'test+gb@binary.com',
-        client_password => 'abc123',
-        residence       => 'es',
+            email           => 'test+gb@binary.com',
+            client_password => 'abc123',
+            residence       => 'es',
+
     });
     # authorize
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
@@ -136,6 +137,7 @@ sub create_vr_account {
                 email           => $args->{email},
                 client_password => $args->{client_password},
                 residence       => $args->{residence},
+                account_type    => 'binary',
             },
             email_verified => 1
         });
