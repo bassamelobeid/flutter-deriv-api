@@ -3422,7 +3422,8 @@ subtest 'Social identity provider' => sub {
                 'email'             => $email,
                 'residence'         => 'id',
                 'has_social_signup' => 1,
-                'brand_name'        => 'deriv'
+                'brand_name'        => 'deriv',
+                'account_type'      => 'binary',
             },
             utm_data => {
                 'utm_content'      => undef,

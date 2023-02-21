@@ -1282,20 +1282,26 @@ subtest $method => sub {
             'Correct error for invalid currency.';
 
         $params->{args}->{currency} = 'USD';
+
+        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+
+        is_deeply $result->{error},
+            {
+            code              => 'InvalidRequestParams',
+            message_to_client => 'Invalid request parameters.',
+            details           => {field => 'payment_method'}
+            },
+            'Correct error for invalid currency.';
+
+        $params->{args}->{payment_method} = 'doughflow';
+
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidAccountRegion',
             'It should return error code if wallet is unavailable in country of residence.')
             ->error_message_is('Sorry, account opening is unavailable in your region.', 'Error message about service unavailability.');
 
         $mock_countries->redefine(wallet_company_for_country => 'svg');
-
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error code if missing any details')
-            ->error_message_is('Please provide complete details for your account.', 'It should return error message if missing any details')
-            ->error_details_is({missing => ["payment_method"]});
-
-        $params->{args}->{payment_method} = 'fiat';
-        $params->{args}->{currency}       = 'USD';
+        $params->{args}->{currency} = 'USD';
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_no_error('If passed argumets are ok a new real wallet will be created successfully');
@@ -1397,8 +1403,14 @@ subtest $method => sub {
             },
             'Correct error for invalid currency.';
 
-        $params->{args}->{payment_method} = 'fiat';
-        $params->{args}->{currency}       = 'USD';
+        $params->{args}->{currency} = 'USD';
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidRequestParams', 'It should return error code if missing any details')
+            ->error_message_is('Invalid request parameters.', 'It should return error message if missing any details')
+            ->error_details_is({field => "payment_method"});
+
+        $params->{args}->{payment_method} = 'doughflow';
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidAccountRegion',
@@ -1461,7 +1473,7 @@ subtest $method => sub {
         ok(!$wallet_client->can_trade, 'wallet client can_trade is false');
         is $wallet_client->residence, 'de', 'Residence is copied from the virtual account';
 
-        is($wallet_client->payment_method, undef, 'Account type field is decommisioned, it will be renamed to account_type');
+        is($wallet_client->account_type, 'doughflow', 'Account type field is decommisioned, it will be renamed to account_type');
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
 
         $app_config->system->suspend->wallets(1);
@@ -1509,110 +1521,6 @@ subtest $method => sub {
         }
         'Initial users and clients';
     };
-
-    my $mock_countries = Test::MockModule->new('Brands::Countries');
-
-    subtest 'Create new MFW wallet real - non EU country' => sub {
-        $emit_data = {};
-        $params->{token} = $auth_token;
-
-        $user->update_email_fields(email_verified => 1);
-
-        my $app_config = BOM::Config::Runtime->instance->app_config;
-        ok $app_config->system->suspend->wallets, 'wallets are suspended';
-
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('PermissionDenied',
-            'It should return error code if wallet is unavailable in country of residence.')
-            ->error_message_is('Wallet account creation is currently suspended.', 'Error message about service unavailability.');
-
-        $app_config->system->suspend->wallets(0);
-
-        $params->{args}->{company} = 'maltainvest';
-
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
-        is_deeply $result->{error},
-            {
-            code              => 'InvalidRequestParams',
-            message_to_client => 'Invalid request parameters.',
-            details           => {field => 'currency'}
-            },
-            'Correct error for missing currency.';
-
-        $params->{args}->{currency} = 'DUMMY';
-        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
-        is_deeply $result->{error},
-            {
-            code              => 'InvalidRequestParams',
-            message_to_client => 'Invalid request parameters.',
-            details           => {field => 'currency'}
-            },
-            'Correct error for invalid currency.';
-
-        $params->{args}->{currency} = 'USD';
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidResidence',
-            'It should return error code if wallet is unavailable in country of residence.')
-            ->error_message_is('Sorry, our service is not available for your country of residence.');
-
-        $mock_countries->redefine(wallet_company_for_country => 'svg');
-
-        $params->{args}->{payment_method} = 'fiat';
-        $params->{args}->{currency}       = 'USD';
-
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error code if missing any details')
-            ->error_message_is('Please provide complete details for your account.', 'It should return error message if missing any details')
-            ->error_details_is({missing => ["tax_residence", "tax_identification_number", "account_opening_reason"]});
-
-        $params->{args} = {
-            $params->{args}->%*,
-            "set_financial_assessment"                 => 1,
-            "risk_tolerance"                           => "Yes",
-            "source_of_experience"                     => "I have an academic degree, professional certification, and/or work experience.",
-            "cfd_experience"                           => "Less than a year",
-            "cfd_frequency"                            => "1 - 5 transactions in the past 12 months",
-            "trading_experience_financial_instruments" => "Less than a year",
-            "trading_frequency_financial_instruments"  => "1 - 5 transactions in the past 12 months",
-            "cfd_trading_definition"                   => "Speculate on the price movement.",
-            "leverage_impact_trading"                  => "Leverage lets you open larger positions for a fraction of the trade's value.",
-            "leverage_trading_high_risk_stop_loss"     => "Close your trade automatically when the loss is more than or equal to a specific amount.",
-            "required_initial_margin"                  => "When opening a Leveraged CFD trade.",
-            "employment_industry"                      => "Finance",                # +15
-            "education_level"                          => "Secondary",              # +1
-            "income_source"                            => "Self-Employed",          # +0
-            "net_income"                               => '$25,000 - $50,000',      # +1
-            "estimated_worth"                          => '$100,000 - $250,000',    # +1
-            "occupation"                               => 'Managers',               # +0
-            "employment_status"                        => "Self-Employed",          # +0
-            "source_of_wealth"                         => "Company Ownership",      # +0
-            "account_turnover"                         => 'Less than $25,000',
-            'tax_residence'                            => 'de',
-            'tax_identification_number'                => 'MRTSVT79M29F8P9P',
-            'account_opening_reason'                   => 'Income Earning',
-        };
-
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_no_error('If passed argumets are ok a new real wallet will be created successfully');
-        $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return wallet landing company');
-
-        my $new_loginid = $rpc_ct->result->{client_id};
-        ok $new_loginid =~ /^MFW\d+/, 'new MFW loginid';
-        is $emit_data->{properties}->{type},    'wallet', 'type=wallet';
-        is $emit_data->{properties}->{subtype}, 'real',   'subtype=real';
-
-        my $wallet_client = BOM::User::Client->get_client_instance($new_loginid);
-        isa_ok($wallet_client, 'BOM::User::Wallet', 'get_client_instance returns instance of wallet');
-        ok($wallet_client->is_wallet,  'wallet client is_wallet is true');
-        ok(!$wallet_client->can_trade, 'wallet client can_trade is false');
-        is $wallet_client->residence, 'id', 'Residence is copied from the virtual account';
-
-        ok $emitted{"signup_$new_loginid"}, "signup event emitted";
-
-        $app_config->system->suspend->wallets(1);
-    };
-
-    $mock_countries->unmock_all;
 };
 
 subtest 'Empty phone number' => sub {

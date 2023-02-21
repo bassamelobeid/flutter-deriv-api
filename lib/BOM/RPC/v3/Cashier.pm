@@ -55,6 +55,7 @@ use BOM::TradingPlatform;
 use BOM::Config::Redis;
 use BOM::Rules::Engine;
 use BOM::TradingPlatform::Helper::HelperDerivEZ;
+use BOM::Config::BrokerDatabase;
 
 requires_auth('trading', 'wallet');
 
@@ -1231,8 +1232,8 @@ rpc transfer_between_accounts => sub {
         my @available_siblings_for_transfer =
             grep { !$_->{disabled} && $_->{demo_account} == $client->is_virtual && $lc_short eq $_->{landing_company_name} } values %$siblings;
 
-        @available_siblings_for_transfer = map {
-            { $_->%{qw/loginid balance account_type currency demo_account/} }
+        @available_siblings_for_transfer = map { $_->{account_type} = delete $_->{category}; $_ } map {
+            { $_->%{qw/loginid balance account_type currency demo_account category/} }
         } @available_siblings_for_transfer;
 
         if (($args->{accounts} // '') eq 'all' and not(BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all)) {
@@ -1454,7 +1455,7 @@ rpc transfer_between_accounts => sub {
                     loginid      => $binary_login,
                     balance      => $binary_client->default_account->balance,
                     currency     => $binary_client->default_account->currency_code,
-                    account_type => $binary_client->account_type,
+                    account_type => $binary_client->get_account_type->category->name,
                     demo_account => $binary_client->is_virtual,
                     };
 
@@ -1504,7 +1505,7 @@ rpc transfer_between_accounts => sub {
                     loginid      => $loginid_from,
                     balance      => $client_from->account->balance,
                     currency     => $client_from->account->currency_code,
-                    account_type => $client_from->account_type,
+                    account_type => $client_from->get_account_type->category->name,
                 },
                 {
                     loginid      => $loginid_to,
@@ -1531,7 +1532,7 @@ rpc transfer_between_accounts => sub {
                     loginid      => $loginid_to,
                     balance      => $to_client->account->balance,
                     currency     => $to_client->account->currency_code,
-                    account_type => $to_client->account_type,
+                    account_type => $to_client->get_account_type->category->name,
                 },
                 {
                     loginid      => $loginid_from,
@@ -1771,6 +1772,14 @@ rpc transfer_between_accounts => sub {
 
         $remark = "$remark $additional_remark" if $additional_remark;
 
+        my $inter_db_transfer = 0;
+        if ($client_from->broker_code ne $client_to->broker_code) {
+            my $db_from = BOM::Config::BrokerDatabase->get_domain($client_from->broker_code) // '';
+            my $db_to   = BOM::Config::BrokerDatabase->get_domain($client_to->broker_code)   // '';
+
+            $inter_db_transfer = $db_from eq $db_to ? 0 : 1;
+        }
+
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
             amount            => $amount,
@@ -1779,7 +1788,7 @@ rpc transfer_between_accounts => sub {
             fmStaff           => $loginid_from,
             toStaff           => $loginid_to,
             remark            => $remark,
-            inter_db_transfer => ($client_from->landing_company->short ne $client_to->landing_company->short),
+            inter_db_transfer => $inter_db_transfer,
             source            => $source,
             fees              => $fees,
             gateway_code      => 'account_transfer',
@@ -1804,13 +1813,13 @@ rpc transfer_between_accounts => sub {
                 loginid      => $client_from->loginid,
                 balance      => $client_from->default_account->balance,
                 currency     => $client_from->default_account->currency_code,
-                account_type => $client_from->account_type,
+                account_type => $client_from->get_account_type->category->name,
             },
             {
                 loginid      => $client_to->loginid,
                 balance      => $client_to->default_account->balance,
                 currency     => $client_to->default_account->currency_code,
-                account_type => $client_to->account_type,
+                account_type => $client_to->get_account_type->category->name,
             }]};
 };
 

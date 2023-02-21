@@ -393,7 +393,7 @@ subtest $method => sub {
                     'trading'              => {
                         linked_to => [{
                                 account_id     => $vr_wallet->loginid,
-                                payment_method => $vr_wallet->payment_method,
+                                payment_method => $vr_wallet->account_type,
                                 balance        => '10000.00',
                                 currency       => $vr_wallet->currency
                             }
@@ -421,7 +421,7 @@ subtest $method => sub {
                             }
                         ],
                         account_id     => $vr_wallet->loginid,
-                        payment_method => $vr_wallet->payment_method,
+                        payment_method => $vr_wallet->account_type,
                         balance        => '10000.00',
                         currency       => 'USD'
                     },
@@ -452,7 +452,7 @@ subtest $method => sub {
             'trading' => {
                 linked_to => [{
                         account_id     => $vr_wallet->loginid,
-                        payment_method => $vr_wallet->payment_method,
+                        payment_method => $vr_wallet->account_type,
                         balance        => '10000.00',
                         currency       => $vr_wallet->currency
                     }
@@ -520,7 +520,7 @@ subtest $method => sub {
                     'trading'              => {
                         linked_to => [{
                                 account_id     => $vr_wallet->loginid,
-                                payment_method => $vr_wallet->payment_method,
+                                payment_method => $vr_wallet->account_type,
                                 balance        => '10000.00',
                                 currency       => 'USD'
                             }
@@ -548,7 +548,7 @@ subtest $method => sub {
                             }
                         ],
                         account_id     => $vr_wallet->loginid,
-                        payment_method => $vr_wallet->payment_method,
+                        payment_method => $vr_wallet->account_type,
                         balance        => '10000.00',
                         currency       => $vr_wallet->currency
                     },
@@ -585,7 +585,7 @@ subtest $method => sub {
                     }
                 ],
                 account_id     => $vr_wallet->loginid,
-                payment_method => $vr_wallet->payment_method,
+                payment_method => $vr_wallet->account_type,
                 balance        => '10000.00',
                 currency       => $vr_wallet->currency
             },

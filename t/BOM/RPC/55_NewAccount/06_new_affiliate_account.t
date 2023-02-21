@@ -95,6 +95,7 @@ subtest 'Initialization' => sub {
 };
 
 subtest 'new affiliate account successfully created' => sub {
+    BOM::Config::Runtime->instance->app_config->system->suspend->wallets(0);
     my $email     = 'new_aff' . rand(999) . '@binary.com';
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',

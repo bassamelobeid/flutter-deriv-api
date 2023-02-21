@@ -118,8 +118,11 @@ rpc new_account_real => sub {
         return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $company;
     }
 
-    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name('binary', 'real');
-    my $broker       = $account_type->get_single_broker_code($company);
+    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // 'binary')
+        or die "Invalid account type $args->{account_type}";
+    die "Account type $account_type does not support real account opening" unless any { $_ eq 'real' } $account_type->account_opening->@*;
+
+    my $broker = $account_type->get_single_broker_code($company);
 
     # Send error if a maltainvest account  is going to be created here;
     # because they should be created using new_account_maltainvest call
@@ -129,7 +132,8 @@ rpc new_account_real => sub {
     my $response = create_new_real_account(
         client          => $client,
         args            => $args,
-        account_type    => 'trading',
+        account_type    => $account_type->name,
+        category        => $account_type->category->name,
         broker_code     => $broker,
         market_type     => $market_type,
         environment     => request()->login_env($params),
@@ -166,13 +170,17 @@ rpc new_account_maltainvest => sub {
     # this call is exclusively for maltainvest
     return BOM::RPC::v3::Utility::permission_error if ($company ne 'maltainvest');
 
-    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name('binary', 'real');
-    my $broker       = $account_type->get_single_broker_code($company);
+    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name($args->{account_type} // 'binary')
+        or die "Invalid account type $args->{account_type}";
+    die "Account type $account_type does not support real account opening" unless any { $_ eq 'real' } $account_type->account_opening->@*;
+
+    my $broker = $account_type->get_single_broker_code($company);
 
     my $response = create_new_real_account(
         client          => $client,
         args            => $args,
-        account_type    => 'trading',
+        account_type    => $account_type->name,
+        category        => $account_type->category->name,
         broker_code     => $broker,
         market_type     => 'financial',
         environment     => request()->login_env($params),
@@ -220,17 +228,20 @@ rpc "new_account_virtual",
     my $args   = $params->{args};
 
     $args->{token_details} = delete $params->{token_details};
-    $args->{type} //= 'trading';    # default to 'trading'
 
-    my $account_category = $args->{type} eq 'wallet' ? 'wallet' : 'binary';
-    my $account_type     = BOM::Config::AccountType::Registry->account_type_by_name($account_category, 'demo');
-    my $broker           = $account_type->get_single_broker_code('virtual');
+    my $category          = delete $args->{type}  // 'trading';
+    my $account_type_name = $args->{account_type} // ($category eq 'trading' ? 'binary' : 'virtual');
+    my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name);
+    die "Invalid account type $account_type"                               unless $account_type;
+    die "Account type $account_type does not support demo account opening" unless any { $_ eq 'demo' } $account_type->account_opening->@*;
+
+    my $broker = $account_type->get_single_broker_code('virtual');
     $args->{broker} = $broker;
 
     return BOM::RPC::v3::Utility::suspended_login()
         if grep { $broker eq $_ } BOM::Config::Runtime->instance->app_config->system->suspend->logins->@*;
 
-    if ($args->{type} eq 'wallet' && BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
+    if ($category eq 'wallet' && BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
             message_to_client => localize("Wallet account creation is currently suspended."),
@@ -246,10 +257,12 @@ rpc "new_account_virtual",
 
     my ($client, $account);
     try {
-        $args->{ip}          = $params->{client_ip} // '';
-        $args->{country}     = uc($params->{country_code} // '');
-        $args->{environment} = request()->login_env($params);
-        $args->{source}      = $params->{source};
+        $args->{ip}           = $params->{client_ip} // '';
+        $args->{country}      = uc($params->{country_code} // '');
+        $args->{environment}  = request()->login_env($params);
+        $args->{source}       = $params->{source};
+        $args->{account_type} = $account_type->name;
+        $args->{category}     = $account_type->category->name;
 
         # Pre-set email if client is authorized
         if ($args->{token_details}) {
@@ -274,7 +287,7 @@ rpc "new_account_virtual",
             currency    => $account->currency_code(),
             balance     => formatnumber('amount', $account->currency_code(), $account->balance),
             oauth_token => _create_oauth_token($params->{source}, $client->loginid),
-            type        => $args->{type},
+            type        => $category,
             $refresh_token ? (refresh_token => $refresh_token) : (),
         };
     } catch ($e) {
@@ -315,11 +328,8 @@ rpc new_account_wallet => sub {
     my $countries_instance = request()->brand->countries_instance;
     my $company_name       = $countries_instance->wallet_company_for_country($client->residence, 'real') // '';
 
-    # EU must always default to maltainvest, other countries can be under MFW when specified.
-    # For maltainvest, the user needs to fulfill additional requirements within create_new_real_account
-    my $is_maltainvest = $company_name eq 'maltainvest' || ($args->{'company'} && $args->{'company'} eq 'maltainvest');
-    $company_name = 'maltainvest' if $is_maltainvest;
-    my $wallet_lc = LandingCompany::Registry->by_name($company_name // '');
+    my $is_maltainvest = $company_name eq 'maltainvest';
+    my $wallet_lc      = LandingCompany::Registry->by_name($company_name // '');
 
     my $currency_type = LandingCompany::Registry::get_currency_type($args->{currency} // '');
     return BOM::RPC::v3::Utility::create_error({
@@ -327,8 +337,16 @@ rpc new_account_wallet => sub {
             message_to_client => localize('Invalid request parameters.'),
             details           => {field => 'currency'}}) unless $currency_type;
 
-    # Note: we don't have an argument for wallet account-type a the moment. Let's default it to fiat/crypto based on currency type.
-    my $account_type = BOM::Config::AccountType::Registry->account_type_by_name('wallet', $currency_type);
+    # Note: we don't get account type form websocket at the moment; so we default it by currency type;
+    # TODO: We should rename payment_method to account_type in future. in current card we're trying to keep API as is.
+    my $account_type = $args->{payment_method} && BOM::Config::AccountType::Registry->account_type_by_name($args->{payment_method});
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidRequestParams',
+            message_to_client => localize('Invalid request parameters.'),
+            details           => {field => 'payment_method'}}) unless $account_type && $account_type->category->name eq 'wallet';
+
+    die "Account type $account_type does not support real account opening" unless any { $_ eq 'real' } $account_type->account_opening->@*;
 
     return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $wallet_lc;
 
@@ -337,7 +355,8 @@ rpc new_account_wallet => sub {
     my $response = create_new_real_account(
         client          => $client,
         args            => $args,
-        account_type    => 'wallet',
+        account_type    => $account_type->name,
+        category        => $account_type->category->name,
         broker_code     => $broker,
         landing_company => $company_name,
         environment     => request()->login_env($params),
@@ -439,7 +458,7 @@ sub create_virtual_account {
         die $error if $error;
     }
 
-    if ($args->{type} eq 'wallet') {
+    if ($args->{category} eq 'wallet') {
         my $countries_instance = request()->brand->countries_instance;
         my $company_name       = $countries_instance->wallet_company_for_country($args->{residence}, 'virtual');
 
@@ -457,10 +476,10 @@ sub create_virtual_account {
             client_password => $args->{client_password},
             residence       => $args->{residence},
             source          => $args->{source},
+            account_type    => $args->{account_type},
         },
         utm_data               => {},
-        type                   => $args->{type},
-        account_opening_reason => $args->{account_opening_reason} // ''
+        account_opening_reason => $args->{account_opening_reason} // '',
     };
 
     # Clients from Spain and portugal are not allowed to signup via affiliate links hence we are removing their token.
@@ -527,7 +546,7 @@ sub create_virtual_account {
         {
             loginid    => $client->loginid,
             properties => {
-                type     => $args->{type} // 'trading',
+                type     => $args->{account_type} eq 'binary' ? 'trading' : 'wallet',
                 subtype  => 'virtual',
                 utm_tags => BOM::Platform::Utility::extract_valid_params(\@tags_list, $utm_tags, $regex_validation)}});
 
@@ -636,7 +655,7 @@ sub create_new_real_account {
     my $client = $params{client};
     my $args   = $params{args};
 
-    $args->{$_} = $params{$_} for (qw/broker_code account_type market_type source landing_company environment/);
+    $args->{$_} = $params{$_} for (qw/broker_code account_type market_type source landing_company environment category/);
 
     my $details_ref = _new_account_pre_process($args, $client);
     my $error_map   = BOM::RPC::v3::Utility::error_map();
@@ -684,12 +703,13 @@ sub create_new_real_account {
     my $acc;
     try {
         $acc = $create_account_sub->({
-            ip          => $params{ip} // '',
-            country     => uc($client->residence // ''),
-            from_client => $client,
-            user        => $user,
-            details     => $details_ref->{details},
-            params      => $args,
+            ip           => $params{ip} // '',
+            country      => uc($client->residence // ''),
+            from_client  => $client,
+            user         => $user,
+            details      => $details_ref->{details},
+            params       => $args,
+            account_type => delete $args->{account_type},
         });
     } finally {
         BOM::Platform::Redis::release_lock($client->user_id);
@@ -841,13 +861,13 @@ sub _new_account_pre_process {
         tax_identification_number => undef,
         non_pep_declaration_time  => undef,
         currency                  => undef,
-        payment_method            => undef,
+        account_type              => undef,
     );
 
     for my $field (keys %default_values) {
         $details->{$field} = $args->{$field} // $default_values{$field};
     }
-    $details->{type} = $account_type;
+    $details->{account_type} = $account_type;
 
     if ($account_type eq 'trading' and $market_type eq 'financial') {
         # When a Deriv (Europe) Limited/Deriv (MX) Ltd account is created,
@@ -911,8 +931,7 @@ sub _new_account_post_process {
         $new_client->set_affiliate_info({affiliate_plan => $args->{affiliate_plan}});
     }
 
-    if (any { $args->{account_type} eq $_ } qw/trading affiliate/) {
-
+    if (any { $new_client->{account_type} eq $_ } qw/binary trading affiliate/) {
         update_financial_assessment($client->user, decode_fa($client->financial_assessment()))
             if $args->{market_type} eq 'synthetic' && $client->financial_assessment();
 
@@ -973,8 +992,12 @@ sub _new_account_post_process {
             loginid    => $new_client->loginid,
             properties => {
                 # TODO: CHECK PROPERTIES AGAINST EVENT HANDLER
-                type    => $args->{account_type},
-                subtype => 'real'
+                type => $new_client->get_account_type->category
+                    ->name,    #keep it for backward compatibility, Before removing please check bom-events and cio
+
+                account_type => $new_client->get_account_type->name,
+                category     => $new_client->get_account_type->category->name,
+                subtype      => 'real'
             }});
 }
 
@@ -1197,14 +1220,15 @@ sub _do_affiliate {
         });
     }
 
-    print Dumper($args);
-
     my $cx_response = $params->{third_party_function}->($email, $args);
 
     if ($cx_response->{code} eq "CXRuntimeError") {
         return BOM::RPC::v3::Utility::create_error($cx_response);
     }
 
+    $args->{token_details} = delete $params->{token_details};
+    my $category          = 'wallet';
+    my $account_type_name = 'affiliate';
     $args->{address_line_1} = $args->{address_street};
     $args->{token_details}  = delete $params->{token_details};
     $args->{type} //= 'trading';    # affiliate demo account will always be trading if not specified.
@@ -1242,6 +1266,8 @@ sub _do_affiliate {
         $args->{tax_identification_number} = "111-222-333";
         $args->{account_opening_reason}    = "affiliate";
         $args->{payment_method}            = "bank_transfer";
+        $args->{account_type}              = 'binary';
+        $args->{category}                  = 'trading';
 
         # Pre-set email if client is authorized
         my $user = BOM::User->new(email => $email);
@@ -1289,7 +1315,8 @@ sub _do_affiliate {
         my $result = create_new_real_account_for_affiliate(
             client          => $client,
             args            => $args,
-            account_type    => 'affiliate',
+            account_type    => $account_type_name,
+            category        => $category,
             broker_code     => $broker,
             market_type     => 'affiliate',
             environment     => request()->login_env($params),

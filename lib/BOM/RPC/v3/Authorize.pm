@@ -22,7 +22,9 @@ use LandingCompany::Registry;
 sub _get_upgradeable_landing_companies {
     my ($client) = @_;
 
-    return [] unless $client->account_type eq 'trading';
+    return []
+        unless $client->account_type eq
+        'binary';    # this field only for legacy accounts in future we'll use separate API call for returning this information
 
     # List to store upgradeable companies
     my @upgradeable_landing_companies;
@@ -62,7 +64,7 @@ sub _get_upgradeable_landing_companies {
                     loginid         => $client->loginid,
                     landing_company => $lc,
                     currency        => $currency,
-                    account_type    => 'trading'
+                    account_type    => 'binary'
                 )->has_failure
                 )
             {
