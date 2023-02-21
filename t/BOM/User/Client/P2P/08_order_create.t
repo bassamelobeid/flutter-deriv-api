@@ -6,8 +6,7 @@ use Test::Deep;
 use Test::Warn;
 use Test::MockModule;
 use Test::Exception;
-use Format::Util::Numbers qw(formatnumber);
-
+use Format::Util::Numbers                      qw(formatnumber financialrounding);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
@@ -146,9 +145,9 @@ subtest 'Creating new buy order' => sub {
         expiry_time      => re('\d+'),
         id               => $new_order->{id},
         is_incoming      => 0,
-        local_currency   => $ad_params{local_currency},
+        local_currency   => uc($ad_params{local_currency}),
         price            => num($ad_params{amount} * $ad_params{rate}),
-        price_display    => num($ad_params{amount} * $ad_params{rate}),
+        price_display    => num(financialrounding('amount', $advert_info->{local_currency}, ($ad_params{amount} * $ad_params{rate}))),
         rate             => num($ad_params{rate}),
         rate_display     => num($ad_params{rate}),
         status           => 'pending',

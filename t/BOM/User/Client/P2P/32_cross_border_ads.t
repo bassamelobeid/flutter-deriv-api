@@ -19,6 +19,7 @@ my $rule_engine = BOM::Rules::Engine->new();
 
 $p2p_config->payment_methods_enabled(1);
 $p2p_config->transaction_verification_countries([]);
+$p2p_config->cross_border_ads_restricted_countries(['nz']);
 $p2p_config->transaction_verification_countries_all(0);
 $p2p_config->payment_method_countries(
     encode_json_utf8({
@@ -29,7 +30,11 @@ $p2p_config->payment_method_countries(
             method2 => {mode => 'exclude'},
             method3 => {
                 mode      => 'include',
-                countries => ['ng']}}));
+                countries => ['ng']
+            },
+            method4 => {
+                mode      => 'include',
+                countries => ['nz']}}));
 
 my $advertiser_id = BOM::Test::Helper::P2P::create_advertiser(
     balance        => 1000,
@@ -37,9 +42,17 @@ my $advertiser_id = BOM::Test::Helper::P2P::create_advertiser(
 my $advertiser_ng = BOM::Test::Helper::P2P::create_advertiser(
     balance        => 1000,
     client_details => {residence => 'ng'});
+my $advertiser_nz = BOM::Test::Helper::P2P::create_advertiser(
+    balance        => 1000,
+    client_details => {residence => 'nz'});
+
+my $advertiser_nz_2 = BOM::Test::Helper::P2P::create_advertiser(
+    balance        => 1000,
+    client_details => {residence => 'nz'});
 
 my $methods_id = $advertiser_id->p2p_advertiser_payment_methods(create => [{method => 'method1'}, {method => 'method2'}]);
 my $methods_ng = $advertiser_ng->p2p_advertiser_payment_methods(create => [{method => 'method2'}, {method => 'method3'}]);
+my $methods_nz = $advertiser_nz->p2p_advertiser_payment_methods(create => [{method => 'method2'}, {method => 'method4'}]);
 
 # sell ad with common pm
 my (undef, $ad_sell_id_1) = BOM::Test::Helper::P2P::create_advert(
@@ -104,6 +117,23 @@ my (undef, $ad_buy_ng_2) = BOM::Test::Helper::P2P::create_advert(
     min_order_amount     => 3,
     max_order_amount     => 4,
     payment_method_names => ['method3'],
+);
+my (undef, $ad_buy_nz_1) = BOM::Test::Helper::P2P::create_advert(
+    client               => $advertiser_nz,
+    type                 => 'buy',
+    rate                 => 2,
+    min_order_amount     => 3,
+    max_order_amount     => 4,
+    payment_method_names => ['method4'],
+);
+
+my (undef, $ad_buy_nz_2) = BOM::Test::Helper::P2P::create_advert(
+    client               => $advertiser_nz_2,
+    type                 => 'buy',
+    rate                 => 2,
+    min_order_amount     => 3,
+    max_order_amount     => 4,
+    payment_method_names => ['method4'],
 );
 
 subtest 'advert list' => sub {
@@ -252,6 +282,78 @@ subtest 'floating rate ads' => sub {
     );
     cmp_ok $order->{rate},                                             '==', 100.1, 'created order has correct rate';
     cmp_ok $za_advertiser->p2p_order_info(id => $order->{id})->{rate}, '==', 100.1, 'p2p_order_info has correct rate';
+};
+
+subtest 'cross border ads disabled for a particular country' => sub {
+    cmp_deeply(
+        exception {
+            $advertiser_nz->p2p_advert_list(
+                local_currency    => $advertiser_id->local_currency,
+                counterparty_type => 'sell'
+            );
+        },
+        {error_code => 'CrossBorderNotAllowed'},
+        'Advertiser not allowed to view ads not from his local currency in p2p_advert_list'
+    );
+
+    cmp_deeply([
+            map { $_->{id} } $advertiser_nz->p2p_advert_list(
+                local_currency    => $advertiser_nz->local_currency,
+                counterparty_type => 'sell'
+            )->@*
+        ],
+        bag($ad_buy_nz_1->{id}, $ad_buy_nz_2->{id}),
+        'expected nz buy ads seen by nz user'
+    );
+
+    lives_ok {
+        $advertiser_nz->p2p_advert_info(id => $ad_buy_ng_1->{id});
+    }
+    'Advertiser can view specific ad info not from his local currency through p2p_advert_info';
+
+    cmp_deeply(
+        exception {
+            BOM::Test::Helper::P2P::create_advert(
+                client               => $advertiser_nz,
+                type                 => 'buy',
+                rate                 => 2,
+                min_order_amount     => 3,
+                max_order_amount     => 4,
+                payment_method_names => ['method4'],
+                local_currency       => $advertiser_id->local_currency,
+            );
+        },
+        {error_code => 'CrossBorderNotAllowed'},
+        'Advertiser not allowed create ads that is not from his local currency'
+    );
+
+    cmp_deeply(
+        exception {
+            $advertiser_nz->p2p_order_create(
+                advert_id          => $ad_buy_id_1->{id},
+                amount             => 1,
+                payment_method_ids => [grep { $methods_id->{$_}{method} eq 'method4' } keys %$methods_id],
+                contact_info       => 'x',
+                rule_engine        => $rule_engine
+            );
+        },
+        {error_code => 'CrossBorderNotAllowed'},
+        'Advertiser not allowed create order against ad that is not from his local currency although cross border feature is disabled'
+    );
+
+    lives_ok {
+        my $order = $advertiser_nz->p2p_order_create(
+            advert_id          => $ad_buy_nz_2->{id},
+            amount             => 3,
+            payment_method_ids => [grep { $methods_nz->{$_}{method} eq 'method4' } keys %$methods_nz],
+            contact_info       => 'x',
+            rule_engine        => $rule_engine
+        );
+        $advertiser_nz_2->p2p_order_confirm(id => $order->{id});
+        $advertiser_nz->p2p_order_confirm(id => $order->{id});
+    }
+    'can complete sell order of ad from the same local currency even if cross border feature is disabled';
+
 };
 
 done_testing();

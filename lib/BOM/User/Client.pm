@@ -2722,8 +2722,10 @@ sub p2p_advert_create {
     $param{country}          = $self->residence;
     $param{account_currency} = $self->currency;
     ($param{local_currency} //= $self->local_currency) or die +{error_code => 'NoLocalCurrency'};
-    $param{advertiser_id} = $advertiser_info->{id};
-    $param{is_active}     = 1;                        # we will validate this as an active ad
+    $param{advertiser_id}  = $advertiser_info->{id};
+    $param{is_active}      = 1;                            # we will validate this as an active ad
+    $param{local_currency} = uc($param{local_currency});
+    $self->_validate_cross_border_availability if $param{local_currency} ne uc($self->local_currency);
 
     $self->_validate_advert(%param);
 
@@ -2863,8 +2865,10 @@ sub p2p_advert_list {
 
     my @countries = $self->residence;
     if ($param{local_currency}) {
+        $param{local_currency} = uc($param{local_currency});
         my $config = $BOM::Config::CurrencyConfig::ALL_CURRENCIES{uc $param{local_currency}} or die +{error_code => 'InvalidLocalCurrency'};
         push @countries, $config->{countries}->@*;
+        $self->_validate_cross_border_availability if $param{local_currency} ne uc($self->local_currency);
     } else {
         $param{country} = $self->residence;
     }
@@ -3014,6 +3018,8 @@ sub p2p_order_create {
     )->[0];
 
     die +{error_code => 'AdvertNotFound'} unless $advert and $advert_id;
+
+    $self->_validate_cross_border_availability if lc($advert->{country}) ne lc($self->residence);
 
     my $legacy_ad = !($advert->{payment_method_names} and $advert->{payment_method_names}->@*);
 
@@ -4072,6 +4078,22 @@ sub _set_last_seen_status {
     $p2p_redis->hset(P2P_ORDER_LAST_SEEN_STATUS, $order_key, $param{status});
 }
 
+=head2 _validate_cross_border_availability
+
+Check if client's residence is restricted from cross border ad feature
+If yes, advertiser not allowed to create ads, view ads or create order against ads that is not from his local currency
+
+=cut
+
+sub _validate_cross_border_availability {
+    my $self                                      = shift;
+    my $p2p_config                                = BOM::Config::Runtime->instance->app_config->payments->p2p;
+    my $restricted_countries_for_cross_border_ads = $p2p_config->cross_border_ads_restricted_countries // [];
+    die +{error_code => 'CrossBorderNotAllowed'}
+        if any { lc($_) eq $self->residence } $restricted_countries_for_cross_border_ads->@*;
+    return 1;
+}
+
 =head2 _p2p_advertisers
 
 Returns a list of advertisers filtered by id and/or loginid.
@@ -4168,7 +4190,6 @@ sub _p2p_adverts {
                     );
             }
         }
-
         my %market_rate_map = map { $_ => p2p_exchange_rate($_)->{quote} } @currencies;
         $param{market_rate_map} = $json->encode(\%market_rate_map);
     }
