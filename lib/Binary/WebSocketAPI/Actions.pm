@@ -639,6 +639,7 @@ sub actions_config {
                 msg_group => 'p2p',
             },
         ],
+        ['trading_platform_asset_listing'],
         [
             'p2p_advertiser_list',
             {

@@ -1,0 +1,48 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Trading Platform: Asset Listing (request)",
+    "description": "Get list of Trading Platform assets for client",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 0,
+    "auth_scopes": [
+        "read"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "trading_platform_asset_listing",
+        "platform"
+    ],
+    "properties": {
+        "trading_platform_asset_listing": {
+            "description": "Must be `1`",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "platform": {
+            "description": "Trading platform name",
+            "type": "string",
+            "enum": [
+                "mt5"
+            ]
+        },
+        "type": {
+            "description": "Can be either 'brief' or 'full'",
+            "type": "string",
+            "enum": [
+                "brief",
+                "full"
+            ]
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}
