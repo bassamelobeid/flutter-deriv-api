@@ -315,6 +315,19 @@ sub brand {
     return $brand;
 }
 
+=head2 dx_slippage_threshold
+
+Get slippage thresholds for DerivX
+
+Returns a hashref with symbols and their corresponding slippage threshold 
+
+=cut
+
+sub dx_slippage_threshold {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/dx_slippage_threshold.yml');
+    return $config;
+}
+
 =head2 s3
 
 Get our S3 bucket details
