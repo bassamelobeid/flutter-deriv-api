@@ -135,41 +135,41 @@ my $POA_REASONS = {
 };
 
 my $POINC_REASONS = {
-    old => {
-        reason => 'old',
+    blurry => {
+        reason => 'blurry',
     },
-    cropped => {
-        reason => 'cropped',
-    },
-    blurred => {
-        reason => 'blurred/flashlight',
-    },
-    screenshot => {
-        reason => 'screenshot',
-    },
-    envelope => {
-        reason => 'envelope',
-    },
-    different_name => {
-        reason => 'different name',
-    },
-    different_address => {
-        reason => 'different address',
-    },
-    capitec_stat_no_match => {
-        reason => 'capitec stat no match',
-    },
-    suspicious => {
-        reason => 'suspicious',
+    not_dated => {
+        reason => 'not dated',
     },
     password_protected => {
         reason => 'password protected',
     },
-    unsupported_format => {
-        reason => 'unsupported format',
+    different_name => {
+        reason => 'different name',
     },
-    irrelevant_documnets => {
-        reason => 'irrelevant documents',
+    no_employer_details => {
+        reason => 'no employer details',
+    },
+    cropped => {
+        reason => 'cropped',
+    },
+    not_stamped => {
+        reason => 'not stamped',
+    },
+    outdated => {
+        reason => 'outdated',
+    },
+    no_income_details => {
+        reason => 'no income details',
+    },
+    no_occupation_details => {
+        reason => 'no occupation details',
+    },
+    no_letterhead => {
+        reason => 'no letterhead',
+    },
+    income_not_matching_fa => {
+        reason => 'income not matching FA',
     }};
 
 my $UNTRUSTED_STATUS = [{
