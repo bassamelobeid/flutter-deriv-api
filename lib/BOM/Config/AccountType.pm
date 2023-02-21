@@ -60,13 +60,21 @@ Note: It's created for speeding up service lookups needed within internal method
 
 has $services_lookup : reader;
 
-=head2 is_demo
+=head2 account_opening
 
-Returns a bool value to indicate the account type is demo or not
+Returns a list of account opening options available (I<demo> and/or I<real>)
 
 =cut
 
-has $is_demo : reader;
+has $account_opening : reader;
+
+=head2 market_types
+
+Returns a list of market types available (I<gaming> and/or I<financial>)
+
+=cut
+
+has $market_types : reader;
 
 =head2 linkable_to_different_currency
 
@@ -116,6 +124,14 @@ Returns a hash-ref of account type's broker codes per landing company. It's usua
 =cut
 
 has $type_broker_codes : reader;
+
+=head2 type_platform
+
+Return platform defined at account type level
+
+=cut
+
+has $type_platform : reader;
 
 =head1 METHODS
 
@@ -174,6 +190,16 @@ method broker_codes {
     return keys $type_broker_codes->%* ? $type_broker_codes : $self->category->broker_codes // {};
 }
 
+=head2 platform 
+
+Return platform for account type, if it's not defined it'll try to take platform from category.
+
+=cut
+
+method platform {
+    return $type_platform ? $type_platform : $self->category->platform // '';
+}
+
 =head2  new
 
 create account type objects
@@ -186,7 +212,9 @@ Takes the following parameters:
 
 =item * C<category> - a L<BOM::config::AccountType::Category> object that represent category
 
-=item * C<is_demo> - a bool that indicate it is a demo or not
+=item * C<account_opening> - a list of account type opetions, I<demo> and/or I<real> (default = ['demo', 'real'])
+
+=item * C<market_types> - a list of supported market types, I<gaming> and/or I<finnacial> 
 
 =item * C<linkable_to_different_currency> - a bool that indicate it is linkable to a wallet with a different currency
 
@@ -211,9 +239,10 @@ Return account type object
 BUILD {
     my %args = @_;
 
-    $args{$_} //= 0  for (qw/is_demo linkable_to_different_currency/);
-    $args{$_} //= [] for (qw/groups linkable_wallet_types currency_types currencies/);
+    $args{$_} //= 0  for (qw/linkable_to_different_currency/);
+    $args{$_} //= [] for (qw/groups linkable_wallet_types currency_types currencies market_types/);
     $args{$_} //= {} for (qw/broker_codes currencies_by_landing_company/);
+    $args{account_opening} //= [qw/demo real/];
 
     $name     = $args{name};
     $category = $args{category};
@@ -239,7 +268,7 @@ BUILD {
     $services_lookup = +{map { $_ => 1 } @$services};
 
     my @all_real_wallets =
-        grep { $_ ne 'demo' } keys BOM::Config->account_types->{categories}->{wallet}->{account_types}->%*;
+        grep { $_ ne 'virtual' } keys BOM::Config->account_types->{categories}->{wallet}->{account_types}->%*;
 
     my @linkable_wallet_types = ($args{linkable_wallet_types} // [])->@*;
 
@@ -249,8 +278,6 @@ BUILD {
         die "Invalid linkable wallet type $wallet_type in account type $category_name-$name"
             unless $wallet_type eq 'all'
             || $wallet_config->{account_types}->{$wallet_type};
-
-        die "Demo account type $category_name-$name is linked to non-demo wallet $wallet_type" if $args{is_demo} && $wallet_type ne 'demo';
     }
     @linkable_wallet_types = @all_real_wallets if any { $_ eq 'all' } $args{linkable_wallet_types}->@*;
 
@@ -278,13 +305,14 @@ BUILD {
     }
 
     (
-        $groups,                $type_broker_codes, $is_demo,    $linkable_to_different_currency,
-        $linkable_wallet_types, $currency_types,    $currencies, $currencies_by_landing_company
+        $groups,                         $type_broker_codes,     $account_opening, $market_types,
+        $linkable_to_different_currency, $linkable_wallet_types, $currency_types,  $currencies,
+        $currencies_by_landing_company,  $type_platform,
         )
         = @args{
-        qw/groups broker_codes
-            is_demo linkable_to_different_currency linkable_wallet_types currency_types
-            currencies currencies_by_landing_company/
+        qw/groups broker_codes account_opening market_types
+            linkable_to_different_currency linkable_wallet_types currency_types
+            currencies currencies_by_landing_company platform/
         };
 };
 

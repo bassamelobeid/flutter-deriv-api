@@ -33,6 +33,14 @@ Returns a hash-ref containing the broker codes per landing company.
 
 has $broker_codes : reader;
 
+=head2 platform
+
+Platform defined at category level
+
+=cut
+
+has $platform : reader;
+
 =head2 account_types
 
 Returns account types included in the current category as a hash ref of name:L<BOM::Config::AccountType> pairs
@@ -112,7 +120,7 @@ BUILD {
             unless $name eq $account_type->category_name;
     }
 
-    ($brands, $broker_codes, $account_types, $groups) = @args{qw/brands broker_codes account_types groups/};
+    ($brands, $broker_codes, $account_types, $groups, $platform) = @args{qw/brands broker_codes account_types groups platform/};
 }
 
 1;

@@ -21,8 +21,8 @@ use BOM::Config;
 
 use constant SERVICES => {
     map { $_ => 1 } (
-        qw/trade link_to_accounts transfer_without_link p2p fiat_cashier crypto_cashier get_commissions paymentagent_transfer paymentagent_withdraw/)
-};
+        qw/trade link_to_accounts transfer_without_link p2p fiat_cashier crypto_cashier affiliate_commissions paymentagent_transfer paymentagent_withdraw/
+    )};
 
 =head1 METHODS -  accessors
 

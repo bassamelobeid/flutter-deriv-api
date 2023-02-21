@@ -86,7 +86,7 @@ subtest 'registry' => sub {
         for my $type_name (keys $category_config->{account_types}->%*) {
             ok my $account_type = $category->account_types->{$type_name}, "Account type $category_name-$type_name object is found";
             isa_ok $account_type, 'BOM::Config::AccountType', "Account type $category_name-$type_name object type is correct";
-            is(BOM::Config::AccountType::Registry->account_type_by_name($category_name, $type_name),
+            is(BOM::Config::AccountType::Registry->account_type_by_name($type_name),
                 $account_type, "Account type $category_name-$type_name is found in registry");
 
             my $type_config = $category_config->{account_types}->{$type_name};
@@ -118,17 +118,17 @@ subtest 'registry' => sub {
         is(BOM::Config::AccountType::Registry->find_broker_code(%args), 0, 'CR not found in wallet category');
 
         delete $args{category};
-        $args{account_type} = 'demo';
-        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 0, 'CR not found in demo account types');
+        $args{account_type} = 'crypto';
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 0, 'CR not found in crypto account type');
 
-        $args{account_type} = 'real';
-        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 1, 'CR found in real account types');
+        $args{account_type} = 'standard';
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 1, 'CR found in standard account type');
+
+        $args{account_type} = 'binary';
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 1, 'CR found in standard account type');
 
         $args{category} = 'wallet';
-        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 0, 'CR not found in real account types of wallet category');
-
-        $args{category} = 'trading';
-        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 1, 'CR found in real account types of trading category');
+        is(BOM::Config::AccountType::Registry->find_broker_code(%args), 0, 'CR not found in wallet category + standard account type');
     };
 };
 
@@ -217,10 +217,11 @@ subtest 'account type class' => sub {
     $args{category} = BOM::Config::AccountType::Registry->category_by_name('wallet');
     ok $account_type = BOM::Config::AccountType->new(%args), 'Account type created with the minimum args required';
 
-    is $account_type->name,                           'my_type',                                                      'Name is correct';
-    is $account_type->category_name,                  'wallet',                                                       'Category name is correct';
-    is $account_type->category,                       BOM::Config::AccountType::Registry->category_by_name('wallet'), 'Category object is correct';
-    is $account_type->is_demo,                        0,                                                              'account type is not demo';
+    is $account_type->name,          'my_type',                                                      'Name is correct';
+    is $account_type->category_name, 'wallet',                                                       'Category name is correct';
+    is $account_type->category,      BOM::Config::AccountType::Registry->category_by_name('wallet'), 'Category object is correct';
+    is_deeply $account_type->account_opening, [qw/demo real/], 'Default account opening opetions returned';
+    is_deeply $account_type->market_types,    [],              'default market type is returned';
     is $account_type->linkable_to_different_currency, 0, 'it is not linkable to a different currency';
 
     is_deeply $account_type->brands,   ['deriv'], 'Brands are the same as the category';
@@ -252,12 +253,7 @@ subtest 'account type class' => sub {
         qr/Invalid linkable wallet type dummy in account type wallet-my_type/, 'Correct error for invalid linkable wallet type';
 
     $args{linkable_wallet_types} = ['all'];
-    $args{is_demo}               = 1;
-    like exception { BOM::Config::AccountType->new(%args) },
-        qr/Demo account type wallet-my_type is linked to non-demo wallet all/, 'Demo account type can be linked to demo wallet only';
-
-    $args{is_demo}    = 0;
-    $args{currencies} = ['XYZ'];
+    $args{currencies}            = ['XYZ'];
     like exception { BOM::Config::AccountType->new(%args) },
         qr/Unknown currency XYZ in account type wallet-my_type 's limited correncies/,
         'Correct error for invalid currency - all wallets are accepted';
@@ -275,11 +271,12 @@ subtest 'account type class' => sub {
     $args{currencies_by_landing_company} = {maltainvest => ['BTC']};
     like exception { BOM::Config::AccountType->new(%args) },
         qr/Invalid currency BTC in account type wallet-my_type 's landing company limited currencies for maltainvest/,
-        'Correct error for invalid landing company';
+        'Correct error for currency not supported by landing company';
 
     $args{currencies_by_landing_company}  = {svg => ['BTC']};
-    $args{is_demo}                        = 1;
-    $args{linkable_wallet_types}          = ['demo'];
+    $args{account_opening}                = [qw/demo real/];
+    $args{market_types}                   = [qw/gaming financial/];
+    $args{linkable_wallet_types}          = ['virtual'];
     $args{linkable_to_different_currency} = 1;
     ok $account_type = BOM::Config::AccountType->new(%args), 'Account type created with full args';
 

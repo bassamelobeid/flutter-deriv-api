@@ -19,7 +19,7 @@ groups:
       - crypto_cashier  
   affiliate:
     services:
-      - get_commissions
+      - affiliate_commissions
   paymentagent:
     services:
       - paymentagent_transfer
@@ -34,150 +34,106 @@ categories:
         - CR
       maltainvest:
         - MF
+      virtual:
+        - VRTC
     brands:
       - deriv
     groups:
       - trader
+    account_opening:
+      - real
+      - demo
     account_types:
-      real:
+      standard:
+        platform: dtrade
         linkable_wallet_types:
           - all
         linkable_to_different_currency: 0
-      demo:
-        is_demo: 1
-        linkable_wallet_types:
-          - demo
+      binary:
+        platform: dtrade
+        linkable_wallet_types: []
         linkable_to_different_currency: 0
-        currencies:
-          - USD
-        broker_codes:
-          virtual:
-            - VRTC
-
-  wallet:
-    broker_codes:
-      svg: 
-        - CRW
-      maltainvest:
-        - MFW
-    brands:
-      - deriv
-    groups:
-      - wallet
-    account_types:
-      fiat:
-        currency_types:
-          - fiat
         groups:
-          - fiat_cashier
-      crypto:
-        currency_types:
-          - crypto
-        groups:
-          - crypto_cashier
-      p2p:
-        groups:
-          - p2p
-      paymentagent:
-        groups:
-          - paymentagent 
-      paymentagent_client:
-        groups:
-          - paymentagent_client
-      affiliate:
-        groups:
-          - affiliate
-        broker_codes:
-          dsl:
-            - CRA
-      demo:
-        is_demo: 1
-        currencies:
-          - USD
-        broker_codes:
-          virtual:
-            - VRW 
-
-  binary:
-    broker_codes:
-      svg:
-        - CR
-      maltainvest:
-        - MF
-    brands:
-      - binary
-    groups:
-      - legacy
-      - trader
-    account_types:
-      real:
-        groups:
+          - legacy
+          - trader
           - fiat_cashier
           - crypto_cashier
           - paymentagent
           - paymentagent_client
           - p2p
           - affiliate 
+      mt5:
+        platform: mt5
+        linkable_wallet_types: []
+        linkable_to_different_currency: 0
+        currencies:
+          - USD
+        market_types:
+          - gaming
+          - financial
+        broker_codes: {}
+      dxtrade:
+        platform: dxtrade
+        linkable_wallet_types: []
+        linkable_to_different_currency: 0
+        currencies:
+          - USD
+        market_types:
+          - gaming
+          - financial
+        broker_codes: {}
+  wallet:
+    broker_codes:
+      svg: 
+        - CRW
+      maltainvest:
+        - MFW
+    platform: dwallet
+    brands:
+      - deriv
+    groups:
+      - wallet
+    account_types:
+      doughflow:
+        account_opening:
+          - real
+        currency_types:
+          - fiat
+        groups:
+          - fiat_cashier
+      crypto:
+        account_opening:
+          - real
+        currency_types:
+          - crypto
+        groups:
+          - crypto_cashier
+      p2p:
+        account_opening:
+          - real
+        groups:
+          - p2p
+      paymentagent:
+        groups:
+          - paymentagent 
+      paymentagent_client:
+        account_opening:
+          - real
+        groups:
+          - paymentagent_client
+      affiliate:
+        account_opening:
+          - real
+        groups:
+          - affiliate
         broker_codes:
-          svg:
-            - CR
-          maltainvest:
-            - MF
-        linkable_wallet_types:
-          - all
-      demo:
-        is_demo: 1
+          dsl:
+            - CRA
+      virtual:
+        account_opening:
+          - demo
         currencies:
           - USD
         broker_codes:
           virtual:
-            - VRTC
-        linkable_wallet_types:
-          - demo
-
-  mt5:
-    brands:
-      - binary
-      - deriv
-    is_external: 1
-    account_types:
-      demo:
-        is_demo: 1
-        linkable_wallet_types:
-          - demo
-        linkable_to_different_currency: 0
-        currencies:
-          - USD
-      financial:
-        linkable_wallet_types:
-          - all
-        linkable_to_different_currency: 1
-        currencies:
-          - USD
-          - EUR
-      gaming:
-        linkable_wallet_types:
-          - all
-        linkable_to_different_currency: 1
-        currencies:
-          - USD
-          - EUR
-  derivx:
-    brands:
-      - binary
-      - deriv
-    is_external: 1
-    account_types:
-      demo:
-        is_demo: 1
-        linkable_wallet_types:
-          - demo
-        linkable_to_different_currency: 1
-        currencies:
-          - USD
-      real:
-        linkable_wallet_types:
-          - all
-        linkable_to_different_currency: 1
-        currencies:
-          - USD
+            - VRW

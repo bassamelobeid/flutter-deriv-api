@@ -4,7 +4,7 @@ use warnings;
 no indirect ':fatal';
 
 use Syntax::Keyword::Try;
-use List::Util qw(uniq none);
+use List::Util qw(uniq none any first);
 
 use BOM::Config;
 use BOM::Config::AccountType;
@@ -13,7 +13,7 @@ use BOM::Config::AccountType::Group;
 
 ## VERSION
 
-our (%groups, %categories, @account_types);
+our (%groups, %categories, %account_types);
 
 =head1 DESCRIPTION
 
@@ -47,6 +47,7 @@ sub load_data {
 
         my $types_config = $category_config->{$category_name}->{account_types};
         for my $type_name (keys %$types_config) {
+            die "Duplicate account type $type_name - please choose unique names for account types" if any { $_->name eq $type_name };
             my @groups = map { $groups{$_} or die "Unknown group $_ appeared in the account type $category_name-$type_name"; }
                 ($types_config->{$type_name}->{groups}->@*);
 
@@ -60,7 +61,7 @@ sub load_data {
             );
 
             $category->account_types->{$type_name} = $account_type;
-            push @account_types, $account_type;
+            $account_types{$type_name} = $account_type;
         }
 
         $categories{$category_name} = $category;
@@ -132,13 +133,11 @@ Returns an object of type L<BOM::Config::AccountType>
 =cut
 
 sub account_type_by_name {
-    my (undef, $category, $type) = @_;
+    my (undef, $type) = @_;
 
-    die 'Category name is missing'       unless $category;
-    die 'Account type name is missing'   unless $type;
-    die "Ivalid category name $category" unless $categories{$category};
+    die 'Account type name is missing' unless $type;
 
-    return $categories{$category}->account_types->{$type};
+    return $account_types{$type};
 }
 
 =head2 all_categories
@@ -182,7 +181,7 @@ sub find_broker_code {
     die "Broker code is missing"                                                unless $broker;
     die "Cannot find the broke code without a category or an account type name" unless $category || $account_type;
 
-    for my $type (@account_types) {
+    for my $type (values %account_types) {
         next if $account_type && ($type->name ne $account_type);
         next if $category     && ($type->category_name ne $category);
         next if none { $_ eq $broker } map { $type->broker_codes->{$_}->@* } keys $type->broker_codes->%*;
