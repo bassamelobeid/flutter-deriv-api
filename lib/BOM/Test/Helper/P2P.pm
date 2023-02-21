@@ -151,6 +151,54 @@ sub ready_to_refund {
     );
 }
 
+=head2 populate_trade_band_db
+
+medium and high band are present in  cr01 production DB but not populated in QA box. Hence, this function will
+add entries in p2p.p2p_country_trade_band for these two bands along with their respective band criteria. 
+we will reduce min_completed_orders to 3 for both medium and high bands for the sake of testing.
+
+=cut
+
+sub populate_trade_band_db {
+    my $client = BOM::Test::Helper::Client::create_client();
+
+    $client->db->dbic->dbh->do(
+        "INSERT INTO p2p.p2p_country_trade_band 
+               (trade_band, country, currency, max_daily_buy, max_daily_sell, min_joined_days, max_allowed_dispute_rate,
+                min_completion_rate, min_completed_orders, max_allowed_fraud_cases, poa_required, email_alert_required, automatic_approve)
+         VALUES 
+               ('medium', 'default', 'USD', 5000, 2000, 90, 0.02, 0.94, 3, 0, TRUE, FALSE, TRUE),
+               ('high', 'default', 'USD', 10000, 10000, 180, 0, 0.98, 3, 0, TRUE, TRUE, FALSE)"
+    );
+
+    return 1;
+}
+
+=head2 set_advertiser_created_time_by_day
+
+Modify created_time of a particular advertiser in p2p.p2p_advertiser table
+
+Example usage:
+    set_advertiser_created_time_by_day($advertiser, -92); --> set advertiser created_time to 92 days before current date.
+    set_advertiser_created_time_by_day($advertiser, 30); --> set advertiser created_time to 30 days after current date.
+Takes the following arguments:
+
+=over 4
+
+=item * C<advertiser> - P2P advertiser client object
+
+=item * C<day> - if value > 0, set created_time to $day days after current date, if value < 0, set created_time to $day days before current date
+
+=cut
+
+sub set_advertiser_created_time_by_day {
+    my ($advertiser, $day) = @_;
+    my $time = $day < 0 ? ("NOW() - interval '" . abs($day) . " day'") : ("NOW() + interval '" . abs($day) . " day'");
+    my $sql  = "update p2p.p2p_advertiser set created_time = $time WHERE client_loginid = ?";
+    $advertiser->db->dbic->dbh->do($sql, undef, $advertiser->loginid);
+    return 1;
+}
+
 sub set_order_status {
     my ($client, $order_id, $new_status) = @_;
 
