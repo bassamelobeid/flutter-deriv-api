@@ -41,6 +41,15 @@
                    }
                }
             },
+            "p2p_status":{
+               "type":"string",
+               "enum": [
+                  "none",
+                  "active",
+                  "temp_ban",
+                  "perm_ban"
+               ]
+            },
             "prompt_client_to_authenticate" : {
                "enum" : [1,0]
             },
