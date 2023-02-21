@@ -25,9 +25,13 @@ sub create_account {
     my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
     my $account_opening_reason = $args->{account_opening_reason} // '';
 
-    # The argument `type` stands for a `category` in account type terminology.
-    # TODO: The argument sould be renamed to `category` in the API for consistency.
-    my $category = $args->{type} // 'trading';    # default to 'trading'
+    my $account_type_name = $details->{account_type} or return {error => {code => 'AccountTypeMissing'}};    # default to 'trading'
+    my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name)
+        or return {error => {code => 'InvalidAccountType'}};
+    # TODO: move it to rule engine
+    return {error => {code => 'InvalidDemoAccountType'}} unless any { $_ eq 'demo' } $account_type->account_opening->@*;
+
+    my $category = $account_type->category->name;
 
     if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => {code => 'invalid'}};
@@ -53,7 +57,7 @@ sub create_account {
     }
 
     # set virtual company if residence is provided otherwise use brand name to infer the broker code
-    my $virtual_company_for_brand = _virtual_company_for_brand($brand_name, $category);
+    my $virtual_company_for_brand = _virtual_company_for_brand($brand_name);
     return {error => {code => 'InvalidBrand'}} unless $virtual_company_for_brand;
 
     #return error if date_first_contact is in future or invalid
@@ -109,10 +113,10 @@ sub create_account {
         ) unless ($user);
 
         my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $virtual_company_for_brand->short;
-        my $account_type    = BOM::Config::AccountType::Registry->account_type_by_name($category, 'demo');
         my $broker_code     = $account_type->get_single_broker_code($landing_company);
 
         my %args = (
+            account_type       => $account_type->name,
             broker_code        => $broker_code,
             client_password    => $password,
             first_name         => '',
@@ -128,9 +132,7 @@ sub create_account {
             phone              => '',
             secret_question    => '',
             secret_answer      => '',
-            ($category eq 'wallet') ? (payment_method => 'DemoWalletMoney') : (),
         );
-
         $client = $category eq 'wallet' ? $user->create_wallet(%args) : $user->create_client(%args);
 
     } catch ($e) {
@@ -153,8 +155,6 @@ Finds the virtual landing company that is allowed for a specific brand.
 
 =item * C<brand_name> - Name of the brand to find the virtual landing company for
 
-=item * C<type> - e.g. `wallet` or `trading`
-
 =back
 
 Returns the virtual landing company object that is allowed for the given brand, if not found: C<undef>.
@@ -162,8 +162,7 @@ Returns the virtual landing company object that is allowed for the given brand, 
 =cut
 
 sub _virtual_company_for_brand {
-    my ($brand_name, $type) = @_;
-    $type //= 'trading';
+    my ($brand_name) = @_;
 
     my @lc = grep {
         $_->is_virtual && any { /^$brand_name$/ }

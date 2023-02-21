@@ -24,14 +24,16 @@ sub create_account {
     my $args = shift;
     my ($user, $details) = @{$args}{'user', 'details'};
 
-    my $type = delete $details->{type} // 'trading';
+    my $account_type_name = $details->{account_type} or return {error => {code => 'AccountTypeMissing'}};    # default to 'trading'
+    my $account_type      = BOM::Config::AccountType::Registry->account_type_by_name($account_type_name)
+        or return {error => {code => 'InvalidAccountType'}};
 
     my $client;
     try {
-        if ($type eq 'wallet') {
-            $client = $user->create_wallet(%$details);
-        } elsif ($type eq 'affiliate') {
+        if ($account_type->name eq 'affiliate') {
             $client = $user->create_affiliate(%$details);
+        } elsif ($account_type->category->name eq 'wallet') {
+            $client = $user->create_wallet(%$details);
         } else {
             $client = $user->create_client(%$details);
         }
@@ -127,7 +129,7 @@ sub after_register_client {
 
     BOM::Platform::Client::IDAuthentication->new(client => $client)->run_validation('signup');
 
-    set_allow_document_upload($client) if $client->account_type eq 'trading';
+    set_allow_document_upload($client);
 
     return {
         client => $client,

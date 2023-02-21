@@ -5,8 +5,9 @@ use Guard;
 use JSON::MaybeXS;
 use Date::Utility;
 
-use Test::More (tests => 5);
+use Test::More (tests => 8);
 use Test::Exception;
+use Test::Fatal;
 use Test::Warn;
 use Test::MockModule;
 use Test::Warnings;
@@ -34,15 +35,23 @@ $idauth_mocked->mock(
     });
 
 my $vr_acc;
+my %args = (
+    email           => 'foo+us@binary.com',
+    client_password => 'foobar',
+    residence       => 'us',                  # US
+    account_type    => ''
+);
 lives_ok {
-    $vr_acc = create_vr_acc({
-        email           => 'foo+us@binary.com',
-        client_password => 'foobar',
-        residence       => 'us',                  # US
-    });
+    $vr_acc = create_vr_acc(\%args);
 }
 'create VR acc';
-is($vr_acc->{error}->{code}, 'invalid residence', 'create VR acc failed: restricted country');
+is $vr_acc->{error}->{code}, 'AccountTypeMissing', 'Missing account type';
+
+is create_vr_acc({%args, account_type => 'dummy'})->{error}->{code}, 'InvalidAccountType', 'Invalid account type';
+is create_vr_acc({%args, account_type => 'doughflow'})->{error}->{code}, 'InvalidDemoAccountType',
+    'Doughflow account type (wallet) does not support demo account opening';
+
+is(create_vr_acc({%args, account_type => 'standard'})->{error}->{code}, 'invalid residence', 'create VR acc failed: restricted country');
 
 $on_production = 0;
 
@@ -51,6 +60,7 @@ $client_mocked->mock('add_note', sub { return 1 });
 
 my $vr_details = {
     CR => [{
+            account_type       => 'standard',
             email              => 'foo+id@binary.com',
             client_password    => 'foobar',
             residence          => 'id',                  # Indonesia
@@ -62,6 +72,7 @@ my $vr_details = {
         }
     ],
     MF => [{
+            account_type       => 'standard',
             email              => 'foo+gb@binary.com',
             client_password    => 'foobar',
             residence          => 'gb',                  # UK
@@ -73,6 +84,7 @@ my $vr_details = {
             stopped            => 1,                     # this special flag indicates the account wont be created
         },
         {
+            account_type       => 'standard',
             email              => 'foo+pt@binary.com',
             client_password    => 'foobar',
             residence          => 'pt',
@@ -86,6 +98,7 @@ my $vr_details = {
 };
 
 my %real_client_details = (
+    account_type                  => 'standard',
     salutation                    => 'Ms',
     last_name                     => 'binary',
     date_of_birth                 => '1990-01-01',
@@ -295,16 +308,14 @@ subtest 'create account' => sub {
     lives_ok {
         $vr_wallet_acc = BOM::Platform::Account::Virtual::create_account({
                 details => {
-                    email => 'foo+noresidence@binary.com',
-                },
-                type => 'wallet'
-            });
+                    email        => 'foo+noresidence@binary.com',
+                    account_type => 'virtual'
+                }});
         ($vr_wallet_client, $user_wallet) = @{$vr_wallet_acc}{'client', 'user'};
 
     }
     'create VR wallet account';
-
-    is($vr_wallet_client->payment_method, undef, 'Payment method is decommisioned, it will be renamed to account_type in future');
+    is($vr_wallet_client->account_type, 'virtual', 'correct account_type for virtual wallet');
 
     my %t_details = (
         %real_client_details,
@@ -318,7 +329,8 @@ subtest 'create account' => sub {
     lives_ok {
         my $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
-                    email => 'foo+noresidence@binary.com',
+                    email        => 'foo+noresidence@binary.com',
+                    account_type => 'virtual'
                 }});
         my ($vr_client_n, $user_n) = @{$vr_acc}{'client', 'user'};
     }
@@ -332,7 +344,7 @@ subtest 'create account' => sub {
         );
 
         for my $brand_name (sort keys %expected) {
-            is(BOM::Platform::Account::Virtual::_virtual_company_for_brand($brand_name, 'trading')->short,
+            is(BOM::Platform::Account::Virtual::_virtual_company_for_brand($brand_name)->short,
                 $expected{$brand_name}, "Got correct virtual company for $brand_name brand");
         }
 
@@ -356,35 +368,40 @@ subtest 'create account' => sub {
         my $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
                     email              => 'foo1+datecontact@binary.com',
-                    date_first_contact => Date::Utility->today->plus_time_interval('1d')->date_yyyymmdd
+                    date_first_contact => Date::Utility->today->plus_time_interval('1d')->date_yyyymmdd,
+                    account_type       => 'binary'
                 }});
         is($vr_acc_n->{user}->date_first_contact, '2016-02-29', 'Date in future set to today');
 
         $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
                     email              => 'foo5+datecontact@binary.com',
-                    date_first_contact => '2016-13-40'
+                    date_first_contact => '2016-13-40',
+                    account_type       => 'binary'
                 }});
         is($vr_acc_n->{user}->date_first_contact, '2016-02-29', 'Invalid date gets set to today');
 
         $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
                     email              => 'foo2+datecontact@binary.com',
-                    date_first_contact => Date::Utility->today->date_yyyymmdd
+                    date_first_contact => Date::Utility->today->date_yyyymmdd,
+                    account_type       => 'binary'
                 }});
         isa_ok($vr_acc_n->{client}, 'BOM::User::Client', 'No error when today');
 
         $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
                     email              => 'foo3+datecontact@binary.com',
-                    date_first_contact => Date::Utility->today->minus_time_interval('40d')->date_yyyymmdd
+                    date_first_contact => Date::Utility->today->minus_time_interval('40d')->date_yyyymmdd,
+                    account_type       => 'binary'
                 }});
         is($vr_acc_n->{user}->date_first_contact, '2016-01-30', 'When over 30 days old date_first_contact is 30 days old');
 
         $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
                     email              => 'foo4+datecontact@binary.com',
-                    date_first_contact => Date::Utility->today->minus_time_interval('20d')->date_yyyymmdd
+                    date_first_contact => Date::Utility->today->minus_time_interval('20d')->date_yyyymmdd,
+                    account_type       => 'binary'
                 }});
         isa_ok($vr_acc_n->{client}, 'BOM::User::Client', 'No error when under 30 days old ');
     };
@@ -394,10 +411,11 @@ subtest 'create account' => sub {
     # real acc
     lives_ok {
         $real_acc = BOM::Platform::Account::Real::default::create_account({
-            from_client => $vr_client,
-            user        => $user,
-            details     => \%t_details,
-            country     => $vr_client->residence,
+            from_client  => $vr_client,
+            user         => $user,
+            details      => \%t_details,
+            country      => $vr_client->residence,
+            account_type => 'binary',
         });
         ($real_client, $user) = @{$real_acc}{'client', 'user'};
     }
@@ -420,7 +438,7 @@ subtest 'create account' => sub {
                         my %social_login_user_details = (
                             $acc_details->%*,
                             email         => 'social+' . $broker_code . '+' . $residence . '@binary.com',
-                            social_signup => 1,
+                            social_signup => 1
                         );
                         my ($vr_client, $real_client, $social_login_user, $real_acc);
                         lives_ok {
@@ -467,11 +485,12 @@ subtest 'create account' => sub {
                                 my $params = \%financial_data;
                                 $params->{accept_risk} = 1;
                                 $real_acc = BOM::Platform::Account::Real::maltainvest::create_account({
-                                    from_client => $vr_client,
-                                    user        => $social_login_user,
-                                    details     => \%details,
-                                    country     => $vr_client->residence,
-                                    params      => $params,
+                                    from_client  => $vr_client,
+                                    user         => $social_login_user,
+                                    details      => \%details,
+                                    country      => $vr_client->residence,
+                                    params       => $params,
+                                    account_type => 'binary',
                                 });
                             }
                             "create $broker_code account OK, after verify email";
@@ -479,10 +498,11 @@ subtest 'create account' => sub {
                             # Social login user may create default account
                             lives_ok {
                                 $real_acc = BOM::Platform::Account::Real::default::create_account({
-                                    from_client => $vr_client,
-                                    user        => $social_login_user,
-                                    details     => \%details,
-                                    country     => $vr_client->residence,
+                                    from_client  => $vr_client,
+                                    user         => $social_login_user,
+                                    details      => \%details,
+                                    country      => $vr_client->residence,
+                                    account_type => 'binary'
                                 });
                             }
                             "create $broker_code account OK, after verify email";
@@ -509,6 +529,7 @@ subtest 'create account' => sub {
                             email         => 'empty_phone+' . $broker_code . '+' . $residence . '@binary.com',
                             phone         => '',
                             social_signup => 1,
+                            account_type  => 'binary',
                         );
                         my ($vr_client, $real_client, $empty_phone_login_user, $real_acc);
                         lives_ok {
@@ -534,6 +555,7 @@ subtest 'create account' => sub {
                                 email          => $acc_details->{email},
                                 binary_user_id => $user->id,
                                 residence      => $acc_details->{residence},
+                                account_type   => 'binary'
                             });
                         }
 
@@ -548,10 +570,11 @@ subtest 'create account' => sub {
 
                         lives_ok {
                             $real_acc = BOM::Platform::Account::Real::default::create_account({
-                                from_client => $vr_client,
-                                user        => $empty_phone_login_user,
-                                details     => \%details,
-                                country     => $vr_client->residence,
+                                    from_client => $vr_client,
+                                    user        => $empty_phone_login_user,
+                                    details     => \%details,
+                                    country     => $vr_client->residence,
+
                             });
                         }
                         "create $broker_code account OK";
@@ -607,7 +630,8 @@ subtest 'create account' => sub {
         ok $real_client_new->status->transfers_blocked, "transfers_blocked status is copied to new real client upon creation";
 
         my $client_vr_new = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
+            broker_code  => 'VRTC',
+            account_type => 'binary'
         });
         $user->add_client($client_vr_new);
 
@@ -640,7 +664,8 @@ subtest 'create account' => sub {
             "allow_poa_resubmission reason should not have the copied from part";
 
         my $client_vr_new = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
+            broker_code  => 'VRTC',
+            account_type => 'binary'
         });
         $user->add_client($client_vr_new);
 
@@ -667,8 +692,8 @@ subtest 'create affiliate' => sub {
                 user        => $user,
                 details     => {
                     broker_code              => 'CRA',
-                    type                     => 'affiliate',
                     email                    => 'afftest@binary.com',
+                    account_type             => 'affiliate',
                     client_password          => 'okcomputer',
                     residence                => 'br',
                     first_name               => 'test',
@@ -680,8 +705,7 @@ subtest 'create affiliate' => sub {
                     secret_answer            => 'the iron maiden',
                     account_opening_reason   => 'Hedging',
                     non_pep_declaration_time => Date::Utility->new()->_plus_years(1)->date_yyyymmdd,
-                },
-            });
+                }});
     }
     'create CRA acc';
 
@@ -693,6 +717,7 @@ sub create_vr_acc {
     return BOM::Platform::Account::Virtual::create_account({
             details => {
                 email              => $args->{email},
+                account_type       => $args->{account_type} // 'binary',
                 client_password    => $args->{client_password},
                 residence          => $args->{residence},
                 has_social_signup  => $args->{social_signup},
@@ -708,6 +733,7 @@ sub create_real_acc {
     $details{$_}              = $vr_client->$_ for qw(email residence address_state);
     $details{$_}              = $broker        for qw(broker_code first_name);
     $details{client_password} = $vr_client->password;
+    $details{account_type} //= 'binary';
 
     return BOM::Platform::Account::Real::default::create_account({
         from_client => $vr_client,
@@ -730,11 +756,12 @@ sub create_mf_acc {
     my $params = \%financial_data;
     $params->{accept_risk} = 1;
     return BOM::Platform::Account::Real::maltainvest::create_account({
-        from_client => $from_client,
-        user        => $user,
-        details     => \%details,
-        country     => $from_client->residence,
-        params      => $params
+        account_type => $details{account_type} // 'binary',
+        from_client  => $from_client,
+        user         => $user,
+        details      => \%details,
+        country      => $from_client->residence,
+        params       => $params
     });
 }
 

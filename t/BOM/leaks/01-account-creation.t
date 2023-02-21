@@ -23,6 +23,7 @@ test_noleaks(
                     email           => 'leak-test@binary.com',
                     client_password => 'does-not-matter',
                     residence       => 'US',
+                    account_type    => 'binary'
                 }});
         BAIL_OUT("expectations does not met")
             unless $account->{error}->{code} eq 'invalid residence';

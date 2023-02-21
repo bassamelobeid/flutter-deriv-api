@@ -48,6 +48,7 @@ my $client_details1 = {
     'first_name'               => 'Felix',
     'citizen'                  => 'Brazil',
     non_pep_declaration_time   => Date::Utility->new->date_yyyymmdd,
+    account_type               => 'doughflow',
 };
 
 my $client_details2 = {
@@ -83,6 +84,7 @@ my $client_details2 = {
     'first_name'               => 'Felix',
     'citizen'                  => 'Brazil',
     non_pep_declaration_time   => Date::Utility->new->date_yyyymmdd,
+    account_type               => 'doughflow',
 };
 
 my $df_client;

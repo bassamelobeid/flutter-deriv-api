@@ -14,16 +14,17 @@ use BOM::User::FinancialAssessment qw(should_warn update_financial_assessment);
 
 sub create_account {
     my $args = shift;
-    my ($from_client, $user, $country, $details, $params) =
-        @{$args}{'from_client', 'user', 'country', 'details', 'params'};
+    my ($account_type, $from_client, $user, $country, $details, $params) =
+        @{$args}{'account_type', 'from_client', 'user', 'country', 'details', 'params'};
 
     my $accept_risk = $params->{accept_risk};
     my $should_warn = should_warn($params);
 
     my $register = BOM::Platform::Account::Real::default::create_account({
-        user        => $user,
-        details     => $details,
-        from_client => $from_client
+        user         => $user,
+        details      => $details,
+        from_client  => $from_client,
+        account_type => $account_type
     });
     return $register if ($register->{error});
 
