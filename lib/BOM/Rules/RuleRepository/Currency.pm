@@ -156,11 +156,11 @@ Arguments:
 sub _currency_is_available {
     my ($self, $context, $args, $include_self) = @_;
 
-    my $currency        = $args->{currency};
-    my $currency_type   = LandingCompany::Registry::get_currency_type($currency);
-    my $account_type    = $args->{account_type}    // $context->client($args)->account_type;
-    my $payment_method  = $args->{payment_method}  // '';
-    my $landing_company = $args->{landing_company} // $context->client($args)->landing_company->short;
+    my $currency         = $args->{currency};
+    my $currency_type    = LandingCompany::Registry::get_currency_type($currency);
+    my $account_type     = $args->{account_type} // $context->client($args)->get_account_type->name;
+    my $account_category = BOM::Config::AccountType::Registry->account_type_by_name($account_type)->category->name;
+    my $landing_company  = $args->{landing_company} // $context->client($args)->landing_company->short;
 
     return 1 unless $currency;
 
@@ -174,26 +174,23 @@ sub _currency_is_available {
     )->%*;
 
     for my $sibling (@siblings) {
-        next if $account_type ne $sibling->{account_type};
+        next if $account_category ne $sibling->{category};
 
         # Note: Landing company is matched for trading acccounts only.
         #       Wallet landing company is skipped to avoid failure when we switch from samoa to svg.
-        next if $account_type eq 'trading' and $sibling->{landing_company_name} ne $landing_company;
+        next if $account_category eq 'trading' and $sibling->{landing_company_name} ne $landing_company;
 
         # Only one fiat trading account is allowed
-        if ($account_type eq 'trading' && $currency_type eq 'fiat') {
+        if ($account_category eq 'trading' && $currency_type eq 'fiat') {
             my $sibling_currency_type = LandingCompany::Registry::get_currency_type($sibling->{currency});
             $self->fail('CurrencyTypeNotAllowed') if $sibling_currency_type eq 'fiat';
         }
+        my $error_code = $sibling->{category} eq 'trading' ? 'DuplicateCurrency' : 'DuplicateWallet';
 
-        my $error_code = $sibling->{account_type} eq 'trading' ? 'DuplicateCurrency' : 'DuplicateWallet';
-        # Account type, currency and payment method should match
-        my $sibling_payment_method = $sibling->{payment_method} // '';
-
+        # Account type and currency should match
         $self->fail($error_code, params => $currency)
-            if $account_type eq $sibling->{account_type}
-            and $currency eq ($sibling->{currency} // '')
-            and $payment_method eq $sibling_payment_method;
+            if $currency eq ($sibling->{currency} // '')
+            and $account_type eq ($sibling->{account_type} // '');
     }
 
     return 1;

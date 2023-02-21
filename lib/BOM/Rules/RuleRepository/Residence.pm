@@ -24,6 +24,7 @@ rule 'residence.market_type_is_available' => {
 
         my $market_type     = $args->{market_type}  // '';
         my $account_type    = $args->{account_type} // '';
+        my $category        = $args->{category}     // '';
         my $residence       = $context->residence($args);
         my $landing_company = $context->landing_company_object($args);
 
@@ -34,7 +35,7 @@ rule 'residence.market_type_is_available' => {
             financial => $countries_instance->financial_company_for_country($context->residence($args)),
         };
 
-        if ($account_type eq 'wallet' || $account_type eq 'affiliate') {
+        if ($category eq 'wallet') {
             $self->fail('InvalidAccount') unless List::Util::any { $_ } values %$companies;
         } else {
             $self->fail('InvalidAccount') if $context->landing_company($args) ne ($companies->{$market_type} // '');
@@ -65,6 +66,7 @@ rule 'residence.account_type_is_available_for_real_account_opening' => {
         my $residence = $context->residence($args);
 
         die 'Account type is required' unless $args->{account_type};
+        return 1 if $args->{account_type} eq 'binary';
         return 1 if $args->{account_type} eq 'trading';
         return 1 if $args->{account_type} eq 'affiliate';
 
@@ -73,7 +75,6 @@ rule 'residence.account_type_is_available_for_real_account_opening' => {
         my $wallet_lc_name = $countries_instance->wallet_company_for_country($residence, 'real') // 'none';
 
         $self->fail('InvalidResidence') if $wallet_lc_name eq 'none';
-
         return 1;
     },
 };

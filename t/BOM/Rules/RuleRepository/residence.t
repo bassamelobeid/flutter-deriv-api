@@ -75,6 +75,7 @@ subtest 'rule residence.market_type_is_available' => sub {
 
         $args->{market_type}  = 'affiliate';
         $args->{account_type} = 'affiliate';
+        $args->{category}     = 'wallet';
         is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
             {
             error_code => 'InvalidAccount',
@@ -131,13 +132,16 @@ subtest 'residence.account_type_is_available_for_real_account_opening' => sub {
 
     like exception { $rule_engine->apply_rules($rule_name, %$args) }, qr/Account type is required/, 'Account type is missing';
 
-    $args->{account_type} = 'trading';
+    $args->{account_type} = 'binary';
+    $args->{category}     = 'trading';
     is exception { $rule_engine->apply_rules($rule_name, %$args) }, undef, 'No error for trading account type';
 
     $args->{account_type} = 'affiliate';
+    $args->{category}     = 'wallet';
     is exception { $rule_engine->apply_rules($rule_name, %$args) }, undef, 'No error for affiliate account type';
 
-    $args->{account_type} = 'wallet';
+    $args->{account_type} = 'doughflow';
+    $args->{category}     = 'wallet';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
         error_code => 'InvalidResidence',

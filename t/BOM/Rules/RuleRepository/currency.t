@@ -130,7 +130,7 @@ subtest $rule_name => sub {
         %args = (
             %args,
             currency     => 'EUR',
-            account_type => 'trading'
+            account_type => 'binary'
         );
         is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
             {
@@ -166,31 +166,29 @@ subtest $rule_name => sub {
 
     subtest 'wallet account' => sub {
         my %args = (
-            loginid        => $client_cr_usd->loginid,
-            account_type   => 'wallet',
-            currency       => 'USD',
-            payment_method => 'Skrill',
+            loginid      => $client_cr_usd->loginid,
+            currency     => 'USD',
+            account_type => 'doughflow',
         );
         is $client_cr_usd->account->currency_code(), 'USD', 'There is a trading sibling with USD currency';
 
         lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Wallet with the same currency as the trading account is allowed';
 
         my $wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CRW'});
-        $wallet->payment_method('Skrill');
+        $wallet->account_type('doughflow');
         $wallet->set_default_account('USD');
         $wallet->save;
         $user->add_client($wallet);
 
-        # TODO return need back after renaming payment method to account_type
-        # is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
-        #     {
-        #     error_code => 'DuplicateWallet',
-        #     params     => 'USD',
-        #     rule       => $rule_name
-        #     },
-        #     'Duplicate wallet is detected';
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+            {
+            error_code => 'DuplicateWallet',
+            params     => 'USD',
+            rule       => $rule_name
+            },
+            'Duplicate wallet is detected';
 
-        $args{payment_method} = 'Paypal';
+        $args{account_type} = 'p2p';
         lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Currency is available with a different payment method';
 
         $args{currency} = 'EUR';
