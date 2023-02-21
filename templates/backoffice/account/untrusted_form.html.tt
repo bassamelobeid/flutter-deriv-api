@@ -8,7 +8,7 @@
         </div>
     [% END %]
 
-<form action="[% edit_url %]" method=post>
+<form action="[% edit_url %]" enctype='multipart/form-data' method=post>
     [% IF untrusted_statuses %]
         <table>
                 <thead>
@@ -91,7 +91,8 @@
     [% IF show_login %]
         <tr>
             <td><label>Login ID:</label></td>
-            <td><input type="text" size="15" name="login_id" value="[% clientid %]" data-lpignore="true" /></td>
+            <td><input type="text" size="15" name="login_id" value="[% clientid %]" data-lpignore="true" />
+                <label>File:</label><input type='file' name='bulk_loginids'></td>
         </tr>
     [% ELSE %]
         <input type="hidden" name="login_id" value="[% clientid %]" />
@@ -147,9 +148,21 @@
             <input type="hidden" name="broker" value="[% broker %]">
             <input type="hidden" name="untrusted_action" value="insert_data">
             <input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
-             <input type="submit" class="btn btn--primary" value="Save">
         </td>
      </tr>
+     [% IF show_login %]
+     <tr>
+            <td><label>DCC:</label></td>
+            <td><input type='text' name='DCcode' size='50' data-lpignore='true'/> </td>
+     </tr>
+     <tr>
+     <td><input type="submit" class="btn btn--primary" value="Save"></td>
+     </tr>
+     [% ELSE %]
+     <tr>
+     <td><input type="submit" class="btn btn--primary" value="Save"></td>
+     </tr>
+     [% END %]
     </table>
 </form>
 

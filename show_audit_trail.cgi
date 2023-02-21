@@ -182,11 +182,9 @@ for my $table (@tables) {
 
         my $changes = {};
 
-        my $data = {
-            table      => delete $row->{tbl} // $tabname,
-            staff_name => $row->{pg_userid}};
+        my $data = {table => delete $row->{tbl} // $tabname};
 
-        for my $col (qw/stamp operation remote_addr/) {
+        for my $col (qw/stamp operation remote_addr staff_name/) {
             $data->{$col} = $row->{$col} if exists $row->{$col};
         }
 

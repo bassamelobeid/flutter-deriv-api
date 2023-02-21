@@ -13,6 +13,12 @@ use BOM::Platform::Email          qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
+use CGI;
+use Log::Any      qw($log);
+use Future::Utils qw( fmap_void );
+use List::Util    qw( uniqstr );
+use Net::Async::HTTP;
+
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -24,19 +30,77 @@ my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 my $clientID           = uc(request()->param('login_id') // '');
 my $action             = request()->param('untrusted_action');
 my $client_status_type = request()->param('untrusted_action_type');
-my $reason             = request()->param('untrusted_reason');
-my $operation          = request()->param('status_op');
-my $status_checked     = request()->param('status_checked') // [];
+my $bulk_loginids      = request()->param('bulk_loginids') // '';
+my $cgi                = request()->cgi;
+my $DCcode             = request()->param('DCcode') // '';
+
+my $reason         = request()->param('untrusted_reason');
+my $operation      = request()->param('status_op');
+my $status_checked = request()->param('status_checked') // [];
 $status_checked = [$status_checked] unless ref($status_checked);
 my $additional_info = request()->param('additional_info');
 my $p2p_approved    = request()->param('p2p_approved');
 my $add_regex       = qr/^add|^sync/;
+my $file_name       = "$broker.$client_status_type";
 
 if (my $error_message = write_operation_error()) {
     print_error_and_exit($error_message);
 }
 
-$clientID || code_exit_BO('Login ID is mandatory.', "UNTRUSTED/DISABLE CLIENT", redirect());
+# check invalid Action
+if (!$status_checked->@* && (!$client_status_type || $client_status_type =~ /SELECT AN ACTION/)) {
+    print_error_and_exit("Action is not specified.");
+}
+
+my ($file, $csv, $lines, @login_ids);
+if ($bulk_loginids) {
+
+# adding dcc verification code here
+# start
+    code_exit_BO(_get_display_error_message("ERROR: dual control code is mandatory for bulk status update")) if $DCcode eq '';
+    try {
+        $file  = $cgi->upload('bulk_loginids');
+        $csv   = Text::CSV->new({binary => 1});
+        $lines = $csv->getline_all($file);
+    } catch ($e) {
+        code_exit_BO(_get_display_error_message("ERROR: " . $e)) if $e;
+    }
+
+    my $dcc_error = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => "UPDATECLIENT_DETAILS_BULK"
+        })->validate_batch_anonymization_control_code($DCcode, [map { join "\0" => $_->@* } $lines->@*]);
+    code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg()))                                       if $dcc_error;
+    code_exit_BO(_get_display_error_message("ERROR: the given file is empty, please provide the required client_ids")) if (scalar(@$lines) == 0);
+    code_exit_BO(_get_display_error_message("ERROR: the number of client_ids exceeds limit of 2000 please reduce the number of entries"))
+        if scalar(@$lines) > 2000;
+    for my $line (@$lines) {
+        push @login_ids, $line->[0];
+    }
+    @login_ids = uniqstr grep { $_ } map { uc $_ } map { s/^\s+|\s+$//gr } map { $_->@* } \@login_ids;
+    BOM::Platform::Event::Emitter::emit(
+        'bulk_client_status_update',
+        {
+            loginids   => \@login_ids,
+            properties => {
+                status_op             => $operation,
+                status_checked        => $status_checked,
+                untrusted_action_type => $client_status_type,
+                reason                => $reason,
+                clerk                 => $clerk,
+                file_name             => $file_name,
+                action                => $action,
+                status_code           => get_untrusted_type_by_linktype($client_status_type)->{code},
+                req_params            => request()->params,
+            }});
+    code_exit_BO(_get_display_message("SUCCESS the client loginds update is triggered"), redirect());
+# end
+} else {
+    $clientID || code_exit_BO('Login ID is mandatory.', "UNTRUSTED/DISABLE CLIENT", redirect());
+    @login_ids = split(/\s+/, $clientID);
+    print_error_and_exit("number of login id allowed exceeds the maximum allowed for this kind of status update.") if @login_ids > 5;
+
+}
 
 # check invalid Operation
 if (!$operation || $operation =~ /SELECT AN OPERATION/) {
@@ -47,28 +111,19 @@ if (!$operation || $operation =~ /SELECT AN OPERATION/) {
 if (!$status_checked->@* && $operation =~ /remove/) {
     print_error_and_exit("Status to be removed not specified. It should already exist.");
 }
-
-# check invalid Action
-if (!$status_checked->@* && (!$client_status_type || $client_status_type =~ /SELECT AN ACTION/)) {
-    print_error_and_exit("Action is not specified.");
-}
-
 # check invalid Reason
 if ($client_status_type && $client_status_type !~ /SELECT AN ACTION/ && $reason =~ /SELECT A REASON/) {
     print_error_and_exit("Reason is not specified.");
 }
 
-my $file_name = "$broker.$client_status_type";
-
 # append the input text if additional infomation exist
 $reason = ($additional_info) ? $reason . ' - ' . $additional_info : $reason;
 local $\ = "\n";
 my ($printline, @invalid_logins);
-$clientID || code_exit_BO('Login ID is mandatory.', "UNTRUSTED/DISABLE CLIENT", redirect());
 
 Bar("UNTRUSTED/DISABLE CLIENT");
 LOGIN:
-foreach my $login_id (split(/\s+/, $clientID)) {
+foreach my $login_id (@login_ids) {
     my $client = eval { BOM::User::Client::get_instance({'loginid' => $login_id}) };
 
     if (not $client) {
@@ -132,7 +187,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         if ($action eq 'insert_data' && ($operation =~ $add_regex)) {
             $printline = execute_set_status({%common_args_for_execute_method, status_code => $status_code});
             if ($status_code eq 'allow_document_upload' && $reason eq 'Pending payout request') {
-                notify_submission_of_documents_for_pending_payout($client);
+                BOM::User::Utility::notify_submission_of_documents_for_pending_payout($client);
             }
         } elsif ($action eq 'remove_status') {
             $printline = execute_remove_status({%common_args_for_execute_method, status_code => $status_code});
@@ -167,7 +222,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
 
     p2p_advertiser_approval_check($client, request()->params);
 
-    my $status_op_summary = status_op_processor(
+    my $status_op_summary = BOM::User::Utility::status_op_processor(
         $client,
         {
             status_op             => $operation,
@@ -278,25 +333,4 @@ sub print_error_and_exit {
     my $error_msg = shift;
     print "<p class='notify notify--danger'>ERROR : $error_msg</span>";
     code_exit_BO(redirect());
-}
-
-sub notify_submission_of_documents_for_pending_payout {
-    my ($client) = @_;
-    my $brand = Brands->new(name => 'deriv');
-
-    my $req = BOM::Platform::Context::Request->new(
-        brand_name => $brand->name,
-        app_id     => $client->source,
-    );
-    BOM::Platform::Context::request($req);
-
-    my $due_date = Date::Utility->today->plus_time_interval('3d');
-
-    BOM::Platform::Event::Emitter::emit(
-        account_verification_for_pending_payout => {
-            loginid    => $client->loginid,
-            properties => {
-                email => $client->email,
-                date  => $due_date->date_ddmmyyyy,
-            }});
 }

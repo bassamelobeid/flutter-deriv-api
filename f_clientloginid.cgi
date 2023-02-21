@@ -72,19 +72,23 @@ BOM::Backoffice::Request::template()->process('backoffice/newpassword_email.html
 Bar("MAKE DUAL CONTROL CODE");
 print
     "<p>To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.</p>";
+BOM::Backoffice::Request::template()->process('backoffice/file_upload_handle.html.tt') || die BOM::Backoffice::Request::template()->error(), "\n";
 print "<form id='clientdetailsDCC' action='"
     . request()->url_for('backoffice/f_makeclientdcc.cgi')
-    . "' method='get' class='bo_ajax_form'>"
+    . "' method='post' class='bo_ajax_form'  enctype='multipart/form-data'>"
     . "<input type='hidden' name='broker' value='$encoded_broker'>"
     . "<input type='hidden' name='l' value='EN'>"
     . "<div class='row'>"
-    . "<label>Type of transaction:</label><select name='transtype'>"
+    . "<label>Type of transaction:</label><select id='transtype' name='transtype'>"
     . "<option value='UPDATECLIENTDETAILS'>Update client details</option>"
+    . "<option selected disabled hidden >select transaction type</option>"
+    . "<option value='UPDATECLIENT_DETAILS_BULK'>Update client status bulk</option>"
     . "</select>"
-    . "<label>Login ID:</label><input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' />"
+    . "<label name='login_IDs'>Login ID:</label><input type='text' name='client_loginid' size='15' placeholder='required' data-lpignore='true' />"
+    . "<label name='bulk_login_IDs'>File:</label><input type='file' name='bulk_clientloginids'>"
     . "</div>"
     . "<div class='row'>"
-    . "<label>Email of the client, enter new email if you want to change email address:</label><input type='text' name='clientemail' placeholder='required' data-lpignore='true' />"
+    . "<label name='client_email_message'>Email of the client, enter new email if you want to change email address:</label><input type='text' name='client_email' placeholder='required' data-lpignore='true' />"
     . "</div>"
     . "<div class='row'>"
     . "<label>Input a comment/reminder about this DCC:</label><input type='text' size='50' name='reminder' data-lpignore='true' />"
@@ -96,7 +100,7 @@ print "<form id='clientdetailsDCC' action='"
 Bar("CLOSED/DISABLED ACCOUNTS");
 my $client_login      = request()->param('login_id') // '';
 my $show_notification = request()->param('editlink') and $client_login and request()->param('untrusted_action_type');
-
+my $bulk_loginids     = request()->param('bulk_loginids');
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
     {
@@ -106,6 +110,7 @@ BOM::Backoffice::Request::template()->process(
         broker                    => $broker,
         encoded_broker            => $encoded_broker,
         clientid                  => $client_login,
+        bulk_loginids             => $bulk_loginids,
         actions                   => get_untrusted_types(),
         show_untrusted            => 1,
         show_login                => 1,

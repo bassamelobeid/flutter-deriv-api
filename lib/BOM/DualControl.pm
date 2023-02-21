@@ -142,6 +142,23 @@ sub batch_anonymization_control_code {
     return $code;
 }
 
+=head2 batch_status_update_control_code
+
+Generates DCC code to batch update client status code
+
+=cut
+
+sub batch_status_update_control_code {
+    my ($self, $lines) = @_;
+
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, checksum_for_records($lines), $self->_environment));
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
+}
+
 sub validate_client_control_code {
     my ($self, $incode, $email, $user_id) = @_;
 
@@ -284,6 +301,34 @@ sub validate_client_anonymization_control_code {
     $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
     return undef;
+}
+
+=head2 validate_batch_status_update_control_code
+
+Validates batch client status update DCC
+
+=cut
+
+sub validate_batch_status_update_control_code {
+    my ($self, $incode, $lines) = @_;
+
+    my $code         = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_element_count($code, 5);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_filelines($code, $lines);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_already_used($incode);
+    return $error_status if $error_status;
+
+    return;
 }
 
 =head2 validate_batch_anonymization_control_code

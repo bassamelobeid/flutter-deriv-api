@@ -1027,128 +1027,6 @@ sub build_client_warning_message {
     return $output;
 }
 
-=head2 status_op_processor
-
-Given a input and a client, this sub will process the given statuses expecting multiple
-statsues passed.
-
-It takes the following arguments:
-
-=over 4
-
-=item * C<client> - the client instance
-
-=item * C<input> - a hashref of the user inputs
-
-=back
-
-The input should have a B<status_op> key that may contain:
-
-=over 4
-
-=item * C<remove> - this op performs a status removal from the client
-
-=item * C<remove_siblings> - the same as `remove` but will also remove the status from siblings
-
-=item * C<sync> - this op copies the given statuses to the siblings
-
-=back
-
-From the input hashref we will look for a `status_checked` value that can either be an arrayref or string (must check for that).
-This value represents the given status codes.
-
-Returns a summary to print out or undef if nothing happened.
-
-=cut
-
-sub status_op_processor {
-    my ($client, $args) = @_;
-    my $status_op      = $args->{status_op};
-    my $status_checked = $args->{status_checked} // [];
-    $status_checked = [$status_checked] unless ref($status_checked);
-    my $client_status_type = $args->{untrusted_action_type};
-    my $reason             = $args->{reason};
-
-    my $status_map = {
-        disabledlogins            => 'disabled',
-        lockcashierlogins         => 'cashier_locked',
-        unwelcomelogins           => 'unwelcome',
-        nowithdrawalortrading     => 'no_withdrawal_or_trading',
-        lockwithdrawal            => 'withdrawal_locked',
-        lockmt5withdrawal         => 'mt5_withdrawal_locked',
-        duplicateaccount          => 'duplicate_account',
-        allowdocumentupload       => 'allow_document_upload',
-        internalclient            => 'internal_client',
-        notrading                 => 'no_trading',
-        sharedpaymentmethod       => 'shared_payment_method',
-        cryptoautorejectdisabled  => 'crypto_auto_reject_disabled',
-        cryptoautoapprovedisabled => 'crypto_auto_approve_disabled',
-    };
-
-    if ($client_status_type && $client_status_type !~ /SELECT AN ACTION/) {
-        push(@$status_checked, $client_status_type);
-    }
-    return undef unless $status_op;
-    return undef unless scalar $status_checked->@*;
-
-    my $loginid = $client->loginid;
-    my $summary = '';
-
-    my $old_db = $client->get_db();
-    # assign write access to db_operation to perform client_status delete/copy operation
-    $client->set_db('write') if 'write' ne $old_db;
-
-    for my $status ($status_checked->@*) {
-        try {
-            if ($status_op eq 'remove') {
-                my $client_status_clearer_method_name = 'clear_' . $status;
-                $client->status->$client_status_clearer_method_name;
-                $summary .= "<div class='notify'><b>SUCCESS :</b>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from <b>$loginid</b></div>";
-            } elsif ($status_op eq 'remove_siblings' or $status_op eq 'remove_accounts') {
-                $summary .= status_op_processor(
-                    $client,
-                    {
-                        status_checked => [$status],
-                        status_op      => 'remove',
-                    });
-
-                my $updated_client_loginids =
-                    $client->clear_status_and_sync_to_siblings($status, BOM::Backoffice::Auth0::get_staffname(), $status_op eq 'remove_accounts');
-                my $siblings = join ', ', $updated_client_loginids->@*;
-
-                if (scalar $updated_client_loginids->@*) {
-                    $summary .=
-                        "<div class='notify'><b>SUCCESS :</b><&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from siblings:<b>$siblings</b></div>";
-                }
-            } elsif ($status_op eq 'sync' or $status_op eq 'sync_accounts') {
-                $status = $status_map->{$status}       ? $status_map->{$status}           : $status;
-                $reason = $reason =~ /SELECT A REASON/ ? $client->status->reason($status) : $reason;
-                my $updated_client_loginids =
-                    $client->copy_status_to_siblings($status, BOM::Backoffice::Auth0::get_staffname(), $status_op eq 'sync_accounts', $reason);
-                my $siblings = join ', ', $updated_client_loginids->@*;
-
-                if (scalar $updated_client_loginids->@*) {
-                    $summary .=
-                        "<div class='notify'><b>SUCCESS :</b>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been copied to siblings:<b>$siblings</b></div>";
-                }
-            }
-        } catch {
-            my $fail_op = 'process';
-            $fail_op = 'remove'                                                                        if $status_op eq 'remove';
-            $fail_op = 'remove from siblings'                                                          if $status_op eq 'remove_siblings';
-            $fail_op = 'copy to siblings'                                                              if $status_op eq 'sync';
-            $fail_op = 'copy to accounts, only DISABLED ACCOUNTS can be synced to all accounts'        if $status_op eq 'sync_accounts';
-            $fail_op = 'remove from accounts, only DISABLED ACCOUNTS can be removed from all accounts' if $status_op eq 'remove_accounts';
-
-            $summary .=
-                "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.</div>";
-        }
-    }
-    # once db operation is done, set back db_operation to replica
-    $client->set_db($old_db);
-    return $summary;
-}
-
 ## get_untrusted_client_reason ###############################
 #
 # Purpose : all the available untrusted client reason
@@ -2369,6 +2247,31 @@ sub check_update_needed {
     die "don't know the scope $sync_scope{$key}";
 }
 
+=head2 p2p_advertiser_approval_check
+
+Checks if p2p advertiser approval has changed based on hidden form field
+"p2p_approved" which contains the previous approval state.
+
+=over 4
+
+=item * C<client> - the client instance
+
+=item * C<params> - a hashref of the user inputs
+
+=back
+
+=cut
+
+sub p2p_advertiser_approval_check {
+    my ($client, $params) = @_;
+
+    return unless exists $params->{p2p_approved};
+    my $p2p_advertiser = $client->_p2p_advertiser_cached or return;
+    if ($params->{p2p_approved} ne $p2p_advertiser->{is_approved}) {
+        BOM::Platform::Event::Emitter::emit('p2p_advertiser_approval_changed', {client_loginid => $client->loginid});
+    }
+}
+
 =head2 _get_detailed_resaon
 
 Maps reason code to a detailed reasoning message
@@ -2774,31 +2677,6 @@ sub create_dropdown {
     return $options if $args{only_options};
 
     return "<select name='$args{name}'>$options</select>";
-}
-
-=head2 p2p_advertiser_approval_check
-
-Checks if p2p advertiser approval has changed based on hidden form field
-"p2p_approved" which contains the previous approval state.
-
-=over 4
-
-=item * C<client> - the client instance
-
-=item * C<params> - a hashref of the user inputs
-
-=back
-
-=cut
-
-sub p2p_advertiser_approval_check {
-    my ($client, $params) = @_;
-
-    return unless exists $params->{p2p_approved};
-    my $p2p_advertiser = $client->_p2p_advertiser_cached or return;
-    if ($params->{p2p_approved} ne $p2p_advertiser->{is_approved}) {
-        BOM::Platform::Event::Emitter::emit('p2p_advertiser_approval_changed', {client_loginid => $client->loginid});
-    }
 }
 
 =head2 write_operation_error

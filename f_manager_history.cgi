@@ -118,7 +118,7 @@ if (defined $action && $action eq "gross_transactions") {
 }
 
 # Deleting checked statuses
-my $status_op_summary = status_op_processor($client, request()->params);
+my $status_op_summary = BOM::User::Utility::status_op_processor($client, request()->params);
 # Print other untrusted section warning in backoffice
 print build_client_warning_message(encode_entities($client->loginid));
 # The choice of positioning is to allow display under the buttons associated with this event

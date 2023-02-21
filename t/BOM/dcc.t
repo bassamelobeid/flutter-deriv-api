@@ -53,5 +53,26 @@ subtest 'Batch Anonymization DCC' => sub {
     ok $error, 'Fail in case dataset is changed';
 };
 
+subtest 'Batch Client Status Update DCC' => sub {
+    my $dcc1 = BOM::DualControl->new({
+            staff           => 'murzilka',
+            transactiontype => 'deposit'
+        })->batch_status_update_control_code([1, 2, 3]);
+
+    my $error = BOM::DualControl->new({
+            staff           => 'kirill',
+            transactiontype => 'deposit'
+        })->validate_batch_status_update_control_code($dcc1, [1, 2, 3]);
+
+    ok !$error, 'No error for same dataset';
+
+    my $error = BOM::DualControl->new({
+            staff           => 'kirill',
+            transactiontype => 'deposit'
+        })->validate_batch_status_update_control_code($dcc1, [1, 2, 4]);
+
+    ok $error, 'Fail in case dataset is changed';
+};
+
 done_testing();
 
