@@ -149,6 +149,7 @@ our %ERROR_MAP = do {
         OrderCreateFailAmount    => localize("An order cannot be created for this amount at this time. Please try adjusting the amount."),
 
         # TODO these messages needs to be checked with copywritter team
+        CrossBorderNotAllowed            => localize('Only exchanges in your local currency are supported. Contact us via live chat to learn more.'),
         AdvertiserCreateChatError        => localize('An error occurred (chat user not created). Please try again later.'),
         AdvertiserNotFoundForChat        => localize('You may not chat until you have registered as a Deriv P2P advertiser.'),
         ChatTokenError                   => localize('An error occurred when issuing a new token. Please try again later.'),

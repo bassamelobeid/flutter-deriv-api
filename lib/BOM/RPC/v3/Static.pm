@@ -387,8 +387,9 @@ rpc website_status => sub {
             float_rate_offset_limit => Math::BigFloat->new($float_range)->bdiv(2)->bfround(-2, 'trunc')->bstr,
             $p2p_advert_config->{deactivate_fixed}       ? (fixed_rate_adverts_end_date => $p2p_advert_config->{deactivate_fixed}) : (),
             ($exchange_rate->{source} // '') eq 'manual' ? (override_exchange_rate      => $exchange_rate->{quote})                : (),
-            feature_level    => $p2p_config->feature_level,
-            local_currencies => \@local_currencies,
+            feature_level            => $p2p_config->feature_level,
+            local_currencies         => \@local_currencies,
+            cross_border_ads_enabled => (any { lc($_) eq $country } $p2p_config->cross_border_ads_restricted_countries->@*) ? 0 : 1,
         };
     }
     return $result;
