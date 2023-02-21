@@ -388,6 +388,11 @@ payments:
           isa: ArrayRef
           global: 1
           default: []
+        cross_border_ads_restricted_countries:
+          description: 'List of countries for which cross border ad feature is not available, 2 letter lower case country codes.'
+          isa: ArrayRef
+          global: 1
+          default: []
         limits:
           description: 'Peer-to-peer payment system and client limits'
           isa: section
