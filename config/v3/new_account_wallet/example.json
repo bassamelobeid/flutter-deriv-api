@@ -10,6 +10,6 @@
     "first_name": "Peter",
     "last_name": "Pan",
     "non_pep_declaration": 1,
-    "payment_method": "fiat",
+    "payment_method": "doughflow",
     "phone": "+6123456789"
 }

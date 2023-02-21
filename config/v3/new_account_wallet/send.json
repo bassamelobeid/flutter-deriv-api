@@ -378,11 +378,12 @@
             "description": "To set method which is used to transfer to/from wallet.",
             "type": "string",
             "enum": [
-                "fiat",
-                "payment_agent",
-                "pa_client",
+                "doughflow",
+                "crypto",
                 "p2p",
-                "crypto"
+                "paymentagent",
+                "paymentagent_client",
+                "affiliate"
             ]
         },
         "phone": {
