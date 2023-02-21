@@ -20,10 +20,12 @@ alias:
 - &update_git
   run:
     name: Update git repositories
+    no_output_timeout: 3h
     command: /opt/circle/prepare-test.sh
 - &services
   run:
     name: Start services
+    no_output_timeout: 3h
     command: |
       start_services
       touch /tmp/services.ready
@@ -31,6 +33,7 @@ alias:
 - &wait_services
   run:
     name: Wait for services to start up
+    no_output_timeout: 3h
     command: |
       count=0
       while [ ! -f /tmp/services.ready ]; do
@@ -51,6 +54,7 @@ jobs:
     steps:
     - checkout
     - run:
+        no_output_timeout: 3h
         command: |
           if [[ -n "$CIRCLE_PULL_REQUEST" && $CIRCLE_BRANCH != "master" ]]; then
             GIT_COMMIT_DESC="$(git log --format=oneline -n 1 $CIRCLE_SHA1)";
@@ -67,11 +71,13 @@ jobs:
     - *update_git
     - run:
         <<: *test_output
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make syntax
         name: Code structure and syntax
     - run:
+        no_output_timeout: 3h
         command: make unit
         name: unit tests
     - store_test_results:
@@ -83,11 +89,13 @@ jobs:
     - *update_git
     - run:
         <<: *test_output
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make syntax_diff
         name: Code structure and syntax
     - run:
+        no_output_timeout: 3h
         command: make unit
         name: unit tests
     - store_test_results:
@@ -102,6 +110,7 @@ jobs:
     - run:
         <<: *test_output
         name: Product contract test
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit_test_product_contract
@@ -117,6 +126,7 @@ jobs:
     - run:
         <<: *test_output
         name: Validation
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit_test_validation
@@ -132,6 +142,7 @@ jobs:
     - run:
         <<: *test_output
         name: MemoryTest
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make memory_test
@@ -147,6 +158,7 @@ jobs:
     - run:
         <<: *test_output
         name: Pricing
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit_test_pricing
@@ -162,23 +174,28 @@ jobs:
     - run:
         <<: *test_output
         name: Product extended
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit_test_product_contract_extended
     - run:
         name: Product base
+        no_output_timeout: 3h
         command: make unit_test_product_base
         when: always
     - run:
         name: Product model
+        no_output_timeout: 3h
         command: make unit_test_product_model
         when: always
     - run:
         name: Valatility
+        no_output_timeout: 3h
         command: make unit_test_volatility
         when: always
     - run:
         name: Offerings
+        no_output_timeout: 3h
         command: make unit_test_offerings
         when: always
     - store_test_results:
@@ -194,6 +211,7 @@ jobs:
     - run:
         <<: *test_output
         name: Merlin Benchmark
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/bom-quant-benchmark
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -201,6 +219,7 @@ jobs:
     - run:
         <<: *test_output
         name: OVRA benchmark
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/bom-quant-benchmark
           make OVRA_benchmark
@@ -217,30 +236,37 @@ jobs:
     - *wait_services
     - run:
         name: SDFX benchmark major
+        no_output_timeout: 3h
         command: make SDFX_benchmark_major
         when: always
     - run:
         name: SDFX benchmark minor
+        no_output_timeout: 3h
         command: make SDFX_benchmark_minor
         when: always
     - run:
         name: SDEQ benchmark OTC_DJI
+        no_output_timeout: 3h
         command: make SDEQ_benchmark_OTC_DJI
         when: always
     - run:
         name: SDEQ benchmark OTC_FCHI
+        no_output_timeout: 3h
         command: make SDEQ_benchmark_OTC_FCHI
         when: always
     - run:
         name: SDEQ benchmark OTC_SPC
+        no_output_timeout: 3h
         command: make SDEQ_benchmark_OTC_SPC
         when: always
     - run:
         name: SDEQ benchmark SSECOMP
+        no_output_timeout: 3h
         command: make SDEQ_benchmark_SSECOMP
         when: always
     - run:
         name: SDEQ benchmark OTC_FTSE
+        no_output_timeout: 3h
         command: make SDEQ_benchmark_OTC_FTSE
         when: always
     - store_test_results:
@@ -255,6 +281,7 @@ jobs:
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-European-Digital-Slope
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-European-Digital-Slope
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -262,6 +289,7 @@ jobs:
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-BlackScholes
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -270,6 +298,7 @@ jobs:
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-Digits
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Digits
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -278,6 +307,7 @@ jobs:
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-HighLow-Ticks
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -286,6 +316,7 @@ jobs:
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-Intraday-Forex-Base
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -294,6 +325,7 @@ jobs:
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-Lookback
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -302,6 +334,7 @@ jobs:
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-Markup
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Markup
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -310,6 +343,7 @@ jobs:
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-Reset
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-Reset
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -318,6 +352,7 @@ jobs:
     - run:
         <<: *test_output
         name: perl-Pricing-Engine-TickExpiry
+        no_output_timeout: 3h
         command: |
           cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -333,6 +368,7 @@ jobs:
     - run:
         <<: *test_output
         name: Run Unit Tests
+        no_output_timeout: 3h
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make unit
@@ -348,6 +384,7 @@ jobs:
     - run:
         <<: *test_output
         name: code coverage tests
+        no_output_timeout: 3h
         command: make cover
 workflows:
   version: 2
