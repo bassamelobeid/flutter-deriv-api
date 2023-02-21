@@ -11,7 +11,9 @@ use Syntax::Keyword::Try;
 use BOM::Config::MT5;
 use BOM::Config::Compliance;
 use BOM::MT5::User::Async;
+use BOM::Platform::Context qw (localize request);
 use BOM::User::Utility;
+use JSON::MaybeXS              qw{decode_json};
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Log::Any                   qw($log);
 use LandingCompany::Registry;
@@ -512,6 +514,36 @@ sub mt5_accounts_lookup {
             my @result = map { $_->result } @futures_result;
             return Future->done(@result);
         });
+}
+
+=head2 get_assets
+
+Get assets listing from MT5
+
+=over 4
+
+=back
+
+Returns a Future object holding an MT5 account info on success, throws exception on error
+
+=cut
+
+sub get_assets {
+    my ($self, $type) = @_;
+
+    my $redis         = BOM::Config::Redis::redis_mt5_user();
+    my $asset_listing = decode_json($redis->get('MT5::ASSETS') // '{}');
+
+    my @res = ();
+
+    for my $asset ($asset_listing->{assets}->@*) {
+        next if $type eq 'brief' and $asset->{display_order} == 10000;
+        my %new_asset = map { lc $_ => $asset->{$_} } keys $asset->%*;
+        $new_asset{symbol} = localize($new_asset{symbol});
+        push @res, \%new_asset;
+    }
+
+    return \@res;
 }
 
 =head2 get_settings

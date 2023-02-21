@@ -571,8 +571,6 @@ sub _invoke_using_proxy {
                     $out->{login} = $out->{user}->{login};
                 } elsif ($cmd eq "UserGet") {
                     delete $out->{user}->{apidata};
-                } elsif ($cmd eq "GroupGet") {
-                    delete $out->{group}->{symbols};
                 }
 
                 # Append login prefixes for mt5 used id.
@@ -718,6 +716,122 @@ sub get_user {
             $mt_user->{$_} = $ret->{$_} for (@fields);
             return Future->done($mt_user);
         });
+}
+
+=head2 tick_last
+
+Gets last tick for MT5 symbol
+
+=over 4
+
+=item * C<$login> MT5 manager login id
+
+=item * C<$symbol> MT5 Symbol
+
+=back
+
+returns fields from the TickLast
+
+=cut
+
+sub tick_last {
+    my ($login, $symbol) = @_;
+    my $param = {
+        login  => $login,
+        symbol => $symbol
+    };
+
+    return _invoke_mt5('TickLast', $param)->then(
+        sub {
+            my ($response) = @_;
+
+            my $ret = $response->{tick_last}->{details};
+
+            my @final_results;
+
+            for my $tick_detail ($ret->@*) {
+                my %new_tick_detail = map { lc $_ => $tick_detail->{$_} } keys $tick_detail->%*;
+                push @final_results, \%new_tick_detail;
+            }
+
+            return Future->done(\@final_results);
+        });
+
+}
+
+=head2 tick_last_group
+
+Gets last tick for MT5 group
+
+=over 4
+
+=item * C<$login> MT5 manager login id
+
+=item * C<$symbol> MT5 Symbol
+
+=item * C<$group> MT5 Group
+
+=back
+
+returns fields from the TickLastGroup
+
+=cut
+
+sub tick_last_group {
+    my ($login, $symbol, $group) = @_;
+    my $param = {
+        login  => $login,
+        symbol => $symbol,
+        group  => $group
+    };
+
+    return _invoke_mt5('TickLastGroup', $param)->then(
+        sub {
+            my ($response) = @_;
+
+            my $ret = $response->{tick_last_group}->{details};
+
+            my @final_results;
+
+            for my $tick_detail ($ret->@*) {
+                my %new_tick_detail = map { lc $_ => $tick_detail->{$_} } keys $tick_detail->%*;
+                push @final_results, \%new_tick_detail;
+            }
+
+            return Future->done(\@final_results);
+        });
+
+}
+
+=head2 get_symbol
+
+Gets MT5 symbols info
+
+=over 4
+
+=item * C<$loginid> MT5 manager login id
+
+=item * C<$symbol> symbol
+
+=back
+
+returns fields from the SymbolGet subroutine
+
+=cut
+
+sub get_symbol {
+    my ($login, $symbol) = @_;
+    my $param = {
+        login  => $login,
+        symbol => $symbol
+    };
+
+    return _invoke_mt5('SymbolGet', $param)->then(
+        sub {
+            my ($response) = @_;
+            return Future->done($response->{symbol});
+        });
+
 }
 
 =head2 get_user_archive
