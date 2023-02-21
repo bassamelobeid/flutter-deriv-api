@@ -20,7 +20,7 @@ use YAML::XS qw(LoadFile);
 use WebService::SendBird;
 use JSON::MaybeUTF8 qw(:v1);
 use Digest::SHA     qw(hmac_sha1_hex);
-use List::Util      qw(any);
+use List::Util      qw(any uniq);
 
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
@@ -386,6 +386,154 @@ sub generate_email_unsubscribe_checksum {
     my $user_info = $loginid . $email;
     my $hash_key  = BOM::Config::third_party()->{customerio}->{hash_key};
     return hmac_sha1_hex($user_info, $hash_key) // q{};
+}
+
+=head2 status_op_processor
+
+Given an input and a client, this sub will process the given statuses expecting multiple
+statuses passed.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<client> - the client instance
+
+=item * C<input> - a hashref of the user inputs
+
+=back
+
+The input should have a B<status_op> key that may contain:
+
+=over 4
+
+=item * C<remove> - this op performs a status removal from the client
+
+=item * C<remove_siblings> - the same as `remove` but will also remove the status from siblings
+
+=item * C<sync> - this op copies the given statuses to the siblings
+
+=back
+
+From the input hashref we will look for a `status_checked` value that can either be an arrayref or string (must check for that).
+This value represents the given status codes.
+
+Returns a summary to print out or undef if nothing happened.
+
+=cut
+
+sub status_op_processor {
+    my ($client, $args) = @_;
+    my $status_op      = $args->{status_op};
+    my $status_checked = $args->{status_checked} // [];
+    $status_checked = [$status_checked] unless ref($status_checked);
+    my $client_status_type = $args->{untrusted_action_type};
+    my $reason             = $args->{reason};
+    my $clerk              = $args->{clerk} // BOM::Backoffice::Auth0::get_staffname();
+    my $status_map         = {
+        disabledlogins            => 'disabled',
+        lockcashierlogins         => 'cashier_locked',
+        unwelcomelogins           => 'unwelcome',
+        nowithdrawalortrading     => 'no_withdrawal_or_trading',
+        lockwithdrawal            => 'withdrawal_locked',
+        lockmt5withdrawal         => 'mt5_withdrawal_locked',
+        duplicateaccount          => 'duplicate_account',
+        allowdocumentupload       => 'allow_document_upload',
+        internalclient            => 'internal_client',
+        notrading                 => 'no_trading',
+        sharedpaymentmethod       => 'shared_payment_method',
+        cryptoautorejectdisabled  => 'crypto_auto_reject_disabled',
+        cryptoautoapprovedisabled => 'crypto_auto_approve_disabled',
+    };
+
+    if ($client_status_type) {
+        push(@$status_checked, $client_status_type);
+    }
+    @$status_checked = uniq @$status_checked;
+    return undef unless $status_op;
+    return undef unless scalar $status_checked->@*;
+
+    my $loginid = $client->loginid;
+    my $summary = '';
+
+    for my $status ($status_checked->@*) {
+        try {
+            if ($status_op eq 'remove') {
+                my $client_status_clearer_method_name = 'clear_' . $status;
+                $client->status->$client_status_clearer_method_name;
+                $summary .= "<div class='notify'><b>SUCCESS :</b>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from <b>$loginid</b></div>";
+            } elsif ($status_op eq 'remove_siblings' or $status_op eq 'remove_accounts') {
+                $summary .= status_op_processor(
+                    $client,
+                    {
+                        status_checked => [$status],
+                        status_op      => 'remove',
+                    });
+
+                my $updated_client_loginids = $client->clear_status_and_sync_to_siblings($status, $clerk, $status_op eq 'remove_accounts');
+                my $siblings = join ', ', $updated_client_loginids->@*;
+
+                if (scalar $updated_client_loginids->@*) {
+                    $summary .=
+                        "<div class='notify'><b>SUCCESS :</b><&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from siblings:<b>$siblings</b></div>";
+                }
+            } elsif ($status_op eq 'sync' or $status_op eq 'sync_accounts') {
+                $status = $status_map->{$status}       ? $status_map->{$status}           : $status;
+                $reason = $reason =~ /SELECT A REASON/ ? $client->status->reason($status) : $reason;
+                my $updated_client_loginids = $client->copy_status_to_siblings($status, $clerk, $status_op eq 'sync_accounts', $reason);
+                my $siblings = join ', ', $updated_client_loginids->@*;
+
+                if (scalar $updated_client_loginids->@*) {
+                    $summary .=
+                        "<div class='notify'><b>SUCCESS :</b>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been copied to siblings:<b>$siblings</b></div>";
+                }
+            }
+        } catch {
+            my $fail_op = 'process';
+            $fail_op = 'remove'                                                                        if $status_op eq 'remove';
+            $fail_op = 'remove from siblings'                                                          if $status_op eq 'remove_siblings';
+            $fail_op = 'copy to siblings'                                                              if $status_op eq 'sync';
+            $fail_op = 'copy to accounts, only DISABLED ACCOUNTS can be synced to all accounts'        if $status_op eq 'sync_accounts';
+            $fail_op = 'remove from accounts, only DISABLED ACCOUNTS can be removed from all accounts' if $status_op eq 'remove_accounts';
+
+            $summary .=
+                "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.</div>";
+        }
+    }
+    return $summary;
+}
+
+=head2 notify_submission_of_documents_for_pending_payout
+
+send notification to client of document submission pending
+
+=over
+
+=item * C<client> - properties to update the status of the client 
+
+=back
+
+=cut
+
+sub notify_submission_of_documents_for_pending_payout {
+    my ($client) = @_;
+    my $brand = Brands->new(name => 'deriv');
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => $brand->name,
+        app_id     => $client->source,
+    );
+    BOM::Platform::Context::request($req);
+
+    my $due_date = Date::Utility->today->plus_time_interval('3d');
+
+    BOM::Platform::Event::Emitter::emit(
+        account_verification_for_pending_payout => {
+            loginid    => $client->loginid,
+            properties => {
+                email => $client->email,
+                date  => $due_date->date_ddmmyyyy,
+            }});
 }
 
 1;
