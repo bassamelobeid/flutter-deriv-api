@@ -303,4 +303,57 @@ sub create_payment_methods {
     BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries($json);
 }
 
+=head2 set_advertiser_is_enabled
+
+Permanently block or unblock P2P advertiser
+
+Example usage:
+
+    set_advertiser_is_enabled($advertiser, 0); --> disable advertiser
+    set_advertiser_is_enabled($advertiser, 1); --> enable advertiser
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<advertiser> - P2P advertiser client object
+
+=item * C<is_enabled> - flag to indicate whether to enable or disable advertiser
+
+=cut
+
+sub set_advertiser_is_enabled {
+    my ($advertiser, $is_enabled) = @_;
+    my $sql = "update p2p.p2p_advertiser set is_enabled=" . ($is_enabled ? 'TRUE' : 'FALSE') . " WHERE client_loginid = ?";
+    $advertiser->db->dbic->dbh->do($sql, undef, $advertiser->loginid);
+    return 1;
+}
+
+=head2 set_advertiser_blocked_until
+
+Temporarily block P2P advertiser or remove temporary block of advertiser
+
+Example usage:
+
+    set_advertiser_blocked_until($advertiser, 2); --> temporarily block advertiser for another 2 hours
+    set_advertiser_blocked_until($advertiser, 0); --> remove temporary block of advertiser
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<advertiser> - P2P advertiser client object
+
+=item * C<temp_blocked_hours> - if value >= 1, block for that many hours, if value = 0, remove temporary block
+
+=cut
+
+sub set_advertiser_blocked_until {
+    my ($advertiser, $temp_blocked_hours) = @_;
+    $temp_blocked_hours = $temp_blocked_hours ? "NOW() + INTERVAL '" . $temp_blocked_hours . " hour'" : "NULL";
+    my $sql = "update p2p.p2p_advertiser set blocked_until=$temp_blocked_hours WHERE client_loginid = ?";
+    $advertiser->db->dbic->dbh->do($sql, undef, $advertiser->loginid);
+    return 1;
+}
+
 1;
