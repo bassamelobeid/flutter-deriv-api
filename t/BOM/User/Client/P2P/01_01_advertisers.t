@@ -5,13 +5,16 @@ use Test::More;
 use Test::Fatal;
 use Test::Deep;
 use Test::MockModule;
+use Test::Warn;
+use Log::Any::Test;
 use Test::Exception;
-use Test::MockTime qw(set_fixed_time restore_time);
-
+use Test::MockTime        qw(set_fixed_time restore_time);
+use Format::Util::Numbers qw(formatnumber);
 use BOM::User::Client;
 use BOM::Config::Redis;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use JSON::MaybeUTF8                            qw(:v1);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -278,6 +281,115 @@ subtest 'p2p_advertiser_info subscription' => sub {
         {%$info2, client_loginid => $advertiser2->loginid},
         'loginid is added to repsonse when subscribe to other'
     );
+};
+
+subtest 'advertiser band upgrade information' => sub {
+    my $advertiser1 = BOM::Test::Helper::P2P::create_advertiser();
+    my $info1       = $advertiser1->p2p_advertiser_info;
+    ok !exists $info1->{upgradable_daily_limits}, 'advertiser not eligible for band upgrade';
+
+    my $redis       = BOM::Config::Redis->redis_p2p_write;
+    my $json_string = "{\"target_max_daily_buy\":\"10000\",\"target_max_daily_sell\":\"10000\"";
+
+    $redis->hset('P2P::ADVERTISER_BAND_UPGRADE_PENDING', $info1->{id}, $json_string);
+
+    ok !exists $advertiser1->p2p_advertiser_info->{upgradable_daily_limits},
+        'advertiser next available band information not returned due to invalid JSON data';
+
+    my $data = +{
+        target_max_daily_buy  => 10000,
+        target_max_daily_sell => 10000,
+        target_trade_band     => "high",
+    };
+    $redis->hset('P2P::ADVERTISER_BAND_UPGRADE_PENDING', $info1->{id}, encode_json_utf8($data));
+
+    cmp_deeply(
+        $advertiser1->p2p_advertiser_info,
+        superhashof({
+                upgradable_daily_limits => {
+                    max_daily_sell => 10000,
+                    max_daily_buy  => 10000,
+                }}
+        ),
+        'advertiser next available band information returned'
+    );
+
+    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser();
+    my $info2       = $advertiser2->p2p_advertiser_info(id => $info1->{id});
+    ok !exists $info2->{upgradable_daily_limits}, 'advertiser 1 band information not returned to advertiser 2';
+
+};
+
+subtest 'advertiser band update' => sub {
+    no warnings;
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $info       = $advertiser->p2p_advertiser_info;
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advertiser_update(upgrade_limits => 1);
+        },
+        {error_code => 'AdvertiserNotEligibleForLimitUpgrade'},
+        'Error when advertiser not eligible for band upgrade'
+    );
+
+    delete $advertiser->{_p2p_advertiser_cached};
+    my $redis       = BOM::Config::Redis->redis_p2p_write;
+    my $json_string = "{\"target_max_daily_buy\":\"10000\",\"target_max_daily_sell\":\"10000\"}}";
+    $redis->hset('P2P::ADVERTISER_BAND_UPGRADE_PENDING', $info->{id}, $json_string);
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advertiser_update(upgrade_limits => 1);
+        },
+        {error_code => 'P2PLimitUpgradeFailed'},
+        'Error when invalid JSON data stored'
+    );
+
+    # prepare trade band data for medium and high
+    BOM::Test::Helper::P2P::populate_trade_band_db();
+
+    @emitted_events = ();
+    my $data = +{
+        target_max_daily_buy  => 10000,
+        target_max_daily_sell => 10000,
+        target_trade_band     => "high",
+        email_alert_required  => 1,
+        account_currency      => $advertiser->currency,
+    };
+
+    $redis->hset('P2P::ADVERTISER_BAND_UPGRADE_PENDING', $info->{id}, encode_json_utf8($data));
+    my $update = $advertiser->p2p_advertiser_update(upgrade_limits => 1);
+    delete $advertiser->{_p2p_advertiser_cached};
+    ok !exists $update->{upgradable_daily_limits}, 'limit upgrade was successful';
+    is $redis->hget('P2P::ADVERTISER_BAND_UPGRADE_PENDING', $info->{id}), undef, 'redis field deleted successfully';
+
+    cmp_deeply([$update->@{qw(daily_buy_limit daily_sell_limit)}], ["10000.00", "10000.00"], 'new buy and sell limit values reflected correctly');
+
+    cmp_deeply(
+        \@emitted_events,
+        [
+            ['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}],
+            ['p2p_adverts_updated',    {advertiser_id  => $update->{id}}],
+            [
+                'p2p_limit_changed',
+                {
+                    loginid           => $advertiser->loginid,
+                    advertiser_id     => $update->{id},
+                    new_sell_limit    => formatnumber('amount', $advertiser->currency, "10000"),
+                    new_buy_limit     => formatnumber('amount', $advertiser->currency, "10000"),
+                    account_currency  => $advertiser->currency,
+                    change            => 1,
+                    automatic_approve => 0,
+                }
+            ],
+        ],
+        'p2p_advertiser_updated, p2p_adverts_updated and p2p_limit_changed events emitted'
+    );
+
+    my $upgrade_done = decode_json_utf8($redis->hget('P2P::ADVERTISER_BAND_UPGRADE_COMPLETED', $info->{id}));
+
+    cmp_deeply($upgrade_done, superhashof($data), 'upgrade success data populated correctly');
 };
 
 done_testing;

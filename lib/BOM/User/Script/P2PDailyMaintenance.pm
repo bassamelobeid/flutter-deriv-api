@@ -21,19 +21,27 @@ use BOM::User::Utility;
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
 use Date::Utility;
-use List::Util      qw(uniq);
+use List::Util      qw(uniq sum);
 use JSON::MaybeUTF8 qw(:v1);
 use Brands;
-use POSIX qw(ceil);
+use POSIX                      qw(ceil strftime);
+use DataDog::DogStatsd::Helper qw(stats_timing);
+use Time::HiRes;
+use Format::Util::Numbers qw(formatnumber);
 
 use constant {
-    CRON_INTERVAL_DAYS      => 1,
-    AD_ARCHIVE_KEY          => 'P2P::AD_ARCHIVAL_DATES',
-    AD_ACTIVATION_KEY       => 'P2P::AD_ACTIVATION',
-    P2P_USERS_ONLINE_KEY    => 'P2P::USERS_ONLINE',
-    MAX_QUOTE_SECS          => 24 * 60 * 60,               # 1 day
-    P2P_ONLINE_USER_PRUNE   => 26 * 7 * 24 * 60 * 60,      # 26 weeks
-    DAILY_TOTALS_PRUNE_DAYS => 60,
+    CRON_INTERVAL_DAYS                    => 1,
+    AD_ARCHIVE_KEY                        => 'P2P::AD_ARCHIVAL_DATES',
+    AD_ACTIVATION_KEY                     => 'P2P::AD_ACTIVATION',
+    P2P_USERS_ONLINE_KEY                  => 'P2P::USERS_ONLINE',
+    MAX_QUOTE_SECS                        => 24 * 60 * 60,                               # 1 day
+    P2P_ONLINE_USER_PRUNE                 => 26 * 7 * 24 * 60 * 60,                      # 26 weeks
+    DAILY_TOTALS_PRUNE_DAYS               => 60,
+    P2P_STATS_REDIS_PREFIX                => 'P2P::ADVERTISER_STATS',
+    P2P_ADVERTISER_BAND_UPGRADE_PENDING   => 'P2P::ADVERTISER_BAND_UPGRADE_PENDING',
+    P2P_ADVERTISER_BAND_UPGRADE_COMPLETED => 'P2P::ADVERTISER_BAND_UPGRADE_COMPLETED',
+    P2P_ADVERTISER_MIN_JOINED_DAYS        => 30,
+    DD_METRIC                             => 'p2p.advertisers_for_band_upgrade.timing'
 };
 
 =head1 Name
@@ -302,6 +310,83 @@ sub run {
             $log->errorf('Error pruning daily totals %s: %s', $broker, $e);
         }
 
+        # 7. check if active P2P advertisers eligible for limit increase
+        try {
+            my $start_time = Time::HiRes::time;
+            my $data       = $db_replica->run(
+                fixup => sub {
+                    $_->selectall_arrayref('select * from p2p.advertisers_for_band_upgrade(?,NULL)', {Slice => {}}, P2P_ADVERTISER_MIN_JOINED_DAYS);
+
+                });
+            my $elapsed_ms = (Time::HiRes::time - $start_time) * 1000;
+            stats_timing(DD_METRIC, $elapsed_ms);
+
+            my %final_advertiser_limit;
+            for my $advertiser (@$data) {
+                # find total lifetime fraud for that advertiser
+                my $count =
+                    sum(map { $redis->zcard(join '::' => P2P_STATS_REDIS_PREFIX, $advertiser->{client_loginid}, $_) } qw{BUY_FRAUD SELL_FRAUD});
+                next if $count > ($advertiser->{max_allowed_fraud_cases} // 0);
+                my $id = $advertiser->{id};
+                next if $final_advertiser_limit{$id} and ($final_advertiser_limit{$id}->{target_total} >= $advertiser->{target_total});
+                $final_advertiser_limit{$id} = $advertiser;
+                $final_advertiser_limit{$id}->{fraud_count} = $count;
+
+            }
+
+            # complexity for these keys deletion are O(N) where N is the number of elements in the list, set, sorted set or hash
+            $redis->del(P2P_ADVERTISER_BAND_UPGRADE_PENDING);
+            for my $id (keys %final_advertiser_limit) {
+                my $target = $final_advertiser_limit{$id};
+                # if automatic upgrade, send tracking event, otherwise store in redis
+                if ($target->{automatic_approve}) {
+                    $db_write->run(
+                        fixup => sub {
+                            $_->do(
+                                'SELECT p2p.advertiser_update_v2(?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ?, NULL, NULL, NULL, NULL)',
+                                undef, $id, $target->{target_trade_band});
+
+                        }) if $target->{target_trade_band};
+
+                    # trigger customer.io email and mobile PN for automatically approved limit upgrade
+                    # currently only medium band fall under this category but this might change in future
+                    BOM::Platform::Event::Emitter::emit(
+                        p2p_limit_changed => {
+                            loginid           => $target->{client_loginid},
+                            advertiser_id     => $id,
+                            new_sell_limit    => formatnumber('amount', $target->{account_currency}, $target->{target_max_daily_sell}),
+                            new_buy_limit     => formatnumber('amount', $target->{account_currency}, $target->{target_max_daily_buy}),
+                            account_currency  => $target->{account_currency},
+                            change            => 1,
+                            automatic_approve => $target->{automatic_approve},
+                        });
+
+                } else {
+                    delete $target->@{qw(id automatic_approve max_allowed_fraud_cases max_allowed_dispute_rate target_total total_orders)};
+                    $target->@{qw(completion_rate dispute_rate)} =
+                        map { sprintf("%.3f", $_) } $target->@{qw(completion_rate dispute_rate)};
+                    $redis->hset(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $id, encode_json_utf8($target));
+
+                    # trigger customer.io mobile PN to notify user he/she is eligible for limit upgrade
+                    BOM::Platform::Event::Emitter::emit(
+                        p2p_limit_upgrade_available => {
+                            loginid       => $target->{client_loginid},
+                            advertiser_id => $id,
+                        });
+
+                }
+                # this event is to send updated advertiser info only to that specific advertiser
+                BOM::Platform::Event::Emitter::emit(
+                    p2p_advertiser_updated => {
+                        client_loginid => $target->{client_loginid},
+                        self_only      => 1,
+                    },
+                );
+            }
+        } catch ($e) {
+            $log->errorf('Error checking P2P advertisers eligibility for limit increase %s: %s', $broker, $e);
+        }
+
     }
 
     $redis->multi;
@@ -310,7 +395,7 @@ sub run {
     $redis->expire(AD_ARCHIVE_KEY, $archive_days * 24 * 60 * 60);
     $redis->exec;
 
-    # 7. delete very old user online activity records
+    # 8. delete very old user online activity records
     $redis->zremrangebyscore(P2P_USERS_ONLINE_KEY, '-Inf', time - P2P_ONLINE_USER_PRUNE);
 
     for my $advertiser_id (uniq @advertiser_ids) {
@@ -325,7 +410,7 @@ sub run {
     my $exchange         = Finance::Exchange->create_exchange('FOREX');
     my %all_currencies   = %BOM::Config::CurrencyConfig::ALL_CURRENCIES;
 
-    # 8. send internal email if any floating rate countries have exchange rates older than MAX_QUOTE_SECS
+    # 9. send internal email if any floating rate countries have exchange rates older than MAX_QUOTE_SECS
     my @alerts;
     for my $currency (keys %all_currencies) {
         my @float_countries = grep { $ad_config->{$_} and $ad_config->{$_}{float_ads} ne 'disabled' } $all_currencies{$currency}->{countries}->@*;
@@ -388,6 +473,52 @@ sub run {
                 message               => \@lines,
             }) or $log->warn('Failed to send outdated exchange rates alert email to p2p team');
 
+    }
+
+    # 10. send email to anti-fraud team for each successful P2P band upgrade that has flag (email_alert_required:1)
+    if (my %completed_band_upgrade = $redis->hgetall(P2P_ADVERTISER_BAND_UPGRADE_COMPLETED)->@*) {
+        my @intro = (
+            '<p>The following P2P advertiser(s) have upgraded their P2P Band limit in the last 24 hours:<br></p>',
+            '<p>Completed Orders, Completion Rate and Dispute Rate are statistics for the last one month.<br></p>',
+            '<table border=1 # cellpadding="3" style="border-collapse:collapse;"><tr>',
+            '<th>Advertiser ID</th><th>Loginid</th><th>Currency</th><th>Country</th><th>Old Band</th><th>New Band</th><th>Old Sell Limit</th><th>Old Buy Limit</th><th>New Sell Limit</th><th>New Buy Limit</th>',
+            '<th>Completed Orders</th><th>Completion Rate</th><th>Dispute Rate</th><th>Fraud Count</th><th>POA</th><th>Advertiser Tenure (Days)</th><th>Upgrade Time</th></tr>',
+        );
+        my @body;
+        for my $id (keys %completed_band_upgrade) {
+            try {
+                my $data = decode_json_utf8($completed_band_upgrade{$id});
+                my @keys =
+                    qw(client_loginid account_currency country old_trade_band target_trade_band old_sell_limit old_buy_limit target_max_daily_sell target_max_daily_buy
+                    completed_orders completion_rate dispute_rate fraud_count fully_authenticated days_since_joined);
+                push @body,
+                    (
+                    '<tr><td>&nbsp;&nbsp;' . $id . '&nbsp;&nbsp;</td>',
+                    (join '' => map { '<td>&nbsp;&nbsp;' . $data->{$_} . '</td>&nbsp;&nbsp;' } @keys),
+                    '<td>&nbsp;&nbsp;' . (strftime "%d-%m-%Y-%H:%M:%S", gmtime($data->{upgrade_date})) . ' GMT' . '&nbsp;&nbsp;</td></tr>',
+                    );
+            } catch ($e) {
+                $log->warnf(
+                    'Failed to send P2P Band Upgrade email for advertiser id: %s with data: %s at REDIS HASH KEY: %s. Error: %s',
+                    $id,
+                    $completed_band_upgrade{$id},
+                    P2P_ADVERTISER_BAND_UPGRADE_COMPLETED, $e
+                );
+            }
+
+        }
+        if (@body) {
+            push @body, '</table>';
+            push(@intro, @body);
+            send_email({
+                    from                  => 'x-backend@binary.com',
+                    to                    => $brand->emails(q{anti-fraud}),
+                    subject               => 'P2P Band Upgrade list',
+                    email_content_is_html => 1,
+                    message               => \@intro,
+                }) or $log->warn('Failed to send P2P Band Upgrade list to anti-fraud team');
+            $redis->del(P2P_ADVERTISER_BAND_UPGRADE_COMPLETED);
+        }
     }
 
     return 0;

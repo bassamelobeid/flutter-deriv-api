@@ -69,6 +69,7 @@ use BOM::Platform::Utility qw(error_map);
 use BOM::Platform::Token::API;
 use BOM::Platform::Token;
 use BOM::User::Onfido;
+use JSON::MaybeUTF8 qw(:v1);
 
 use Carp qw(croak confess);
 
@@ -2314,25 +2315,29 @@ use constant {
         sell => 'buy',
     },
 
-    P2P_ORDER_DISPUTED_AT             => 'P2P::ORDER::DISPUTED_AT',
-    P2P_ORDER_EXPIRES_AT              => 'P2P::ORDER::EXPIRES_AT',
-    P2P_ORDER_TIMEDOUT_AT             => 'P2P::ORDER::TIMEDOUT_AT',
-    P2P_ORDER_REVIEWABLE_START_AT     => 'P2P::ORDER::REVIEWABLE_START_AT',
-    P2P_ADVERTISER_BLOCK_ENDS_AT      => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
-    P2P_STATS_REDIS_PREFIX            => 'P2P::ADVERTISER_STATS',
-    P2P_STATS_TTL_IN_DAYS             => 120,                                   # days after which to prune redis stats
-    P2P_ARCHIVE_DATES_KEY             => 'P2P::AD_ARCHIVAL_DATES',
-    P2P_USERS_ONLINE_KEY              => 'P2P::USERS_ONLINE',
-    P2P_ONLINE_PERIOD                 => 90,
-    P2P_ORDER_LAST_SEEN_STATUS        => 'P2P::ORDER::LAST_SEEN_STATUS',
-    P2P_TOKEN_MIN_EXPIRY              => 2 * 60 * 60,                           # 2 hours. Sendbird token min expiry
-    P2P_VERIFICATION_REQUEST_INTERVAL => 60,                                    # min seconds between order verification requests
-    P2P_VERIFICATION_TOKEN_EXPIRY     => 10 * 60,                               # tokens expire after 10 min
-    P2P_VERIFICATION_MAX_ATTEMPTS     => 3,                                     # number of unsucsessful attempts before lockout
-    P2P_VERIFICATION_LOCKOUT_TTL      => 30 * 60,                               # 30 min lockout after too many unsucsessful attempts
-    P2P_VERIFICATION_ATTEMPT_KEY      => 'P2P::ORDER::VERIFICATION_ATTEMPT',    # sorted set to track verification attempts
-    P2P_VERIFICATION_HISTORY_KEY      => 'P2P::ORDER::VERIFICATION_HISTORY',    # list of verification events for backoffice
-    P2P_VERIFICATION_EVENT_KEY        => 'P2P::ORDER::VERIFICATION_EVENT',      # sorted set of verification events that occur in the future
+    P2P_ORDER_DISPUTED_AT               => 'P2P::ORDER::DISPUTED_AT',
+    P2P_ORDER_EXPIRES_AT                => 'P2P::ORDER::EXPIRES_AT',
+    P2P_ORDER_TIMEDOUT_AT               => 'P2P::ORDER::TIMEDOUT_AT',
+    P2P_ORDER_REVIEWABLE_START_AT       => 'P2P::ORDER::REVIEWABLE_START_AT',
+    P2P_ADVERTISER_BLOCK_ENDS_AT        => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
+    P2P_STATS_REDIS_PREFIX              => 'P2P::ADVERTISER_STATS',
+    P2P_STATS_TTL_IN_DAYS               => 120,                                   # days after which to prune redis stats
+    P2P_ARCHIVE_DATES_KEY               => 'P2P::AD_ARCHIVAL_DATES',
+    P2P_USERS_ONLINE_KEY                => 'P2P::USERS_ONLINE',
+    P2P_ONLINE_PERIOD                   => 90,
+    P2P_ORDER_LAST_SEEN_STATUS          => 'P2P::ORDER::LAST_SEEN_STATUS',
+    P2P_TOKEN_MIN_EXPIRY                => 2 * 60 * 60,                           # 2 hours. Sendbird token min expiry
+    P2P_VERIFICATION_REQUEST_INTERVAL   => 60,                                    # min seconds between order verification requests
+    P2P_VERIFICATION_TOKEN_EXPIRY       => 10 * 60,                               # tokens expire after 10 min
+    P2P_VERIFICATION_MAX_ATTEMPTS       => 3,                                     # number of unsucsessful attempts before lockout
+    P2P_VERIFICATION_LOCKOUT_TTL        => 30 * 60,                               # 30 min lockout after too many unsucsessful attempts
+    P2P_VERIFICATION_ATTEMPT_KEY        => 'P2P::ORDER::VERIFICATION_ATTEMPT',    # sorted set to track verification attempts
+    P2P_VERIFICATION_HISTORY_KEY        => 'P2P::ORDER::VERIFICATION_HISTORY',    # list of verification events for backoffice
+    P2P_VERIFICATION_EVENT_KEY          => 'P2P::ORDER::VERIFICATION_EVENT',      # sorted set of verification events that occur in the future
+    P2P_ADVERTISER_BAND_UPGRADE_PENDING =>
+        'P2P::ADVERTISER_BAND_UPGRADE_PENDING',    #if advertiser eligible for band upgrade, store the next available band limits and stats here
+    P2P_ADVERTISER_BAND_UPGRADE_COMPLETED =>
+        'P2P::ADVERTISER_BAND_UPGRADE_COMPLETED',    #if upgrade success, delete entry from ADVERTISER_BAND_UPGRADE_PENDING and store data here
 
     # Statuses here should match the DB function p2p.is_status_final.
     P2P_ORDER_STATUS => {
@@ -2547,21 +2552,41 @@ sub p2p_advertiser_update {
 
     die +{error_code => 'AdvertiserCannotListAds'} if $param{is_listed} and not $advertiser_info->{is_approved} and not $param{is_approved};
     $param{is_listed} = 0 if defined $param{is_approved} and not $param{is_approved};
+    my ($band, $max_daily_sell, $max_daily_buy, $email_alert_required, $target);
+    my $redis = BOM::Config::Redis->redis_p2p();
+    if ($param{upgrade_limits}) {
+        $target = $redis->hget(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $advertiser_info->{id});
+        die +{error_code => 'AdvertiserNotEligibleForLimitUpgrade'} unless $target;
+
+        try {
+            $target = decode_json_utf8($target);
+            ($band, $max_daily_sell, $max_daily_buy, $email_alert_required) =
+                $target->@{qw(target_trade_band target_max_daily_sell target_max_daily_buy email_alert_required)};
+            $param{trade_band} = lc($band);
+        } catch ($e) {
+            $log->warnf(
+                'Invalid JSON stored for advertiser id: %s with data: %s at REDIS HASH KEY: %s. Error: %s',
+                $advertiser_info->{id},
+                $target, P2P_ADVERTISER_BAND_UPGRADE_PENDING, $e
+            );
+            die +{error_code => 'P2PLimitUpgradeFailed'};
+        }
+    }
 
     # Return the current information of the advertiser if nothing changed
+
     return $advertiser_info
         unless grep { exists $advertiser_info->{$_} and $param{$_} ne $advertiser_info->{$_} } keys %param
-        or exists $param{show_name};
-
+        or exists $param{show_name}
+        or ($param{upgrade_limits} // 0);
     my $update = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.advertiser_update_v2(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, NULL, ?, NULL)',
+                'SELECT * FROM p2p.advertiser_update_v2(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, NULL, NULL, ?, NULL)',
                 undef,
                 $advertiser_info->{id},
-                @param{qw/is_approved is_listed name default_advert_description payment_info contact_info show_name/});
+                @param{qw/is_approved is_listed name default_advert_description payment_info contact_info trade_band show_name/});
         });
-
     BOM::Platform::Event::Emitter::emit(
         p2p_advertiser_updated => {
             client_loginid => $self->loginid,
@@ -2572,9 +2597,30 @@ sub p2p_advertiser_update {
         p2p_adverts_updated => {
             advertiser_id => $advertiser_info->{id},
         });
-
     $self->_p2p_convert_advertiser_limits($update);
-    return $self->_advertiser_details($update);
+    my $response = $self->_advertiser_details($update);
+
+    # double check if band upgrade was successfull
+    if ($param{trade_band}) {
+        $redis->hdel(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $advertiser_info->{id});
+        delete $response->{upgradable_daily_limits};
+        $target->@{qw(old_sell_limit old_buy_limit country upgrade_date)} =
+            ($advertiser_info->@{qw/daily_sell_limit daily_buy_limit/}, $self->residence, time);
+        $redis->hset(P2P_ADVERTISER_BAND_UPGRADE_COMPLETED, $advertiser_info->{id}, encode_json_utf8($target)) if $email_alert_required;
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_limit_changed => {
+                loginid           => $self->loginid,
+                advertiser_id     => $advertiser_info->{id},
+                new_sell_limit    => formatnumber('amount', $target->{account_currency}, $target->{target_max_daily_sell}),
+                new_buy_limit     => formatnumber('amount', $target->{account_currency}, $target->{target_max_daily_buy}),
+                account_currency  => $target->{account_currency},
+                change            => 1,
+                automatic_approve => 0,
+            });
+    }
+
+    return $response;
 }
 
 =head2 p2p_advertiser_relations
@@ -4804,7 +4850,6 @@ sub _advertiser_details {
 
     # only advertiser themself can see these fields
     if ($self->loginid eq $loginid) {
-
         $details->{payment_info}      = $advertiser->{payment_info} // '';
         $details->{contact_info}      = $advertiser->{contact_info} // '';
         $details->{chat_user_id}      = $advertiser->{chat_user_id};
@@ -4847,6 +4892,25 @@ sub _advertiser_details {
             for my $type ('fixed', 'float') {
                 my $count = scalar grep { $_->{rate_type} eq $type } @$ads;
                 $details->{'active_' . $type . '_ads'} = $count if $count > 0;
+            }
+        }
+
+        if ($advertiser->{is_approved} and not($details->{blocked_until})) {
+            my $redis = BOM::Config::Redis->redis_p2p();
+            if (my $target = $redis->hget(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $advertiser->{id})) {
+                try {
+                    $target = decode_json_utf8($target);
+                    my ($max_daily_sell, $max_daily_buy) = $target->@{qw(target_max_daily_sell target_max_daily_buy)};
+
+                    $details->{upgradable_daily_limits} = {
+                        max_daily_sell => $max_daily_sell,
+                        max_daily_buy  => $max_daily_buy,
+                    };
+
+                } catch ($e) {
+                    $log->warnf('Invalid JSON stored for advertiser id: %s with data: %s at REDIS HASH KEY: %s. Error: %s',
+                        $advertiser->{id}, $target, P2P_ADVERTISER_BAND_UPGRADE_PENDING, $e);
+                }
             }
         }
 
