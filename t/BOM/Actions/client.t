@@ -39,6 +39,9 @@ use WebService::Async::SmartyStreets::Address;
 use Encode                 qw(encode_utf8);
 use Locale::Codes::Country qw(country_code2code);
 use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8);
+use BOM::Test::Helper::P2P;
+
+BOM::Test::Helper::P2P::bypass_sendbird();
 my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
     email       => 'vrtc+test1@bin.com',
@@ -882,6 +885,60 @@ $ryu_mock->mock(
     });
 
 my $check_href = $check->{href};
+
+subtest 'test bulk client status update' => sub {
+    ok 1, 'test';
+    my ($result, $msg);
+    my $test_client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email       => 'test1232@binary.com',
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email          => $test_client3->email,
+        password       => "hello",
+        email_verified => 1,
+    )->add_client($test_client3);
+    $test_client3->place_of_birth('br');
+    $test_client3->binary_user_id($user->id);
+    $test_client3->account('USD');
+    $test_client3->save;
+    $test_client3->status->set('age_verification', 'system', 'manually set');
+    $test_client3->p2p_advertiser_create(name => 'bob');
+
+    is $test_client3->_p2p_advertiser_cached->{is_approved}, 1, 'p2p approval state is changed to 1';
+
+    my $handler = BOM::Event::Process->new(category => 'generic')->actions->{bulk_client_status_update};
+    $result = $handler->({
+            loginids   => [$test_client3->loginid],
+            properties => {
+                action     => "insert_data",
+                clerk      => "test.clerk",
+                file_name  => "CR.disabledlogins",
+                reason     => "Account closure",
+                req_params => {
+                    additional_info       => "",
+                    broker                => "CR",
+                    bulk_loginids         => "temp.csv",
+                    DCcode                => 1233,
+                    login_id              => "",
+                    p2p_approved          => "",
+                    status_op             => "add",
+                    untrusted_action      => "insert_data",
+                    untrusted_action_type => "disabledlogins",
+                    untrusted_reason      => "Account closure",
+                },
+                status_checked        => [],
+                status_code           => "disabled",
+                status_op             => "add",
+                untrusted_action_type => "disabledlogins",
+            }})->get;
+    delete $test_client3->{_p2p_advertiser_cached};
+    is $test_client3->_p2p_advertiser_cached->{is_approved}, 0, 'p2p approval state is changed to 0';
+
+    $msg = mailbox_search(subject => qr/Client update status report/);
+    ok $result, 'result processed';
+    ok $msg,    'email sent';
+};
 
 subtest "client_verification" => sub {
     my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');

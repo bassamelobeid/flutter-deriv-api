@@ -27,7 +27,7 @@ use Future::AsyncAwait;
 use Future::Utils qw(fmap0);
 use IO::Async::Loop;
 use JSON::MaybeUTF8        qw(decode_json_utf8 encode_json_utf8);
-use List::Util             qw(any all first uniq none min);
+use List::Util             qw(any all first uniq none min uniqstr);
 use Locale::Codes::Country qw(country_code2code);
 use Log::Any               qw($log);
 use POSIX                  qw(strftime);
@@ -3619,6 +3619,140 @@ sub derivx_account_deactivated {
             email      => $args->{email},
             first_name => $args->{first_name},
             account    => $args->{account}});
+}
+
+=head2 bulk_client_status_update
+
+updates the list of bulk login_ids with the status and reason provided in the
+properties argument 
+
+=over 4
+
+=item * C<loginids> - list of client loginids to which the status change is to be applied
+
+=item * C<properties> - properties to update the status of the client 
+
+=back
+
+=cut
+
+async sub bulk_client_status_update {
+    my ($args) = @_;
+    my $loginids = $args->{loginids};
+    my (@invalid_logins, @message, $status_op_summary, $summary, $p2p_approved);
+    my $properties = $args->{properties};
+    my ($operation, $client_status_type, $status_checked, $reason, $clerk, $action, $req_params, $status_code) =
+        @{$properties}{qw/status_op untrusted_action_type status_checked reason clerk action req_params status_code/};
+    my $add_regex = qr/^add|^sync/;
+    my @failed_update;
+
+    push(@message, ("<br>",     "bulk operation details:"));
+    push(@message, ("<br><br>", "action: " . $client_status_type));
+    push(@message, ("<br>",     "operation: " . $operation));
+    push(@message, ("<br>",     "clerk: " . $clerk . "<br><br>"));
+
+    LOGIN:
+    foreach my $loginid ($loginids->@*) {
+        $status_op_summary = "";
+        $summary           = "";
+        my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid}) };
+        try {
+            if (not $client) {
+                push @invalid_logins, "<tr><td>" . $loginid . "</td></tr>";
+                next LOGIN;
+            }
+            $p2p_approved = $client->_p2p_advertiser_cached->{is_approved} if $client->_p2p_advertiser_cached;
+            if ($client_status_type eq 'disabledlogins') {
+                if ($action eq 'insert_data' && $operation =~ $add_regex) {
+                    #should check portfolio
+                    if (@{$client->get_open_contracts}) {
+                        $summary =
+                            "<span class='error'>ERROR:</span>&nbsp;&nbsp;Account <b>$loginid</b> cannot be marked as disabled as account has open positions. Please check account portfolio.";
+                    } else {
+                        if (!$client->status->disabled) {
+                            $client->status->upsert('disabled', $clerk, $reason);
+                        } else {
+                            $summary = "<span class='error'>ERROR:</span>&nbsp;&nbsp;Account <b>$loginid</b> status is already marked.";
+                        }
+
+                    }
+                }
+
+            } elsif ($client_status_type eq 'duplicateaccount' && ($operation =~ $add_regex)) {
+                if ($client->status->$status_code) {
+                    $summary =
+                        "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$loginid $reason ($clerk)</b>&nbsp;&nbsp;has not been saved, cannot override existing status reason</b>";
+                    push @failed_update, "<tr><td>" . $summary . "</td></tr>";
+                    next LOGIN;
+                }
+                $client->status->upsert($status_code, $clerk, $reason);
+                my $m = BOM::Platform::Token::API->new;
+                $m->remove_by_loginid($client->loginid);
+
+            } else {
+                if ($operation =~ $add_regex) {
+                    $client->status->upsert($status_code, $clerk, $reason);
+                    if ($status_code eq 'allow_document_upload' && $reason eq 'Pending payout request') {
+                        BOM::User::Utility::notify_submission_of_documents_for_pending_payout($client);
+                    }
+                }
+            }
+
+            if ($client->_p2p_advertiser_cached) {
+                delete $client->{_p2p_advertiser_cached};
+                if ($p2p_approved ne $client->_p2p_advertiser_cached->{is_approved}) {
+                    BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client_loginid => $client->loginid});
+                }
+            }
+            $status_op_summary = BOM::User::Utility::status_op_processor(
+                $client,
+                {
+                    status_op             => $operation,
+                    status_checked        => $status_checked,
+                    untrusted_action_type => $client_status_type,
+                    reason                => $reason,
+                    clerk                 => $clerk
+                });
+        } catch {
+            $summary =
+                "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to update $loginid, status <b>$client_status_type</b>. Please try again.</div>";
+        }
+
+        if ($summary =~ /ERROR/) {
+            push @failed_update, "<tr><td>" . $summary . "</td></tr>";
+        }
+        if ($status_op_summary =~ /ERROR/) {
+            push @failed_update, "<tr><td>" . $status_op_summary . "</td></tr>";
+        }
+    }
+    if (@invalid_logins) {
+        push(@message, ("<br><h3>List of invalid logins: </h3>", "<table border='1'>"));
+        push(@message, @invalid_logins);
+        push(@message, "</table>");
+    }
+
+    if (@failed_update) {
+        push(@message, ("<br><h3>List of failed updates: </h3>", "<table border='1'>"));
+        push(@message, @failed_update);
+        push(@message, "</table>");
+    }
+
+    if (!@failed_update && !@invalid_logins) {
+        push(@message, "<br><h4> task completed no invalid logins were found or failures occured</h4>");
+    } else {
+        push(@message, "<br><h4> task completed some invalid logins were found or failures occured</h4>");
+    }
+    my $BRANDS     = BOM::Platform::Context::request()->brand();
+    my $from_email = $BRANDS->emails('no-reply');
+    my $to_email   = $BRANDS->emails('compliance');
+
+    send_email({
+        from                  => $from_email,
+        to                    => $to_email,
+        subject               => 'Client update status report',
+        message               => \@message,
+        email_content_is_html => 1,
+    });
 }
 
 =head2 payops_event_email
