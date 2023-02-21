@@ -150,14 +150,16 @@ sub create_client {
 
     my $vr = $user->create_client(
         %details,
-        broker_code => 'VRTC',
+        broker_code  => 'VRTC',
+        account_type => 'binary',
     );
     $vr->save;
     $log->infof('Virtual account: %s', $vr->loginid);
 
     my $cr = $user->create_client(
         %details,
-        broker_code => 'CR',
+        broker_code  => 'CR',
+        account_type => $args{account_type} // 'binary',
     );
     $cr->set_default_account($currency);
     $cr->save;

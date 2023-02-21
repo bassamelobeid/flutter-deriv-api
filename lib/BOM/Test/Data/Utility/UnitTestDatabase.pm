@@ -26,6 +26,20 @@ use BOM::Database::Model::FinancialMarketBet::Accumulator;
 use Dir::Self;
 use Cwd qw/abs_path/;
 
+use constant default_account_types => {
+    VRTC => 'binary',
+    VRW  => 'virtual',
+    CR   => 'binary',
+    CRW  => 'doughflow',
+    MF   => 'binary',
+    MFW  => 'doughflow',
+    MX   => 'binary',
+    MLT  => 'binary',
+    AFF  => 'affiliate',
+    CH   => 'binary',
+    VRCH => 'binary'
+};
+
 sub _db_name {
     return 'cr';
 }
@@ -152,6 +166,7 @@ sub create_client {
     my $class  = BOM::User::Client->get_class_by_broker_code($broker_code);
     my $client = $class->rnew;
 
+    $client_data->{account_type} //= default_account_types->{$broker_code} // 'binary';
     for (keys %$client_data) {
         $client->$_($client_data->{$_});
     }
