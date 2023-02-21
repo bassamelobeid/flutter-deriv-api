@@ -24,8 +24,9 @@ use DateTime::Format::Pg;
 use Date::Utility;
 
 use constant {
-    P2P_ADVERTISER_BLOCK_ENDS_AT => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
-    P2P_ONLINE_PERIOD            => 90,
+    P2P_ADVERTISER_BLOCK_ENDS_AT        => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
+    P2P_ONLINE_PERIOD                   => 90,
+    P2P_ADVERTISER_BAND_UPGRADE_PENDING => 'P2P::ADVERTISER_BAND_UPGRADE_PENDING',
 };
 
 my $cgi = CGI->new;
@@ -104,6 +105,10 @@ if (my $id = $input{update}) {
             die "Invalid advertiser ID\n" unless $update;
 
             my $redis = BOM::Config::Redis->redis_p2p_write();
+
+            # if user was eligible for a band upgrade before this change, will delete his field in redis
+            $redis->hdel(P2P_ADVERTISER_BAND_UPGRADE_PENDING, $id) if ($existing->{trade_band} // "") ne $input{trade_band};
+
             if (my $blocked_until = $update->{blocked_until}) {
                 my $blocked_du = Date::Utility->new($blocked_until);
                 if ($blocked_du->is_after(Date::Utility->new)) {
@@ -146,6 +151,7 @@ if (my $id = $input{update}) {
             });
 
         $output{message} = "Advertiser $id details saved.";
+
     } catch ($err) {
         $Data::Dumper::Terse = 1;
         $output{error} = 'Could not update P2P advertiser: ' . (ref($err) ? Dumper($err) : $err);
@@ -201,7 +207,6 @@ if ($output{advertiser}) {
     }
 
     $output{relations} = $client->_p2p_advertiser_relation_lists;
-
     $output{advertiser}{total_completion_rate} =
         $output{advertiser}{completion_rate} ? sprintf("%.1f", $output{advertiser}{completion_rate} * 100) : undef;
 

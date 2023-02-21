@@ -80,7 +80,64 @@
         <td>
             <input type="text" name="min_balance" value="[% item.action && item.min_balance %]" size=20 data-lpignore="true" />(optional)
         </td>
-    </tr>    
+    </tr>
+    <tr>
+        <td class="label">Min Joined Days</td>
+        <td>
+            <input type="text" name="min_joined_days" value="[% item.action && item.min_joined_days %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Max Dispute Rate</td>
+        <td>
+            <input type="text" name="max_allowed_dispute_rate" value="[% item.action && item.max_allowed_dispute_rate %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Min Completion Rate</td>
+        <td>
+            <input type="text" name="min_completion_rate" value="[% item.action && item.min_completion_rate %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Min Completed Order</td>
+        <td>
+            <input type="text" name="min_completed_orders" value="[% item.action && item.min_completed_orders %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Max Fraud Cases</td>
+        <td>
+            <input type="text" name="max_allowed_fraud_cases" value="[% item.action && item.max_allowed_fraud_cases %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Automatic Approve</td>
+        <td>
+            <select name="automatic_approve">
+                <option value="false" [% (action == 'new') || !item.automatic_approve %]>no</option>
+                <option value="true" [% (action != 'new') && item.automatic_approve && 'selected' %]>yes</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">POA Required</td>
+        <td>
+            <select name="poa_required">
+                <option value="false" [% (action == 'new') || !item.poa_required %]>no</option>
+                <option value="true" [% (action != 'new') && item.poa_required && 'selected' %]>yes</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Email Alert Required</td>
+        <td>
+            <select name="email_alert_required">
+                <option value="false" [% (action == 'new') || !item.email_alert_required %]>no</option>
+                <option value="true" [% (action != 'new') && item.email_alert_required && 'selected' %]>yes</option>
+            </select>
+        </td>
+    </tr>       
 </table>
 
 [% IF item.action %]

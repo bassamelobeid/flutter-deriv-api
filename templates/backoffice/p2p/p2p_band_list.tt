@@ -18,6 +18,14 @@
             <th scope="col">Min Order</th>
             <th scope="col">Max Order</th>
             <th scope="col">Min Balance</th>
+            <th scope="col">Min Joined Days</th>
+            <th scope="col">Max Dispute Rate</th>
+            <th scope="col">Min Completion Rate</th>
+            <th scope="col">Min Completed Order</th>
+            <th scope="col">Max Fraud Cases</th>
+            <th scope="col">Automatic Approve</th>
+            <th scope="col">POA Required</th>
+            <th scope="col">Email Alert Required</th>
             <th></th>
         </tr>
     </thead>
@@ -39,6 +47,14 @@
             <td>[% b.min_order_amount || '-' %]</td>
             <td>[% b.max_order_amount || '-' %]</td>
             <td>[% b.min_balance || '-' %]</td>
+            <td>[% b.min_joined_days || '-' %]</td>
+            <td>[% IF b.max_allowed_dispute_rate.size %][% b.max_allowed_dispute_rate %][% ELSE %][%  '-'  %][% END %]</td>
+            <td>[% b.min_completion_rate || '-' %]</td>
+            <td>[% b.min_completed_orders || '-' %]</td>
+            <td>[% IF b.max_allowed_fraud_cases.size %][% b.max_allowed_fraud_cases %][% ELSE %][%  '-'  %][% END %]</td>
+            <td>[% b.automatic_approve %]</td>
+            <td>[% b.poa_required %]</td>
+            <td>[% b.email_alert_required %]</td>
             <td>
                 <form style="margin-block-end:0;" action="[% request.url_for('backoffice/p2p_band_management.cgi', {broker => broker}) %]" method="post">
                     <input type="hidden" name="country" value="[% b.country %]"/>
@@ -49,6 +65,14 @@
                     <input type="hidden" name="min_order_amount" value="[% b.min_order_amount %]"/>
                     <input type="hidden" name="max_order_amount" value="[% b.max_order_amount %]"/>
                     <input type="hidden" name="min_balance" value="[% b.min_balance %]"/>
+                    <input type="hidden" name="min_joined_days" value="[% b.min_joined_days %]"/>
+                    <input type="hidden" name="max_allowed_dispute_rate" value="[% b.max_allowed_dispute_rate %]"/>
+                    <input type="hidden" name="min_completion_rate" value="[% b.min_completion_rate %]"/>
+                    <input type="hidden" name="min_completed_orders" value="[% b.min_completed_orders %]"/>
+                    <input type="hidden" name="max_allowed_fraud_cases" value="[% b.max_allowed_fraud_cases %]"/>
+                    <input type="hidden" name="automatic_approve" value="[% b.automatic_approve %]"/>
+                    <input type="hidden" name="poa_required" value="[% b.poa_required %]"/>
+                    <input type="hidden" name="email_alert_required" value="[% b.email_alert_required %]"/>
                     <select name="action" style="width:80;">
                         <option value="edit">Edit</option>
                         [% IF b.country != 'default' %]<option value="delete">Delete</option>[% END %]
