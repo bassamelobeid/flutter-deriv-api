@@ -23,6 +23,7 @@ use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Auth0;
+use Brands;
 
 =head1 NAME
 
@@ -142,10 +143,11 @@ sub save_settings {
                     $message .= join('',
                         '<tr class="error"><td class="status">&#10005;</td><td class="key-name">',
                         encode_entities($s), '</td><td class="value">',
-                        $settings->{$s},     '</td><td>Invalid value, could not set because <b>',
-                        encode_entities($e), '</b></td></tr>');
+                        $settings->{$s},     '</td><td>Invalid value, could not set because ',
+                        encode_entities($e), '</td></tr>');
                     $has_errors = 1;
                 }
+
             }
             $message .= '</tbody></table>';
 
@@ -492,6 +494,7 @@ sub get_settings_by_group {
                 payments.p2p.feature_level
                 payment_agents.initial_deposit_per_country
                 payments.payments_limit
+                payments.p2p.cross_border_ads_restricted_countries
             )]};
 
     my $settings;
@@ -592,6 +595,9 @@ sub get_extra_validation {
         'payments.transfer_between_accounts.minimum.dxtrade'         => \&_validate_transfer_trading_platform,
         'payments.p2p.limits.maximum_advert'                         => \&_validate_positive_number,
         'payments.p2p.limits.maximum_order'                          => \&_validate_positive_number,
+        'payments.p2p.restricted_countries'                          => \&_validate_countries,
+        'payments.p2p.cross_border_ads_restricted_countries'         => \&_validate_countries,
+        'payments.p2p.transaction_verification_countries'            => \&_validate_countries,
         'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.dxtrade'          => \&_validate_positive_number,
@@ -655,6 +661,23 @@ sub _validate_positive_number {
     die "Invalid numerical value $input_data"    unless Scalar::Util::looks_like_number($input_data);
     die "$input_data is less than or equal to 0" unless $input_data > 0;
     return;
+}
+
+=head2 _validate_countries
+
+Check if country code provided is valid.
+
+=cut
+
+sub _validate_countries {
+    my ($new_value, undef, $key) = @_;
+    my %counter;
+    die "duplicate values added to $key" if grep { ++$counter{$_} == 2 } $new_value->@*;
+    die "invalid format of country code added to $key. Make sure it is a 2 letter lower case country code"
+        if any { ($_ !~ m/^[a-z]{2}$/) } $new_value->@*;
+    my $countries = Brands->new->countries_instance->countries_list;
+    die "non-existent country code added to $key" if any { (!$countries->{$_}) } $new_value->@*;
+    return 1;
 }
 
 sub _validate_transfer_min_default {
