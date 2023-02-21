@@ -110,11 +110,8 @@ sub website_status {
                     ### to config
                     my $current_state = ws_redis_master()->get("NOTIFY::broadcast::state");
                     $rpc_response->{clients_country} //= '';
-                    $website_status->{$_} = $rpc_response->{$_}
-                        for grep { exists $rpc_response->{$_} }
-                        qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config p2p_config payment_agents mt5_status dxtrade_status|;
-
-                    $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
+                    $website_status = $rpc_response;
+                    $current_state  = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
                     $website_status->{site_status} = $current_state->{site_status}                 // 'up';
                     $website_status->{message}     = get_status_msg($c, $current_state->{message}) // '' if $current_state->{message};
