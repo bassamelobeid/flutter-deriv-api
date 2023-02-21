@@ -14,10 +14,17 @@
             "type" : "string"
         },
         "website_status" : {
-            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country", "p2p_config", "payment_agents"],
+            "required" : ["currencies_config", "api_call_limits", "supported_languages","broker_codes", "site_status", "terms_conditions_version", "clients_country", "p2p_config", "payment_agents"],
             "properties" : {
                 "supported_languages" : {
                     "description" : "Provides codes for languages supported",
+                    "type" : "array",
+                    "items" : {
+                        "type" : "string"
+                    }
+                },
+                "broker_codes" : {
+                    "description" : "Provides all broker codes",
                     "type" : "array",
                     "items" : {
                         "type" : "string"
