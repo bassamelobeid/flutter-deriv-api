@@ -404,6 +404,7 @@ sub create_virtual_account {
         brand_name        => $user_details->{brand},
         residence         => $user_details->{residence},
         source            => $user_details->{source},
+        account_type      => 'binary',
     };
 
     $details->{$_} = $user_details->{$_}
