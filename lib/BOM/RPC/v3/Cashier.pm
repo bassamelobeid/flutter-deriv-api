@@ -1591,7 +1591,7 @@ rpc transfer_between_accounts => sub {
             loginid      => $binary_login,
             balance      => $binary_client->default_account->balance,
             currency     => $binary_client->default_account->currency_code,
-            account_type => $binary_client->account_type,
+            account_type => $binary_client->get_account_type->category->name,
             demo_account => $binary_client->is_virtual,
             };
 

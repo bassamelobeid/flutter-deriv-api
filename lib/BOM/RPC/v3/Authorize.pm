@@ -22,9 +22,8 @@ use LandingCompany::Registry;
 sub _get_upgradeable_landing_companies {
     my ($client) = @_;
 
-    return []
-        unless $client->account_type eq
-        'binary';    # this field only for legacy accounts in future we'll use separate API call for returning this information
+    # this field only for legacy accounts in future we'll use separate API call for returning this information
+    return [] unless $client->get_account_type->name eq 'binary';
 
     # List to store upgradeable companies
     my @upgradeable_landing_companies;
