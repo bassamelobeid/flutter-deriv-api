@@ -132,6 +132,10 @@ subtest 'identify_vetification.yml integrity check' => sub {
                 selfish      => 0,
                 display_name => 'Derivative Wealth',
             },
+            metamap => {
+                selfish      => 0,
+                display_name => 'Metamap',
+            },
             data_zoo => {
                 selfish      => 1,
                 display_name => 'Data Zoo',
