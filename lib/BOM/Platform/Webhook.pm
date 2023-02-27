@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use BOM::Platform::Webhook::Acquired;
 use BOM::Platform::Webhook::ISignThis;
+use BOM::Platform::Webhook::IDV;
 use Log::Any qw($log);
 
 use parent qw(Mojolicious);
@@ -33,6 +34,7 @@ sub startup {
     my $routes = {
         '/acquired'  => 'acquired#collect',
         '/isignthis' => 'i_sign_this#collect',
+        '/idv'       => 'i_d_v#collect',
     };
 
     for (keys $routes->%*) {
