@@ -37,10 +37,12 @@ subtest 'Get Filters data' => sub {
                 aadhaar
                 epic
                 pan
+                curp
+                dni
                 /
         },
-        countries => +{map { ($_ => Locale::Country::code2country($_)) } qw/br gh ke ng ug za zw in/},
-        providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) } qw/zaig smile_identity derivative_wealth data_zoo/},
+        countries => +{map { ($_ => Locale::Country::code2country($_)) } qw/br gh ke ng ug za zw in ar mx/},
+        providers => +{map { ($_ => $idv_config->{providers}->{$_}->{display_name}) } qw/zaig smile_identity derivative_wealth data_zoo metamap/},
         statuses  => +{map { ($_ => $idv_config->{statuses}->{$_}) } qw/pending failed refuted verified/},
         messages  => $idv_config->{messages},
         },
