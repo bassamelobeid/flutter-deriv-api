@@ -1010,6 +1010,7 @@ subtest "client_verification" => sub {
             'Expected DD histogram sent';
         cmp_deeply + {@metrics},
             +{
+            'onfido.api.hit'                                => undef,
             'event.onfido.client_verification.dispatch'     => undef,
             'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
             'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
@@ -1062,6 +1063,7 @@ subtest "client_verification" => sub {
             })->get;
         cmp_deeply + {@metrics},
             +{
+            'onfido.api.hit'                                => undef,
             'event.onfido.client_verification.dispatch'     => undef,
             'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:consider', 'result:dob_not_reported']},
             'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:consider', 'result:dob_not_reported']},
@@ -1097,6 +1099,7 @@ subtest "client_verification" => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
+                'onfido.api.hit'                                => undef,
                 'event.onfido.client_verification.dispatch'     => undef,
                 'event.onfido.client_verification.not_verified' =>
                     {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
@@ -1120,6 +1123,7 @@ subtest "client_verification" => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
+                'onfido.api.hit'                                => undef,
                 'event.onfido.client_verification.dispatch'     => undef,
                 'event.onfido.client_verification.not_verified' =>
                     {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
@@ -1166,6 +1170,7 @@ subtest "Uninitialized date of birth" => sub {
             })->get;
         cmp_deeply + {@metrics},
             +{
+            'onfido.api.hit'                                => undef,
             'event.onfido.client_verification.dispatch'     => undef,
             'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},
             'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},
@@ -1259,6 +1264,7 @@ subtest "time from ready to verified" => sub {
 
         cmp_deeply + {@metrics},
             +{
+            'onfido.api.hit'                                => undef,
             'event.onfido.client_verification.dispatch'     => undef,
             'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
             'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
@@ -1347,6 +1353,7 @@ subtest "document upload request context" => sub {
 
         cmp_deeply + {@metrics},
             +{
+            'onfido.api.hit'                                => undef,
             'event.onfido.client_verification.dispatch'     => undef,
             'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
             'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
@@ -1373,6 +1380,7 @@ subtest "document upload request context" => sub {
 
         cmp_deeply + {@metrics},
             +{
+            'onfido.api.hit'                                => undef,
             'event.onfido.client_verification.dispatch'     => undef,
             'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
             'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
@@ -2717,6 +2725,7 @@ subtest 'onfido resubmission' => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
+                'onfido.api.hit'                                => undef,
                 'event.onfido.client_verification.dispatch'     => undef,
                 'event.onfido.client_verification.not_verified' =>
                     {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_not_reported']},
@@ -4091,6 +4100,7 @@ subtest 'Onfido DOB checks' => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
+                'onfido.api.hit'                                     => undef,
                 'event.onfido.client_verification.dispatch'          => undef,
                 'event.onfido.client_verification.not_verified'      => {tags => ['check:clear', 'country:COL', 'report:consider']},
                 'event.onfido.client_verification.underage_detected' => {tags => ['check:clear', 'country:COL', 'report:consider']},
@@ -4162,6 +4172,7 @@ subtest 'Onfido DOB checks' => sub {
                     })->get;
                 cmp_deeply + {@metrics},
                     +{
+                    'onfido.api.hit'                                     => undef,
                     'event.onfido.client_verification.dispatch'          => undef,
                     'event.onfido.client_verification.not_verified'      => {tags => ['check:clear', 'country:COL', 'report:consider']},
                     'event.onfido.client_verification.underage_detected' => {tags => ['check:clear', 'country:COL', 'report:consider']},
@@ -4218,6 +4229,7 @@ subtest 'Onfido DOB checks' => sub {
                     })->get;
                 cmp_deeply + {@metrics},
                     +{
+                    'onfido.api.hit'                                     => undef,
                     'event.onfido.client_verification.dispatch'          => undef,
                     'event.onfido.client_verification.not_verified'      => {tags => ['check:clear', 'country:COL', 'report:consider']},
                     'event.onfido.client_verification.underage_detected' => {tags => ['check:clear', 'country:COL', 'report:consider']},
@@ -4273,6 +4285,7 @@ subtest 'Onfido DOB checks' => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
+                'onfido.api.hit'                                     => undef,
                 'event.onfido.client_verification.dispatch'          => undef,
                 'event.onfido.client_verification.not_verified'      => {tags => ['check:clear', 'country:COL', 'report:rejected']},
                 'event.onfido.client_verification.underage_detected' => {tags => ['check:clear', 'country:COL', 'report:rejected']},
@@ -4390,6 +4403,7 @@ subtest 'Onfido DOB checks' => sub {
                     })->get;
                 cmp_deeply + {@metrics},
                     +{
+                    'onfido.api.hit'                                     => undef,
                     'event.onfido.client_verification.dispatch'          => undef,
                     'event.onfido.client_verification.not_verified'      => {tags => ['check:clear', 'country:COL', 'report:rejected']},
                     'event.onfido.client_verification.underage_detected' => {tags => ['check:clear', 'country:COL', 'report:rejected']},
@@ -4448,6 +4462,7 @@ subtest 'Onfido DOB checks' => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
+                'onfido.api.hit'                            => undef,
                 'event.onfido.client_verification.dispatch' => undef,
                 'event.onfido.client_verification.result'   => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:age_verified']},
                 'event.onfido.client_verification.success'  => undef,
@@ -4506,6 +4521,7 @@ subtest 'Onfido DOB checks' => sub {
 
                 cmp_deeply + {@metrics},
                     +{
+                    'onfido.api.hit'                                     => undef,
                     'event.onfido.client_verification.dispatch'          => undef,
                     'event.onfido.client_verification.not_verified'      => {tags => ['check:clear', 'country:COL', 'report:rejected']},
                     'event.onfido.client_verification.underage_detected' => {tags => ['check:clear', 'country:COL', 'report:rejected']},
@@ -4560,6 +4576,7 @@ subtest 'Onfido DOB checks' => sub {
                 })->get;
             cmp_deeply + {@metrics},
                 +{
+                'onfido.api.hit'                                => undef,
                 'event.onfido.client_verification.dispatch'     => undef,
                 'event.onfido.client_verification.not_verified' => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},
                 'event.onfido.client_verification.result'       => {tags => ['check:clear', 'country:COL', 'report:clear', 'result:dob_mismatch']},

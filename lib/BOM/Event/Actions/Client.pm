@@ -697,6 +697,8 @@ async sub client_verification {
             check_id => $check_id,
         );
 
+        DataDog::DogStatsd::Helper::stats_inc('onfido.api.hit');
+
         my $applicant_id = $check->applicant_id;
         my $result       = $check->result;
 
@@ -1381,6 +1383,7 @@ async sub sync_onfido_details {
         $client_details_onfido->{applicant_id} = $applicant_id;
 
         my $response = await _onfido()->applicant_update(%$client_details_onfido);
+        DataDog::DogStatsd::Helper::stats_inc('onfido.api.hit');
 
         return $response;
 
@@ -2622,6 +2625,7 @@ async sub check_or_store_onfido_applicant {
     # fetch and store the new applicantid for the user
     my $onfido    = _onfido();
     my $applicant = await $onfido->applicant_get(applicant_id => $applicant_id);
+    DataDog::DogStatsd::Helper::stats_inc('onfido.api.hit');
 
     BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
 
