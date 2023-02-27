@@ -2,7 +2,7 @@
     <form id='generateDCC' action="[% request.url_for('backoffice/f_makeclientdcc.cgi') | none %]" method='get' class='bo_ajax_form'>
         <input type='hidden' name='l' value='EN'>
         <input type='hidden' name='transtype' value='Edit affiliates token'>
-        <label>Login ID:</label><input type='text' name='clientloginid' placeholder='required' value='[% loginid %]' data-lpignore='true' />
+        <label>Login ID:</label><input type='text' name='client_loginid' placeholder='required' value='[% loginid %]' data-lpignore='true' />
         <br><br><input type='submit' class="btn btn--primary" value='Make Dual Control Code (by [% clerk %] )'>
     </form>
 [% END %]

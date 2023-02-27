@@ -25,32 +25,31 @@ my $title = 'Make dual control code';
 my $now   = Date::Utility->new;
 my $input = request()->params;
 
-unless ($input->{'transtype'} =~ /^UPDATECLIENT/) {
+unless ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token/) {
     code_exit_BO('please select a valid transaction type to update client details', $title);
 }
 
-if ($input->{'transtype'} eq "UPDATECLIENTDETAILS" && not($input->{clientloginid})) {
+if ($input->{'transtype'} eq "UPDATECLIENTDETAILS" && not($input->{client_loginid})) {
     code_exit_BO('Please provide client loginid.', $title);
 } elsif ($input->{'transtype'} eq "UPDATECLIENT_DETAILS_BULK" && not($input->{'bulk_clientloginids'})) {
     code_exit_BO('ERROR: invalid file location or empty file!', $title);
 }
 my $batch_file = ref $input->{bulk_clientloginids} eq 'ARRAY' ? trim($input->{bulk_clientloginids}->[0]) : trim($input->{bulk_clientloginids});
 my ($file, $csv, $lines);
-if ($input->{'transtype'} eq "UPDATECLIENTDETAILS") {
-    my $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'backoffice_replica'}) };
+if ($input->{'transtype'} =~ /^UPDATECLIENTDETAILS|Edit affiliates token/) {
+    $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'client_loginid'}), db_operation => 'backoffice_replica'}) };
     code_exit_BO("ERROR: " . encode_entities($input->{'client_loginid'}) . " does not exist! Perhaps you made a typo?", $title) if not $client;
-    my $client_email = $client->email;
+    $client_email = $client->email;
     $input->{'reminder'} = defang($input->{'reminder'});
 
-    if (length $input->{'reminder'} < 4) {
-        code_exit_BO('ERROR: your comment/reminder field is too short! (need 4 or more chars).', $title);
+    if ($input->{'transtype'} ne "Edit affiliates token") {
+        if     (length $input->{'reminder'} < 4) { code_exit_BO('ERROR: your comment/reminder field is too short! (need 4 or more chars).', $title); }
+        unless ($input->{client_email}) {
+            code_exit_BO('Please provide email.', $title);
+        }
+        $client_email = lc $input->{client_email};
     }
-
-    unless ($input->{clientemail}) {
-        code_exit_BO('Please provide email.', $title);
-    }
-    $client_email = lc $input->{clientemail};
-    $code         = BOM::DualControl->new({
+    $code = BOM::DualControl->new({
             staff           => $clerk,
             transactiontype => $input->{'transtype'}})->client_control_code($client_email, $client->binary_user_id);
 
