@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use Test::BOM::RPC::QueueClient;
 use Test::Mojo;
+use Test::Deep;
 use HTTP::Response;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use constant ONFIDO_APPLICANT_SDK_TOKEN_KEY_PREFIX => 'ONFIDO::SDK::TOKEN::';
@@ -109,7 +110,16 @@ subtest 'onfido dos websocket api' => sub {
     my $redis       = BOM::Config::Redis::redis_replicated_write();
     my $counter     = 0;
     my $onfido_mock = Test::MockModule->new('WebService::Async::Onfido');
+    my $dog_mock    = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my @metrics;
+    $dog_mock->mock(
+        'stats_inc',
+        sub {
+            push @metrics, @_;
+            push @metrics, 1 if scalar @metrics % 2 != 0;
 
+            return 1;
+        });
     $onfido_mock->mock(
         'sdk_token',
         sub {
@@ -146,6 +156,14 @@ subtest 'onfido dos websocket api' => sub {
             token => $token,
             args  => $args
         });
+
+    cmp_deeply + {@metrics},
+        +{
+        'bom_rpc.v_3.call.count' => {tags => ['rpc:service_token', 'stream:general']},
+        'onfido.api.hit'         => 1,
+        },
+        'Expected dd metrics';
+
     $res = $c->tcall(
         'service_token',
         {

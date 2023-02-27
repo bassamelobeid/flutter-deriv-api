@@ -215,6 +215,7 @@ sub _get_onfido_applicant {
         });
     my $applicant_id = $applicant_data->{id};
 
+    DataDog::DogStatsd::Helper::stats_inc('onfido.api.hit');
     if ($applicant_id) {
         return $onfido->applicant_get(applicant_id => $applicant_id);
     }
