@@ -24,9 +24,10 @@ use Log::Any        qw( $log );
 use Scalar::Util    qw( blessed );
 use Syntax::Keyword::Try;
 use Time::HiRes;
-use MIME::Base64 qw(decode_base64);
-use Digest::MD5  qw(md5_hex);
-use List::Util   qw(first);
+use MIME::Base64  qw(decode_base64);
+use Digest::MD5   qw(md5_hex);
+use List::Util    qw(first);
+use JSON::MaybeXS qw(decode_json encode_json);
 
 use BOM::Config::Services;
 use BOM::Event::Services;
@@ -679,6 +680,89 @@ sub _get_provider {
         provider => $idv_config->{provider});
 
     return $idv_config->{provider};
+}
+
+=head2 idv_webhook_relay
+
+Relay the IDV request from the webhook to our idv microservice
+
+=over 4
+
+=item * C<webhook_response> - the response from the webhook
+
+=back
+
+Returns an array includes (status, request + response, status message).
+
+=cut
+
+async sub idv_webhook_relay {
+    my $args = shift;
+
+    my $config = BOM::Config::Services->config('identity_verification');
+
+    my $api_base_url = sprintf('http://%s:%s', $config->{host}, $config->{port});
+
+    my ($response, $decoded_response, $login_id, $status);
+
+    my $status_message = [];
+
+    my $url = "$api_base_url/v1/idv/webhook";
+
+    try {
+        # Schedule the next HTTP POST request to be invoked as soon as the current round of IO operations is complete.
+        await $loop->later;
+
+        $response =
+            (await _http()->POST($url, encode_json($args->{data}->{json}), (content_type => 'application/json', headers => $args->{headers})))
+            ->content;
+        $decoded_response = eval { decode_json_utf8 $response }
+            // {};    # further json encoding of this hashref should not convert to utf8 again, use `json_encode_text` instead
+
+        $status         = $decoded_response->{status};
+        $status_message = $decoded_response->{messages};
+        $login_id       = $decoded_response->{req_echo}->{profile}->{id};
+
+        my $verify_process_response = await verify_process({
+            loginid       => $login_id,
+            status        => $status,
+            response_hash => $decoded_response,
+            message       => $status_message,
+        });
+
+    } catch ($e) {
+        if (blessed($e) and $e->isa('Future::Exception')) {
+            my ($payload) = $e->details;
+            $response = $payload->content;
+
+            $decoded_response = eval { decode_json_utf8 $response } // {};
+
+            $status = 'failed';
+
+            $status_message = $log->errorf(
+                "Identity Verification Microservice responded an error to our request for passing the webhook response with code: %s, message: %s - %s",
+                $decoded_response->{code} // 'UNKNOWN',
+                $e->message,
+                $decoded_response->{error} // 'UNKNOWN'
+            );
+        } elsif ($e =~ /\bconnection refused\b/i) {
+
+            # Update the status to failed as for it to not remain in perpetual 'pending' state
+            $status         = 'failed';
+            $status_message = "CONNECTION_REFUSED";
+
+        } else {
+            $log->errorf('Unhandled IDV exception: %s', $e);
+        }
+    }
+
+    unless ($status) {
+        $status         = 'failed';
+        $status_message = 'UNAVAILABLE_MICROSERVICE';
+    }
+
+    return ($status, $decoded_response, $status_message);
+
 }
 
 =head2 _upload_photo

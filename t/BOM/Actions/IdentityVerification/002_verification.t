@@ -68,6 +68,8 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $user->add_client($client);
 
 my @requests;
+my @urls;
+my @options;
 my ($resp, $verification_status, $personal_info_status, $personal_info, $args) = undef;
 my $updates = 0;
 
@@ -84,7 +86,10 @@ $mock_idv_model->redefine(
 my $mock_http = Test::MockModule->new('Net::Async::HTTP');
 $mock_http->mock(
     POST => sub {
-        push @requests, $_[2];    # request body
+        shift;
+        push @urls,     shift;    # request url
+        push @requests, shift;    # request body
+        push @options,  +{@_};    # the rest of the params are the options
 
         return $resp->() if ref $resp eq 'CODE';
         return $resp;
@@ -1823,6 +1828,51 @@ subtest 'testing unexpected error' => sub {
 
     $log->contains_ok(qr/Unhandled IDV exception: UNEXPECTED ERROR/, "good message was logged");
 
+};
+
+subtest 'unit test - idv_webhook_relay' => sub {
+    my $idv_event_handler = BOM::Event::Process->new(category => 'generic')->actions->{idv_webhook_received};
+
+    my $email = 'test_webhook_requested@binary.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => "pwd123",
+        email_verified => 1,
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $client->user($user);
+    $client->binary_user_id($user->id);
+    $user->add_client($client);
+    $client->save;
+
+    @requests = ();
+    @options  = ();
+    @urls     = ();
+
+    my $data = BOM::Event::Actions::Client::IdentityVerification::idv_webhook_relay({
+            data => {
+                json => {
+                    test => 1,
+                }
+            },
+            headers => {'x-request-id' => '1234'}})->get;
+
+    cmp_bag([@urls],     ['http://dummy:8080/v1/idv/webhook'], 'Expected URL returned');
+    cmp_bag([@requests], ['{"test":1}'],                       'Expected request body returned');
+    cmp_bag(
+        [@options],
+        [{
+                'content_type' => 'application/json',
+                'headers'      => {'x-request-id' => '1234'}}
+        ],
+        'Expected request body returned'
+    );
 };
 
 subtest 'testing _detect_mime_type' => sub {
