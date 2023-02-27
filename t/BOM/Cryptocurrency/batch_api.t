@@ -74,8 +74,8 @@ subtest 'BOM::Cryptocurrency::BatchAPI' => sub {
             },
         },
     ];
-    my $mock_api = Test::MockModule->new('BOM::CTC::API::Batch');
-    $mock_api->mock(process => sub { return {responses => $batch_response}; });
+    my $mock_api = Test::MockModule->new('BOM::Platform::CryptoCashier::InternalAPI');
+    $mock_api->mock(process_batch => sub { return {responses => $batch_response}; });
 
     my $received_response = $batch->process();
     is_deeply $received_response, $batch_response, 'Invoking execute() returns the correct response.';
@@ -111,84 +111,6 @@ subtest 'BOM::Cryptocurrency::BatchAPI' => sub {
     is_deeply $single_body, $expected_bodies->{$id_2}, 'Returns the correct body for single id (2).';
 
     $mock_api->unmock_all();
-};
-
-subtest 'use crypto API' => sub {
-
-    my $mock_ctc        = Test::MockModule->new('BOM::CTC::API::Batch');
-    my $mock_crypto_api = Test::MockModule->new('BOM::Platform::CryptoCashier::InternalAPI');
-    my $mock_app_config = Test::MockModule->new('App::Config::Chronicle');
-
-    my $batch          = BOM::Cryptocurrency::BatchAPI->new();
-    my $id             = $batch->add_request(action => 'address/validate');
-    my $batch_response = [{
-            id     => $id,
-            status => 1,
-            body   => {
-                is_success => 1,
-                message    => 'Operation was successful',
-            },
-        },
-    ];
-
-    my $ctc_process_calls = 0;
-    $mock_ctc->mock(
-        process => sub {
-            $ctc_process_calls++;
-            return {responses => $batch_response};
-        },
-    );
-
-    my $process_batch_calls = 0;
-    $mock_crypto_api->mock(
-        process_batch => sub {
-            $process_batch_calls++;
-            return {responses => $batch_response};
-        },
-    );
-
-    my $config_key;
-    $mock_app_config->mock(
-        get => sub {
-            (undef, $config_key) = @_;
-            return 0;
-        },
-    );
-
-    $batch->process;
-
-    is $ctc_process_calls,   1,                                      'Call the ctc function dirctly';
-    is $process_batch_calls, 0,                                      'No api call when the config value is 0';
-    is $config_key,          'system.backoffice.crypto_cashier_api', 'Correct config key';
-
-    my $batch_2 = BOM::Cryptocurrency::BatchAPI->new();
-    $id             = $batch_2->add_request(action => 'address/validate');
-    $batch_response = [{
-            id     => $id,
-            status => 1,
-            body   => {
-                is_success => 1,
-                message    => 'Operation was successful',
-            },
-        },
-    ];
-
-    $mock_app_config->mock(
-        get => sub {
-            (undef, $config_key) = @_;
-            return 1;
-        },
-    );
-
-    $batch_2->process;
-
-    is $ctc_process_calls,   1,                                      'No call for the ctc function';
-    is $process_batch_calls, 1,                                      'call the api when the config value is 1';
-    is $config_key,          'system.backoffice.crypto_cashier_api', 'Correct config key';
-
-    $mock_app_config->unmock_all;
-    $mock_ctc->unmock_all;
-    $mock_crypto_api->unmock_all;
 };
 
 done_testing;
