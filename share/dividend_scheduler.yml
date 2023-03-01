@@ -13,43 +13,57 @@ symbols:
     - HK50
     - AAL
     - AAPL
+    - ABNB
     - ADS
+    - AGG
     - AIG
     - AIR
     - AIRF
-    - ABNB
-    - AMZN
     - AMD
+    - AMZN
+    - ARKK
     - BA
     - BABA
     - BAC
     - BAY
+    - BIIB
     - BMW
     - BOSS
-    - BIIB
     - C
-    - CRM
     - CONG
+    - CRM
     - CSCO
     - DAL
     - DBK
+    - DIA
     - DIS
-    - DAX_30
     - EBAY
+    - EEM
+    - EFA
+    - ERX
     - FB
     - FDX
     - FOX
+    - GDX
+    - GLD
     - GM
     - GOOG
     - GS
-    - HPQ
     - HD
+    - HPQ
+    - HYG
     - IBM
+    - IEMG
+    - IJR
     - INTC
+    - IVV
+    - IVW
+    - IWM
     - JNJ
     - JPM
     - KO
     - LHAG
+    - LQD
     - MA
     - MCD
     - MRNA
@@ -65,11 +79,27 @@ symbols:
     - PSHG
     - PUMG
     - PYPL
+    - QID
+    - SDS
+    - SLV
     - SONY
+    - SPXS
+    - SPY
+    - TBT
     - TEVA
+    - TQQQ
     - TSLA
     - TWTR
     - UBER
+    - UNG
     - V
+    - VEA
+    - VNQ
+    - VOO
+    - VTI
+    - VWO
     - WMT
-    - ZM
+    - XLE
+    - XLF
+    - XLK
+    - ZM    
