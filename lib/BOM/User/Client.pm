@@ -93,6 +93,8 @@ use constant {
 
     SR_UNWELCOME_REASON => 'Social responsibility thresholds breached - Pending financial assessment',
 
+    IMMUTABLE_FIELDS_AGE_VERIFICATION => [sort qw/first_name last_name date_of_birth/],
+
     # Redis key for SR keys expire
     SR_30_DAYS_EXP => 86400 * 30,
 
@@ -2209,14 +2211,24 @@ sub immutable_fields {
         }
     }
 
+    my $return;
+
+    #Added first name, last name and DOB to immutable if client is verifed|Authenticated
+    if ($self->status->age_verification) {
+        push(@immutable, IMMUTABLE_FIELDS_AGE_VERIFICATION->@*);
+        $return = 1;
+    }
+
     #Added address properties to immutable if client is verifed|Authenticated
     if ($self->get_poi_status() =~ qr/verified|expired/) {
         if ($self->get_poi_status() eq "verified") {
             #if verifed add address feilds in immutable fields
             push(@immutable, ADDRESS_FIELDS_IMMUTABLE_AFTER_AUTH->@*);
         }
-        return @immutable;
+        $return = 1;
     }
+
+    return uniq(@immutable) if $return;
 
     # the remaining part is for un-authenticated clients only
 

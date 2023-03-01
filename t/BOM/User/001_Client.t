@@ -553,7 +553,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
 
         my @empty_fields;
         for my $field (
-            qw/account_opening_reason citizen first_name last_name place_of_birth
+            qw/account_opening_reason citizen place_of_birth
             salutation secret_answer secret_question tax_residence tax_identification_number/
             )
         {
@@ -589,6 +589,9 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         my @poi_name_mismatch_fields = qw(first_name last_name);
         my @poi_dob_mismatch_fields  = qw(date_of_birth);
 
+        $client_mlt->status->clear_age_verification;
+        $client_mlt->status->_clear_all;
+
         for my $field (@all_immutables) {
             push @excluded_fields, $field;
 
@@ -622,12 +625,16 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
             "Can update date_of_birth on dob mismatch";
         $client_cr->status->clear_poi_dob_mismatch;
 
-        $test_poi_status->{svg} = 'expired';
-        cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields remain unchanged";
-
         $client_cr->status->setnx('poi_name_mismatch', 'test', 'test');
-        cmp_bag [uniq($client_cr->immutable_fields)], [array_minus(@all_immutables, @poi_name_mismatch_fields)],
-            "Can update first_name and last_name on name mismatch";
+        $client_cr->status->setnx('age_verification',  'test', 'test');
+
+        cmp_bag [$client_cr->immutable_fields], \@all_immutables_with_address,
+            "Cannot update first_name and last_name on name mismatch case if already age verified";
+        $client_cr->status->clear_poi_name_mismatch;
+        $client_cr->status->_clear_all;
+        $test_poi_status->{svg} = 'expired';
+
+        cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields remain unchanged even under name mismatch";
 
         # basically, the lock has more weight
         subtest 'personal_detail_locked and poi_name_mismatch' => sub {
@@ -637,6 +644,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
 
         $client_cr->status->clear_personal_details_locked;
         $client_cr->status->clear_poi_name_mismatch;
+        $client_cr->status->clear_age_verification;
         $test_poi_status->{svg} = 'none';
         cmp_bag [$client_cr->immutable_fields], [], "Immutable fields are reverted to empty";
     };
