@@ -636,7 +636,7 @@ sub calculate_limits {
                 };
 
                 # override vanilla per symbol config if we have client specific limit
-                $vanilla_limits->{max_daily_volume} = convert_currency($client_limit->{max_daily_volume}, 'USD', $currency);
+                $vanilla_limits->{max_daily_volume} = $client_limit->{max_daily_volume};
             }
 
             push @{$limits{specific_turnover_limits}},
