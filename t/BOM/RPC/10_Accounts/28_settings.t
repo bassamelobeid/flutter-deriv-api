@@ -447,6 +447,16 @@ subtest 'get settings' => sub {
     $expected->{immutable_fields} = ['citizen', 'date_of_birth', 'residence', 'salutation', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'first and last name allowed after poi name mismatch');
 
+    # poi name mismatch + age verified
+    $test_client_Y_cr_2->status->setnx('age_verification', 'test', 'test');
+    $poi_name_mismatch = 1;
+    $poi_dob_mismatch  = 0;
+    $result            = $c->tcall($method, $params);
+    $expected->{immutable_fields} =
+        ['citizen', 'date_of_birth', 'residence', 'salutation', 'secret_answer', 'secret_question', 'first_name', 'last_name'];
+    is_deeply($result, $expected, 'first name and last name not allowed to change while already age verified');
+    $test_client_Y_cr_2->status->clear_age_verification;
+
     # poi dob mismatch
     $poi_status                   = 'expired';
     $poi_name_mismatch            = 0;
@@ -454,6 +464,16 @@ subtest 'get settings' => sub {
     $result                       = $c->tcall($method, $params);
     $expected->{immutable_fields} = ['citizen', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'dob allowed after poi dob mismatch');
+
+    # dob mismatch + age verified
+    $test_client_Y_cr_2->status->set('age_verification', 'test', 'test');
+    $poi_name_mismatch = 0;
+    $poi_dob_mismatch  = 1;
+    $result            = $c->tcall($method, $params);
+    $expected->{immutable_fields} =
+        ['citizen', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question', 'date_of_birth'];
+    is_deeply($result, $expected, 'dob not allowed to change while already age verified');
+    $test_client_Y_cr_2->status->clear_age_verification;
 
     # personal details locked
     $poi_status              = 'expired';
@@ -630,8 +650,30 @@ subtest 'set settings' => sub {
         );
     }
 
-    $poi_status = 'verified';
+    delete $params->{args}{address_line_1};
     delete $params->{args}{place_of_birth};
+    $poi_status = 'verified';
+
+    # dont allow name or last name change after verified
+
+    $test_client_X_mf->status->set('age_verification',  'test', 'test');
+    $test_client_X_mf->status->set('poi_name_mismatch', 'test', 'test');
+
+    $params->{args}{first_name} = 'aa';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your first name cannot be changed.', 'Your first name cannot be changed.');
+    delete $params->{args}{first_name};
+
+    $params->{args}{last_name} = 'xx';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your last name cannot be changed.', 'Your last name cannot be changed.');
+    delete $params->{args}{last_name};
+
+    $params->{args}{date_of_birth} = '1999-10-10';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your date of birth cannot be changed.', 'Your dob cannot be changed.');
+    delete $params->{args}{date_of_birth};
+
+    $test_client_X_mf->status->clear_age_verification;
+    $test_client_X_mf->status->clear_poi_name_mismatch;
+    $test_client_X_mf->status->_clear_all;
 
     # dont allow address change after authorisation
 
