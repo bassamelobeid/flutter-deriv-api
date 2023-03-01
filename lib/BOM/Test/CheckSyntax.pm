@@ -84,6 +84,7 @@ sub check_syntax_on_diff {
         check_tidy(\@check_files, \@skipped_files);
         check_yaml(@check_files);
         check_localize_string_structure(@check_files);
+        check_log_any_adapter(@check_files);
     } else {
         pass "no change detected, skip tests";
     }
@@ -110,6 +111,8 @@ sub check_syntax_all {
     check_tidy(\@check_files, \@skipped_files);
     @check_files = _run_command('find . -name "*.yml" -o -name "*.yaml"');
     check_yaml(@check_files);
+    @check_files = _run_command("find lib -type f");
+    check_log_any_adapter(@check_files);
 }
 
 =head2 check_syntax
@@ -223,6 +226,32 @@ sub check_yaml {
             lives_ok { LoadFile($file) } "$file YAML valid";
         }
     }
+}
+
+=head2 check_log_any_adapter
+
+Check whether there is any Log::Any::Adapter in module.
+Test fail if module used Log::Any::Adapter.
+Except modules like BOM::Feed::Script::* which will be used directly by the very simple scripts without any other logic flow.
+
+=cut
+
+sub check_log_any_adapter {
+
+    my @check_files  = @_;
+    my @exclude_dir  = ("lib\/BOM\/Feed\/Script\/");
+    my $filter_files = join("|", @exclude_dir);
+    my @pm_files     = grep { /[.]pm\z/ } @check_files;
+    @pm_files = grep { /[.]pm\z/ && !/$filter_files/ } @check_files if $filter_files;
+
+    my @result = map { _run_command('git grep -E "(use|require)\s+Log::Any::Adapter" ' . $_) } @pm_files;
+
+    ok !@result, "Check whether Log::Any::Adapter is not used in modules";
+    if (@result) {
+        diag(qq{Log::Any::Adapter is used in the following modules!!});
+        diag(join("\n", @result));
+    }
+
 }
 
 =head2 check_bom_dependency

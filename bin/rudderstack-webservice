@@ -4,6 +4,9 @@ use warnings;
 
 use IO::Async::Loop;
 use BOM::Test::Rudderstack::Webserver;
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 'json',
+    log_level => 'error';
 
 my $loop = IO::Async::Loop->new;
 

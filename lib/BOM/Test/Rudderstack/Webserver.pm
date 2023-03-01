@@ -28,11 +28,7 @@ use curry;
 use Carp  qw(croak);
 use POSIX qw/strftime/;
 
-use Log::Any          qw($log);
-use Log::Any::Adapter qw(DERIV),
-    stderr    => 'json',
-    log_level => 'error';
-
+use Log::Any qw($log);
 use constant HTML_HEAD =>
     "<!DOCTYPE html><table role=\"presentation\" width=\"800\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"> <tr><td width=\"100%\" style=\"font-family:Arial, sans-serif; font-size:16px; line-height:1.5em; color:#333333; padding:2em; background-color:#e4e4e4;\">";
 use constant HTML_FOOT => "</td></tr></table>";
