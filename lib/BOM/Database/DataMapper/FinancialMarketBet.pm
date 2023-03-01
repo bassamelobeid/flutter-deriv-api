@@ -31,6 +31,7 @@ use BOM::Database::Model::FinancialMarketBet::CallputSpread;
 use BOM::Database::Model::FinancialMarketBet::Runs;
 use BOM::Database::Model::FinancialMarketBet::Multiplier;
 use BOM::Database::Model::FinancialMarketBet::Accumulator;
+use BOM::Database::Model::FinancialMarketBet::Vanilla;
 use Date::Utility;
 use Syntax::Keyword::Try;
 
@@ -110,6 +111,7 @@ sub get_fmb_by_id {
             $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET,        $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION,
             $BOM::Database::Model::Constants::BET_CLASS_RESET_BET,        $BOM::Database::Model::Constants::BET_CLASS_HIGH_LOW_TICK,
             $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER,       $BOM::Database::Model::Constants::BET_CLASS_ACCUMULATOR,
+            $BOM::Database::Model::Constants::BET_CLASS_VANILLA,
         ],
         query => [id => $bet_ids],
         db    => $self->db,
@@ -506,6 +508,9 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_ACCUMULATOR) {
         $param->{'accumulator_record'} = $rose_object->accumulator;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::Accumulator';
+    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_VANILLA) {
+        $param->{'vanilla_record'} = $rose_object->vanilla;
+        $model_class = 'BOM::Database::Model::FinancialMarketBet::Vanilla';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
