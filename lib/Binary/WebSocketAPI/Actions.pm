@@ -364,6 +364,12 @@ sub actions_config {
             }
         ],
         [
+            'paymentagent_withdraw_justification',
+            {
+                msg_group => 'payment',
+            }
+        ],
+        [
             'paymentagent_transfer',
             {
                 error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
