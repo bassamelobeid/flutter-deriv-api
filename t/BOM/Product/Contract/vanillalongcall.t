@@ -284,6 +284,8 @@ subtest 'risk management tools' => sub {
     lives_ok {
         $args->{date_start}   = $now;
         $args->{date_pricing} = $now;
+        $args->{barrier}      = '+1';
+        $args->{stake}        = '1000';
 
         $per_symbol_config                            = JSON::MaybeXS::decode_json($per_symbol_config);
         $per_symbol_config->{min_number_of_contracts} = {'USD' => 0};
@@ -354,6 +356,7 @@ subtest 'strike price choice validation' => sub {
 
     $args->{duration} = '10h';
     $args->{barrier}  = '+39';
+    $args->{stake}    = '10';
     $c                = produce_contract($args);
 
     ok $c->is_valid_to_buy, 'valid to buy';

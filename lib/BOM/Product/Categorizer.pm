@@ -78,7 +78,7 @@ sub BUILD {
 
         $self->_initialize_parameters();
 
-        unless ($skip_contract_input_validation) {
+        unless (($skip_contract_input_validation) or ($self->_parameters->{category}->code eq 'vanilla')) {
             $self->_validate_barrier;
             $self->_validate_stake_min_max;
             $self->_validate_multiplier;

@@ -10,6 +10,7 @@ use POSIX                 qw(ceil floor);
 use Format::Util::Numbers qw/financialrounding formatnumber roundnear roundcommon/;
 use BOM::Product::Static;
 use BOM::Product::Contract::Strike::Vanilla;
+use BOM::Config::Quants qw(minimum_stake_limit);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -64,7 +65,12 @@ calculates minimum stake based on values from backoffice
 sub _build_min_stake {
     my $self = shift;
 
-    return financialrounding('price', $self->currency, $self->minimum_number_of_implied_contracts * $self->ask_probability->amount);
+    my $min_stake_quants = minimum_stake_limit($self->currency, $self->landing_company, $self->underlying->market->name, $self->category->code);
+    my $min_stake_theoretical =
+        financialrounding('price', $self->currency, $self->minimum_number_of_implied_contracts * $self->ask_probability->amount);
+
+    # return the bigger min stake
+    return ($min_stake_quants > $min_stake_theoretical) ? $min_stake_quants : $min_stake_theoretical;
 }
 
 =head2 _build_max_stake
@@ -83,6 +89,7 @@ sub _build_max_stake {
         financialrounding('price', $self->currency, $self->maximum_number_of_implied_contracts() * $self->ask_probability->amount);
 
     # return the smaller max stake
+    return $max_stake_risk_profile if $max_stake_theoretical <= 0;
     return ($max_stake_risk_profile < $max_stake_theoretical) ? $max_stake_risk_profile : $max_stake_theoretical;
 }
 
@@ -293,27 +300,44 @@ sub _build_bid_probability {
     return $bid_probability;
 }
 
-=head2 _validate_maximum_stake
+=head2 _validate_stake
 
 validate maximum stake based on financial underlying risk profile defined in backoffice
 
 =cut
 
-sub _validate_maximum_stake {
+sub _validate_stake {
     my $self = shift;
 
     my $per_symbol_config = $self->per_symbol_config();
-
-    my $risk_profile = $per_symbol_config->{risk_profile};
-
-    my $max_stake = JSON::MaybeXS::decode_json($self->app_config->get("quants.vanilla.risk_profile.$risk_profile"));
+    my $risk_profile      = $per_symbol_config->{risk_profile};
+    my $max_stake         = JSON::MaybeXS::decode_json($self->app_config->get("quants.vanilla.risk_profile.$risk_profile"));
 
     if ($self->_user_input_stake > $max_stake->{$self->currency}) {
         return {
             message           => 'maximum stake limit',
-            message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $max_stake->{$self->currency})]};
+            message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $max_stake->{$self->currency})],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
+        };
     }
 
+    if ($self->_user_input_stake < $self->min_stake) {
+        return {
+            message           => 'minimum stake limit exceeded',
+            message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
+        };
+    }
 }
 
 =head2 _validate_number_of_contracts
@@ -332,10 +356,17 @@ sub _validate_number_of_contracts {
     # instead we tell them to reduce stake
 
     if ($number_of_contracts < $self->minimum_number_of_implied_contracts()) {
+        # due to precision issues, we allow 1% flexibility
+        return undef unless (abs($number_of_contracts - $self->minimum_number_of_implied_contracts()) / $number_of_contracts > 0.01);
         return {
             message           => 'minimum stake limit exceeded',
             message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
-            details           => {field => 'stake'},
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
         };
     }
 
@@ -343,10 +374,16 @@ sub _validate_number_of_contracts {
         return {
             message           => 'maximum stake limit exceeded',
             message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $self->max_stake)],
-            details           => {field => 'stake'},
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
         };
     }
 
+    return undef;
 }
 
 =head2 _validation_methods
@@ -367,9 +404,9 @@ sub _validation_methods {
     push @validation_methods, '_validate_rollover_blackout';
 
     # add vanilla specific validations
-    push @validation_methods, '_validate_number_of_contracts';
     push @validation_methods, '_validate_barrier_choice' unless $self->for_sale;
-    push @validation_methods, '_validate_maximum_stake';
+    push @validation_methods, '_validate_number_of_contracts';
+    push @validation_methods, '_validate_stake';
 
     return \@validation_methods;
 }
@@ -447,6 +484,8 @@ sub _validate_barrier_choice {
         message_to_client => [$message],
         details           => {
             field           => 'barrier',
+            min_stake       => $self->min_stake,
+            max_stake       => $self->max_stake,
             barrier_choices => $strike_price_choices
         },
     };
@@ -461,8 +500,13 @@ override _validate_price => sub {
     if (not $ask_price or $ask_price == 0) {
         return {
             message           => 'Stake can not be zero .',
-            message_to_client => [$ERROR_MAPPING->{InvalidStake}],
-            details           => {field => 'amount'},
+            message_to_client => [$ERROR_MAPPING->{InvalidMinStake}, financialrounding('price', $self->currency, $self->min_stake)],
+            details           => {
+                field           => 'amount',
+                min_stake       => $self->min_stake,
+                max_stake       => $self->max_stake,
+                barrier_choices => $self->strike_price_choices
+            },
         };
     }
 
