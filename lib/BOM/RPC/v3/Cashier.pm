@@ -69,6 +69,8 @@ use constant {
     MT5                           => 'mt5',
     DXTRADE                       => 'dxtrade',
     DERIVEZ                       => 'derivez',
+    PA_JUSTIFICATION_PREFIX       => 'PA_WITHDRAW_JUSTIFICATION_SUBMIT::',
+    PA_JUSTIFICATION_TTL          => 60 * 60 * 24,                           # 24 hours in sec
 };
 
 my $payment_limits = BOM::Config::payment_limits;
@@ -1158,6 +1160,30 @@ sub _process_pa_withdraw_error {
 
     return BOM::RPC::v3::Utility::rule_engine_error($rules_error, 'PaymentAgentWithdrawError');
 }
+
+rpc paymentagent_withdraw_justification => sub {
+    my $params = shift;
+
+    my $loginid       = $params->{client}->loginid;
+    my $justification = $params->{args}{message};
+    my $brand         = request()->brand;
+    my $redis         = BOM::Config::Redis::redis_replicated_write();
+
+    unless ($redis->set(PA_JUSTIFICATION_PREFIX . $loginid, 1, 'NX', 'EX', PA_JUSTIFICATION_TTL)) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'JustificationAlreadySubmitted',
+                message_to_client => localize('You cannot submit another payment agent withdrawal justification within 24 hours.')});
+    }
+
+    send_email({
+        from    => $brand->emails('system'),
+        to      => $brand->emails('payments'),
+        subject => "Payment agent withdraw justification submitted by $loginid at " . Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ,
+        message => [$justification],
+    });
+
+    return 1;
+};
 
 =head2 get_transfer_fee_remark
 
