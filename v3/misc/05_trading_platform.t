@@ -444,7 +444,7 @@ subtest 'trading_platform_available_accounts' => sub {
         {
             'requirements' => {
                 'compliance' => {
-                    'mt5'             => ['fully_authenticated', 'expiration_check'],
+                    'mt5' => ['fully_authenticated', 'expiration_check'],
                 },
                 'signup' => [
                     'salutation',     'citizen',      'tax_residence', 'tax_identification_number',
