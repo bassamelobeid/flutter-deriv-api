@@ -100,6 +100,8 @@ sub validate_params {
     return {error => "Short Tax must be a number"}       if !looks_like_number($args->{short_tax});
     return {error => "Long Dividend must be > 0, or 0"}  if $args->{long_dividend} < 0;
     return {error => "Short Dividend must be < 0, or 0"} if $args->{short_dividend} > 0;
+    return {error => "Long Tax must be < 100, or 100"}   if $args->{long_tax} > 100;
+    return {error => "Short Tax must be < 100, or 100"}  if $args->{short_tax} > 100;
     return {error => "Long Tax must be > 0, or 0"}       if $args->{long_tax} < 0;
     return {error => "Short Tax must be > 0, or 0"}      if $args->{short_tax} < 0;
     return {error => "Comment is required"}              if !$args->{dividend_deal_comment};
