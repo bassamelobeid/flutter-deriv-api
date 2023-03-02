@@ -20,7 +20,8 @@ use Format::Util::Numbers            qw(financialrounding);
 use Future;
 use Future::AsyncAwait;
 use Time::Moment;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_event);
+use Data::Dump                 qw(pp);
 
 use constant DISABLE_ACCOUNT_DAYS       => 30;
 use constant SECOND_REMINDER_EMAIL_DAYS => 20;
@@ -182,7 +183,7 @@ or a hashref with error field describing the failure
 
     method update_loginid_status ($params) {
         return $self->return_error("update_loginid_status", "No parameters passed") unless ($params);
-
+        $self->dd_log_info('update_loginid_status', "Updating status for " . pp($params));
         my $binary_user_id = $params->{binary_user_id};
         my $loginid        = $params->{loginid};
         my $to_status      = $params->{to_status};
@@ -224,6 +225,7 @@ or 0 in case if the email was not sent
         my $email_params = $params->{email_params};
 
         return return $self->return_error("send_email_to_client", "No parameters passed") unless ($email_type and $emails->{$email_type});
+        $self->dd_log_info('send_email_to_client', 'Sending email: ' . pp($params));
         return BOM::Platform::Event::Emitter::emit($email_type => $email_params);
     }
 
@@ -292,7 +294,7 @@ cr_currency
 
     method load_all_user_data ($binary_user_id) {
         return $self->return_error("load_all_user_data", "No parameters passed") unless ($binary_user_id);
-
+        $self->dd_log_info('load_all_user_data', "Loading user data for user with binary_user_id: $binary_user_id");
         my ($user, $bom_loginid, $client, $cr_currency);
         try {
             $user = BOM::User->new((id => $binary_user_id));
@@ -302,6 +304,9 @@ cr_currency
         } catch ($e) {
             return $self->return_error("load_all_user_data", "Cant load user data: $e")
         }
+
+        return $self->return_error("load_all_user_data", "BOM loginid is undefined")   unless ($bom_loginid);
+        return $self->return_error("load_all_user_data", "Client object is undefined") unless ($client);
 
         return +{
             user        => $user,
@@ -413,6 +418,8 @@ Returns a hashref with result => 1 if succeed, hashref with error field otherwis
             # Check balance and withdraw
             if ($mt_user->{balance} and $mt_user->{balance} > 0) {
 
+                $self->dd_log_info('withdraw_and_archive', "Withdrawing and archiving $loginid");
+
                 my $group_currency = await BOM::MT5::User::Async::get_group($group);
                 $group_currency = $group_currency->{currency};
 
@@ -429,6 +436,7 @@ Returns a hashref with result => 1 if succeed, hashref with error field otherwis
                     comment => $loginid . '_' . $bom_loginid,
                 });
 
+                $self->dd_log_info('withdraw_and_archive', "Withdraw for $loginid successful");
                 if ($withdraw_response->{status}) {
 
                     my ($txn) = $client->payment_mt5_transfer(
@@ -479,6 +487,7 @@ Returns a hashref with result => 1 if succeed, hashref with error field otherwis
                 "Client $loginid is archived due to poa verification failed and " . DISABLE_ACCOUNT_DAYS . " days of inactivity");
 
             $self->update_loginid_status({binary_user_id => $binary_user_id, loginid => $loginid, to_status => 'archived'});
+            $self->dd_log_info('withdraw_and_archive', "Archived $loginid");
 
             return {result => 1};
 
@@ -516,6 +525,7 @@ or error field otherwise
             my $open_positions = await BOM::MT5::User::Async::get_open_positions_count($loginid);
 
             if ($open_orders->{total} or $open_positions->{total}) {
+                $self->dd_log_info('check_activity_and_process_client', "Client $loginid has open orders or positions, sending to x-compops");
                 return +{send_to_compops => 1};
             } else {
                 return await $self->withdraw_and_archive($params);
@@ -555,6 +565,9 @@ or error field otherwise
         my $landing_company = ($group =~ m{bvi} ? 'bvi' : ($group =~ m{vanuatu} ? 'vanuatu' : ''));
         my @mt5_accounts_under_same_jurisdiction =
             $self->get_mt5_accounts_under_same_jurisdiction({jurisdiction => $landing_company, user => $params->{user}});
+        $self->dd_log_info('restrict_client_and_send_email',
+            "Client $bom_loginid has " . pp(@mt5_accounts_under_same_jurisdiction) . " under the $landing_company jurisdiction");
+
         my $jurisdiction_restricted = 1;
         my $account_restricted      = 0;
 
@@ -627,7 +640,7 @@ Returns a hashref with error field with the description of the failure
 =cut
 
     method return_error ($method, $error_message) {
-        stats_inc("StatusUpdate.$method", {tags => ['error: ' . $error_message]});
+        stats_event("StatusUpdate.$method", "Error: $error_message", {alert_type => 'error'});
         return {error => 1};
     }
 
@@ -648,7 +661,7 @@ Does not return any value
 =cut
 
     method dd_log_info ($method, $info) {
-        stats_inc("StatusUpdate.$method", {tags => ['info: ' . $info]});
+        stats_event("StatusUpdate.$method", "Info: $info", {alert_type => 'info'});
         return;
     }
 
@@ -708,6 +721,12 @@ Does not takes or returns any parameters
             statuses          => ['poa_pending', 'poa_rejected'],
         });
 
+        $self->dd_log_info('grace_period_actions',
+                  "Gathered "
+                . scalar(@combined)
+                . " accounts form the DB with status ['poa_pending', 'poa_rejected'] with the newest created at: "
+                . $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_WARNING_DAYS) . 'd')->datetime_ddmmmyy_hhmmss_TZ);
+
         foreach my $data (@combined) {
 
             my $mt5_client = $self->parse_user($data);
@@ -765,8 +784,16 @@ Does not takes or returns any parameters
             statuses          => ['poa_failed'],
         });
 
+        $self->dd_log_info('disable_users_actions',
+                  "Gathered "
+                . scalar(@combined)
+                . " accounts form the DB with status ['poa_failed'] with the newest created at: "
+                . $now->minus_time_interval(DISABLE_ACCOUNT_DAYS . 'd')->datetime_ddmmmyy_hhmmss_TZ);
+
         foreach my $data (@combined) {
             my $mt5_client = $self->parse_user($data);
+            $self->dd_log_info('disable_users_actions', 'Parsed client: ' . pp($mt5_client));
+
             next if ($mt5_client->{error});
             my $loginid        = $mt5_client->{loginid};
             my $creation_stamp = $mt5_client->{creation_stamp};
@@ -776,7 +803,7 @@ Does not takes or returns any parameters
                 my $group     = $mt5_client->{group};
 
                 if ($group =~ m{bvi}) {
-                    if ($creation_stamp->days_since_epoch + BVI_EXPIRATION_DAYS + DISABLE_ACCOUNT_DAYS == $now->days_since_epoch) {
+                    if ($creation_stamp->days_since_epoch + BVI_EXPIRATION_DAYS + DISABLE_ACCOUNT_DAYS <= $now->days_since_epoch) {
                         my $response = $self->check_activity_and_process_client({%$mt5_client, %$user_data})->get;
 
                         push @bvi_clients_to_compops, "<tr><td>$loginid</td><td>$group</td></tr>"
@@ -784,7 +811,7 @@ Does not takes or returns any parameters
 
                     }
                 } elsif ($group =~ m{vanuatu}) {
-                    if ($creation_stamp->days_since_epoch + VANUATU_EXPIRATION_DAYS + DISABLE_ACCOUNT_DAYS == $now->days_since_epoch) {
+                    if ($creation_stamp->days_since_epoch + VANUATU_EXPIRATION_DAYS + DISABLE_ACCOUNT_DAYS <= $now->days_since_epoch) {
                         my $response = $self->check_activity_and_process_client({%$mt5_client, %$user_data})->get;
 
                         push @vanuatu_clients_to_compops, "<tr><td>$loginid</td><td>$group</td></tr>"
@@ -813,6 +840,13 @@ Does not takes or returns any parameters
         }
 
         if (scalar(@lines)) {
+            $self->dd_log_info('disable_users_actions',
+                      "Sending "
+                    . scalar(@bvi_clients_to_compops)
+                    . " bvi clients and "
+                    . scalar(@vanuatu_clients_to_compops)
+                    . " vanuatu clients to x-compops");
+
             my $brand = Brands->new();
             BOM::Platform::Event::Emitter::emit(
                 'send_email',
@@ -858,6 +892,12 @@ Does not takes or returns any parameters
             newest_created_at => $now,
             statuses          => ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending'],
         });
+
+        $self->dd_log_info('sync_status_actions',
+                  "Gathered "
+                . scalar(@combined)
+                . " accounts form the DB with status ['poa_failed', 'proof_failed', 'verification_pending', 'poa_rejected', 'poa_pending'] with the newest created at: "
+                . $now->datetime_ddmmmyy_hhmmss_TZ);
 
         foreach my $data (@combined) {
             my $mt5_client = $self->parse_user($data);
@@ -917,6 +957,13 @@ Does not takes or returns any parameters
             newest_created_at => $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_EXPIRATION_DAYS) + FIRST_REMINDER_EMAIL_DAYS . 'd'),
             statuses          => ['poa_failed', 'poa_rejected'],
         });
+
+        $self->dd_log_info('send_reminder_emails',
+                  "Gathered "
+                . scalar(@combined)
+                . " accounts form the DB with status ['poa_failed', 'poa_rejected'] with the newest created at: "
+                . $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_EXPIRATION_DAYS) + FIRST_REMINDER_EMAIL_DAYS . 'd')
+                ->datetime_ddmmmyy_hhmmss_TZ);
 
         my $error_ocurred = 0;
         foreach my $data (@combined) {
@@ -987,6 +1034,12 @@ Does not takes or returns any parameters
             newest_created_at => $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_WARNING_DAYS) . 'd'),
             statuses          => ['poa_pending'],
         });
+
+        $self->dd_log_info('send_warning_emails',
+                  "Gathered "
+                . scalar(@combined)
+                . " accounts form the DB with status ['poa_pending'] with the newest created at: "
+                . $now->minus_time_interval(min(BVI_WARNING_DAYS, VANUATU_WARNING_DAYS) . 'd')->datetime_ddmmmyy_hhmmss_TZ);
 
         foreach my $data (@combined) {
 
