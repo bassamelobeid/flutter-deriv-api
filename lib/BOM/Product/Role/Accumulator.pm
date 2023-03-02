@@ -549,9 +549,10 @@ override '_build_ticks_for_tick_expiry' => sub {
     # - between entry tick epoch + 1 to maximum allowed ticks (based on max duration, max payout or take profit)
     my $end_time   = $self->is_sold ? $self->sell_time : $self->underlying->for_date ? $self->underlying->for_date->epoch : undef;
     my $start_time = $self->entry_tick->epoch + 1;
+    my @ticks;
 
     if ($end_time and $end_time >= $start_time) {
-        my @ticks =
+        @ticks =
             reverse @{
             $self->_tick_accessor->ticks_in_between_start_end({
                     start_time => $start_time,
@@ -566,14 +567,30 @@ override '_build_ticks_for_tick_expiry' => sub {
             my $tick_count_till_sell = $self->tickcount_for($self->sell_price);
             return [@ticks[0 .. $tick_count_till_sell - 1]];
         }
-
-        return \@ticks;
+    } else {
+        @ticks = @{
+            $self->_tick_accessor->ticks_in_between_start_limit({
+                    start_time => $start_time,
+                    limit      => $self->ticks_to_expiry,
+                })};
     }
 
-    return $self->_tick_accessor->ticks_in_between_start_limit({
-        start_time => $self->entry_tick->epoch + 1,
-        limit      => $self->ticks_to_expiry,
-    });
+    #sometimes when barrier violation happends there is a delay between sell_time and expiry_time
+    #we need to make sure if contract is expired, we only return ticks till expiry, not sell_time
+    my $prev_spot    = $self->entry_tick->quote;
+    my $tick_counter = 0;
+
+    for my $tick (@ticks) {
+        my $higher = $self->get_high_barrier($prev_spot);
+        my $lower  = $self->get_low_barrier($prev_spot);
+
+        return [@ticks[0 .. $tick_counter]] if (($tick->quote >= $higher) or ($tick->quote <= $lower));
+
+        $prev_spot = $tick->quote;
+        $tick_counter++;
+    }
+
+    return \@ticks;
 };
 
 =head2 bid_price
@@ -798,24 +815,22 @@ initializing hit_tick attribute
 sub _build_hit_tick {
     my $self = shift;
 
-    # date_start + 1 applies for all expiry type (tick, intraday & multi-day). Basically the first tick
-    # that comes into play is the tick after the contract start time, not at the contract start time.
     return undef unless $self->entry_tick;
 
     my @ticks_since_start = @{$self->ticks_for_tick_expiry};
-    my $prev_spot         = $self->entry_tick->quote;
+    return undef unless @ticks_since_start;
 
-    #returns the first tick on which one of the barriers is hit
-    for my $tick (@ticks_since_start) {
-        my $higher = $self->get_high_barrier($prev_spot);
-        my $lower  = $self->get_low_barrier($prev_spot);
+    #we only need to check if the last tick crosses the barriers, not all the ticks.
+    #we are already checking barrier violation for other ticks in "_build_ticks_for_tick_expiry", in other words
+    #ticks_for_tick_expiry returns ticks after entry_tick to the first tick that barrier got crossed (if there is any)
+    #and if there is no violation, it returns all the ticks available for the contract. so, only checking the last tick will be enough
 
-        return $tick if (($tick->quote >= $higher) or ($tick->quote <= $lower));
+    my $prev_spot = $ticks_since_start[-2] ? $ticks_since_start[-2]->quote : $self->entry_tick->quote;
+    my $higher    = $self->get_high_barrier($prev_spot);
+    my $lower     = $self->get_low_barrier($prev_spot);
+    my $last_tick = $ticks_since_start[-1];
 
-        $prev_spot = $tick->quote;
-    }
-
-    return undef;
+    return (($last_tick->quote >= $higher) or ($last_tick->quote <= $lower)) ? $last_tick : undef;
 }
 
 =head2 _build_close_tick

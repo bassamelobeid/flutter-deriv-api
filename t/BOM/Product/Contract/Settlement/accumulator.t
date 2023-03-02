@@ -129,11 +129,11 @@ subtest 'hit take profit and barrier at the same time' => sub {
 
 subtest 'hit tick expiry' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-        [100, $now->epoch,     $symbol],
-        [100, $now->epoch + 1, $symbol],
-        [100, $now->epoch + 2, $symbol],
-        [100, $now->epoch + 3, $symbol],
-        [100, $now->epoch + 4, $symbol]);
+        [100,  $now->epoch,     $symbol],
+        [99,   $now->epoch + 1, $symbol],
+        [97.1, $now->epoch + 2, $symbol],
+        [99,   $now->epoch + 3, $symbol],
+        [100,  $now->epoch + 4, $symbol]);
 
     $args->{duration}     = '3t';
     $args->{date_pricing} = $now->plus_time_interval('4s');
