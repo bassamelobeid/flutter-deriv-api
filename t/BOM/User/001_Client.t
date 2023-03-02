@@ -53,7 +53,7 @@ subtest 'Get class by broker code' => sub {
 };
 
 subtest "Client load and saving." => sub {
-    plan tests => 45;
+    plan tests => 48;
     # create client object
     lives_ok { $client = BOM::User::Client->new({'loginid' => $login_id}); }
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => $login_id})'";
@@ -92,6 +92,24 @@ subtest "Client load and saving." => sub {
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => CR0008})'";
     $client->set_authentication('IDV', {status => 'pass'});
     is($client->fully_authenticated(), 1, "CR0008 - fully authenticated");
+
+    lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR0010'}); }
+    "Can create client object 'BOM::User::Client::get_instance({'loginid' => CR0010})'";
+    $client->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(
+                "INSERT INTO betonmarkets.client_authentication_method (client_loginid, authentication_method_code, status) VALUES (?,?,?)");
+            $sth->execute($client->loginid, 'ID_ONLINE',   'pending');
+            $sth->execute($client->loginid, 'IDV',         'pass');
+            $sth->execute($client->loginid, 'ID_DOCUMENT', 'needs_review');
+        });
+    my $count_authentication_methods = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT count(*) FROM betonmarkets.client_authentication_method WHERE client_loginid=? GROUP BY client_loginid',
+                undef, $client->loginid);
+        });
+    is($count_authentication_methods->{count}, 4, 'CR0010 - has multiple authentication_methods');
+    is($client->fully_authenticated(),         1, "CR0010 - fully authenticated even with multiple authentication methods");
 
     my $client_details = {
         'loginid'            => 'CR5089',
