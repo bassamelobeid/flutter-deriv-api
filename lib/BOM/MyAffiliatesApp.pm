@@ -9,7 +9,6 @@ use BOM::Config;
 use BOM::Config::Runtime;
 
 use Log::Any                qw($log);
-use Log::Any::Adapter::Util qw(logging_methods);
 
 =head2 startup
 
