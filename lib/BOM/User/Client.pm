@@ -2503,7 +2503,7 @@ sub p2p_advertiser_list {
     $param{id}             = $advertiser_info->{id};
     $param{client_loginid} = $advertiser_info->{client_loginid};
 
-    my $list;
+    my $list = [];
     if ($param{trade_partners}) {
         $list = $self->_p2p_advertiser_trade_partners(%param);
     }
