@@ -1054,7 +1054,15 @@ sub get_untrusted_client_reason {
         },
         investigation => {
             name    => 'Investigations',
-            reasons => ['Hacked account', 'Fraudulent account', 'Forged document', 'Pending investigation',],
+            reasons => [
+                'Hacked account',
+                'Fraudulent account',
+                'Forged document',
+                'Pending investigation',
+                'Chargeback',
+                'Fraud Notification',
+                'Retrieval Request'
+            ],
         },
         payment => {
             name    => 'Payments / transactions',
