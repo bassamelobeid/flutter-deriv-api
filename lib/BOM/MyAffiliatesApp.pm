@@ -8,8 +8,7 @@ use Brands;
 use BOM::Config;
 use BOM::Config::Runtime;
 
-use Log::Any                qw($log);
-use Log::Any::Adapter::Util qw(logging_methods);
+use Log::Any qw($log);
 
 =head2 startup
 
