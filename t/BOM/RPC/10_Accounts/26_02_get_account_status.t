@@ -1569,6 +1569,39 @@ subtest 'poi dob mismatch on age verified scenario' => sub {
     ok(!(grep { $_ eq 'poi_dob_mismatch' } $result->{status}->@*), 'Poi DOB mismatch not reported under fully auth scenario');
 };
 
+subtest 'poi fully authenticated multiple authentication methods scenario' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+fullyauth+multiplemethods@binary.com',
+        password => 'Abcd1234'
+    );
+    $user->add_client($client);
+
+    ok !$client->fully_authenticated, 'Client is not fully authenticated';
+
+    $client->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(
+                "INSERT INTO betonmarkets.client_authentication_method (client_loginid, authentication_method_code, status) VALUES (?,?,?)");
+            $sth->execute($client->loginid, 'ID_ONLINE',   'pending');
+            $sth->execute($client->loginid, 'IDV',         'pass');
+            $sth->execute($client->loginid, 'ID_DOCUMENT', 'needs_review');
+        });
+    my $count_authentication_methods = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT count(*) FROM betonmarkets.client_authentication_method WHERE client_loginid=? GROUP BY client_loginid',
+                undef, $client->loginid);
+        });
+    is($count_authentication_methods->{count}, 3, 'client has multiple authentication_methods');
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall('get_account_status', {token => $token});
+
+    ok((grep { $_ eq 'authenticated' } $result->{status}->@*), 'Client is now fully authenticated');
+};
+
 $documents_mock->unmock_all;
 $user_mock->unmock_all;
 done_testing();
