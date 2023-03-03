@@ -57,9 +57,11 @@ subtest "Request $method for deriv_go" => sub {
     $params[1]{country} = 'id';
     my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
 
-    is $result->{hit_count}, 6, 'multipliers and callputspread types are available';
+    is $result->{hit_count}, 28, 'multipliers, callputspread, callput and callputequal types are available';
     ok((grep { $_->{contract_category} eq 'multiplier' } @{$result->{available}}) == 2,    'two multipliers available on deriv_go');
     ok((grep { $_->{contract_category} eq 'callputspread' } @{$result->{available}}) == 4, 'four callputspread type available on deriv_go');
+    ok((grep { $_->{contract_category} eq 'callputequal' } @{$result->{available}}) == 8,  'eight callputequal type available on deriv_go');
+    ok((grep { $_->{contract_category} eq 'callput' } @{$result->{available}}) == 14,      'forteen callput type available on deriv_go');
 };
 
 subtest "Request $method for binary_smarttrader" => sub {
