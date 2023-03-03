@@ -359,6 +359,11 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
+                payments.transfer_between_accounts.daily_cumulative_limit.enable
+                payments.transfer_between_accounts.daily_cumulative_limit.between_accounts
+                payments.transfer_between_accounts.daily_cumulative_limit.MT5
+                payments.transfer_between_accounts.daily_cumulative_limit.dxtrade
+                payments.transfer_between_accounts.daily_cumulative_limit.derivez
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5
                 payments.transfer_between_accounts.limits.dxtrade
