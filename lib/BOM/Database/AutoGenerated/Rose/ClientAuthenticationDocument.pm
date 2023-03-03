@@ -24,7 +24,7 @@ __PACKAGE__->meta->setup(
         upload_date                => { type => 'timestamp' },
         issue_date                 => { type => 'date' },
         lifetime_valid             => { type => 'boolean', default => 0},
-        origin                     => { type => 'enum', check_in => [ 'bo', 'client', 'onfido', 'legacy' ], db_type => 'betonmarkets.client_document_origin', 'default' => 'legacy' },
+        origin                     => { type => 'enum', check_in => [ 'bo', 'client', 'onfido', 'legacy', 'idv' ], db_type => 'betonmarkets.client_document_origin', 'default' => 'legacy' },
     ],
 
     primary_key_columns => [ 'id' ],
