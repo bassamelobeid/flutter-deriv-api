@@ -1610,6 +1610,7 @@ subtest 'testing photo being sent as paramter - verified' => sub {
     my ($doc) = $client->find_client_authentication_document(query => [id => $photo->{photo_id}]);
 
     is $doc->{status}, 'verified', 'status in BO reflects idv status - verified';
+    is $doc->{origin}, 'idv',      'IDV is the origin of the doc';
 
 };
 

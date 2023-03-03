@@ -824,8 +824,9 @@ async sub _upload_photo {
 
         $upload_info = $client->db->dbic->run(
             ping => sub {
-                $_->selectrow_hashref('SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    undef, $client->loginid, 'photo', $file_type, undef, '', $file_checksum, '', '', undef, $lifetime_valid);
+                $_->selectrow_hashref(
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::betonmarkets.client_document_origin)',
+                    undef, $client->loginid, 'photo', $file_type, undef, '', $file_checksum, '', '', undef, $lifetime_valid, 'idv');
             });
 
         if ($upload_info && $upload_info->{file_id}) {
