@@ -10,6 +10,7 @@ use Syntax::Keyword::Try;
 
 use BOM::Config::MT5;
 use BOM::Config::Compliance;
+use BOM::Config::Runtime;
 use BOM::MT5::User::Async;
 use BOM::Platform::Context qw (localize request);
 use BOM::User::Utility;
@@ -17,6 +18,7 @@ use JSON::MaybeXS              qw{decode_json};
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Log::Any                   qw($log);
 use LandingCompany::Registry;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Brands;
 
 use Format::Util::Numbers qw(financialrounding formatnumber);
@@ -43,9 +45,7 @@ This module must provide support to each MetaTrader5 integration within our syst
 
 use parent qw( BOM::TradingPlatform );
 
-use constant {
-    MT5_REGEX => qr/^MT[DR]?(?=\d+$)/,
-};
+use constant {MT5_REGEX => qr/^MT[DR]?(?=\d+$)/};
 
 =head2 create_error_future
 
@@ -529,17 +529,25 @@ Returns a Future object holding an MT5 account info on success, throws exception
 =cut
 
 sub get_assets {
-    my ($self, $type) = @_;
+    my ($self, $type, $region) = @_;
 
-    my $redis         = BOM::Config::Redis::redis_mt5_user();
-    my $asset_listing = decode_json($redis->get('MT5::ASSETS') // '{}');
+    my $redis                 = BOM::Config::Redis::redis_mt5_user();
+    my $asset_listing         = decode_json($redis->get('MT5::ASSETS') // '{}');
+    my $suspended_underlyings = BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy;
 
     my @res = ();
 
     for my $asset ($asset_listing->{assets}->@*) {
+
+        my @tokens              = split(",", $asset->{availability});
+        my %region_availability = map { $_ => 1 } @tokens;
+        my $asset_shortcode     = $asset->{shortcode};
+        next if grep { /^$asset_shortcode$/ } $suspended_underlyings->@*;
+        next unless $region_availability{$region};
         next if $type eq 'brief' and $asset->{display_order} == 10000;
         my %new_asset = map { lc $_ => $asset->{$_} } keys $asset->%*;
         $new_asset{symbol} = localize($new_asset{symbol});
+        delete $new_asset{availability};
         push @res, \%new_asset;
     }
 

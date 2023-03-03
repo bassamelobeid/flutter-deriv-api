@@ -24,8 +24,9 @@ $config->run()->get();
 use Future::AsyncAwait;
 use Net::Async::Redis;
 use Syntax::Keyword::Try;
-use JSON::MaybeXS qw(encode_json);
-
+use JSON::MaybeXS          qw(encode_json);
+use BOM::Platform::Context qw (localize request);
+use JSON::MaybeUTF8        qw(encode_json_utf8);
 use Data::Dumper;
 use YAML::XS qw(LoadFile);
 use Date::Utility;
@@ -67,6 +68,13 @@ use constant MT5_MARKET_MAPPER => {
     'Forex Major'        => 'forex',
     'Forex_III'          => 'forex',
     'Forex_II'           => 'forex',
+};
+
+use constant {
+    MT5_PLATFORM                => 'mt5',
+    MT5_REGIONS                 => ['eu',    'row'],
+    MT5_ASSET_LISTING_TYPES     => ['brief', 'full'],
+    ASSET_LISTING_STREAM_PREFIX => 'asset_listing'
 };
 
 use Date::Utility;
@@ -113,6 +121,70 @@ The symbol cache that holds symbol information
 
 sub symbol_info_cache { shift->{symbol_info_cache} }
 
+=head2 get_asset_listing_stream_channel
+
+Return the stream channel for asset_listing 
+
+=over 4
+
+=item * platform - CFD platform, e.g. mt5
+
+=item * region - eu or row
+
+=item * type - brief or full
+
+=back
+
+=cut
+
+sub get_asset_listing_stream_channel {
+
+    my ($self, $platform, $region, $type) = @_;
+
+    return ASSET_LISTING_STREAM_PREFIX . "::" . join("_", ($platform, $region, $type));
+
+}
+
+=head2 publish_asset_listing_channels
+
+Publish updates to assets listing stream channels
+
+=over 4
+
+=back
+
+=cut
+
+async sub publish_asset_listing_channels {
+
+    my ($self, $asset_listing_results) = @_;
+
+    for my $region (MT5_REGIONS->@*) {
+        for my $asset_listing_type (MT5_ASSET_LISTING_TYPES->@*) {
+            my $channel = $self->get_asset_listing_stream_channel(MT5_PLATFORM, $region, $asset_listing_type);
+
+            my @res  = ();
+            my $resp = {};
+
+            for my $asset ($asset_listing_results->@*) {
+
+                my @tokens              = split(",", $asset->{availability});
+                my %region_availability = map { $_ => 1 } @tokens;
+                next unless $region_availability{$region};
+                next if $asset_listing_type eq 'brief' and $asset->{display_order} == 10000;
+                my %new_asset = map { lc $_ => $asset->{$_} } keys $asset->%*;
+                delete $new_asset{availability};
+                push @res, \%new_asset;
+            }
+
+            $resp->{mt5} = {assets => \@res};
+
+            await $self->{redis}->publish($channel, encode_json_utf8($resp));
+
+        }
+    }
+}
+
 =head2 run
 
 Runs the asset listing script
@@ -129,9 +201,10 @@ async sub run {
 
     my $self = shift;
 
-    my $assets_config = BOM::Config::mt5_assets_config();
-    my $webapi_config = BOM::Config::mt5_webapi_config();
-    my @mt5_groups    = ('real\p01_ts01\synthetic\bvi_std-hr_usd', 'real\p01_ts01\financial\bvi_std-hr_usd');
+    my $assets_config       = BOM::Config::mt5_assets_config();
+    my $webapi_config       = BOM::Config::mt5_webapi_config();
+    my $mt5_symbols_mapping = LoadFile('/home/git/regentmarkets/bom-config/share/mt5-symbols.yml');
+    my @mt5_groups          = ('real\p01_ts01\synthetic\bvi_std-hr_usd', 'real\p01_ts01\financial\bvi_std-hr_usd');
     $log->infof("Asset Listing script started");
 
     while (1) {
@@ -174,6 +247,8 @@ async sub run {
                     my $symbol_asset_config = $assets_config->{$symbol_name};
                     my $display_order       = $symbol_asset_config ? $symbol_asset_config->{display_order} : DEFAULT_RANKING;
                     my $symbol_display_name = $symbol_asset_config ? $symbol_asset_config->{display_name}  : $symbol_name;
+                    my $availability        = $symbol_asset_config ? $symbol_asset_config->{availability}  : ["eu", "row"];
+                    my $shortcode           = $mt5_symbols_mapping->{$symbol_name} // $symbol_display_name;
 
                     my $cache_mid_price       = ($bid + $ask) / 2;
                     my $last_cached_mid_price = await $self->{redis}->get(MT5_MIDCACHE . $symbol_name);
@@ -199,10 +274,12 @@ async sub run {
                     my $asset_info = {
                         bid                   => $bid,
                         ask                   => $ask,
+                        availability          => join(",", $availability->@*),
                         display_order         => $display_order,
                         spread                => $spread,
                         day_percentage_change => $day_percentage_change,
                         symbol                => $symbol_display_name,
+                        shortcode             => $shortcode,
                         market                => $market
                     };
 
@@ -220,6 +297,9 @@ async sub run {
         }
 
         await $self->{redis}->set('MT5::ASSETS', encode_json({assets => \@results}));
+
+        await $self->publish_asset_listing_channels(\@results);
+
         $log->debugf('Updated %s assets', scalar(@results));
 
         # Update every at every 10th second of the minute
