@@ -92,6 +92,10 @@ my $servers = {
         config => '/etc/rmg/redis-exchangerates.yml',
         user   => 'read',
     },
+    redis_mt5_user => {
+        config => '/etc/rmg/redis-mt5user.yml',
+        user   => 'read',
+    },
 };
 
 # We export (on demand) all Redis names and a helper function.

@@ -45,6 +45,10 @@
                                         "description": "Market type of asset.",
                                         "type": "string"
                                     },
+                                    "shortcode": {
+                                        "description": "The asset shortcode.",
+                                        "type": "string"
+                                    },
                                     "spread": {
                                         "description": "Spread of asset.",
                                         "type": "number"
@@ -57,6 +61,24 @@
                             }
                         }
                     }
+                }
+            }
+        },
+        "subscription": {
+            "title": "Subscription information",
+            "description": "For subscription requests only.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "description": "A per-connection unique identifier. Can be passed to the `forget` API call to unsubscribe.",
+                    "type": "string",
+                    "examples": [
+                        "c84a793b-8a87-7999-ce10-9b22f7ceead3"
+                    ]
                 }
             }
         },

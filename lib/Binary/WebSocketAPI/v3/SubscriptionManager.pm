@@ -20,6 +20,7 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw(
     redis_transaction
     redis_p2p
     redis_exchange_rates
+    redis_mt5_user
 );
 
 use namespace::clean;
@@ -99,10 +100,12 @@ my $config = {
     redis_transaction_manager         => sub { return redis_transaction() },
     redis_p2p_manager                 => sub { return redis_p2p() },
     redis_exchange_rates_manager      => sub { return redis_exchange_rates() },
+    redis_asset_listing_manager       => sub { return redis_mt5_user() },
 };
 
 sub redis {
-    my $self  = shift;
+    my $self = shift;
+
     my $redis = $config->{$self->name}->();
     return $redis;
 }
@@ -116,6 +119,7 @@ Supports both normal channals and redis patterns.
 
 sub subscribe {
     my ($self, $subscription) = @_;
+
     my $channel    = $subscription->channel;
     my $stats_name = $subscription->stats_name;
     my $class      = $subscription->class;
@@ -253,6 +257,7 @@ The function that will attach onto redis server. This function will call on_mess
 
 sub on_message {
     my ($self, $redis, $message, $channel) = @_;
+
     if (my $entry = $self->channel_subscriptions->{$channel}) {
         # The $entry hash could be modified while we are looping over it
         # In order to avoid a situation like: https://perldoc.pl/perldiag#Use-of-freed-value-in-iteration

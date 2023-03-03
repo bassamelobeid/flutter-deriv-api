@@ -11,7 +11,9 @@
     "additionalProperties": false,
     "required": [
         "trading_platform_asset_listing",
-        "platform"
+        "platform",
+        "region",
+        "type"
     ],
     "properties": {
         "trading_platform_asset_listing": {
@@ -28,8 +30,23 @@
                 "mt5"
             ]
         },
+        "region": {
+            "description": "Region be either 'eu' or 'row'.",
+            "type": "string",
+            "enum": [
+                "eu",
+                "row"
+            ]
+        },
+        "subscribe": {
+            "description": "[Optional] If set to 1, will send updates whenever asset listing is updated.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
         "type": {
-            "description": "Can be either 'brief' or 'full'",
+            "description": "Can be either 'brief' or 'full'.",
             "type": "string",
             "enum": [
                 "brief",

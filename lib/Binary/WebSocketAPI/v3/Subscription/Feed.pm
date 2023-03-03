@@ -183,6 +183,7 @@ sub handle_message {
     if ($cache_only) {
         $cache->{$epoch} = $result;
     } else {
+
         $c->send({
                 json => {
                     msg_type => $msg_type,

@@ -60,6 +60,7 @@ sub forget_all {
             p2p_advertiser
             p2p_advert
             cashier_payments
+            trading_platform_asset_listing
         );
         my $accepted_types = qr/^${\join q{|} => @accepted_types}$/;
         my @failed_types   = grep { !/$accepted_types/ } @$types;
@@ -83,7 +84,10 @@ sub forget_all {
                 @removed_ids{@{_forget_p2p_advert_subscription($c)}} = ();
             } elsif ($type eq 'cashier_payments') {
                 @removed_ids{@{_forget_cashier_payments_subscription($c)}} = ();
+            } elsif ($type eq 'trading_platform_asset_listing') {
+                @removed_ids{@{_forget_trading_platform_asset_listing($c)}} = ();
             }
+
             #TODO why we check 'proposal_open_contract' here ?
             #TODO be brave and remove it. This is most likely legacy code left around (?)
             if ($type ne 'proposal_open_contract') {
@@ -262,6 +266,25 @@ sub _forget_cashier_payments_subscription {
     my ($c) = @_;
     my @removed_ids;
     my @subscriptions = Binary::WebSocketAPI::v3::Subscription::CashierPayments->get_by_class($c);
+
+    foreach my $subscription (@subscriptions) {
+        my $uuid = $subscription->uuid;
+        push @removed_ids, $uuid;
+        $subscription->unregister;
+    }
+    return \@removed_ids;
+}
+
+=head2 _forget_trading_platform_asset_listing
+
+Handles forgetting the subscriptions of C<trading_platform_asset_listing>.
+
+=cut
+
+sub _forget_trading_platform_asset_listing {
+    my ($c) = @_;
+    my @removed_ids;
+    my @subscriptions = Binary::WebSocketAPI::v3::Subscription::AssetListing->get_by_class($c);
 
     foreach my $subscription (@subscriptions) {
         my $uuid = $subscription->uuid;

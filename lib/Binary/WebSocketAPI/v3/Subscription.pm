@@ -106,6 +106,7 @@ sub process {
 
     try {
         my $data = decode_json_utf8($message);
+
         $data = $self->handle_error($data->{error}, $message, $data) if exists $data->{error};
         return undef unless $data;
         return $self->handle_message($data);
