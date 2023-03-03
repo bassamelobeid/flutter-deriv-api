@@ -86,6 +86,7 @@ my %ERROR_MAP = do {
         TradingAccountCurrencyNotAllowed => localize('This currency is not available.'),
         CurrencyRequired                 => localize('Please provide valid currency.'),
         MaximumTransfers                 => localize('You can only perform up to [_1] transfers a day. Please try again tomorrow.'),
+        MaximumAmountTransfers           => localize('The maximum amount of transfers is [_1] [_2] per day. Please try again tomorrow.'),
         InvalidMinAmount                 => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
         InvalidMaxAmount                 => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
         CurrencyTypeNotAllowed           => localize('This currency is temporarily suspended. Please select another currency to proceed.'),

@@ -2262,14 +2262,28 @@ sub _mt5_validate_and_get_amount {
                     params        => [formatnumber('amount', $source_currency, $min), $source_currency]}
             ) if $amount < financialrounding('amount', $source_currency, $min);
 
-            my $max = $mt5_transfer_limits->{$source_currency}->{max};
-
-            return create_error_future(
-                'InvalidMaxAmount',
-                {
-                    override_code => $error_code,
-                    params        => [formatnumber('amount', $source_currency, $max), $source_currency]}
-            ) if $amount > financialrounding('amount', $source_currency, $max);
+            my $is_daily_cumulative_limit_enabled =
+                BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
+            if ($is_daily_cumulative_limit_enabled) {
+                # max amounts are saved in USD
+                my $max                        = $mt5_transfer_limits->{$source_currency}->{max};
+                my $user_daily_transfer_amount = $authorized_client->user->daily_transfer_amount('MT5');
+                return create_error_future(
+                    'MaximumAmountTransfers',
+                    {
+                        override_code => $error_code,
+                        params        => [formatnumber('amount', $source_currency, $max), $source_currency]})
+                    if convert_currency($user_daily_transfer_amount, 'USD', $source_currency) + abs($amount) >
+                    financialrounding('amount', $source_currency, $max);
+            } else {
+                my $max = $mt5_transfer_limits->{$source_currency}->{max};
+                return create_error_future(
+                    'InvalidMaxAmount',
+                    {
+                        override_code => $error_code,
+                        params        => [formatnumber('amount', $source_currency, $max), $source_currency]}
+                ) if $amount > financialrounding('amount', $source_currency, $max);
+            }
 
             unless ($client->is_virtual and _is_account_demo($mt5_group)) {
                 my $rule_engine = BOM::Rules::Engine->new(client => $client);
@@ -2429,11 +2443,17 @@ sub _validate_client {
 
     return ('SetExistingAccountCurrency', $loginid) unless $client_currency;
 
-    my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
-    my $user_daily_transfer_count = $client_obj->user->daily_transfer_count('mt5');
+    my $is_daily_cumulative_limit_enabled =
+        BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
 
-    return ('MaximumTransfers', $daily_transfer_limit)
-        unless $user_daily_transfer_count < $daily_transfer_limit;
+    #total limits is being handled in maximum limits
+    if (!$is_daily_cumulative_limit_enabled) {
+        my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
+        my $user_daily_transfer_count = $client_obj->user->daily_transfer_count('MT5');
+
+        return ('MaximumTransfers', $daily_transfer_limit)
+            unless $user_daily_transfer_count < $daily_transfer_limit;
+    }
 
     return undef;
 }

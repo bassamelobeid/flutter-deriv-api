@@ -127,8 +127,7 @@ subtest 'platform deposit and withdrawal' => sub {
 
     $is_experimental_currency = 0;
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->dxtrade(1);
-    $client1->user->daily_transfer_incr('dxtrade');
-
+    $client1->user->daily_transfer_incr({type => 'dxtrade'});
     $c->call_ok('trading_platform_deposit', $params)->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'Daily transfer limit hit')
         ->error_message_is('You can only perform up to 1 transfers a day. Please try again tomorrow.');
 
@@ -303,7 +302,7 @@ subtest 'transfer between accounts' => sub {
         $is_experimental_currency = 0;
 
         BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->dxtrade(1);
-        $client1->user->daily_transfer_incr('dxtrade');
+        $client1->user->daily_transfer_incr({type => 'dxtrade'});
 
         $c->call_ok('transfer_between_accounts', $params)
             ->has_no_system_error->has_error->error_code_is('MaximumTransfers', 'Daily transfer limit hit')

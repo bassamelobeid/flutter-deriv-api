@@ -218,6 +218,44 @@
             "internal"
          ]
       },
+      "daily_cumulative_amount_transfers" : {
+         "type" : "object",
+         "additionalProperties" : false,
+         "properties" : {
+            "mt5" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "required" : [
+                  "allowed",
+                  "available"
+               ],
+               "properties" : {
+                  "allowed" : {
+                     "type" : "integer"
+                  },
+                  "available" : {
+                     "type" : "integer"
+                  }
+               }
+            },
+            "internal" : {
+               "type" : "object",
+               "additionalProperties" : false,
+               "required" : [
+                  "allowed",
+                  "available"
+               ],
+               "properties" : {
+                  "allowed" : {
+                     "type" : "integer"
+                  },
+                  "available" : {
+                     "type" : "integer"
+                  }
+               }
+            }
+         }
+      },
       "withdrawal_for_x_days_monetary" : {
          "enum" : [
             0

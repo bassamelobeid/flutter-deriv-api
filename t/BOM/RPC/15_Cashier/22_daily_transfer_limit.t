@@ -234,8 +234,62 @@ subtest 'mt5' => sub {
         $c->call_ok('mt5_deposit', $params)->has_no_system_error->has_no_error('third transfer ok with updated limit');
     };
 
+    subtest 'mt5_deposit with total limit' => sub {
+        initialize_user_transfer_limits();
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(500);
+        $app_config->set({
+            'payments.transfer_between_accounts.minimum.default'               => 1,
+            'payments.transfer_between_accounts.maximum.default'               => 2500,
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 500,
+        });
+        $params->{args} = {
+            amount      => 180,
+            from_binary => $client_usd->loginid,
+            to_mt5      => $login_std,
+        };
+        $params->{token} = $token_usd;
+        $c->call_ok('mt5_deposit', $params)->has_no_system_error->has_no_error('first mt5 deposit');
+
+        $params = {
+            token => $token_eth,
+            args  => {
+                amount      => 180,
+                from_binary => $client_eth->loginid,
+                to_mt5      => $login_adv,
+            },
+        };
+        $c->call_ok('mt5_deposit', $params)->has_no_system_error->has_no_error('second mt5 deposit');
+
+        $params = {
+            token => $token_usd,
+            args  => {
+                amount      => 180,
+                from_binary => $client_usd->loginid,
+                to_mt5      => $login_adv,
+            },
+        };
+
+        $c->call_ok('mt5_deposit', $params)
+            ->has_no_system_error->has_error->error_code_is('MT5DepositError', 'limit applies to different account of same user')
+            ->error_message_like(qr/The maximum amount of transfers is/, 'per day. Please try again tomorrow.');
+
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 600,
+        });
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(600);
+        $c->call_ok('mt5_deposit', $params)->has_no_system_error->has_no_error('third transfer ok with updated total limit');
+    };
+
     subtest 'mt5_withdrawal' => sub {
         initialize_user_transfer_limits();
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 0,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 600,
+        });
         $app_config->payments->transfer_between_accounts->limits->MT5(2);
 
         $params->{args} = {
@@ -272,8 +326,59 @@ subtest 'mt5' => sub {
         $c->call_ok('mt5_withdrawal', $params)->has_no_system_error->has_no_error('third transfer ok with updated limit');
     };
 
+    subtest 'mt5_withdrawal with total limits' => sub {
+        initialize_user_transfer_limits();
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(400);
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 400,
+        });
+        $params->{args} = {
+            amount    => 150,
+            to_binary => $client_usd->loginid,
+            from_mt5  => $login_std,
+        };
+        $c->call_ok('mt5_withdrawal', $params)->has_no_system_error->has_no_error('first mt5 withdrawal');
+
+        $params = {
+            token => $token_eth,
+            args  => {
+                amount    => 150,
+                to_binary => $client_eth->loginid,
+                from_mt5  => $login_adv,
+            },
+        };
+        $c->call_ok('mt5_withdrawal', $params)->has_no_system_error->has_no_error('second mt5 withdrawal');
+
+        $params = {
+            token => $token_usd,
+            args  => {
+                amount    => 150,
+                to_binary => $client_usd->loginid,
+                from_mt5  => $login_adv,
+            },
+        };
+
+        $c->call_ok('mt5_withdrawal', $params)
+            ->has_no_system_error->has_error->error_code_is('MT5WithdrawalError', 'limit applies to different account of same user')
+            ->error_message_like(qr/The maximum amount of transfers is/, 'per day. Please try again tomorrow.');
+
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(500);
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 500,
+        });
+        $c->call_ok('mt5_withdrawal', $params)->has_no_system_error->has_no_error('third transfer ok with updated total limit');
+    };
+
     subtest 'transfer_between_accounts to mt5' => sub {
         initialize_user_transfer_limits();
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 0,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 500,
+        });
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
         $app_config->payments->transfer_between_accounts->limits->MT5(2);
 
         $params->{args} = {
@@ -313,10 +418,62 @@ subtest 'mt5' => sub {
         $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('third transfer ok with updated limit');
     };
 
+    subtest 'transfer_between_accounts to mt5 with total limit' => sub {
+        initialize_user_transfer_limits();
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(500);
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 500,
+        });
+        $params->{args} = {
+            amount       => 180,
+            currency     => 'USD',
+            account_from => $client_usd->loginid,
+            account_to   => $login_std,
+        };
+        $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('first mt5 deposit');
+
+        $params = {
+            token => $token_eth,
+            args  => {
+                amount       => 180,
+                currency     => 'ETH',
+                account_from => $client_eth->loginid,
+                account_to   => $login_adv,
+            },
+        };
+        $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('second mt5 deposit');
+
+        $params = {
+            token => $token_usd,
+            args  => {
+                amount       => 180,
+                currency     => 'USD',
+                account_from => $client_usd->loginid,
+                account_to   => $login_adv,
+            },
+        };
+
+        $c->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'limit applies to different account of same user')
+            ->error_message_like(qr/The maximum amount of transfers is/, 'per day. Please try again tomorrow.');
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 1000,
+        });
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(1000);
+        $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('third transfer ok with updated limit');
+    };
+
     subtest 'transfer_between_accounts from mt5' => sub {
         initialize_user_transfer_limits();
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
         $app_config->payments->transfer_between_accounts->limits->MT5(2);
-
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 0,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 1000,
+        });
         $params->{args} = {
             amount       => 150,
             currency     => 'USD',
@@ -353,6 +510,118 @@ subtest 'mt5' => sub {
         $app_config->payments->transfer_between_accounts->limits->MT5(3);
         $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('third transfer ok with updated limit');
     };
+
+    subtest 'transfer_between_accounts from mt5' => sub {
+        initialize_user_transfer_limits();
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(400);
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 400,
+        });
+        $params->{args} = {
+            amount       => 150,
+            currency     => 'USD',
+            account_to   => $client_usd->loginid,
+            account_from => $login_std,
+        };
+        $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('first mt5 withdrawal');
+
+        $params = {
+            token => $token_eth,
+            args  => {
+                amount       => 150,
+                currency     => 'USD',
+                account_to   => $client_eth->loginid,
+                account_from => $login_adv,
+            },
+        };
+        $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('second mt5 withdrawal');
+
+        $params = {
+            token => $token_usd,
+            args  => {
+                amount       => 150,
+                currency     => 'USD',
+                account_to   => $client_usd->loginid,
+                account_from => $login_adv,
+            },
+        };
+
+        $c->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'limit applies to different account of same user')
+            ->error_message_like(qr/The maximum amount of transfers is/, 'per day. Please try again tomorrow.');
+
+        $app_config->payments->transfer_between_accounts->daily_cumulative_limit->MT5(1000);
+        $app_config->set({
+            'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+            'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 1000,
+        });
+        $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('third transfer ok with updated limit');
+    };
+};
+
+subtest 'transfer between accounts with daily_cumulative_limit enabled' => sub {
+    initialize_user_transfer_limits();
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->between_accounts(20);
+    $app_config->set({
+        'payments.transfer_between_accounts.minimum.default'                         => 1,
+        'payments.transfer_between_accounts.maximum.default'                         => 2500,
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable'           => 1,
+        'payments.transfer_between_accounts.daily_cumulative_limit.between_accounts' => 20,
+    });
+
+    my $params = {
+        token => $token_usd,
+        args  => {
+            account_from => $client_usd->loginid,
+            account_to   => $client_btc->loginid,
+            currency     => 'USD',
+            amount       => 10,
+        },
+    };
+    $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('first transfer ok');
+
+    $params = {
+        token => $token_btc,
+        args  => {
+            account_from => $client_btc->loginid,
+            account_to   => $client_usd->loginid,
+            currency     => 'BTC',
+            amount       => 9,
+        },
+    };
+
+    $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('second transfer ok');
+
+    my $res = $c->call_ok('transfer_between_accounts', $params);
+    $res->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'error code for exceeded limit')
+        ->error_message_like(qr/The maximum amount of transfers is /, 'per day. Please try again tomorrow.');
+
+    $params = {
+        token => $token_eth,
+        args  => {
+            account_from => $client_eth->loginid,
+            account_to   => $client_usd->loginid,
+            currency     => 'ETH',
+            amount       => 10,
+        },
+    };
+
+    $c->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'limit applies to different account of same user')
+        ->error_message_like(qr/The maximum amount of transfers is /, 'per day. Please try again tomorrow.');
+
+    $app_config->payments->transfer_between_accounts->limits->between_accounts(30);
+    $app_config->set({
+        'payments.transfer_between_accounts.minimum.default'                         => 1,
+        'payments.transfer_between_accounts.maximum.default'                         => 2500,
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable'           => 1,
+        'payments.transfer_between_accounts.daily_cumulative_limit.between_accounts' => 30,
+    });
+    $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('third transfer ok with updated total limit');
+    $app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
 };
 
 $documents_mock->unmock_all;

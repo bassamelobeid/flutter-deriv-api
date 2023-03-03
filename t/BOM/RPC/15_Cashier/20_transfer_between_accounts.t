@@ -1534,16 +1534,6 @@ subtest 'multi currency transfers' => sub {
         ->error_message_is('Sorry, transfers are currently unavailable. Please try again later.',
         'fiat->cryto when rate older than 1 hour - correct error message');
 
-    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts(2);
-    $redis->hmset(
-        'exchange_rates::EUR_USD',
-        quote => 1.1,
-        epoch => time
-    );
-    $result =
-        $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Daily Transfer limit - correct error code")
-        ->error_message_like(qr/2 transfers a day/, 'Daily Transfer Limit - correct error message');
 };
 
 subtest 'suspended currency transfers' => sub {
@@ -2389,6 +2379,101 @@ subtest 'crypto to fiat limits' => sub {
         ->error_message_like(qr/You have exceeded [\d\.]+ BTC in cumulative transactions. To continue, you will need to verify your identity./,
         'Correct error message returned for a crypto to fiat transfer that reached the limit.');
 
+    $mock_status->unmock_all;
+    $mock_client->unmock_all;
+};
+
+subtest 'cumulative_limits limits' => sub {
+    my $email = 'cumulative_limits' . rand(999) . '@sample.com';
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts(2);
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->crypto_to_fiat(10000);
+    restore_time();
+    $redis->hmset(
+        'exchange_rates::BTC_USD',
+        quote => 1,
+        epoch => time
+    );
+    $redis->hmset(
+        'exchange_rates::BTC_USD',
+        quote => 1,
+        epoch => time
+    );
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
+    });
+    my $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
+    });
+
+    $user->add_client($client_cr_btc);
+    $user->add_client($client_cr_usd);
+
+    $client_cr_btc->set_default_account('BTC');
+    $client_cr_usd->set_default_account('USD');
+
+    $client_cr_btc->payment_free_gift(
+        currency => 'BTC',
+        amount   => 20,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr_btc->default_account->balance + 0, '==', 20, 'correct balance';
+
+    $client_cr_usd->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    cmp_ok $client_cr_usd->default_account->balance + 0, '==', 1000, 'correct balance';
+
+    $params->{args} = {
+        account_from => $client_cr_btc->loginid,
+        account_to   => $client_cr_usd->loginid,
+        currency     => 'BTC',
+        amount       => 1.2,
+    };
+
+    my $token = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
+    $params->{token}      = $token;
+    $params->{token_type} = 'oauth_token';
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $mock_status = Test::MockModule->new('BOM::User::Client::Status');
+
+    my $auth = 1;
+    $mock_client->mock('fully_authenticated', sub { $auth; });
+    $mock_status->mock(
+        'age_verification',
+        sub {
+            return 0;
+        });
+
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+
+    ok $result->{status}, 'Fully authenticated non age verified transfer is sucessful';
+
+    sleep 2;
+
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+
+    sleep 2;
+    $result =
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Daily Transfer limit - correct error code")
+        ->error_message_like(qr/2 transfers a day/, 'Daily Transfer Limit - correct error message');
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
     $mock_status->unmock_all;
     $mock_client->unmock_all;
 };

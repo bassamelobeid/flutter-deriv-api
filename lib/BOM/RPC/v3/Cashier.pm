@@ -489,7 +489,7 @@ rpc get_limits => sub {
             },
             mt5 => {
                 config  => 'MT5',
-                counter => MT5,
+                counter => 'MT5',
             },
             dxtrade => {
                 config  => DXTRADE,
@@ -500,7 +500,9 @@ rpc get_limits => sub {
                 counter => DERIVEZ,
             },
         };
-
+        my $is_daily_cumulative_limit_enabled =
+            BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
+        $limit->{daily_cumulative_amount_transfers}->{enabled} = $is_daily_cumulative_limit_enabled;
         for my $transfer (keys $daily_transfer_limits->%*) {
             my ($config, $counter) = @{$daily_transfer_limits->{$transfer}}{qw/config counter/};
             my $transfers_limit   = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->$config;
@@ -510,6 +512,17 @@ rpc get_limits => sub {
             $limit->{daily_transfers}->{$transfer} = {
                 allowed   => $transfers_limit,
                 available => $available > 0 ? $available : 0,
+            };
+
+            my $transfers_amount_limit =
+                BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->$config // 0;
+
+            next if $transfers_amount_limit < 0;
+            my $transfers_amount = $client->user->daily_transfer_amount($counter);
+            my $available_amount = $transfers_amount_limit - $transfers_amount;
+            $limit->{daily_cumulative_amount_transfers}->{$transfer} = {
+                allowed   => $transfers_amount_limit,
+                available => $available_amount > 0 ? $available_amount : 0,
             };
         }
     }
@@ -1828,7 +1841,10 @@ rpc transfer_between_accounts => sub {
     }
     BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]", $loginid_from);
 
-    $client_from->user->daily_transfer_incr();
+    $client_from->user->daily_transfer_incr({
+        amount   => $amount,
+        currency => $currency
+    });
 
     return {
         status              => 1,
@@ -1908,27 +1924,40 @@ sub _validate_transfer_between_accounts {
         if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
         and (($from_currency_type // '') ne ($to_currency_type // ''));
 
-    # check for internal transactions number limits
-    my $daily_transfer_limit = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
-    my $daily_transfer_count = $current_client->user->daily_transfer_count();
-    return _transfer_between_accounts_error(
-        localize("You can only perform up to [_1] transfers a day. Please try again tomorrow.", $daily_transfer_limit))
-        unless $daily_transfer_count < $daily_transfer_limit;
+    my $is_daily_cumulative_limit_enabled =
+        BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable;
+    if ($is_daily_cumulative_limit_enabled) {
+        my $user_daily_transfer_amount = $current_client->user->daily_transfer_amount();
+        my $max_allowed_amount         = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{max};
+        return _transfer_between_accounts_error(
+            localize(
+                'The maximum amount of transfers is [_1] [_2] per day. Please try again tomorrow.',
+                formatnumber('amount', $currency, $max_allowed_amount), $currency
+            )) unless convert_currency($user_daily_transfer_amount, 'USD', $currency) + abs($amount) < $max_allowed_amount;
 
+    } else {
+
+        # check for internal transactions number limits
+        my $daily_transfer_limit = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
+        my $daily_transfer_count = $current_client->user->daily_transfer_count();
+        return _transfer_between_accounts_error(
+            localize("You can only perform up to [_1] transfers a day. Please try again tomorrow.", $daily_transfer_limit))
+            unless $daily_transfer_count < $daily_transfer_limit;
+
+        my $max_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{max};
+
+        return _transfer_between_accounts_error(
+            localize(
+                'Provided amount is not within permissible limits. Maximum transfer amount for [_1] currency is [_2].',
+                $currency, formatnumber('amount', $currency, $max_allowed_amount))
+        ) if (($amount > $max_allowed_amount) and ($from_currency_type ne $to_currency_type));
+    }
+    #minimum thresholds should be not affected by total limit
     my $min_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{min};
-
     return _transfer_between_accounts_error(
         localize(
             'Provided amount is not within permissible limits. Minimum transfer amount for [_1] currency is [_2].',
             $currency, formatnumber('amount', $currency, $min_allowed_amount))) if $amount < $min_allowed_amount;
-
-    my $max_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{max};
-
-    return _transfer_between_accounts_error(
-        localize(
-            'Provided amount is not within permissible limits. Maximum transfer amount for [_1] currency is [_2].',
-            $currency, formatnumber('amount', $currency, $max_allowed_amount))
-    ) if (($amount > $max_allowed_amount) and ($from_currency_type ne $to_currency_type));
 
     # this check is only for svg and unauthenticated clients
     # fiat to crypto || crypto to fiat || crypto to crypto

@@ -93,6 +93,7 @@ my %category_message_mapping = do {
         AccountDisabled              => localize("We've disabled your MT5 account. Please contact us for more information."),
         CashierLocked                => localize('Your account cashier is locked. Please contact us for more information.'),
         MaximumTransfers             => localize('You can only perform up to [_1] transfers a day. Please try again tomorrow.'),
+        MaximumAmountTransfers       => localize('The maximum amount of transfers is [_1] [_2] per day. Please try again tomorrow.'),
         CannotGetOpenPositions       => localize('A connection error happened while we were completing your request. Please try again later.'),
         WithdrawalLocked             => localize('You cannot perform this action, as your account is withdrawal locked.'),
         TransferBetweenAccountsError => localize('Transfers between accounts are not available for your account.'),

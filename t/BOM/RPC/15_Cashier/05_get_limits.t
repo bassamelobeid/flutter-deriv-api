@@ -73,6 +73,22 @@ my $transfer_limits       = {
         available => $transfer_limit_config->derivez
     }};
 
+my $transfer_daily_cumulative_limit_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit;
+my $transfer_daily_cumulative_limits       = {
+    enabled  => $transfer_daily_cumulative_limit_config->enable,
+    internal => {
+        allowed   => $transfer_daily_cumulative_limit_config->between_accounts,
+        available => $transfer_daily_cumulative_limit_config->between_accounts
+    },
+    mt5 => {
+        allowed   => $transfer_daily_cumulative_limit_config->MT5,
+        available => $transfer_daily_cumulative_limit_config->MT5
+    },
+    dxtrade => {
+        allowed   => $transfer_daily_cumulative_limit_config->dxtrade,
+        available => $transfer_daily_cumulative_limit_config->dxtrade
+    }};
+
 # Test for CR accounts which use USD as the currency
 subtest 'CR - USD' => sub {
 
@@ -140,6 +156,7 @@ subtest 'CR - USD' => sub {
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price', 'USD', $limits->{lifetime_limit}),
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -179,6 +196,7 @@ subtest 'CR - USD' => sub {
         'withdrawal_for_x_days_monetary'      => '1000.00',
         'remainder'                           => formatnumber('price', 'USD', 99998999),
         'daily_transfers'                     => $transfer_limits,
+        'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
     };
 
     subtest 'skip_authentication' => sub {
@@ -268,6 +286,7 @@ subtest 'CR-EUR' => sub {
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => $lifetime_limit,
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -317,6 +336,7 @@ subtest 'CR-EUR' => sub {
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price', 'EUR', $lifetime_limit - 1000),
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
 
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -372,6 +392,7 @@ subtest 'CR-BTC' => sub {
             'withdrawal_since_inception_monetary' => '0.00000000',
             'remainder'                           => $lifetime_limit,
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -429,6 +450,7 @@ subtest 'CR-BTC' => sub {
             'withdrawal_for_x_days_monetary'      => '1.00000000',
             'remainder'                           => formatnumber('price', 'BTC', $lifetime_limit - 1),
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
 
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -483,6 +505,7 @@ subtest 'MLT' => sub {
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price', 'EUR', $limits->{lifetime_limit}),
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -528,6 +551,7 @@ subtest 'MLT' => sub {
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price', 'EUR', 99998999),
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
 
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -583,6 +607,7 @@ subtest 'MX' => sub {
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price', 'EUR', $limits->{limit_for_days}),
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -628,6 +653,7 @@ subtest 'MX' => sub {
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price', 'EUR', 99998999),
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
 
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -660,6 +686,7 @@ subtest 'MX' => sub {
             'withdrawal_for_x_days_monetary'      => '1100.00',
             'remainder'                           => formatnumber('price', 'EUR', 99998899),
             'daily_transfers'                     => $transfer_limits,
+            'daily_cumulative_amount_transfers'   => $transfer_daily_cumulative_limits
         };
 
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'correct withdrawal limits');
