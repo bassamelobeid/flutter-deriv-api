@@ -154,7 +154,7 @@ rpc trading_platform_asset_listing => auth => [],
             client   => $client,
         );
 
-        $resp->{$params->{args}{platform}}->{assets} = $platform->get_assets($params->{args}{type} // '');
+        $resp->{$params->{args}{platform}}->{assets} = $platform->get_assets($params->{args}{type} // '', $params->{args}{region} // 'row');
 
         return $resp;
 
