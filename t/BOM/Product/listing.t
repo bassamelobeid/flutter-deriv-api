@@ -76,9 +76,10 @@ subtest 'product listing - deriv bot' => sub {
 subtest 'product listing - deriv go' => sub {
     my $app_id   = 23789;
     my $deriv_go = BOM::Product::Listing->new->by_country('id', [$app_id]);
-    cmp_bag $deriv_go->{$app_id}->{available_markets}, ['Cryptocurrencies', 'Forex', 'Derived'], 'available markets matched';
-    cmp_bag $deriv_go->{$app_id}->{available_trade_types}, ['Spreads', 'Multipliers'], 'available trade types matched';
-    is scalar $deriv_go->{$app_id}->{product_list}->@*, 49, '49 listing';
+    cmp_bag $deriv_go->{$app_id}->{available_markets}, ['Cryptocurrencies', 'Forex', 'Derived', 'Commodities', 'Stock Indices'],
+        'available markets matched';
+    cmp_bag $deriv_go->{$app_id}->{available_trade_types}, ['Spreads', 'Multipliers', 'Options'], 'available trade types matched';
+    is scalar $deriv_go->{$app_id}->{product_list}->@*, 84, '84 listing';
     # check the structure
     cmp_bag [keys $deriv_go->{$app_id}->{product_list}->[0]->%*],
         ['available_account_types', 'available_trade_types', 'symbol', 'market', 'submarket'],
