@@ -894,6 +894,12 @@ subtest 'backtest for Onfido disabled country' => sub {
     $onfido_mock->mock(
         'get_latest_check',
         sub {
+            if (!$country_supported) {
+                return {
+                    user_check => undef,
+                };
+            }
+
             return {
                 report_document_status     => 'complete',
                 report_document_sub_result => $onfido_document_sub_result,
@@ -928,8 +934,11 @@ subtest 'backtest for Onfido disabled country' => sub {
             expected          => {
                 status => 'verified',
             },
-            age_verification => 1,
-            name             => 'verified status, supported country',
+            age_verification => {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            name => 'verified status, supported country',
         },
         {
             check_result      => 'clear',
@@ -938,7 +947,7 @@ subtest 'backtest for Onfido disabled country' => sub {
             expected          => {
                 status => 'rejected',
             },
-            age_verification => 0,
+            age_verification => undef,
             name             => 'rejected status, supported country',
         },
         {
@@ -946,38 +955,41 @@ subtest 'backtest for Onfido disabled country' => sub {
             docum_result      => 'rejected',
             country_supported => 0,
             expected          => {
-                status => 'rejected',
+                status => 'none',
             },
-            name => 'rejected status, unsupported country',
+            name => 'none status, unsupported country',
         },
         {
             check_result      => 'consider',
             docum_result      => 'suspected',
             country_supported => 0,
             expected          => {
-                status => 'suspected',
+                status => 'none',
             },
-            name => 'suspected status, unsupported country',
+            name => 'none status, unsupported country',
         },
         {
             check_result      => 'clear',
             docum_result      => undef,
             country_supported => 0,
             expected          => {
-                status => 'verified',
+                status => 'none',
             },
-            age_verification => 1,
-            name             => 'verified status, unsupported country',
+            age_verification => {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            name => 'none status, unsupported country',
         },
         {
             check_result      => 'clear',
             docum_result      => undef,
             country_supported => 0,
             expected          => {
-                status => 'rejected',
+                status => 'none',
             },
-            age_verification => 0,
-            name             => 'rejected status, unsupported country',
+            age_verification => undef,
+            name             => 'none status, unsupported country',
         },
         {
             docum_result      => 'awaiting_applicant',
@@ -1194,7 +1206,7 @@ subtest 'IDV Validated account' => sub {
 
     $documents_uploaded      = {};
     $ignore_age_verification = 0;
-    $client->status->set('age_verification', 'test', 'test');
+    $client->status->set('age_verification', 'system', 'test');
     $result = $c->tcall('get_account_status', {token => $token});
 
     cmp_deeply $result->{authentication},
@@ -1303,7 +1315,7 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
             };
         });
 
-    $client->status->set('age_verification', 'test', 'test');
+    $client->status->set('age_verification', 'system', 'test');
     @latest_poi_by = ('idv');
     $result        = $c->tcall('get_account_status', {token => $token});
     cmp_deeply $result->{authentication},
@@ -1449,6 +1461,10 @@ subtest 'IDV Validated, but high_risk manual upload pending' => sub {
                             test => 1,
                         }}}};
         });
+
+    $client->status->clear_age_verification;
+    $client->status->set('age_verification', 'test', 'test');
+    $client->status->_clear_all;
 
     $client->documents->_clear_uploaded;
     $result = $c->tcall('get_account_status', {token => $token});

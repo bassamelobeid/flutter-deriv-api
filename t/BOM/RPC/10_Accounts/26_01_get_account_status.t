@@ -654,6 +654,7 @@ subtest 'get account status' => sub {
                     },
                     expiry_date => Date::Utility->new->plus_time_interval('1d')->epoch,
                     is_expired  => 0,
+                    is_pending  => 1,
                 },
             };
 
@@ -694,7 +695,7 @@ subtest 'get account status' => sub {
                                     status              => 'none',
                                 },
                                 manual => {
-                                    status => 'verified',
+                                    status => 'pending',
                                 }}
                         },
                         ownership => {
@@ -726,7 +727,14 @@ subtest 'get account status' => sub {
                 $test_client->save;
 
                 my $mocked_status = Test::MockModule->new(ref($test_client->status));
-                $mocked_status->mock('age_verification', sub { return 1 });
+                $mocked_status->mock(
+                    'age_verification',
+                    sub {
+                        return +{
+                            staff_name => 'system',
+                            reason     => 'test'
+                        };
+                    });
                 $documents_uploaded = {
                     proof_of_identity => {
                         documents => {
@@ -1045,7 +1053,14 @@ subtest 'get account status' => sub {
             );
 
             my $mocked_status = Test::MockModule->new(ref($test_client_cr->status));
-            $mocked_status->mock('age_verification', sub { return 1 });
+            $mocked_status->mock(
+                'age_verification',
+                sub {
+                    return {
+                        staff_name         => 'system',
+                        last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+                    };
+                });
             $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
                 $result,
@@ -1111,8 +1126,15 @@ subtest 'get account status' => sub {
 
                 my $mocked_client = Test::MockModule->new(ref($test_client_cr));
                 my @latest_poi_by;
-                $mocked_client->mock('latest_poi_by',    sub { return @latest_poi_by });
-                $mocked_status->mock('age_verification', sub { return 1 });
+                $mocked_client->mock('latest_poi_by', sub { return @latest_poi_by });
+                $mocked_status->mock(
+                    'age_verification',
+                    sub {
+                        return +{
+                            staff_name => 'gato',
+                            reason     => 'test'
+                        };
+                    });
                 $documents_uploaded = {
                     proof_of_identity => {
                         documents => {
@@ -1211,7 +1233,14 @@ subtest 'get account status' => sub {
                 my @latest_poi_by;
                 $mocked_client->mock('latest_poi_by',       sub { return @latest_poi_by });
                 $mocked_client->mock('fully_authenticated', sub { return 1 });
-                $mocked_status->mock('age_verification',    sub { return 1 });
+                $mocked_status->mock(
+                    'age_verification',
+                    sub {
+                        return +{
+                            staff_name => 'gato',
+                            reason     => 'test'
+                        };
+                    });
                 $documents_expired  = 1;
                 $documents_uploaded = {
                     proof_of_address => {
@@ -1938,7 +1967,14 @@ subtest 'get account status' => sub {
                 $test_client_mlt->save;
 
                 my $mocked_status = Test::MockModule->new(ref($test_client_mlt->status));
-                $mocked_status->mock('age_verification', sub { return 1 });
+                $mocked_status->mock(
+                    'age_verification',
+                    sub {
+                        return +{
+                            staff_name => 'gato',
+                            reason     => 'test'
+                        };
+                    });
                 $documents_expired = 1;
                 $mocked_client->mock('has_deposits', sub { return 1 });
                 my @latest_poi_by;
@@ -2120,7 +2156,7 @@ subtest 'get account status' => sub {
             $mocked_client->mock('is_first_deposit_pending', sub { return 0 });
 
             my $mocked_status = Test::MockModule->new(ref($test_client_mx->status));
-            $mocked_status->mock('age_verification', sub { return {reason => 'test reason'} });
+            $mocked_status->mock('age_verification', sub { return {reason => 'test reason', staff_name => 'system'} });
             $mocked_status->mock('unwelcome',        sub { return {reason => 'test reason'} });
 
             $result = $c->tcall($method, {token => $token_mx});
@@ -2275,7 +2311,14 @@ subtest 'get account status' => sub {
 
                 $test_client_mx->set_authentication('ID_DOCUMENT', {status => 'pending'});
                 $test_client_mx->save;
-                $mocked_status->mock('age_verification', sub { return 1 });
+                $mocked_status->mock(
+                    'age_verification',
+                    sub {
+                        return +{
+                            staff_name => 'gato',
+                            reason     => 'test'
+                        };
+                    });
                 $documents_expired  = 1;
                 $documents_uploaded = {
                     proof_of_identity => {
@@ -2388,7 +2431,14 @@ subtest 'get account status' => sub {
             $test_client->save;
 
             my $mocked_status = Test::MockModule->new(ref($test_client->status));
-            $mocked_status->mock('age_verification', sub { return 1 });
+            $mocked_status->mock(
+                'age_verification',
+                sub {
+                    return +{
+                        staff_name => 'system',
+                        reason     => 'test'
+                    };
+                });
 
             my $result = $c->tcall($method, {token => $token});
             subtest "with valid documents" => sub {
@@ -2638,7 +2688,14 @@ subtest 'get account status' => sub {
             $mocked_client->mock('latest_poi_by', sub { return @latest_poi_by });
 
             my $mocked_status = Test::MockModule->new(ref($test_client->status));
-            $mocked_status->mock('age_verification', sub { return 1 });
+            $mocked_status->mock(
+                'age_verification',
+                sub {
+                    return +{
+                        staff_name => 'system',
+                        reason     => 'test',
+                    };
+                });
 
             $test_client->get_authentication('ID_DOCUMENT')->delete;
             $test_client->save;
