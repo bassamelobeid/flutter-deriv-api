@@ -56,6 +56,7 @@ Deletes all keys for user daily transfer limits.
 sub initialize_user_transfer_limits {
     my $redis = BOM::Config::Redis::redis_replicated_write();
     $redis->del($_) for $redis->keys('USER_TRANSFERS_DAILY::*')->@*;
+    $redis->del($_) for $redis->keys('USER_TOTAL_AMOUNT_TRANSFERS_DAILY::*')->@*;
     return;
 }
 
