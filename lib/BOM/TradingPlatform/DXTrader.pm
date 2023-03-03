@@ -572,8 +572,11 @@ sub deposit {
         );
 
         $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
-        $self->client->user->daily_transfer_incr(PLATFORM_ID);
 
+        $self->client->user->daily_transfer_incr({
+                type     => PLATFORM_ID,
+                amount   => $args{amount},
+                currency => $account->{currency}});
     } catch {
         die +{error_code => 'DXDepositFailed'};
     }
@@ -701,8 +704,11 @@ sub withdraw {
         );
 
         $self->insert_payment_details($txn->payment_id, $args{from_account}, $args{amount} * -1);
-        $self->client->user->daily_transfer_incr(PLATFORM_ID);
 
+        $self->client->user->daily_transfer_incr({
+                type     => PLATFORM_ID,
+                amount   => $args{amount},
+                currency => $account->{currency}});
     } catch {
         die +{error_code => 'DXWithdrawalIncomplete'};
     }

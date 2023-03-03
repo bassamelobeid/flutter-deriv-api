@@ -29,7 +29,7 @@ use BOM::User::RiskScreen;
 use BOM::User::SocialResponsibility;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
-use ExchangeRates::CurrencyConverter qw(in_usd);
+use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
 use BOM::Platform::Redis;
 use LandingCompany::Registry;
 use BOM::Config::AccountType::Registry;
@@ -49,6 +49,8 @@ use constant BACKOFFICE_APP_ID => 4;
 use constant CLIENT_LOGIN_HISTORY_KEY_PREFIX => "CLIENT_LOGIN_HISTORY::";
 # Redis key prefix for counting daily user transfers
 use constant DAILY_TRANSFER_COUNT_KEY_PREFIX => "USER_TRANSFERS_DAILY::";
+# Redis key prefix for counting daily user amount transfers
+use constant DAILY_TRANSFER_AMOUNT_KEY_PREFIX => "USER_TOTAL_AMOUNT_TRANSFERS_DAILY::";
 
 sub dbic {
     my (undef, %params) = @_;
@@ -1044,6 +1046,12 @@ sub _save_login_detail_redis {
     }
 }
 
+=head2 logged_in_before_from_same_location
+
+Checks where the user have logged in from the same location before
+
+=cut
+
 sub logged_in_before_from_same_location {
     my ($self, $new_env) = @_;
 
@@ -1084,21 +1092,64 @@ sub logged_in_before_from_same_location {
 
 =head2 daily_transfer_incr
 
-Increments number of transfers per day in redis.
+Increments transfers per day in redis depending on count or cumulative amount.
 
 =cut
 
 sub daily_transfer_incr {
+    my ($self, $args) = @_;
+
+    my $type     = $args->{type}     // 'internal';
+    my $currency = $args->{currency} // 'USD';
+    my $amount   = $args->{amount}   // 0;
+
+    # redis name is different than dynamic settings
+    # Everyone's limits will be reset to zero if setting is changed. So we should always be incrementing both keys always.
+    # It's a waste of space but we have no choice until we remove the old code.
+
+    $self->daily_transfer_incr_amount(convert_currency(abs($amount), $currency, 'USD'), $type);
+    $self->daily_transfer_incr_count($type);
+
+    return;
+}
+
+=head2 daily_transfer_incr_count
+
+Increments number of transfers per day in redis.
+
+=cut
+
+sub daily_transfer_incr_count {
     my ($self, $type) = @_;
-    $type //= 'internal';
 
     my $redis     = BOM::Config::Redis::redis_replicated_write();
     my $redis_key = DAILY_TRANSFER_COUNT_KEY_PREFIX . $type . '_' . $self->id;
-    my $expiry    = 86400 - Date::Utility->new->seconds_after_midnight;
-
+    my $expiry    = Date::Utility->today->plus_time_interval("1d")->epoch - 1;    #end of day - 1 sec
     $redis->multi;
     $redis->incr($redis_key);
-    $redis->expire($redis_key, $expiry);
+    $redis->expireat($redis_key, $expiry);
+    $redis->exec;
+
+    return;
+}
+
+=head2 daily_transfer_incr_amount
+
+Increments number of transfers per day in redis.
+
+=cut
+
+sub daily_transfer_incr_amount {
+    my ($self, $amount, $type) = @_;
+
+    my $redis          = BOM::Config::Redis::redis_replicated_write();
+    my $redis_hash     = DAILY_TRANSFER_AMOUNT_KEY_PREFIX . Date::Utility->new->date;
+    my $redis_hash_key = $type . '_' . $self->id;
+    my $expiry         = Date::Utility->today->plus_time_interval("1d")->epoch - 1;     #end of day - 1 sec
+
+    $redis->multi;
+    $redis->hincrbyfloat($redis_hash, $redis_hash_key, $amount);
+    $redis->expireat($redis_hash, $expiry);
     $redis->exec;
 
     return;
@@ -1118,6 +1169,23 @@ sub daily_transfer_count {
     my $redis_key = DAILY_TRANSFER_COUNT_KEY_PREFIX . $type . '_' . $self->id;
 
     return $redis->get($redis_key) // 0;
+}
+
+=head2 daily_transfer_amount
+
+Gets number of total transfers made in the current day.
+
+=cut
+
+sub daily_transfer_amount {
+    my ($self, $type) = @_;
+    $type //= 'internal';
+
+    my $redis          = BOM::Config::Redis::redis_replicated_write();
+    my $redis_hash     = DAILY_TRANSFER_AMOUNT_KEY_PREFIX . Date::Utility->new->date;
+    my $redis_hash_key = $type . '_' . $self->id;
+
+    return $redis->hget($redis_hash, $redis_hash_key) // 0;
 }
 
 =head2 valid_to_anonymize

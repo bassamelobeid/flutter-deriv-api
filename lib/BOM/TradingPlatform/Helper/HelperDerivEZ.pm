@@ -1278,8 +1278,8 @@ sub _validate_client {
 
     return ('SetExistingAccountCurrency', $loginid) unless $client_currency;
 
-    my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
-    my $user_daily_transfer_count = $client_obj->user->daily_transfer_count('mt5');
+    my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->derivez;
+    my $user_daily_transfer_count = $client_obj->user->daily_transfer_count('derivez');
 
     return ('MaximumTransfers', $daily_transfer_limit)
         unless $user_daily_transfer_count < $daily_transfer_limit;

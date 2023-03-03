@@ -492,7 +492,11 @@ sub deposit {
             remark       => $comment,
             txn_details  => \%txn_details,
         );
-        $self->client->user->daily_transfer_incr('derivez');
+        $self->client->user->daily_transfer_incr({
+            type     => 'derivez',
+            amount   => $amount,
+            currency => $fm_client->currency
+        });
 
         # We are recording derivez in mt5_transfer table
         record_derivez_transfer_to_mt5_transfer($fm_client->db->dbic, $txn->payment_id, -$response->{derivez_amount},
@@ -652,7 +656,11 @@ sub withdraw {
             remark       => $comment,
             txn_details  => \%txn_details,
         );
-        $self->client->user->daily_transfer_incr('derivez');
+        $self->client->user->daily_transfer_incr({
+            type     => 'derivez',
+            amount   => $amount,
+            currency => $derivez_currency_code
+        });
 
         # We are recording derivez in mt5_transfer table
         record_derivez_transfer_to_mt5_transfer($to_client->db->dbic, $txn->payment_id, $amount, $from_derivez, $derivez_currency_code);

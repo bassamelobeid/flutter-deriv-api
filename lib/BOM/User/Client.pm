@@ -6694,8 +6694,11 @@ sub payment_mt5_transfer {
         $txn_details,
     );
 
-    $self->user->daily_transfer_incr('mt5');
-
+    $self->user->daily_transfer_incr({
+        type     => 'MT5',
+        amount   => $amount,
+        currency => $currency
+    });
     return $trx;
 }
 
