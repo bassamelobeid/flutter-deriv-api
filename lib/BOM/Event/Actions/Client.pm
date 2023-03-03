@@ -1122,6 +1122,12 @@ async sub check_onfido_rules {
                 my $age_verification_due = $poi_name_mismatch || $poi_dob_mismatch;
 
                 if ($age_verification_due && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0) {
+
+                    $client->db->dbic->run(
+                        fixup => sub {
+                            $_->do('SELECT * FROM betonmarkets.set_onfido_doc_status_to_verified(?)', undef, $client->binary_user_id);
+                        });
+
                     if (await BOM::Event::Actions::Common::set_age_verification($client, 'Onfido', $redis_events_write, 'onfido')) {
                         if ($tags) {
                             DataDog::DogStatsd::Helper::stats_inc(

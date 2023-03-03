@@ -339,22 +339,41 @@ subtest 'Check Onfido Rules' => sub {
             for (qw/data_comparison.first_name data_comparison.last_name data_comparison.date_of_birth/) {
                 @rejected      = ($_);
                 $test_client   = BOM::User::Client->new({loginid => $test_client->loginid});
+                $last_name     = 'wrong';
+                $first_name    = 'elon';
+                $date_of_birth = '1990-01-05';
+
+                ok $action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successful event execution';
+
+                ok $test_client->status->poi_name_mismatch, 'POI name mismatch is forced';
+                ok $test_client->status->poi_dob_mismatch,  'POI dob mismatch is forced';
+
+                $test_client   = BOM::User::Client->new({loginid => $test_client->loginid});
                 $last_name     = 'musk';
                 $first_name    = 'elon';
                 $date_of_birth = '1990-01-02';
 
-                my $mismatch = $test_client->status->poi_name_mismatch || $test_client->status->poi_dob_mismatch;
                 ok $action_handler->({
                         loginid  => $test_client->loginid,
                         check_id => 'TEST'
                     })->get, 'Successfull event execution';
 
-                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
                 ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
                 ok !$test_client->status->poi_dob_mismatch,  'POI dob mismatch not set';
 
-                if ($mismatch && $result eq 'clear' && $check_result eq 'clear') {
+                if ($result eq 'clear' && $check_result eq 'clear') {
                     ok $test_client->status->age_verification, 'Age verified set';
+
+                    my ($doc) = $test_client->find_client_authentication_document(
+                        query => [
+                            client_loginid => $test_client->loginid,
+                            origin         => 'onfido'
+                        ]);
+                    is $doc->status, 'verified', 'Onfido document status is verified';
+
                 } else {
                     ok !$test_client->status->age_verification, 'Age verified not set';
                 }
