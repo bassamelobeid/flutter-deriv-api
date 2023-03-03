@@ -23,7 +23,7 @@ use Scalar::Util          qw( looks_like_number );
 use Syntax::Keyword::Try;
 use List::Util qw/any/;
 use LandingCompany::Registry;
-use ExchangeRates::CurrencyConverter qw/offer_to_clients/;
+use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 
 rule 'transfers.currency_should_match' => {
     description => "The currency of the account given should match the currency param when defined",
@@ -55,12 +55,41 @@ rule 'transfers.daily_limit' => {
     description => "Validates the daily transfer limits for the context client",
     code        => sub {
         my ($self, $context, $args) = @_;
-        my $client                    = $context->client($args);
-        my $platform                  = $args->{platform} // '';
+        my $client   = $context->client($args);
+        my $platform = $args->{platform} // '';
+        my $config   = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit;
+        my $daily_transfer_amount =
+            BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->$platform;
+
+        # daily_cumulative_limit is disabled if it is set to negative
+        return 1 if $config->enable && $config->$platform > 0;
+
         my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->$platform;
         my $user_daily_transfer_count = $client->user->daily_transfer_count($platform);
-
         $self->fail('MaximumTransfers', message_params => [$daily_transfer_limit]) unless $user_daily_transfer_count < $daily_transfer_limit;
+
+        return 1;
+    },
+};
+
+rule 'transfers.daily_total_amount_limit' => {
+    description => "Validates the daily total amount transfer limits for the context client",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client            = $context->client($args);
+        my $platform          = $args->{platform} // '';
+        my $amount            = $args->{amount};
+        my $platform_currency = $args->{platform_currency} // '';
+        my $config            = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit;
+
+        return 1 unless $config->enable;
+
+        # daily_cumulative_limit is disabled if it is set to negative
+        return 1 if $config->$platform < 0;
+
+        my $user_daily_transfer_amount = $client->user->daily_transfer_amount($platform);
+        $self->fail('MaximumAmountTransfers', message_params => [$config->$platform, 'USD'])
+            unless $user_daily_transfer_amount + convert_currency(abs($amount), $platform_currency, 'USD') < $config->$platform;
 
         return 1;
     },

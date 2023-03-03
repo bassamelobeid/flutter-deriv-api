@@ -12,7 +12,7 @@ use Format::Util::Numbers qw/formatnumber/;
 use BOM::Config::Chronicle;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
-
+my $redis = BOM::Config::Redis::redis_exchangerates_write();
 subtest 'rule transfers.currency_should_match' => sub {
     my $rule_name = 'transfers.currency_should_match';
 
@@ -86,7 +86,7 @@ subtest 'rule transfers.daily_limit' => sub {
     };
 
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->dxtrade(1);
-    $client->user->daily_transfer_incr('dxtrade');
+    $client->user->daily_transfer_incr({type => 'dxtrade'});
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
         {
@@ -98,6 +98,99 @@ subtest 'rule transfers.daily_limit' => sub {
 
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->dxtrade(100);
     ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
+
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+
+    ok $rule_engine->apply_rules($rule_name, %$params), 'The rule is by-passed using when total limits enabled';
+
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->derivez(0);
+    $params->{platform} = 'derivez';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
+        {
+        error_code     => 'MaximumTransfers',
+        message_params => [0],
+        rule           => $rule_name
+        },
+        'expected error when limit is hit - total limits not applied on derivez';
+};
+
+subtest 'rule transfers.daily_total_amount_limit' => sub {
+    my $rule_name = 'transfers.daily_total_amount_limit';
+
+    my $client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $client_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $user = BOM::User->create(
+        email    => 'test+daily_amount@test.deriv',
+        password => 'TRADING PASS',
+    );
+    $user->add_client($client_2);
+    $user->add_client($client_1);
+    $client_1->account('USD');
+    $client_2->account('EUR');
+    my $rule_engine_1 = BOM::Rules::Engine->new(client => $client_1);
+    my $rule_engine_2 = BOM::Rules::Engine->new(client => $client_2);
+    my $params        = {
+        loginid           => $client_1->loginid,
+        platform          => 'derivez',
+        amount            => 500,
+        platform_currency => 'USD'
+    };
+
+    ok $rule_engine_1->apply_rules($rule_name, %$params), 'The test by-passed for derivez USD';
+
+    $params->{platform} = 'dxtrade';
+
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(0);
+    ok $rule_engine_1->apply_rules($rule_name, %$params), 'The test by-passed if total limit is disabled';
+
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->enable(1);
+    my $user_daily_transfer_amount =
+        BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->dxtrade(1000);
+
+    ok $rule_engine_1->apply_rules($rule_name, %$params), 'The test passed';
+    $client_1->user->daily_transfer_incr({
+        type   => 'dxtrade',
+        amount => 500
+    });
+    $params->{amount} = 1000;
+    is_deeply exception { $rule_engine_1->apply_rules($rule_name, %$params) },
+        {
+        error_code     => 'MaximumAmountTransfers',
+        message_params => [$user_daily_transfer_amount, 'USD'],
+        rule           => $rule_name
+        },
+        'expected error when limit is hit';
+    $user_daily_transfer_amount =
+        BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->daily_cumulative_limit->dxtrade(2000);
+    $params = {
+        loginid           => $client_2->loginid,
+        platform          => 'dxtrade',
+        amount            => 500,
+        platform_currency => 'EUR'
+    };
+    $redis->hmset(
+        'exchange_rates::USD_EUR',
+        quote => 0.5,
+        epoch => time
+    );
+    ok $rule_engine_2->apply_rules($rule_name, %$params), 'The test by-passed for derivez EUR';
+
+    $client_2->user->daily_transfer_incr({
+        type   => 'dxtrade',
+        amount => 500
+    });
+    $params->{amount} = 1000;
+    is_deeply exception { $rule_engine_2->apply_rules($rule_name, %$params) },
+        {
+        error_code     => 'MaximumAmountTransfers',
+        message_params => [$user_daily_transfer_amount, 'USD'],
+        rule           => $rule_name
+        },
+        'expected error when limit is hit';
 };
 
 subtest 'rule transfers.limits' => sub {

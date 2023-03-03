@@ -25,6 +25,7 @@ trading_account_deposit:
     - transfers.currency_should_match
     - transfers.daily_limit
     - transfers.limits
+    - transfers.daily_total_amount_limit
     - type: conditional
       on: account_type
       rules_per_value:
@@ -40,6 +41,7 @@ trading_account_withdrawal:
     - transfers.currency_should_match
     - transfers.daily_limit
     - transfers.limits
+    - transfers.daily_total_amount_limit
     - type: conditional
       on: account_type
       rules_per_value:
