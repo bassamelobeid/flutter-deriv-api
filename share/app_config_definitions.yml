@@ -557,9 +557,38 @@ payments:
       description: 'Transfer between accounts config'
       isa: section
       contains:
+        daily_cumulative_limit:
+          isa: section
+          description: 'Limits for total amount limit of internal transfers per day'
+          contains:
+            enable:
+              isa: Num
+              description: 'Enable daily amount limit in USD - default to daily transaction and maximum'
+              default: 0
+              global: 1
+            between_accounts:
+              isa: Num
+              description: 'Limits the amount of daily transfers in USD between accounts'
+              default: 100000
+              global: 1
+            MT5:
+              isa: Num
+              description: 'Limits the amount of daily transfers in USD between binary accounts and MT5 accounts'
+              default: 200000
+              global: 1
+            dxtrade:
+              isa: Num
+              description: 'Limits the amount of daily transfers in USD between binary accounts and Deriv X accounts'
+              default: 50000
+              global: 1
+            derivez:
+              isa: Num
+              description: 'Limits the amount of daily transfers in USD between binary accounts and DerivEZ accounts - not used'
+              default: -1
+              global: 1
         limits:
           isa: section
-          description: 'Limits for internal transfers'
+          description: 'Limits for internal transfers (default)'
           contains:
             between_accounts:
               isa: Num
@@ -699,7 +728,7 @@ payments:
               global: 1
         maximum:
           isa: section
-          description: 'Transfer maximum amount'
+          description: 'Transfer maximum amount (default)'
           contains:
             default:
               isa: Num

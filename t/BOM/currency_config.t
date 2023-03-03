@@ -83,8 +83,10 @@ subtest 'get_mt5_transfer_limit_by_brand' => sub {
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
-        'payments.transfer_between_accounts.maximum.MT5' => JSON::MaybeUTF8::encode_json_utf8($mt5_max_limit),
-        'payments.transfer_between_accounts.minimum.MT5' => JSON::MaybeUTF8::encode_json_utf8($mt5_min_limit),
+        'payments.transfer_between_accounts.maximum.MT5'                   => JSON::MaybeUTF8::encode_json_utf8($mt5_max_limit),
+        'payments.transfer_between_accounts.minimum.MT5'                   => JSON::MaybeUTF8::encode_json_utf8($mt5_min_limit),
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 0,
+        'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 0,
     });
 
     my $expected_config_for_derivCrypto = {
@@ -113,6 +115,27 @@ subtest 'get_mt5_transfer_limit_by_brand' => sub {
     my $default_config = BOM::Config::CurrencyConfig::get_mt5_transfer_limit_by_brand();
     is_deeply $default_config, $expected_default_config, 'Correct default config';
 
+    $app_config->set({
+        'payments.transfer_between_accounts.maximum.MT5'                   => JSON::MaybeUTF8::encode_json_utf8($mt5_max_limit),
+        'payments.transfer_between_accounts.minimum.MT5'                   => JSON::MaybeUTF8::encode_json_utf8($mt5_min_limit),
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+        'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 150000
+    });
+
+    $derivCrypto_config = BOM::Config::CurrencyConfig::get_mt5_transfer_limit_by_brand('derivcrypto');
+    is_deeply $derivCrypto_config, $expected_config_for_derivCrypto, 'Correct config for derivcrypto - should not be affected by total daily limit';
+
+    $expected_default_config = {
+        maximum => {
+            currency => 'USD',
+            amount   => 150000
+        },
+        minimum => {
+            currency => 'USD',
+            amount   => 1
+        }};
+    $default_config = BOM::Config::CurrencyConfig::get_mt5_transfer_limit_by_brand();
+    is_deeply $default_config, $expected_default_config, 'Correct config using total limit';
 };
 
 subtest 'mt5_transfer_limits' => sub {
@@ -138,8 +161,10 @@ subtest 'mt5_transfer_limits' => sub {
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
-        'payments.transfer_between_accounts.maximum.MT5' => JSON::MaybeUTF8::encode_json_utf8($mt5_max_limit),
-        'payments.transfer_between_accounts.minimum.MT5' => JSON::MaybeUTF8::encode_json_utf8($mt5_min_limit),
+        'payments.transfer_between_accounts.maximum.MT5'                   => JSON::MaybeUTF8::encode_json_utf8($mt5_max_limit),
+        'payments.transfer_between_accounts.minimum.MT5'                   => JSON::MaybeUTF8::encode_json_utf8($mt5_min_limit),
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 0,
+        'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 0,
     });
 
     my @all_currencies = LandingCompany::Registry::all_currencies();
@@ -160,6 +185,26 @@ subtest 'mt5_transfer_limits' => sub {
     }
 
     my $mt5_transfer_limits = BOM::Config::CurrencyConfig::mt5_transfer_limits(1);
+
+    $app_config->set({
+        'payments.transfer_between_accounts.maximum.MT5'                   => JSON::MaybeUTF8::encode_json_utf8($mt5_max_limit),
+        'payments.transfer_between_accounts.minimum.MT5'                   => JSON::MaybeUTF8::encode_json_utf8($mt5_min_limit),
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable' => 1,
+        'payments.transfer_between_accounts.daily_cumulative_limit.MT5'    => 150000,
+    });
+
+    $mt5_transfer_limits = BOM::Config::CurrencyConfig::mt5_transfer_limits(1);
+
+    for my $currency (@all_currencies) {
+        my ($min, $max);
+
+        $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min_amount, $min_currency, $currency)); };
+        $max = eval { 0 + financialrounding('amount', $currency, convert_currency(150000,      $max_currency, $currency)); };
+
+        $expected_currency_config->{$currency}->{min} = $min // 0;
+        $expected_currency_config->{$currency}->{max} = $max // 0;
+    }
+
     is_deeply $mt5_transfer_limits, $expected_currency_config, 'correct mt5 limits config';
 };
 
@@ -186,8 +231,10 @@ subtest 'get_dxtrade_transfer_limit_by_brand' => sub {
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
-        'payments.transfer_between_accounts.maximum.dxtrade' => JSON::MaybeUTF8::encode_json_utf8($dxtrade_max_limit),
-        'payments.transfer_between_accounts.minimum.dxtrade' => JSON::MaybeUTF8::encode_json_utf8($dxtrade_min_limit),
+        'payments.transfer_between_accounts.maximum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_max_limit),
+        'payments.transfer_between_accounts.minimum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_min_limit),
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable'  => 0,
+        'payments.transfer_between_accounts.daily_cumulative_limit.dxtrade' => 0,
     });
 
     my $expected_config_for_derivCrypto = {
@@ -216,6 +263,29 @@ subtest 'get_dxtrade_transfer_limit_by_brand' => sub {
     my $default_config = BOM::Config::CurrencyConfig::get_platform_transfer_limit_by_brand('dxtrade');
     is_deeply $default_config, $expected_default_config, 'Correct default config';
 
+    $app_config->set({
+        'payments.transfer_between_accounts.maximum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_max_limit),
+        'payments.transfer_between_accounts.minimum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_min_limit),
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable'  => 1,
+        'payments.transfer_between_accounts.daily_cumulative_limit.dxtrade' => 25000,
+    });
+
+    $derivCrypto_config = BOM::Config::CurrencyConfig::get_platform_transfer_limit_by_brand('dxtrade', 'derivcrypto');
+    is_deeply $derivCrypto_config, $expected_config_for_derivCrypto, 'Correct config for derivcrypto - should not be affected by total limit';
+
+    $expected_default_config = {
+        maximum => {
+            currency => 'USD',
+            amount   => 25000
+        },
+        minimum => {
+            currency => 'USD',
+            amount   => 1
+        }};
+
+    $default_config = BOM::Config::CurrencyConfig::get_platform_transfer_limit_by_brand('dxtrade');
+    is_deeply $default_config, $expected_default_config, 'Correct default config for total amount limits';
+
 };
 
 subtest 'dxtrade_transfer_limits' => sub {
@@ -241,8 +311,10 @@ subtest 'dxtrade_transfer_limits' => sub {
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
-        'payments.transfer_between_accounts.maximum.dxtrade' => JSON::MaybeUTF8::encode_json_utf8($dxtrade_max_limit),
-        'payments.transfer_between_accounts.minimum.dxtrade' => JSON::MaybeUTF8::encode_json_utf8($dxtrade_min_limit),
+        'payments.transfer_between_accounts.maximum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_max_limit),
+        'payments.transfer_between_accounts.minimum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_min_limit),
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable'  => 0,
+        'payments.transfer_between_accounts.daily_cumulative_limit.dxtrade' => 0,
     });
 
     my @all_currencies = LandingCompany::Registry::all_currencies();
@@ -264,13 +336,55 @@ subtest 'dxtrade_transfer_limits' => sub {
 
     my $dxtrade_transfer_limits = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade', 1);
     is_deeply $dxtrade_transfer_limits, $expected_currency_config, 'correct deriv x limits config';
+
+    $app_config->set({
+        'payments.transfer_between_accounts.maximum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_max_limit),
+        'payments.transfer_between_accounts.minimum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_min_limit),
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable'  => 1,
+        'payments.transfer_between_accounts.daily_cumulative_limit.dxtrade' => 25000,
+    });
+
+    for my $currency (@all_currencies) {
+        my ($min, $max);
+
+        $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min_amount, $min_currency, $currency)); };
+        $max = eval { 0 + financialrounding('amount', $currency, convert_currency(25000,       $max_currency, $currency)); };
+
+        $expected_currency_config->{$currency}->{min} = $min // 0;
+        $expected_currency_config->{$currency}->{max} = $max // 0;
+    }
+
+    $dxtrade_transfer_limits = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade', 1);
+    is_deeply $dxtrade_transfer_limits, $expected_currency_config, 'correct deriv x limits config using total limits';
+
+    $app_config->set({
+        'payments.transfer_between_accounts.maximum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_max_limit),
+        'payments.transfer_between_accounts.minimum.dxtrade'                => JSON::MaybeUTF8::encode_json_utf8($dxtrade_min_limit),
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable'  => 1,
+        'payments.transfer_between_accounts.daily_cumulative_limit.dxtrade' => -1,
+    });
+
+    for my $currency (@all_currencies) {
+        my ($min, $max);
+
+        $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min_amount, $min_currency, $currency)); };
+        $max = eval { 0 + financialrounding('amount', $currency, convert_currency($max_amount, $max_currency, $currency)); };
+
+        $expected_currency_config->{$currency}->{min} = $min // 0;
+        $expected_currency_config->{$currency}->{max} = $max // 0;
+    }
+
+    $dxtrade_transfer_limits = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade', 1);
+    is_deeply $dxtrade_transfer_limits, $expected_currency_config, 'correct deriv x limits config using total limits and disabled';
 };
 
 subtest 'transfer_between_accounts_limits' => sub {
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
-        'payments.transfer_between_accounts.minimum.default' => 1,
-        'payments.transfer_between_accounts.maximum.default' => 2500,
+        'payments.transfer_between_accounts.minimum.default'                         => 1,
+        'payments.transfer_between_accounts.maximum.default'                         => 2500,
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable'           => 0,
+        'payments.transfer_between_accounts.daily_cumulative_limit.between_accounts' => 0,
     });
 
     my @all_currencies  = LandingCompany::Registry::all_currencies();
@@ -283,6 +397,25 @@ subtest 'transfer_between_accounts_limits' => sub {
             $transfer_limits->{$currency_code}->{min},
             '==',
             financialrounding('amount', $currency_code, $currency_min_default),
+            "Transfer between account minimum is correct for $currency_code"
+        );
+    }
+
+    $app_config->set({
+        'payments.transfer_between_accounts.minimum.default'                         => 1,
+        'payments.transfer_between_accounts.maximum.default'                         => 2500,
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable'           => 1,
+        'payments.transfer_between_accounts.daily_cumulative_limit.between_accounts' => 50000,
+    });
+    $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1);
+    my $max_default = 50000;
+    for my $currency_code (@all_currencies) {
+        my $currency_max_default = convert_currency($max_default, 'USD', $currency_code);
+
+        cmp_ok(
+            $transfer_limits->{$currency_code}->{max},
+            '==',
+            financialrounding('amount', $currency_code, $currency_max_default),
             "Transfer between account minimum is correct for $currency_code"
         );
     }

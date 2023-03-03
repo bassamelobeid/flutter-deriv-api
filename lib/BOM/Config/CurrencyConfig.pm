@@ -311,11 +311,19 @@ sub transfer_between_accounts_limits {
 
     my @all_currencies = LandingCompany::Registry::all_currencies();
 
-    my $configs = app_config()->get(['payments.transfer_between_accounts.minimum.default', 'payments.transfer_between_accounts.maximum.default',]);
+    my $configs = app_config()->get([
+        'payments.transfer_between_accounts.minimum.default',
+        'payments.transfer_between_accounts.maximum.default',
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable',
+        'payments.transfer_between_accounts.daily_cumulative_limit.between_accounts'
+    ]);
 
-    my $min_amount = $configs->{"payments.transfer_between_accounts.minimum.default"};
-    my $max_amount = $configs->{"payments.transfer_between_accounts.maximum.default"};
-
+    my $min_amount              = $configs->{"payments.transfer_between_accounts.minimum.default"};
+    my $is_total_amount_enabled = $configs->{"payments.transfer_between_accounts.daily_cumulative_limit.enable"};
+    my $max_amount              = $configs->{"payments.transfer_between_accounts.maximum.default"};
+    if ($is_total_amount_enabled) {
+        $max_amount = $configs->{"payments.transfer_between_accounts.daily_cumulative_limit.between_accounts"};
+    }
     my $currency_limits = {};
     foreach my $currency (@all_currencies) {
         my ($min, $max);
@@ -430,16 +438,27 @@ Returns a hashref of currency limits for the brand.
 sub get_platform_transfer_limit_by_brand {
     my ($platform, $brand) = @_;
 
-    my $configs =
-        app_config()->get(['payments.transfer_between_accounts.minimum.' . $platform, 'payments.transfer_between_accounts.maximum.' . $platform]);
+    my $configs = app_config()->get([
+        'payments.transfer_between_accounts.minimum.' . $platform,
+        'payments.transfer_between_accounts.maximum.' . $platform,
+        'payments.transfer_between_accounts.daily_cumulative_limit.enable',
+        'payments.transfer_between_accounts.daily_cumulative_limit.' . $platform
+    ]);
 
     my $maximum_config = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.maximum.' . $platform});
     my $minimum_config = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.minimum.' . $platform});
 
+    # change max value to become a hash when total limit amount is enabled
     my $result = {
         maximum => $maximum_config->{default},
         minimum => $minimum_config->{default}};
 
+    my $is_total_amount_enabled = $configs->{"payments.transfer_between_accounts.daily_cumulative_limit.enable"};
+    if ($is_total_amount_enabled) {
+        my $daily_cumulative_limit = $configs->{'payments.transfer_between_accounts.daily_cumulative_limit.' . $platform};
+        $result->{maximum}->{amount} = $configs->{'payments.transfer_between_accounts.daily_cumulative_limit.' . $platform}
+            if $daily_cumulative_limit > 0;
+    }
     return $result unless $brand;
 
     $result->{maximum} = $maximum_config->{$brand} if $maximum_config->{$brand};
