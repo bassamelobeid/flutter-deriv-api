@@ -171,7 +171,10 @@ sub _build_uploaded {
             next unless $category_config;
 
             my $category     = $category_config->{category} // 'other';
-            my $category_key = $origin eq 'onfido' ? 'onfido' : $category;
+            my $category_key = $category;
+
+            $category_key = $origin if any { $origin eq $_ } qw/onfido idv/;
+
             $documents{$category_key}{documents}{$single_document->file_name} = $doc_structure->($single_document);
 
             if ($category eq 'proof_of_income' || $category eq 'proof_of_identity') {
@@ -221,25 +224,9 @@ sub _build_uploaded {
         delete $documents{$category_key}->{is_expired};
     }
 
-    if ($documents{proof_of_identity}) {
-        $documents{proof_of_identity}{is_pending} //= 0;
-
-        # Cancel the is_pending for an age_verified account that does not have verified expired docs
-        if ($documents{proof_of_identity}{is_pending}) {
-            $documents{proof_of_identity}{is_pending} = 0
-                if $self->client->status->age_verification
-                and not $self->client->ignore_age_verification
-                and not $documents{proof_of_identity}{is_expired};
-        }
-    }
-
-    if ($documents{onfido}) {
-        $documents{onfido}{is_pending} //= 0;
-
-        # Cancel the is_pending for an age_verified account that does not have verified expired docs
-        if ($documents{onfido}{is_pending}) {
-            $documents{onfido}{is_pending} = 0
-                if $self->client->status->age_verification and not $documents{onfido}{is_expired};
+    for my $origin (qw/onfido idv proof_of_identity/) {
+        if ($documents{$origin}) {
+            $documents{$origin}{is_pending} //= 0;
         }
     }
 

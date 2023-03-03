@@ -953,7 +953,7 @@ subtest 'rejected an accepted' => sub {
                     'status'      => 'verified'
                 }
             },
-            'is_pending'  => 0,
+            'is_pending'  => 1,
             'expiry_date' => re('\d+'),
             'is_expired'  => 0,
             'is_uploaded' => 2,

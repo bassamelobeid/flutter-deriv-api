@@ -108,4 +108,74 @@ subtest 'uploaded by Onfido' => sub {
         'Expected uploaded documents, onfido is a separate category';
 };
 
+subtest 'uploaded by IDV' => sub {
+    my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,NULL,NULL,?::betonmarkets.client_document_origin)';
+    my $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 1234, 'z33z', 'none', 'front', 'idv');
+
+    my $id1 = $sth_doc_new->fetch()->[0];
+    $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
+
+    my $sth_doc_info = $dbh->prepare($SQL);
+    $sth_doc_info->execute($client->loginid);
+
+    $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    my $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id1);
+    $sth_doc_info->execute($client->loginid);
+
+    $client = BOM::User::Client->new({loginid => $client->loginid});
+    my $uploaded = $client->documents->uploaded;
+
+    cmp_deeply $uploaded,
+        +{
+        proof_of_identity => {
+            is_expired  => 1,
+            is_pending  => 0,
+            is_verified => 1,
+            documents   => {
+                'CR10000.passport.270744401_front.PNG' => {
+                    type        => 'passport',
+                    id          => '55555',
+                    status      => 'verified',
+                    expiry_date => re('\d+'),
+                    format      => 'PNG',
+                }
+            },
+            expiry_date => re('\d+'),
+        },
+        onfido => {
+            is_expired  => 1,
+            is_pending  => 0,
+            is_verified => 1,
+            documents   => {
+                'CR10000.passport.270744421_front.PNG' => {
+                    type        => 'passport',
+                    id          => '1234',
+                    status      => 'verified',
+                    expiry_date => re('\d+'),
+                    format      => 'PNG',
+                }
+            },
+            expiry_date => re('\d+'),
+        },
+        idv => {
+            is_expired  => 1,
+            is_pending  => 0,
+            is_verified => 1,
+            documents   => {
+                'CR10000.passport.270744441_front.PNG' => {
+                    type        => 'passport',
+                    id          => '1234',
+                    status      => 'verified',
+                    expiry_date => re('\d+'),
+                    format      => 'PNG',
+                }
+            },
+            expiry_date => re('\d+'),
+        },
+        },
+        'Expected uploaded documents, IDV is a separate category';
+};
+
 done_testing();
