@@ -12,6 +12,8 @@ use JSON::MaybeXS;
 use Log::Any             qw($log);
 use BOM::Platform::Email qw(send_email);
 use Brands;
+use BOM::Config::Redis;
+use DateTime;
 
 my $json = JSON::MaybeXS->new;
 my %notification_cache;
@@ -37,6 +39,8 @@ sub _publish {
     my $brand = Brands->new(name => 'deriv');
     # trading is suspended. So sound the alarm!
     if ($msg->{current_amount} >= $msg->{limit_amount}) {
+        # storing global limits into redis-hash
+        _store_global_limits($msg);
         $status = 'disabled';
         $subject =
             $msg->{type} =~ /^global/
@@ -106,6 +110,53 @@ sub _get_new_clients_limit {
     my $lc_loss_limit =
         $dbh->selectcol_arrayref(q/SELECT potential_loss FROM betonmarkets.user_specific_limits WHERE binary_user_id IS NULL AND client_type='new'/);
     return $lc_loss_limit->[0] // undef;
+}
+
+=head2 _is_defined
+
+Checking if the given value is defined and if it is not defined, it return 'default'
+
+=cut
+
+sub _is_defined {
+    my $check = shift;
+    return $check ? $check : "default";
+}
+
+=head2 _store_global_limits
+
+When Global Realized loss limit crossed, it stores in a redis hash with an expiry of next date. 
+
+=cut
+
+sub _store_global_limits {
+    my $msg = shift;
+    my $key = "global::limits";
+    if ($msg->{landing_company} =~ /cr/) {
+        $msg->{landing_company_short} = "svg";
+    } elsif ($msg->{landing_company} =~ /mx/) {
+        $msg->{landing_company_short} = "iom";
+    } elsif ($msg->{landing_company} =~ /mlt/) {
+        $msg->{landing_company_short} = "malta";
+    } elsif ($msg->{landing_company} =~ /mf/) {
+        $msg->{landing_company_short} = "maltainvest";
+    } else {
+        $msg->{landing_company_short} = undef;
+    }
+
+    my $hash_key =
+          _is_defined($msg->{rank}{market}) . "::"
+        . _is_defined($msg->{rank}{expiry_type}) . "::"
+        . _is_defined($msg->{rank}{is_atm}) . "::"
+        . _is_defined($msg->{rank}{contract_group}) . "::"
+        . _is_defined($msg->{landing_company}) . "::"
+        . _is_defined($msg->{limit_amount});
+    my $encoded_msg = $json->encode($msg);
+    my $ttl         = DateTime->today(time_zone => 'local')->add(days => 1)->epoch - time;
+    my $redis       = BOM::Config::Redis::redis_replicated_write();
+    $redis->hset($key, $hash_key, $encoded_msg);
+    $redis->expire($key, $ttl);
+    return;
 }
 
 sub run {
