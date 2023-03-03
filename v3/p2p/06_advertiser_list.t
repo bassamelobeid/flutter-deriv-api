@@ -212,6 +212,17 @@ subtest 'trade partners' => sub {
                 total_orders_count         => 0,
                 total_turnover             => '0.00'
             }]);
+
+    #negativ offset
+    $resp = $t->await::p2p_advertiser_list({
+        p2p_advertiser_list => 1,
+        trade_partners      => 1,
+        offset              => -1
+    });
+    test_schema('p2p_advertiser_list', $resp);
+    is($resp->{msg_type},         'p2p_advertiser_list');
+    is($resp->{error}->{code},    'InputValidationFailed',           "Input field is invalid");
+    is($resp->{error}->{message}, 'Input validation failed: offset', "Checked that validation failed for offset");
 };
 
 $t->finish_ok;

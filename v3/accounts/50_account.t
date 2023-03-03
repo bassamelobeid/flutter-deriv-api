@@ -143,6 +143,18 @@ ok($statement->{statement});
 is($statement->{statement}->{count}, 5);
 test_schema('statement', $statement);
 
+#statement, the offset validation
+$statement = $t->await::statement({
+    statement => 1,
+    limit     => 54,
+    offset    => -1,
+});
+test_schema('statement', $statement);
+
+is($statement->{msg_type},         'statement');
+is($statement->{error}->{code},    'InputValidationFailed',           "Input field is invalid");
+is($statement->{error}->{message}, 'Input validation failed: offset', "Checked that validation failed for offset");
+
 subtest 'request_report' => sub {
 
     ## request_report
@@ -246,6 +258,18 @@ test_schema('profit_table', $profit_table);
 my (undef, $call_params) = call_mocked_consumer_groups_request($t, {get_limits => 1});
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};
+
+#profit_table offset validation
+$profit_table = $t->await::profit_table({
+    profit_table => 1,
+    limit        => 1,
+    offset       => -1
+});
+test_schema('profit_table', $profit_table);
+
+is($profit_table->{msg_type},         'profit_table');
+is($profit_table->{error}->{code},    'InputValidationFailed',           "Input field is invalid");
+is($profit_table->{error}->{message}, 'Input validation failed: offset', "Checked that validation failed for offset");
 
 my $res = $t->await::get_limits({get_limits => 1});
 ok($res->{get_limits});

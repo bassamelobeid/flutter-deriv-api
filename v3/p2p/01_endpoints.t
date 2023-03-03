@@ -321,6 +321,22 @@ subtest 'create advert (sell)' => sub {
     test_schema('p2p_advert_info', $resp);
     cmp_deeply($resp->{p2p_advert_info}, $advert, 'Advert info matches advert create');
 
+    $resp = $t->await::p2p_advertiser_adverts({
+        p2p_advertiser_adverts => 1,
+        offset                 => -1
+    });
+    test_schema('p2p_advertiser_adverts', $resp);
+    is($resp->{msg_type}, 'p2p_advertiser_adverts');
+    is($resp->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+
+    $resp = $t->await::p2p_advert_list({
+        p2p_advert_list => 1,
+        offset          => -1
+    });
+    test_schema('p2p_advert_list', $resp);
+    is($resp->{msg_type}, 'p2p_advert_list');
+    is($resp->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+
     $t->await::authorize({authorize => $token_client});
 
     subtest 'Client use p2p_advert_info' => sub {
@@ -387,6 +403,16 @@ subtest 'create order (buy)' => sub {
     });
 
     is $resp->{error}->{code}, 'InputValidationFailed', 'offer_id validation error';
+
+    #negativ offset
+    $resp = $t->await::p2p_order_list({
+        p2p_order_list => 1,
+        offset         => -1
+    });
+    test_schema('p2p_order_list', $resp);
+    is($resp->{msg_type},         'p2p_order_list');
+    is($resp->{error}->{code},    'InputValidationFailed',           "Input field is invalid");
+    is($resp->{error}->{message}, 'Input validation failed: offset', "Checked that validation failed for offset");
 
     $resp = $t->await::p2p_order_list({p2p_order_list => 1});
     test_schema('p2p_order_list', $resp);
