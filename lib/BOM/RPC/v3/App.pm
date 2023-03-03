@@ -288,7 +288,7 @@ rpc app_markup_details => sub {
     my ($time_from, $time_to);
     try {
         $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
-        $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
+        $time_to   = Date::Utility->new($args->{date_to})->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss;
     } catch {
         log_exception();
         return BOM::RPC::v3::Utility::create_error({
@@ -297,18 +297,17 @@ rpc app_markup_details => sub {
             })
     }
 
-    my $clientdb = BOM::Database::ClientDB->new({
-            client_loginid => $client->loginid,
-            operation      => 'replica',
-        })->db;
+    my $collectordb = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
 
     return {
-        transactions => $clientdb->dbic->run(
+        transactions => $collectordb->run(
             fixup => sub {
                 $_->selectall_arrayref(
-                    'SELECT * FROM reporting.get_app_markup_details(?,?,?,?,?,?,?,?)',
+                    'SELECT * FROM data_collection.get_app_markup_details(?,?,?,?,?,?,?,?)',
                     {Slice => {}},
-                    $app_ids, $time_from, $time_to,
+                    $app_ids,
+                    $time_from,
+                    $time_to,
                     $args->{offset}         || undef,
                     $args->{limit}          || 1000,
                     $args->{client_loginid} || undef,
@@ -319,18 +318,18 @@ rpc app_markup_details => sub {
 };
 
 rpc app_markup_statistics => sub {
-    my $params    = shift;
-    my $args      = $params->{args};
-    my $client    = $params->{client};
-    my $user_id   = $client->user_id;
-    my $oauth     = BOM::Database::Model::OAuth->new;
-    my $collector = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
-    my $app_ids   = $oauth->get_app_ids_by_user_id($user_id);
+    my $params      = shift;
+    my $args        = $params->{args};
+    my $client      = $params->{client};
+    my $user_id     = $client->user_id;
+    my $oauth       = BOM::Database::Model::OAuth->new;
+    my $collectordb = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
+    my $app_ids     = $oauth->get_app_ids_by_user_id($user_id);
 
     my ($time_from, $time_to);
     try {
         $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
-        $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
+        $time_to   = Date::Utility->new($args->{date_to})->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss;
     } catch {
         log_exception();
         return BOM::RPC::v3::Utility::create_error({
@@ -340,7 +339,7 @@ rpc app_markup_statistics => sub {
     }
 
     my $res = {
-        breakdown => $collector->run(
+        breakdown => $collectordb->run(
             fixup => sub {
                 $_->selectall_arrayref(
                     'SELECT * FROM data_collection.get_app_markup_statistics(?,?,?)',
