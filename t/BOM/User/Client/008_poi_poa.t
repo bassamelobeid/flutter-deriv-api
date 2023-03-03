@@ -6,6 +6,7 @@ use Test::Deep;
 use BOM::User::Client;
 use BOM::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use Date::Utility;
 
 my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 my $uploaded;
@@ -637,7 +638,7 @@ subtest 'get_poi_status' => sub {
                 },
             };
 
-            $test_client_cr->status->setnx('age_verification', 'test', 'test');
+            $test_client_cr->status->setnx('age_verification', 'gato', 'test');
             is $test_client_cr->get_poi_status,        'verified', 'poi status = verified';
             is $test_client_cr->get_idv_status,        'rejected', 'idv status = rejected';
             is $test_client_cr->get_manual_poi_status, 'verified', 'manual status = verified';
@@ -1057,7 +1058,14 @@ subtest 'needs_poi_verification' => sub {
         subtest 'Needed when verified' => sub {
             $mocked_client->mock('get_poi_status',      sub { return 'verified' });
             $mocked_client->mock('fully_authenticated', sub { return 1 });
-            $mocked_status->mock('age_verification',    sub { return 1 });
+            $mocked_status->mock(
+                'age_verification',
+                sub {
+                    return {
+                        staff_name         => 'system',
+                        last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+                    };
+                });
             $uploaded = {
                 proof_of_address => {
                     documents => {},
@@ -1079,7 +1087,14 @@ subtest 'needs_poi_verification' => sub {
         subtest 'Not needed' => sub {
             $mocked_client->mock('get_poi_status',      sub { return 'verified' });
             $mocked_client->mock('fully_authenticated', sub { return 1 });
-            $mocked_status->mock('age_verification',    sub { return 1 });
+            $mocked_status->mock(
+                'age_verification',
+                sub {
+                    return {
+                        staff_name         => 'system',
+                        last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+                    };
+                });
             $uploaded = {
                 proof_of_identity => {
                     documents => {},
@@ -1115,7 +1130,14 @@ subtest 'needs_poi_verification' => sub {
         subtest 'Not needed when manual poi verified' => sub {
             $mocked_client->mock('get_manual_poi_status', sub { return 'verified' });
             $mocked_client->mock('fully_authenticated',   sub { return 1 });
-            $mocked_status->mock('age_verification',      sub { return 1 });
+            $mocked_status->mock(
+                'age_verification',
+                sub {
+                    return {
+                        staff_name         => 'system',
+                        last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+                    };
+                });
             $uploaded = {
                 proof_of_identity => {
                     documents => {},
@@ -1224,7 +1246,14 @@ subtest 'needs_poi_verification' => sub {
         subtest 'Not needed' => sub {
             $mocked_client->mock('get_poi_status',      sub { return 'verified' });
             $mocked_client->mock('fully_authenticated', sub { return 1 });
-            $mocked_status->mock('age_verification',    sub { return 1 });
+            $mocked_status->mock(
+                'age_verification',
+                sub {
+                    return {
+                        staff_name         => 'system',
+                        last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+                    };
+                });
             $uploaded = {
                 proof_of_address => {
                     documents => {},
@@ -1363,9 +1392,16 @@ subtest 'needs_poi_verification' => sub {
                 documents => {},
             }};
 
-        $mocked_client->mock('get_poi_status',          sub { return 'verified' });
-        $mocked_client->mock('fully_authenticated',     sub { return 1 });
-        $mocked_status->mock('age_verification',        sub { return 1 });
+        $mocked_client->mock('get_poi_status',      sub { return 'verified' });
+        $mocked_client->mock('fully_authenticated', sub { return 1 });
+        $mocked_status->mock(
+            'age_verification',
+            sub {
+                return {
+                    staff_name         => 'system',
+                    last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+                };
+            });
         $mocked_client->mock('ignore_age_verification', sub { return $ignore_age_verification; });
 
         $mocked_client->mock(
@@ -1681,7 +1717,12 @@ subtest 'Onfido status' => sub {
     $mocked_status->mock(
         'age_verification',
         sub {
-            return $age_verification;
+            return {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            } if $age_verification;
+
+            return undef;
         });
 
     # backtest to prove that the onfido country supported status does not change the results!
@@ -2007,7 +2048,12 @@ subtest 'Manual POI status' => sub {
     $mocked_status->mock(
         'age_verification',
         sub {
-            return $age_verification;
+            return {
+                staff_name         => 'staff',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            } if $age_verification;
+
+            return undef;
         });
 
     my ($is_expired, $is_pending, $documents);
@@ -2088,7 +2134,7 @@ subtest 'Manual POI status' => sub {
             ignore_age_verification => 0,
         },
         {
-            status    => 'verified',
+            status    => 'pending',
             onfido    => 'none',
             idv       => 'none',
             documents => {
@@ -2660,7 +2706,12 @@ subtest 'Jurisdiction POI status' => sub {
     $mocked_status->mock(
         'age_verification',
         sub {
-            return $age_verification;
+            return {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            } if $age_verification;
+
+            return undef;
         });
 
     my $tests = [{
@@ -2678,8 +2729,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'none',
             idv              => 'verified',
             manual           => 'none',
-            age_verification => 1,
-            landing_company  => 'svg',
+            age_verification => {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'svg',
         },
         {
             name             => 'SVG: Onfido verifed => verified',
@@ -2687,8 +2741,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'verified',
             idv              => 'none',
             manual           => 'none',
-            age_verification => 1,
-            landing_company  => 'svg',
+            age_verification => {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'svg',
         },
         {
             name             => 'SVG: manualy verifed => verified',
@@ -2696,8 +2753,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'none',
             idv              => 'none',
             manual           => 'verified',
-            age_verification => 1,
-            landing_company  => 'svg',
+            age_verification => {
+                staff_name         => 'staff',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'svg',
         },
         {
             name             => 'SVG: no document, manually verifed=> verified',
@@ -2705,8 +2765,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'none',
             idv              => 'none',
             manual           => 'none',
-            age_verification => 1,
-            landing_company  => 'svg',
+            age_verification => {
+                staff_name         => 'staff',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'svg',
         },
         {
             name             => 'Maltainvest: no document, not age verified => none',
@@ -2723,8 +2786,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'none',
             idv              => 'verified',
             manual           => 'none',
-            age_verification => 1,
-            landing_company  => 'maltainvest',
+            age_verification => {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'maltainvest',
         },
         {
             name             => 'Maltainvest: Onfido verifed => verified',
@@ -2732,8 +2798,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'verified',
             idv              => 'none',
             manual           => 'none',
-            age_verification => 1,
-            landing_company  => 'maltainvest',
+            age_verification => {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'maltainvest',
         },
         {
             name             => 'Maltainvest: manualy verifed => verified',
@@ -2741,8 +2810,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'none',
             idv              => 'none',
             manual           => 'verified',
-            age_verification => 1,
-            landing_company  => 'maltainvest',
+            age_verification => {
+                staff_name         => 'staff',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'maltainvest',
         },
         {
             name             => 'Maltainvest: no document, manually verifed=> verified',
@@ -2750,8 +2822,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'none',
             idv              => 'none',
             manual           => 'none',
-            age_verification => 1,
-            landing_company  => 'maltainvest',
+            age_verification => {
+                staff_name         => 'staff',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'maltainvest',
         },
         {
             name             => 'Maltainvest: no document, not age verified => none',
@@ -2768,8 +2843,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'none',
             idv              => 'verified',
             manual           => 'none',
-            age_verification => 1,
-            landing_company  => 'vanuatu',
+            age_verification => {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'vanuatu',
         },
         {
             name             => 'Vanuatu: Onfido verifed => verified',
@@ -2777,8 +2855,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'verified',
             idv              => 'none',
             manual           => 'none',
-            age_verification => 1,
-            landing_company  => 'vanuatu',
+            age_verification => {
+                staff_name         => 'system',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'vanuatu',
         },
         {
             name             => 'Vanuatu: manualy verifed => verified',
@@ -2786,8 +2867,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'none',
             idv              => 'none',
             manual           => 'verified',
-            age_verification => 1,
-            landing_company  => 'vanuatu',
+            age_verification => {
+                staff_name         => 'staff',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'vanuatu',
         },
         {
             name             => 'Vanuatu: no document, manually verifed=> verified',
@@ -2795,8 +2879,11 @@ subtest 'Jurisdiction POI status' => sub {
             onfido           => 'none',
             idv              => 'none',
             manual           => 'none',
-            age_verification => 1,
-            landing_company  => 'vanuatu',
+            age_verification => {
+                staff_name         => 'staff',
+                last_modified_date => Date::Utility->new()->datetime_ddmmmyy_hhmmss
+            },
+            landing_company => 'vanuatu',
         },
         {
             name             => 'Vanuatu: no document, not age verified => none',

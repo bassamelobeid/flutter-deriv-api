@@ -120,7 +120,7 @@ subtest 'onfido after idv validated' => sub {
     # Submit POI through IDV
     $client->aml_risk_classification('low');
     $get_last_updated_document = 'verified';
-    $client->status->set('age_verification', 'test', 'test');
+    $client->status->setnx('age_verification', 'system', 'test');
 
     @latest_poi_by      = ('idv');
     @latest_verified_by = ('idv');

@@ -416,6 +416,59 @@ subtest 'latest poi by' => sub {
             },
             expected => 'idv',
         },
+        # latest poi by for manual age verification
+        {
+            title            => 'LC:vanuatu, IDV verified, Onfido rejected, Manual verified',
+            age_verification => {
+                created_at => '2020-10-10 00:00:02',
+                staff_name => 'pepito',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:01',
+                result     => 'clear',
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            expected        => 'manual',
+            landing_company => 'vanuatu',
+            lc_status       => 'verified',
+        },
+        # latest poi by for manual age verification counter example from system instead of BO staff
+        {
+            title            => 'LC:vanuatu, IDV verified, Onfido rejected, Manual verified (by system?)',
+            age_verification => {
+                created_at => '2020-10-10 00:00:02',
+                staff_name => 'system',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:01',
+                result     => 'consider',
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            expected        => 'onfido',
+            landing_company => 'vanuatu',
+            lc_status       => 'rejected',
+        },
+        {
+            title            => 'LC:svg, IDV verified, Onfido rejected, Manual verified (by system?)',
+            age_verification => {
+                created_at => '2020-10-10 00:00:02',
+                staff_name => 'system',
+            },
+            onfido => {
+                created_at => '2020-10-10 00:00:01',
+                result     => 'consider',
+            },
+            idv => {
+                requested_at => '2020-10-10 00:00:00',
+            },
+            expected        => 'onfido',
+            landing_company => 'svg',
+            lc_status       => 'verified',
+        },
     ];
 
     my $mock_onfido = Test::MockModule->new('BOM::User::Onfido');
@@ -441,6 +494,18 @@ subtest 'latest poi by' => sub {
     $mock_onfido->mock(
         'get_latest_check',
         sub {
+            my (undef, $args) = @_;
+
+            $args //= {};
+
+            if ($args->{only_verified}) {
+                if ($onfido_latest->{user_check}->{result} ne 'clear') {
+                    return {
+                        user_check => undef,
+                    };
+                }
+            }
+
             return $onfido_latest;
         });
 
@@ -474,10 +539,25 @@ subtest 'latest poi by' => sub {
             };
         });
 
+    my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+    my $age_verification_status;
+    $status_mock->mock(
+        'age_verification',
+        sub {
+            my ($self) = @_;
+
+            $self->_build_all;
+
+            return $age_verification_status;
+        });
+
     for my $test ($tests->@*) {
-        my ($onfido, $idv, $title, $expected, $manual, $idv_pending) = @{$test}{qw/onfido idv title expected manual idv_pending_check/};
+        my ($onfido, $idv, $title, $expected, $manual, $idv_pending, $age_verification, $lc, $lc_status) =
+            @{$test}{qw/onfido idv title expected manual idv_pending_check age_verification landing_company lc_status/};
 
         subtest $title => sub {
+            $age_verification_status = $age_verification;
+
             $onfido_latest = {user_check => $onfido};
 
             $idv_latest = $idv;
@@ -500,6 +580,9 @@ subtest 'latest poi by' => sub {
                 isa_ok $check, 'HASH', 'Expected Onfido check' if $expected eq 'onfido';
             }
 
+            if ($lc) {
+                is $client->get_poi_status({landing_company => $lc}), $lc_status, "Landing company $lc status is $lc_status";
+            }
         };
     }
 };

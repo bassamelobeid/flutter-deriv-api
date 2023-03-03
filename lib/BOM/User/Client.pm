@@ -7600,6 +7600,7 @@ sub get_onfido_status {
     return BOM::User::Onfido::maybe_pending($self) if BOM::User::Onfido::pending_request($self->binary_user_id);
 
     my $onfido = BOM::User::Onfido::get_latest_check($self);
+
     my ($check, $report_document_status, $report_document_sub_result) =
         @{$onfido}{qw/user_check report_document_status report_document_sub_result/};
     my $check_result = $check->{result} // '';
@@ -7653,22 +7654,24 @@ sub get_manual_poi_status {
     my $poi_documents  = $self->documents->uploaded->{proof_of_identity};
     my $is_poi_expired = $poi_documents->{is_expired};
 
-    return 'none' unless scalar keys $poi_documents->{documents}->%*;
+    return 'none' if scalar keys $poi_documents->{documents}->%* == 0 && !$self->status->age_verification;
 
     return 'pending' if $self->documents->pending;
 
     return 'expired' if $is_poi_expired;
 
     if ($self->status->age_verification) {
-        return 'verified' if $self->documents->verified;
+        my $staff = $self->status->age_verification->{staff_name} // '';
 
-        return 'verified' unless $self->ignore_age_verification;
+        return 'verified' unless $self->ignore_age_verification || $staff eq 'system';
     }
 
     # Return pending when the documents are verified, but the age is not verified yet.
     return 'pending' if $self->documents->verified;
 
-    return 'rejected';    # if docs are not pending, not age verified, what else could it be?
+    return 'rejected' if scalar keys $poi_documents->{documents}->%*;    # if docs are not pending, not age verified, what else could it be?
+
+    return 'none';
 }
 
 =head2 needs_poa_verification
@@ -8247,6 +8250,13 @@ sub latest_poi_by {
 
         if ($origin eq 'client' || $origin eq 'bo') {
             push @triplets, ['manual', $document, Date::Utility->new($document->{upload_date})->epoch];
+        }
+    }
+
+    if (my $age_verification = $self->status->age_verification) {
+        $age_verification->{staff_name} //= 'system';
+        if (lc $age_verification->{staff_name} ne 'system') {
+            push @triplets, ['manual', {status => 'verified'}, Date::Utility->new($age_verification->{last_modified_date})->epoch];
         }
     }
 
