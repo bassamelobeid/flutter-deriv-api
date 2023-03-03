@@ -244,7 +244,7 @@ sub check_log_any_adapter {
     my @pm_files     = grep { /[.]pm\z/ } @check_files;
     @pm_files = grep { /[.]pm\z/ && !/$filter_files/ } @check_files if $filter_files;
 
-    my @result = map { _run_command('git grep -E "(use|require)\s+Log::Any::Adapter" ' . $_) } @pm_files;
+    my @result = map { _run_command('git grep -E "(use|require)\s+Log::Any::Adapter(\s+|;)" ' . $_) } @pm_files;
 
     ok !@result, "Check whether Log::Any::Adapter is not used in modules";
     if (@result) {
