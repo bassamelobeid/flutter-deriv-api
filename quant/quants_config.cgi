@@ -24,6 +24,7 @@ use BOM::Config::Runtime;
 use BOM::Backoffice::QuantsAuditLog;
 use Time::Duration::Concise;
 use Finance::Underlying::Market::Registry;
+use BOM::Config::Redis;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -60,8 +61,62 @@ BOM::Backoffice::Request::template()->process(
 
 Bar('Quants Config');
 
+=head2 _compare_values
+
+Comparing values between $global_limit_hit and $all_global_limits
+
+=cut
+
+sub _compare_values {
+    my ($global_limit_hit, $global_limit) = @_;
+    my @keys_to_check = qw (market contract_group expiry_type);
+    my $check         = 0;
+    for my $key (@keys_to_check) {
+        $check = $global_limit_hit->{rank}{$key} eq $global_limit->{$key} ? 1 : 0;
+        if ($check == 0) {
+            return 0;
+        }
+    }
+    return $check;
+}
+
+# Reading global::limits from redis hash
+my $redis_key             = "global::limits";
+my $redis                 = BOM::Config::Redis::redis_replicated_read();
+my $global_limits_hit_ref = $redis->hvals($redis_key);
+my $all_global_limits_ref = $quants_config->get_all_global_limit(['default']);
+my @limits_crossed        = ();
+
+for my $global_limit (@$all_global_limits_ref) {
+    for my $limit_hit (@$global_limits_hit_ref) {
+
+        # dereferencing
+        my $global_limits_hit = $json->decode($limit_hit);
+
+        # replacing undef values with 'default'
+        $global_limits_hit->{rank}{contract_group} //= "default";
+        $global_limits_hit->{rank}{market}         //= "default";
+        $global_limits_hit->{rank}{expiry_type}    //= "default";
+        $global_limits_hit->{rank}{is_atm}         //= "default";
+
+        # comparison of global_limits_hit from redis hash and $global_limit from the $quants_config->get_all_global_limit
+        if (_compare_values($global_limits_hit, $global_limit)
+            && $global_limits_hit->{current_amount} >= $global_limit->{global_realized_loss})
+        {
+            if ($global_limits_hit->{landing_company_short} && $global_limits_hit->{landing_company_short} eq $global_limit->{landing_company}) {
+                # replacing landing company short name with their respective broker code i.e. svg to cr01;
+                $global_limit->{landing_company} = $global_limits_hit->{landing_company};
+                push(@limits_crossed, $global_limit);
+            }
+
+        }
+    }
+}
+
 my $existing_per_landing_company = BOM::Backoffice::QuantsConfigHelper::decorate_for_display($quants_config->get_all_global_limit(['default']));
 my %lc_limits                    = map { $_ => $json->encode($existing_per_landing_company->{$_}) } keys %$existing_per_landing_company;
+my $global_realized_limits       = BOM::Backoffice::QuantsConfigHelper::decorate_for_display(\@limits_crossed);
+my %global_realized_limits_data  = map { $_ => $json->encode($global_realized_limits->{$_}) } keys %$global_realized_limits;
 my $pending_market_group =
     BOM::Backoffice::QuantsConfigHelper::decorate_for_pending_market_group($quants_config->get_pending_market_group(['default']));
 my %lc_pending_market_group = map { $_ => $json->encode($pending_market_group->{$_}) } keys %$pending_market_group;
@@ -96,6 +151,7 @@ BOM::Backoffice::Request::template()->process(
     {
         upload_url                    => request()->url_for('backoffice/quant/update_quants_config.cgi'),
         existing_landing_company      => \%lc_limits,
+        global_limits_passed          => \%global_realized_limits_data,
         existing_pending_market_group => \%lc_pending_market_group,
         existing_contract_groups      => \@existing_contract_groups,
         existing_market_groups        => \@existing_market_groups,

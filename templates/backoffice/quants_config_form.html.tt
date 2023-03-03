@@ -121,6 +121,10 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
 
 <div id="per_landing_company" class="row"></div>
 
+<h3>Global Realized Loss Limits Hit</h3>
+
+<div id="global_loss_limits_display" class="row"></div>
+
 <h3>Pending market group switch</h3>
 <p>Market group update and clean-up of expired records is by a cron that runs every minute. So, if you select a start time of 20:11:15, it will be updated at 20:12:00</p>
 
@@ -263,7 +267,6 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
 
     function createDisplayTable(data, header, id) {
         var table = '<table class="pretty small hover alternate" id="'+id+'"><thead><tr>';
-
         for (var i=0; i < header.length; i++) {
             if (header[i][1] == 'Time Status') {
                 continue;
@@ -289,7 +292,8 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
                     continue;
                 }
                 table += '<td class="'+key+'" data_key="'+value.data_key+'">';
-                if (key.substr(0,7) == 'global_' && \$.isNumeric(value.display_value)) {
+                
+                if (key.substr(0,7) == 'global_' && \$.isNumeric(value.display_value) && id.includes('per_landing_company')) {
                     table += '<button class="btn btn--secondary" name="delete" onClick="deleteLimit(\''+id+'\',\''+key+'\','+i+')">Delete</button> ';
                     table += '<button class="btn btn--primary" name="update" onClick="updateLimit(\''+id+'\',\''+key+'\','+i+')">Update</button>';
                     table += '<input style="border-radius: 5px; line-height: 18px; width: 65px" type="text" value="' +
@@ -471,6 +475,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
     createInputTable([% data.contract_groups | none %], 'contract_group');
 
     createDisplayTable([% existing_landing_company.records | none %], [% existing_landing_company.header | none %], 'per_landing_company');
+    createDisplayTable([% global_limits_passed.records | none %], [% global_limits_passed.header | none %], 'global_loss_limits_display');
     createDisplayTable([% existing_pending_market_group.records | none %], [% existing_pending_market_group.header | none %], 'market_group_display');
 
     \$(document).ready(function() {
