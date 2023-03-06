@@ -427,7 +427,10 @@ sub _process_message {
             }};
     }
 
-    $params->{response} = {result => $result};
+    $params->{response} = {
+        result    => $result,
+        timestamp => Time::HiRes::time
+    };
     $self->_publish_response($params->{who}, encode_json_utf8($params));
     $self->_ack_message($msg_id);
 
