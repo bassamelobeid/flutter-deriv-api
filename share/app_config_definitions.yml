@@ -1456,6 +1456,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        payments_graceful:
+          description: "Gracefully suspend new payouts or deposits"
+          isa: Bool
+          default: 0
+          global: 1
         payment_agents:
           description: "Suspend all payment agent transfers"
           isa: Bool

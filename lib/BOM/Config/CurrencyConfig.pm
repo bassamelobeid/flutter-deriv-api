@@ -576,6 +576,16 @@ sub is_payment_suspended {
     return app_config()->system->suspend->payments;
 }
 
+=head2 is_paymentapi_suspended
+
+Returns whether payment api is currently gracefully suspended or not.
+
+=cut
+
+sub is_paymentapi_suspended {
+    return app_config()->system->suspend->payments_graceful;
+}
+
 =head2 is_cashier_suspended
 
 Returns whether fiat cashier is currently suspended or not.
