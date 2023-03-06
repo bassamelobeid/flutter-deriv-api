@@ -6231,10 +6231,12 @@ sub validate_payment {
     my $payment_type       = $args{payment_type} // '';
     my $rule_engine        = $args{rule_engine};
     my $action_to_validate = $args{action_to_validate} // 'validate_payment';
-
+    my $skip_cashier_check = exists $args{skip_cashier_check} ? $args{skip_cashier_check} : undef;
     # validate expects 'deposit'/'withdraw' so if action_type is 'withdrawal' should be replaced to 'withdraw'
     my $validation = BOM::Platform::Client::CashierValidation::check_availability($self, $action_type);
-    die $validation->{error} if exists $validation->{error};
+    if (exists $validation->{error}) {
+        die $validation->{error} unless $skip_cashier_check and $validation->{error}{code} eq 'CashierForwardError';
+    }
 
     # todo: extend rule engine to support conditional rules matching multiple values
     my @internal = qw(internal_transfer mt5_transfer dxtrade_transfer);
