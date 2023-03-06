@@ -25,7 +25,7 @@ use BOM::User::Client;
 use BOM::User::Wallet;
 use BOM::User::Affiliate;
 use BOM::User::Onfido;
-use BOM::User::RiskScreen;
+use BOM::User::LexisNexis;
 use BOM::User::SocialResponsibility;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
@@ -1883,36 +1883,35 @@ sub get_edd_status {
     }
 }
 
-=head2 risk_screen
+=head2 lexis_nexis
 
-Gets the RiskScreen information of the current user.
+Gets the LexisNexis information of the current user.
 
 =cut
 
-sub risk_screen {
+sub lexis_nexis {
     my $self = shift;
 
-    my ($risk_screen) = BOM::User::RiskScreen->find(binary_user_id => $self->id);
+    my ($lexis_nexis) = BOM::User::LexisNexis->find(binary_user_id => $self->id);
 
-    return $risk_screen;
+    return $lexis_nexis;
 }
 
-=head2 set_risk_screen
+=head2 set_lexis_nexis
 
-Prepares the current user to be monitored in RiskScreen.
+Prepares the current user to be monitored in LexisNexis.
 
 =cut
 
-sub set_risk_screen {
+sub set_lexis_nexis {
     my ($self, %args) = @_;
 
-    my $old_values = $self->risk_screen // {};
+    my $old_values = $self->lexis_nexis // {};
 
-    my $risk_screen = BOM::User::RiskScreen->new(%$old_values, %args, binary_user_id => $self->id);
+    my $lexis_nexis = BOM::User::LexisNexis->new(%$old_values, %args, binary_user_id => $self->id);
 
-    $risk_screen->save;
-
-    return $risk_screen;
+    $lexis_nexis->save;
+    return $lexis_nexis;
 }
 
 =head2 affiliate
