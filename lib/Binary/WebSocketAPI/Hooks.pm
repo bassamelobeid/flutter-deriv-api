@@ -133,6 +133,36 @@ sub log_call_timing {
     return;
 }
 
+sub log_response_latency_timing {
+    my ($c, $req_storage, $rpc_response) = @_;
+
+    return unless $rpc_response->{rpc_response}->{timestamp};
+
+    my %tags = (
+        rpc    => $req_storage->{method},
+        stream => $req_storage->{msg_group},
+        map { $_ => $c->stash($_) } qw/brand source_type/
+    );
+
+    $tags{app_id} = $c->stash('source') if $req_storage->{method} =~ APP_ID_LOGGED_METHODS;
+
+    # extra tagging for buy, proposal_open_contract, send_ask and sell for better visualization
+    my $methods = qr/^(buy|sell|send_ask|proposal_open_contract)/;
+
+    if (($req_storage->{method} =~ $methods) and $c->stash('market')) {
+        $tags{market} = $c->stash('market');
+    }
+    my $elapsed = Time::HiRes::time - $rpc_response->{rpc_response}->{timestamp};
+
+    DataDog::DogStatsd::Helper::stats_timing(
+        'bom_websocket_api.v_3.rpc.call.timing.response.latency',
+        $elapsed * 1000,
+        {tags => [map { join ':', $_ => $tags{$_} } grep { $tags{$_} } sort(keys %tags)]},
+    );
+
+    return;
+}
+
 sub log_call_timing_connection {
     my ($c, $req_storage, $rpc_response) = @_;
 
