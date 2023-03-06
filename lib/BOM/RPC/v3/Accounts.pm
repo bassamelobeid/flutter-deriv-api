@@ -1875,6 +1875,12 @@ rpc set_settings => sub {
             $current_client->residence,
             $current_client->landing_company->short
         );
+        # Send an email to contact the client
+        _send_request_professional_status_confirmation_email(
+            $current_client,
+            'professional_status_requested',
+            loginid                     => $current_client->loginid,
+            request_professional_status => $args->{request_professional_status}) if $current_client->fully_authenticated;
     }
 
     foreach my $loginid (@loginids) {
@@ -1978,6 +1984,41 @@ rpc set_settings => sub {
 
     return {status => 1};
 };
+
+=head2 _send_request_professional_status_confirmation_email
+
+Sends the first email once client requested for professional status
+
+It takes the following params:
+
+=over 4
+
+=item * C<client> A L<BOM::User::Client> instance.
+
+=item * C<event> The event to be emitted.
+
+=item * C<event_args> A hash containg event arguments.
+
+=back
+
+Returns undef.
+
+=cut
+
+sub _send_request_professional_status_confirmation_email {
+    my ($client, $event, %event_args) = @_;
+    die unless defined $event;
+    BOM::Platform::Event::Emitter::emit(
+        $event,
+        {
+            loginid    => $client->loginid,
+            properties => {
+                first_name                  => $client->first_name,
+                email                       => $client->email,
+                request_professional_status => $event_args{request_professional_status} ? 1 : 0,
+            }});
+    return undef;
+}
 
 rpc get_self_exclusion => sub {
     my $params = shift;

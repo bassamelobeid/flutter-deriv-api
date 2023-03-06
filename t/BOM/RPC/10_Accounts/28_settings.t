@@ -499,13 +499,16 @@ subtest 'get settings' => sub {
 $method = 'set_settings';
 subtest 'set settings' => sub {
     my $emitted;
-    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $mock_events                     = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $is_proff_status_event_triggered = 0;
     $mock_events->mock(
         'emit',
         sub {
             my ($type, $data) = @_;
             if ($type eq 'send_email') {
                 return BOM::Platform::Email::process_send_email($data);
+            } elsif ($type eq 'professional_status_requested') {
+                $is_proff_status_event_triggered = 1;
             } else {
                 $emitted->{$type} = $data;
             }
@@ -1042,7 +1045,22 @@ subtest 'set settings' => sub {
 
     $params->{token} = $token_X_mf;
     delete $emitted->{profile_change};
+
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+
+    is($is_proff_status_event_triggered, 0, 'The client is not authenicated. Hence the professional_status_requested event has not triggered');
+
+    # clear the professonal_requested status and set again
+    $test_client_X_mf->status->clear_professional_requested;
+    $params->{args}->{request_professional_status} = 1;
+
+    # The client is need to be fully authenticated to trigger the professional_status_requested event
+    $mocked_client->redefine('fully_authenticated' => sub { return 1 });
+
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    is($is_proff_status_event_triggered,      1, 'The client is fully authenicated. Hence the professional_status_requested event has triggered');
+    $mocked_client->unmock('fully_authenticated');
+
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
         {request_professional_status => 0},
         "updated fields are correctly sent to track event";
