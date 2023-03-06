@@ -157,6 +157,11 @@ The payout is processed as a withdrawal if freezing funds are enabled.
 sub create_payout_POST {
     my $c = shift;
 
+    BOM::Config::Runtime->instance->app_config->check_for_update();
+    return $c->throw(403, 'The cashier is under maintenance, it will be back soon.')
+        if BOM::Config::Runtime->instance->app_config->system->suspend->payments_graceful
+        and BOM::Config::Runtime->instance->app_config->system->suspend->cashier;
+
     return _doughflow_backend($c, 'payout_created')
         if ($c->user->is_payout_freezing_funds_enabled);
 

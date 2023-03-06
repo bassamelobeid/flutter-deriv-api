@@ -212,6 +212,12 @@ sub validate_as_payment {
         return $c->throw(403, 'Payments are suspended.');
     }
 
+    BOM::Config::Runtime->instance->app_config->check_for_update();
+    my $suspend_flags = (BOM::Config::Runtime->instance->app_config->system->suspend->payments_graceful
+            and BOM::Config::Runtime->instance->app_config->system->suspend->cashier);
+    my $graceful_suspend_flag = ($c->type =~ /^(deposit_validate|withdrawal_validate)$/ and $suspend_flags);
+    return $c->throw(403, 'The cashier is under maintenance, it will be back soon.') if $graceful_suspend_flag;
+
     my $client = $c->user;
     my $action =
           $c->type =~ /^(deposit|deposit_validate)$/              ? 'deposit'
@@ -227,11 +233,12 @@ sub validate_as_payment {
         # deposits are not validated becaause we already did so for deposit_validate
         # and at this point we are holding the client funds from payment processor
         $client->validate_payment(
-            currency     => $currency,
-            amount       => $signed_amount,
-            action_type  => $action,
-            payment_type => 'doughflow',
-            rule_engine  => BOM::Rules::Engine->new(client => $client),
+            currency           => $currency,
+            amount             => $signed_amount,
+            action_type        => $action,
+            payment_type       => 'doughflow',
+            rule_engine        => BOM::Rules::Engine->new(client => $client),
+            skip_cashier_check => $suspend_flags,
         ) unless $c->type eq 'deposit';
 
         if ($action eq 'deposit' and not $client->status->age_verification) {

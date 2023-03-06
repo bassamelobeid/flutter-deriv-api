@@ -4,7 +4,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use APIHelper                                  qw(balance deposit withdrawal_validate update_payout);
+use APIHelper                                  qw(balance deposit withdrawal_validate update_payout create_payout);
 use JSON::MaybeUTF8                            qw(:v1);
 use BOM::User::Client;
 use Test::MockModule;
@@ -124,6 +124,48 @@ subtest 'free gift' => sub {
         amount  => 10,
     );
     is $r->code, 403, 'truly cannot withdraw!';
+};
+
+subtest 'graceful suspend payments' => sub {
+    my $email = 'graceful_test@deriv.com';
+    my $user  = BOM::User->create(
+        email    => $email,
+        password => 'Pa$$w0rD'
+    );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        binary_user_id => $user->id,
+        broker_code    => 'CR',
+        email          => $email,
+        residence      => 'id',
+    });
+    $user->add_loginid($client->loginid);
+    my $balance = balance($client->loginid);
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->payments_graceful(1);
+    BOM::Config::Runtime->instance->app_config->system->suspend->cashier(1);
+
+    my $req = withdrawal_validate(
+        loginid => $client->loginid,
+    );
+    is($req->code, 200, 'correct status code');
+    my $resp = decode_json_utf8($req->content);
+    is $resp->{allowed},              0, 'Withdrawal validation fails when cashier and payments_graceful suspend';
+    is $resp->{message},              'The cashier is under maintenance, it will be back soon.', 'Correct error message in response body';
+    is 0 + balance($client->loginid), $balance + 0,                                              'Correct error message in response body';
+
+    $req = create_payout(
+        loginid => $client->loginid,
+    );
+    is($req->code,    403,         'Correct error status code when cashier and payments_graceful is suspended');
+    is($req->message, 'Forbidden', 'Correct message when cashier and payments_graceful is suspended');
+    like(
+        $req->content,
+        qr[error="The cashier is under maintenance, it will be back soon."],
+        'Correct content when cashier and payments_graceful is suspended'
+    );
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->payments_graceful(0);
+    BOM::Config::Runtime->instance->app_config->system->suspend->cashier(0);
 };
 
 done_testing();
