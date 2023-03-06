@@ -259,6 +259,7 @@ sub get_settings_by_group {
         shutdown_suspend => [qw(
                 system.suspend.trading
                 system.suspend.payments
+                system.suspend.payments_graceful
                 system.suspend.payment_agents
                 system.suspend.payment_agent_withdrawal_automation
                 system.suspend.cashier
