@@ -28,6 +28,8 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use BOM::Platform::Email       qw(send_email);
+use BOM::MT5::User::Async;
 
 # Load Brands object globally
 my $BRANDS = BOM::Platform::Context::request()->brand();
@@ -40,6 +42,7 @@ use constant ERROR_MESSAGE_MAPPING => {
     userAlreadyAnonymized => "Client is already anonymized",
     deskError             => "couldn't anonymize user from s3 desk",
     closeIOError          => "couldn't anonymize user from Close.io",
+    mt5AnonymizationError => "An API error occurred while anonymizing one or more MT5 Accounts",
 };
 
 use constant DF_ANONYMIZATION_KEY               => 'DF_ANONYMIZATION_QUEUE';
@@ -288,7 +291,6 @@ sub _send_anonymization_report {
 =head2 _anonymize
 
 removal of a client's personally identifiable information from Binary's systems.
-Skip C<MT5> account untouched because we dont want to anonymize third parties yet.
 This module will anonymize below information :
 - replace these with `deleted`
    - first and last names (deleted+loginid)
@@ -332,12 +334,38 @@ Possible error_codes for now are:
 async sub _anonymize {
     my $loginid = shift;
     my ($user, @clients_hashref);
+    my @mt5_activeids;
+    my @mt5_inactiveids;
     try {
         my $client = BOM::User::Client->new({loginid => $loginid});
         return "clientNotFound" unless ($client);
         $user = $client->user;
         return "userNotFound" unless $user;
         return "userAlreadyAnonymized" if $user->email =~ /\@deleted\.binary\.user$/;
+
+        my @mt_logins = sort $user->get_mt5_loginids(include_all_status => 1);
+
+        if (scalar(@mt_logins)) {
+            foreach my $mt5_account (@mt_logins) {
+                try {
+                    await BOM::MT5::User::Async::get_user($mt5_account);
+                    push @mt5_activeids, $mt5_account;
+                } catch ($e) {
+                    if ($e->{error} =~ m/ERR_NOTFOUND/i) {
+                        $log->errorf("Account not found while retrieving user '%s' from MT5 : %s", $mt5_account, $e);
+                        try {
+                            my $mt5_archived_account = await BOM::MT5::User::Async::get_user_archive($mt5_account);
+                            push @mt5_inactiveids, $mt5_account if $mt5_archived_account;
+                        } catch ($e) {
+                            $log->errorf("Error occured while retrieving user from get_user_archive api call'%s' from MT5 : %s", $mt5_account, $e);
+                        }
+                    }
+                }
+            }
+        }
+
+        return "activeClient" if @mt5_activeids;
+
         return "activeClient" unless ($user->valid_to_anonymize);
 
         # Delete data on close io
@@ -349,24 +377,50 @@ async sub _anonymize {
         # Delete desk data from s3
         return "deskError" unless await BOM::Platform::Desk->new(user => $user)->anonymize_user();
 
+        my $redis = _redis_payment_write();
+
         @clients_hashref = $client->user->clients(
             include_disabled   => 1,
             include_duplicated => 1,
         );
 
-        my $redis = _redis_payment_write();
+        if (scalar(@mt5_inactiveids)) {
+            my @error_ids;
+            foreach my $mt5_account (@mt5_inactiveids) {
+                my $active_id;
+                my $archive_id;
+                try {
+                    my $mt5_archivedid = await BOM::MT5::User::Async::get_user_archive($mt5_account);
+                    await BOM::MT5::User::Async::user_restore($mt5_archivedid);
+                    my $updated_userinfo = _prepare_params_for_update($mt5_archivedid);
+                    await BOM::MT5::User::Async::update_user($updated_userinfo);
+                    await BOM::MT5::User::Async::user_archive($mt5_account);
+                } catch ($e) {
+                    $log->infof("An error occured while anonymizing MT5 account '%s' from MT5 : %s", $mt5_account, $e);
+                    try {
+                        $active_id  = await BOM::MT5::User::Async::get_user($mt5_account);
+                        $archive_id = await BOM::MT5::User::Async::user_archive($mt5_account) if $active_id;
+                        die "Error in anonymization process" unless $archive_id;
+                    } catch ($e) {
+                        $log->errorf("An error occured while rearchiving the MT5 Account during anonymization process '%s' from MT5 : %s",
+                            $mt5_account, $e);
+                        push @error_ids, $mt5_account;
+                    }
+                }
+            }
+            return "mt5AnonymizationError" if @error_ids;
+        }
 
         # Anonymize data for all the user's clients
         foreach my $cli (@clients_hashref) {
-            # Skip mt5 because we dont want to anonymize third parties yet
-            next if $cli->is_mt5;
+
             # Skip if client already anonymized
             next if $cli->email =~ /\@deleted\.binary\.user$/;
+
             # Delete documents from S3 because after anonymization the filename will be changed.
             $cli->remove_client_authentication_docs_from_S3();
 
             # Set client status to disabled to prevent user from doing any future actions
-
             $cli->status->setnx('disabled', 'system', 'Anonymized client');
 
             # Remove all user tokens
@@ -449,11 +503,13 @@ async sub df_anonymization_done {
             my $counter = await $redis->incr(DF_ANONYMIZATION_RETRY_COUNTER_KEY . $loginid);
 
             if ($counter <= DF_ANONYMIZATION_MAX_RETRY) {
+
                 # retry
                 $log->warnf('DF Anonymization retry: %s (%d times)', $loginid, $counter);
                 stats_inc('df_anonymization.result.retry', {tags => ["loginid:$loginid"]});
                 await _df_anonymize($redis, $cli);
             } else {
+
                 # give up
                 $log->errorf('DF Anonymization max retry attempts reached: %s', $loginid);
                 stats_inc('df_anonymization.result.max_retry', {tags => ["loginid:$loginid"]});
@@ -491,6 +547,29 @@ async sub df_anonymization_done {
     }
 
     return 1;
+}
+
+=head2 _prepare_params_for_update
+
+Method prepares params for sending to mt5 server for user_update
+
+=cut
+
+sub _prepare_params_for_update {
+
+    my $updated_userinfo = shift;
+    my $mt5_loginid      = $updated_userinfo->{login};
+    $mt5_loginid =~ s/MT[DR]?//;
+    $updated_userinfo->{name}    = $mt5_loginid . "-deleted";
+    $updated_userinfo->{address} = "deleted";
+    $updated_userinfo->{city}    = "deleted";
+    $updated_userinfo->{phone}   = "deleted";
+    $updated_userinfo->{country} = "deleted";
+    $updated_userinfo->{state}   = "deleted";
+    $updated_userinfo->{zipCode} = "deleted";
+    $updated_userinfo->{id}      = "deleted";
+    $updated_userinfo->{email}   = $mt5_loginid . "\@deleted.binary.user";
+    return $updated_userinfo;
 }
 
 1;
