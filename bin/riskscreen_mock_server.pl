@@ -16,12 +16,12 @@ This scripts acts as a RiskScreen mock server in test environment. It reads mock
 
 use Syntax::Keyword::Try;
 use IO::Async::Loop;
-use WebService::Async::RiskScreen::MockServer;
+use WebService::Async::LexisNexis::MockServer;
 
 try {
     my $loop = IO::Async::Loop->new;
     $loop->add(my $server =
-            WebService::Async::RiskScreen::MockServer->new(mock_data_path => '/home/git/regentmarkets/bom-platform/bin/riskscreen_mock_data.yml'));
+            WebService::Async::LexisNexis::MockServer->new(mock_data_path => '/home/git/regentmarkets/bom-platform/bin/riskscreen_mock_data.yml'));
 
     my $port = $server->start->get;
     print "RiskScreen mock server is started. Please edit settings in third_party.yml: \n";

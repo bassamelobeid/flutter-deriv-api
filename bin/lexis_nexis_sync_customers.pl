@@ -7,11 +7,11 @@ no indirect;
 
 =head1 NAME
 
-C<riskscreen_sync_customers.pl>
+C<lexis_nexis_sync_customers.pl>
 
 =head1 DESCRIPTION
 
-This scripts fetches new customers and matches from risk screen server and save a summary in B<userdb>.
+This scripts fetches new customers and matches from lexis nexis server and save a summary in B<userdb>.
 
 =cut
 
@@ -21,7 +21,7 @@ use Log::Any qw($log);
 use Log::Any::Adapter;
 use Data::Dumper;
 
-use BOM::Platform::RiskScreenAPI;
+use BOM::Platform::LexisNexisAPI;
 
 GetOptions(
     'l|log_level=s' => \my $log_level,
@@ -39,11 +39,13 @@ $update_all //= 0;
 $log->debugf('Starting to sync riskscreen data with UPDATE ALL = %d, LOG LEVEL = %s, count = %d', $update_all, $log_level, $count // '<undef>');
 
 try {
-    my $riskscreen_api = BOM::Platform::RiskScreenAPI->new(
+    my $lexis_nexis_api = BOM::Platform::LexisNexisAPI->new(
         update_all => $update_all,
-        count      => $count
+        count      => $count // 0
     );
-    $riskscreen_api->sync_all_customers($update_all, $count)->get;
+
+    $lexis_nexis_api->sync_all_customers($update_all, $count)->get;
+
 } catch ($e) {
     warn Dumper $e;
 }
