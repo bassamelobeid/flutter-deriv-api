@@ -31,15 +31,19 @@ $datadog->mock('stats_inc',    sub { push @$stats,  \@_ });
 
 $res = $t->await::website_status({website_status => 1});
 
-is @$timing, 2, 'Should make 2 logs';
+is @$timing, 3, 'Should make 3 logs';
 
 is $timing->[0]->[0], 'bom_websocket_api.v_3.rpc.call.timing';
 ok $timing->[0]->[1], 'Should log timing';
 cmp_bag $timing->[0]->[2]->{tags}, ['brand:binary', 'rpc:website_status', 'stream:general'], 'Metric tags are correct';
 
-is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.sent';
-ok $timing->[1]->[1], 'Should log timing';
-is $timing->[1]->[2]->{tags}->[0], 'rpc:website_status', 'Should set tag with rpc method name';
+is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.response.latency';
+ok $timing->[1]->[1], 'Should log response latency timing';
+cmp_bag $timing->[0]->[2]->{tags}, ['brand:binary', 'rpc:website_status', 'stream:general'], 'Metric tags are correct';
+
+is $timing->[2]->[0], 'bom_websocket_api.v_3.rpc.call.timing.sent';
+ok $timing->[2]->[1], 'Should log timing';
+is $timing->[2]->[2]->{tags}->[0], 'rpc:website_status', 'Should set tag with rpc method name';
 
 is $stats->[0]->[0], 'bom_websocket_api.unknown_ip.count';
 my $call_stat = first { $_->[0] eq 'bom_websocket_api.v_3.call.all' } @$stats;
@@ -61,11 +65,14 @@ $res = $t->await::proposal({
     %contractParameters
 });
 
-is @$timing, 3, 'Should make 3 logs. Added pre_rpc log';
+is @$timing, 4, 'Should make 4 logs. Added pre_rpc log';
 
 is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.connection';
 ok $timing->[1]->[1], 'Should log timing';
 is $timing->[1]->[2]->{tags}->[0], 'rpc:send_ask', 'Should set tag with rpc method name';
+
+is $timing->[2]->[0], 'bom_websocket_api.v_3.rpc.call.timing.response.latency';
+ok $timing->[2]->[1], 'Should log timing';
 
 my $email  = 'test-binary' . rand(999) . '@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
