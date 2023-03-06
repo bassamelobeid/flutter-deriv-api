@@ -648,7 +648,14 @@ sub finish_successful_upload {
     };
 
     # Call successful upload
+    $client->status->clear_poi_poa_uploaded;
+    $client->status->_clear_all;
+
     my $result = $c->call_ok($method, $params)->has_no_error->result;
+
+    # Check status for copied documents from CR/MF is set for CS agents
+    ok $client->status->poi_poa_uploaded, 'Status added correctly';
+    is $client->status->reason('poi_poa_uploaded'), 'Documents uploaded by ' . $client->broker_code, 'Status reason added correctly';
 
     # Check doc is updated in database properly
     my ($doc) = $client->find_client_authentication_document(query => [id => $result->{file_id}]);

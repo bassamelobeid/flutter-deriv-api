@@ -118,6 +118,9 @@ sub successful_upload {
     try {
         my $finish_upload_result = $client->finish_document_upload($args->{file_id});
 
+        # We set this status so CS agents can see documents where uploaded in sibling acc CR/MF
+        $client->status->setnx('poi_poa_uploaded', 'system', 'Documents uploaded by ' . $client->broker_code);
+
         return create_upload_error() unless $finish_upload_result and ($args->{file_id} == $finish_upload_result);
     } catch ($error) {
         log_exception();
