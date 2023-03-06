@@ -3456,6 +3456,10 @@ Event to handle withdrawal_reversal payment type.
 
 Event to handle withdrawal payment type.
 
+=head2 professional_status_requested
+
+It is triggered for each B<professional_status_requested> event emitted.
+
 =over
 
 =item * C<loginid> - required. Login Id of the user.
@@ -3480,6 +3484,7 @@ for my $func_name (
     transfer_between_accounts
     payment_withdrawal_reversal
     payment_withdrawal
+    professional_status_requested
     ))
 {
     no strict 'refs';    # allow symbol table manipulation

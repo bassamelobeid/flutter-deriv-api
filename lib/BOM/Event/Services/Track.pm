@@ -160,9 +160,10 @@ my %EVENT_PROPERTIES = (
     p2p_order_confirm_verify    => [qw(verification_url order_id order_amount order_currency buyer_name code live_chat_url password_reset_url)],
     poi_poa_resubmission        =>
         [qw(first_name poi_reason poi_title poi_subtitle footnote poi_layout poa_reason poa_title poa_subtitle poa_layout title is_eu)],
-    p2p_limit_changed           => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
-    p2p_limit_upgrade_available => [qw(loginid advertiser_id)],
-    payops_event_email          => [qw(contents subject loginid email_template properties)],
+    professional_status_requested => [qw(first_name email request_professional_status)],
+    payops_event_email            => [qw(contents subject loginid email_template properties)],
+    p2p_limit_changed             => [qw(loginid advertiser_id new_sell_limit new_buy_limit account_currency change automatic_approve)],
+    p2p_limit_upgrade_available   => [qw(loginid advertiser_id)],
 );
 
 # Put the common events that should have simillar data struture to delivering it to Segment.
@@ -208,6 +209,7 @@ my @COMMON_EVENT_METHODS = qw(
     p2p_order_confirm_verify
     poi_poa_resubmission
     derivx_account_deactivated
+    professional_status_requested
     p2p_limit_changed
     p2p_limit_upgrade_available
     identity_verification_rejected
@@ -1448,6 +1450,10 @@ It is triggered for each B<poa_verification_warning> event emitted, delivering i
 =head2 poa_verification_expired
 
 It is triggered for each B<poa_verification_expired> event emitted, delivering it to Segment.
+
+=head2 professional_status_requested
+
+It is triggered for each B<professional_status_requested> event emitted, delivering it to rudderstack.
 
 =head2 poa_verification_failed_reminder
 
