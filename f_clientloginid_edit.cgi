@@ -243,10 +243,10 @@ if (defined $input{request_risk_screen}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Screening is not possible without proof of identity.<a/></p>])
         unless $client->status->age_verification();
 
-    $client->user->set_risk_screen(
-        interface_reference => $client->loginid,
-        status              => 'requested',
-        custom_text1        => $input{screening_reason_select} || undef,
+    $client->user->set_lexis_nexis(
+        client_loginid => $client->loginid,
+        alert_status   => 'requested',
+        note           => $input{screening_reason_select} || undef,
     );
 
     print "<p class=\"notify\">Screening requested. It will be enabled within 24 hours.</p>";

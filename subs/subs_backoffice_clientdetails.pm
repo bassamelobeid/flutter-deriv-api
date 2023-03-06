@@ -52,7 +52,7 @@ use BOM::User::Onfido;
 use BOM::User::SocialResponsibility;
 use BOM::User::IdentityVerification;
 use BOM::Platform::Doughflow;
-use BOM::User::RiskScreen;
+use BOM::User::LexisNexis;
 
 use 5.010;
 
@@ -625,8 +625,8 @@ SQL
             });
     }
 
-    my $risk_screen = $client->user->risk_screen;
-    $risk_screen->{flags_str} = join(',', $risk_screen->flags->@*) if $risk_screen && $risk_screen->flags;
+    my $lexis_nexis = $client->user->lexis_nexis;
+    # $lexis_nexis->{flags_str} = join(',', $lexis_nexis->flags->@*) if $lexis_nexis && $lexis_nexis->flags;
     my $key = RISK_DISCLAIMER_RESUBMISSION_KEY_PREFIX . $client->user->id;
     my $risk_disclaimer_resubmission_updated_at;
     my $risk_disclaimer_resubmission_updated_by;
@@ -751,8 +751,8 @@ SQL
         expired_poi_docs                             => $client->documents->expired(1),
         login_locked_until                           => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
         too_many_attempts                            => $too_many_attempts,
-        risk_screen                                  => $risk_screen,
-        screening_reasons                            => [BOM::User::RiskScreen::SCREENING_REASON],
+        lexis_nexis                                  => $lexis_nexis,
+        screening_reasons                            => [BOM::User::LexisNexis::SCREENING_REASON],
         is_compliance                                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
         risk_disclaimer_updated_at                   => $risk_disclaimer_resubmission_updated_at,
         risk_disclaimer_updated_by                   => $risk_disclaimer_resubmission_updated_by,

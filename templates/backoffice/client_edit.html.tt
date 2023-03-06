@@ -163,27 +163,19 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     <tr>
         <td class="bg-lightgrey" colspan="2">#AML SCREENING</td>
     </tr>
-    [% IF risk_screen %]
+    [% IF lexis_nexis %]
         <tr>
-            <td class="label">Interface Reference</td>
+            <td class="label">Client Login ID</td>
             <td>: 
-            [% IF risk_screen.client_entity_id %] 
-                <a href="https://batch.riskscreen.com/entity/view/[% risk_screen.client_entity_id %]">[% risk_screen.interface_reference %]</a>
-            [% ELSE %]
-                [% risk_screen.interface_reference %]
-            [% END %]
+            [% lexis_nexis.client_loginid %]
             </td>
         </tr>
-        <tr><td class="label">Status</td><td>:                [% risk_screen.status %]<td></tr>
-        [% IF risk_screen.match_potential_volume %] <tr><td class="label">Potential Matches</td><td>:   [% risk_screen.match_potential_volume %]</td></tr> [% END %]
-        [% IF risk_screen.match_discounted_volume %] <tr><td class="label">Discounted Matches</td><td>: [% risk_screen.match_discounted_volume %]</td></tr> [% END %]
-        [% IF risk_screen.match_flagged_volume %] <tr><td class="label">Flagged Matches</td><td>:       [% risk_screen.match_flagged_volume %]</td></tr> [% END %]
-        [% IF risk_screen.flags_str %]            <tr><td class="label">Flags</td><td>:                 [% risk_screen.flags_str %]</td></tr> [% END %]
-        <tr><td class="label">Update date</td><td>: [% risk_screen.date_updated %] </td></tr>
-        <tr><td class="label">Date added </td><td>: [% risk_screen.date_added %] </td></tr>
-        <tr><td class="label">Screening Reason (Custom Text)</td><td>: [% risk_screen.custom_text1 %] </td></tr>
+        <tr><td class="label">Status</td><td>:                [% lexis_nexis.alert_status %]<td></tr>
+        <tr><td class="label">Update date</td><td>: [% lexis_nexis.date_updated %] </td></tr>
+        <tr><td class="label">Date added </td><td>: [% lexis_nexis.date_added %] </td></tr>
+        <tr><td class="label">Screening Reason (Custom Note)</td><td>: [% lexis_nexis.note %] </td></tr>
     [% END %]
-    [% IF NOT risk_screen OR risk_screen.status == 'requested' %]
+    [% IF NOT lexis_nexis OR lexis_nexis.alert_status == 'requested' %]
         <tr>
         <td class="label"></td>
         <td>
@@ -191,7 +183,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             <select id='screening_reason_select' name='screening_reason_select'>
                 <option value=""></option>
                 [% FOREACH reason IN screening_reasons%]
-                    <option value="[% reason %]" [% IF reason == risk_screen.custom_text1 %] selected [% END %]> 
+                    <option value="[% reason %]" [% IF reason == lexis_nexis.note %] selected [% END %]>
                         [% reason %]
                     </option>
                 [% END %]
