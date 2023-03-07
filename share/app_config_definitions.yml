@@ -1040,66 +1040,6 @@ quants:
       description: "Accumulator variables"
       isa: section
       contains:
-        symbol_config:
-          description: "Config per symbol"
-          isa: section
-          contains:
-            common: &accumulator_lc
-              description: "Landing company type"
-              isa: section
-              contains:
-                R_10: &accumulator_symbols
-                  isa: json_string
-                  default: '{ "1655022046": { "max_payout": { "USD": 10000, "AUD": 10000, "GBP": 10000, "EUR": 10000 , "BTC": 0.5,"ETH": 8, "LTC": 100, "BUSD": 10000, "DAI": 10000, "EURS": 10000, "IDK": 100000, "PAX": 10000, "TUSD": 10000, "USB": 10000, "USDC": 10000, "USDK": 10000, "UST": 10000, "eUSDT": 10000, "tUSDT": 10000},"max_duration_coefficient": 10, "growth_start_step": 1,"growth_rate": [0.01, 0.02, 0.03, 0.04, 0.05] } }'
-                  global: 1
-                R_25: *accumulator_symbols
-                R_50: *accumulator_symbols
-                R_75: *accumulator_symbols
-                R_100: *accumulator_symbols
-                1HZ10V: *accumulator_symbols
-                1HZ25V: *accumulator_symbols
-                1HZ50V: *accumulator_symbols
-                1HZ75V: *accumulator_symbols
-                1HZ100V: *accumulator_symbols
-                JD10: *accumulator_symbols
-                JD25: *accumulator_symbols
-                JD50: *accumulator_symbols
-                JD75: *accumulator_symbols
-                JD100: *accumulator_symbols
-                CRASH300N: *accumulator_symbols
-                CRASH500: *accumulator_symbols
-                CRASH1000: *accumulator_symbols
-                BOOM300N: *accumulator_symbols
-                BOOM500: *accumulator_symbols
-                BOOM1000: *accumulator_symbols
-            svg: *accumulator_lc
-            virtual: *accumulator_lc
-        client_limits:
-          description: "Client limits on accumulator contracts"
-          isa: section
-          contains:
-              max_open_positions:
-                description: "max open postions limit"
-                isa: Num
-                default: 1
-                global: 1
-              max_daily_volume:
-                description: "daily volume limit"
-                isa: json_string
-                default: '{"USD": 50000, "AUD": 75000, "GBP": 40000, "EUR": 50000 , "BTC": 2, "ETH": 40, "LTC": 500, "BUSD": 50000, "DAI": 50000, "EURS": 50000, "IDK": 500000, "PAX": 50000, "TUSD": 50000, "USB": 50000, "USDC": 50000, "USDK": 50000, "UST": 50000, "eUSDT": 50000, "tUSDT": 50000 }'
-                global: 1  
-        risk_profile:
-          description: "risk profile for market or underlying symbols"
-          isa: section
-          contains:
-              market:
-                isa: json_string
-                default: '{}'
-                global: 1
-              symbol:
-                isa: json_string
-                default: '{}'
-                global: 1  
         affiliate_commission:
           description: "Affiliate commission for accumulator contracts"
           isa: section

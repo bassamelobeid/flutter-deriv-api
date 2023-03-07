@@ -30,11 +30,14 @@ use Date::Utility;
 use LandingCompany::Registry;
 use List::Util   qw(first all);
 use Scalar::Util qw(looks_like_number);
+use BOM::Config::Redis;
+use BOM::Config;
 use Finance::Contract::Category;
 use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
 use Finance::Underlying;
-use POSIX qw(strftime);
+use POSIX         qw(strftime);
+use JSON::MaybeXS qw(encode_json decode_json);
 
 use BOM::Config::Runtime;
 
@@ -54,6 +57,39 @@ has [qw(recorded_date for_date)] => (
     is      => 'ro',
     default => undef,
 );
+
+=head2 contract_category
+
+Contract category which we need the respected config for
+
+=cut
+
+has contract_category => (
+    is => 'rw',
+);
+
+=head2 _redis_replicated
+
+redis replicated instance
+
+=cut
+
+has _redis_replicated => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build__redis_replicated',
+);
+
+=head2 _build_redis_replicated
+
+Building a redis replicated instance
+
+=cut
+
+sub _build__redis_replicated {
+
+    return BOM::Config::Redis::redis_replicated_write();
+}
 
 =head2 save_config
 
@@ -79,10 +115,11 @@ sub save_config {
         $config = $args;
     } elsif ($config_type =~ /deal_cancellation/) {
         $config = $args;
+    } elsif ($config_type =~ /accumulator/) {
+        $config = $self->_process_accumulator_config($config_type, $args);
     } else {
         die "unregconized config type [$config_type]";
     }
-
     $self->chronicle_writer->set(CONFIG_NAMESPACE, $config_type, $config, $self->recorded_date);
 
     return $config->{$args->{name}} if $args->{name};
@@ -242,6 +279,197 @@ Returns the C<$default_multiplier_config> defined in yaml.
 sub get_multiplier_config_default {
     return $default_multiplier_config;
 }
+
+=head2 _process_accumulator_config
+
+Before saving any accumulator config to both Redis and DB, some modifications might be needed. 
+In this functions based on the type of the conifg these measures are addressed.  
+
+=cut
+
+sub _process_accumulator_config {
+    my ($self, $redis_key, $args) = @_;
+
+    my @redis_key_split = split("::", $redis_key);
+    my $config_category = $redis_key_split[1];
+
+    # for 'per_symbol' config, other than storing it into Chronicle, the last recent 10 config changes are also stored into a
+    # sorted set inside Redis.
+    if ($config_category eq 'per_symbol') {
+        # this field is added to make sure we always have unique values so that existing sorted set members are not updated.
+        $args->{u_id} = rand();
+        my $config            = encode_json($args);
+        my $landing_company   = $redis_key_split[2];
+        my $underlying_symbol = $redis_key_split[3];
+        my $cached_redis_key =
+            join('::', CONFIG_NAMESPACE, $self->contract_category, 'cached_per_symbol_conifg', $landing_company, $underlying_symbol);
+
+        my $sorted_set_len = $self->_redis_replicated->execute('zcard', $cached_redis_key);
+
+        if ($sorted_set_len and $sorted_set_len >= 10) {
+            $self->_redis_replicated->execute('zpopmin', $cached_redis_key);
+            $self->_redis_replicated->execute('zadd', $cached_redis_key, 'NX', $self->recorded_date->epoch, $config);
+        } else {
+            $self->_redis_replicated->execute('zadd', $cached_redis_key, 'NX', $self->recorded_date->epoch, $config);
+        }
+    }
+
+    return $args;
+
+}
+
+=head2 get_per_symbol_config
+
+This method returns the config per landing company per symbol. 
+When the $need_latest_cache tag is true, it will return the latest cache inside Chronicle Redis cache to be used in creating new contracts and also for BackOffice.
+Otherwise it will check for the conifg first inside a sorted set in Redis which contains the last few configs. This set is used 
+to avoid calling DB for past conifgs which are used by yet open contracts. 
+If we didn't have the requiered cache for the specific time iniside the sorted set in Redis, it will be fetched from DB, but since it
+is for epxired contracts, it won't overload DB. 
+
+=cut
+
+sub get_per_symbol_config {
+    my ($self, $args) = @_;
+
+    return unless my $underlying_symbol = $args->{underlying_symbol};
+    my $landing_company = $args->{landing_company} ? $args->{landing_company} : 'common';
+
+    my $redis_key        = join('::', $self->contract_category, 'per_symbol', $landing_company, $underlying_symbol);
+    my $cached_redis_key = join('::', CONFIG_NAMESPACE, $self->contract_category, 'cached_per_symbol_conifg', $landing_company, $underlying_symbol);
+
+    if (my $last_cache = $self->chronicle_reader->get(CONFIG_NAMESPACE, $redis_key)) {
+        return $last_cache if $args->{need_latest_cache};
+
+        #look into a Redis sorted set to see if the required config is cached inside it.
+        my $cached_configs = $self->_redis_replicated->execute('zrange', $cached_redis_key, '0', $self->for_date->epoch, 'byscore');
+        return decode_json(pop(@$cached_configs)) if $cached_configs and @$cached_configs;
+
+        # in case of no Redis cache, we look for the config inside DB for the specific date.
+        my $config = $self->chronicle_reader->get_for(CONFIG_NAMESPACE, $redis_key, $self->for_date);
+        return $config if $config;
+
+        # this case is needed when we need a config before the first insertion into Chronicle.
+        return $self->get_config_default('per_symbol')->{$landing_company}->{$underlying_symbol};
+
+    } else {
+        return $self->get_config_default('per_symbol')->{$landing_company}->{$underlying_symbol};
+    }
+    return;
+
+}
+
+=head2 get_config_default
+
+This function would return the default config for a specific contract category and for the following config types:
+- per_symbol
+- per_symbol_limits
+
+=cut
+
+sub get_config_default {
+    my ($self, $config_type) = @_;
+
+    return LoadFile("/home/git/regentmarkets/bom-config/share/default_" . $self->contract_category . "_" . $config_type . "_config.yml");
+}
+
+=head2 get_per_symbol_limits
+
+Returns the limits imposed on each symbol for a specific contract category. 
+These limits are part of the Risk Management tool. 
+
+=cut
+
+sub get_per_symbol_limits {
+    my ($self, $args) = @_;
+
+    return unless my $underlying_symbol = $args->{underlying_symbol};
+    my $landing_company = $args->{landing_company} ? $args->{landing_company} : 'common';
+
+    my $redis_key       = join("::", $self->contract_category, 'per_symbol_limits',, $landing_company, $underlying_symbol);
+    my $existing_config = $self->chronicle_reader->get(CONFIG_NAMESPACE, $redis_key);
+
+    return $existing_config ? $existing_config : $self->get_config_default('per_symbol_limits')->{$landing_company}->{$underlying_symbol};
+}
+
+=head2 get_user_specific_limits
+
+Returns the limits imposed on clients for a specific contract category. 
+These limits are part of the Risk Management tool. 
+
+=cut
+
+sub get_user_specific_limits {
+    my $self = shift;
+
+    my $redis_key       = join("::", $self->contract_category, 'user_specific_limits');
+    my $existing_config = $self->chronicle_reader->get(CONFIG_NAMESPACE, $redis_key);
+
+    return $existing_config ? $existing_config : undef;
+}
+
+=head2 get_max_stake_per_risk_profile_config_default
+
+Returns a hashref containing the default values for each contract type risk profile's max stake value. 
+
+=cut
+
+sub get_max_stake_per_risk_profile_config_default {
+    my $self = shift;
+
+    return BOM::Config::quants()->{risk_profile};
+}
+
+=head2 get_max_stake_per_risk_profile
+
+Returns a hashref containing the values for each risk profile's max stake value. 
+
+=cut
+
+sub get_max_stake_per_risk_profile {
+    my ($self, $risk_profile) = @_;
+
+    my $redis_key       = join("::", $self->contract_category, 'max_stake_per_risk_profile', $risk_profile);
+    my $existing_config = $self->chronicle_reader->get(CONFIG_NAMESPACE, $redis_key);
+
+    return $existing_config ? $existing_config : $self->get_max_stake_per_risk_profile_config_default->{$risk_profile}->{$self->contract_category};
+}
+
+=head2 get_risk_profile_per_symbol
+
+Returns the risk level imposed on each symbol for specific contract categories. 
+
+=cut
+
+sub get_risk_profile_per_symbol {
+    my $self = shift;
+
+    my $redis_key       = join("::", $self->contract_category, 'risk_profile_per_symbol');
+    my $existing_config = $self->chronicle_reader->get(CONFIG_NAMESPACE, $redis_key);
+
+    return $existing_config ? $existing_config : undef;
+}
+
+=head2 get_risk_profile_per_market
+
+Returns the risk level imposed on each market for specific contract categories. 
+
+=cut
+
+sub get_risk_profile_per_market {
+    my $self = shift;
+
+    my $redis_key       = join("::", $self->contract_category, 'risk_profile_per_market');
+    my $existing_config = $self->chronicle_reader->get(CONFIG_NAMESPACE, $redis_key);
+
+    return $existing_config ? $existing_config : undef;
+}
+
+=head2 _process_commission
+
+process commission
+
+=cut
 
 sub _process_commission {
     my ($self, $existing_config, $args) = @_;
