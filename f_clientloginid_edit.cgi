@@ -1611,7 +1611,10 @@ foreach my $lid ($user_clients->@*) {
 # show MT5 a/c
 
 # inverse jurisdiction ratings; for example high => [id, ru] is converted to {id => high, ru => high}
-my $mt5_jurisdiction = BOM::Config::Compliance->get_jurisdiction_risk_rating('mt5');
+my $mt5_jurisdiction_mt5 = BOM::Config::Compliance->get_jurisdiction_risk_rating('mt5');
+my $mt5_jurisdiction_aml = BOM::Config::Compliance->get_jurisdiction_risk_rating('aml');
+my $mt5_jurisdiction     = {%$mt5_jurisdiction_mt5, %$mt5_jurisdiction_aml};
+
 delete $mt5_jurisdiction->{revision};
 for my $landing_company (keys %$mt5_jurisdiction) {
     for my $risk_level (BOM::Config::Compliance::RISK_LEVELS) {
