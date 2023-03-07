@@ -13,6 +13,12 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use Pricing::Engine::EuropeanDigitalSlope;
 
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::GBP_USD',
+    quote => 1.14239,
+    epoch => time
+);
 my $date_pricing = 1352344145;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $date_pricing});
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');

@@ -15,6 +15,13 @@ use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db
 
 my $now = Date::Utility->new('2014-11-11');
 
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::EUR_USD',
+    quote => 1.00080,
+    epoch => time
+);
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {

@@ -20,7 +20,9 @@ use Test::MockModule;
 use Postgres::FeedDB::Spot::Tick;
 use Quant::Framework::VolSurface::Delta;
 
-my $now = Date::Utility->new('2016-03-18 01:00:00');
+my $now          = Date::Utility->new('2016-03-18 01:00:00');
+my $mocked_redis = Test::MockModule->new("RedisDB");
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -49,6 +51,23 @@ my $bet_params = {
     barrier      => 'S0P',
     current_tick => $fake_tick,
 };
+
+my %dataset = (
+    'exchange_rates::UST_USD' => {
+        source           => 'coingecko',
+        offer_to_clients => 1,
+        shift_in_rate    => '-0.101398601398589',
+        quote            => 0.999985,
+        epoch            => time,
+    },
+    'exchange_rates::BTC_USD' => {
+        source           => 'Feed',
+        offer_to_clients => 1,
+        shift_in_rate    => '-0.0379805941505417',
+        quote            => 22371.350,
+        epoch            => time,
+    },
+);
 
 subtest 'invalid start and expiry time' => sub {
     $bet_params->{date_start} = $bet_params->{date_expiry} = $now;
@@ -283,6 +302,8 @@ subtest 'invalid payout currency' => sub {
 };
 
 subtest 'stable crypto as payout currency' => sub {
+    $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
+
     my $now        = Date::Utility->new($fake_tick->epoch);
     my $bet_params = {
         date_start   => $now,

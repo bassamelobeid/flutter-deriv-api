@@ -22,6 +22,13 @@ use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::AUD_USD',
+    quote => 0.67414,
+    epoch => time
+);
+
 my $now  = Date::Utility->new('2012-01-19T01:00:00Z')->epoch;
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxEURUSD',

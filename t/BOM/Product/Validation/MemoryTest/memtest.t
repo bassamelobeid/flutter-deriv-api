@@ -23,6 +23,23 @@ use BOM::MarketData::Types;
 use BOM::Market::DataDecimate;
 use Cache::RedisDB;
 
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::EUR_USD',
+    quote => 1.00080,
+    epoch => time
+);
+$redis_exchangerates->hmset(
+    'exchange_rates::GBP_USD',
+    quote => 1.14239,
+    epoch => time
+);
+$redis_exchangerates->hmset(
+    'exchange_rates::AUD_USD',
+    quote => 0.67414,
+    epoch => time
+);
+
 my $mock_calendar = Test::MockModule->new('Finance::Calendar');
 $mock_calendar->mock(is_open_at => sub { 1 });
 

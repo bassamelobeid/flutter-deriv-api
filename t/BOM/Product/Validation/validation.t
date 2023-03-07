@@ -25,7 +25,16 @@ use Quant::Framework;
 use LandingCompany::Registry;
 
 initialize_realtime_ticks_db();
-
+my $mocked_redis = Test::MockModule->new("RedisDB");
+my %dataset      = (
+    'exchange_rates::AUD_USD' => {
+        source           => 'Feed',
+        offer_to_clients => 1,
+        shift_in_rate    => 0,
+        quote            => 0.69510,
+        epoch            => time,
+    },
+);
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
 my $mocked_decimate  = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(
@@ -856,6 +865,8 @@ subtest '10% barrier check for double barrier contract' => sub {
 };
 
 subtest 'expiry_daily expiration time' => sub {
+    $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
+
     my $now         = Date::Utility->new('2014-10-08 18:00:00');
     my $tick_params = {
         symbol => 'not_checked',
@@ -1011,6 +1022,8 @@ subtest 'tentative events' => sub {
 };
 
 subtest 'integer barrier' => sub {
+    $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
+
     my $now = Date::Utility->new('2015-04-08 00:30:00');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',

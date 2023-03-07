@@ -12,8 +12,13 @@ use BOM::Product::ContractFactory                qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-my $date_pricing = '8-Nov-12';
-
+my $date_pricing        = '8-Nov-12';
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::GBP_USD',
+    quote => 1.14239,
+    epoch => time
+);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {

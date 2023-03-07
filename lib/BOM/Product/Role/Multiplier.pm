@@ -10,6 +10,7 @@ use Format::Util::Numbers qw(financialrounding);
 use BOM::Config::Runtime;
 use YAML::XS qw(LoadFile);
 use BOM::Config::QuantsConfig;
+use BOM::Config::Quants qw(get_exchangerates_limit);
 use BOM::Config::Chronicle;
 use Machine::Epsilon;
 use Scalar::Util qw(looks_like_number);
@@ -1074,10 +1075,8 @@ sub _validate_maximum_stake {
 
     my $default_max_stake = maximum_stake_limit($self->currency, 'default_landing_company', $self->underlying->market->name, $self->category->code);
     my $limit_definitions = BOM::Config::quants()->{risk_profile};
-    my $max_stake         = min(
-        $default_max_stake, map { $limit_definitions->{$_}{multiplier}{$self->currency} }
-            grep { defined $_ } @risk_profiles
-    );
+    my $max_stake = min($default_max_stake, map { get_exchangerates_limit($limit_definitions->{$_}{multiplier}{$self->currency}, $self->currency) }
+            grep { defined $_ } @risk_profiles);
 
     if ($self->_user_input_stake > $max_stake) {
         my $display_name = $self->underlying->display_name;

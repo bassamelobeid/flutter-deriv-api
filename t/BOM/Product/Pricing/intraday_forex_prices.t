@@ -23,6 +23,12 @@ use Test::BOM::UnitTestPrice;
 
 use Volatility::EconomicEvents;
 use Test::MockModule;
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::GBP_USD',
+    quote => 1.14239,
+    epoch => time
+);
 my $module = Test::MockModule->new('Volatility::EconomicEvents');
 $module->mock('retrieve_vol', sub { return LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/economic_events_volatilities_config.yml') });
 

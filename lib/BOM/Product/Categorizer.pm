@@ -199,6 +199,20 @@ sub _initialize_parameters {
         $params->{amount_type} = 'stake';
     }
 
+    # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
+    unless ($params->{date_start}) {
+        # An undefined or missing date_start implies that we want a bet which starts now.
+        $params->{date_start} = Date::Utility->new;
+        # Force date_pricing to be similarly set, but make sure we know below that we did this, for speed reasons.
+        $params->{pricing_new} = 1;
+    } else {
+        $params->{date_start} = Date::Utility->new($params->{date_start});
+    }
+
+    $params->{pricing_new} = 1
+        if $params->{date_pricing} and Date::Utility->new($params->{date_pricing})->is_same_as(Date::Utility->new($params->{date_start}));
+    $params->{date_expiry} = Date::Utility->new($params->{date_expiry}) if defined $params->{date_expiry};
+
     return;
 }
 
@@ -255,20 +269,6 @@ sub _initialize_other_parameters {
     delete $params->{shortcode};
     delete $params->{expiry_daily};
     delete $params->{is_intraday};
-
-    # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
-    unless ($params->{date_start}) {
-        # An undefined or missing date_start implies that we want a bet which starts now.
-        $params->{date_start} = Date::Utility->new;
-        # Force date_pricing to be similarly set, but make sure we know below that we did this, for speed reasons.
-        $params->{pricing_new} = 1;
-    } else {
-        $params->{date_start} = Date::Utility->new($params->{date_start});
-    }
-
-    $params->{pricing_new} = 1
-        if $params->{date_pricing} and Date::Utility->new($params->{date_pricing})->is_same_as(Date::Utility->new($params->{date_start}));
-    $params->{date_expiry} = Date::Utility->new($params->{date_expiry}) if defined $params->{date_expiry};
 
     if (defined $params->{duration}) {
         if (my ($tick_count) = $params->{duration} =~ /^([0-9]+)t$/) {
@@ -506,6 +506,8 @@ sub _validate_stake_min_max {
     my $self = shift;
 
     my $params = $self->_parameters;
+
+    return unless $params->{pricing_new};
 
     if ($params->{category}->require_basis) {
         BOM::Product::Exception->throw(

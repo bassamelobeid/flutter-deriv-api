@@ -4,6 +4,7 @@ use Moose::Role;
 # Spreads is a double barrier contract that expires at contract expiration time.
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd', 'BOM::Product::Role::NonBinary';
 
+use BOM::Config::Quants        qw(get_exchangerates_limit);
 use LandingCompany::Commission qw(get_underlying_base_commission);
 use Format::Util::Numbers      qw/financialrounding/;
 use List::Util                 qw(min);
@@ -40,7 +41,7 @@ sub _build_minimum_commission_per_contract {
 
     my $static = BOM::Config::quants;
 
-    return $static->{bet_limits}->{min_commission_amount}->{callputspread}->{$self->currency};
+    return get_exchangerates_limit($static->{bet_limits}->{min_commission_amount}->{callputspread}->{$self->currency}, $self->currency);
 }
 
 override '_build_ask_price' => sub {

@@ -16,6 +16,25 @@ use BOM::MarketData::Types;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Cache::RedisDB;
 
+my $mocked_redis = Test::MockModule->new("RedisDB");
+
+my %dataset = (
+    'exchange_rates::GBP_USD' => {
+        source           => 'Feed',
+        offer_to_clients => 1,
+        shift_in_rate    => 0,
+        quote            => 1.17382,
+        epoch            => time,
+    },
+    'exchange_rates::JPY_USD' => {
+        source           => 'Feed',
+        offer_to_clients => 1,
+        shift_in_rate    => 0,
+        quote            => 142.224,
+        epoch            => time,
+    },
+);
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -220,6 +239,7 @@ test_with_feed([
         ['2008-03-19 00:02:00'],
     ],
     'Double Down.' => sub {
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
 
         my $bet_params = {
             bet_type     => 'PUT',
@@ -263,6 +283,7 @@ test_with_feed([
         ['2008-03-19 00:02:00'],
     ],
     'Double Up.' => sub {
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
 
         my $bet_params = {
             bet_type     => 'CALL',
@@ -390,6 +411,7 @@ test_with_feed([
         ['2008-03-19'],
     ],
     'Double up.' => sub {
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
 
         my $bet_params = {
             bet_type     => 'CALL',
@@ -440,6 +462,7 @@ test_with_feed([
         ['6-Feb-08',   106.25, 106.73, 105.76, 106.52],
     ],
     'One Touch.' => sub {
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
 
         # The high/low during this period is [104.97,107.74]
         my $bet_params = {
@@ -567,7 +590,7 @@ test_with_feed([
         ['2009-02-13 05:29:57', 63819.07, 'R_100',],
     ],
     'One Touch Short Term.' => sub {
-
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
         # The high/low during this period is [63948.31, 64324.91]
         my $bet_params = {
             bet_type    => 'ONETOUCH',
@@ -651,6 +674,7 @@ test_with_feed([
         ['5-Feb-08',   106.25, 106.73, 105.76, 106.52],
     ],
     'No Touch.' => sub {
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
 
         my $bet_params = {
             bet_type    => 'NOTOUCH',
@@ -762,7 +786,7 @@ test_with_feed([
         ['2009-02-13 05:29:57', 63819.07, 'R_100',],
     ],
     'No Touch Short Term.' => sub {
-
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
         # The high/low during this period is [63948.31, 64324.91]
         my $bet_params = {
             bet_type    => 'NOTOUCH',
@@ -820,6 +844,7 @@ test_with_feed([
 test_with_feed(
     [['2008-01-09 00:00:02', 110.12], ['2008-01-09 23:58:59', 110.12], ['2008-02-06', 106.53, 106.80, 106.18, 106.40]],
     'Expiry range.' => sub {
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
 
         my $bet_params = {
             bet_type     => 'EXPIRYRANGE',
@@ -889,6 +914,7 @@ test_with_feed([
         ['2009-02-13 05:29:17', 63999.50, 'R_100',],                     #Extra trick required to ensure that 29:13 is same as 29:12
     ],
     'Expiry range short term.' => sub {
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
 
         my $bet_params = {
             bet_type     => 'EXPIRYRANGE',
@@ -941,6 +967,7 @@ test_with_feed([
 test_with_feed(
     [['2008-01-09 00:00:01', 110.12], ['2008-01-09 23:58:59', 110.12], ['2008-02-06', 106.53, 106.80, 106.18, 106.40]],
     'Expiry miss.' => sub {
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
 
         my $bet_params = {
             bet_type     => 'EXPIRYMISS',
@@ -1012,6 +1039,7 @@ test_with_feed([
         ['2009-02-13 05:29:17', 63999.50, 'R_100',],                     #Extra trick required to ensure that 29:13 is same as 29:12
     ],
     'Expiry miss short term.' => sub {
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
 
         my $bet_params = {
             bet_type     => 'EXPIRYMISS',
@@ -1077,7 +1105,7 @@ test_with_feed([
         ['6-Feb-08',  106.53, 106.80, 106.18, 106.40]
     ],
     'Range.' => sub {
-
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
         # The range from 9 Jan 2008 to 6 Feb 2008 is [104.97,110.12]
         my $bet_params = {
             bet_type     => 'RANGE',
@@ -1210,7 +1238,7 @@ test_with_feed([
         ['2009-02-13 05:29:57', 63819.07, 'R_100',],
     ],
     'Range short term.' => sub {
-
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
         # The high/low during this period is [63948.31, 64324.91]
         my $bet_params = {
             bet_type     => 'RANGE',
@@ -1292,7 +1320,7 @@ test_with_feed([
         ['6-Feb-08',  106.53, 106.80, 106.18, 106.40]
     ],
     'Up or Down.' => sub {
-
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
         # The range from 9 Jan 2008 to 6 Feb 2008 is [104.97,110.12]
         my $bet_params = {
             bet_type     => 'UPORDOWN',
@@ -1425,7 +1453,7 @@ test_with_feed([
         ['2009-02-13 05:29:57', 63819.07, 'R_100',],
     ],
     'Up or Down short term.' => sub {
-
+        $mocked_redis->mock('hgetall', sub { my ($self, $key) = @_; return [%{$dataset{$key} // {}}] });
         # The high/low during this period is [63948.31, 64324.91]
         my $bet_params = {
             bet_type     => 'UPORDOWN',

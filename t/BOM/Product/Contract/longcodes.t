@@ -12,6 +12,18 @@ use File::Spec;
 use BOM::Product::ContractFactory                qw( produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::EUR_USD',
+    quote => 1.00080,
+    epoch => time
+);
+$redis_exchangerates->hmset(
+    'exchange_rates::AUD_USD',
+    quote => 0.67414,
+    epoch => time
+);
+
 subtest 'Proper form' => sub {
     my @shortcodes = (
         qw~

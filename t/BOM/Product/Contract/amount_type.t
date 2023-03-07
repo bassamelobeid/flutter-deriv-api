@@ -12,6 +12,13 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis      qw(initialize_realtime_ticks_db);
 
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::BTC_USD',
+    quote => 30000,
+    epoch => time
+);
+
 my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_100',
     quote      => 100,
@@ -158,9 +165,9 @@ subtest 'cryto amount' => sub {
     my $error = exception { produce_contract({%$args, payout => 0}) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Please enter a payout amount that\'s at least [_1].', 'zero payout not valid';
-    is $error->message_to_client->[1], '0.00000015';
+    is $error->message_to_client->[1], '0.00000030';
 
-    my $c = produce_contract({%$args, payout => 0.0000015});
+    my $c = produce_contract({%$args, payout => 0.01000000});
     isa_ok $c, 'BOM::Product::Contract::Call';
 };
 

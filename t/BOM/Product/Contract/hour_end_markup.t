@@ -29,7 +29,8 @@ $mocked_decimate->mock(
         [map { {epoch => $_, decimate_epoch => $_, quote => 110 + 0.005 * $_} } (0 .. 80)];
     });
 initialize_realtime_ticks_db();
-my $now = Date::Utility->new('2018-09-18 13:57:00');
+my $now                 = Date::Utility->new('2018-09-18 13:57:00');
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -71,6 +72,12 @@ my $args = {
     payout       => 10,
     barrier      => 'S0P',
 };
+
+$redis_exchangerates->hmset(
+    'exchange_rates::AUD_USD',
+    quote => 0.67414,
+    epoch => time
+);
 
 subtest 'hour_end_markup_start_now_contract' => sub {
     lives_ok {

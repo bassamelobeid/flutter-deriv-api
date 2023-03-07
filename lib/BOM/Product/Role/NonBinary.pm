@@ -4,6 +4,7 @@ use Moose::Role;
 
 requires 'theo_price', 'base_commission', 'multiplier', 'minimum_bid_price';
 
+use BOM::Config::Quants qw(get_exchangerates_limit);
 use BOM::Config;
 use List::Util            qw(max min);
 use Format::Util::Numbers qw/financialrounding/;
@@ -62,8 +63,9 @@ override _validate_price => sub {
     my $bet_limits = $static->{bet_limits};
     # NOTE: this evaluates only the contract-specific payout limit. There may be further
     # client-specific restrictions which are evaluated in B:P::Transaction.
-    my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
-    my @possible_payout_maxes     = ($bet_limits->{maximum_payout}->{$self->currency}, $per_contract_payout_limit);
+    my $per_contract_payout_limit =
+        get_exchangerates_limit($static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency}, $self->currency);
+    my @possible_payout_maxes = ($bet_limits->{maximum_payout}->{$self->currency}, $per_contract_payout_limit);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
 

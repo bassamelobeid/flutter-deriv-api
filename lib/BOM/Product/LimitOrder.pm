@@ -6,6 +6,7 @@ use BOM::Product::Exception;
 use BOM::Product::Types;
 use BOM::Product::Static;
 use List::Util            qw(max min);
+use BOM::Config::Quants   qw(get_exchangerates_limit);
 use Scalar::Util::Numeric qw(isint);
 use Format::Util::Numbers qw(financialrounding);
 use BOM::Config;
@@ -143,7 +144,7 @@ sub _validate_stop_loss {
 
     my $amount           = $self->order_amount;
     my $details          = {field => $self->order_type};
-    my $min_order_amount = BOM::Config::quants()->{bet_limits}->{min_order_amount}->{$currency};
+    my $min_order_amount = get_exchangerates_limit(BOM::Config::quants()->{bet_limits}->{min_order_amount}->{$currency}, $currency);
     # check minimum allowed
     if ($amount > -$min_order_amount) {
         return {
@@ -185,7 +186,7 @@ sub _validate_take_profit {
 
     my $amount           = $self->order_amount;
     my $details          = {field => $self->order_type};
-    my $min_order_amount = BOM::Config::quants()->{bet_limits}->{min_order_amount}->{$currency};
+    my $min_order_amount = get_exchangerates_limit(BOM::Config::quants()->{bet_limits}->{min_order_amount}->{$currency}, $currency);
     # check minimum allowed
     if ($amount < $min_order_amount) {
         return {

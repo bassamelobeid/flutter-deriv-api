@@ -111,9 +111,10 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 114.5,
 });
 
-my $redis     = BOM::Config::Redis::redis_replicated_write();
-my $undec_key = "DECIMATE_frxUSDJPY" . "_31m_FULL";
-my $encoder   = Sereal::Encoder->new({
+my $redis               = BOM::Config::Redis::redis_replicated_write();
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+my $undec_key           = "DECIMATE_frxUSDJPY" . "_31m_FULL";
+my $encoder             = Sereal::Encoder->new({
     canonical => 1,
 });
 my %defaults = (
@@ -125,6 +126,11 @@ my %defaults = (
     count  => 1,
 );
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
+$redis_exchangerates->hmset(
+    'exchange_rates::AUD_USD',
+    quote => 0.67414,
+    epoch => time
+);
 
 $defaults{epoch} = $now->epoch + 1;
 $defaults{quote} = 114.5;

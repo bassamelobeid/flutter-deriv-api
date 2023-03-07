@@ -36,6 +36,13 @@ my $currency   = 'GBP';
 my $first_day = Date::Utility->new($date_start)->truncate_to_day;
 my $next_day  = Date::Utility->new($date_start + (3600 * 9));
 
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::GBP_USD',
+    quote => 1.14239,
+    epoch => time
+);
+
 foreach my $day ($first_day) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $day});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

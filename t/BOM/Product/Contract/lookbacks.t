@@ -235,8 +235,9 @@ subtest 'multiplier for crypto' => sub {
 };
 
 subtest 'invalid amount_type' => sub {
-    $args->{amount_type} = 'unkown';
-    $args->{amount}      = 1;
+    $args->{amount_type}  = 'unkown';
+    $args->{amount}       = 1;
+    $args->{date_pricing} = $args->{date_start};
 
     my $error = exception { produce_contract($args); };
     isa_ok $error, 'BOM::Product::Exception';

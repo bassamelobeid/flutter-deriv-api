@@ -9,6 +9,7 @@ use List::Util            qw(max);
 use List::MoreUtils       qw(none all);
 use Format::Util::Numbers qw/financialrounding/;
 
+use BOM::Config::Quants qw(get_exchangerates_limit);
 use Price::Calculator;
 use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Currency;
@@ -994,7 +995,8 @@ sub _build_min_commission_amount {
 
     my $static = BOM::Config::quants;
 
-    return $static->{bet_limits}->{min_commission_amount}->{default_contract_category}->{$self->currency} // 0;
+    return get_exchangerates_limit($static->{bet_limits}->{min_commission_amount}->{default_contract_category}->{$self->currency}, $self->currency)
+        // 0;
 }
 
 has _custom_commission => (
