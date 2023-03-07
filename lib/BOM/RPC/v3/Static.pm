@@ -21,6 +21,7 @@ use List::UtilsBy qw(nsort_by);
 use Array::Utils  qw(intersect);
 use Time::HiRes   ();
 
+use BOM::Config::Quants qw(get_exchangerates_limit);
 use LandingCompany::Registry;
 use Format::Util::Numbers;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
@@ -229,7 +230,7 @@ sub _currencies_config {
         $_ => {
             fractional_digits         => $amt_precision->{$_},
             type                      => LandingCompany::Registry::get_currency_type($_),
-            stake_default             => $default_stakes->{$_},
+            stake_default             => get_exchangerates_limit($default_stakes->{$_}, $_),
             is_suspended              => $suspended_currencies->{$_} ? 1 : 0,
             is_deposit_suspended      => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'deposit'),
             is_withdrawal_suspended   => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'withdrawal'),

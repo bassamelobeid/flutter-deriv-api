@@ -131,6 +131,18 @@ my $token = $m->create_token($test_client_cr->loginid, 'test token');
 
 my $c = Test::BOM::RPC::QueueClient->new();
 
+# Mocking all of the necessary exchange rates in redis.
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+my @all_currencies      = qw(EUR EURS PAX ETH IDK AUD eUSDT tUSDT BTC USDK LTC USB UST USDC TUSD USD GBP DAI BUSD);
+
+for my $currency (@all_currencies) {
+    $redis_exchangerates->hmset(
+        'exchange_rates::' . $currency . '_USD',
+        quote => 1,
+        epoch => time
+    );
+}
+
 my $method = 'payout_currencies';
 subtest 'payout currencies' => sub {
     # we should not care about order of currencies

@@ -20,6 +20,18 @@ $INC{$fname . '.pm'} = 1;
 my $mock_t_c_version = Test::MockModule->new($mock_class);
 $mock_t_c_version->mock('terms_conditions_versions', sub { '{ "deriv": "Version ' . $version . '"}' });
 
+# Mocking all of the necessary exchange rates in redis.
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+my @all_currencies      = qw(EUR EURS PAX ETH IDK AUD eUSDT tUSDT BTC USDK LTC USB UST USDC TUSD USD GBP DAI BUSD);
+
+for my $currency (@all_currencies) {
+    $redis_exchangerates->hmset(
+        'exchange_rates::' . $currency . '_USD',
+        quote => 1,
+        epoch => time
+    );
+}
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
