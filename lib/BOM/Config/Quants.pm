@@ -13,10 +13,99 @@ This module exports methods to get our quants and trading configuration.
 
 =cut
 
+use ExchangeRates::CurrencyConverter qw(convert_currency);
+use List::Util                       qw(max);
+use Format::Util::Numbers            qw(roundnear);
+use BOM::Config::Redis;
+
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use Log::Any                   qw($log);
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(market_pricing_limits minimum_payout_limit maximum_payout_limit minimum_stake_limit maximum_stake_limit);
+our @EXPORT_OK = qw(get_exchangerates_limit market_pricing_limits minimum_payout_limit maximum_payout_limit minimum_stake_limit maximum_stake_limit);
+
+use constant {
+    TTL           => 3600,
+    MAX_DEVIATION => 0.2,
+};
+
+=head2 get_exchangerates_limit
+
+Gets the required exchange rate limit from redis.
+
+Since those limits have a ttl in redis, exchangerates will be updated automatically when the key
+exrpires and someone request it.
+'exchangerates_update_interval:'' field. Must be in seconds
+
+=over 4
+
+=item C<value> - The value to convert and round
+
+=item C<currency> - The currency of the requested limit
+
+=back
+
+Returns a single number, the limit of the requested currency
+
+=cut
+
+sub get_exchangerates_limit {
+    my ($value, $currency) = @_;
+    return undef if (not(defined $value and defined $currency));
+
+    my $unit = 'USD';
+
+    return $value if ($value == 0 or $currency eq $unit);
+
+    my $key   = "limit:$unit-to-$currency:$value";
+    my $redis = BOM::Config::Redis::redis_exchangerates();
+
+    # Lazy get if exists
+    if ($redis->exists($key)) {
+        return ($redis->get($key) + 0);
+    }
+
+    my $price = convert_currency($value + 0, $unit, $currency);
+    return undef if (not defined $price);
+
+    $price = _round($price, MAX_DEVIATION);
+
+    return $price if $redis->set($key, $price, 'EX', TTL) eq 'OK';
+
+    die 'Failed to convert ' . $value . ' amount of ' . $currency;
+}
+
+=head2 _round
+
+Fucntion to round the price withing the allowed deviance
+
+=over 4
+
+=item C<number> - Any price in any currency
+
+=item C<crypto_symbol> - The allowed deviance, default 0.2
+
+=back
+
+Returns a single number, the new rounded price
+
+=cut
+
+sub _round {
+    my ($number, $allowed_difference) = @_;
+
+    return $number if ($number == 0 or (not defined $number));
+    my $rounded;
+
+    #if allowed deviance is not provided default is 20%
+    $allowed_difference = $allowed_difference // 0.2;
+    my $power = 10;
+    do {
+        $rounded = roundnear(10**$power, $number + 0);
+        $power--;
+    } until (abs($rounded - $number) / max($rounded, $number) <= $allowed_difference);
+    return $rounded;
+}
 
 =head2 market_pricing_limits
 
@@ -60,8 +149,8 @@ sub market_pricing_limits {
             my $cat_max = $market_max->{$contract_category} // $market_max->{default_contract_category};
 
             for my $currency (@$currencies) {
-                my $min_stake  = $cat_min->{$currency};
-                my $max_payout = $cat_max->{$currency};
+                my $min_stake  = get_exchangerates_limit($cat_min->{$currency}, $currency);
+                my $max_payout = get_exchangerates_limit($cat_max->{$currency}, $currency);
 
                 if (not defined $min_stake or not defined $max_payout) {
                     stats_inc('bom_config.quants.market_pricing_limits.unsupported_currency', {tags => ['currency:' . $currency]});
@@ -196,7 +285,7 @@ sub _get_amount_limit {
         ? $by_market->{$contract_category}
         : $by_market->{'default_contract_category'};
 
-    return $by_cc->{$currency};
+    return get_exchangerates_limit($by_cc->{$currency}, $currency);
 }
 
 1;
