@@ -36,6 +36,12 @@ rpc active_symbols => sub {
 rpc contracts_for => sub {
     my $params = shift;
 
+    # landing_company is deprecated to make place for landing_company_short.
+    # We need to here some special handling for these parameters as they both default to virtual
+    # TODO: Remove this line when we remove the deprecated landing_company.
+    my $lc = $params->{args}->{landing_company};
+    $params->{args}->{landing_company_short} = $lc if $lc && $lc ne 'virtual';
+
     my $args = _extract_params($params);
     $args->{symbol} = $params->{args}->{contracts_for};
 
@@ -70,7 +76,7 @@ Extra parameters for RPC endpoint
 sub _extract_params {
     my $params = shift;
 
-    my $landing_company_name = $params->{args}->{landing_company};
+    my $landing_company_name = $params->{args}->{landing_company_short} // $params->{args}->{landing_company};
     my $token_details        = $params->{token_details};
     my $country_code         = $params->{country_code};
     my $app_id               = $params->{valid_source} // $params->{source};
