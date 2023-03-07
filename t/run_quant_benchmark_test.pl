@@ -22,6 +22,18 @@ use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Text::CSV;
 
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+$redis_exchangerates->hmset(
+    'exchange_rates::EUR_USD',
+    quote => 1.00080,
+    epoch => time
+);
+$redis_exchangerates->hmset(
+    'exchange_rates::GBP_USD',
+    quote => 1.14239,
+    epoch => time
+);
+
 sub documentation {
     return 'This script runs quant\'s pricing-related datasets';
 }
