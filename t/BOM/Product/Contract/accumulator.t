@@ -8,13 +8,11 @@ use Test::More;
 use Test::Deep;
 use Test::Exception;
 use Test::Fatal;
-use JSON::MaybeXS                                qw(decode_json);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase   qw(:init);
-
-use BOM::Product::ContractFactory qw(produce_contract);
-use Finance::Contract::Longcode   qw(shortcode_to_parameters);
-use YAML::XS                      qw(LoadFile);
+use BOM::Product::ContractFactory                qw(produce_contract);
+use Finance::Contract::Longcode                  qw(shortcode_to_parameters);
+use YAML::XS                                     qw(LoadFile);
 use Date::Utility;
 
 my $now    = Date::Utility->new(time);
@@ -27,14 +25,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 
-my $symbol_config = decode_json(
-    '{"max_payout": { "USD": 10000, "AUD": 10000, "GBP": 10000, "EUR": 10000 , "BTC": 0.15, 
-      "ETH": 2.5, "LTC": 45, "BUSD": 10000, "DAI": 10000, "EURS": 10000, "IDK": 138950, "PAX": 10000, "TUSD": 10000, 
-      "USB": 10000, "USDC": 10000, "USDK": 10000, "UST": 10000, "eUSDT": 10000, "tUSDT": 10000},
-      "max_duration_coefficient": 10, "growth_start_step": 1,
-      "growth_rate": [0.01, 0.02, 0.03, 0.04, 0.05] }'
-);
-
 my $args = {
     bet_type          => 'ACCU',
     underlying        => $symbol,
@@ -46,7 +36,6 @@ my $args = {
     currency          => 'USD',
     growth_frequency  => 1,
     tick_size_barrier => 0.02,
-    symbol_config     => $symbol_config,
 };
 
 subtest 'config' => sub {
@@ -57,9 +46,9 @@ subtest 'config' => sub {
     is $c->code,          'ACCU',        'code ACCU';
     is $c->category_code, 'accumulator', 'category accumulator';
     ok $c->is_path_dependent, 'path dependent';
-    is $c->tick_count,        927,   'tick count is 927';
-    is $c->ticks_to_expiry,   927,   'ticks to expiry is 927';
-    is $c->max_duration,      1000,  'max duration is 1000';
+    is $c->tick_count,        300,   'tick count is 300';
+    is $c->ticks_to_expiry,   300,   'ticks to expiry is 300';
+    is $c->max_duration,      300,   'max duration is 300';
     is $c->ask_price,         1,     'ask_price is 1';
     is $c->growth_start_step, 1,     'growth_start_step is 1';
     is $c->max_payout,        10000, 'max_payout is 10000';
@@ -301,11 +290,6 @@ subtest 'maximum stake' => sub {
     my $error = exception { produce_contract($args) };
     is $error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'maximum stake limit';
     is $error->message_to_client->[1], '500.00';
-
-    $args->{max_stake} = 0;
-    $error = exception { produce_contract($args) };
-    is $error->message_to_client->[0], 'Trading accumulator options on [_1] is disabled.', 'maximum stake limit in case of no_business risk profile';
-    is $error->message_to_client->[1], 'Volatility 100 Index';
 
     delete $args->{max_stake};
 };

@@ -91,16 +91,8 @@ sub decorate {
             $o->{cancellation_range} = $config->{cancellation_duration_range};
         }
 
-        if ($contract_category eq 'accumulator') {
-            my $app_config = BOM::Config::Runtime->instance->app_config;
-            try {
-                my $all_records = decode_json($app_config->get("quants.accumulator.symbol_config.$lc_short.$symbol"));
-                my $key         = max grep { $_ <= time } keys %{$all_records};
-                $o->{growth_rate_range} = $all_records->{$key}->{growth_rate};
-
-            } catch {
-                $log->warn("no accumulator config is available for $symbol symbol in $lc_short landing company.");
-            }
+        if ($contract_category eq 'accumulator' and my $config = _get_accumulator_config($underlying->symbol)) {
+            $o->{growth_rate_range} = $config->{growth_rate};
         }
         # The reason why we have to append 't' to tick expiry duration
         # is because in the backend it is easier to handle them if the
@@ -271,11 +263,44 @@ sub _default_barrier {
     return $underlying->market->integer_barrier ? floor($barrier) : $barrier;
 }
 
+=head2 _quants_config
+
+Builds Quants::Config object
+
+=cut
+
+sub _quants_config {
+
+    return BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
+
+}
+
+=head2 _get_multiplier_config
+
+Gets multiplier's config
+
+=cut
+
 sub _get_multiplier_config {
     my ($lc_short, $symbol) = @_;
 
-    my $qc     = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
-    my $config = $qc->get_multiplier_config($lc_short, $symbol) // {};
+    my $config = _quants_config->get_multiplier_config($lc_short, $symbol) // {};
+
+    return $config;
+}
+
+=head2 _get_accumulator_config
+
+Gets accumulators's config
+
+=cut
+
+sub _get_accumulator_config {
+    my $symbol = shift;
+
+    my $qc = _quants_config();
+    $qc->contract_category('accumulator');
+    my $config = $qc->get_per_symbol_config({underlying_symbol => $symbol, need_latest_cache => 1}) // {};
 
     return $config;
 }

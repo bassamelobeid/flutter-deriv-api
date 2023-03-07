@@ -12,7 +12,9 @@ use YAML::XS              qw(LoadFile);
 use POSIX                 qw(floor ceil);
 use List::Util            qw(any min max first);
 use BOM::Config::Quants   qw(maximum_stake_limit);
-use JSON::MaybeXS         qw(decode_json);
+use BOM::Config::QuantsConfig;
+use BOM::Config::Chronicle;
+use JSON::MaybeXS qw(decode_json);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 my $config;
@@ -55,7 +57,7 @@ sub BUILD {
         }
     }
 
-    my $acceptable_growth_rate = $self->symbol_config->{growth_rate};
+    my $acceptable_growth_rate = $self->per_symbol_config->{growth_rate};
     unless (any { $_ == $self->growth_rate } @$acceptable_growth_rate) {
         BOM::Product::Exception->throw(
             error_code => 'GrowthRateOutOfRange',
@@ -65,18 +67,18 @@ sub BUILD {
     }
 
     if ($self->pricing_new and $self->_user_input_stake > $self->max_stake) {
-        if ($self->max_stake) {
-            BOM::Product::Exception->throw(
-                error_code => 'StakeLimitExceeded',
-                error_args => [financialrounding('price', $self->currency, $self->max_stake)],
-                details    => {field => 'stake'},
-            );
-        } else {
+        if ($self->risk_level eq 'no_business') {
             my $display_name = $self->underlying->display_name;
             BOM::Product::Exception->throw(
                 error_code => 'TradingAccumulatorIsDisabled',
                 error_args => [$display_name],
                 details    => {field => 'basis'},
+            );
+        } else {
+            BOM::Product::Exception->throw(
+                error_code => 'StakeLimitExceeded',
+                error_args => [financialrounding('price', $self->currency, $self->max_stake)],
+                details    => {field => 'stake'},
             );
         }
     }
@@ -108,39 +110,66 @@ has growth_frequency => (
     default => 1,
 );
 
-=head2 symbol_config
+=head2 quants_config
 
-Symbol config set in BackOffice
+QuantsConfig object attribute
 
 =cut
 
-has symbol_config => (
+has quants_config => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-=head2 _build_symbol_config 
+=head2 _build_quants_config
 
-Initilazing symbol config
+Builds a QuantsConfig object
 
 =cut
 
-sub _build_symbol_config {
+sub _build_quants_config {
     my $self = shift;
 
-    my $lc     = $self->landing_company ? $self->landing_company : 'common';
-    my $symbol = $self->underlying->symbol;
+    my $qc = BOM::Config::QuantsConfig->new(
+        contract_category => $self->category_code,
+        for_date          => $self->date_start,
+        chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader($self->date_start));
 
-    if ($self->app_config->quants->accumulator->symbol_config->can($lc) and $self->app_config->quants->accumulator->symbol_config->$lc->can($symbol))
-    {
-        my $all_records = decode_json($self->app_config->get("quants.accumulator.symbol_config.$lc.$symbol"));
-        my $key         = _closest_key_to_value($all_records, $self->date_start->epoch);
+    return $qc;
+}
 
-        return $all_records->{$key};
-    } else {
-        # throw error because configuration is unsupported for the symbol and landing company pair.
-        BOM::Product::Exception->throw(error_code => 'MissingRequiredContractConfig');
-    }
+=head2 per_symbol_config
+
+Per symbol configuration
+
+=cut
+
+has per_symbol_config => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 _build_per_symbol_config
+
+Builds per_symbol_config attribute
+
+=cut
+
+sub _build_per_symbol_config {
+    my $self = shift;
+
+    my $config = $self->quants_config->get_per_symbol_config({
+        underlying_symbol => $self->underlying->symbol,
+        need_latest_cache => $self->pricing_new
+    });
+
+    return $config if $config && %$config;
+
+    $self->_add_error({
+        message           => 'accumulator config undefined for ' . $self->underlying->symbol,
+        message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
+    });
+
 }
 
 =head2 growth_start_step
@@ -163,7 +192,7 @@ fetching the config for growth_start_step
 sub _build_growth_start_step {
     my $self = shift;
 
-    return $self->symbol_config->{growth_start_step};
+    return $self->per_symbol_config->{growth_start_step};
 }
 
 =head2 take_profit
@@ -261,8 +290,7 @@ initializing max_duration
 sub _build_max_duration {
     my $self = shift;
 
-    my $coefficient = $self->symbol_config->{max_duration_coefficient};
-    return floor($coefficient / $self->growth_rate);
+    return $self->per_symbol_config->{max_duration}->{"growth_rate_" . $self->growth_rate};
 }
 
 =head2 _build_duration
@@ -293,7 +321,7 @@ initializing max_payout
 sub _build_max_payout {
     my $self = shift;
 
-    return $self->symbol_config->{max_payout}->{$self->currency};
+    return $self->per_symbol_config->{max_payout}->{$self->currency};
 }
 
 =head2 _build_tick_count
@@ -508,23 +536,35 @@ calculate maximum allowable stake to buy a contract
 sub _build_max_stake {
     my $self = shift;
 
-    my $per_symbol_risk_profile = decode_json($self->app_config->get('quants.accumulator.risk_profile.symbol'));
-    my $per_market_risk_profile = decode_json($self->app_config->get('quants.accumulator.risk_profile.market'));
-
-    my $risk_profile;
-    if ($per_symbol_risk_profile->{$self->underlying->symbol}) {
-        $risk_profile = $per_symbol_risk_profile->{$self->underlying->symbol};
-    } elsif ($per_market_risk_profile->{$self->market->name}) {
-        $risk_profile = $per_market_risk_profile->{$self->market->name};
-    } else {
-        $risk_profile = $self->market->{risk_profile};
-    }
-
-    my $default_max_stake = maximum_stake_limit($self->currency, $self->landing_company, $self->market->name, $self->category->code);
-    my $limit_definitions = BOM::Config::quants()->{risk_profile};
+    my $default_max_stake          = maximum_stake_limit($self->currency, $self->landing_company, $self->market->name, $self->category->code);
+    my $max_stake_per_risk_profile = $self->quants_config->get_max_stake_per_risk_profile($self->risk_level);
 
     # maximum stake should not be greater that maximum payout
-    return min($default_max_stake, $limit_definitions->{$risk_profile}{accumulator}{$self->currency}, $self->max_payout);
+    return min($default_max_stake, $max_stake_per_risk_profile->{$self->currency}, $self->max_payout);
+}
+
+=head2 risk_level
+
+Defines the risk_level per_symbol or per_market
+
+=cut
+
+sub risk_level {
+    my $self = shift;
+
+    my $risk_profile_per_symbol = $self->quants_config->get_risk_profile_per_symbol;
+    my $risk_profile_per_market = $self->quants_config->get_risk_profile_per_market($self->market->name);
+
+    my $risk_level;
+    if ($risk_profile_per_symbol and $risk_profile_per_symbol->{$self->underlying->symbol}) {
+        $risk_level = $risk_profile_per_symbol->{$self->underlying->symbol};
+    } elsif ($risk_profile_per_market and $risk_profile_per_market->{$self->market->name}) {
+        $risk_level = $risk_profile_per_market->{$self->market->name};
+    } else {
+        $risk_level = $self->market->{risk_profile};
+    }
+
+    return $risk_level;
 }
 
 override 'shortcode' => sub {
