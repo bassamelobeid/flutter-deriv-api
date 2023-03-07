@@ -61,6 +61,11 @@ my $schema = [{
         field    => q{report},
         th       => q{report},
         skip_csv => 1,
+    },
+    {
+        field    => q{photo_urls},
+        th       => q{pictures},
+        skip_csv => 1,
     }];
 
 my %input = %{request()->params};

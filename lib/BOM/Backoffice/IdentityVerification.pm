@@ -8,6 +8,7 @@ use BOM::Config;
 use BOM::Database::UserDB;
 use BOM::Backoffice::Request qw(request);
 use JSON::MaybeUTF8          qw(decode_json_utf8);
+use BOM::Platform::S3Client;
 
 use constant PAGE_LIMIT => 30;
 
@@ -157,7 +158,11 @@ Apply transformation to the Dashboard data.
 sub _normalize {
     my ($rows, $csv) = @_;
 
-    for my $row ($rows->@*) {
+    my $photo_pot = {};
+
+    for my $index (0 .. scalar $rows->@*) {
+        my $row = $rows->[$index];
+
         $row->{loginids} =
             [map { $_ =~ /^VR/ ? () : +{loginid => $_, url => request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $_})} }
                 $row->{loginids}->@*];
@@ -167,10 +172,61 @@ sub _normalize {
         if ($csv) {
             $row->{loginids}        = join('|', map { $_->{loginid} } $row->{loginids}->@*);
             $row->{status_messages} = join('|', $row->{status_messages}->@*);
+        } else {
+            # Point each photo id to their row index
+            # csv does not need this
+            $photo_pot = +{$photo_pot->%*, map { defined $_ ? ($_ => $index) : () } $row->{photo_id}->@*} if $row->{photo_id};
+        }
+    }
+
+    # To grab the pictures we will hit the database only once and use the pot indexing to accommodate
+    # them back into the rows.
+
+    if (scalar keys $photo_pot->%*) {
+        my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
+        my $photo_ids = [keys $photo_pot->%*];
+        my $documents = _documents_query($photo_ids);
+
+        my $urls = +{map { $s3_client->get_s3_url($_->{file_name}) => $photo_pot->{$_->{id}} } $documents->@*};
+
+        for my $url (keys $urls->%*) {
+            my $index = $urls->{$url};
+            $rows->[$index]->{photo_urls} //= [];
+            push $rows->[$index]->{photo_urls}->@*, $url;
         }
     }
 
     return $rows;
+}
+
+=head2 _documents_query
+
+Calls the DB function to grab pictures from the documents table.
+
+Note: IDV is CR only, if we ever support another broke code we will have to refactor
+the IDV photo_id storage and accomodate the broke code somewhere.
+
+It takes the following parameters: 
+
+=over 4
+
+=item * C<$photo_ids> - and arrayref of documents ids representing the IDV pictures
+
+=back
+
+Returns an arrayref of the betonmarkets.client_authentication_document resultset.
+
+=cut
+
+sub _documents_query {
+    my ($photo_ids) = @_;
+
+    my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
+
+    return $db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT * FROM betonmarkets.get_document_files(?::BIGINT[])", {Slice => {}}, $photo_ids);
+        });
 }
 
 1;

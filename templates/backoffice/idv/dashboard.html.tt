@@ -28,6 +28,8 @@
                             [% PROCESS json_viewer %]
                         [% ELSIF cfg.field == 'report' %]
                             [% PROCESS json_viewer %]
+                        [% ELSIF cfg.field == 'photo_urls' %]
+                            [% PROCESS photo_urls %]
                         [% ELSE %]
                             [% record.${cfg.field} %]
                         [% END %]
@@ -60,6 +62,16 @@
         <DIV>
             <A TARGET="_blank" HREF="[% data.url %]">[% data.loginid %]</A>
         </DIV>
+    [% END %]
+[% END %]
+
+[% BLOCK photo_urls %]
+    [% IF record.${cfg.field}.empty %]
+        [% PROCESS not_available %]
+    [% ELSE %]
+        [% FOREACH url IN record.${cfg.field}%]
+            <DIV><A href="[% url %]" target="_blank">Show picture</A></DIV>
+        [% END %]
     [% END %]
 [% END %]
 

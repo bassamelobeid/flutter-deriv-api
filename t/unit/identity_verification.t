@@ -60,6 +60,18 @@ subtest 'Get Dashboard data' => sub {
             return $data;
         });
 
+    $mock->mock(
+        '_documents_query',
+        sub {
+            my ($ids) = @_;
+
+            return [
+                map { +{id => $_, file_name => $_ . 'file.png'}; } grep {
+                    $_ % 2 == 0;    # even ids will get an url
+                } $ids->@*
+            ];
+        });
+
     $data = [{
             loginids        => ['CR9000', 'VR9000', 'CR90001'],
             status_messages => encode_json_utf8(['TEST', 'FAILURE']),
@@ -71,6 +83,26 @@ subtest 'Get Dashboard data' => sub {
         {
             loginids        => ['CR1234'],
             status_messages => undef,
+        },
+        {
+            loginids        => ['CR1'],
+            status_messages => undef,
+            photo_id        => undef
+        },
+        {
+            loginids        => ['CR2'],
+            status_messages => undef,
+            photo_id        => []
+        },
+        {
+            loginids        => ['CR3'],
+            status_messages => undef,
+            photo_id        => [1, 2, 3, 4, 5],
+        },
+        {
+            loginids        => ['CR4'],
+            status_messages => undef,
+            photo_id        => [undef],
         },
     ];
 
@@ -107,6 +139,43 @@ subtest 'Get Dashboard data' => sub {
             ],
             status_messages => []
         },
+        {
+            loginids => [{
+                    loginid => 'CR1',
+                    url     => re('CR1'),
+                }
+            ],
+            status_messages => [],
+            photo_id        => undef,
+        },
+        {
+            loginids => [{
+                    loginid => 'CR2',
+                    url     => re('CR2'),
+                }
+            ],
+            status_messages => [],
+            photo_id        => [],
+        },
+        {
+            loginids => [{
+                    loginid => 'CR3',
+                    url     => re('CR3'),
+                }
+            ],
+            status_messages => [],
+            photo_urls      => bag(re('2file\.png'), re('4file\.png'),),
+            photo_id        => [1, 2, 3, 4, 5],
+        },
+        {
+            loginids => [{
+                    loginid => 'CR4',
+                    url     => re('CR4'),
+                }
+            ],
+            status_messages => [],
+            photo_id        => [undef],
+        },
         ],
         'Expected dashboard data';
 
@@ -122,6 +191,21 @@ subtest 'Get Dashboard data' => sub {
             loginids        => ['CR1234'],
             status_messages => undef,
         },
+        {
+            loginids        => ['CR1'],
+            status_messages => undef,
+            photo_id        => undef
+        },
+        {
+            loginids        => ['CR2'],
+            status_messages => undef,
+            photo_id        => []
+        },
+        {
+            loginids        => ['CR3'],
+            status_messages => undef,
+            photo_id        => [1, 2, 3, 4, 5],
+        },
     ];
 
     cmp_deeply BOM::Backoffice::IdentityVerification::get_dashboard(csv => 1),
@@ -136,6 +220,21 @@ subtest 'Get Dashboard data' => sub {
         {
             loginids        => 'CR1234',
             status_messages => '',
+        },
+        {
+            loginids        => 'CR1',
+            status_messages => '',
+            photo_id        => undef,
+        },
+        {
+            loginids        => 'CR2',
+            status_messages => '',
+            photo_id        => [],
+        },
+        {
+            loginids        => 'CR3',
+            status_messages => '',
+            photo_id        => [1, 2, 3, 4, 5],
         },
         ],
         'Expected CSV data';
