@@ -23,6 +23,7 @@ use Finance::Underlying::Market::Registry;
 use Finance::Underlying::SubMarket::Registry;
 use LandingCompany::Registry;
 
+use BOM::Config::Quants qw(get_exchangerates_limit);
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
@@ -246,7 +247,8 @@ sub get_turnover_limit_parameters {
 
             $params = {
                 name  => $_->{name},
-                limit => BOM::Config::quants()->{risk_profile}->{$_->{risk_profile}}{turnover}{$self->currency},
+                limit =>
+                    get_exchangerates_limit(BOM::Config::quants()->{risk_profile}->{$_->{risk_profile}}{turnover}{$self->currency}, $self->currency),
             };
 
             if (my $exp = $_->{expiry_type}) {
@@ -393,11 +395,11 @@ sub get_client_volume_limits {
     my $symbol_limit = $custom_volume_limits->{symbols}{$self->symbol};
 
     if (defined $market_limit && defined $market_limit->{risk_profile}) {
-        my $max_stake = $limit_defs->{$market_limit->{risk_profile}}{multiplier}{$client->currency};
+        my $max_stake = get_exchangerates_limit($limit_defs->{$market_limit->{risk_profile}}{multiplier}{$client->currency}, $client->currency);
         $default_limit = $market_limit->{max_volume_positions} * $max_stake * $max_multiplier;
     }
     if (defined $symbol_limit && defined $symbol_limit->{risk_profile}) {
-        my $max_stake = $limit_defs->{$symbol_limit->{risk_profile}}{multiplier}{$client->currency};
+        my $max_stake = get_exchangerates_limit($limit_defs->{$symbol_limit->{risk_profile}}{multiplier}{$client->currency}, $client->currency);
         my $limit     = $symbol_limit->{max_volume_positions} * $max_stake * $max_multiplier;
 
         $default_limit = defined $default_limit ? min($limit, $default_limit) : $limit;
@@ -463,10 +465,13 @@ sub get_current_profile_definitions {
             my @list = map {
                 {
                     name           => $_->display_name,
-                    turnover_limit => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{turnover}{$currency} // 0),
-                    payout_limit   => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{payout}{$currency}   // 0),
-                    profile_name   => $_->risk_profile,
-                    level          => 'submarket'
+                    turnover_limit => formatnumber(
+                        'amount', $currency, get_exchangerates_limit($limit_ref->{$_->risk_profile}{turnover}{$currency}, $currency) // 0
+                    ),
+                    payout_limit =>
+                        formatnumber('amount', $currency, get_exchangerates_limit($limit_ref->{$_->risk_profile}{payout}{$currency}, $currency) // 0),
+                    profile_name => $_->risk_profile,
+                    level        => 'submarket'
                 }
             } @submarket_list;
             push @{$limits{$market->name}}, @list;
@@ -476,10 +481,12 @@ sub get_current_profile_definitions {
         push @{$limits{$market->name}},
             +{
             name           => $market->display_name,
-            turnover_limit => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{turnover}{$currency} // 0),
-            payout_limit   => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{payout}{$currency}   // 0),
-            profile_name   => $market->risk_profile,
-            level          => 'market'
+            turnover_limit =>
+                formatnumber('amount', $currency, get_exchangerates_limit($limit_ref->{$market->risk_profile}{turnover}{$currency}, $currency) // 0),
+            payout_limit =>
+                formatnumber('amount', $currency, get_exchangerates_limit($limit_ref->{$market->risk_profile}{payout}{$currency}, $currency) // 0),
+            profile_name => $market->risk_profile,
+            level        => 'market'
             };
     }
 
