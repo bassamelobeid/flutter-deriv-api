@@ -1,55 +1,39 @@
 <p> <b>Max. Payout:</b> maximum allowable payout <br/>
-<b>Max. Duration Coefficient:</b> a constant used in the calculation of maximum duration <br/>
+<b>Max. Duration:</b> maximum duration specified for each growth rate<br/>
 <b>Growth Start Step:</b> number of ticks after which payout starts to grow <br/>
 <b>Growth Rate:</b> the rate at which payout grows <br/>
 </p>
-<p>Different requirements for regulated clients on financial intruments. Hence, we will have a separate sets of config:
 
-<select id="accumulator_select" onchange="ToggleTable(this.id)" onfocus="SavePrevious(this.id)">
-    <option value="VIRTUAL">VIRTUAL</option>
-    <option value="svg">SVG</option>
-</select>
-
-</p>
-
-[% FOREACH category IN existing_config.keys %]
-    <form id="[% category %]" [% IF NOT existing_config.$category.selected %]style="display: none" [% END %]>
-    <div class="scrollable">
-    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
-    <table class="small border hover alternate full-width">
-        <thead><tr>
-            <th>Underlying symbol</th>
-            <th>Max. payout</th>
-            <th>Max. duration coefficient</th>
-            <th>Growth start step</th>
-            <th>Growth rate</th>
-            <th></th>
-            <th></th>
-        </tr></thead>
-        <tbody>
-        [% FOREACH data IN existing_config.$category.items %]
-        <tr id="[% data.symbol_name %]-accumulator_config">
-            <td>[% data.symbol_name %]</td>
-            <td><input type="text" name="max_payout" value="[% data.max_payout %]" data-lpignore="true" /></td>
-            <td><input type="text" name="max_duration_coefficient" value="[% data.max_duration_coefficient %]" data-lpignore="true" /></td>
-            <td><input type="text" name="growth_start_step" value="[% data.growth_start_step %]" data-lpignore="true" /></td>
-            <td><input type="text" name="growth_rate" value="[% data.growth_rate %]" data-lpignore="true" /></td>
-            <td><button onClick="SaveAccumulatorConfig('[% category %]', '[% data.symbol_name %]')" type="button" class="btn btn--primary">Save</button></td>
-            <td class="accumulator_config_result"></td>
-        </tr>
-        [% END %]
-        </tbody>
-    </table>
-    </fieldset>
-    </div>
-    </form>
-[% END %]
+<form id='per_symbol_config'>
+<table class="small full-width hover alternate border">
+    <thead><tr>
+        <th>Underlying symbol</th>
+        <th>Max. payout</th>
+        <th>Max. duration</th>
+        <th>Growth start step</th>
+        <th>Growth rate</th>
+    </tr></thead>
+    <tbody>
+    [% FOREACH data IN existing_config %]
+    <tr align="center" id="[% data.symbol %]-accumulator_config">
+        <td>[% data.symbol %]</td>
+        <td><input type="text" name="max_payout" value="[% data.max_payout %]" data-lpignore="true" /></td>
+        <td><input type="text" name="max_duration" value="[% data.max_duration %]" data-lpignore="true" /></td>
+        <td><input type="text" name="growth_start_step" value="[% data.growth_start_step %]" data-lpignore="true" /></td>
+        <td><input type="text" name="growth_rate" value="[% data.growth_rate %]" data-lpignore="true" /></td>
+        <td><button onClick="SaveAccumulatorConfig('[% data.symbol %]')" type="button" class="btn btn--primary">Save</button></td>
+        <td class="accumulator_config_result"></td>
+    </tr>
+    [% END %]
+    </tbody>
+</table>
+</form>
 
 <script>
 var accumulator_upload_url = "[% accumulator_upload_url | none %]";
 
-function SaveAccumulatorConfig(id, symbol) {
-    var el = \$('form#'+id).find('tr#' + symbol + '-accumulator_config');
+function SaveAccumulatorConfig(symbol) {
+    var el = \$('#per_symbol_config').find('tr#' + symbol + '-accumulator_config');
     var result = el.find('td.accumulator_config_result');
     result.text('processing ...');
 
@@ -59,10 +43,9 @@ function SaveAccumulatorConfig(id, symbol) {
             save_accumulator_config: 1,
             symbol: symbol,
             max_payout: el.find('input[name="max_payout"]').val(),
-            max_duration_coefficient: el.find('input[name="max_duration_coefficient"]').val(),
+            max_duration: el.find('input[name="max_duration"]').val(),
             growth_start_step: el.find('input[name="growth_start_step"]').val(),
-            growth_rate: el.find('input[name="growth_rate"]').val(),
-            landing_company: id
+            growth_rate: el.find('input[name="growth_rate"]').val()
         },
         success: function(data) {
             var config = \$.parseJSON(data);
@@ -75,21 +58,4 @@ function SaveAccumulatorConfig(id, symbol) {
     });
 }
 
-function ToggleTable(id) {
-    var el = \$('select#'+id);
-    var prev_val = el.data('prev-value');
-
-    // hide previous selected table
-    \$('form#'+prev_val).toggle();
-    // show current table
-    \$('form#'+el.val()).toggle();
-    // save new previous
-    el.data('prev-value', el.val());
-}
-
-function SavePrevious(id) {
-    // set previous value in data-previous
-    var el = \$('select#'+id);
-    el.data('prev-value', el.val());
-}
 </script>

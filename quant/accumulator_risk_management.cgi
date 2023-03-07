@@ -11,6 +11,8 @@ use List::Util      qw(min max);
 use BOM::Config::Runtime;
 use BOM::Backoffice::Sysinit ();
 use LandingCompany::Registry;
+use BOM::Config::QuantsConfig;
+use BOM::Config::Chronicle;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -18,14 +20,25 @@ PrintContentType();
 BrokerPresentation('Accumulator Risk Management Tool');
 
 my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
-
-Bar("Accumulator Risk Profile Definitions");
+my $qc             = BOM::Config::QuantsConfig->new(
+    contract_category => 'accumulator',
+    chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader(),
+);
 my $limit_defs = BOM::Config::quants()->{risk_profile};
 my @currencies = sort keys %{$limit_defs->{no_business}{accumulator}};
 my @stake_rows;
-foreach my $key (sort keys %{$limit_defs}) {
-    push @stake_rows, [$key, @{$limit_defs->{$key}{accumulator}}{@currencies}];
+
+foreach my $risk_level (keys %$limit_defs) {
+    my $s = $qc->get_max_stake_per_risk_profile($risk_level);
+    my @stake;
+    foreach my $ccy (sort keys %{$s}) {
+        push @stake, $s->{$ccy};
+    }
+
+    push @stake_rows, [$risk_level, @stake];
 }
+
+Bar("Accumulator Risk Profile Definitions");
 BOM::Backoffice::Request::template()->process(
     'backoffice/accumulator_profile_definitions.html.tt',
     {
@@ -40,7 +53,7 @@ BOM::Backoffice::Request::template()->process(
     {
         accumulator_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_accumulator_config.cgi'),
         risk_profiles          => [sort keys %{BOM::Config::quants()->{risk_profile}}],
-        %{_get_existing_market_and_symbol_volume_risk_profile()},
+        %{_get_existing_market_and_symbol_risk_profile()},
     }) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Accumulator Affiliate Commission");
@@ -57,23 +70,35 @@ BOM::Backoffice::Request::template()->process(
     'backoffice/accumulator_per_symbol_configuration.html.tt',
     {
         accumulator_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_accumulator_config.cgi'),
-        existing_config        => _get_existing_accumulator_config(),
+        existing_config        => _get_existing_accumulator_per_symbol_config(),
         disabled               => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
-Bar("Accumulator Client Limits");
+Bar("Per symbol limits");
 BOM::Backoffice::Request::template()->process(
-    'backoffice/accumulator_client_limits.html.tt',
+    'backoffice/accumulator_per_symbol_limits.html.tt',
     {
         accumulator_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_accumulator_config.cgi'),
-        existing_config        => _get_existing_accumulator_client_limits_config(),
+        existing_config        => _get_existing_accumulator_per_symbol_limits(),
         disabled               => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
-sub _get_existing_market_and_symbol_volume_risk_profile {
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-    my $markets    = decode_json_utf8($app_config->get('quants.accumulator.risk_profile.market'));
-    my $symbols    = decode_json_utf8($app_config->get('quants.accumulator.risk_profile.symbol'));
+Bar("Account Specific Limits");
+BOM::Backoffice::Request::template()->process(
+    'backoffice/accumulator_user_specific_limits.html.tt',
+    {
+        accumulator_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_accumulator_config.cgi'),
+        existing_config        => _get_existing_user_specific_limits(),
+        disabled               => $disabled_write,
+    }) || die BOM::Backoffice::Request::template()->error;
+
+sub _get_existing_market_and_symbol_risk_profile {
+    my $qc = BOM::Config::QuantsConfig->new(
+        contract_category => 'accumulator',
+        chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader(),
+    );
+    my $markets = $qc->get_risk_profile_per_market // {};
+    my $symbols = $qc->get_risk_profile_per_symbol // {};
 
     my @market_risk_profiles;
     my @symbol_risk_profiles;
@@ -110,6 +135,23 @@ sub _get_existing_market_and_symbol_volume_risk_profile {
     };
 }
 
+sub _get_existing_user_specific_limits {
+    my $qc = BOM::Config::QuantsConfig->new(
+        contract_category => 'accumulator',
+        chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader());
+
+    my $user_specific_limits = $qc->get_user_specific_limits // {};
+
+    my $clients = $user_specific_limits->{clients};
+
+    my @existing;
+    for my $loginid (keys %{$clients}) {
+        push @existing, $clients->{$loginid};
+    }
+    @existing = sort { $a->{loginid} cmp $b->{loginid} } @existing;
+    return \@existing;
+}
+
 sub _get_existing_accumulator_commission_config {
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -120,46 +162,48 @@ sub _get_existing_accumulator_commission_config {
 
 }
 
-sub _get_existing_accumulator_config {
+sub _get_existing_accumulator_per_symbol_config {
 
-    my $app_config        = BOM::Config::Runtime->instance->app_config;
-    my @landing_companies = ('svg', 'virtual');
-    my $now               = time;
-    my $existing          = {};
-    my $selected          = 0;
-    my $offerings_config  = {
-        action          => 'buy',
-        loaded_revision => 0,
-    };
+    my $qc = BOM::Config::QuantsConfig->new(
+        contract_category => 'accumulator',
+        chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader(),
+    );
 
-    foreach my $lc (@landing_companies) {
-        my $offerings = LandingCompany::Registry->by_name($lc)->basic_offerings($offerings_config);
-        my @symbols   = sort $offerings->query({contract_category => 'accumulator'}, ['underlying_symbol']);
-        foreach my $symbol (@symbols) {
-            my $all_config      = decode_json_utf8($app_config->get("quants.accumulator.symbol_config.$lc.$symbol"));
-            my $latest_key      = max grep { $_ <= $now } keys %{$all_config};
-            my $existing_config = $all_config->{$latest_key};
-            $existing_config->{'symbol_name'} = $symbol;
-            $existing_config->{'max_payout'}  = encode_json_utf8($existing_config->{'max_payout'});
-            $existing_config->{'growth_rate'} = encode_json_utf8($existing_config->{'growth_rate'});
-            push @{$existing->{$lc}->{items}}, $existing_config;
-        }
-        $existing->{$lc}->{'selected'} = $selected;
-        $selected++;
+    my $existing = [];
+    #for now there's now specific config for different landing companies, so common is used.
+    my @symbols = sort keys %{$qc->get_config_default('per_symbol')->{'common'}};
+    foreach my $symbol (@symbols) {
+        my %existing_config = %{$qc->get_per_symbol_config({underlying_symbol => $symbol, need_latest_cache => 1})};
+        $existing_config{symbol}         = $symbol;
+        $existing_config{'max_payout'}   = encode_json_utf8($existing_config{'max_payout'});
+        $existing_config{'growth_rate'}  = encode_json_utf8($existing_config{'growth_rate'});
+        $existing_config{'max_duration'} = encode_json_utf8($existing_config{'max_duration'});
+
+        push @{$existing}, \%existing_config;
     }
 
     return $existing;
 }
 
-sub _get_existing_accumulator_client_limits_config {
+sub _get_existing_accumulator_per_symbol_limits {
 
-    my $app_config = BOM::Config::Runtime->instance->app_config;
+    my $qc = BOM::Config::QuantsConfig->new(
+        contract_category => 'accumulator',
+        chronicle_reader  => BOM::Config::Chronicle::get_chronicle_reader(),
+    );
 
-    return {
+    my $existing = [];
 
-        max_open_positions => $app_config->get('quants.accumulator.client_limits.max_open_positions'),
-        max_daily_volume   => $app_config->get('quants.accumulator.client_limits.max_daily_volume')};
+    #for now there's now specific config for different landing companies, so common is used.
+    my @symbols = sort keys %{$qc->get_config_default('per_symbol_limits')->{'common'}};
+    foreach my $symbol (@symbols) {
+        my %existing_config = %{$qc->get_per_symbol_limits({underlying_symbol => $symbol})};
+        $existing_config{symbol}                     = $symbol;
+        $existing_config{'max_aggregate_open_stake'} = encode_json_utf8($existing_config{'max_aggregate_open_stake'});
+        push @{$existing}, \%existing_config;
+    }
 
+    return $existing;
 }
 
 code_exit_BO();
