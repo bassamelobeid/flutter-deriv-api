@@ -1036,14 +1036,14 @@ sub create_error_by_code {
     my $message_to_client = $options{message_to_client} // error_map()->{$error_code} // BOM::Platform::Utility::error_map()->{$error_code};
     return BOM::RPC::v3::Utility::permission_error() unless $message_to_client;
 
+    my @params;
     if ($options{params}) {
-        my @params = ref $options{params} eq 'ARRAY' ? @{$options{params}} : ($options{params});
-        $message_to_client = localize($message_to_client, @params);
+        @params = ref $options{params} eq 'ARRAY' ? @{$options{params}} : ($options{params});
     }
 
     return BOM::RPC::v3::Utility::create_error({
             code              => $options{override_code} || $error_code,
-            message_to_client => $message_to_client,
+            message_to_client => localize($message_to_client, @params),
             $options{message} ? (message => $options{message}) : (),
             $options{details} ? (details => $options{details}) : ()});
 
