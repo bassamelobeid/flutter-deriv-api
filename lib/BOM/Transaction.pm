@@ -557,6 +557,23 @@ sub get_vanilla_user_specific_limit {
     return $user_specific_limit->{clients}->{$client_binary_user_id};
 }
 
+sub get_contract_per_symbol_limits {
+    my $self = shift;
+
+    my $symbol = $self->contract->underlying->symbol;
+    return $self->contract->quants_config->get_per_symbol_limits({underlying_symbol => $symbol});
+}
+
+sub get_contract_user_specific_limits {
+    my $self   = shift;
+    my $client = shift;
+
+    my $user_specific_limits = $self->contract->quants_config->get_user_specific_limits();
+
+    my $client_binary_user_id = 'binary_user_id::' . $client->binary_user_id;
+    return $user_specific_limits ? $user_specific_limits->{clients}->{$client_binary_user_id} : undef;
+}
+
 sub calculate_limits {
     my $self   = shift;
     my $client = shift || $self->client;
@@ -648,12 +665,39 @@ sub calculate_limits {
         }
 
     }
-    # accumulator specific client limits
+
     if ($self->contract->category_code eq 'accumulator') {
-        my $max_open_positions = $app_config->get('quants.accumulator.client_limits.max_open_positions');
-        my $max_daily_volume   = decode_json($app_config->get('quants.accumulator.client_limits.max_daily_volume'));
-        $limits{accumulator_client_limits}->{max_open_positions} = $max_open_positions;
-        $limits{accumulator_client_limits}->{max_daily_volume}   = $max_daily_volume->{$contract->currency};
+        my $per_symbol_limits    = $self->get_contract_per_symbol_limits;
+        my $user_specific_limits = $self->get_contract_user_specific_limits($client);
+
+        my $currency         = $self->contract->currency;
+        my $max_daily_volume = $per_symbol_limits->{max_daily_volume};
+
+        $limits{max_open_bets_per_bet_class} = $per_symbol_limits->{max_open_positions};
+        $limits{max_aggregate_open_stake} =
+            convert_currency($per_symbol_limits->{max_aggregate_open_stake}->{'growth_rate_' . $self->contract->growth_rate}, 'USD', $currency);
+
+        if ($user_specific_limits) {
+            $limits{max_open_bets_per_bet_class} = $user_specific_limits->{max_open_positions} if $user_specific_limits->{max_open_positions};
+            $limits{max_stake_per_trade}         = convert_currency($user_specific_limits->{max_stake_per_trade}, 'USD', $currency)
+                if $user_specific_limits->{max_stake_per_trade};
+            if ($user_specific_limits->{max_daily_pnl}) {
+                $limits{max_pnl} = {
+                    'limit'     => convert_currency($user_specific_limits->{max_daily_pnl}, 'USD', $currency),
+                    'bet_class' => 'accumulator'
+                };
+            }
+
+            # override accumulator per symbol config if we have client specific limits
+            $max_daily_volume = $user_specific_limits->{max_daily_volume} if $user_specific_limits->{max_daily_volume};
+        }
+
+        push @{$limits{specific_turnover_limits}},
+            {
+            'name'     => 'accumulator_specific_turnover_limit',
+            'bet_type' => ['ACCU'],
+            'symbols'  => [$self->contract->underlying->symbol],
+            'limit'    => convert_currency($max_daily_volume, 'USD', $currency)};
     }
 
     defined($lim = $client->get_limit_for_daily_losses)
@@ -688,6 +732,10 @@ sub calculate_limits {
         delete $limits{specific_turnover_limits};
         delete $limits{max_turnover};
         delete $limits{max_losses};
+        #TODO this is a temp condition. It should be removed after Accumulator's FE design for multiple contracts is finalized.
+        delete $limits{max_pnl};
+        delete $limits{max_aggregate_open_stake};
+        delete $limits{max_stake_per_trade};
     }
 
     return \%limits;
@@ -789,6 +837,8 @@ sub prepare_bet_data_for_buy {
         $bet_params->{tick_count}      = undef;
         $bet_params->{expiry_time}     = undef;
         $bet_params->{settlement_time} = undef;
+        #growth_rate is stored so that we can have limit validations per growth_rate
+        $bet_params->{growth_rate} = $contract->growth_rate;
 
         # take profit is optional.
         if ($contract->take_profit) {
@@ -2119,20 +2169,12 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -mesg              => 'Client contract profit limit exceeded',
         -message_to_client => BOM::Platform::Context::localize('Maximum daily profit limit exceeded for this contract.'),
     ),
-    BI028 => Error::Base->cuss(
+    BI030 => Error::Base->cuss(
         -quiet             => 1,
-        -type              => 'ClientMaxOpenPositionReachedForAccumulatorContracts',
-        -mesg              => 'Client max open position limit reached for accumulator contracts',
+        -type              => 'MaxAggregateOpenStakeExceeded',
+        -mesg              => 'maximum aggregate open stake limit exceeded for this contract',
         -message_to_client => BOM::Platform::Context::localize(
-            'Maximum open positions exceeded for this contract type. Please close some of your positions and try again.',
-        ),
-    ),
-    BI029 => Error::Base->cuss(
-        -quiet             => 1,
-        -type              => 'ClientMaxDailyVolumeReachedForAccumulatorContracts',
-        -mesg              => 'client max daily volume limit reached for accumulator contracts',
-        -message_to_client => BOM::Platform::Context::localize(
-            'Maximum daily volume exceeded for this contract type. Please close some of your positions and try again.',
+            'No further trading is allowed on this growth rate and instrument. Please try again later or alternatively try on other instrument or growth rate.',
         ),
     ),
 );

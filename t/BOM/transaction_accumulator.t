@@ -53,6 +53,7 @@ $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validatio
 
 my $underlying = create_underlying('R_100');
 my $now        = Date::Utility->new;
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
@@ -136,8 +137,6 @@ SQL
 
 my $cl;
 my $acc_usd;
-my $app_config = BOM::Config::Runtime->instance->app_config;
-$app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
 ####################################################################
 # real tests begin here
@@ -514,9 +513,15 @@ subtest 'buy accumulator on crash/boom with VRTC' => sub {
 };
 
 subtest 'sell failure due to update' => sub {
-
     my $mocked_limits = Test::MockModule->new('BOM::Transaction');
-    $mocked_limits->mock('calculate_limits', sub { return {accumulator_client_limits => {max_open_positions => 10}} });
+    $mocked_limits->mock(
+        'get_contract_per_symbol_limits',
+        sub {
+            return {
+                max_open_positions       => 100,
+                max_daily_volume         => 100000,
+                max_aggregate_open_stake => {'growth_rate_0.01' => 3000}};
+        });
 
     my $contract = produce_contract($args);
 
