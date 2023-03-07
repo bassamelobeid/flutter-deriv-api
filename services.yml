@@ -1,7 +1,6 @@
 - postgres-auth
 - postgres-chronicle
 - postgres-client
-- postgres-crypto
 - postgres-feed
 - postgres-user
 - redis
