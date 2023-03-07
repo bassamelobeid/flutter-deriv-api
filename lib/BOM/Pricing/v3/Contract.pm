@@ -239,17 +239,18 @@ sub _get_ask {
                             'order_amount' => $contract->take_profit->{amount}}};
                 }
 
-                my $redis_replicated    = BOM::Config::Redis::redis_replicated_write();
+                my $redis               = BOM::Config::Redis::redis_replicated_read();
                 my $unerlying_key       = join('::', $contract->underlying->symbol, 'growth_rate_' . $contract->growth_rate);
-                my $last_tick_processed = decode_json($redis_replicated->hget("accumulator::previous_tick_barrier_status", $unerlying_key));
-                my $stat_key            = join('::', 'accumulator', 'stat_history', $unerlying_key);
+                my $last_tick_processed = $redis->hget("accumulator::previous_tick_barrier_status", $unerlying_key);
+                $last_tick_processed = decode_json($last_tick_processed) if $last_tick_processed;
+                my $stat_key = join('::', 'accumulator', 'stat_history', $unerlying_key);
 
                 #if the request is coming from Websocket we should return all data(100 numbers) to build the stat chart.
                 #after that(when the request is coming from pricer) we only need to return the last value to update it
                 my $ticks_stayed_in =
                       $streaming_params->{from_pricer}
-                    ? $redis_replicated->lrange($stat_key, -1, -1)
-                    : $redis_replicated->lrange($stat_key, 0,  -1);
+                    ? $redis->lrange($stat_key, -1, -1)
+                    : $redis->lrange($stat_key, 0,  -1);
 
                 #barriers in PP should be calculated based on the current tick
                 my $high_barrier = $contract->display_high_barrier($contract->get_high_barrier($contract->current_spot));
@@ -260,9 +261,10 @@ sub _get_ask {
                     'maximum_ticks'     => $contract->max_duration,
                     'tick_size_barrier' => $contract->tick_size_barrier,
                     'high_barrier'      => $high_barrier,
-                    'low_barrier'       => $low_barrier,
-                    'ticks_stayed_in'   => $ticks_stayed_in,
-                    'last_tick_epoch'   => $last_tick_processed->{tick_epoch}};
+                    'low_barrier'       => $low_barrier
+                };
+                $response->{contract_details}->{ticks_stayed_in} = $ticks_stayed_in                   if @$ticks_stayed_in;
+                $response->{contract_details}->{last_tick_epoch} = $last_tick_processed->{tick_epoch} if $last_tick_processed;
             }
 
             # On websocket, we are setting 'basis' to payout and 'amount' to 1000 to increase the collission rate.
