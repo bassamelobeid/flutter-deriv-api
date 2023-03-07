@@ -165,9 +165,9 @@ Returns an arrayref containing values returned by the generate_asset_index($coun
 
 sub asset_index {
     my $params               = shift;
-    my $landing_company_name = $params->{args}{landing_company};
-    my $language             = $params->{language}     // 'en';
-    my $country_code         = $params->{country_code} // '';
+    my $landing_company_name = $params->{args}{landing_company_short} // $params->{args}{landing_company};
+    my $language             = $params->{language}                    // 'en';
+    my $country_code         = $params->{country_code}                // '';
 
     my $token_details = $params->{token_details};
 
@@ -187,9 +187,9 @@ sub asset_index {
 
 sub trading_durations {
     my $params               = shift;
-    my $landing_company_name = $params->{args}{landing_company};
-    my $language             = $params->{language}     // 'en';
-    my $country_code         = $params->{country_code} // '';
+    my $landing_company_name = $params->{args}{landing_company_short} // $params->{args}{landing_company};
+    my $language             = $params->{language}                    // 'en';
+    my $country_code         = $params->{country_code}                // '';
 
     my $token_details = $params->{token_details};
     # Set landing company with logged in client details if no arg passed
