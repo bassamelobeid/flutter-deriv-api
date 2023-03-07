@@ -451,7 +451,7 @@ subtest 'get and set self_exclusion' => sub {
             place_of_birth         => 'de',
             account_opening_reason => 'Income Earning',
         }};
-    is($c->tcall('set_settings', $update_mt5_params)->{status}, 1, 'update successfully');
+    cmp_deeply($c->tcall('set_settings', $update_mt5_params), {notification => undef}, 'update successfully');
 
     my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
     my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
