@@ -102,24 +102,22 @@ subtest 'identify_vetification.yml integrity check' => sub {
         },
         messages => [
             qw/
-                DOB_MISMATCH
-                EXPIRED
-                PROVIDER_UNAVAILABLE
-                REJECTED_BY_PROVIDER
-                DECEASED
-                UNAVAILABLE_MICROSERVICE
-                UNAVAILABLE_ISSUER
-                NAME_MISMATCH
-                MALFORMED_JSON
-                DOCUMENT_REJECTED
-                VERIFICATION_STARTED
                 UNEXPECTED_ERROR
-                EMPTY_STATUS
-                INFORMATION_LACK
-                UNDERAGE
+                DOCUMENT_REJECTED
+                MALFORMED_JSON
                 UNDESIRED_HTTP_CODE
-                TIMEOUT
+                INFORMATION_LACK
                 NEEDS_TECHNICAL_INVESTIGATION
+                PROVIDER_UNAVAILABLE
+                TIMEOUT
+                EMPTY_RESPONSE
+                UNAVAILABLE_STATUS
+                ADDRESS_VERIFIED
+                NAME_MISMATCH
+                EXPIRED
+                DOB_MISMATCH
+                UNDERAGE
+                DECEASED
                 /
         ],
         providers => {
