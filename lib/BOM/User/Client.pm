@@ -89,8 +89,7 @@ use constant {
         sort
             qw/account_opening_reason citizen date_of_birth first_name last_name place_of_birth residence salutation secret_answer secret_question tax_residence tax_identification_number /
     ],
-    ADDRESS_FIELDS_IMMUTABLE_AFTER_AUTH => [sort qw/address_city address_line_1 address_line_2 address_postcode address_state/],
-
+    ADDRESS_FIELDS      => [qw/address_city address_line_1 address_line_2 address_postcode address_state /],
     SR_UNWELCOME_REASON => 'Social responsibility thresholds breached - Pending financial assessment',
 
     IMMUTABLE_FIELDS_AGE_VERIFICATION => [sort qw/first_name last_name date_of_birth/],
@@ -2204,27 +2203,33 @@ sub immutable_fields {
         if ($self->status->poi_name_mismatch) {
             @immutable = grep { $_ !~ qr/(first_name|last_name)/ } @immutable;
         }
-
         # Allow dob edition when poi dob mismatch (should not be locked though)
         if ($self->status->poi_dob_mismatch) {
             @immutable = grep { $_ !~ qr/(date_of_birth)/ } @immutable;
+        }
+        # Allow address edition when address mismatch (should not be locked though)
+        if ($self->status->poa_address_mismatch) {
+            @immutable = grep { $_ !~ qr/(address_city|address_line_1|address_line_2|address_postcode|address_state)/ } @immutable;
         }
     }
 
     my $return;
 
-    #Added first name, last name and DOB to immutable if client is verifed|Authenticated
-    if ($self->status->age_verification) {
-        push(@immutable, IMMUTABLE_FIELDS_AGE_VERIFICATION->@*);
+    # Add address fields to immutable array if address verified
+    if ($self->status->address_verified) {
+        push @immutable, ADDRESS_FIELDS->@*;
         $return = 1;
     }
 
-    #Added address properties to immutable if client is verifed|Authenticated
-    if ($self->get_poi_status() =~ qr/verified|expired/) {
-        if ($self->get_poi_status() eq "verified") {
-            #if verifed add address feilds in immutable fields
-            push(@immutable, ADDRESS_FIELDS_IMMUTABLE_AFTER_AUTH->@*);
-        }
+    # Add address fields to immutable array if either fully authenticated
+    if ($self->fully_authenticated) {
+        push @immutable, ADDRESS_FIELDS->@*;
+        $return = 1;
+    }
+
+    #Added first name, last name and DOB to immutable if either fully authenticated or poi verified
+    if ($self->status->age_verification) {
+        push @immutable, IMMUTABLE_FIELDS_AGE_VERIFICATION->@*;
         $return = 1;
     }
 
