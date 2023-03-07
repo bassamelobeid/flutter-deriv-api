@@ -1,0 +1,52 @@
+package BOM::Event::Script::OnfidoRetry;
+
+=head1 NAME
+
+BOM::Event::Script::OnfidoRetry - Construct required service objects
+
+=head1 DESCRIPTION
+
+Provides a retry mechanism for stuck in progress onfido checks.
+
+=cut
+
+use strict;
+use warnings;
+
+use BOM::Platform::Event::Emitter;
+use BOM::Database::UserDB;
+use Future::AsyncAwait;
+use BOM::Event::Services;
+use IO::Async::Loop;
+
+=head2 run
+
+Runs pending checks again.
+
+=cut
+
+async sub run {
+    my $loop = IO::Async::Loop->new;
+    $loop->add(my $services = BOM::Event::Services->new);
+    my $onfido = $services->onfido();
+    my $checks = BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('select id from users.get_in_progress_onfido_checks()', {Slice => {}});
+        });
+
+    for my $check ($checks->@*) {
+        my $onfido_check = await $onfido->check_get(
+            check_id => $check->{id},
+        );
+
+        next if $onfido_check->status eq 'in_progress';
+
+        BOM::Platform::Event::Emitter::emit(
+            'client_verification',
+            {
+                check_url => '/v3.4/checks/' . $check->{id},
+            });
+    }
+}
+
+1;
