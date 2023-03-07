@@ -9,6 +9,7 @@ use List::Util qw(min max first any);
 use YAML::XS   qw(LoadFile);
 use JSON::MaybeXS;
 
+use BOM::Config::Quants              qw(get_exchangerates_limit);
 use Format::Util::Numbers            qw/financialrounding/;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Database::Helper::RejectedTrade;
@@ -687,7 +688,8 @@ sub _validate_payout_limit {
             );
         }
 
-        my $custom_limit = BOM::Config::quants()->{risk_profile}{$custom_profile}{payout}{$contract->currency};
+        my $custom_limit =
+            get_exchangerates_limit(BOM::Config::quants()->{risk_profile}{$custom_profile}{payout}{$contract->currency}, $contract->currency);
         if (defined $custom_limit and (my $payout = $self->transaction->payout) > $custom_limit) {
             return Error::Base->cuss(
                 -quiet             => 1,

@@ -26,6 +26,7 @@ use Format::Util::Numbers               qw/formatnumber financialrounding/;
 use List::Util                          qw(min first);
 use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period);
 
+use BOM::Config::Quants qw(get_exchangerates_limit);
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
@@ -720,7 +721,8 @@ sub calculate_limits {
         # TODO: comebine this with BOM::Product::QuantsConfig
         push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
     } else {
-        $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
+        $limits{lookback_open_position_limit} =
+            get_exchangerates_limit($static_config->{lookback_limits}{open_position_limits}{$currency}, $currency);
         my @non_binary_custom_limits = $rp->get_non_binary_limit_parameters(\@cl_rp);
 
         my @limits_arr   = map { $_->{non_binary_contract_limit} } grep { exists $_->{non_binary_contract_limit}; } @{$non_binary_custom_limits[0]};
