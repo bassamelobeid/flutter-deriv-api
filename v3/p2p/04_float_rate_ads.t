@@ -29,6 +29,18 @@ my $client_escrow = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $client_escrow->account('USD');
 
+# Mocking all of the necessary exchange rates in redis.
+my $redis_exchangerates = BOM::Config::Redis::redis_exchangerates_write();
+my @all_currencies      = qw(EUR EURS PAX ETH IDK AUD eUSDT tUSDT BTC USDK LTC USB UST USDC TUSD USD GBP DAI BUSD);
+
+for my $currency (@all_currencies) {
+    $redis_exchangerates->hmset(
+        'exchange_rates::' . $currency . '_USD',
+        quote => 1,
+        epoch => time
+    );
+}
+
 $app_config->set({'payments.p2p.enabled'                  => 1});
 $app_config->set({'system.suspend.p2p'                    => 0});
 $app_config->set({'payments.p2p.available'                => 1});
